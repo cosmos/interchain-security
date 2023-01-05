@@ -15,8 +15,8 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-// EndBlockRD executes EndBlock logic for the reward distribution sub-protocol.
-// The sub-protocol follows a simple model -- send tokens to the fee pool
+// EndBlockRD executes EndBlock logic for the Reward Distribution sub-protocol.
+// Reward Distribution follows a simple model: send tokens to the fee pool
 // of the provider validator set
 func (k Keeper) EndBlockRD(ctx sdk.Context) {
 	// Split blocks rewards.

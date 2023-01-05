@@ -173,7 +173,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 // EndBlock implements the AppModule interface
 // Flush PendingChanges to ABCI, send pending packets, write acknowledgements for packets that have finished unbonding.
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	// Execute EndBlock logic for reward distribution sub-protocol
+	// Execute EndBlock logic for the Reward Distribution sub-protocol
 	am.keeper.EndBlockRD(ctx)
 
 	// NOTE: Slash packets are queued in BeginBlock via the Slash function
