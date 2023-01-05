@@ -85,6 +85,11 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 				return err
 			}
 		}
+
+		k.Logger(ctx).Info("sent block rewards to provider",
+			"total fee pool", fpTokens.String(),
+			"sent", tstProviderTokens.String(),
+		)
 	}
 
 	newLtbh := types.LastTransmissionBlockHeight{

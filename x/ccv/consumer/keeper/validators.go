@@ -85,13 +85,20 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		return
 	}
 
+	// get VSC ID for infraction height
+	vscID := k.GetHeightValsetUpdateID(ctx, uint64(infractionHeight))
+
+	k.Logger(ctx).Debug("vscID obtained from mapped infraction height",
+		"infraction height", infractionHeight,
+		"vscID", vscID,
+	)
+
 	k.QueueSlashPacket(
 		ctx,
 		abci.Validator{
 			Address: addr.Bytes(),
 			Power:   power},
-		// get VSC ID for infraction height
-		k.GetHeightValsetUpdateID(ctx, uint64(infractionHeight)),
+		vscID,
 		infraction,
 	)
 }

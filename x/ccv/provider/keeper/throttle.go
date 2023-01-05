@@ -40,6 +40,7 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 		// don't handle any more global entries if meter becomes negative in value
 		if meter.IsNegative() {
+			k.Logger(ctx).Info("negative slash meter value, no more slash packets will be handled", "meter", meter.Int64())
 			break
 		}
 	}
@@ -49,6 +50,11 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 	// Persist current value for slash meter
 	k.SetSlashMeter(ctx, meter)
+
+	if len(handledEntries) > 0 {
+		k.Logger(ctx).Info("handled global slash entries", "count", len(handledEntries), "meter", meter.Int64())
+	}
+
 }
 
 // Obtains the effective validator power relevant to a validator consensus address.
@@ -129,6 +135,7 @@ func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 
 	meter := k.GetSlashMeter(ctx)
+	oldMeter := meter
 	allowance := k.GetSlashMeterAllowance(ctx)
 
 	// Replenish meter up to allowance for this block. That is, if meter was negative
@@ -139,7 +146,13 @@ func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 	if meter.GT(allowance) {
 		meter = allowance
 	}
+
 	k.SetSlashMeter(ctx, meter)
+
+	k.Logger(ctx).Debug("slash meter replenished",
+		"old meter value", oldMeter.Int64(),
+		"new meter value", meter.Int64(),
+	)
 }
 
 // GetSlashMeterAllowance returns the amount of voting power units (int)
@@ -273,6 +286,10 @@ func (k Keeper) SetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID
 func (k Keeper) IncrementThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID string) {
 	size := k.GetThrottledPacketDataSize(ctx, consumerChainID)
 	k.SetThrottledPacketDataSize(ctx, consumerChainID, size+1)
+	k.Logger(ctx).Debug("incremented throttled packets size",
+		"chainID", consumerChainID,
+		"size", size+1,
+	)
 }
 
 // QueueThrottledSlashPacketData queues the slash packet data for a chain-specific throttled packet data queue.
