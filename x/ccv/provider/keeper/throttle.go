@@ -135,6 +135,7 @@ func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 
 	meter := k.GetSlashMeter(ctx)
+	oldMeter := meter
 	allowance := k.GetSlashMeterAllowance(ctx)
 
 	// Replenish meter up to allowance for this block. That is, if meter was negative
@@ -146,8 +147,12 @@ func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 		meter = allowance
 	}
 
-	k.Logger(ctx).Debug("slash meter replenished", "meter", meter.Int64())
 	k.SetSlashMeter(ctx, meter)
+
+	k.Logger(ctx).Debug("slash meter replenished",
+		"old meter value", oldMeter.Int64(),
+		"new meter value", meter.Int64(),
+	)
 }
 
 // GetSlashMeterAllowance returns the amount of voting power units (int)

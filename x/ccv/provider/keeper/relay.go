@@ -130,7 +130,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		// This should never happen.
 		k.Logger(ctx).Error(
 			"recv ErrorAcknowledgement",
-			"channel", packet.SourceChannel,
+			"channelID", packet.SourceChannel,
 			"error", err,
 		)
 		if chainID, ok := k.GetChannelToChain(ctx, packet.SourceChannel); ok {
@@ -147,7 +147,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) error {
 	chainID, found := k.GetChannelToChain(ctx, packet.SourceChannel)
 	if !found {
-		k.Logger(ctx).Error("packet timeout, unknown channel:", "channel", packet.SourceChannel)
+		k.Logger(ctx).Error("packet timeout, unknown channel:", "channelID", packet.SourceChannel)
 		// abort transaction
 		return sdkerrors.Wrap(
 			channeltypes.ErrInvalidChannelState,
@@ -358,7 +358,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	k.Logger(ctx).Debug("handling slash packet",
 		"chainID", chainID,
-		"consumer cons addr", sdk.ConsAddress(data.Validator.Address).String(),
+		"provider cons addr", sdk.ConsAddress(data.Validator.Address).String(),
 		"vscID", data.ValsetUpdateId,
 		"infractionType", data.Infraction,
 	)
@@ -469,7 +469,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 			// stop the consumer chain and unlock the unbonding.
 			// Note that the CCV channel was not established,
 			// thus closeChan is irrelevant
-			k.Logger(ctx).Info("removing timed out consumer chain - chain was not initialised",
+			k.Logger(ctx).Info("about to remove timed out consumer chain - chain was not initialised",
 				"chainID", initTimeoutTimestamp.ChainId)
 			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
 			if err != nil {
@@ -489,7 +489,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 			if currentTime.After(timeoutTimestamp) {
 				// vscTimeout expired
 				// stop the consumer chain and release unbondings
-				k.Logger(ctx).Info("removing timed out consumer chain - VSCPacket timed out",
+				k.Logger(ctx).Info("about to remove timed out consumer chain - VSCPacket timed out",
 					"chainID", channelToChain.ChainId,
 					"vscID", vscSendTimestamp.VscId,
 				)

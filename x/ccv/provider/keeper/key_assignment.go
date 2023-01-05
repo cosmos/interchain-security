@@ -537,8 +537,8 @@ func (k Keeper) PruneKeyAssignments(ctx sdk.Context, chainID string, vscID uint6
 	for _, addr := range consumerAddrs.Addresses {
 		k.DeleteValidatorByConsumerAddr(ctx, chainID, addr)
 		k.Logger(ctx).Info("consumer address was pruned",
-			"chainID", chainID,
-			"consumerAddr", sdk.ConsAddress(addr).String(),
+			"consumer chainID", chainID,
+			"consumer consensus addr", sdk.ConsAddress(addr).String(),
 		)
 	}
 
