@@ -110,7 +110,7 @@ tee $PROVIDER_HOME/consumer-proposal.json<<EOF
     "chain_id": "consumer",
     "initial_height": {
         "revision_number": 0,
-        "revision_height": 1
+        "revision_height": 8
     },
     "genesis_hash": "519df96a862c30f53e67b1277e6834ab4bd59dfdd08c781d1b7cf3813080fb28",
     "binary_hash": "09184916f3e85aa6fa24d3c12f1e5465af2214f13db265a52fa9f4617146dea5",

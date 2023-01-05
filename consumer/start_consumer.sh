@@ -297,7 +297,7 @@ PROVIDER_VALIDATOR_ADDRESS=$(jq -r .address $PROVIDER_HOME/keypair.json)
 DELEGATIONS=$($PROVIDER_BINARY q staking delegations $PROVIDER_VALIDATOR_ADDRESS --home $PROVIDER_HOME --node tcp://${PROVIDER_RPC_LADDR} -o json)
 OPERATOR_ADDR=$(echo $DELEGATIONS | jq -r .delegation_responses[0].delegation.validator_address)
 
-$PROVIDER_BINARY tx staking delegate $OPERATOR_ADDR 50000000stake \
+$PROVIDER_BINARY tx staking delegate $OPERATOR_ADDR 32000000stake \
        --from $VALIDATOR \
        $KEYRING \
        --home $PROVIDER_HOME \
@@ -306,7 +306,7 @@ $PROVIDER_BINARY tx staking delegate $OPERATOR_ADDR 50000000stake \
 sleep 1
 
 $PROVIDER_BINARY status --node=tcp://${PROVIDER_RPC_LADDR}
-$PROVIDER_BINARY status --node=tcp://${PROVIDER_RPC_LADDR1}
+# $PROVIDER_BINARY status --node=tcp://${PROVIDER_RPC_LADDR1}
 
 $CONSUMER_BINARY status --node tcp://$SOVEREIGN_RPC_LADDR
 $CONSUMER_BINARY status --node tcp://$CONSUMER_RPC_LADDR
