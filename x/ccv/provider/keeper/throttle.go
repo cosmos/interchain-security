@@ -531,11 +531,11 @@ func (k Keeper) GetLastSlashMeterFullTime(ctx sdktypes.Context) time.Time {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(providertypes.LastSlashMeterFullTimeKey())
 	if bz == nil {
-		panic("last slash replenish time not set")
+		panic("last slash meter full time not set")
 	}
 	time, err := sdktypes.ParseTimeBytes(bz)
 	if err != nil {
-		panic(fmt.Sprintf("failed to parse last slash meter replenish time: %s", err))
+		panic(fmt.Sprintf("failed to parse last slash meter full time: %s", err))
 	}
 	return time.UTC()
 }
