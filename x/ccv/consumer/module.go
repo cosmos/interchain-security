@@ -159,13 +159,14 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 		// the consumer chain is no longer safe
 
 		channelClosedMsg := fmt.Sprintf("CCV channel %q was closed - shutdown consumer chain since it is not secured anymore", channelID)
-		ctx.Logger().Error(channelClosedMsg)
+		am.keeper.Logger(ctx).Error(channelClosedMsg)
 		panic(channelClosedMsg)
 	}
 
 	blockHeight := uint64(ctx.BlockHeight())
 	vID := am.keeper.GetHeightValsetUpdateID(ctx, blockHeight)
 	am.keeper.SetHeightValsetUpdateID(ctx, blockHeight+1, vID)
+	am.keeper.Logger(ctx).Debug("block height was mapped to vscID", "height", blockHeight+1, "vscID", vID)
 
 	am.keeper.TrackHistoricalInfo(ctx)
 }
@@ -179,7 +180,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		panic(err)
 	}
 
-	// NOTE: Slash packets are queued in BeginBlock
+	// NOTE: Slash packets are queued in BeginBlock via the Slash function
 	// Packet ordering is managed by the PendingPackets queue.
 	am.keeper.QueueVSCMaturedPackets(ctx)
 
@@ -193,6 +194,8 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	// apply changes to cross-chain validator set
 	tendermintUpdates := am.keeper.ApplyCCValidatorChanges(ctx, data.ValidatorUpdates)
 	am.keeper.DeletePendingChanges(ctx)
+
+	am.keeper.Logger(ctx).Debug("sending validator updates to consensus engine", "len updates", len(tendermintUpdates))
 
 	return tendermintUpdates
 }
