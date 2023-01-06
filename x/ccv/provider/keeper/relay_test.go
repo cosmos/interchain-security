@@ -157,9 +157,9 @@ func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
 	// Queue some leading vsc matured packet data for chain-1
 	err := providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 1, vscData[0])
 	require.NoError(t, err)
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 2, vscData[1])
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 2, vscData[1])
 	require.NoError(t, err)
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 3, vscData[2])
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 3, vscData[2])
 	require.NoError(t, err)
 
 	// Queue some trailing slash packet data (and a couple more vsc matured)
