@@ -300,11 +300,8 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 		})
 	}
 
-	// apply key assignments to the initial valset
-	initialUpdatesWithConsumerKeys, err := k.ApplyKeyAssignmentToValUpdates(ctx, chainID, initialUpdates)
-	if err != nil {
-		panic("unable to apply key assignments to the initial valset")
-	}
+	// Apply key assignments to the initial valset.
+	initialUpdatesWithConsumerKeys := k.MustApplyKeyAssignmentToValUpdates(ctx, chainID, initialUpdates)
 
 	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)

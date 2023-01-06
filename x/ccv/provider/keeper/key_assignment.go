@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -444,13 +446,14 @@ func (k Keeper) AssignConsumerKey(
 	return nil
 }
 
-// ApplyKeyAssignmentToValUpdates applies the key assignment to the validator updates
-// received from the staking module
-func (k Keeper) ApplyKeyAssignmentToValUpdates(
+// MustApplyKeyAssignmentToValUpdates applies the key assignment to the validator updates
+// received from the staking module.
+// The method panics if the key-assignment state is corrupted.
+func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 	ctx sdk.Context,
 	chainID string,
 	valUpdates []abci.ValidatorUpdate,
-) (newUpdates []abci.ValidatorUpdate, err error) {
+) (newUpdates []abci.ValidatorUpdate) {
 	for _, valUpdate := range valUpdates {
 		providerAddr := utils.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
 
@@ -467,7 +470,9 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 
 			newConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 			if !found {
-				return newUpdates, sdkerrors.Wrapf(types.ErrConsumerKeyNotFound, "consumer key not found for %s", providerAddr)
+				// This should never happen as for every KeyAssignmentReplacement there should
+				// be a ValidatorConsumerPubKey that was stored when AssignConsumerKey() was called.
+				panic(fmt.Errorf("consumer key not found for provider addr %s stored in KeyAssignmentReplacement", providerAddr))
 			}
 			newUpdates = append(newUpdates, abci.ValidatorUpdate{
 				PubKey: newConsumerKey,
@@ -505,7 +510,9 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 
 		newConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, replacement.ProviderAddr)
 		if !found {
-			return newUpdates, sdkerrors.Wrapf(types.ErrConsumerKeyNotFound, "consumer key not found for %s", replacement.ProviderAddr)
+			// This should never happen as for every KeyAssignmentReplacement there should
+			// be a ValidatorConsumerPubKey that was stored when AssignConsumerKey() was called.
+			panic(fmt.Errorf("consumer key not found for provider addr %s stored in KeyAssignmentReplacement", replacement.ProviderAddr))
 		}
 		newUpdates = append(newUpdates, abci.ValidatorUpdate{
 			PubKey: newConsumerKey,
@@ -513,7 +520,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 		})
 	}
 
-	return newUpdates, nil
+	return newUpdates
 }
 
 // GetProviderAddrFromConsumerAddr returns the consensus address of a validator with
