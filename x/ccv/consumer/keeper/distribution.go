@@ -37,6 +37,12 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 		// write cache
 		writeCache()
 	}
+
+	// Update LastTransmissionBlockHeight
+	newLtbh := types.LastTransmissionBlockHeight{
+		Height: ctx.BlockHeight(),
+	}
+	k.SetLastTransmissionBlockHeight(ctx, newLtbh)
 }
 
 // DistributeRewardsInternally splits the block rewards according to the
@@ -140,12 +146,6 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 			"sent", tstProviderTokens.String(),
 		)
 	}
-
-	// Update LastTransmissionBlockHeight
-	newLtbh := types.LastTransmissionBlockHeight{
-		Height: ctx.BlockHeight(),
-	}
-	k.SetLastTransmissionBlockHeight(ctx, newLtbh)
 
 	return nil
 }

@@ -76,6 +76,10 @@ func TestRewardsDistribution(t *testing.T) {
 	runCCVTestByName(t, "TestRewardsDistribution")
 }
 
+func TestEndBlockRD(t *testing.T) {
+	runCCVTestByName(t, "TestEndBlockRD")
+}
+
 //
 // Expired client tests
 //
