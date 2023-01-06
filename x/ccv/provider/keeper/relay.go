@@ -109,14 +109,11 @@ func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv
 
 // CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations
 func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
-	ids, err := k.ConsumeMaturedUnbondingOps(ctx)
-	if err != nil {
-		panic(fmt.Sprintf("could not get the list of matured unbonding ops: %s", err.Error()))
-	}
-	for _, id := range ids {
+	for _, id := range k.ConsumeMaturedUnbondingOps(ctx) {
 		// Attempt to complete unbonding in staking module
 		err := k.stakingKeeper.UnbondingCanComplete(ctx, id)
 		if err != nil {
+			// TODO mpoke
 			panic(fmt.Sprintf("could not complete unbonding op: %s", err.Error()))
 		}
 		k.Logger(ctx).Debug("unbonding operation matured on all consumers", "opID", id)
@@ -210,6 +207,7 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 				k.Logger(ctx).Debug("IBC client is expired, cannot send VSC, leaving packet data stored:", "chainID", chainID, "vscid", data.ValsetUpdateId)
 				return
 			}
+			// TODO mpoke
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
 		// set the VSC send timestamp for this packet;
@@ -230,6 +228,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 		// apply the key assignment to the validator updates
 		valUpdates, err := k.ApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, valUpdates)
 		if err != nil {
+			// TODO mpoke
 			panic(fmt.Sprintf("could not apply key assignment to validator updates for chain %s: %s", chain.ChainId, err.Error()))
 		}
 

@@ -52,6 +52,7 @@ func (msg MsgAssignConsumerKey) Type() string {
 func (msg MsgAssignConsumerKey) GetSigners() []sdk.AccAddress {
 	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
+		// same behavior as in cosmos-sdk
 		panic(err)
 	}
 	return []sdk.AccAddress{valAddr.Bytes()}

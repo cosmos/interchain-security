@@ -264,15 +264,13 @@ func TestMaturedUnbondingOps(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	ids, err := providerKeeper.GetMaturedUnbondingOps(ctx)
-	require.NoError(t, err)
+	ids := providerKeeper.GetMaturedUnbondingOps(ctx)
 	require.Nil(t, ids)
 
 	unbondingOpIds := []uint64{0, 1, 2, 3, 4, 5, 6}
 	providerKeeper.AppendMaturedUnbondingOps(ctx, unbondingOpIds)
 
-	ids, err = providerKeeper.ConsumeMaturedUnbondingOps(ctx)
-	require.NoError(t, err)
+	ids = providerKeeper.ConsumeMaturedUnbondingOps(ctx)
 	require.Equal(t, len(unbondingOpIds), len(ids))
 	for i := 0; i < len(unbondingOpIds); i++ {
 		require.Equal(t, unbondingOpIds[i], ids[i])

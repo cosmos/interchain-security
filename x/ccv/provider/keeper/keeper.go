@@ -459,18 +459,18 @@ func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valset
 }
 
 // GetMaturedUnbondingOps returns the list of matured unbonding operation ids
-func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64, err error) {
+func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.MaturedUnbondingOpsKey())
 	if bz == nil {
-		return nil, nil
+		return nil
 	}
 
 	var ops ccv.MaturedUnbondingOps
 	if err := ops.Unmarshal(bz); err != nil {
-		return nil, err
+		panic(fmt.Errorf("failed to unmarshal MaturedUnbondingOps: %w", err))
 	}
-	return ops.GetIds(), nil
+	return ops.GetIds()
 }
 
 // AppendMaturedUnbondingOps adds a list of ids to the list of matured unbonding operation ids
@@ -478,11 +478,7 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) {
 	if len(ids) == 0 {
 		return
 	}
-	existingIds, err := k.GetMaturedUnbondingOps(ctx)
-	if err != nil {
-		panic(fmt.Sprintf("failed to get matured unbonding operations: %s", err))
-	}
-
+	existingIds := k.GetMaturedUnbondingOps(ctx)
 	maturedOps := ccv.MaturedUnbondingOps{
 		Ids: append(existingIds, ids...),
 	}
@@ -496,14 +492,11 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) {
 }
 
 // ConsumeMaturedUnbondingOps empties and returns list of matured unbonding operation ids (if it exists)
-func (k Keeper) ConsumeMaturedUnbondingOps(ctx sdk.Context) ([]uint64, error) {
-	ids, err := k.GetMaturedUnbondingOps(ctx)
-	if err != nil {
-		return nil, err
-	}
+func (k Keeper) ConsumeMaturedUnbondingOps(ctx sdk.Context) []uint64 {
+	ids := k.GetMaturedUnbondingOps(ctx)
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.MaturedUnbondingOpsKey())
-	return ids, nil
+	return ids
 }
 
 // Retrieves the underlying client state corresponding to a connection ID.

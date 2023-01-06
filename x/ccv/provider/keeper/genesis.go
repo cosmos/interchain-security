@@ -125,11 +125,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	}
 
-	matureUbdOps, err := k.GetMaturedUnbondingOps(ctx)
-	if err != nil {
-		panic(fmt.Errorf("failed to get matured unbonding operations: %s", err))
-	}
-
 	// ConsumerAddrsToPrune are added only for registered consumer chains
 	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
 	for _, chain := range registeredChains {
@@ -143,7 +138,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.GetAllValsetUpdateBlockHeights(ctx),
 		consumerStates,
 		k.GetAllUnbondingOps(ctx),
-		&ccv.MaturedUnbondingOps{Ids: matureUbdOps},
+		&ccv.MaturedUnbondingOps{Ids: k.GetMaturedUnbondingOps(ctx)},
 		k.GetAllPendingConsumerAdditionProps(ctx),
 		k.GetAllPendingConsumerRemovalProps(ctx),
 		params,
