@@ -91,8 +91,13 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 	delegate(s, delAddr, bondAmt)
 	s.providerChain.NextBlock()
 
-	ck := s.consumerApp.GetConsumerKeeper()
-	bpdt := ck.GetBlocksPerDistributionTransmission(s.consumerCtx())
+	// relay VSC packets from provider to consumer
+	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
+
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
+	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
+
+	bpdt := consumerKeeper.GetBlocksPerDistributionTransmission(s.consumerCtx())
 	transChanID := s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(s.consumerCtx())
 
 	// corruptTransChannel intentionally causes the reward distribution to fail by corrupting the transmission,
@@ -105,13 +110,26 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		s.consumerApp.GetIBCKeeper().ChannelKeeper.SetChannel(ctx, transfertypes.PortID, transChanID, tChan)
 	}
 
-	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
-
-	// fillRewardPool send coins to the fee pool which is used for reward distribution
-	fillRewardPool := func(sdk.Context) {
+	// prepareRD pass enough blocks in order that the reward distribution is triggered in
+	// the next consumer EndBlock and allocate some coins to the fee pool
+	prepareRD := func(ctx sdk.Context) {
+		// make sure we pass enough block
+		s.coordinator.CommitNBlocks(s.consumerChain, uint64(bpdt))
+		// fill pool
 		fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
-		err := consumerBankKeeper.SendCoinsFromAccountToModule(s.consumerCtx(), s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
+		err := consumerBankKeeper.SendCoinsFromAccountToModule(ctx, s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
 		s.Require().NoError(err)
+	}
+
+	// lBThUpdated checks that the current LBTH is greater than the given block height
+	lBThUpdated := func(ctx sdk.Context, height int64) bool {
+		return height < consumerKeeper.GetLastTransmissionBlockHeight(ctx).Height
+	}
+
+	// getEscrowBalance gets the current balances in the escrow account holding the transfered tokens to the provider
+	getEscrowBalance := func(ctx sdk.Context) sdk.Coins {
+		escAddr := transfertypes.GetEscrowAddress(transfertypes.PortID, transChanID)
+		return s.consumerApp.GetE2eBankKeeper().GetAllBalances(ctx, escAddr)
 	}
 
 	testCases := []struct {
@@ -127,15 +145,14 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 	}, {
 		name: fmt.Sprintf("should update LBTH when %d or more block are passed", bpdt),
 		setup: func(ctx sdk.Context) {
-			fillRewardPool(ctx)
+			prepareRD(ctx)
 		},
 		expLBThUpdated:     true,
 		expStatesPersisted: true,
 	}, {
 		name: "should update LBTH and discard the IBC transfer states when sending rewards to provider fails",
 		setup: func(ctx sdk.Context) {
-			s.consumerChain.NextBlock()
-			fillRewardPool(ctx)
+			prepareRD(ctx)
 			corruptTransChannel(ctx)
 		},
 		expLBThUpdated:     true,
@@ -143,41 +160,26 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 	},
 	}
 
-	// lBThUpdated checks that the current LBTH is greater than the given block height
-	lBThUpdated := func(ctx sdk.Context, height int64) bool {
-		return height < ck.GetLastTransmissionBlockHeight(ctx).Height
-	}
-
-	// getEscrowBalance gets the current balances in the escrow account holding the transfered tokens to the provider
-	getEscrowBalance := func(ctx sdk.Context) sdk.Coins {
-		escAddr := transfertypes.GetEscrowAddress(transfertypes.PortID, transChanID)
-		return s.consumerApp.GetE2eBankKeeper().GetAllBalances(ctx, escAddr)
-	}
-
-	// statesPersisted checks if the coins present on the escrow account balance are equal to the given coins input
-	escrowAccntUpdated := func(ctx sdk.Context, coins sdk.Coins) bool {
-		currentEscrowBalance := getEscrowBalance(ctx)
-		return coins.AmountOf(sdk.DefaultBondDenom) != currentEscrowBalance.AmountOf(sdk.DefaultBondDenom)
-	}
-
-	// relay VSC packets from provider to consumer
-	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
-
-	//reward for the provider chain will be sent after each 2 blocks
+	// reward for the provider chain will be sent after each 2 blocks
 	consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
 	consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(2))
-	s.consumerChain.NextBlock()
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			ctx := s.consumerCtx()
-			oldLbth := ck.GetLastTransmissionBlockHeight(ctx)
+			oldLbth := consumerKeeper.GetLastTransmissionBlockHeight(ctx)
 			oldEscBalance := getEscrowBalance(ctx)
 
-			// setup test
-			tc.setup(ctx)
+			// prepare the RD if we expect LTHB to be updated
+			if tc.expLBThUpdated {
+				prepareRD(ctx)
+				// make the RD fail to check that the states aren't persisted
+				if !tc.expStatesPersisted {
+					corruptTransChannel(ctx)
+				}
+			}
 
-			// trigger EndBlockRD and reward distribution
+			// trigger RD in EndBlockRD
 			s.consumerChain.NextBlock()
 
 			switch {
@@ -185,7 +187,14 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 				s.Require().True(lBThUpdated(s.consumerCtx(), oldLbth.Height))
 
 			case tc.expStatesPersisted:
-				s.Require().True(escrowAccntUpdated(s.consumerCtx(), oldEscBalance))
+				// check that the coins present on the escrow account balance are updated
+				currentEscrowBalance := getEscrowBalance(ctx)
+				s.Require().NotEqual(currentEscrowBalance, oldEscBalance)
+
+			case !tc.expStatesPersisted:
+				// check that the coins present on the escrow account balance aren't updated
+				currentEscrowBalance := getEscrowBalance(ctx)
+				s.Require().Equal(currentEscrowBalance, oldEscBalance)
 			}
 		})
 	}
