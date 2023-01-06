@@ -37,7 +37,7 @@ const (
 
 	// DefaultMaxThrottledPackets defines the default amount of throttled slash or vsc matured packets
 	// that can be queued for a single consumer before the provider chain halts.
-	DefaultMaxThrottledPackets = 1000
+	DefaultMaxThrottledPackets = 100000
 )
 
 // Reflection based keys for params subspace
