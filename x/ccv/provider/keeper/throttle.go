@@ -559,6 +559,9 @@ func (k Keeper) GetSlashMeter(ctx sdktypes.Context) sdktypes.Int {
 //
 // Note: the value of this int should always be in the range of tendermint's [-MaxTotalVotingPower, MaxTotalVotingPower]
 func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value sdktypes.Int) {
+
+	// TODO: remove these invariant panics once https://github.com/cosmos/interchain-security/issues/534 is solved.
+
 	// The following panics are included since they are invariants for slash meter value.
 	//
 	// Explanation: slash meter replenish fraction is validated to be in range of [0, 1],
