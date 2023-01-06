@@ -73,9 +73,8 @@ func (k Keeper) HandleLeadingVSCMaturedPackets(ctx sdk.Context) {
 // TODO: Unit test this method.
 func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv.VSCMaturedPacketData) {
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
-	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
 	var maturedIds []uint64
-	for _, unbondingOp := range unbondingOps {
+	for _, unbondingOp := range k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId) {
 		// remove consumer chain ID from unbonding op record
 		unbondingOp.UnbondingConsumerChains, _ = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
 		k.Logger(ctx).Debug("unbonding operation matured on consumer", "chainID", chainID, "opID", unbondingOp.Id)
@@ -234,7 +233,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations
 		// w/o changes in the voting power of the validators in the validator set
-		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chain.ChainId, valUpdateID)
+		unbondingOps := k.GetUnbondingOpsFromIndex(ctx, chain.ChainId, valUpdateID)
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 			// construct validator set change packet data
 			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chain.ChainId))
