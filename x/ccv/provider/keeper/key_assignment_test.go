@@ -241,16 +241,19 @@ func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	addrsToPrune := keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
+	require.Empty(t, addrsToPrune)
+
 	keeper.AppendConsumerAddrsToPrune(ctx, chainID, vscID, consumerAddr)
 
-	addrToPrune := keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
-	require.NotEmpty(t, addrToPrune, "address to prune is empty")
-	require.Len(t, addrToPrune, 1, "address to prune is not len 1")
-	require.Equal(t, sdk.ConsAddress(addrToPrune[0]), consumerAddr)
+	addrsToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
+	require.NotEmpty(t, addrsToPrune, "addresses to prune is empty")
+	require.Len(t, addrsToPrune, 1, "addresses to prune is not len 1")
+	require.Equal(t, sdk.ConsAddress(addrsToPrune[0]), consumerAddr)
 
 	keeper.DeleteConsumerAddrsToPrune(ctx, chainID, vscID)
-	addrToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
-	require.Empty(t, addrToPrune, "address to prune was returned")
+	addrsToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
+	require.Empty(t, addrsToPrune, "addresses to prune was returned")
 }
 
 func TestGetAllConsumerAddrsToPrune(t *testing.T) {

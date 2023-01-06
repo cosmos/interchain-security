@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -25,7 +27,9 @@ func (k Keeper) GetValidatorConsumerPubKey(
 	}
 	err := consumerKey.Unmarshal(bz)
 	if err != nil {
-		panic(err)
+		// An error here would indicate something is very wrong,
+		// the consumer key is assumed to be correctly serialized in SetValidatorConsumerPubKey.
+		panic(fmt.Sprintf("failed to unmarshal consumer key: %v", err))
 	}
 	return consumerKey, true
 }
@@ -40,7 +44,10 @@ func (k Keeper) SetValidatorConsumerPubKey(
 	store := ctx.KVStore(k.storeKey)
 	bz, err := consumerKey.Marshal()
 	if err != nil {
-		panic(err)
+		// An error here would indicate something is very wrong,
+		// the consumer key is obtained from GetValidatorConsumerPubKey, called from
+		// TODO: not sure that consumerKey is actually validated by all possible code paths
+		panic(fmt.Sprintf("failed to marshal consumer key: %v", err))
 	}
 	store.Set(types.ConsumerValidatorsKey(chainID, providerAddr), bz)
 }
@@ -68,12 +75,16 @@ func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID *string)
 	for ; iterator.Valid(); iterator.Next() {
 		chainID, providerAddr, err := types.ParseChainIdAndConsAddrKey(types.ConsumerValidatorsBytePrefix, iterator.Key())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the store key is assumed to be correctly serialized in SetValidatorConsumerPubKey.
 			panic(err)
 		}
 		var consumerKey tmprotocrypto.PublicKey
 		err = consumerKey.Unmarshal(iterator.Value())
 		if err != nil {
-			panic(err)
+			// An error here would indicate something is very wrong,
+			// the consumer key is assumed to be correctly serialized in SetValidatorConsumerPubKey.
+			panic(fmt.Sprintf("failed to unmarshal consumer key: %v", err))
 		}
 
 		validatorConsumerPubKeys = append(validatorConsumerPubKeys, types.ValidatorConsumerPubKey{
@@ -106,7 +117,9 @@ func (k Keeper) GetValidatorByConsumerAddr(
 	}
 	err := providerAddr.Unmarshal(bz)
 	if err != nil {
-		panic(err)
+		// An error here would indicate something is very wrong,
+		// the provider address is assumed to be correctly serialized in SetValidatorByConsumerAddr.
+		panic(fmt.Sprintf("failed to unmarshal provider address: %v", err))
 	}
 	return providerAddr, true
 }
@@ -120,10 +133,8 @@ func (k Keeper) SetValidatorByConsumerAddr(
 	providerAddr sdk.ConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := providerAddr.Marshal()
-	if err != nil {
-		panic(err)
-	}
+	// Cons address is a type alias for a byte string, no marshaling needed
+	bz := providerAddr
 	store.Set(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr), bz)
 }
 
@@ -151,12 +162,16 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string)
 	for ; iterator.Valid(); iterator.Next() {
 		chainID, consumerAddr, err := types.ParseChainIdAndConsAddrKey(types.ValidatorsByConsumerAddrBytePrefix, iterator.Key())
 		if err != nil {
-			panic(err)
+			// An error here would indicate something is very wrong,
+			// store keys are assumed to be correctly serialized in SetValidatorByConsumerAddr.
+			panic(fmt.Sprintf("failed to parse chainID and consumer address: %v", err))
 		}
 		var providerAddr sdk.ConsAddress
 		err = providerAddr.Unmarshal(iterator.Value())
 		if err != nil {
-			panic(err)
+			// An error here would indicate something is very wrong,
+			// the provider address is assumed to be correctly serialized in SetValidatorByConsumerAddr.
+			panic(fmt.Sprintf("failed to unmarshal provider address: %v", err))
 		}
 
 		validatorConsumerAddrs = append(validatorConsumerAddrs, types.ValidatorByConsumerAddr{
@@ -193,7 +208,9 @@ func (k Keeper) GetKeyAssignmentReplacement(
 
 	err := pubKeyAndPower.Unmarshal(bz)
 	if err != nil {
-		panic(err)
+		// An error here would indicate something is very wrong,
+		// the public key and power are assumed to be correctly serialized in SetKeyAssignmentReplacement.
+		panic(fmt.Sprintf("failed to unmarshal public key and power: %v", err))
 	}
 	return pubKeyAndPower.PubKey, pubKeyAndPower.Power, true
 }
@@ -212,7 +229,11 @@ func (k Keeper) SetKeyAssignmentReplacement(
 	pubKeyAndPower := abci.ValidatorUpdate{PubKey: prevCKey, Power: power}
 	bz, err := pubKeyAndPower.Marshal()
 	if err != nil {
-		panic(err)
+		// An error here would indicate something is very wrong,
+		// prevCKey is obtained from GetValidatorConsumerPubKey (called from AssignConsumerKey),
+		// and power is obtained from GetLastValidatorPower (called from AssignConsumerKey).
+		// Both of which are assumed to return valid values.
+		panic(fmt.Sprintf("failed to marshal public key and power: %v", err))
 	}
 	store.Set(types.KeyAssignmentReplacementsKey(chainID, providerAddr), bz)
 }
@@ -231,12 +252,16 @@ func (k Keeper) GetAllKeyAssignmentReplacements(ctx sdk.Context, chainID string)
 	for ; iterator.Valid(); iterator.Next() {
 		_, providerAddr, err := types.ParseChainIdAndConsAddrKey(types.KeyAssignmentReplacementsBytePrefix, iterator.Key())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// store keys are assumed to be correctly serialized in SetKeyAssignmentReplacement.
 			panic(err)
 		}
 		var pubKeyAndPower abci.ValidatorUpdate
 		err = pubKeyAndPower.Unmarshal(iterator.Value())
 		if err != nil {
-			panic(err)
+			// An error here would indicate something is very wrong,
+			// the public key and power are assumed to be correctly serialized in SetKeyAssignmentReplacement.
+			panic(fmt.Sprintf("failed to unmarshal public key and power: %v", err))
 		}
 
 		replacements = append(replacements, types.KeyAssignmentReplacement{
@@ -272,12 +297,17 @@ func (k Keeper) AppendConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscI
 	if bz != nil {
 		err := consumerAddrsToPrune.Unmarshal(bz)
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the data bytes are assumed to be correctly serialized by previous calls to this method.
 			panic(err)
 		}
 	}
+	// TODO: do we need to validate the consumerAddr we're appending here?
 	consumerAddrsToPrune.Addresses = append(consumerAddrsToPrune.Addresses, consumerAddr)
 	bz, err := consumerAddrsToPrune.Marshal()
 	if err != nil {
+		// An error here would indicate something is very wrong,
+		// consumerAddrsToPrune is instantiated in this method and should be able to be marshaled.
 		panic(err)
 	}
 	store.Set(types.ConsumerAddrsToPruneKey(chainID, vscID), bz)
@@ -297,7 +327,9 @@ func (k Keeper) GetConsumerAddrsToPrune(
 	}
 	err := consumerAddrsToPrune.Unmarshal(bz)
 	if err != nil {
-		panic(err)
+		// An error here would indicate something is very wrong,
+		// the list of consumer addresses is assumed to be correctly serialized in AppendConsumerAddrsToPrune.
+		panic(fmt.Sprintf("failed to unmarshal consumer addresses to prune: %v", err))
 	}
 	return
 }
@@ -315,11 +347,15 @@ func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, chainID string) (con
 	for ; iterator.Valid(); iterator.Next() {
 		_, vscID, err := types.ParseChainIdAndUintIdKey(types.ConsumerAddrsToPruneBytePrefix, iterator.Key())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// store keys are assumed to be correctly serialized in AppendConsumerAddrsToPrune.
 			panic(err)
 		}
 		var addrs types.AddressList
 		err = addrs.Unmarshal(iterator.Value())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the list of consumer addresses is assumed to be correctly serialized in AppendConsumerAddrsToPrune.
 			panic(err)
 		}
 
