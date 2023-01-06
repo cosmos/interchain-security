@@ -53,6 +53,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		chainID := cs.ChainId
 		k.SetConsumerClientId(ctx, chainID, cs.ClientId)
 		if err := k.SetConsumerGenesis(ctx, chainID, cs.ConsumerGenesis); err != nil {
+			// An error here would indicate something is very wrong,
+			// the ConsumerGenesis validated in ConsumerState.Validate().
 			panic(fmt.Errorf("consumer chain genesis could not be persisted: %w", err))
 		}
 		for _, ubdOpIndex := range cs.UnbondingOpsIndex {
