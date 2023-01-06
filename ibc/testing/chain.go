@@ -512,8 +512,11 @@ func (chain *TestChain) CreateTMClientHeader(chainID string, blockHeight int64, 
 	// Thus we iterate over the ordered validator set and construct a signer array
 	// from the signer map in the same order.
 	var signerArr []tmtypes.PrivValidator
-	for _, v := range tmValSet.Validators {
-		signerArr = append(signerArr, signers[v.Address.String()])
+
+	if tmValSet.Validators != nil {
+		for _, v := range tmValSet.Validators {
+			signerArr = append(signerArr, signers[v.Address.String()])
+		}
 	}
 
 	commit, err := tmtypes.MakeCommit(blockID, blockHeight, 1, voteSet, signerArr, timestamp)
