@@ -53,21 +53,32 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 	if err := h.k.stakingKeeper.PutUnbondingOnHold(ctx, ID); err != nil {
 		// If there was an error putting the unbonding on hold, panic to end execution for
 		// the current tx and prevent committal of this invalid state.
+		//
+		// Note: that in the case of a validator unbonding, AfterUnbondingInitiated is called
+		// form staking.EndBlock, thus the following panic would halt the chain.
+		// In this case PutUnbondingOnHold fails if either the unbonding operation was
+		// not found or the UnbondingOnHoldRefCount is negative. In either cases,
+		// the state of the x/staking module of cosmos-sdk is invalid.
 		panic(fmt.Errorf("unbonding could not be put on hold: %w", err))
 	}
 	return nil
 }
 
+// ValidatorConsensusKeyInUse is called when a new validator is created
+// in the x/staking module of cosmos-sdk. In case it panics, the TX aborts
+// and thus, the validator is not created
 func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddress) bool {
 	// Get the validator being added in the staking module.
 	val, found := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if !found {
+		// Abort TX, do NOT allow validator to be created
 		panic("did not find newly created validator in staking module")
 	}
 
 	// Get the consensus address of the validator being added
 	consensusAddr, err := val.GetConsAddr()
 	if err != nil {
+		// Abort TX, do NOT allow validator to be created
 		panic("could not get validator cons addr ")
 	}
 
