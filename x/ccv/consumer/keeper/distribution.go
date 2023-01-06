@@ -141,6 +141,9 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 			}
 		}
 
+		consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
+		fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
+
 		k.Logger(ctx).Info("sent block rewards to provider",
 			"total fee pool", fpTokens.String(),
 			"sent", tstProviderTokens.String(),
