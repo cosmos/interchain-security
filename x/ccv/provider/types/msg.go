@@ -77,7 +77,7 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 	}
 	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
-		return err
+		return ErrInvalidProviderAddress
 	}
 	if msg.ConsumerKey == nil {
 		return ErrInvalidConsumerConsensusPubKey
