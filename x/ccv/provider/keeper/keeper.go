@@ -318,8 +318,10 @@ func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp types.UnbondingOp) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := unbondingOp.Marshal()
 	if err != nil {
-		// An error here would indicate something is very wrong.
-		// TODO mpoke
+		// An error here would indicate something is very wrong,
+		// unbondingOp is either instantiated in AfterUnbondingInitiated,
+		// updated correctly by RemoveConsumerFromUnbondingOp,
+		// or set during InitGenesis.
 		panic(fmt.Errorf("unbonding op could not be marshaled: %w", err))
 	}
 	store.Set(types.UnbondingOpKey(unbondingOp.Id), bz)
@@ -380,6 +382,48 @@ func (k Keeper) GetAllUnbondingOps(ctx sdk.Context) (ops []types.UnbondingOp) {
 	}
 
 	return ops
+}
+
+// RemoveConsumerFromUnbondingOp removes a consumer chain ID that the unbonding op with id is waiting on.
+// The method returns true if the unbonding op can complete. In this case the record is removed from store.
+func (k Keeper) RemoveConsumerFromUnbondingOp(ctx sdk.Context, id uint64, chainID string) (canComplete bool) {
+	canComplete = false
+	// Get the unbonding op from store
+	unbondingOp, found := k.GetUnbondingOp(ctx, id)
+	if !found {
+		k.Logger(ctx).Error("internal state corrupted; could not find UnbondingOp",
+			"ID", id,
+		)
+		return
+	}
+
+	// Remove consumer chain ID from unbonding op
+	var numRemoved int
+	unbondingOp.UnbondingConsumerChains, numRemoved = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
+	if numRemoved > 0 {
+		k.Logger(ctx).Debug("unbonding operation matured on consumer", "chainID", chainID, "opID", id)
+
+		if len(unbondingOp.UnbondingConsumerChains) == 0 {
+			// Delete unbonding op
+			k.DeleteUnbondingOp(ctx, id)
+			// No more consumer chains; the unbonding op can complete
+			canComplete = true
+		} else {
+			// Update unbonding op in store
+			k.SetUnbondingOp(ctx, unbondingOp)
+		}
+	}
+	return
+}
+
+func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
+	for _, y := range slice {
+		if x != y {
+			newSlice = append(newSlice, y)
+		}
+	}
+
+	return newSlice, len(slice) - len(newSlice)
 }
 
 // SetUnbondingOpIndex sets the IDs of unbonding operations that are waiting for

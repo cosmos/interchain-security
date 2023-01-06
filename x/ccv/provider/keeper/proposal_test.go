@@ -480,17 +480,6 @@ func TestStopConsumerChain(t *testing.T) {
 
 	tests := []testCase{
 		{
-			description: "fail due to an invalid unbonding index",
-			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-				// set invalid unbonding op index
-				providerKeeper.SetUnbondingOpIndex(ctx, "chainID", 0, []uint64{0})
-
-				// StopConsumerChain should return error, but state is still cleaned (asserted with mocks).
-				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
-			},
-			expErr: true,
-		},
-		{
 			description: "proposal dropped, client doesn't exist",
 			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				// No mocks, meaning no external keeper methods are allowed to be called.

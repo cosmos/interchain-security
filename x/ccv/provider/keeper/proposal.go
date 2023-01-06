@@ -199,27 +199,10 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		// iterate over the unbonding operations for the current VSC ID
 		var maturedIds []uint64
 		for _, id := range unbondingOpsIndex.UnbondingOpIds {
-			unbondingOp, found := k.GetUnbondingOp(ctx, id)
-			if !found {
-				// This can happen only if the internal state is corrupted.
-				// TODO: we should probably panic here
-				k.Logger(ctx).Error("internal state corrupted; could not find UnbondingOp",
-					"ID", id,
-				)
-				return fmt.Errorf("could not find UnbondingOp according to index - id: %d", id)
-
-			}
-			// remove consumer chain ID from unbonding op record
-			unbondingOp.UnbondingConsumerChains, _ = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
-
-			// If unbonding op is completely unbonded from all relevant consumer chains
-			if len(unbondingOp.UnbondingConsumerChains) == 0 {
+			// Remove consumer chain ID from unbonding op record
+			if k.RemoveConsumerFromUnbondingOp(ctx, id, chainID) {
 				// Store id of matured unbonding op for later completion of unbonding in staking module
-				maturedIds = append(maturedIds, unbondingOp.Id)
-				// Delete unbonding op
-				k.DeleteUnbondingOp(ctx, unbondingOp.Id)
-			} else {
-				k.SetUnbondingOp(ctx, unbondingOp)
+				maturedIds = append(maturedIds, id)
 			}
 		}
 		k.AppendMaturedUnbondingOps(ctx, maturedIds)

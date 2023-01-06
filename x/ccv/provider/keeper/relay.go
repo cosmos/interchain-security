@@ -75,18 +75,10 @@ func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
 	var maturedIds []uint64
 	for _, unbondingOp := range k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId) {
-		// remove consumer chain ID from unbonding op record
-		unbondingOp.UnbondingConsumerChains, _ = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
-		k.Logger(ctx).Debug("unbonding operation matured on consumer", "chainID", chainID, "opID", unbondingOp.Id)
-
-		// If unbonding op is completely unbonded from all relevant consumer chains
-		if len(unbondingOp.UnbondingConsumerChains) == 0 {
+		// Remove consumer chain ID from unbonding op record
+		if k.RemoveConsumerFromUnbondingOp(ctx, unbondingOp.Id, chainID) {
 			// Store id of matured unbonding op for later completion of unbonding in staking module
 			maturedIds = append(maturedIds, unbondingOp.Id)
-			// Delete unbonding op
-			k.DeleteUnbondingOp(ctx, unbondingOp.Id)
-		} else {
-			k.SetUnbondingOp(ctx, unbondingOp)
 		}
 	}
 	k.AppendMaturedUnbondingOps(ctx, maturedIds)
@@ -506,16 +498,6 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 			}
 		}
 	}
-}
-
-func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
-	for _, y := range slice {
-		if x != y {
-			newSlice = append(newSlice, y)
-		}
-	}
-
-	return newSlice, len(slice) - len(newSlice)
 }
 
 // getMappedInfractionHeight gets the infraction height mapped from val set ID for the given chain ID
