@@ -513,10 +513,8 @@ func (chain *TestChain) CreateTMClientHeader(chainID string, blockHeight int64, 
 	// from the signer map in the same order.
 	var signerArr []tmtypes.PrivValidator
 
-	if tmValSet.Validators != nil {
-		for _, v := range tmValSet.Validators {
-			signerArr = append(signerArr, signers[v.Address.String()])
-		}
+	for _, v := range tmValSet.Validators {
+		signerArr = append(signerArr, signers[v.Address.String()])
 	}
 
 	commit, err := tmtypes.MakeCommit(blockID, blockHeight, 1, voteSet, signerArr, timestamp)
