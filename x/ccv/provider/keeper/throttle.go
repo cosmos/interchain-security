@@ -165,7 +165,7 @@ func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 
 	strFrac := k.GetSlashMeterReplenishFraction(ctx)
-	// The below func should not panic, since the (string representation) of the slash meter replenish fraction
+	// MustNewDecFromStr should not panic, since the (string representation) of the slash meter replenish fraction
 	// is validated in ValidateGenesis and anytime the param is mutated.
 	decFrac := sdktypes.MustNewDecFromStr(strFrac)
 
@@ -227,7 +227,7 @@ func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.G
 	entries := []providertypes.GlobalSlashEntry{}
 
 	for ; iterator.Valid(); iterator.Next() {
-		// The below func should not panic, since we should be iterating over keys that're
+		// MustParseGlobalSlashEntryKey should not panic, since we should be iterating over keys that're
 		// assumed to be correctly serialized in QueueGlobalSlashEntry.
 		recvTime, chainID, ibcSeqNum := providertypes.MustParseGlobalSlashEntryKey(iterator.Key())
 		valAddr := iterator.Value()
@@ -335,7 +335,7 @@ func (k Keeper) QueueThrottledPacketData(
 		}
 		bz = append([]byte{vscMaturedPacketData}, bz...)
 	default:
-		// Default case would indicate a developer error, this method should only be called
+		// Indicates a developer error, this method should only be called
 		// by tests, QueueThrottledSlashPacketData, or QueueThrottledVSCMaturedPacketData.
 		panic(fmt.Sprintf("unexpected packet data type: %T", data))
 	}
