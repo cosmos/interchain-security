@@ -192,8 +192,7 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 // related to jailing/tombstoning over time. This "global" queue is used to coordinate the order of slash packet handling
 // between chains, whereas the chain-specific queue is used to coordinate the order of slash and vsc matured packets
 // relevant to each chain.
-func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context,
-	entry providertypes.GlobalSlashEntry) {
+func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context, entry providertypes.GlobalSlashEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.GlobalSlashEntryKey(entry)
 	store.Set(key, entry.ProviderValConsAddr)
@@ -297,23 +296,26 @@ func (k Keeper) IncrementThrottledPacketDataSize(ctx sdktypes.Context, consumerC
 //
 // Note: This queue is shared between pending slash packet data and pending vsc matured packet data.
 func (k Keeper) QueueThrottledSlashPacketData(
-	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData) {
-	k.QueueThrottledPacketData(ctx, consumerChainID, ibcSeqNum, data)
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData) error {
+	return k.QueueThrottledPacketData(ctx, consumerChainID, ibcSeqNum, data)
 }
 
 // QueueThrottledVSCMaturedPacketData queues the vsc matured packet data for a chain-specific throttled packet data queue.
 //
 // Note: This queue is shared between pending slash packet data and pending vsc matured packet data.
 func (k Keeper) QueueThrottledVSCMaturedPacketData(
-	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData) {
-	k.QueueThrottledPacketData(ctx, consumerChainID, ibcSeqNum, data)
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData) error {
+	return k.QueueThrottledPacketData(ctx, consumerChainID, ibcSeqNum, data)
 }
 
 // QueueThrottledPacketData queues a slash packet data or vsc matured packet data instance
-// for the given consumer chain's queue. This method is either used by tests, or called
-// by higher level methods with type assertion.
+// for the given consumer chain's queue.
+//
+// Note: This method returns an error because it is called from
+// OnRecvSlashPacket and OnRecvVSCMaturedPacket, meaning we can return an ibc err ack to the
+// counter party chain on error, instead of panicking this chain.
 func (k Keeper) QueueThrottledPacketData(
-	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{}) {
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{}) error {
 
 	store := ctx.KVStore(k.storeKey)
 
@@ -323,17 +325,13 @@ func (k Keeper) QueueThrottledPacketData(
 	case ccvtypes.SlashPacketData:
 		bz, err = data.Marshal()
 		if err != nil {
-			// Slash packet data is assumed to be validated in OnRecvPacket and/or OnRecvSlashPacket,
-			// hence an error here would indicate something is very wrong.
-			panic(fmt.Sprintf("failed to marshal slash packet data: %v", err))
+			return fmt.Errorf("failed to marshal slash packet data: %v", err)
 		}
 		bz = append([]byte{slashPacketData}, bz...)
 	case ccvtypes.VSCMaturedPacketData:
 		bz, err = data.Marshal()
 		if err != nil {
-			// VSC matured packet data is assumed to be validated in OnRecvPacket and/or OnRecvVSCMaturedPacket,
-			// hence an error here would indicate something is very wrong.
-			panic(fmt.Sprintf("failed to marshal vsc matured packet data: %v", err))
+			return fmt.Errorf("failed to marshal vsc matured packet data: %v", err)
 		}
 		bz = append([]byte{vscMaturedPacketData}, bz...)
 	default:
@@ -344,6 +342,7 @@ func (k Keeper) QueueThrottledPacketData(
 
 	store.Set(providertypes.ThrottledPacketDataKey(consumerChainID, ibcSeqNum), bz)
 	k.IncrementThrottledPacketDataSize(ctx, consumerChainID)
+	return nil
 }
 
 // GetLeadingVSCMaturedData returns the leading vsc matured packet data instances

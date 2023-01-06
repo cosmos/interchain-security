@@ -506,7 +506,10 @@ func TestStopConsumerChain(t *testing.T) {
 				providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 					ctx.BlockTime(), "chainID", 1, cryptoutil.NewCryptoIdentityFromIntSeed(90).SDKConsAddress()))
 
-				providerKeeper.QueueThrottledSlashPacketData(ctx, "chainID", 1, testkeeper.GetNewSlashPacketData())
+				err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chainID", 1, testkeeper.GetNewSlashPacketData())
+				if err != nil {
+					t.Fatal(err)
+				}
 				providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chainID", 2, testkeeper.GetNewVSCMaturedPacketData())
 			},
 			expErr: false,

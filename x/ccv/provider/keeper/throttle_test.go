@@ -917,7 +917,8 @@ func TestGetLeadingVSCMaturedData(t *testing.T) {
 
 		// Queue a slash and vsc matured packet data for some random chain.
 		// These values should never be returned.
-		providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
+		err := providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
+		require.NoError(t, err)
 		providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, testkeeper.GetNewVSCMaturedPacketData())
 
 		// Queue the data to test against
@@ -1020,7 +1021,8 @@ func TestGetSlashAndTrailingData(t *testing.T) {
 
 		// Queue a slash and vsc matured packet data for some random chain.
 		// These values should never be returned.
-		providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
+		err := providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
+		require.NoError(t, err)
 		providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, testkeeper.GetNewVSCMaturedPacketData())
 
 		// Queue the data to test
@@ -1045,13 +1047,17 @@ func TestDeleteThrottledPacketDataForConsumer(t *testing.T) {
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// Queue slash and a VSC matured packet data for chain-48
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-48", 0, testkeeper.GetNewSlashPacketData())
+	err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-48", 0, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
 	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-48", 1, testkeeper.GetNewVSCMaturedPacketData())
 
 	// Queue 3 slash, and 4 vsc matured packet data instances for chain-49
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 0, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 1, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 2, testkeeper.GetNewSlashPacketData())
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 0, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 1, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 2, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
 	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 3, testkeeper.GetNewVSCMaturedPacketData())
 	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 4, testkeeper.GetNewVSCMaturedPacketData())
 	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 5, testkeeper.GetNewVSCMaturedPacketData())

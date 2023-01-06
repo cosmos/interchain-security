@@ -117,7 +117,8 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 
 	// Now queue a slash packet data instance for chain-2, then confirm the on recv method
 	// queues the vsc matured behind the slash packet data
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 1, testkeeper.GetNewSlashPacketData())
+	err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 1, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
 	ack = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", 2)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 	require.Equal(t, uint64(2), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
@@ -159,8 +160,10 @@ func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
 	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 3, vscData[2])
 
 	// Queue some trailing slash packet data (and a couple more vsc matured)
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 4, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 5, testkeeper.GetNewSlashPacketData())
+	err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 4, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 5, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
 	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 6, vscData[3])
 	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 7, vscData[4])
 
@@ -169,8 +172,10 @@ func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
 	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-2", 2, vscData[6])
 
 	// And trailing slash packet data for chain-2
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 3, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 4, testkeeper.GetNewSlashPacketData())
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 3, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 4, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
 
 	// And one more trailing vsc matured packet for chain-2
 	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-2", 5, vscData[7])

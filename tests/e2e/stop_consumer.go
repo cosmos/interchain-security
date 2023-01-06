@@ -87,8 +87,9 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 				firstBundle := s.getFirstBundle()
 				globalEntry := types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), firstBundle.Chain.ChainID, 7, []byte{})
 				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
-				providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), firstBundle.Chain.ChainID, 1,
+				err := providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), firstBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
+				suite.Require().NoError(err)
 				providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
 					firstBundle.Chain.ChainID, 2, ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
 
@@ -96,8 +97,9 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 				secondBundle := s.getBundleByIdx(1)
 				globalEntry = types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), secondBundle.Chain.ChainID, 7, []byte{})
 				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
-				providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), secondBundle.Chain.ChainID, 1,
+				err = providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), secondBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
+				suite.Require().NoError(err)
 				providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
 					secondBundle.Chain.ChainID, 2, ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
 

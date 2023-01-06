@@ -35,7 +35,10 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data)
+	if err := k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data); err != nil {
+		return channeltypes.NewErrorAcknowledgement(fmt.Sprintf(
+			"failed to queue VSCMatured packet data: %s", err.Error()))
+	}
 
 	k.Logger(ctx).Info("VSCMaturedPacket received and enqueued",
 		"chainID", chainID,
@@ -316,10 +319,9 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
 	// to enforce order of handling between the two packet data types.
-	k.QueueThrottledSlashPacketData(ctx,
-		chainID,         // consumer chain id that sent the packet
-		packet.Sequence, // IBC sequence number of the packet
-		data)
+	if err := k.QueueThrottledSlashPacketData(ctx, chainID, packet.Sequence, data); err != nil {
+		return channeltypes.NewErrorAcknowledgement(fmt.Sprintf("failed to queue slash packet data: %s", err.Error()))
+	}
 
 	k.Logger(ctx).Info("slash packet received and enqueued",
 		"chainID", chainID,
