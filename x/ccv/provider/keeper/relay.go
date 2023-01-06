@@ -268,10 +268,30 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// Replenish slash meter if necessary, BEFORE executing slash packet throttling logic.
 	// This ensures the meter value is replenished, and not greater than the allowance (max value)
 	// for the block, before the throttling logic is executed.
+	//
+	// Note: CheckForSlashMeterReplenishment contains panics for the following scenarios, any of which should never occur
+	// if the protocol is correct and external data is properly validated:
+	//
+	// - Either SlashMeter or LastSlashMeterFullTime have not been set (both of which should be set in InitGenesis, see InitializeSlashMeter).
+	// - Params not being set (all of which should be set in InitGenesis).
+	// - Marshaling and/or store corruption errors.
+	// - Setting invalid slash meter values (see SetSlashMeter).
 	k.CheckForSlashMeterReplenishment(ctx)
-	// Handle leading vsc matured packets before throttling logic
+	// Handle leading vsc matured packets before throttling logic.
+	//
+	// Note: HandleLeadingVSCMaturedPackets contains panics for the following scenarios, any of which should never occur
+	// if the protocol is correct and external data is properly validated:
+	//
+	// - Marshaling and/or store corruption errors.
 	k.HandleLeadingVSCMaturedPackets(ctx)
-	// Execute slash packet throttling logic
+	// Handle queue entries considering throttling logic.
+	//
+	// Note: HandleThrottleQueues contains panics for the following scenarios, any of which should never occur
+	// if the protocol is correct and external data is properly validated:
+	//
+	// - SlashMeter has not been set (which should be set in InitGenesis, see InitializeSlashMeter).
+	// - Marshaling and/or store corruption errors.
+	// - Setting invalid slash meter values (see SetSlashMeter).
 	k.HandleThrottleQueues(ctx)
 }
 
