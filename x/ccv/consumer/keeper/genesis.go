@@ -17,13 +17,11 @@ import (
 //  2. A consumer chain restarts after a client to the provider was created, but the CCV channel handshake is still in progress
 //  3. A consumer chain restarts after the CCV channel handshake was completed.
 func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) []abci.ValidatorUpdate {
-	fmt.Println("consumer.InitGenesis")
 	// PreCCV is true when consumer chain used to be running on non-consumer chain, and when it is in the progress of upgrading
 	// to consumer chain, where consumer chain upgrade is done.
 	if state.PreCCV {
 		k.SetPreCCV(ctx, state)
 	}
-	fmt.Println("consumer.InitGenesis1")
 
 	k.SetParams(ctx, state.Params)
 	// TODO: Remove enabled flag and find a better way to setup e2e tests
@@ -32,7 +30,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		return nil
 	}
 
-	fmt.Println("consumer.InitGenesis2")
 	k.SetPort(ctx, ccv.ConsumerPortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
@@ -46,11 +43,9 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		}
 	}
 
-	fmt.Println("consumer.InitGenesis3")
 	// initialValSet is checked in NewChain case by ValidateGenesis
 	// start a new chain
 	if state.NewChain {
-		fmt.Println("consumer.InitGenesis4")
 		// create the provider client in InitGenesis for new consumer chain. CCV Handshake must be established with this client id.
 		clientID, err := k.clientKeeper.CreateClient(ctx, state.ProviderClientState, state.ProviderConsensusState)
 		if err != nil {
@@ -64,7 +59,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()), uint64(0))
 
 	} else {
-		fmt.Println("consumer.InitGenesis5")
 		// chain restarts with the CCV channel established
 		if state.ProviderChannelId != "" {
 			// set provider channel ID
@@ -87,27 +81,21 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 			if err != nil {
 				panic(fmt.Sprintf("could not set last transmission block height: %v", err))
 			}
-
 		}
 
-		fmt.Println("consumer.InitGenesis6")
 		// set pending consumer pending packets
 		// note that the list includes pending mature VSC packet only if the handshake is completed
 		k.AppendPendingPacket(ctx, state.PendingConsumerPackets.List...)
 
-		fmt.Println("consumer.InitGenesis7")
 		// set height to valset update id mapping
 		for _, h2v := range state.HeightToValsetUpdateId {
 			k.SetHeightValsetUpdateID(ctx, h2v.Height, h2v.ValsetUpdateId)
 		}
 
-		fmt.Println("consumer.InitGenesis8")
 		// set provider client id
 		k.SetProviderClientID(ctx, state.ProviderClientId)
-
 	}
 
-	fmt.Println("consumer.InitGenesis9", state.InitialValSet)
 	if state.PreCCV {
 		return []abci.ValidatorUpdate{}
 	}

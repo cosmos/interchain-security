@@ -627,7 +627,6 @@ func New(
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
 		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
-			fmt.Println("UPGRADING DATA!!!", upgradeName)
 
 			app.IBCKeeper.ConnectionKeeper.SetParams(ctx, ibcconnectiontypes.DefaultParams())
 
@@ -643,7 +642,6 @@ func New(
 				stdlog.Println("Failed to get home dir %2", err)
 			}
 			nodeHome := userHomeDir + "/.sovereign/config/genesis.json"
-			fmt.Println("NodeHome:", nodeHome)
 			appState, _, err := genutiltypes.GenesisStateFromGenFile(nodeHome)
 			if err != nil {
 				return fromVM, fmt.Errorf("failed to unmarshal genesis state: %w", err)
@@ -652,9 +650,7 @@ func New(
 			var consumerGenesis = ibcconsumertypes.GenesisState{}
 			appCodec.MustUnmarshalJSON(appState[ibcconsumertypes.ModuleName], &consumerGenesis)
 
-			fmt.Println("appState[ibcconsumertypes.ModuleName]", string(appState[ibcconsumertypes.ModuleName]))
 			consumerGenesis.PreCCV = true
-			fmt.Println("consumerGenesis", consumerGenesis)
 			app.ConsumerKeeper.InitGenesis(ctx, &consumerGenesis)
 
 			ctx.Logger().Info("start to run module migrations...")
@@ -669,7 +665,6 @@ func New(
 	}
 
 	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
-		fmt.Println("UPGRADING STORAGE!!!", upgradeName)
 		storeUpgrades := store.StoreUpgrades{
 			Added: []string{ibcconsumertypes.ModuleName},
 		}

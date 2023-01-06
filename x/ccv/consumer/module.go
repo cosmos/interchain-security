@@ -160,7 +160,6 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 // Set the VSC ID for the subsequent block to the same value as the current block
 // Panic if the provider's channel was established and then closed
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
-	fmt.Println("Consumer.BeginBlock", am.keeper.IsPreCCV(ctx))
 
 	channelID, found := am.keeper.GetProviderChannel(ctx)
 	if found && am.keeper.IsChannelClosed(ctx, channelID) {
@@ -175,7 +174,6 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	blockHeight := uint64(ctx.BlockHeight())
 	vID := am.keeper.GetHeightValsetUpdateID(ctx, blockHeight)
 	am.keeper.SetHeightValsetUpdateID(ctx, blockHeight+1, vID)
-	fmt.Println("Consumer.BeginBlock.TrackHistoricalInfo", am.keeper.IsPreCCV(ctx))
 
 	am.keeper.TrackHistoricalInfo(ctx)
 }
@@ -183,13 +181,11 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 // EndBlock implements the AppModule interface
 // Flush PendingChanges to ABCI, send pending packets, write acknowledgements for packets that have finished unbonding.
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	fmt.Println("Consumer.EndBlock", am.keeper.IsPreCCV(ctx))
 	if am.keeper.IsPreCCV(ctx) {
 		initialValSet := am.keeper.GetInitialValSet(ctx)
 		// Note: validator set update is only done on consumer chain from first endblocker
 		// on soft fork from existing chain
 		am.keeper.DeletePreCCV(ctx)
-		fmt.Println("Consumer.EndBlock1.initialValSet", initialValSet)
 		// populate cross chain validators states with initial valset
 		am.keeper.ApplyCCValidatorChanges(ctx, initialValSet)
 
@@ -203,7 +199,6 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 				initialValSet = append(initialValSet, update)
 			}
 		}
-		fmt.Println("Consumer.EndBlock2.initialValSet", initialValSet)
 
 		return initialValSet
 	}

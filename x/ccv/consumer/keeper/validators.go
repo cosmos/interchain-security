@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"fmt"
 	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -151,7 +150,6 @@ func (k Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
 // TrackHistoricalInfo saves the latest historical-info and deletes the oldest
 // heights that are below pruning height
 func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
-	fmt.Println("Consumer.BeginBlock.TrackHistoricalInfo")
 
 	numHistoricalEntries := k.GetHistoricalEntries(ctx)
 
