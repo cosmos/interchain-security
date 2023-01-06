@@ -51,8 +51,8 @@ func (gs GenesisState) Validate() error {
 	}
 
 	for _, ubdOp := range gs.UnbondingOps {
-		if len(ubdOp.UnbondingConsumerChains) == 0 {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "unbonding operations cannot have an empty consumer chain list")
+		if err := gs.ValidateUnbondingOp(ubdOp); err != nil {
+			return err
 		}
 	}
 
@@ -83,6 +83,38 @@ func (gs GenesisState) Validate() error {
 
 	if err := gs.Params.Validate(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (gs GenesisState) ValidateUnbondingOp(ubdOp UnbondingOp) error {
+	if len(ubdOp.UnbondingConsumerChains) == 0 {
+		return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "unbonding operations cannot have an empty consumer chain list")
+	}
+
+	// Check that the ID is set correctly in the UnbondingOpsIndex
+	for _, chainID := range ubdOp.UnbondingConsumerChains {
+		found := false
+
+		// Find consumer state for this consumer chain
+		for _, cs := range gs.ConsumerStates {
+			if cs.ChainId != chainID {
+				continue
+			}
+			for _, vscUnbondingOps := range cs.UnbondingOpsIndex {
+				for _, id := range vscUnbondingOps.GetUnbondingOpIds() {
+					if id == ubdOp.Id {
+						found = true
+						break
+					}
+				}
+			}
+		}
+		if !found {
+			return sdkerrors.Wrap(ccv.ErrInvalidGenesis,
+				fmt.Sprintf("unbonding operation without UnbondingOpsIndex, opID=%d, chainID=%s", ubdOp.Id, chainID))
+		}
 	}
 
 	return nil
@@ -123,7 +155,7 @@ func (cs ConsumerState) Validate() error {
 
 	for _, ubdOpIdx := range cs.UnbondingOpsIndex {
 		if ubdOpIdx.VscId == 0 {
-			return fmt.Errorf("valset update ID cannot be equal to zero")
+			return fmt.Errorf("UnbondingOpsIndex vscID cannot be equal to zero")
 		}
 		if len(ubdOpIdx.UnbondingOpIds) == 0 {
 			return fmt.Errorf("unbonding operation index cannot be empty: %#v", ubdOpIdx)

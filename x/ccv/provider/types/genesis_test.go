@@ -486,13 +486,125 @@ func TestValidateGenesisState(t *testing.T) {
 			false,
 		},
 		{
-			"invalid consumer state unbonding operation operation",
+			"invalid consumer state UnbondingOpsIndex - zero vscID",
 			types.NewGenesisState(
 				types.DefaultValsetUpdateID,
 				nil,
-				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
-					UnbondingOpsIndex: []types.VscUnbondingOps{{}}}},
+				[]types.ConsumerState{
+					{
+						ChainId:           "chainid",
+						ChannelId:         "channel-0",
+						ClientId:          "client-id",
+						ConsumerGenesis:   getInitialConsumerGenesis(t, "chainid"),
+						UnbondingOpsIndex: []types.VscUnbondingOps{{}},
+					},
+				},
 				nil,
+				nil,
+				nil,
+				nil,
+				types.DefaultParams(),
+				nil,
+				nil,
+				nil,
+			),
+			false,
+		},
+		{
+			"invalid consumer state UnbondingOpsIndex - no IDs",
+			types.NewGenesisState(
+				types.DefaultValsetUpdateID,
+				nil,
+				[]types.ConsumerState{
+					{
+						ChainId:           "chainid",
+						ChannelId:         "channel-0",
+						ClientId:          "client-id",
+						ConsumerGenesis:   getInitialConsumerGenesis(t, "chainid"),
+						UnbondingOpsIndex: []types.VscUnbondingOps{{VscId: 1}},
+					},
+				},
+				nil,
+				nil,
+				nil,
+				nil,
+				types.DefaultParams(),
+				nil,
+				nil,
+				nil,
+			),
+			false,
+		},
+		{
+			"invalid consumer state UnbondingOp - no matching UnbondingOpsIndex",
+			types.NewGenesisState(
+				types.DefaultValsetUpdateID,
+				nil,
+				[]types.ConsumerState{
+					{
+						ChainId:         "chainid",
+						ChannelId:       "channel-0",
+						ClientId:        "client-id",
+						ConsumerGenesis: getInitialConsumerGenesis(t, "chainid"),
+						UnbondingOpsIndex: []types.VscUnbondingOps{
+							{
+								VscId: 1,
+							},
+						},
+					},
+				},
+				[]types.UnbondingOp{
+					{
+						Id:                      13,
+						UnbondingConsumerChains: []string{"chainid"},
+					},
+				},
+				nil,
+				nil,
+				nil,
+				types.DefaultParams(),
+				nil,
+				nil,
+				nil,
+			),
+			false,
+		},
+		{
+			"invalid consumer state UnbondingOp - no matching UnbondingOpsIndex 2",
+			types.NewGenesisState(
+				types.DefaultValsetUpdateID,
+				nil,
+				[]types.ConsumerState{
+					{
+						ChainId:         "chainid",
+						ChannelId:       "channel-0",
+						ClientId:        "client-id",
+						ConsumerGenesis: getInitialConsumerGenesis(t, "chainid"),
+						UnbondingOpsIndex: []types.VscUnbondingOps{
+							{
+								VscId:          1,
+								UnbondingOpIds: []uint64{13},
+							},
+						},
+					},
+					{
+						ChainId:         "chainid-2",
+						ChannelId:       "channel-0",
+						ClientId:        "client-id",
+						ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-2"),
+						UnbondingOpsIndex: []types.VscUnbondingOps{
+							{
+								VscId: 1,
+							},
+						},
+					},
+				},
+				[]types.UnbondingOp{
+					{
+						Id:                      13,
+						UnbondingConsumerChains: []string{"chainid", "chainid-2"},
+					},
+				},
 				nil,
 				nil,
 				nil,

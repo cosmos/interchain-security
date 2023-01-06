@@ -512,9 +512,7 @@ func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valset
 		if !found {
 			// An error here would indicate something is very wrong.
 			// Every UnbondingOpIndex is assumed to have the corresponding UnbondingOps set in store.
-			// This is done in AfterUnbondingInitiated and InitGenesis
-			//
-			// TODO: This assumption must be checked when validated the GenesisState
+			// This is done in AfterUnbondingInitiated and InitGenesis.
 			panic("did not find UnbondingOp according to index- index was probably not correctly updated")
 		}
 		entries = append(entries, entry)
