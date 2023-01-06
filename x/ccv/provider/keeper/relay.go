@@ -113,7 +113,8 @@ func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
 		// Attempt to complete unbonding in staking module
 		err := k.stakingKeeper.UnbondingCanComplete(ctx, id)
 		if err != nil {
-			// TODO mpoke
+			// UnbondingCanComplete fails if the unbonding operation was not found,
+			// which means that the state of the x/staking module of cosmos-sdk is invalid.
 			panic(fmt.Sprintf("could not complete unbonding op: %s", err.Error()))
 		}
 		k.Logger(ctx).Debug("unbonding operation matured on all consumers", "opID", id)
