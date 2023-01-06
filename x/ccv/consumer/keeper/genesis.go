@@ -100,10 +100,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		return []abci.ValidatorUpdate{}
 	}
 
-	fmt.Println("consumer.InitGenesis10", state.InitialValSet)
 	// populate cross chain validators states with initial valset
 	k.ApplyCCValidatorChanges(ctx, state.InitialValSet)
-	fmt.Println("consumer.InitGenesis11")
 
 	return state.InitialValSet
 }
