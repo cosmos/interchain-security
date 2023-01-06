@@ -90,8 +90,9 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 				err := providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), firstBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
 				suite.Require().NoError(err)
-				providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
+				err = providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
 					firstBundle.Chain.ChainID, 2, ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
+				suite.Require().NoError(err)
 
 				// Queue slash and vsc packet data for consumer 1, these queue entries will be not be removed
 				secondBundle := s.getBundleByIdx(1)
@@ -100,8 +101,9 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 				err = providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), secondBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
 				suite.Require().NoError(err)
-				providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
+				err = providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
 					secondBundle.Chain.ChainID, 2, ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
+				suite.Require().NoError(err)
 
 				return nil
 			},

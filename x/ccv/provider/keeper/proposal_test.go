@@ -510,7 +510,10 @@ func TestStopConsumerChain(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chainID", 2, testkeeper.GetNewVSCMaturedPacketData())
+				err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chainID", 2, testkeeper.GetNewVSCMaturedPacketData())
+				if err != nil {
+					t.Fatal(err)
+				}
 			},
 			expErr: false,
 		},

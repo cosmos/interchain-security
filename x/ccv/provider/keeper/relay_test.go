@@ -155,21 +155,28 @@ func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
 	providerKeeper.SetConsumerClientId(ctx, "chain-2", "client-2")
 
 	// Queue some leading vsc matured packet data for chain-1
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 1, vscData[0])
+	err := providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 1, vscData[0])
+	require.NoError(t, err)
 	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 2, vscData[1])
+	require.NoError(t, err)
 	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 3, vscData[2])
+	require.NoError(t, err)
 
 	// Queue some trailing slash packet data (and a couple more vsc matured)
-	err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 4, testkeeper.GetNewSlashPacketData())
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 4, testkeeper.GetNewSlashPacketData())
 	require.NoError(t, err)
 	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 5, testkeeper.GetNewSlashPacketData())
 	require.NoError(t, err)
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 6, vscData[3])
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 7, vscData[4])
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 6, vscData[3])
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 7, vscData[4])
+	require.NoError(t, err)
 
 	// Queue some leading vsc matured packet data for chain-2
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-2", 1, vscData[5])
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-2", 2, vscData[6])
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-2", 1, vscData[5])
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-2", 2, vscData[6])
+	require.NoError(t, err)
 
 	// And trailing slash packet data for chain-2
 	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 3, testkeeper.GetNewSlashPacketData())
@@ -178,7 +185,8 @@ func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
 	require.NoError(t, err)
 
 	// And one more trailing vsc matured packet for chain-2
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-2", 5, vscData[7])
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-2", 5, vscData[7])
+	require.NoError(t, err)
 
 	// Set VSC Send timestamps for each recv vsc matured packet
 	providerKeeper.SetVscSendTimestamp(ctx, "chain-1", vscData[0].ValsetUpdateId, time.Now())
