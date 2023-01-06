@@ -35,6 +35,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		// the first packet from the provider chain
 		// - mark the CCV channel as established
 		k.SetProviderChannel(ctx, packet.DestinationChannel)
+		k.Logger(ctx).Info("CCV channel established", "port", packet.DestinationPort, "channel", packet.DestinationChannel)
 
 		// emit event on first VSC packet to signal that CCV is working
 		ctx.EventManager().EmitEvent(
@@ -65,9 +66,16 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	// Save maturity time and packet
 	maturityTime := ctx.BlockTime().Add(k.GetUnbondingPeriod(ctx))
 	k.SetPacketMaturityTime(ctx, newChanges.ValsetUpdateId, maturityTime)
+	k.Logger(ctx).Debug("packet maturity time was set",
+		"vscID", newChanges.ValsetUpdateId,
+		"maturity time (utc)", maturityTime.UTC(),
+		"maturity time (nano)", uint64(maturityTime.UnixNano()),
+	)
 
 	// set height to VSC id mapping
-	k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())+1, newChanges.ValsetUpdateId)
+	blockHeight := uint64(ctx.BlockHeight()) + 1
+	k.SetHeightValsetUpdateID(ctx, blockHeight, newChanges.ValsetUpdateId)
+	k.Logger(ctx).Debug("block height was mapped to vscID", "height", blockHeight, "vscID", newChanges.ValsetUpdateId)
 
 	// remove outstanding slashing flags of the validators
 	// for which the slashing was acknowledged by the provider chain
@@ -75,6 +83,11 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		k.DeleteOutstandingDowntime(ctx, addr)
 	}
 
+	k.Logger(ctx).Info("finished receiving/handling VSCPacket",
+		"vscID", newChanges.ValsetUpdateId,
+		"len updates", len(newChanges.ValidatorUpdates),
+		"len slash acks", len(newChanges.SlashAcks),
+	)
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
 }
@@ -101,6 +114,8 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 		})
 
 		k.DeletePacketMaturityTimes(ctx, maturityTime.VscId, maturityTime.MaturityTime)
+
+		k.Logger(ctx).Info("VSCMaturedPacket enqueued", "vscID", vscPacket.ValsetUpdateId)
 
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
@@ -142,6 +157,12 @@ func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, vals
 			SlashPacketData: slashPacket,
 		},
 	})
+
+	k.Logger(ctx).Info("SlashPacket enqueued",
+		"vscID", slashPacket.ValsetUpdateId,
+		"validator cons addr", sdk.ConsAddress(slashPacket.Validator.Address).String(),
+		"infraction", slashPacket.Infraction,
+	)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -185,6 +206,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 
 		if err != nil {
 			if clienttypes.ErrClientNotActive.Is(err) {
+				k.Logger(ctx).Debug("IBC client is inactive, packet remains in queue", "type", p.Type.String())
 				// leave the packet data stored to be sent once the client is upgraded
 				return
 			}
@@ -204,7 +226,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 	if err := ack.GetError(); err != "" {
 		// Reasons for ErrorAcknowledgment
 		//  - packet data could not be successfully decoded
-		//  - the Slash packet was ill-formed (errors while handling it)
+		//  - invalid Slash packet
 		// None of these should ever happen.
 		k.Logger(ctx).Error(
 			"recv ErrorAcknowledgement",

@@ -183,6 +183,84 @@ function stakingWithoutSlashing(hist: BlockHistory): boolean {
 }
 
 /**
+ * Checks the validator set replication property as defined
+ * https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties
+ *
+ * @param hist A history of blocks.
+ * @returns Is the property satisfied?
+ */
+function validatorSetReplication(hist: BlockHistory): boolean {
+  const blocks = hist.blocks;
+  let good = true;
+
+  // Each committed block on the consumer chain has a last vscID
+  // received that informs the validator set at the NEXT height.
+  // Thus, on every received VSCPacket with vscID at height H, 
+  // the consumer sets hToVscID[H+1] to vscID. 
+  //
+  // The consumer valset is exactly the valset on the provider
+  // at the NEXT height after the vscID was sent.
+  // Thus, on every sent VSCPacket with vscID at height H,
+  // the provider sets vscIDtoH[vscID] to H+1 
+  //
+  // As a result, for every height hC on the consumer, the active 
+  // valset was last updated by the VSCPacket with ID vscID = hToVscID[hc]. 
+  // This packet was sent by the provider at height hP-1, with hP = vscIDtoH[vscID]. 
+  // This means that the consumer valset at height hC MUST match
+  // the provider valset at height hP.
+  // 
+  // We compare these valsets, which are committed in blocks 
+  // hC-1 and hP-1, respectively (the valset is always used at the NEXT height).
+  for (const [hC, b] of blocks[C]) {
+    if (hC < 1) {
+      // The model starts at consumer height 0, so there is
+      // no committed block at height - 1. This means it does
+      // not make sense to try to check the property for height 0.
+      continue
+    }
+    const snapshotC = b.invariantSnapshot;
+    // Get the vscid of the last update which dictated
+    // the consumer valset valsetC committed at hC-1
+    const vscid = snapshotC.hToVscID[hC];
+    // The VSU packet was sent at height hP-1
+    const hP = snapshotC.vscIDtoH[vscid];
+    // Compare the validator sets at hC-1 and hP-1
+    const valsetC = blocks[C].get(hC - 1)!.invariantSnapshot.consumerPower;
+    // The provider set is implicitly defined by the status and tokens (power)
+    if (hP < 1) {
+      // The model starts at provider height 0, so there is
+      // no committed block at height - 1. This means it does not
+      // make sense to try to check the property for height 0.
+      continue
+    }
+    const snapshotP = blocks[P].get(hP - 1)!.invariantSnapshot;
+    const statusP = snapshotP.status;
+    const tokensP = snapshotP.tokens;
+    assert(valsetC.length === statusP.length, 'this should never happen.');
+    assert(valsetC.length === tokensP.length, 'this should never happen.');
+    valsetC.forEach((power, i) => {
+      if (power !== undefined) { // undefined means the validator is not in the set
+        // Check that the consumer power is strictly equal to the provider power
+        good = good && (tokensP[i] === power);
+      }
+    })
+    statusP.forEach((status, i) => {
+      if (status === Status.BONDED) {
+        const power = tokensP[i];
+        // Check that the consumer power is strictly equal to the provider power
+        good = good && (valsetC[i] === power);
+      }
+      else {
+        // Ensure that the consumer validator set does not contain a non-bonded validator
+        good = good && (valsetC[i] === undefined);
+      }
+    })
+
+  }
+  return good;
+}
+
+/**
  * Checks the bond-based consumer voting power property as defined
  * in https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties
  * but modified to account for finite executions and always zero slash factors.
@@ -277,4 +355,5 @@ export {
   BlockHistory,
   stakingWithoutSlashing,
   bondBasedConsumerVotingPower,
+  validatorSetReplication,
 };

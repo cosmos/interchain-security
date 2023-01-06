@@ -5,12 +5,8 @@ import (
 
 	"testing"
 
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	ibctestingcore "github.com/cosmos/interchain-security/ibc/core"
 	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 // RelayedPath augments ibctesting.Path, giving fine-grained control
@@ -93,43 +89,13 @@ func (f *RelayedPath) DeliverAcks(chainID string, num int) {
 func (f *RelayedPath) EndAndBeginBlock(chainID string, dt time.Duration, preCommitCallback func()) {
 	c := f.Chain(chainID)
 
-	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
-
-	preCommitCallback()
-
-	c.App.Commit()
-
-	c.Vals = c.NextVals
-
-	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
-
-	c.LastHeader = c.CurrentTMClientHeader()
-
-	// Store header to be used in UpdateClient
-	f.clientHeaders[chainID] = append(f.clientHeaders[chainID], c.LastHeader)
-
-	for _, e := range ebRes.Events {
-		if e.Type == channeltypes.EventTypeSendPacket {
-			packet, _ := ibctestingcore.ReconstructPacketFromEvent(e)
-			// Collect packets
-			f.Link.AddPacket(chainID, packet)
-		}
+	header, packets := EndBlock(c, preCommitCallback)
+	f.clientHeaders[chainID] = append(f.clientHeaders[chainID], header)
+	for _, p := range packets {
+		f.Link.AddPacket(chainID, p)
 	}
-
-	// Commit packets emmitted up to this point
 	f.Link.Commit(chainID)
-
-	// increment the current header
-	c.CurrentHeader = tmproto.Header{
-		ChainID:            c.ChainID,
-		Height:             c.App.LastBlockHeight() + 1,
-		AppHash:            c.App.LastCommitID().Hash,
-		Time:               c.CurrentHeader.Time.Add(dt),
-		ValidatorsHash:     c.Vals.Hash(),
-		NextValidatorsHash: c.NextVals.Hash(),
-	}
-
-	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
+	BeginBlock(c, dt)
 }
 
 func (f *RelayedPath) other(chainID string) string {
