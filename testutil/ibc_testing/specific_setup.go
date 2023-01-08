@@ -15,8 +15,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmdb "github.com/tendermint/tm-db"
 
-	// TODO: Add back gaia ref
-	//gaiaApp "github.com/cosmos/gaia/v8/app"
+	gaiaApp "github.com/cosmos/gaia/v8/app"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
@@ -30,15 +29,14 @@ func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
 }
 
-// TODO: Fix Gaia version
-//// GaiaAppIniter implements ibctesting.AppIniter for the gaia app
-//func GaiaAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
-//	encoding := gaiaApp.MakeTestEncodingConfig()
-//	app := gaiaApp.NewGaiaApp(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-//		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
-//	testApp := ibctesting.TestingApp(app)
-//	return testApp, gaiaApp.NewDefaultGenesisState()
-//}
+// GaiaAppIniter implements ibctesting.AppIniter for the gaia app
+func GaiaAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
+	encoding := gaiaApp.MakeTestEncodingConfig()
+	app := gaiaApp.NewGaiaApp(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
+		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
+	testApp := ibctesting.TestingApp(app)
+	return testApp, gaiaApp.NewDefaultGenesisState()
+}
 
 // ConsumerAppIniter implements ibctesting.AppIniter for a consumer app
 func ConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
