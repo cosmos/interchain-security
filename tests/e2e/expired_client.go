@@ -9,7 +9,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
+	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )

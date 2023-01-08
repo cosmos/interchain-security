@@ -66,8 +66,8 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
-	ibctestingcore "github.com/cosmos/interchain-security/ibc/core"
-	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
+	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -85,7 +85,6 @@ import (
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
-	//ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
 
 const (

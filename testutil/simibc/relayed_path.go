@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
+	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 )
 
 // RelayedPath augments ibctesting.Path, giving fine-grained control

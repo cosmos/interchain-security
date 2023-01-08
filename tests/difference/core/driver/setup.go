@@ -18,8 +18,8 @@ import (
 
 	"github.com/cosmos/ibc-go/v3/testing/mock"
 
-	ibctestingcore "github.com/cosmos/interchain-security/ibc/core"
-	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
+	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"

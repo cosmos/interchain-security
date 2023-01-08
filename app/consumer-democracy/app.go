@@ -69,8 +69,8 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
-	ibctestingcore "github.com/cosmos/interchain-security/ibc/core"
-	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
+	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -394,7 +394,7 @@ func New(
 
 	app.GovKeeper = *govKeeper.SetHooks(
 		ccvgovtypes.NewMultiGovHooks(
-		// register the governance hooks
+			// register the governance hooks
 		),
 	)
 

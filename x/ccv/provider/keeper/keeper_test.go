@@ -8,7 +8,7 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
-	ibcsimapp "github.com/cosmos/interchain-security/ibc/simapp"
+	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
 
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"

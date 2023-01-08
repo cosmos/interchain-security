@@ -87,8 +87,8 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
-	ibctestingcore "github.com/cosmos/interchain-security/ibc/core"
-	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
+	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
 	"github.com/gorilla/mux"
 	"github.com/gravity-devs/liquidity/x/liquidity"
