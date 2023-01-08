@@ -302,7 +302,6 @@ func (k Keeper) AppendConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscI
 			panic(err)
 		}
 	}
-	// TODO: do we need to validate the consumerAddr we're appending here?
 	consumerAddrsToPrune.Addresses = append(consumerAddrsToPrune.Addresses, consumerAddr)
 	bz, err := consumerAddrsToPrune.Marshal()
 	if err != nil {
@@ -425,6 +424,9 @@ func (k Keeper) AssignConsumerKey(
 				ctx,
 				chainID,
 				k.GetValidatorSetUpdateId(ctx),
+
+				// it is assumed that the old consumer key has been previously validated in AssignConsumerKey,
+				// so TMCryptoPublicKeyToConsAddr should not panic.
 				utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey),
 			)
 		} else {
