@@ -85,13 +85,6 @@ func (gs GenesisState) Validate() error {
 		return err
 	}
 
-	for _, pk := range gs.ValidatorConsumerPubkeys {
-		if err := sdk.VerifyAddressFormat(pk.ProviderAddr); err != nil {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, fmt.Sprintf("invalid provider address: %s", pk.ProviderAddr))
-		}
-		// TODO: do we need to validate the consumer key?
-	}
-
 	return nil
 }
 
