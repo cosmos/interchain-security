@@ -102,8 +102,13 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 		return &types.QueryValidatorConsumerAddrResponse{}, nil
 	}
 
+	consumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+	if err != nil {
+		return nil, err
+	}
+
 	return &types.QueryValidatorConsumerAddrResponse{
-		ConsumerAddress: utils.TMCryptoPublicKeyToConsAddr(consumerKey).String(),
+		ConsumerAddress: consumerAddr.String(),
 	}, nil
 }
 
