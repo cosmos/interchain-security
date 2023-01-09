@@ -199,7 +199,8 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 				k.Logger(ctx).Debug("IBC client is expired, cannot send VSC, leaving packet data stored:", "chainID", chainID, "vscid", data.ValsetUpdateId)
 				return
 			}
-			// TODO mpoke
+			// TODO do not panic if the send fails
+			// https://github.com/cosmos/interchain-security/issues/649
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
 		// set the VSC send timestamp for this packet;
