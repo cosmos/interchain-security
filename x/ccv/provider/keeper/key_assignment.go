@@ -46,7 +46,6 @@ func (k Keeper) SetValidatorConsumerPubKey(
 	if err != nil {
 		// An error here would indicate something is very wrong,
 		// the consumer key is obtained from GetValidatorConsumerPubKey, called from
-		// TODO: not sure that consumerKey is actually validated by all possible code paths
 		panic(fmt.Sprintf("failed to marshal consumer key: %v", err))
 	}
 	store.Set(types.ConsumerValidatorsKey(chainID, providerAddr), bz)
