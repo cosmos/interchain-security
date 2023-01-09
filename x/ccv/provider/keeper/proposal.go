@@ -230,7 +230,10 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 }
 
 // MakeConsumerGenesis constructs the consumer CCV module part of the genesis state.
-func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditionProposal) (gen consumertypes.GenesisState, nextValidatorsHash []byte, err error) {
+func (k Keeper) MakeConsumerGenesis(
+	ctx sdk.Context,
+	prop *types.ConsumerAdditionProposal,
+) (gen consumertypes.GenesisState, nextValidatorsHash []byte, err error) {
 	chainID := prop.ChainId
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
@@ -264,17 +267,17 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 	for _, p := range lastPowers {
 		addr, err := sdk.ValAddressFromBech32(p.Address)
 		if err != nil {
-			panic(err)
+			return gen, nil, err
 		}
 
 		val, found := k.stakingKeeper.GetValidator(ctx, addr)
 		if !found {
-			panic("Validator from LastValidatorPowers not found in staking keeper")
+			return gen, nil, sdkerrors.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers: %s", err)
 		}
 
 		tmProtoPk, err := val.TmConsPublicKey()
 		if err != nil {
-			panic(err)
+			return gen, nil, err
 		}
 
 		initialUpdates = append(initialUpdates, abci.ValidatorUpdate{
@@ -289,7 +292,7 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)
 	if err != nil {
-		panic("unable to create validator set from updates computed from key assignment in MakeConsumerGenesis")
+		return gen, nil, fmt.Errorf("unable to create validator set from updates computed from key assignment in MakeConsumerGenesis: %s", err)
 	}
 	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
 
@@ -324,6 +327,7 @@ func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, prop *types.Cons
 	store := ctx.KVStore(k.storeKey)
 	bz, err := prop.Marshal()
 	if err != nil {
+		// An error here would indicate something is very wrong
 		panic(fmt.Errorf("failed to marshal consumer addition proposal: %w", err))
 	}
 	store.Set(types.PendingCAPKey(prop.SpawnTime, prop.ChainId), bz)
@@ -342,6 +346,8 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 	}
 	err := prop.Unmarshal(bz)
 	if err != nil {
+		// An error here would indicate something is very wrong,
+		// the ConsumerAdditionProp is assumed to be correctly serialized in SetPendingConsumerAdditionProp.
 		panic(fmt.Errorf("failed to unmarshal consumer addition proposal: %w", err))
 	}
 
@@ -394,6 +400,8 @@ func (k Keeper) GetConsumerAdditionPropsToExecute(ctx sdk.Context) (propsToExecu
 		var prop types.ConsumerAdditionProposal
 		err := prop.Unmarshal(iterator.Value())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the ConsumerAdditionProp is assumed to be correctly serialized in SetPendingConsumerAdditionProp.
 			panic(fmt.Errorf("failed to unmarshal consumer addition proposal: %w", err))
 		}
 
@@ -422,6 +430,8 @@ func (k Keeper) GetAllPendingConsumerAdditionProps(ctx sdk.Context) (props []typ
 		var prop types.ConsumerAdditionProposal
 		err := prop.Unmarshal(iterator.Value())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the ConsumerAdditionProp is assumed to be correctly serialized in SetPendingConsumerAdditionProp.
 			panic(fmt.Errorf("failed to unmarshal consumer addition proposal: %w", err))
 		}
 
@@ -450,6 +460,7 @@ func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, prop *types.Consu
 	store := ctx.KVStore(k.storeKey)
 	bz, err := prop.Marshal()
 	if err != nil {
+		// An error here would indicate something is very wrong
 		panic(fmt.Errorf("failed to marshal consumer removal proposal: %w", err))
 	}
 	store.Set(types.PendingCRPKey(prop.StopTime, prop.ChainId), bz)
@@ -528,6 +539,8 @@ func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.Consum
 		var prop types.ConsumerRemovalProposal
 		err := prop.Unmarshal(iterator.Value())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the ConsumerRemovalProposal is assumed to be correctly serialized in SetPendingConsumerRemovalProp.
 			panic(fmt.Errorf("failed to unmarshal consumer removal proposal: %w", err))
 		}
 
@@ -557,6 +570,8 @@ func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []type
 		var prop types.ConsumerRemovalProposal
 		err := prop.Unmarshal(iterator.Value())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the ConsumerRemovalProposal is assumed to be correctly serialized in SetPendingConsumerRemovalProp.
 			panic(fmt.Errorf("failed to unmarshal consumer removal proposal: %w", err))
 		}
 

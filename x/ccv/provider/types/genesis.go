@@ -133,10 +133,6 @@ func (cs ConsumerState) Validate() error {
 	if !cs.ConsumerGenesis.NewChain {
 		return fmt.Errorf("consumer genesis must be for a new chain")
 	}
-	// consumer genesis MUST be serializable
-	if _, err := cs.ConsumerGenesis.Marshal(); err != nil {
-		return err
-	}
 	// validate a new chain genesis
 	if err := cs.ConsumerGenesis.Validate(); err != nil {
 		return err
