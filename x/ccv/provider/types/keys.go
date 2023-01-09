@@ -295,14 +295,18 @@ func ThrottledPacketDataKey(consumerChainID string, ibcSeqNum uint64) []byte {
 	return ChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, consumerChainID, ibcSeqNum)
 }
 
-// MustParseThrottledPacketDataKey parses a throttled packet data key
-// or panics upon failure
+// MustParseThrottledPacketDataKey parses a throttled packet data key or panics upon failure
 func MustParseThrottledPacketDataKey(key []byte) (string, uint64) {
-	str, i, err := ParseChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, key)
+	chainId, ibcSeqNum, err := ParseThrottledPacketDataKey(key)
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse throttled packet data key: %s", err.Error()))
 	}
-	return str, i
+	return chainId, ibcSeqNum
+}
+
+// ParseThrottledPacketDataKey parses a throttled packet data key
+func ParseThrottledPacketDataKey(key []byte) (chainId string, ibcSeqNum uint64, err error) {
+	return ParseChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, key)
 }
 
 // GlobalSlashEntryKey returns the key for storing a global slash queue entry.
@@ -320,8 +324,9 @@ func GlobalSlashEntryKey(entry GlobalSlashEntry) []byte {
 	)
 }
 
-// ParseGlobalSlashEntry returns the received time and chainID for a global slash queue entry key.
-func ParseGlobalSlashEntryKey(bz []byte) (
+// MustParseGlobalSlashEntryKey returns the received time and chainID for a global slash queue entry key,
+// or panics if the key is invalid.
+func MustParseGlobalSlashEntryKey(bz []byte) (
 	recvTime time.Time, consumerChainID string, ibcSeqNum uint64) {
 
 	// Prefix is in first byte

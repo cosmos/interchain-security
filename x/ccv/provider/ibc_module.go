@@ -182,6 +182,7 @@ func (am AppModule) OnRecvPacket(
 		ack = &errAck
 	} else {
 		// TODO: call ValidateBasic method on consumer packet data
+		// See: https://github.com/cosmos/interchain-security/issues/634
 
 		switch consumerPacket.Type {
 		case ccv.VscMaturedPacket:
