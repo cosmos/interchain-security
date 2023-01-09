@@ -514,4 +514,5 @@ func TestRemoveConsumerFromUnbondingOp(t *testing.T) {
 
 	// check that it doesn't panic when calling with wrong chain IDs
 	canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "some_chain")
+	require.False(t, canComplete)
 }
