@@ -387,7 +387,6 @@ func (k Keeper) GetAllUnbondingOps(ctx sdk.Context) (ops []types.UnbondingOp) {
 // RemoveConsumerFromUnbondingOp removes a consumer chain ID that the unbonding op with id is waiting on.
 // The method returns true if the unbonding op can complete. In this case the record is removed from store.
 func (k Keeper) RemoveConsumerFromUnbondingOp(ctx sdk.Context, id uint64, chainID string) (canComplete bool) {
-	canComplete = false
 	// Get the unbonding op from store
 	unbondingOp, found := k.GetUnbondingOp(ctx, id)
 	if !found {
