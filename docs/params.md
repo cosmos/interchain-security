@@ -34,5 +34,6 @@ ICS relies on the following time-based parameters.
 - `TransferPeriodTimeout` is the period used to compute the timeout timestamp when sending IBC transfer packets from a consumer to the provider. If this timeout expires, then the transfer is attempted again after `BlocksPerDistributionTransmission` blocks. 
   The `TransferPeriodTimeout` on the consumer is initial set via the `ConsumerAdditionProposal` gov proposal to add the consumer. 
   The `TransferPeriodTimeout` SHOULD be smaller than `BlocksPerDistributionTransmission x avg_block_time`, to make it easier to reason about the distribution subprotocol.   
-
-> **TODO:** slash_meter_replenish_period 
+- `SlashMeterReplenishPeriod` exists on the provider such that once the slash meter becomes not-full, the slash meter is replenished after this period has elapsed. The meter is replenished to an amount equal to the slash meter allowance for that block, or `SlashMeterReplenishFraction * CurrentTotalVotingPower`.
+- `SlashMeterReplenishFraction` exists on the provider as the portion (in range [0, 1]) of total voting power that is replenished to the slash meter when a replenishment occurs. This param also serves as a maximum fraction of total voting power that the slash meter can hold.
+- `MaxThrottledPackets` exists on the provider as the maximum amount of throttled slash or vsc matured packets that can be queued from a single consumer before the provider chain halts, it should be set to a large value. This param would allow provider binaries to panic deterministically in the event that packet throttling results in a large amount of state-bloat. In such a scenario, packet throttling could prevent a violation of safety, at the cost of liveness.
