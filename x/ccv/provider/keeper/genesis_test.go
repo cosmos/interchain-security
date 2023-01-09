@@ -6,7 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
