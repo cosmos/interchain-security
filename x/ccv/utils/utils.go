@@ -53,12 +53,14 @@ func GetChangePubKeyAddress(change abci.ValidatorUpdate) (addr []byte) {
 	return pk.Address()
 }
 
-func TMCryptoPublicKeyToConsAddr(k tmprotocrypto.PublicKey) sdk.ConsAddress {
+// TMCryptoPublicKeyToConsAddr converts a TM public key to an SDK public key
+// and returns the associated consensus address
+func TMCryptoPublicKeyToConsAddr(k tmprotocrypto.PublicKey) (sdk.ConsAddress, error) {
 	sdkK, err := cryptocodec.FromTmProtoPublicKey(k)
 	if err != nil {
-		panic("could not get public key from tm proto public key")
+		return nil, err
 	}
-	return sdk.GetConsAddress(sdkK)
+	return sdk.GetConsAddress(sdkK), nil
 }
 
 // SendIBCPacket sends an IBC packet with packetData

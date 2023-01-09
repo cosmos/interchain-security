@@ -383,10 +383,12 @@ func (k Keeper) AssignConsumerKey(
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
 
-	consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+	consumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+	if err != nil {
+		return err
+	}
 
 	providerAddr, err := validator.GetConsAddr()
-
 	if err != nil {
 		return err
 	}
@@ -420,14 +422,15 @@ func (k Keeper) AssignConsumerKey(
 			// mark this old consumer key as prunable once the VSCMaturedPacket
 			// for the current VSC ID is received;
 			// note: this state is removed on receiving the VSCMaturedPacket
+			oldConsumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
+			if err != nil {
+				return err
+			}
 			k.AppendConsumerAddrsToPrune(
 				ctx,
 				chainID,
 				k.GetValidatorSetUpdateId(ctx),
-
-				// it is assumed that the old consumer key has been previously validated in AssignConsumerKey,
-				// so TMCryptoPublicKeyToConsAddr should not panic.
-				utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey),
+				oldConsumerAddr,
 			)
 		} else {
 			// the validator had no key assigned on this consumer chain
@@ -461,11 +464,11 @@ func (k Keeper) AssignConsumerKey(
 		// from the old consumer address to the provider address (if any)
 		// get the previous key assigned for this validator on this consumer chain
 		if oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
-			k.DeleteValidatorByConsumerAddr(
-				ctx,
-				chainID,
-				utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey),
-			)
+			oldConsumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
+			if err != nil {
+				return err
+			}
+			k.DeleteValidatorByConsumerAddr(ctx, chainID, oldConsumerAddr)
 		}
 	}
 
@@ -490,7 +493,10 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 	valUpdates []abci.ValidatorUpdate,
 ) (newUpdates []abci.ValidatorUpdate, err error) {
 	for _, valUpdate := range valUpdates {
-		providerAddr := utils.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
+		providerAddr, err := utils.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
+		if err != nil {
+			return nil, err
+		}
 
 		// If a key assignment replacement is found, we remove the valupdate with the old consumer key,
 		// create two new valupdates,
