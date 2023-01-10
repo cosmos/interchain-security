@@ -758,8 +758,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		// and increment the provider vscid.
 		applyUpdatesAndIncrementVSCID := func(updates []abci.ValidatorUpdate) {
 			providerValset.apply(updates)
-			updates, err := k.ApplyKeyAssignmentToValUpdates(ctx, CHAINID, updates)
-			require.NoError(t, err)
+			updates = k.MustApplyKeyAssignmentToValUpdates(ctx, CHAINID, updates)
 			consumerValset.apply(updates)
 			// Simulate the VSCID update in EndBlock
 			k.IncrementValidatorSetUpdateId(ctx)

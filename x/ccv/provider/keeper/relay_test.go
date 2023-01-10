@@ -491,3 +491,117 @@ func TestHandleSlashPacket(t *testing.T) {
 		ctrl.Finish()
 	}
 }
+
+// TestHandleVSCMaturedPacket tests the handling of VSCMatured packets.
+// Note that this method also tests the behaviour of AfterUnbondingInitiated.
+func TestHandleVSCMaturedPacket(t *testing.T) {
+	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Init vscID
+	pk.SetValidatorSetUpdateId(ctx, 1)
+
+	// Start first unbonding without any consumers registered
+	var unbondingOpId uint64 = 1
+	err := pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
+	require.NoError(t, err)
+	// Check that no unbonding op was stored
+	_, found := pk.GetUnbondingOp(ctx, unbondingOpId)
+	require.False(t, found)
+
+	// Increment vscID
+	pk.IncrementValidatorSetUpdateId(ctx)
+	require.Equal(t, uint64(2), pk.GetValidatorSetUpdateId(ctx))
+
+	// Registered first consumer
+	pk.SetConsumerClientId(ctx, "chain-1", "client-1")
+
+	// Start second unbonding
+	unbondingOpId = 2
+	gomock.InOrder(
+		mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, unbondingOpId).Return(nil),
+	)
+	err = pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
+	require.NoError(t, err)
+	// Check that an unbonding op was stored
+	expectedChains := []string{"chain-1"}
+	unbondingOp, found := pk.GetUnbondingOp(ctx, unbondingOpId)
+	require.True(t, found)
+	require.Equal(t, unbondingOpId, unbondingOp.Id)
+	require.Equal(t, expectedChains, unbondingOp.UnbondingConsumerChains)
+	// Check that the unbonding op index was stored
+	expectedUnbondingOpIds := []uint64{unbondingOpId}
+	ids, found := pk.GetUnbondingOpIndex(ctx, "chain-1", pk.GetValidatorSetUpdateId(ctx))
+	require.True(t, found)
+	require.Equal(t, expectedUnbondingOpIds, ids)
+
+	// Increment vscID
+	pk.IncrementValidatorSetUpdateId(ctx)
+	require.Equal(t, uint64(3), pk.GetValidatorSetUpdateId(ctx))
+
+	// Registered second consumer
+	pk.SetConsumerClientId(ctx, "chain-2", "client-2")
+
+	// Start third and fourth unbonding
+	unbondingOpIds := []uint64{3, 4}
+	for _, id := range unbondingOpIds {
+		gomock.InOrder(
+			mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, id).Return(nil),
+		)
+		err = pk.Hooks().AfterUnbondingInitiated(ctx, id)
+		require.NoError(t, err)
+	}
+	// Check that the unbonding ops were stored
+	expectedChains = []string{"chain-1", "chain-2"}
+	for _, id := range unbondingOpIds {
+		unbondingOp, found = pk.GetUnbondingOp(ctx, id)
+		require.True(t, found)
+		require.Equal(t, id, unbondingOp.Id)
+		require.Equal(t, expectedChains, unbondingOp.UnbondingConsumerChains)
+	}
+	// Check that the unbonding op index was stored
+	for _, chainID := range expectedChains {
+		ids, found := pk.GetUnbondingOpIndex(ctx, chainID, pk.GetValidatorSetUpdateId(ctx))
+		require.True(t, found)
+		require.Equal(t, unbondingOpIds, ids)
+	}
+
+	// Handle VSCMatured packet from chain-1 for vscID 1.
+	// Note that no VSCPacket was sent as the chain was not yet registered,
+	// but the code should still work
+	pk.HandleVSCMaturedPacket(ctx, "chain-1", ccv.VSCMaturedPacketData{ValsetUpdateId: 1})
+	require.Empty(t, pk.ConsumeMaturedUnbondingOps(ctx))
+
+	// Handle VSCMatured packet from chain-1 for vscID 2.
+	pk.HandleVSCMaturedPacket(ctx, "chain-1", ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
+	// Check that the unbonding operation with ID=2 can complete
+	require.Equal(t, []uint64{2}, pk.ConsumeMaturedUnbondingOps(ctx))
+	// Check that the unbonding op index was removed
+	_, found = pk.GetUnbondingOpIndex(ctx, "chain-1", 2)
+	require.False(t, found)
+
+	// Handle VSCMatured packet from chain-2 for vscID 3.
+	pk.HandleVSCMaturedPacket(ctx, "chain-2", ccv.VSCMaturedPacketData{ValsetUpdateId: 3})
+	// Check that the unbonding operations with IDs 3 and 4 no longer wait for chain-2
+	expectedChains = []string{"chain-1"}
+	unbondingOpIds = []uint64{3, 4}
+	for _, id := range unbondingOpIds {
+		unbondingOp, found := pk.GetUnbondingOp(ctx, id)
+		require.True(t, found)
+		require.Equal(t, id, unbondingOp.Id)
+		require.Equal(t, expectedChains, unbondingOp.UnbondingConsumerChains)
+	}
+	// Check that no unbonding operation can complete
+	require.Empty(t, pk.ConsumeMaturedUnbondingOps(ctx))
+	// Check that the unbonding op index was removed
+	_, found = pk.GetUnbondingOpIndex(ctx, "chain-2", 3)
+	require.False(t, found)
+
+	// Handle VSCMatured packet from chain-1 for vscID 3.
+	pk.HandleVSCMaturedPacket(ctx, "chain-1", ccv.VSCMaturedPacketData{ValsetUpdateId: 3})
+	// Check that the unbonding operations with IDs 3 and 4 can complete
+	require.Equal(t, unbondingOpIds, pk.ConsumeMaturedUnbondingOps(ctx))
+	// Check that the unbonding op index was removed
+	_, found = pk.GetUnbondingOpIndex(ctx, "chain-1", 3)
+	require.False(t, found)
+}

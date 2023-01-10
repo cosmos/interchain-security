@@ -19,7 +19,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		// and claims the returned capability
 		err := k.BindPort(ctx, ccv.ProviderPortID)
 		if err != nil {
-			panic(fmt.Sprintf("could not claim port capability: %v", err))
+			// If the binding fails, the chain MUST NOT start
+			panic(fmt.Errorf("could not claim port capability: %v", err))
 		}
 	}
 
@@ -52,6 +53,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		chainID := cs.ChainId
 		k.SetConsumerClientId(ctx, chainID, cs.ClientId)
 		if err := k.SetConsumerGenesis(ctx, chainID, cs.ConsumerGenesis); err != nil {
+			// An error here would indicate something is very wrong,
+			// the ConsumerGenesis validated in ConsumerState.Validate().
 			panic(fmt.Errorf("consumer chain genesis could not be persisted: %w", err))
 		}
 		for _, ubdOpIndex := range cs.UnbondingOpsIndex {
@@ -114,7 +117,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			cs.ChannelId = channelId
 			cs.InitialHeight, found = k.GetInitChainHeight(ctx, chain.ChainId)
 			if !found {
-				panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chain.ChainId, chain.ClientId))
+				panic(fmt.Errorf("cannot find init height for consumer chain %s", chain.ChainId))
 			}
 			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chain.ChainId)
 		}
@@ -122,11 +125,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		cs.PendingValsetChanges = k.GetPendingVSCPackets(ctx, chain.ChainId)
 		consumerStates = append(consumerStates, cs)
 
-	}
-
-	matureUbdOps, err := k.GetMaturedUnbondingOps(ctx)
-	if err != nil {
-		panic(err)
 	}
 
 	// ConsumerAddrsToPrune are added only for registered consumer chains
@@ -142,7 +140,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.GetAllValsetUpdateBlockHeights(ctx),
 		consumerStates,
 		k.GetAllUnbondingOps(ctx),
-		&ccv.MaturedUnbondingOps{Ids: matureUbdOps},
+		&ccv.MaturedUnbondingOps{Ids: k.GetMaturedUnbondingOps(ctx)},
 		k.GetAllPendingConsumerAdditionProps(ctx),
 		k.GetAllPendingConsumerRemovalProps(ctx),
 		params,
