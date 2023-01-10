@@ -39,12 +39,12 @@ type InitState struct {
 	MaxEntries             int
 }
 
-var initState InitState
+var initStateVar InitState
 
 func init() {
 	//	tokens === power
 	sdk.DefaultPowerReduction = sdk.NewInt(1)
-	initState = InitState{
+	initStateVar = InitState{
 		PKSeeds: []string{
 			// Fixed seeds are used to create the private keys for validators.
 			// The seeds are chosen to ensure that the resulting validators are

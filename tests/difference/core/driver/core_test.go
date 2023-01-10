@@ -209,7 +209,7 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 }
 
 func (s *CoreSuite) endAndBeginBlock(chain string) {
-	s.simibc.EndAndBeginBlock(s.chainID(chain), initState.BlockSeconds, func() {
+	s.simibc.EndAndBeginBlock(s.chainID(chain), initStateVar.BlockSeconds, func() {
 		s.matchState()
 	})
 }
@@ -223,30 +223,30 @@ func (s *CoreSuite) matchState() {
 	chain := s.traces.Action().Chain
 
 	// Model time, height start at 0 so we need an offset for comparisons.
-	sutTimeOffset := time.Unix(s.offsetTimeUnix, 0).Add(-initState.BlockSeconds).UTC()
+	sutTimeOffset := time.Unix(s.offsetTimeUnix, 0).Add(-initStateVar.BlockSeconds).UTC()
 	modelTimeOffset := time.Duration(s.traces.Time()) * time.Second
 	sutHeightOffset := s.offsetHeight - 1
 	modelHeightOffset := int64(s.traces.Height())
 	s.Require().Equalf(sutTimeOffset.Add(modelTimeOffset), s.time(chain), diagnostic+"%s Time mismatch", chain)
 	s.Require().Equalf(sutHeightOffset+modelHeightOffset, s.height(chain), diagnostic+"%s Time mismatch", chain)
 	if chain == P {
-		for j := 0; j < initState.NumValidators; j++ {
+		for j := 0; j < initStateVar.NumValidators; j++ {
 			have := s.validatorStatus(int64(j))
 			s.Require().Equalf(s.traces.Status(j), have, diagnostic+"P bond status mismatch for val %d, expect %s, have %s", j, s.traces.Status(j).String(), have.String())
 		}
-		for j := 0; j < initState.NumValidators; j++ {
+		for j := 0; j < initStateVar.NumValidators; j++ {
 			s.Require().Equalf(int64(s.traces.Tokens(j)), s.providerTokens(int64(j)), diagnostic+"P tokens mismatch for val %d", j)
 		}
 		// TODO: delegations
 		s.Require().Equalf(int64(s.traces.DelegatorTokens()), s.delegatorBalance(), diagnostic+"P del balance mismatch")
-		for j := 0; j < initState.NumValidators; j++ {
+		for j := 0; j < initStateVar.NumValidators; j++ {
 			a := s.traces.Jailed(j) != nil
 			b := s.isJailed(int64(j))
 			s.Require().Equalf(a, b, diagnostic+"P jail status mismatch for val %d", j)
 		}
 	}
 	if chain == C {
-		for j := 0; j < initState.NumValidators; j++ {
+		for j := 0; j < initStateVar.NumValidators; j++ {
 			exp := s.traces.ConsumerPower(j)
 			actual, err := s.consumerPower(int64(j))
 			if exp != nil {
@@ -306,7 +306,7 @@ func (s *CoreSuite) TestAssumptions() {
 	const FAIL_MSG = "Assumptions for core diff test failed: there is a problem with the driver or how the test is setup."
 
 	// Staking module maxValidators param is correct
-	maxValsE := uint32(initState.MaxValidators)
+	maxValsE := uint32(initStateVar.MaxValidators)
 	maxVals := s.providerStakingKeeper().GetParams(s.ctx(P)).MaxValidators
 
 	if maxValsE != maxVals {
@@ -316,20 +316,20 @@ func (s *CoreSuite) TestAssumptions() {
 	// TODO: write assumption that checks that throttle params are appropriate
 
 	// Delegator balance is correct
-	s.Require().Equal(int64(initState.InitialDelegatorTokens), s.delegatorBalance())
+	s.Require().Equal(int64(initStateVar.InitialDelegatorTokens), s.delegatorBalance())
 
 	// Slash factors are correct
-	s.Require().Equal(initState.SlashDowntime, s.providerSlashingKeeper().SlashFractionDowntime(s.ctx(P)))
-	s.Require().Equal(initState.SlashDoublesign, s.providerSlashingKeeper().SlashFractionDoubleSign(s.ctx(P)))
+	s.Require().Equal(initStateVar.SlashDowntime, s.providerSlashingKeeper().SlashFractionDowntime(s.ctx(P)))
+	s.Require().Equal(initStateVar.SlashDoublesign, s.providerSlashingKeeper().SlashFractionDoubleSign(s.ctx(P)))
 
 	// Provider unbonding period is correct
 	stakeParams := s.providerStakingKeeper().GetParams(s.ctx(P))
-	s.Require().Equal(stakeParams.UnbondingTime, initState.UnbondingP)
+	s.Require().Equal(stakeParams.UnbondingTime, initStateVar.UnbondingP)
 	// Consumer unbonding period is correct
-	s.Require().Equal(s.consumerKeeper().UnbondingTime(s.ctx(C)), initState.UnbondingC)
+	s.Require().Equal(s.consumerKeeper().UnbondingTime(s.ctx(C)), initStateVar.UnbondingC)
 
 	// Each validator has signing info
-	for i := 0; i < len(initState.ValStates.Tokens); i++ {
+	for i := 0; i < len(initStateVar.ValStates.Tokens); i++ {
 		_, found := s.providerSlashingKeeper().GetValidatorSigningInfo(s.ctx(P), s.consAddr(int64(i)))
 		if !found {
 			s.Require().FailNow(FAIL_MSG)
@@ -337,8 +337,8 @@ func (s *CoreSuite) TestAssumptions() {
 	}
 
 	// Provider delegations are correct
-	for i := 0; i < len(initState.ValStates.Delegation); i++ {
-		E := int64(initState.ValStates.Delegation[i])
+	for i := 0; i < len(initStateVar.ValStates.Delegation); i++ {
+		E := int64(initStateVar.ValStates.Delegation[i])
 		A := s.delegation(int64(i))
 		if E != A {
 			s.T().Fatal(FAIL_MSG)
@@ -346,8 +346,8 @@ func (s *CoreSuite) TestAssumptions() {
 	}
 
 	// Provider validator tokens are correct
-	for i := 0; i < len(initState.ValStates.Tokens); i++ {
-		E := int64(initState.ValStates.Tokens[i])
+	for i := 0; i < len(initStateVar.ValStates.Tokens); i++ {
+		E := int64(initStateVar.ValStates.Tokens[i])
 		A := s.providerTokens(int64(i))
 		if E != A {
 			s.T().Fatal(FAIL_MSG)
@@ -355,8 +355,8 @@ func (s *CoreSuite) TestAssumptions() {
 	}
 
 	// Provider validator status is correct
-	for i := 0; i < len(initState.ValStates.Status); i++ {
-		E := initState.ValStates.Status[i]
+	for i := 0; i < len(initStateVar.ValStates.Status); i++ {
+		E := initStateVar.ValStates.Status[i]
 		A := s.validatorStatus(int64(i))
 		if E != A {
 			s.T().Fatal(FAIL_MSG)
@@ -395,9 +395,9 @@ func (s *CoreSuite) TestAssumptions() {
 	}
 
 	// Consumer power
-	for i := 0; i < len(initState.ValStates.Status); i++ {
-		expectFound := initState.ValStates.Status[i] == stakingtypes.Bonded
-		expectPower := initState.ValStates.Tokens[i]
+	for i := 0; i < len(initStateVar.ValStates.Status); i++ {
+		expectFound := initStateVar.ValStates.Status[i] == stakingtypes.Bonded
+		expectPower := initStateVar.ValStates.Tokens[i]
 		addr := s.validator(int64(i))
 		val, found := s.consumerKeeper().GetCCValidator(s.ctx(C), addr)
 		s.Require().Equal(expectFound, found)
@@ -411,8 +411,8 @@ func (s *CoreSuite) TestAssumptions() {
 	// The offset time is the last committed time, but the SUT is +1 block ahead
 	// because the currentHeader time is ahead of the last committed. Therefore sub
 	// the difference (duration of 1 block).
-	s.Require().Equal(int64(s.offsetTimeUnix), s.time(P).Add(-initState.BlockSeconds).Unix())
-	s.Require().Equal(int64(s.offsetTimeUnix), s.time(C).Add(-initState.BlockSeconds).Unix())
+	s.Require().Equal(int64(s.offsetTimeUnix), s.time(P).Add(-initStateVar.BlockSeconds).Unix())
+	s.Require().Equal(int64(s.offsetTimeUnix), s.time(C).Add(-initStateVar.BlockSeconds).Unix())
 
 	// The offset height is the last committed height, but the SUT is +1 because
 	// the currentHeader is +1 ahead of the last committed. Therefore sub 1.
@@ -470,7 +470,7 @@ func TestCoreSuite(t *testing.T) {
 // SetupTest sets up the test suite in a 'zero' state which matches
 // the initial state in the model.
 func (s *CoreSuite) SetupTest() {
-	state := initState
+	state := initStateVar
 	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(&s.Suite, state)
 	s.valAddresses = valAddresses
 	s.offsetHeight = offsetHeight

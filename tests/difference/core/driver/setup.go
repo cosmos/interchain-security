@@ -260,7 +260,7 @@ func (b *Builder) newChain(coord *ibctesting.Coordinator, appInit ibctesting.App
 		abci.RequestInitChain{
 			ChainId:         chainID,
 			Validators:      []abci.ValidatorUpdate{},
-			ConsensusParams: initState.ConsensusParams,
+			ConsensusParams: initStateVar.ConsensusParams,
 			AppStateBytes:   stateBytes,
 		},
 	)
