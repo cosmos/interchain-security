@@ -237,7 +237,6 @@ func (s *CoreSuite) matchState() {
 		for j := 0; j < initState.NumValidators; j++ {
 			s.Require().Equalf(int64(s.traces.Tokens(j)), s.providerTokens(int64(j)), diagnostic+"P tokens mismatch for val %d", j)
 		}
-		// TODO: delegations
 		s.Require().Equalf(int64(s.traces.DelegatorTokens()), s.delegatorBalance(), diagnostic+"P del balance mismatch")
 		for j := 0; j < initState.NumValidators; j++ {
 			a := s.traces.Jailed(j) != nil
