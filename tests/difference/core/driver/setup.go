@@ -45,6 +45,8 @@ import (
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 )
 
 type Builder struct {
@@ -624,6 +626,11 @@ func (b *Builder) deliverAcks(chainID string) {
 			b.coordinator.Fatal("deliverAcks")
 		}
 	}
+}
+
+// getTestValidator returns the validator private key using the given seed index
+func (b *Builder) getTestValidator(seedIx int) *testcrypto.CryptoIdentity {
+	return testcrypto.NewCryptoIdentityFromBytesSeed([]byte(b.initState.PKSeeds[seedIx]))
 }
 
 func (b *Builder) endBlock(chainID string) {
