@@ -512,7 +512,9 @@ func TestRemoveConsumerFromUnbondingOp(t *testing.T) {
 	require.False(t, found)
 	require.Empty(t, unbondingOp.UnbondingConsumerChains)
 
-	// check that it doesn't panic when calling with wrong chain IDs
-	canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "some_chain")
-	require.False(t, canComplete)
+	// check that it panics when calling with wrong chain IDs
+	require.Panics(t, func() {
+		canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "some_chain")
+		require.False(t, canComplete)
+	})
 }

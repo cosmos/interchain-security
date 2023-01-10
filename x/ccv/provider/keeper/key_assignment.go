@@ -495,7 +495,7 @@ func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 	for _, valUpdate := range valUpdates {
 		providerAddr, err := utils.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
 		if err != nil {
-			return nil, err
+			panic(fmt.Errorf("cannot get provider address from pub key: %s", err.Error()))
 		}
 
 		// If a key assignment replacement is found, we remove the valupdate with the old consumer key,
