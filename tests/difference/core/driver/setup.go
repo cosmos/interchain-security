@@ -129,7 +129,7 @@ func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingAp
 	senderAccounts := []ibctesting.SenderAccount{}
 
 	// Create genesis accounts.
-	for i := 0; i < 2; i++ {
+	for i := 0; i < b.initState.MaxValidators; i++ {
 		pk := secp256k1.GenPrivKey()
 		acc := authtypes.NewBaseAccount(pk.PubKey().Address().Bytes(), pk.PubKey(), uint64(i), 0)
 
