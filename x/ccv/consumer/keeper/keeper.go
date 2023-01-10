@@ -83,6 +83,8 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 func (k *Keeper) SetHooks(sh ccv.ConsumerHooks) *Keeper {
 	if k.hooks != nil {
+		// This should never happen as SetHooks is expected
+		// to be called only once in app.go
 		panic("cannot set validator hooks twice")
 	}
 
