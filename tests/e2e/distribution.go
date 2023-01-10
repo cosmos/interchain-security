@@ -77,9 +77,73 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.Require().True(communityCoins[ibcCoinIndex].Amount.Equal(sdk.NewDecCoinFromCoin(providerExpectedRewards[0]).Amount))
 }
 
-// TODO comment
+// TestSendRewardsRetries tests that failed reward transmissions are retried every BlocksPerDistributionTransmission blocks
 func (s *CCVTestSuite) TestSendRewardsRetries() {
 
+	// TODO: this setup can be consolidated with other tests in the file
+
+	// ccv and transmission channels setup
+	s.SetupCCVChannel(s.path)
+	s.SetupTransferChannel()
+	bondAmt := sdk.NewInt(10000000)
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	delegate(s, delAddr, bondAmt)
+	s.providerChain.NextBlock()
+
+	// relay VSC packets from provider to consumer
+	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
+
+	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
+
+	// reward for the provider chain will be sent after each 1000 blocks
+	consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
+	consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(1000))
+
+	// fill fee pool
+	fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
+	err := consumerBankKeeper.SendCoinsFromAccountToModule(s.consumerCtx(),
+		s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
+	s.Require().NoError(err)
+
+	// Corrupt transmission channel, confirm escrow balance is not updated
+	// when reward dist is attempted, but LTBH is updated
+	oldEscBalance := s.getEscrowBalance()
+	oldLbth := consumerKeeper.GetLastTransmissionBlockHeight(s.consumerCtx())
+	s.corruptTransChannel()
+	s.prepareRewardDist()
+	s.consumerChain.NextBlock()
+	newEscBalance := s.getEscrowBalance()
+	s.Require().Equal(oldEscBalance, newEscBalance,
+		"expected escrow balance to NOT BE updated - OLD: %s, NEW: %s", oldEscBalance, newEscBalance)
+	newLbth := consumerKeeper.GetLastTransmissionBlockHeight(s.consumerCtx())
+	s.Require().Equal(oldLbth.Height+consumerKeeper.GetBlocksPerDistributionTransmission(s.consumerCtx()), newLbth.Height,
+		"expected new LTBH to be previous value + blocks per dist transmission")
+
+	// Prepare reward distribution again, confirm escrow balance is still not updated, but LTBH is updated
+	oldEscBalance = s.getEscrowBalance()
+	oldLbth = consumerKeeper.GetLastTransmissionBlockHeight(s.consumerCtx())
+	s.prepareRewardDist()
+	s.consumerChain.NextBlock()
+	newEscBalance = s.getEscrowBalance()
+	s.Require().Equal(oldEscBalance, newEscBalance,
+		"expected escrow balance to NOT BE updated - OLD: %s, NEW: %s", oldEscBalance, newEscBalance)
+	newLbth = consumerKeeper.GetLastTransmissionBlockHeight(s.consumerCtx())
+	s.Require().Equal(oldLbth.Height+consumerKeeper.GetBlocksPerDistributionTransmission(s.consumerCtx()), newLbth.Height,
+		"expected new LTBH to be previous value + blocks per dist transmission")
+
+	// Now fix transmission channel, confirm escrow balance is updated upon reward distribution
+	transChanID := s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(s.consumerCtx())
+	tChan, _ := s.consumerApp.GetIBCKeeper().ChannelKeeper.GetChannel(s.consumerCtx(), transfertypes.PortID, transChanID)
+	tChan.Counterparty.PortId = transfertypes.PortID
+	s.consumerApp.GetIBCKeeper().ChannelKeeper.SetChannel(s.consumerCtx(), transfertypes.PortID, transChanID, tChan)
+
+	oldEscBalance = s.getEscrowBalance()
+	s.prepareRewardDist()
+	s.consumerChain.NextBlock()
+	newEscBalance = s.getEscrowBalance()
+	s.Require().NotEqual(oldEscBalance, newEscBalance,
+		"expected escrow balance to BE updated - OLD: %s, NEW: %s", oldEscBalance, newEscBalance)
 }
 
 // TestEndBlockRD tests that the last transmission block height (LTBH) is correctly updated after the expected
