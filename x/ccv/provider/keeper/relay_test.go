@@ -503,7 +503,8 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 
 	// Start first unbonding without any consumers registered
 	var unbondingOpId uint64 = 1
-	pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
+	err := pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
+	require.NoError(t, err)
 	// Check that no unbonding op was stored
 	_, found := pk.GetUnbondingOp(ctx, unbondingOpId)
 	require.False(t, found)
@@ -520,7 +521,8 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	gomock.InOrder(
 		mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, unbondingOpId).Return(nil),
 	)
-	pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
+	err = pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
+	require.NoError(t, err)
 	// Check that an unbonding op was stored
 	expectedChains := []string{"chain-1"}
 	unbondingOp, found := pk.GetUnbondingOp(ctx, unbondingOpId)
@@ -546,7 +548,8 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, id).Return(nil),
 		)
-		pk.Hooks().AfterUnbondingInitiated(ctx, id)
+		err = pk.Hooks().AfterUnbondingInitiated(ctx, id)
+		require.NoError(t, err)
 	}
 	// Check that the unbonding ops were stored
 	expectedChains = []string{"chain-1", "chain-2"}
