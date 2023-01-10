@@ -384,16 +384,14 @@ func (k Keeper) GetAllUnbondingOps(ctx sdk.Context) (ops []types.UnbondingOp) {
 	return ops
 }
 
-// RemoveConsumerFromUnbondingOp removes a consumer chain ID that the unbonding op with id is waiting on.
+// RemoveConsumerFromUnbondingOp removes a consumer chain ID that the unbonding op with 'id' is waiting on.
 // The method returns true if the unbonding op can complete. In this case the record is removed from store.
+// The method panics if the unbonding op with 'id' is not found.
 func (k Keeper) RemoveConsumerFromUnbondingOp(ctx sdk.Context, id uint64, chainID string) (canComplete bool) {
 	// Get the unbonding op from store
 	unbondingOp, found := k.GetUnbondingOp(ctx, id)
 	if !found {
-		k.Logger(ctx).Error("internal state corrupted; could not find UnbondingOp",
-			"ID", id,
-		)
-		return
+		panic(fmt.Errorf("internal state corrupted; could not find UnbondingOp with ID %d", id))
 	}
 
 	// Remove consumer chain ID from unbonding op
@@ -525,6 +523,10 @@ func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.MaturedUnbondingOpsKey())
 	if bz == nil {
+		// Note that every call to ConsumeMaturedUnbondingOps
+		// deletes the MaturedUnbondingOpsKey, which means that
+		// the first call to GetMaturedUnbondingOps after that
+		// will enter this branch.
 		return nil
 	}
 

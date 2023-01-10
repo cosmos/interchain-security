@@ -199,7 +199,12 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		// iterate over the unbonding operations for the current VSC ID
 		var maturedIds []uint64
 		for _, id := range unbondingOpsIndex.UnbondingOpIds {
-			// Remove consumer chain ID from unbonding op record
+			// Remove consumer chain ID from unbonding op record.
+			// Note that RemoveConsumerFromUnbondingOp cannot panic here
+			// as it is expected that for all UnbondingOpIds in every
+			// VscUnbondingOps returned by GetAllUnbondingOpIndexes
+			// there is an unbonding op in store that can be retrieved
+			// via via GetUnbondingOp.
 			if k.RemoveConsumerFromUnbondingOp(ctx, id, chainID) {
 				// Store id of matured unbonding op for later completion of unbonding in staking module
 				maturedIds = append(maturedIds, id)
