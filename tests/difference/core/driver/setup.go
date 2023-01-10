@@ -663,51 +663,6 @@ func (b *Builder) endBlock(chainID string) {
 	c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
 }
 
-func (b *Builder) build() {
-
-	b.createChains()
-
-	b.addExtraValidators()
-
-	// Commit the additional validators
-	b.coordinator.CommitBlock(b.provider())
-
-	b.setSlashParams()
-
-	// TODO: tidy up before merging into main
-	prams := b.providerKeeper().GetParams(b.ctx(P))
-	prams.SlashMeterReplenishFraction = "1.0"
-	prams.SlashMeterReplenishPeriod = time.Second * 1
-	b.providerKeeper().SetParams(b.ctx(P), prams)
-	b.providerKeeper().InitializeSlashMeter(b.ctx(P))
-
-	// Set light client params to match model
-	tmConfig := ibctesting.NewTendermintConfig()
-	tmConfig.UnbondingPeriod = b.initState.UnbondingP
-	tmConfig.TrustingPeriod = b.initState.Trusting
-	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
-
-	// Init consumer
-	b.consumerKeeper().InitGenesis(b.ctx(C), b.createConsumerGenesis(tmConfig))
-
-	// Create a simulated network link link
-	b.createLink()
-
-	// Set the unbonding time on the consumer to the model value
-	b.consumerKeeper().SetUnbondingPeriod(b.ctx(C), b.initState.UnbondingC)
-
-	// Establish connection, channel
-	b.doIBCHandshake()
-
-	// Send an empty VSC packet from the provider to the consumer to finish
-	// the handshake. This is necessary because the model starts from a
-	// completely initialized state, with a completed handshake.
-	b.sendEmptyVSCPacketToFinishHandshake()
-
-	b.runSomeProtocolSteps()
-
-}
-
 func (b *Builder) runSomeProtocolSteps() {
 	// Catch up consumer to have the same height and timestamp as provider
 	b.endBlock(b.chainID(C))
@@ -765,7 +720,48 @@ func (b *Builder) runSomeProtocolSteps() {
 func GetZeroState(suite *suite.Suite, initState InitState) (
 	*ibctesting.Path, []sdk.ValAddress, int64, int64) {
 	b := Builder{initState: initState, suite: suite}
-	b.build()
+
+	b.createChains()
+
+	b.addExtraValidators()
+
+	// Commit the additional validators
+	b.coordinator.CommitBlock(b.provider())
+
+	b.setSlashParams()
+
+	// TODO: tidy up before merging into main
+	prams := b.providerKeeper().GetParams(b.ctx(P))
+	prams.SlashMeterReplenishFraction = "1.0"
+	prams.SlashMeterReplenishPeriod = time.Second * 1
+	b.providerKeeper().SetParams(b.ctx(P), prams)
+	b.providerKeeper().InitializeSlashMeter(b.ctx(P))
+
+	// Set light client params to match model
+	tmConfig := ibctesting.NewTendermintConfig()
+	tmConfig.UnbondingPeriod = b.initState.UnbondingP
+	tmConfig.TrustingPeriod = b.initState.Trusting
+	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
+
+	// Init consumer
+	b.consumerKeeper().InitGenesis(b.ctx(C), b.createConsumerGenesis(tmConfig))
+
+	// Create a simulated network link link
+	b.createLink()
+
+	// Set the unbonding time on the consumer to the model value
+	b.consumerKeeper().SetUnbondingPeriod(b.ctx(C), b.initState.UnbondingC)
+
+	// Establish connection, channel
+	b.doIBCHandshake()
+
+	// Send an empty VSC packet from the provider to the consumer to finish
+	// the handshake. This is necessary because the model starts from a
+	// completely initialized state, with a completed handshake.
+	b.sendEmptyVSCPacketToFinishHandshake()
+
+	b.runSomeProtocolSteps()
+
 	// Height of the last committed block (current header is not committed)
 	heightLastCommitted := b.chain(P).CurrentHeader.Height - 1
 	// Time of the last committed block (current header is not committed)
