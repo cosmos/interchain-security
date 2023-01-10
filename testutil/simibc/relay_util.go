@@ -13,8 +13,6 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-// TODO: note this still uses v3
-
 // UpdateReceiverClient is used to send a header to the receiving endpoint and update
 // the client of the respective chain.
 func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, header *ibctmtypes.Header) (err error) {

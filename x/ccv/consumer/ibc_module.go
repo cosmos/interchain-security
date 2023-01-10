@@ -28,10 +28,12 @@ func (am AppModule) OnChanOpenInit(
 	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	version string,
-) error {
+	// TODO: look at ICS26 for correct version string to return here
+	// https://github.com/cosmos/ibc/blob/main/spec/core/ics-026-routing-module/README.md#technical-specification
+) (string, error) {
 	// ensure provider channel hasn't already been created
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok {
-		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
+		return version, sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
 			"provider channel: %s already set", providerChannel)
 	}
 
@@ -39,12 +41,12 @@ func (am AppModule) OnChanOpenInit(
 	if err := validateCCVChannelParams(
 		ctx, am.keeper, order, portID, version,
 	); err != nil {
-		return err
+		return version, err
 	}
 
 	// ensure the counterparty port ID matches the expected provider port ID
 	if counterparty.PortId != ccv.ProviderPortID {
-		return sdkerrors.Wrapf(porttypes.ErrInvalidPort,
+		return version, sdkerrors.Wrapf(porttypes.ErrInvalidPort,
 			"invalid counterparty port: %s, expected %s", counterparty.PortId, ccv.ProviderPortID)
 	}
 
@@ -52,10 +54,10 @@ func (am AppModule) OnChanOpenInit(
 	if err := am.keeper.ClaimCapability(
 		ctx, chanCap, host.ChannelCapabilityPath(portID, channelID),
 	); err != nil {
-		return err
+		return version, err
 	}
 
-	return am.keeper.VerifyProviderChain(ctx, connectionHops)
+	return version, am.keeper.VerifyProviderChain(ctx, connectionHops)
 }
 
 // validateCCVChannelParams validates a ccv channel

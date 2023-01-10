@@ -124,7 +124,8 @@ func TestOnChanOpenInit(t *testing.T) {
 
 		tc.setup(&consumerKeeper, &params, mocks)
 
-		err := consumerModule.OnChanOpenInit(
+		// TODO: assert correct version
+		_, err := consumerModule.OnChanOpenInit(
 			params.ctx,
 			params.order,
 			params.connectionHops,

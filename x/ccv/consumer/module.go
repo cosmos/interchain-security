@@ -17,6 +17,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/consumer/client/cli"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
@@ -25,9 +26,8 @@ import (
 )
 
 var (
-	_ module.AppModule = AppModule{}
-	// TODO
-	// _ porttypes.IBCModule   = AppModule{}
+	_ module.AppModule      = AppModule{}
+	_ porttypes.IBCModule   = AppModule{}
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
