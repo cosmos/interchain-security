@@ -66,7 +66,7 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 
 // ValidatorConsensusKeyInUse is called when a new validator is created
 // in the x/staking module of cosmos-sdk. In case it panics, the TX aborts
-// and thus, the validator is not created
+// and thus, the validator is not created. See AfterValidatorCreated hook.
 func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddress) bool {
 	// Get the validator being added in the staking module.
 	val, found := k.stakingKeeper.GetValidator(ctx, valAddr)
