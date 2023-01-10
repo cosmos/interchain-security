@@ -28,6 +28,7 @@ func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
 }
 
+// TODO: uncomment with gaia using ibc-go v4.2.0
 // GaiaAppIniter implements ibctesting.AppIniter for the gaia app
 // func GaiaAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 // 	encoding := gaiaApp.MakeTestEncodingConfig()

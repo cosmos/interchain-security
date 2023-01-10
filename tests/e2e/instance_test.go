@@ -55,6 +55,7 @@ func TestConsumerDemocracyTestSuite(t *testing.T) {
 	suite.Run(t, democSuite)
 }
 
+// TODO: uncomment with gaia using ibc-go v4.2.0
 // Executes the standard group of ccv tests against a generic consumer app.go implementation and Gaia as the provider.
 // func TestCCVTestSuiteGaia(t *testing.T) {
 
