@@ -18,7 +18,8 @@ import (
 
 	"github.com/cosmos/ibc-go/v3/testing/mock"
 
-	ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -43,7 +44,6 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 
-	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -643,7 +643,7 @@ func (b *Builder) endBlock(chainID string) {
 
 	for _, e := range ebRes.Events {
 		if e.Type == channeltypes.EventTypeSendPacket {
-			packet, _ := channelkeeper.ReconstructPacketFromEvent(e)
+			packet, _ := ibctestingcore.ReconstructPacketFromEvent(e)
 			// Collect packets
 			b.link.AddPacket(chainID, packet)
 		}
