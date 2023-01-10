@@ -177,14 +177,13 @@ func (k Keeper) DeleteProviderChannel(ctx sdk.Context) {
 }
 
 // SetPendingChanges sets the pending validator set change packet that haven't been flushed to ABCI
-func (k Keeper) SetPendingChanges(ctx sdk.Context, updates ccv.ValidatorSetChangePacketData) error {
+func (k Keeper) SetPendingChanges(ctx sdk.Context, updates ccv.ValidatorSetChangePacketData) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := updates.Marshal()
 	if err != nil {
-		return err
+		panic(fmt.Errorf("failed to marshal PendingChanges: %w", err))
 	}
 	store.Set(types.PendingChangesKey(), bz)
-	return nil
 }
 
 // GetPendingChanges gets the pending changes that haven't been flushed over ABCI

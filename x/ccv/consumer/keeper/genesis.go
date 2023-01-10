@@ -112,9 +112,10 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 
 	// export all the states created after a provider channel got established
 	if channelID, ok := k.GetProviderChannel(ctx); ok {
-		clientID, ok := k.GetProviderClientID(ctx)
-		if !ok {
-			panic("provider client does not exist")
+		clientID, found := k.GetProviderClientID(ctx)
+		if !found {
+			// This should never happen
+			panic("provider client does not exist although provider channel does exist")
 		}
 
 		// TODO: update GetLastTransmissionBlockHeight to not return an error
