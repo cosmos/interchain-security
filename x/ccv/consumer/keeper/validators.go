@@ -8,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -17,7 +16,14 @@ import (
 func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) []abci.ValidatorUpdate {
 	ret := []abci.ValidatorUpdate{}
 	for _, change := range changes {
-		addr := utils.GetChangePubKeyAddress(change)
+		// convert TM pubkey to SDK pubkey
+		pubkey, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
+		if err != nil {
+			// An error here would indicate that the validator updates
+			// received from the provider are invalid.
+			panic(err)
+		}
+		addr := pubkey.Address()
 		val, found := k.GetCCValidator(ctx, addr)
 
 		if found {
@@ -33,13 +39,6 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 			// create a new validator
 			consAddr := sdk.ConsAddress(addr)
 
-			// convert TM pubkey to SDK pubkey
-			pubkey, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
-			if err != nil {
-				// An error here would indicate that the validator updates
-				// received from the provider are invalid.
-				panic(err)
-			}
 			ccVal, err := types.NewCCValidator(addr, change.Power, pubkey)
 			if err != nil {
 				// An error here would indicate that the validator updates
