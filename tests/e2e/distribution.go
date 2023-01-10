@@ -129,7 +129,6 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 
 		consumerKeeper := s.consumerApp.GetConsumerKeeper()
 		consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
-		ctx := s.consumerCtx()
 
 		// reward for the provider chain will be sent after each 1000 blocks
 		consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
@@ -138,7 +137,8 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 
 		// fill fee pool
 		fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
-		err := consumerBankKeeper.SendCoinsFromAccountToModule(ctx, s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
+		err := consumerBankKeeper.SendCoinsFromAccountToModule(s.consumerCtx(),
+			s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
 		s.Require().NoError(err)
 
 		transChanID := s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(s.consumerCtx())
@@ -149,45 +149,50 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 			return consumerBankKeeper.GetAllBalances(ctx, escAddr)
 		}
 
-		oldLbth := consumerKeeper.GetLastTransmissionBlockHeight(ctx)
-		oldEscBalance := getEscrowBalance(ctx)
+		oldLbth := consumerKeeper.GetLastTransmissionBlockHeight(s.consumerCtx())
+		oldEscBalance := getEscrowBalance(s.consumerCtx())
 
-		// TODO: note on order. Look into ordering and make issue if needed.
+		// prepareRD passes enough blocks so that a reward distribution is triggered in
+		// the next consumer EndBlock
+		if tc.prepareRD {
+			currentHeight := s.consumerCtx().BlockHeight()
+			lastTransHeight := consumerKeeper.GetLastTransmissionBlockHeight(s.consumerCtx())
+			blocksSinceLastTrans := currentHeight - lastTransHeight.Height
+			blocksToGo := bpdt - blocksSinceLastTrans
+			s.coordinator.CommitNBlocks(s.consumerChain, uint64(blocksToGo))
+		}
 
 		// corruptTransChannel intentionally causes the reward distribution to fail by corrupting the transmission,
 		// causing the SendPacket function to return an error.
 		// Note that the Transferkeeper sends the outgoing fees to an escrow address BEFORE the reward distribution
 		// is aborted within the SendPacket function.
 		if tc.corruptTransChannel {
-			tChan, _ := s.consumerApp.GetIBCKeeper().ChannelKeeper.GetChannel(ctx, transfertypes.PortID, transChanID)
+			tChan, _ := s.consumerApp.GetIBCKeeper().ChannelKeeper.GetChannel(
+				s.consumerCtx(), transfertypes.PortID, transChanID)
 			tChan.Counterparty.PortId = "invalid/PortID"
-			s.consumerApp.GetIBCKeeper().ChannelKeeper.SetChannel(ctx, transfertypes.PortID, transChanID, tChan)
-		}
-
-		// prepareRD passes enough blocks so that a reward distribution is triggered in
-		// the next consumer EndBlock
-		if tc.prepareRD {
-			currentHeight := ctx.BlockHeight()
-			lastTransHeight := consumerKeeper.GetLastTransmissionBlockHeight(ctx)
-			blocksSinceLastTrans := currentHeight - lastTransHeight.Height
-			blocksToGo := bpdt - blocksSinceLastTrans
-			s.coordinator.CommitNBlocks(s.consumerChain, uint64(blocksToGo))
+			s.consumerApp.GetIBCKeeper().ChannelKeeper.SetChannel(
+				s.consumerCtx(), transfertypes.PortID, transChanID, tChan)
 		}
 
 		s.consumerChain.NextBlock()
 
 		if tc.expLBThUpdated {
-			// checks that the current LBTH is greater than the given block height
-			s.Require().True(oldLbth.Height < consumerKeeper.GetLastTransmissionBlockHeight(ctx).Height)
+			lbth := consumerKeeper.GetLastTransmissionBlockHeight(s.consumerCtx())
+			// checks that the current LBTH is greater than the old one
+			s.Require().True(oldLbth.Height < lbth.Height)
+			// confirm the LBTH was updated during the most recently executed block
+			s.Require().Equal(s.consumerCtx().BlockHeight()-1, lbth.Height)
 		}
 
-		currentEscrowBalance := getEscrowBalance(ctx)
+		currentEscrowBalance := getEscrowBalance(s.consumerCtx())
 		if tc.expEscrowBalanceChanged {
 			// check that the coins present on the escrow account balance are updated
-			s.Require().NotEqual(currentEscrowBalance, oldEscBalance, "expected escrow balance to BE updated - OLD: %s, NEW: %s", oldEscBalance, currentEscrowBalance)
+			s.Require().NotEqual(currentEscrowBalance, oldEscBalance,
+				"expected escrow balance to BE updated - OLD: %s, NEW: %s", oldEscBalance, currentEscrowBalance)
 		} else {
 			// check that the coins present on the escrow account balance aren't updated
-			s.Require().Equal(currentEscrowBalance, oldEscBalance, "expected escrow balance to NOT BE updated - OLD: %s, NEW: %s", oldEscBalance, currentEscrowBalance)
+			s.Require().Equal(currentEscrowBalance, oldEscBalance,
+				"expected escrow balance to NOT BE updated - OLD: %s, NEW: %s", oldEscBalance, currentEscrowBalance)
 		}
 	}
 }
