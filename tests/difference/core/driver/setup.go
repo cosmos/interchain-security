@@ -73,31 +73,31 @@ func (b *Builder) otherID(chainID string) string {
 }
 
 func (b *Builder) chain(chain string) *ibctesting.TestChain {
-	return map[string]*ibctesting.TestChain{P: b.providerChain(), C: b.consumerChain()}[chain]
+	return map[string]*ibctesting.TestChain{P: b.provider(), C: b.consumer()}[chain]
 }
 
-func (b *Builder) providerChain() *ibctesting.TestChain {
+func (b *Builder) provider() *ibctesting.TestChain {
 	return b.coordinator.GetChain(ibctesting.GetChainID(0))
 }
 
-func (b *Builder) consumerChain() *ibctesting.TestChain {
+func (b *Builder) consumer() *ibctesting.TestChain {
 	return b.coordinator.GetChain(ibctesting.GetChainID(1))
 }
 
 func (b *Builder) providerStakingKeeper() stakingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).StakingKeeper
+	return b.provider().App.(*appProvider.App).StakingKeeper
 }
 
 func (b *Builder) providerSlashingKeeper() slashingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).SlashingKeeper
+	return b.provider().App.(*appProvider.App).SlashingKeeper
 }
 
 func (b *Builder) providerKeeper() providerkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).ProviderKeeper
+	return b.provider().App.(*appProvider.App).ProviderKeeper
 }
 
 func (b *Builder) consumerKeeper() consumerkeeper.Keeper {
-	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
+	return b.consumer().App.(*appConsumer.App).ConsumerKeeper
 }
 
 func (b *Builder) endpointFromID(chainID string) *ibctesting.Endpoint {
@@ -407,7 +407,7 @@ func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
 // delegate is used to delegate tokens to newly created
 // validators in the setup process.
 func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
-	d := b.providerChain().SenderAccounts[del].SenderAccount.GetAddress()
+	d := b.provider().SenderAccounts[del].SenderAccount.GetAddress()
 	coins := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	msg := stakingtypes.NewMsgDelegate(d, val, coins)
 	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
@@ -423,8 +423,8 @@ func (b *Builder) addExtraValidators() {
 			pubKey, err := val.GetPubKey()
 			b.suite.Require().Nil(err)
 			b.valAddresses = append(b.valAddresses, addr)
-			b.providerChain().Signers[pubKey.Address().String()] = val
-			b.consumerChain().Signers[pubKey.Address().String()] = val
+			b.provider().Signers[pubKey.Address().String()] = val
+			b.consumer().Signers[pubKey.Address().String()] = val
 		}
 	}
 
@@ -453,14 +453,14 @@ func (b *Builder) setSlashParams() {
 func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *consumertypes.GenesisState {
 	// Create Provider client
 	providerClient := ibctmtypes.NewClientState(
-		b.providerChain().ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
-		b.providerChain().LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
+		b.provider().ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
+		b.provider().LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
 		[]string{"upgrade", "upgradedIBCState"}, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
 	)
-	providerConsState := b.providerChain().LastHeader.ConsensusState()
+	providerConsState := b.provider().LastHeader.ConsensusState()
 
 	// Create Consumer genesis
-	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.providerChain().Vals)
+	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.provider().Vals)
 	params := consumertypes.NewParams(
 		true,
 		1000, // ignore distribution
@@ -487,7 +487,7 @@ func (b *Builder) createLink() {
 
 func (b *Builder) doIBCHandshake() {
 	// Configure the ibc path
-	b.path = ibctesting.NewPath(b.consumerChain(), b.providerChain())
+	b.path = ibctesting.NewPath(b.consumer(), b.provider())
 	b.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
 	b.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
 	b.path.EndpointA.ChannelConfig.Version = ccv.Version
@@ -510,7 +510,7 @@ func (b *Builder) doIBCHandshake() {
 	b.suite.Require().NoError(err)
 
 	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.path.EndpointB.ClientID)
+	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumer().ChainID, b.path.EndpointB.ClientID)
 
 	// Handshake
 	b.coordinator.CreateConnections(b.path)
@@ -521,7 +521,7 @@ func (b *Builder) doIBCHandshake() {
 // to the consumer. This is necessary to complete the handshake, and thus
 // match the model init state, without any additional validator power changes.
 func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
-	vscID := b.providerKeeper().GetValidatorSetUpdateId(b.providerChain().GetContext())
+	vscID := b.providerKeeper().GetValidatorSetUpdateId(b.provider().GetContext())
 
 	timeout := uint64(b.chain(P).CurrentHeader.Time.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 
@@ -531,7 +531,7 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 		nil,
 	)
 
-	seq, ok := b.providerChain().App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
+	seq, ok := b.provider().App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
 		b.ctx(P), ccv.ProviderPortID, b.path.EndpointB.ChannelID)
 
 	b.suite.Require().True(ok)
@@ -670,7 +670,7 @@ func (b *Builder) build() {
 	b.addExtraValidators()
 
 	// Commit the additional validators
-	b.coordinator.CommitBlock(b.providerChain())
+	b.coordinator.CommitBlock(b.provider())
 
 	b.setSlashParams()
 
