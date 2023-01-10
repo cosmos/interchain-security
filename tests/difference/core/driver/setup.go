@@ -60,10 +60,6 @@ type Builder struct {
 	initState      InitState
 }
 
-func (b *Builder) ctx(chain string) sdk.Context {
-	return b.chain(chain).GetContext()
-}
-
 func (b *Builder) chainID(chain string) string {
 	return map[string]string{P: ibctesting.GetChainID(0), C: ibctesting.GetChainID(1)}[chain]
 }
@@ -72,16 +68,20 @@ func (b *Builder) otherID(chainID string) string {
 	return map[string]string{ibctesting.GetChainID(0): ibctesting.GetChainID(1), ibctesting.GetChainID(1): ibctesting.GetChainID(0)}[chainID]
 }
 
-func (b *Builder) chain(chain string) *ibctesting.TestChain {
-	return map[string]*ibctesting.TestChain{P: b.provider(), C: b.consumer()}[chain]
-}
-
 func (b *Builder) provider() *ibctesting.TestChain {
 	return b.coordinator.GetChain(ibctesting.GetChainID(0))
 }
 
 func (b *Builder) consumer() *ibctesting.TestChain {
 	return b.coordinator.GetChain(ibctesting.GetChainID(1))
+}
+
+func (b *Builder) providerCtx() sdk.Context {
+	return b.provider().GetContext()
+}
+
+func (b *Builder) consumerCtx() sdk.Context {
+	return b.consumer().GetContext()
 }
 
 func (b *Builder) providerStakingKeeper() stakingkeeper.Keeper {
@@ -346,13 +346,13 @@ func (b *Builder) setSigningInfos() {
 	for i := 0; i < b.initState.NumValidators; i++ {
 		info := slashingtypes.NewValidatorSigningInfo(
 			b.consAddr(int64(i)),
-			b.chain(P).CurrentHeader.GetHeight(),
+			b.provider().CurrentHeader.GetHeight(),
 			0,
 			time.Unix(0, 0),
 			false,
 			0,
 		)
-		b.providerSlashingKeeper().SetValidatorSigningInfo(b.ctx(P), b.consAddr(int64(i)), info)
+		b.providerSlashingKeeper().SetValidatorSigningInfo(b.providerCtx(), b.consAddr(int64(i)), info)
 	}
 }
 
@@ -361,8 +361,8 @@ func (b *Builder) setSigningInfos() {
 func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
 
 	check := func(lesser sdk.ValAddress, greater sdk.ValAddress) {
-		lesserV, _ := b.providerStakingKeeper().GetValidator(b.ctx(P), lesser)
-		greaterV, _ := b.providerStakingKeeper().GetValidator(b.ctx(P), greater)
+		lesserV, _ := b.providerStakingKeeper().GetValidator(b.providerCtx(), lesser)
+		greaterV, _ := b.providerStakingKeeper().GetValidator(b.providerCtx(), greater)
 		lesserKey := stakingtypes.GetValidatorsByPowerIndexKey(lesserV, sdk.DefaultPowerReduction)
 		greaterKey := stakingtypes.GetValidatorsByPowerIndexKey(greaterV, sdk.DefaultPowerReduction)
 		// The result will be 0 if a==b, -1 if a < b, and +1 if a > b.
@@ -392,7 +392,7 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	coins := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	msg := stakingtypes.NewMsgDelegate(d, val, coins)
 	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
-	_, err := pskServer.Delegate(sdk.WrapSDKContext(b.ctx(P)), msg)
+	_, err := pskServer.Delegate(sdk.WrapSDKContext(b.providerCtx()), msg)
 	b.suite.Require().NoError(err)
 }
 
@@ -409,7 +409,7 @@ func (b *Builder) addValidatorToStakingModule(testVal *testcrypto.CryptoIdentity
 		sdk.ZeroInt())
 	b.suite.Require().NoError(err)
 	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
-	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.ctx(P)), msg)
+	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.providerCtx()), msg)
 }
 
 func (b *Builder) addExtraProviderValidators() {
@@ -440,10 +440,10 @@ func (b *Builder) addExtraProviderValidators() {
 
 func (b *Builder) setSlashParams() {
 	// Set the slash factors on the provider to match the model
-	sparams := b.providerSlashingKeeper().GetParams(b.ctx(P))
+	sparams := b.providerSlashingKeeper().GetParams(b.providerCtx())
 	sparams.SlashFractionDoubleSign = b.initState.SlashDoublesign
 	sparams.SlashFractionDowntime = b.initState.SlashDowntime
-	b.providerSlashingKeeper().SetParams(b.ctx(P), sparams)
+	b.providerSlashingKeeper().SetParams(b.providerCtx(), sparams)
 }
 
 func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *consumertypes.GenesisState {
@@ -491,7 +491,7 @@ func (b *Builder) doIBCHandshake() {
 	b.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	b.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
 
-	providerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
+	providerClientID, ok := b.consumerKeeper().GetProviderClientID(b.consumerCtx())
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
@@ -506,7 +506,7 @@ func (b *Builder) doIBCHandshake() {
 	b.suite.Require().NoError(err)
 
 	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumer().ChainID, b.path.EndpointB.ClientID)
+	b.providerKeeper().SetConsumerClientId(b.providerCtx(), b.consumer().ChainID, b.path.EndpointB.ClientID)
 
 	// Handshake
 	b.coordinator.CreateConnections(b.path)
@@ -519,7 +519,7 @@ func (b *Builder) doIBCHandshake() {
 func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 	vscID := b.providerKeeper().GetValidatorSetUpdateId(b.provider().GetContext())
 
-	timeout := uint64(b.chain(P).CurrentHeader.Time.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
+	timeout := uint64(b.provider().CurrentHeader.Time.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 
 	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{},
@@ -528,7 +528,7 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 	)
 
 	seq, ok := b.provider().App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
-		b.ctx(P), ccv.ProviderPortID, b.path.EndpointB.ChannelID)
+		b.providerCtx(), ccv.ProviderPortID, b.path.EndpointB.ChannelID)
 
 	b.suite.Require().True(ok)
 
@@ -537,7 +537,7 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 
 	channelCap := b.endpoint(P).Chain.GetChannelCapability(packet.GetSourcePort(), packet.GetSourceChannel())
 
-	err := b.endpoint(P).Chain.App.GetIBCKeeper().ChannelKeeper.SendPacket(b.ctx(P), channelCap, packet)
+	err := b.endpoint(P).Chain.App.GetIBCKeeper().ChannelKeeper.SendPacket(b.providerCtx(), channelCap, packet)
 
 	b.suite.Require().NoError(err)
 
@@ -730,11 +730,11 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	b.setSlashParams()
 
 	// TODO: tidy up before merging into main
-	prams := b.providerKeeper().GetParams(b.ctx(P))
+	prams := b.providerKeeper().GetParams(b.providerCtx())
 	prams.SlashMeterReplenishFraction = "1.0"
 	prams.SlashMeterReplenishPeriod = time.Second * 1
-	b.providerKeeper().SetParams(b.ctx(P), prams)
-	b.providerKeeper().InitializeSlashMeter(b.ctx(P))
+	b.providerKeeper().SetParams(b.providerCtx(), prams)
+	b.providerKeeper().InitializeSlashMeter(b.providerCtx())
 
 	// Set light client params to match model
 	tmConfig := ibctesting.NewTendermintConfig()
@@ -743,10 +743,10 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
 
 	// Init consumer
-	b.consumerKeeper().InitGenesis(b.ctx(C), b.createConsumerGenesis(tmConfig))
+	b.consumerKeeper().InitGenesis(b.consumerCtx(), b.createConsumerGenesis(tmConfig))
 
 	// Set the unbonding time on the consumer to the model value
-	b.consumerKeeper().SetUnbondingPeriod(b.ctx(C), b.initState.UnbondingC)
+	b.consumerKeeper().SetUnbondingPeriod(b.consumerCtx(), b.initState.UnbondingC)
 
 	// Establish connection, channel
 	b.doIBCHandshake()
@@ -759,8 +759,8 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	b.runSomeProtocolSteps()
 
 	// Height of the last committed block (current header is not committed)
-	heightLastCommitted := b.chain(P).CurrentHeader.Height - 1
+	heightLastCommitted := b.provider().CurrentHeader.Height - 1
 	// Time of the last committed block (current header is not committed)
-	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(-b.initState.BlockInterval).Unix()
+	timeLastCommitted := b.provider().CurrentHeader.Time.Add(-b.initState.BlockInterval).Unix()
 	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
 }
