@@ -80,6 +80,8 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 // TestEndBlockRD tests that the last transmission block height (LTBH) is correctly updated after the expected
 // number of block have passed. It also checks that the IBC transfer transfer states are discarded if
 // the reward distribution to the provider has failed.
+//
+// Note: this method is effectively a unit test for EndBLockRD(), but is written as an e2e test to avoid excessive mocking.
 func (s *CCVTestSuite) TestEndBlockRD() {
 
 	testCases := []struct {
