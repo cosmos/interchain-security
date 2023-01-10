@@ -16,17 +16,11 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/ibc-go/v3/testing/mock"
-
 	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	cryptoEd25519 "crypto/ed25519"
-
-	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -122,13 +116,6 @@ func (b *Builder) validator(i int64) sdk.ValAddress {
 
 func (b *Builder) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(b.validator(i))
-}
-
-// getValidatorPK returns the validator private key using the given seed index
-func (b *Builder) getValidatorPK(seedIx int) mock.PV {
-	seed := []byte(b.initState.PKSeeds[seedIx])
-	//lint:ignore SA1019 We don't care because this is only a test.
-	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 }
 
 func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingApp, genesis map[string]json.RawMessage,
