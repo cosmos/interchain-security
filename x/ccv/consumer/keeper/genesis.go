@@ -108,7 +108,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 	}
 
 	// export the current validator set
-	valset := k.GetCurrentValidatorsAsABCIUpdates(ctx)
+	valset := k.MustGetCurrentValidatorsAsABCIUpdates(ctx)
 
 	// export all the states created after a provider channel got established
 	if channelID, ok := k.GetProviderChannel(ctx); ok {

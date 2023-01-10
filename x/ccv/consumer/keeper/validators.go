@@ -215,8 +215,9 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	k.SetHistoricalInfo(ctx, ctx.BlockHeight(), &historicalEntry)
 }
 
-// GetCurrentValidatorsAsABCIUpdates gets all cross-chain validators converted to the ABCI validator update type
-func (k Keeper) GetCurrentValidatorsAsABCIUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
+// MustGetCurrentValidatorsAsABCIUpdates gets all cross-chain validators converted
+// to the ABCI validator update type. It panics in case of failure.
+func (k Keeper) MustGetCurrentValidatorsAsABCIUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
 	vals := k.GetAllCCValidator(ctx)
 	valUpdates := make([]abci.ValidatorUpdate, 0, len(vals))
 	for _, v := range vals {
