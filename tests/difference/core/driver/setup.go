@@ -723,6 +723,9 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 
 	b.createChains()
 
+	// Create a simulated network link link
+	b.createLink()
+
 	b.addExtraProviderValidators()
 
 	// Commit the additional validators
@@ -745,9 +748,6 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 
 	// Init consumer
 	b.consumerKeeper().InitGenesis(b.ctx(C), b.createConsumerGenesis(tmConfig))
-
-	// Create a simulated network link link
-	b.createLink()
 
 	// Set the unbonding time on the consumer to the model value
 	b.consumerKeeper().SetUnbondingPeriod(b.ctx(C), b.initState.UnbondingC)
