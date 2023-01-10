@@ -341,25 +341,6 @@ func (b *Builder) createChains() {
 
 }
 
-// createValidator creates an additional validator with zero commission
-// and zero tokens (zero voting power).
-func (b *Builder) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.ValAddress) {
-	privVal := b.getValidatorPK(seedIx)
-	pubKey, err := privVal.GetPubKey()
-	b.suite.Require().NoError(err)
-	val := tmtypes.NewValidator(pubKey, 0)
-	addr, err := sdk.ValAddressFromHex(val.Address.String())
-	b.suite.Require().NoError(err)
-	PK := privVal.PrivKey.PubKey()
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
-	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{},
-		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
-	b.suite.Require().NoError(err)
-	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
-	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.ctx(P)), msg)
-	return privVal, addr
-}
-
 // setSigningInfos sets the validator signing info in the provider Slashing module
 func (b *Builder) setSigningInfos() {
 	for i := 0; i < b.initState.NumValidators; i++ {
@@ -415,16 +396,31 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	b.suite.Require().NoError(err)
 }
 
+// addValidatorToStakingModule creates an additional validator with zero commission
+// and zero tokens (zero voting power).
+func (b *Builder) addValidatorToStakingModule(testVal *testcrypto.CryptoIdentity) {
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
+	msg, err := stakingtypes.NewMsgCreateValidator(
+		testVal.SDKValAddress(),
+		testVal.SDKPubKey(),
+		coin,
+		stakingtypes.Description{},
+		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
+		sdk.ZeroInt())
+	b.suite.Require().NoError(err)
+	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
+	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.ctx(P)), msg)
+}
+
 func (b *Builder) addExtraProviderValidators() {
 
 	for i, status := range b.initState.ValStates.Status {
 		if status == stakingtypes.Unbonded {
-			val, addr := b.createValidator(i)
-			pubKey, err := val.GetPubKey()
-			b.suite.Require().Nil(err)
-			b.valAddresses = append(b.valAddresses, addr)
-			b.provider().Signers[pubKey.Address().String()] = val
-			b.consumer().Signers[pubKey.Address().String()] = val
+			testVal := b.getTestValidator(i)
+			b.addValidatorToStakingModule(testVal)
+			b.valAddresses = append(b.valAddresses, testVal.SDKValAddress())
+			b.provider().Signers[testVal.TMCryptoPubKey().Address().String()] = testVal
+			b.consumer().Signers[testVal.TMCryptoPubKey().Address().String()] = testVal
 		}
 	}
 
