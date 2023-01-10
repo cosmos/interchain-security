@@ -27,6 +27,8 @@ import (
 type CoreSuite struct {
 	suite.Suite
 
+	initState InitState
+
 	// the current traces being executed
 	traces Traces
 
@@ -470,8 +472,8 @@ func TestCoreSuite(t *testing.T) {
 // SetupTest sets up the test suite in a 'zero' state which matches
 // the initial state in the model.
 func (s *CoreSuite) SetupTest() {
-	state := initStateVar
-	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(&s.Suite, state)
+	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(&s.Suite, initStateVar)
+	s.initState = initStateVar
 	s.valAddresses = valAddresses
 	s.offsetHeight = offsetHeight
 	s.offsetTimeUnix = offsetTimeUnix
