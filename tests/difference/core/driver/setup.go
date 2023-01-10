@@ -723,13 +723,12 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	prams.SlashMeterReplenishPeriod = time.Second * 1
 	b.providerKeeper().SetParams(b.providerCtx(), prams)
 	b.providerKeeper().InitializeSlashMeter(b.providerCtx())
+	b.setSlashParams()
 
 	b.addExtraProviderValidators()
 
 	// Commit the additional validators
 	b.coordinator.CommitBlock(b.provider())
-
-	b.setSlashParams()
 
 	// Set light client params to match model
 	tmConfig := ibctesting.NewTendermintConfig()
