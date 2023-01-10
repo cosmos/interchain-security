@@ -415,7 +415,7 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	b.suite.Require().NoError(err)
 }
 
-func (b *Builder) addExtraValidators() {
+func (b *Builder) addExtraProviderValidators() {
 
 	for i, status := range b.initState.ValStates.Status {
 		if status == stakingtypes.Unbonded {
@@ -723,7 +723,7 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 
 	b.createChains()
 
-	b.addExtraValidators()
+	b.addExtraProviderValidators()
 
 	// Commit the additional validators
 	b.coordinator.CommitBlock(b.provider())
