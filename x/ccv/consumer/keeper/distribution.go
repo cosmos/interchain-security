@@ -22,7 +22,9 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 	// Split blocks rewards.
 	// It panics in case of marshalling / unmarshalling errors or
 	// if sending coins between module accounts fails.
-	if transferToProvider := k.DistributeRewardsInternally(ctx); !transferToProvider {
+	k.DistributeRewardsInternally(ctx)
+
+	if !k.shouldSendRewardsToProvider(ctx) {
 		return
 	}
 
@@ -48,7 +50,7 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 // DistributeRewardsInternally splits the block rewards according to the
 // ConsumerRedistributionFrac param.
 // Returns true if it's time to send rewards to provider
-func (k Keeper) DistributeRewardsInternally(ctx sdk.Context) bool {
+func (k Keeper) DistributeRewardsInternally(ctx sdk.Context) {
 	consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
 	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
 
@@ -86,30 +88,14 @@ func (k Keeper) DistributeRewardsInternally(ctx sdk.Context) bool {
 		// returns error.
 		panic(err)
 	}
+}
 
-	// Check whether if it's time to send rewards to provider
+// Check whether it's time to send rewards to provider
+func (k Keeper) shouldSendRewardsToProvider(ctx sdk.Context) bool {
 	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
 	curHeight := ctx.BlockHeight()
 	ltbh := k.GetLastTransmissionBlockHeight(ctx)
-	if (curHeight - ltbh.Height) < bpdt {
-		// not enough blocks have passed for a transmission to occur
-		return false
-	}
-
-	ctx.EventManager().EmitEvent(
-		sdk.NewEvent(
-			ccv.EventTypeFeeDistribution,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(ccv.AttributeDistributionCurrentHeight, strconv.Itoa(int(curHeight))),
-			sdk.NewAttribute(ccv.AttributeDistributionNextHeight, strconv.Itoa(int(curHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
-			sdk.NewAttribute(ccv.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
-			sdk.NewAttribute(ccv.AttributeDistributionTotal, fpTokens.String()),
-			sdk.NewAttribute(ccv.AttributeDistributionToConsumer, consRedistrTokens.String()),
-			sdk.NewAttribute(ccv.AttributeDistributionToProvider, remainingTokens.String()),
-		),
-	)
-
-	return true
+	return (curHeight - ltbh.Height) >= bpdt
 }
 
 // SendRewardsToProvider attempts to send to the provider (via IBC)
@@ -147,6 +133,18 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 		k.Logger(ctx).Info("sent block rewards to provider",
 			"total fee pool", fpTokens.String(),
 			"sent", tstProviderTokens.String(),
+		)
+		currentHeight := ctx.BlockHeight()
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				ccv.EventTypeFeeDistribution,
+				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+				sdk.NewAttribute(ccv.AttributeDistributionCurrentHeight, strconv.Itoa(int(currentHeight))),
+				sdk.NewAttribute(ccv.AttributeDistributionNextHeight, strconv.Itoa(int(currentHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
+				sdk.NewAttribute(ccv.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
+				sdk.NewAttribute(ccv.AttributeDistributionTotal, fpTokens.String()),
+				sdk.NewAttribute(ccv.AttributeDistributionToProvider, tstProviderTokens.String()),
+			),
 		)
 	}
 
