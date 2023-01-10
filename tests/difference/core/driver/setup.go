@@ -373,7 +373,7 @@ func (b *Builder) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.ValAdd
 
 // setSigningInfos sets the validator signing info in the provider Slashing module
 func (b *Builder) setSigningInfos() {
-	for i := 0; i < b.initState.NumValidators; i++ { // TODO: unhardcode
+	for i := 0; i < b.initState.NumValidators; i++ {
 		info := slashingtypes.NewValidatorSigningInfo(
 			b.consAddr(int64(i)),
 			b.chain(P).CurrentHeader.GetHeight(),
