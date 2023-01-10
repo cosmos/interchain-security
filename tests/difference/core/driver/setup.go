@@ -511,7 +511,7 @@ func (b *Builder) doIBCHandshake() {
 // Manually construct and send an empty VSC packet from the provider
 // to the consumer. This is necessary to complete the handshake, and thus
 // match the model init state, without any additional validator power changes.
-func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
+func (b *Builder) sendEmptyVSCPacket() {
 	vscID := b.providerKeeper().GetValidatorSetUpdateId(b.provider().GetContext())
 
 	timeout := uint64(b.provider().CurrentHeader.Time.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
@@ -737,7 +737,8 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
 
 	// Init consumer
-	b.consumerKeeper().InitGenesis(b.consumerCtx(), b.createConsumerGenesis(tmConfig))
+	consumerGenesis := b.createConsumerGenesis(tmConfig)
+	b.consumerKeeper().InitGenesis(b.consumerCtx(), consumerGenesis)
 
 	// Set the unbonding time on the consumer to the model value
 	b.consumerKeeper().SetUnbondingPeriod(b.consumerCtx(), b.initState.UnbondingC)
@@ -748,7 +749,7 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	// Send an empty VSC packet from the provider to the consumer to finish
 	// the handshake. This is necessary because the model starts from a
 	// completely initialized state, with a completed handshake.
-	b.sendEmptyVSCPacketToFinishHandshake()
+	b.sendEmptyVSCPacket()
 
 	b.runSomeProtocolSteps()
 
