@@ -165,10 +165,9 @@ func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 
 	strFrac := k.GetSlashMeterReplenishFraction(ctx)
-	decFrac, err := sdktypes.NewDecFromStr(strFrac)
-	if err != nil {
-		panic(fmt.Sprintf("failed to parse slash meter replenish fraction: %s", err))
-	}
+	// MustNewDecFromStr should not panic, since the (string representation) of the slash meter replenish fraction
+	// is validated in ValidateGenesis and anytime the param is mutated.
+	decFrac := sdktypes.MustNewDecFromStr(strFrac)
 
 	// Compute allowance in units of tendermint voting power (integer),
 	// noting that total power changes over time
@@ -193,8 +192,7 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 // related to jailing/tombstoning over time. This "global" queue is used to coordinate the order of slash packet handling
 // between chains, whereas the chain-specific queue is used to coordinate the order of slash and vsc matured packets
 // relevant to each chain.
-func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context,
-	entry providertypes.GlobalSlashEntry) {
+func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context, entry providertypes.GlobalSlashEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.GlobalSlashEntryKey(entry)
 	store.Set(key, entry.ProviderValConsAddr)
@@ -229,7 +227,9 @@ func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.G
 	entries := []providertypes.GlobalSlashEntry{}
 
 	for ; iterator.Valid(); iterator.Next() {
-		recvTime, chainID, ibcSeqNum := providertypes.ParseGlobalSlashEntryKey(iterator.Key())
+		// MustParseGlobalSlashEntryKey should not panic, since we should be iterating over keys that're
+		// assumed to be correctly serialized in QueueGlobalSlashEntry.
+		recvTime, chainID, ibcSeqNum := providertypes.MustParseGlobalSlashEntryKey(iterator.Key())
 		valAddr := iterator.Value()
 		entry := providertypes.NewGlobalSlashEntry(recvTime, chainID, ibcSeqNum, valAddr)
 		entries = append(entries, entry)
@@ -270,7 +270,7 @@ func (k Keeper) SetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID
 
 	// Sanity check to ensure that the chain-specific throttled packet data queue does not grow too
 	// large for a single consumer chain. This check ensures that binaries would panic deterministically
-	// if the queue does grow too large.
+	// if the queue does grow too large. MaxThrottledPackets should be set accordingly (quite large).
 	if size >= uint64(k.GetMaxThrottledPackets(ctx)) {
 		panic(fmt.Sprintf("throttled packet data queue for chain %s is too large: %d", consumerChainID, size))
 	}
@@ -296,23 +296,26 @@ func (k Keeper) IncrementThrottledPacketDataSize(ctx sdktypes.Context, consumerC
 //
 // Note: This queue is shared between pending slash packet data and pending vsc matured packet data.
 func (k Keeper) QueueThrottledSlashPacketData(
-	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData) {
-	k.QueueThrottledPacketData(ctx, consumerChainID, ibcSeqNum, data)
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData) error {
+	return k.QueueThrottledPacketData(ctx, consumerChainID, ibcSeqNum, data)
 }
 
 // QueueThrottledVSCMaturedPacketData queues the vsc matured packet data for a chain-specific throttled packet data queue.
 //
 // Note: This queue is shared between pending slash packet data and pending vsc matured packet data.
 func (k Keeper) QueueThrottledVSCMaturedPacketData(
-	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData) {
-	k.QueueThrottledPacketData(ctx, consumerChainID, ibcSeqNum, data)
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData) error {
+	return k.QueueThrottledPacketData(ctx, consumerChainID, ibcSeqNum, data)
 }
 
 // QueueThrottledPacketData queues a slash packet data or vsc matured packet data instance
-// for the given consumer chain's queue. This method is either used by tests, or called
-// by higher level methods with type assertion.
+// for the given consumer chain's queue.
+//
+// Note: This method returns an error because it is called from
+// OnRecvSlashPacket and OnRecvVSCMaturedPacket, meaning we can return an ibc err ack to the
+// counter party chain on error, instead of panicking this chain.
 func (k Keeper) QueueThrottledPacketData(
-	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{}) {
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{}) error {
 
 	store := ctx.KVStore(k.storeKey)
 
@@ -322,21 +325,24 @@ func (k Keeper) QueueThrottledPacketData(
 	case ccvtypes.SlashPacketData:
 		bz, err = data.Marshal()
 		if err != nil {
-			panic(fmt.Sprintf("failed to marshal slash packet data: %v", err))
+			return fmt.Errorf("failed to marshal slash packet data: %v", err)
 		}
 		bz = append([]byte{slashPacketData}, bz...)
 	case ccvtypes.VSCMaturedPacketData:
 		bz, err = data.Marshal()
 		if err != nil {
-			panic(fmt.Sprintf("failed to marshal vsc matured packet data: %v", err))
+			return fmt.Errorf("failed to marshal vsc matured packet data: %v", err)
 		}
 		bz = append([]byte{vscMaturedPacketData}, bz...)
 	default:
+		// Indicates a developer error, this method should only be called
+		// by tests, QueueThrottledSlashPacketData, or QueueThrottledVSCMaturedPacketData.
 		panic(fmt.Sprintf("unexpected packet data type: %T", data))
 	}
 
 	store.Set(providertypes.ThrottledPacketDataKey(consumerChainID, ibcSeqNum), bz)
 	k.IncrementThrottledPacketDataSize(ctx, consumerChainID)
+	return nil
 }
 
 // GetLeadingVSCMaturedData returns the leading vsc matured packet data instances
@@ -360,16 +366,22 @@ func (k Keeper) GetLeadingVSCMaturedData(ctx sdktypes.Context, consumerChainID s
 		if bz[0] == slashPacketData {
 			break
 		} else if bz[0] != vscMaturedPacketData {
+			// This case would indicate a developer error or store corruption,
+			// since QueueThrottledPacketData should only queue slash packet data or vsc matured packet data.
 			panic(fmt.Sprintf("unexpected packet data type: %d", bz[0]))
 		}
 
 		var data ccvtypes.VSCMaturedPacketData
 		err := data.Unmarshal(bz[1:])
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// vsc matured packet data is assumed to be correctly serialized in QueueThrottledPacketData.
 			panic(fmt.Sprintf("failed to unmarshal vsc matured packet data: %v", err))
 		}
 
 		vscMaturedData = append(vscMaturedData, data)
+		// The below func should not panic, since we should be iterating over keys that're
+		// assumed to be correctly serialized in QueueThrottledPacketData.
 		_, ibcSeqNum := providertypes.MustParseThrottledPacketDataKey(iterator.Key())
 		ibcSeqNums = append(ibcSeqNums, ibcSeqNum)
 	}
@@ -389,7 +401,6 @@ func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID st
 	// data after it has been handled.
 	ibcSeqNums []uint64,
 ) {
-
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
 	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
@@ -409,20 +420,27 @@ func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID st
 				break
 			} else {
 				if err := slashData.Unmarshal(bz[1:]); err != nil {
-					panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
+					// An error here would indicate something is very wrong,
+					// slash packet data is assumed to be correctly serialized in QueueThrottledPacketData.
+					panic(fmt.Sprintf("failed to unmarshal slash packet data: %v", err))
 				}
 				slashFound = true
 			}
 		} else if bz[0] == vscMaturedPacketData {
 			vscMData := ccvtypes.VSCMaturedPacketData{}
 			if err := vscMData.Unmarshal(bz[1:]); err != nil {
-				panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
+				// An error here would indicate something is very wrong,
+				// vsc matured packet data is assumed to be correctly serialized in QueueThrottledPacketData.
+				panic(fmt.Sprintf("failed to unmarshal vsc matured packet data: %v", err))
 			}
 			vscMaturedData = append(vscMaturedData, vscMData)
 		} else {
+			// This case would indicate a developer error or store corruption,
+			// since QueueThrottledPacketData should only queue slash packet data or vsc matured packet data.
 			panic("invalid packet data type")
 		}
-
+		// The below func should not panic, since we should be iterating over keys that're
+		// assumed to be correctly serialized in QueueThrottledPacketData.
 		_, ibcSeqNum := providertypes.MustParseThrottledPacketDataKey(iterator.Key())
 		ibcSeqNums = append(ibcSeqNums, ibcSeqNum)
 	}
@@ -431,8 +449,8 @@ func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID st
 
 // GetAllThrottledPacketData returns all throttled packet data for a specific consumer chain.
 //
-// Note: This method is only used by tests, hence why it returns redundant data as different types.
-// This method is not unit tested, as it is a test util.
+// Note: This method is only used by tests and queries, hence why it returns redundant data as different types.
+// Since this method executes on query, no panics are explicitly included.
 func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID string) (
 	slashData []ccvtypes.SlashPacketData, vscMaturedData []ccvtypes.VSCMaturedPacketData,
 	rawOrderedData []interface{}, ibcSeqNums []uint64) {
@@ -453,21 +471,28 @@ func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID 
 		case slashPacketData:
 			d := ccvtypes.SlashPacketData{}
 			if err := d.Unmarshal(bz[1:]); err != nil {
-				panic(fmt.Sprintf("failed to unmarshal slash packet data: %v", err))
+				k.Logger(ctx).Error(fmt.Sprintf("failed to unmarshal slash packet data: %v", err))
+				continue
 			}
 			slashData = append(slashData, d)
 			rawOrderedData = append(rawOrderedData, d)
 		case vscMaturedPacketData:
 			d := ccvtypes.VSCMaturedPacketData{}
 			if err := d.Unmarshal(bz[1:]); err != nil {
-				panic(fmt.Sprintf("failed to unmarshal vsc matured packet data: %v", err))
+				k.Logger(ctx).Error(fmt.Sprintf("failed to unmarshal vsc matured packet data: %v", err))
+				continue
 			}
 			vscMaturedData = append(vscMaturedData, d)
 			rawOrderedData = append(rawOrderedData, d)
 		default:
-			panic(fmt.Sprintf("invalid packet data type: %v", bz[0]))
+			k.Logger(ctx).Error(fmt.Sprintf("invalid packet data type: %v", bz[0]))
+			continue
 		}
-		_, ibcSeqNum := providertypes.MustParseThrottledPacketDataKey(iterator.Key())
+		_, ibcSeqNum, err := providertypes.ParseThrottledPacketDataKey(iterator.Key())
+		if err != nil {
+			k.Logger(ctx).Error(fmt.Sprintf("failed to parse throttled packet data key: %v", err))
+			continue
+		}
 		ibcSeqNums = append(ibcSeqNums, ibcSeqNum)
 	}
 
@@ -515,11 +540,15 @@ func (k Keeper) GetSlashMeter(ctx sdktypes.Context) sdktypes.Int {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(providertypes.SlashMeterKey())
 	if bz == nil {
+		// Slash meter should be set as a part of InitGenesis and periodically updated by throttle logic,
+		// there is no deletion method exposed, so nil bytes would indicate something is very wrong.
 		panic("slash meter not set")
 	}
 	value := sdktypes.ZeroInt()
 	err := value.Unmarshal(bz)
 	if err != nil {
+		// We should have obtained value bytes that were serialized in SetSlashMeter,
+		// so an error here would indicate something is very wrong.
 		panic(fmt.Sprintf("failed to unmarshal slash meter: %v", err))
 	}
 	return value
@@ -527,17 +556,27 @@ func (k Keeper) GetSlashMeter(ctx sdktypes.Context) sdktypes.Int {
 
 // SetSlashMeter sets the slash meter to the given signed int value
 //
-// Note: the value of this int should always be in the range of tendermint's [-MaxVotingPower, MaxVotingPower]
+// Note: the value of this int should always be in the range of tendermint's [-MaxTotalVotingPower, MaxTotalVotingPower]
 func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value sdktypes.Int) {
+
+	// TODO: remove these invariant panics once https://github.com/cosmos/interchain-security/issues/534 is solved.
+
+	// The following panics are included since they are invariants for slash meter value.
+	//
+	// Explanation: slash meter replenish fraction is validated to be in range of [0, 1],
+	// and MaxMeterValue = MaxAllowance = MaxReplenishFrac * MaxTotalVotingPower = 1 * MaxTotalVotingPower.
 	if value.GT(sdktypes.NewInt(tmtypes.MaxTotalVotingPower)) {
 		panic("slash meter value cannot be greater than tendermint's MaxTotalVotingPower")
 	}
+	// Further, HandleThrottleQueues should never subtract more than MaxTotalVotingPower from the meter,
+	// since we cannot slash more than an entire validator set. So MinMeterValue = -1 * MaxTotalVotingPower.
 	if value.LT(sdktypes.NewInt(-tmtypes.MaxTotalVotingPower)) {
 		panic("slash meter value cannot be less than negative tendermint's MaxTotalVotingPower")
 	}
 	store := ctx.KVStore(k.storeKey)
 	bz, err := value.Marshal()
 	if err != nil {
+		// A returned error for marshaling an int would indicate something is very wrong.
 		panic(fmt.Sprintf("failed to marshal slash meter: %v", err))
 	}
 	store.Set(providertypes.SlashMeterKey(), bz)
@@ -548,10 +587,14 @@ func (k Keeper) GetLastSlashMeterFullTime(ctx sdktypes.Context) time.Time {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(providertypes.LastSlashMeterFullTimeKey())
 	if bz == nil {
+		// Last slash meter full time should be set as a part of InitGenesis and periodically updated by throttle logic,
+		// there is no deletion method exposed, so nil bytes would indicate something is very wrong.
 		panic("last slash meter full time not set")
 	}
 	time, err := sdktypes.ParseTimeBytes(bz)
 	if err != nil {
+		// We should have obtained value bytes that were serialized in SetLastSlashMeterFullTime,
+		// so an error here would indicate something is very wrong.
 		panic(fmt.Sprintf("failed to parse last slash meter full time: %s", err))
 	}
 	return time.UTC()

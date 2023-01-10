@@ -104,7 +104,11 @@ func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
 func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddress, valAddr sdk.ValAddress) {
 	for _, validatorConsumerPubKey := range h.k.GetAllValidatorConsumerPubKeys(ctx, nil) {
 		if sdk.ConsAddress(validatorConsumerPubKey.ProviderAddr).Equals(valConsAddr) {
-			consumerAddr := utils.TMCryptoPublicKeyToConsAddr(*validatorConsumerPubKey.ConsumerKey)
+			consumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(*validatorConsumerPubKey.ConsumerKey)
+			if err != nil {
+				// An error here would indicate something is very wrong
+				panic("cannot get address of consumer key")
+			}
 			h.k.DeleteValidatorByConsumerAddr(ctx, validatorConsumerPubKey.ChainId, consumerAddr)
 			h.k.DeleteValidatorConsumerPubKey(ctx, validatorConsumerPubKey.ChainId, validatorConsumerPubKey.ProviderAddr)
 		}

@@ -122,7 +122,8 @@ func TestHandlePacketDataForChain(t *testing.T) {
 
 		// Queue throttled packet data, where chainID is arbitrary, and ibc seq number is index of the data instance
 		for i, data := range tc.dataToQueue {
-			providerKeeper.QueueThrottledPacketData(ctx, tc.chainID, uint64(i), data)
+			err := providerKeeper.QueueThrottledPacketData(ctx, tc.chainID, uint64(i), data)
+			require.NoError(t, err)
 		}
 
 		// Define our handler callbacks to simply store the data instances that are handled
@@ -805,7 +806,8 @@ func TestThrottledPacketData(t *testing.T) {
 	// Queue all packet data at once
 	for _, chainData := range packetDataForMultipleConsumers {
 		for _, dataInstance := range chainData.instances {
-			providerKeeper.QueueThrottledPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, dataInstance.Data)
+			err := providerKeeper.QueueThrottledPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, dataInstance.Data)
+			require.NoError(t, err)
 		}
 	}
 
@@ -917,12 +919,15 @@ func TestGetLeadingVSCMaturedData(t *testing.T) {
 
 		// Queue a slash and vsc matured packet data for some random chain.
 		// These values should never be returned.
-		providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
-		providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, testkeeper.GetNewVSCMaturedPacketData())
+		err := providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
+		require.NoError(t, err)
+		err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, testkeeper.GetNewVSCMaturedPacketData())
+		require.NoError(t, err)
 
 		// Queue the data to test against
 		for _, dataInstance := range tc.dataToQueue {
-			providerKeeper.QueueThrottledPacketData(ctx, "chain-99", dataInstance.IbcSeqNum, dataInstance.Data)
+			err := providerKeeper.QueueThrottledPacketData(ctx, "chain-99", dataInstance.IbcSeqNum, dataInstance.Data)
+			require.NoError(t, err)
 		}
 
 		// Obtain data from iterator
@@ -1020,12 +1025,15 @@ func TestGetSlashAndTrailingData(t *testing.T) {
 
 		// Queue a slash and vsc matured packet data for some random chain.
 		// These values should never be returned.
-		providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
-		providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, testkeeper.GetNewVSCMaturedPacketData())
+		err := providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
+		require.NoError(t, err)
+		err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, testkeeper.GetNewVSCMaturedPacketData())
+		require.NoError(t, err)
 
 		// Queue the data to test
 		for _, dataInstance := range tc.dataToQueue {
-			providerKeeper.QueueThrottledPacketData(ctx, "chain-49", dataInstance.IbcSeqNum, dataInstance.Data)
+			err := providerKeeper.QueueThrottledPacketData(ctx, "chain-49", dataInstance.IbcSeqNum, dataInstance.Data)
+			require.NoError(t, err)
 		}
 
 		// Retrieve the data, and assert that it is correct
@@ -1045,17 +1053,26 @@ func TestDeleteThrottledPacketDataForConsumer(t *testing.T) {
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// Queue slash and a VSC matured packet data for chain-48
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-48", 0, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-48", 1, testkeeper.GetNewVSCMaturedPacketData())
+	err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-48", 0, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-48", 1, testkeeper.GetNewVSCMaturedPacketData())
+	require.NoError(t, err)
 
 	// Queue 3 slash, and 4 vsc matured packet data instances for chain-49
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 0, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 1, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 2, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 3, testkeeper.GetNewVSCMaturedPacketData())
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 4, testkeeper.GetNewVSCMaturedPacketData())
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 5, testkeeper.GetNewVSCMaturedPacketData())
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 6, testkeeper.GetNewVSCMaturedPacketData())
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 0, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 1, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 2, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 3, testkeeper.GetNewVSCMaturedPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 4, testkeeper.GetNewVSCMaturedPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 5, testkeeper.GetNewVSCMaturedPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 6, testkeeper.GetNewVSCMaturedPacketData())
+	require.NoError(t, err)
 
 	// Delete all packet data for chain-49, confirm they are deleted
 	providerKeeper.DeleteThrottledPacketDataForConsumer(ctx, "chain-49")
@@ -1100,8 +1117,10 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		rand.Seed(time.Now().UnixNano())
 
 		// Queuing up a couple data instances for another chain shouldn't matter
-		providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 0, testkeeper.GetNewSlashPacketData())
-		providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 1, testkeeper.GetNewVSCMaturedPacketData())
+		err := providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 0, testkeeper.GetNewSlashPacketData())
+		require.NoError(t, err)
+		err = providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 1, testkeeper.GetNewVSCMaturedPacketData())
+		require.NoError(t, err)
 
 		// Queue packet data instances until we reach the max (some slash packets, some VSC matured packets)
 		reachedMax := false
@@ -1116,11 +1135,12 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 			// Panic only if we've reached the max
 			if i == int(tc.max-1) {
 				require.Panics(t, func() {
-					providerKeeper.QueueThrottledPacketData(ctx, "chain-88", uint64(i), data)
+					_ = providerKeeper.QueueThrottledPacketData(ctx, "chain-88", uint64(i), data)
 				})
 				reachedMax = true
 			} else {
-				providerKeeper.QueueThrottledPacketData(ctx, "chain-88", uint64(i), data)
+				err := providerKeeper.QueueThrottledPacketData(ctx, "chain-88", uint64(i), data)
+				require.NoError(t, err)
 			}
 		}
 		require.True(t, reachedMax)

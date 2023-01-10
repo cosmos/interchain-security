@@ -691,7 +691,8 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 		// slash validator on consumer chain
 		consumerKey, found := providerKeeper.GetValidatorConsumerPubKey(suite.providerCtx(), suite.consumerChain.ChainID, valConsAddr)
 		suite.Require().True(found)
-		consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+		consumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+		suite.Require().NoError(err)
 		tc.slash(consumerAddr)
 
 		// increment time so that the unbonding period ends on the provider

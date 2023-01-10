@@ -35,7 +35,10 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data)
+	if err := k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data); err != nil {
+		return channeltypes.NewErrorAcknowledgement(fmt.Sprintf(
+			"failed to queue VSCMatured packet data: %s", err.Error()))
+	}
 
 	k.Logger(ctx).Info("VSCMaturedPacket received and enqueued",
 		"chainID", chainID,
@@ -256,10 +259,30 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// Replenish slash meter if necessary, BEFORE executing slash packet throttling logic.
 	// This ensures the meter value is replenished, and not greater than the allowance (max value)
 	// for the block, before the throttling logic is executed.
+	//
+	// Note: CheckForSlashMeterReplenishment contains panics for the following scenarios, any of which should never occur
+	// if the protocol is correct and external data is properly validated:
+	//
+	// - Either SlashMeter or LastSlashMeterFullTime have not been set (both of which should be set in InitGenesis, see InitializeSlashMeter).
+	// - Params not being set (all of which should be set in InitGenesis).
+	// - Marshaling and/or store corruption errors.
+	// - Setting invalid slash meter values (see SetSlashMeter).
 	k.CheckForSlashMeterReplenishment(ctx)
-	// Handle leading vsc matured packets before throttling logic
+	// Handle leading vsc matured packets before throttling logic.
+	//
+	// Note: HandleLeadingVSCMaturedPackets contains panics for the following scenarios, any of which should never occur
+	// if the protocol is correct and external data is properly validated:
+	//
+	// - Marshaling and/or store corruption errors.
 	k.HandleLeadingVSCMaturedPackets(ctx)
-	// Execute slash packet throttling logic
+	// Handle queue entries considering throttling logic.
+	//
+	// Note: HandleThrottleQueues contains panics for the following scenarios, any of which should never occur
+	// if the protocol is correct and external data is properly validated:
+	//
+	// - SlashMeter has not been set (which should be set in InitGenesis, see InitializeSlashMeter).
+	// - Marshaling and/or store corruption errors.
+	// - Setting invalid slash meter values (see SetSlashMeter).
 	k.HandleThrottleQueues(ctx)
 }
 
@@ -307,10 +330,9 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
 	// to enforce order of handling between the two packet data types.
-	k.QueueThrottledSlashPacketData(ctx,
-		chainID,         // consumer chain id that sent the packet
-		packet.Sequence, // IBC sequence number of the packet
-		data)
+	if err := k.QueueThrottledSlashPacketData(ctx, chainID, packet.Sequence, data); err != nil {
+		return channeltypes.NewErrorAcknowledgement(fmt.Sprintf("failed to queue slash packet data: %s", err.Error()))
+	}
 
 	k.Logger(ctx).Info("slash packet received and enqueued",
 		"chainID", chainID,

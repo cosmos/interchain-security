@@ -241,16 +241,19 @@ func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	addrsToPrune := keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
+	require.Empty(t, addrsToPrune)
+
 	keeper.AppendConsumerAddrsToPrune(ctx, chainID, vscID, consumerAddr)
 
-	addrToPrune := keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
-	require.NotEmpty(t, addrToPrune, "address to prune is empty")
-	require.Len(t, addrToPrune, 1, "address to prune is not len 1")
-	require.Equal(t, sdk.ConsAddress(addrToPrune[0]), consumerAddr)
+	addrsToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
+	require.NotEmpty(t, addrsToPrune, "addresses to prune is empty")
+	require.Len(t, addrsToPrune, 1, "addresses to prune is not len 1")
+	require.Equal(t, sdk.ConsAddress(addrsToPrune[0]), consumerAddr)
 
 	keeper.DeleteConsumerAddrsToPrune(ctx, chainID, vscID)
-	addrToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
-	require.Empty(t, addrToPrune, "address to prune was returned")
+	addrsToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
+	require.Empty(t, addrsToPrune, "addresses to prune was returned")
 }
 
 func TestGetAllConsumerAddrsToPrune(t *testing.T) {
@@ -336,7 +339,8 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 		// Try to find a validator who has this consumer address currently assigned
 		isCurrentlyAssigned := false
 		for _, valconsPubKey := range k.GetAllValidatorConsumerPubKeys(ctx, &valByConsAddr.ChainId) {
-			if utils.TMCryptoPublicKeyToConsAddr(*valconsPubKey.ConsumerKey).Equals(sdk.ConsAddress(valByConsAddr.ConsumerAddr)) {
+			consumerAddr, _ := utils.TMCryptoPublicKeyToConsAddr(*valconsPubKey.ConsumerKey)
+			if consumerAddr.Equals(sdk.ConsAddress(valByConsAddr.ConsumerAddr)) {
 				isCurrentlyAssigned = true
 				break
 			}
@@ -619,7 +623,7 @@ func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 	for _, u := range updates {
 		for i, id := range vs.identities { // n2 looping but n is tiny
 			// cons := sdk.ConsAddress(utils.GetChangePubKeyAddress(u))
-			cons := utils.TMCryptoPublicKeyToConsAddr(u.PubKey)
+			cons, _ := utils.TMCryptoPublicKeyToConsAddr(u.PubKey)
 			if id.SDKConsAddress().Equals(cons) {
 				vs.power[i] = u.Power
 			}
@@ -821,7 +825,8 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 						// Use default if unassigned
 						ck = idP.TMProtoCryptoPublicKey()
 					}
-					consC := utils.TMCryptoPublicKeyToConsAddr(ck)
+					consC, err := utils.TMCryptoPublicKeyToConsAddr(ck)
+					require.NoError(t, err)
 					// Find the corresponding consumer validator (must always be found)
 					for j, idC := range consumerValset.identities {
 						if consC.Equals(idC.SDKConsAddress()) {
