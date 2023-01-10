@@ -77,6 +77,11 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.Require().True(communityCoins[ibcCoinIndex].Amount.Equal(sdk.NewDecCoinFromCoin(providerExpectedRewards[0]).Amount))
 }
 
+// TODO comment
+func (s *CCVTestSuite) TestSendRewardsRetries() {
+
+}
+
 // TestEndBlockRD tests that the last transmission block height (LTBH) is correctly updated after the expected
 // number of block have passed. It also checks that the IBC transfer transfer states are discarded if
 // the reward distribution to the provider has failed.
@@ -86,28 +91,28 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 
 	testCases := []struct {
 		name                    string
-		prepareRD               bool
+		prepareRewardDist       bool
 		corruptTransChannel     bool
 		expLBThUpdated          bool
 		expEscrowBalanceChanged bool
 	}{
 		{
 			name:                    "should not update LBTH before blocks per dist trans block are passed",
-			prepareRD:               false,
+			prepareRewardDist:       false,
 			corruptTransChannel:     false,
 			expLBThUpdated:          false,
 			expEscrowBalanceChanged: false,
 		},
 		{
 			name:                    "should update LBTH when blocks per dist trans or more block are passed",
-			prepareRD:               true,
+			prepareRewardDist:       true,
 			corruptTransChannel:     false,
 			expLBThUpdated:          true,
 			expEscrowBalanceChanged: true,
 		},
 		{
 			name:                    "should update LBTH and discard the IBC transfer states when sending rewards to provider fails",
-			prepareRD:               true,
+			prepareRewardDist:       true,
 			corruptTransChannel:     true,
 			expLBThUpdated:          true,
 			expEscrowBalanceChanged: false,
@@ -135,7 +140,6 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		// reward for the provider chain will be sent after each 1000 blocks
 		consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
 		consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(1000))
-		bpdt := consumerKeeper.GetBlocksPerDistributionTransmission(s.consumerCtx())
 
 		// fill fee pool
 		fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
@@ -143,37 +147,15 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 			s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
 		s.Require().NoError(err)
 
-		transChanID := s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(s.consumerCtx())
-
-		// getEscrowBalance gets the current balances in the escrow account holding the transfered tokens to the provider
-		getEscrowBalance := func(ctx sdk.Context) sdk.Coins {
-			escAddr := transfertypes.GetEscrowAddress(transfertypes.PortID, transChanID)
-			return consumerBankKeeper.GetAllBalances(ctx, escAddr)
-		}
-
 		oldLbth := consumerKeeper.GetLastTransmissionBlockHeight(s.consumerCtx())
-		oldEscBalance := getEscrowBalance(s.consumerCtx())
+		oldEscBalance := s.getEscrowBalance()
 
-		// prepareRD passes enough blocks so that a reward distribution is triggered in
-		// the next consumer EndBlock
-		if tc.prepareRD {
-			currentHeight := s.consumerCtx().BlockHeight()
-			lastTransHeight := consumerKeeper.GetLastTransmissionBlockHeight(s.consumerCtx())
-			blocksSinceLastTrans := currentHeight - lastTransHeight.Height
-			blocksToGo := bpdt - blocksSinceLastTrans
-			s.coordinator.CommitNBlocks(s.consumerChain, uint64(blocksToGo))
+		if tc.prepareRewardDist {
+			s.prepareRewardDist()
 		}
 
-		// corruptTransChannel intentionally causes the reward distribution to fail by corrupting the transmission,
-		// causing the SendPacket function to return an error.
-		// Note that the Transferkeeper sends the outgoing fees to an escrow address BEFORE the reward distribution
-		// is aborted within the SendPacket function.
 		if tc.corruptTransChannel {
-			tChan, _ := s.consumerApp.GetIBCKeeper().ChannelKeeper.GetChannel(
-				s.consumerCtx(), transfertypes.PortID, transChanID)
-			tChan.Counterparty.PortId = "invalid/PortID"
-			s.consumerApp.GetIBCKeeper().ChannelKeeper.SetChannel(
-				s.consumerCtx(), transfertypes.PortID, transChanID, tChan)
+			s.corruptTransChannel()
 		}
 
 		s.consumerChain.NextBlock()
@@ -186,7 +168,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 			s.Require().Equal(s.consumerCtx().BlockHeight()-1, lbth.Height)
 		}
 
-		currentEscrowBalance := getEscrowBalance(s.consumerCtx())
+		currentEscrowBalance := s.getEscrowBalance()
 		if tc.expEscrowBalanceChanged {
 			// check that the coins present on the escrow account balance are updated
 			s.Require().NotEqual(currentEscrowBalance, oldEscBalance,
@@ -197,4 +179,36 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 				"expected escrow balance to NOT BE updated - OLD: %s, NEW: %s", oldEscBalance, currentEscrowBalance)
 		}
 	}
+}
+
+// getEscrowBalance gets the current balances in the escrow account holding the transfered tokens to the provider
+func (s CCVTestSuite) getEscrowBalance() sdk.Coins {
+	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
+	transChanID := s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(s.consumerCtx())
+	escAddr := transfertypes.GetEscrowAddress(transfertypes.PortID, transChanID)
+	return consumerBankKeeper.GetAllBalances(s.consumerCtx(), escAddr)
+}
+
+// corruptTransChannel intentionally causes the reward distribution to fail by corrupting the transmission,
+// causing the SendPacket function to return an error.
+// Note that the Transferkeeper sends the outgoing fees to an escrow address BEFORE the reward distribution
+// is aborted within the SendPacket function.
+func (s *CCVTestSuite) corruptTransChannel() {
+	transChanID := s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(s.consumerCtx())
+	tChan, _ := s.consumerApp.GetIBCKeeper().ChannelKeeper.GetChannel(
+		s.consumerCtx(), transfertypes.PortID, transChanID)
+	tChan.Counterparty.PortId = "invalid/PortID"
+	s.consumerApp.GetIBCKeeper().ChannelKeeper.SetChannel(
+		s.consumerCtx(), transfertypes.PortID, transChanID, tChan)
+}
+
+// prepareRewardDist passes enough blocks so that a reward distribution is triggered in the next consumer EndBlock
+func (s *CCVTestSuite) prepareRewardDist() {
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
+	bpdt := consumerKeeper.GetBlocksPerDistributionTransmission(s.consumerCtx())
+	currentHeight := s.consumerCtx().BlockHeight()
+	lastTransHeight := consumerKeeper.GetLastTransmissionBlockHeight(s.consumerCtx())
+	blocksSinceLastTrans := currentHeight - lastTransHeight.Height
+	blocksToGo := bpdt - blocksSinceLastTrans
+	s.coordinator.CommitNBlocks(s.consumerChain, uint64(blocksToGo))
 }
