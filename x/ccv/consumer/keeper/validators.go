@@ -8,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -17,7 +16,14 @@ import (
 func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) []abci.ValidatorUpdate {
 	ret := []abci.ValidatorUpdate{}
 	for _, change := range changes {
-		addr := utils.GetChangePubKeyAddress(change)
+		// convert TM pubkey to SDK pubkey
+		pubkey, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
+		if err != nil {
+			// An error here would indicate that the validator updates
+			// received from the provider are invalid.
+			panic(err)
+		}
+		addr := pubkey.Address()
 		val, found := k.GetCCValidator(ctx, addr)
 
 		if found {
@@ -33,12 +39,10 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 			// create a new validator
 			consAddr := sdk.ConsAddress(addr)
 
-			pubkey, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
-			if err != nil {
-				panic(err)
-			}
 			ccVal, err := types.NewCCValidator(addr, change.Power, pubkey)
 			if err != nil {
+				// An error here would indicate that the validator updates
+				// received from the provider are invalid.
 				panic(err)
 			}
 
@@ -186,10 +190,14 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	for _, v := range k.GetAllCCValidator(ctx) {
 		pk, err := v.ConsPubKey()
 		if err != nil {
+			// This should never happen as the pubkey is assumed
+			// to be stored correctly in ApplyCCValidatorChanges.
 			panic(err)
 		}
 		val, err := stakingtypes.NewValidator(nil, pk, stakingtypes.Description{})
 		if err != nil {
+			// This should never happen as the pubkey is assumed
+			// to be stored correctly in ApplyCCValidatorChanges.
 			panic(err)
 		}
 
@@ -207,20 +215,25 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	k.SetHistoricalInfo(ctx, ctx.BlockHeight(), &historicalEntry)
 }
 
-// GetCurrentValidatorsAsABCIUpdates gets all cross-chain validators converted to the ABCI validator update type
-func (k Keeper) GetCurrentValidatorsAsABCIUpdates(ctx sdk.Context) ([]abci.ValidatorUpdate, error) {
+// MustGetCurrentValidatorsAsABCIUpdates gets all cross-chain validators converted
+// to the ABCI validator update type. It panics in case of failure.
+func (k Keeper) MustGetCurrentValidatorsAsABCIUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
 	vals := k.GetAllCCValidator(ctx)
 	valUpdates := make([]abci.ValidatorUpdate, 0, len(vals))
 	for _, v := range vals {
 		pk, err := v.ConsPubKey()
 		if err != nil {
-			return nil, err
+			// This should never happen as the pubkey is assumed
+			// to be stored correctly in ApplyCCValidatorChanges.
+			panic(err)
 		}
 		tmPK, err := cryptocodec.ToTmProtoPublicKey(pk)
 		if err != nil {
-			return nil, err
+			// This should never happen as the pubkey is assumed
+			// to be stored correctly in ApplyCCValidatorChanges.
+			panic(err)
 		}
 		valUpdates = append(valUpdates, abci.ValidatorUpdate{PubKey: tmPK, Power: v.Power})
 	}
-	return valUpdates, nil
+	return valUpdates
 }

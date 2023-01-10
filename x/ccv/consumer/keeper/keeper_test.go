@@ -73,8 +73,7 @@ func TestPendingChanges(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	err = consumerKeeper.SetPendingChanges(ctx, pd)
-	require.NoError(t, err)
+	consumerKeeper.SetPendingChanges(ctx, pd)
 	gotPd, ok := consumerKeeper.GetPendingChanges(ctx)
 	require.True(t, ok)
 	require.Equal(t, &pd, gotPd, "packet data in store does not equal packet data set")

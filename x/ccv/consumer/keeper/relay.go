@@ -56,12 +56,9 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		pendingChanges = utils.AccumulateChanges(currentChanges.ValidatorUpdates, newChanges.ValidatorUpdates)
 	}
 
-	err := k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{
+	k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{
 		ValidatorUpdates: pendingChanges,
 	})
-	if err != nil {
-		panic(fmt.Errorf("pending validator set change could not be persisted: %w", err))
-	}
 
 	// Save maturity time and packet
 	maturityTime := ctx.BlockTime().Add(k.GetUnbondingPeriod(ctx))
@@ -99,9 +96,6 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 // the consumer chain.
 func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 	for _, maturityTime := range k.GetElapsedPacketMaturityTimes(ctx) {
-		if ctx.BlockTime().Before(maturityTime.MaturityTime) {
-			panic(fmt.Errorf("maturity time %s is after than current time %s", maturityTime.MaturityTime, ctx.BlockTime()))
-		}
 		// construct validator set change packet data
 		vscPacket := ccv.NewVSCMaturedPacketData(maturityTime.VscId)
 
@@ -211,6 +205,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 				return
 			}
 			// something went wrong when sending the packet
+			// TODO do not panic if the send fails
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
 	}
