@@ -470,7 +470,7 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		consumertypes.DefaultTransferTimeoutPeriod,
 		consumertypes.DefaultConsumerRedistributeFrac,
 		consumertypes.DefaultHistoricalEntries,
-		consumertypes.DefaultConsumerUnbondingPeriod,
+		b.initState.UnbondingC,
 	)
 	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, params)
 }
