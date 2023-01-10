@@ -255,7 +255,6 @@ func (s *CoreSuite) matchState() {
 				s.Require().Errorf(err, diagnostic+" power mismatch for val %d, expect 0 (nil), got %d", j, actual)
 			}
 		}
-		// TODO: outstanding downtime
 	}
 }
 
