@@ -717,19 +717,19 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	// Create a simulated network link link
 	b.createLink()
 
-	b.addExtraProviderValidators()
-
-	// Commit the additional validators
-	b.coordinator.CommitBlock(b.provider())
-
-	b.setSlashParams()
-
 	// TODO: tidy up before merging into main
 	prams := b.providerKeeper().GetParams(b.providerCtx())
 	prams.SlashMeterReplenishFraction = "1.0"
 	prams.SlashMeterReplenishPeriod = time.Second * 1
 	b.providerKeeper().SetParams(b.providerCtx(), prams)
 	b.providerKeeper().InitializeSlashMeter(b.providerCtx())
+
+	b.addExtraProviderValidators()
+
+	// Commit the additional validators
+	b.coordinator.CommitBlock(b.provider())
+
+	b.setSlashParams()
 
 	// Set light client params to match model
 	tmConfig := ibctesting.NewTendermintConfig()
