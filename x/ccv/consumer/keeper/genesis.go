@@ -33,6 +33,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		// and claims the returned capability
 		err := k.BindPort(ctx, ccv.ConsumerPortID)
 		if err != nil {
+			// If the binding fails, the chain MUST NOT start
 			panic(fmt.Sprintf("could not claim port capability: %v", err))
 		}
 	}
@@ -43,6 +44,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		// create the provider client in InitGenesis for new consumer chain. CCV Handshake must be established with this client id.
 		clientID, err := k.clientKeeper.CreateClient(ctx, state.ProviderClientState, state.ProviderConsensusState)
 		if err != nil {
+			// If the client creation fails, the chain MUST NOT start
 			panic(err)
 		}
 
@@ -106,10 +108,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 	}
 
 	// export the current validator set
-	valset, err := k.GetCurrentValidatorsAsABCIUpdates(ctx)
-	if err != nil {
-		panic(fmt.Sprintf("fail to retrieve the validator set: %s", err))
-	}
+	valset := k.GetCurrentValidatorsAsABCIUpdates(ctx)
 
 	// export all the states created after a provider channel got established
 	if channelID, ok := k.GetProviderChannel(ctx); ok {
