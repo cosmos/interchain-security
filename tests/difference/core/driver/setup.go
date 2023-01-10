@@ -316,21 +316,10 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 		if b.initState.ValStates.Status[i] != stakingtypes.Bonded {
 			continue
 		}
-		privVal := b.getValidatorPK(i)
-
-		pubKey, err := privVal.GetPubKey()
-		require.NoError(b.suite.T(), err)
-
-		// Compute address
-		addr, err := sdk.ValAddressFromHex(pubKey.Address().String())
-		require.NoError(b.suite.T(), err)
-		addresses = append(addresses, addr)
-
-		// Save signer
-		signers[pubKey.Address().String()] = privVal
-
-		// Save validator with power
-		validators = append(validators, tmtypes.NewValidator(pubKey, int64(power)))
+		testVal := b.getTestValidator(i)
+		signers[testVal.TMCryptoPubKey().Address().String()] = testVal
+		addresses = append(addresses, testVal.SDKValAddress())
+		validators = append(validators, testVal.TMValidator(int64(power)))
 	}
 
 	return tmtypes.NewValidatorSet(validators), signers, addresses
