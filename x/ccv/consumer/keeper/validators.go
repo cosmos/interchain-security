@@ -33,12 +33,17 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 			// create a new validator
 			consAddr := sdk.ConsAddress(addr)
 
+			// convert TM pubkey to SDK pubkey
 			pubkey, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
 			if err != nil {
+				// An error here would indicate that the validator updates
+				// received from the provider are invalid.
 				panic(err)
 			}
 			ccVal, err := types.NewCCValidator(addr, change.Power, pubkey)
 			if err != nil {
+				// An error here would indicate that the validator updates
+				// received from the provider are invalid.
 				panic(err)
 			}
 
@@ -186,10 +191,14 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	for _, v := range k.GetAllCCValidator(ctx) {
 		pk, err := v.ConsPubKey()
 		if err != nil {
+			// This should never happen as the pubkey is assumed
+			// to be stored correctly in ApplyCCValidatorChanges.
 			panic(err)
 		}
 		val, err := stakingtypes.NewValidator(nil, pk, stakingtypes.Description{})
 		if err != nil {
+			// This should never happen as the pubkey is assumed
+			// to be stored correctly in ApplyCCValidatorChanges.
 			panic(err)
 		}
 
