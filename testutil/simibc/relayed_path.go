@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 )
 
 // RelayedPath augments ibctesting.Path, giving fine-grained control
@@ -88,6 +88,7 @@ func (f *RelayedPath) DeliverAcks(chainID string, num int) {
 // allowing access to the sdk.Context after EndBlock.
 func (f *RelayedPath) EndAndBeginBlock(chainID string, dt time.Duration, preCommitCallback func()) {
 	c := f.Chain(chainID)
+
 	header, packets := EndBlock(c, preCommitCallback)
 	f.clientHeaders[chainID] = append(f.clientHeaders[chainID], header)
 	for _, p := range packets {
