@@ -32,7 +32,6 @@ import (
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
@@ -43,14 +42,14 @@ import (
 )
 
 type Builder struct {
-	suite          *suite.Suite
-	link           simibc.OrderedLink
-	path           *ibctesting.Path
-	coordinator    *ibctesting.Coordinator
-	clientHeaders  map[string][]*ibctmtypes.Header
-	mustBeginBlock map[string]bool
-	valAddresses   []sdk.ValAddress
-	initState      InitState
+	suite *suite.Suite
+	// link           simibc.OrderedLink
+	path        *ibctesting.Path
+	coordinator *ibctesting.Coordinator
+	// clientHeaders  map[string][]*ibctmtypes.Header
+	// mustBeginBlock map[string]bool
+	valAddresses []sdk.ValAddress
+	initState    InitState
 }
 
 func (b *Builder) chainID(chain string) string {
