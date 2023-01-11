@@ -1,6 +1,8 @@
 package core
 
 import (
+	"time"
+
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
@@ -114,4 +116,48 @@ func (b *Builder) endBlock(chainID string) {
 	}
 
 	c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
+}
+
+func (b *Builder) runSomeProtocolSteps() {
+
+	b.endBlock(b.consumer().ChainID)
+	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
+	b.mustBeginBlock[C] = true
+
+	// Progress chains in unison, allowing first VSC to mature.
+	for i := 0; i < 11; i++ {
+		b.idempotentBeginBlock(P)
+		b.endBlock(b.provider().ChainID)
+		b.idempotentBeginBlock(C)
+		b.endBlock(b.consumer().ChainID)
+		b.mustBeginBlock = map[string]bool{P: true, C: true}
+		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockInterval).UTC()
+	}
+
+	b.idempotentBeginBlock(P)
+	// Deliver outstanding ack
+	b.deliverAcks(b.provider().ChainID)
+	// Deliver the maturity from the first VSC (needed to complete handshake)
+	b.deliver(b.provider().ChainID)
+
+	for i := 0; i < 2; i++ {
+		b.idempotentBeginBlock(P)
+		b.endBlock(b.provider().ChainID)
+		b.idempotentBeginBlock(C)
+		b.deliverAcks(b.consumer().ChainID)
+		b.endBlock(b.consumer().ChainID)
+		b.mustBeginBlock = map[string]bool{P: true, C: true}
+		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockInterval).UTC()
+	}
+
+	b.idempotentBeginBlock(P)
+	b.idempotentBeginBlock(C)
+
+	b.endBlock(b.provider().ChainID)
+	b.endBlock(b.consumer().ChainID)
+	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockInterval).UTC()
+	b.beginBlock(b.provider().ChainID)
+	b.beginBlock(b.consumer().ChainID)
+	b.updateClient(b.provider().ChainID)
+	b.updateClient(b.consumer().ChainID)
 }

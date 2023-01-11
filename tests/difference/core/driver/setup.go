@@ -437,50 +437,6 @@ func (b *Builder) setSlashParams() {
 	b.providerSlashingKeeper().SetParams(b.providerCtx(), sparams)
 }
 
-func (b *Builder) runSomeProtocolSteps() {
-
-	b.endBlock(b.consumer().ChainID)
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
-	b.mustBeginBlock[C] = true
-
-	// Progress chains in unison, allowing first VSC to mature.
-	for i := 0; i < 11; i++ {
-		b.idempotentBeginBlock(P)
-		b.endBlock(b.provider().ChainID)
-		b.idempotentBeginBlock(C)
-		b.endBlock(b.consumer().ChainID)
-		b.mustBeginBlock = map[string]bool{P: true, C: true}
-		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockInterval).UTC()
-	}
-
-	b.idempotentBeginBlock(P)
-	// Deliver outstanding ack
-	b.deliverAcks(b.provider().ChainID)
-	// Deliver the maturity from the first VSC (needed to complete handshake)
-	b.deliver(b.provider().ChainID)
-
-	for i := 0; i < 2; i++ {
-		b.idempotentBeginBlock(P)
-		b.endBlock(b.provider().ChainID)
-		b.idempotentBeginBlock(C)
-		b.deliverAcks(b.consumer().ChainID)
-		b.endBlock(b.consumer().ChainID)
-		b.mustBeginBlock = map[string]bool{P: true, C: true}
-		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockInterval).UTC()
-	}
-
-	b.idempotentBeginBlock(P)
-	b.idempotentBeginBlock(C)
-
-	b.endBlock(b.provider().ChainID)
-	b.endBlock(b.consumer().ChainID)
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockInterval).UTC()
-	b.beginBlock(b.provider().ChainID)
-	b.beginBlock(b.consumer().ChainID)
-	b.updateClient(b.provider().ChainID)
-	b.updateClient(b.consumer().ChainID)
-}
-
 func (b *Builder) configureIBCTestingPath() {
 	b.path = ibctesting.NewPath(b.consumer(), b.provider())
 	b.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
