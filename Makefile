@@ -22,7 +22,11 @@ test-diff:
 
 # run integration tests
 test-integration:
-	go run ./tests/integration/...
+	go run ./tests/integration/... --happy-path-only
+
+# run full integration tests
+test-integration-full:
+	go run ./tests/integration/... --multiconsumer
 
 # run all tests with caching disabled
 test-no-cache:
