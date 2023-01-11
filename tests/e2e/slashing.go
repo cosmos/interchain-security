@@ -389,9 +389,7 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 	var undelegateConsumerHeight uint64
 
 	consumerUnbondingPeriod := suite.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(suite.consumerCtx())
-	fmt.Printf("consumerUnbondingPeriod: %s\n", consumerUnbondingPeriod)
 	providerUnbondingPeriod := suite.providerApp.GetE2eStakingKeeper().UnbondingTime(suite.providerCtx())
-	fmt.Printf("providerUnbondingPeriod: %s\n", providerUnbondingPeriod)
 
 	testCases := []struct {
 		name             string
