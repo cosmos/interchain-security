@@ -63,7 +63,7 @@ func main() {
 		mul.ValidateStringLiterals()
 		mul.startDocker()
 		mul.ExecuteSteps(multipleConsumers)
-		slash.teardownDocker()
+		mul.teardownDocker()
 	}
 
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
