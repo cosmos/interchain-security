@@ -451,7 +451,7 @@ func (b *Builder) configurePath() {
 	b.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
 }
 
-func (b *Builder) configureConsumerClientOnProvider() {
+func (b *Builder) createProvidersLocalClient() {
 	// Configure and create the consumer Client
 	tmCfg := b.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
 	tmCfg.UnbondingPeriod = b.initState.UnbondingC
@@ -463,7 +463,7 @@ func (b *Builder) configureConsumerClientOnProvider() {
 	b.providerKeeper().SetConsumerClientId(b.providerCtx(), b.consumer().ChainID, b.path.EndpointB.ClientID)
 }
 
-func (b *Builder) createConsumerClientGenesisState() *ibctmtypes.ClientState {
+func (b *Builder) createConsumersLocalClientGenesis() *ibctmtypes.ClientState {
 	tmCfg := b.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig)
 	tmCfg.UnbondingPeriod = b.initState.UnbondingP
 	tmCfg.TrustingPeriod = b.initState.Trusting
@@ -524,9 +524,9 @@ func GetZeroState(
 	b.coordinator.CommitBlock(b.provider())
 
 	b.configurePath()
-	b.configureConsumerClientOnProvider()
+	b.createProvidersLocalClient()
 
-	provClient := b.createConsumerClientGenesisState()
+	provClient := b.createConsumersLocalClientGenesis()
 	consumerGenesis := b.createConsumerGenesis(provClient)
 
 	b.consumerKeeper().InitGenesis(b.consumerCtx(), consumerGenesis)
