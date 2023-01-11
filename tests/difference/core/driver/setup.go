@@ -32,6 +32,7 @@ import (
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
@@ -42,22 +43,11 @@ import (
 )
 
 type Builder struct {
-	suite *suite.Suite
-	// link           simibc.OrderedLink
-	path        *ibctesting.Path
-	coordinator *ibctesting.Coordinator
-	// clientHeaders  map[string][]*ibctmtypes.Header
-	// mustBeginBlock map[string]bool
+	suite        *suite.Suite
+	path         *ibctesting.Path
+	coordinator  *ibctesting.Coordinator
 	valAddresses []sdk.ValAddress
 	initState    InitState
-}
-
-func (b *Builder) chainID(chain string) string {
-	return map[string]string{P: ibctesting.GetChainID(0), C: ibctesting.GetChainID(1)}[chain]
-}
-
-func (b *Builder) otherID(chainID string) string {
-	return map[string]string{ibctesting.GetChainID(0): ibctesting.GetChainID(1), ibctesting.GetChainID(1): ibctesting.GetChainID(0)}[chainID]
 }
 
 func (b *Builder) provider() *ibctesting.TestChain {
@@ -92,10 +82,6 @@ func (b *Builder) consumerKeeper() consumerkeeper.Keeper {
 	return b.consumer().App.(*appConsumer.App).ConsumerKeeper
 }
 
-func (b *Builder) endpointFromID(chainID string) *ibctesting.Endpoint {
-	return map[string]*ibctesting.Endpoint{ibctesting.GetChainID(0): b.path.EndpointB, ibctesting.GetChainID(1): b.path.EndpointA}[chainID]
-}
-
 func (b *Builder) endpoint(chain string) *ibctesting.Endpoint {
 	return map[string]*ibctesting.Endpoint{P: b.path.EndpointB, C: b.path.EndpointA}[chain]
 }
@@ -113,8 +99,12 @@ func (b *Builder) getTestValidator(seedIx int) *testcrypto.CryptoIdentity {
 	return testcrypto.NewCryptoIdentityFromBytesSeed([]byte(b.initState.PKSeeds[seedIx]))
 }
 
-func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingApp, genesis map[string]json.RawMessage,
-	validators *tmtypes.ValidatorSet) ([]byte, []ibctesting.SenderAccount) {
+func (b *Builder) getAppBytesAndSenders(
+	chainID string,
+	app ibctesting.TestingApp,
+	genesis map[string]json.RawMessage,
+	validators *tmtypes.ValidatorSet,
+) ([]byte, []ibctesting.SenderAccount) {
 
 	accounts := []authtypes.GenesisAccount{}
 	balances := []banktypes.Balance{}
@@ -241,8 +231,13 @@ func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingAp
 
 }
 
-func (b *Builder) newChain(coord *ibctesting.Coordinator, appInit ibctesting.AppIniter, chainID string,
-	validators *tmtypes.ValidatorSet, signers map[string]tmtypes.PrivValidator) *ibctesting.TestChain {
+func (b *Builder) newChain(
+	coord *ibctesting.Coordinator,
+	appInit ibctesting.AppIniter,
+	chainID string,
+	validators *tmtypes.ValidatorSet,
+	signers map[string]tmtypes.PrivValidator,
+) *ibctesting.TestChain {
 
 	app, genesis := appInit()
 
@@ -538,7 +533,20 @@ func GetZeroState(suite *suite.Suite, initState InitState) (path *ibctesting.Pat
 
 	b.consumerKeeper().SetProviderChannel(b.consumerCtx(), b.endpoint(C).ChannelID)
 
-	b.runSomeProtocolSteps()
+	simibc.BeginBlock(b.provider(), time.Second*5)
+	// Catch up consumer height to provider height
+	hC0, _ := simibc.EndBlock(b.consumer(), func() {})
+	simibc.BeginBlock(b.consumer(), time.Second*5)
+
+	hP0, _ := simibc.EndBlock(b.provider(), func() {})
+	hC1, _ := simibc.EndBlock(b.consumer(), func() {})
+
+	simibc.BeginBlock(b.provider(), time.Second*5)
+	simibc.BeginBlock(b.consumer(), time.Second*5)
+
+	_ = simibc.UpdateReceiverClient(b.endpoint(C), b.endpoint(P), hC0)
+	_ = simibc.UpdateReceiverClient(b.endpoint(C), b.endpoint(P), hC1)
+	_ = simibc.UpdateReceiverClient(b.endpoint(P), b.endpoint(C), hP0)
 
 	// Height of the last committed block (current header is not committed)
 	heightLastCommitted = b.provider().CurrentHeader.Height - 1

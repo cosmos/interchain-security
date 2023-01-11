@@ -433,7 +433,8 @@ func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
 		Data: LoadTraces("traces.json"),
 	}
-	// s.traces.Data = []TraceData{s.traces.Data[214]}
+	// s.traces.Data = []TraceData{s.traces.Data[200:227]}
+	// s.traces.Data = s.traces.Data[180:260]
 	shortest := -1
 	shortestLen := 10000000000
 	for i := range s.traces.Data {
