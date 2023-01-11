@@ -647,6 +647,67 @@ func (b *Builder) runSomeProtocolSteps() {
 	b.updateClient(b.consumerChainID())
 }
 
+func (b *Builder) configureIBCTestingPath() {
+	b.path = ibctesting.NewPath(b.consumer(), b.provider())
+	b.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
+	b.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
+	b.path.EndpointA.ChannelConfig.Version = ccv.Version
+	b.path.EndpointB.ChannelConfig.Version = ccv.Version
+	b.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
+	b.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
+}
+
+func (b *Builder) configureConsumerClientOnProvider() {
+	// Configure and create the consumer Client
+	tmCfg := b.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
+	tmCfg.UnbondingPeriod = b.initState.UnbondingC
+	tmCfg.TrustingPeriod = b.initState.Trusting
+	tmCfg.MaxClockDrift = b.initState.MaxClockDrift
+	err := b.path.EndpointB.CreateClient()
+	b.suite.Require().NoError(err)
+	// Create the Consumer chain ID mapping in the provider state
+	b.providerKeeper().SetConsumerClientId(b.providerCtx(), b.consumer().ChainID, b.path.EndpointB.ClientID)
+}
+
+func (b *Builder) createConsumerClientGenesisState() *ibctmtypes.ClientState {
+	tmCfg := ibctesting.NewTendermintConfig()
+	tmCfg.UnbondingPeriod = b.initState.UnbondingP
+	tmCfg.TrustingPeriod = b.initState.Trusting
+	tmCfg.MaxClockDrift = b.initState.MaxClockDrift
+
+	return ibctmtypes.NewClientState(
+		b.provider().ChainID, tmCfg.TrustLevel, tmCfg.TrustingPeriod, tmCfg.UnbondingPeriod, tmCfg.MaxClockDrift,
+		b.provider().LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
+		[]string{"upgrade", "upgradedIBCState"}, tmCfg.AllowUpdateAfterExpiry, tmCfg.AllowUpdateAfterMisbehaviour,
+	)
+}
+
+func (b *Builder) createConsumerGenesis(provClient *ibctmtypes.ClientState) *consumertypes.GenesisState {
+	providerConsState := b.provider().LastHeader.ConsensusState()
+
+	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.provider().Vals)
+	params := consumertypes.NewParams(
+		true,
+		1000, // ignore distribution
+		"",   // ignore distribution
+		"",   // ignore distribution
+		ccv.DefaultCCVTimeoutPeriod,
+		consumertypes.DefaultTransferTimeoutPeriod,
+		consumertypes.DefaultConsumerRedistributeFrac,
+		consumertypes.DefaultHistoricalEntries,
+		b.initState.UnbondingC,
+	)
+	return consumertypes.NewInitialGenesisState(provClient, providerConsState, valUpdates, params)
+}
+
+func (b *Builder) configureProviderClientOnConsumer() {
+	providerClientID, ok := b.consumerKeeper().GetProviderClientID(b.consumerCtx())
+	if !ok {
+		panic("must already have provider client on consumer chain")
+	}
+	b.path.EndpointA.ClientID = providerClientID
+}
+
 // The state of the data returned is equivalent to the state of two chains
 // after a full handshake, but the precise order of steps used to reach the
 // state does not necessarily mimic the order of steps that happen in a
@@ -698,67 +759,4 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	// Time of the last committed block (current header is not committed)
 	timeLastCommitted := b.provider().CurrentHeader.Time.Add(-b.initState.BlockInterval).Unix()
 	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
-}
-func (b *Builder) configureIBCTestingPath() {
-	// Configure the ibc path
-	b.path = ibctesting.NewPath(b.consumer(), b.provider())
-	b.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
-	b.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
-	b.path.EndpointA.ChannelConfig.Version = ccv.Version
-	b.path.EndpointB.ChannelConfig.Version = ccv.Version
-	b.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
-	b.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-}
-
-func (b *Builder) configureConsumerClientOnProvider() {
-	// Configure and create the consumer Client
-	tmConfig2 := b.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
-	tmConfig2.UnbondingPeriod = b.initState.UnbondingC
-	tmConfig2.TrustingPeriod = b.initState.Trusting
-	tmConfig2.MaxClockDrift = b.initState.MaxClockDrift
-	err := b.path.EndpointB.CreateClient()
-	b.suite.Require().NoError(err)
-	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.providerCtx(), b.consumer().ChainID, b.path.EndpointB.ClientID)
-
-}
-
-func (b *Builder) createConsumerClientGenesisState() *ibctmtypes.ClientState {
-	tmConfig := ibctesting.NewTendermintConfig()
-	tmConfig.UnbondingPeriod = b.initState.UnbondingP
-	tmConfig.TrustingPeriod = b.initState.Trusting
-	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
-
-	return ibctmtypes.NewClientState(
-		b.provider().ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
-		b.provider().LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
-		[]string{"upgrade", "upgradedIBCState"}, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
-	)
-}
-
-func (b *Builder) createConsumerGenesis(provClient *ibctmtypes.ClientState) *consumertypes.GenesisState {
-	providerConsState := b.provider().LastHeader.ConsensusState()
-
-	// Create Consumer genesis
-	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.provider().Vals)
-	params := consumertypes.NewParams(
-		true,
-		1000, // ignore distribution
-		"",   // ignore distribution
-		"",   // ignore distribution
-		ccv.DefaultCCVTimeoutPeriod,
-		consumertypes.DefaultTransferTimeoutPeriod,
-		consumertypes.DefaultConsumerRedistributeFrac,
-		consumertypes.DefaultHistoricalEntries,
-		b.initState.UnbondingC,
-	)
-	return consumertypes.NewInitialGenesisState(provClient, providerConsState, valUpdates, params)
-}
-
-func (b *Builder) configureProviderClientOnConsumer() {
-	providerClientID, ok := b.consumerKeeper().GetProviderClientID(b.consumerCtx())
-	if !ok {
-		panic("must already have provider client on consumer chain")
-	}
-	b.path.EndpointA.ClientID = providerClientID
 }
