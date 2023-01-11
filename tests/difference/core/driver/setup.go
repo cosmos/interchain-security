@@ -16,7 +16,6 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -438,112 +437,6 @@ func (b *Builder) setSlashParams() {
 	b.providerSlashingKeeper().SetParams(b.providerCtx(), sparams)
 }
 
-func (b *Builder) createLink() {
-	b.link = simibc.MakeOrderedLink()
-	// init utility data structures
-	b.mustBeginBlock = map[string]bool{P: true, C: true}
-	b.clientHeaders = map[string][]*ibctmtypes.Header{}
-	for chainID := range b.coordinator.Chains {
-		b.clientHeaders[chainID] = []*ibctmtypes.Header{}
-	}
-}
-
-// idempotentBeginBlock begins a new block on chain
-// if it is necessary to do so.
-func (b *Builder) idempotentBeginBlock(chain string) {
-	if b.mustBeginBlock[chain] {
-		b.mustBeginBlock[chain] = false
-		b.beginBlock(b.chainID(chain))
-		b.updateClient(b.chainID(chain))
-	}
-}
-
-func (b *Builder) beginBlock(chainID string) {
-	c := b.coordinator.GetChain(chainID)
-	c.CurrentHeader = tmproto.Header{
-		ChainID:            c.ChainID,
-		Height:             c.App.LastBlockHeight() + 1,
-		AppHash:            c.App.LastCommitID().Hash,
-		Time:               b.coordinator.CurrentTime,
-		ValidatorsHash:     c.Vals.Hash(),
-		NextValidatorsHash: c.NextVals.Hash(),
-	}
-	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
-}
-
-func (b *Builder) updateClient(chainID string) {
-	for _, header := range b.clientHeaders[b.otherID(chainID)] {
-		err := simibc.UpdateReceiverClient(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), header)
-		if err != nil {
-			b.coordinator.Fatal("updateClient")
-		}
-	}
-	b.clientHeaders[b.otherID(chainID)] = []*ibctmtypes.Header{}
-}
-
-func (b *Builder) deliver(chainID string) {
-	packets := b.link.ConsumePackets(b.otherID(chainID), 1)
-	for _, p := range packets {
-		receiver := b.endpointFromID(chainID)
-		sender := receiver.Counterparty
-		ack, err := simibc.TryRecvPacket(sender, receiver, p.Packet)
-		if err != nil {
-			b.coordinator.Fatal("deliver")
-		}
-		b.link.AddAck(chainID, ack, p.Packet)
-	}
-}
-
-func (b *Builder) deliverAcks(chainID string) {
-	for _, ack := range b.link.ConsumeAcks(b.otherID(chainID), 999999) {
-		err := simibc.TryRecvAck(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), ack.Packet, ack.Ack)
-		if err != nil {
-			b.coordinator.Fatal("deliverAcks")
-		}
-	}
-}
-
-func (b *Builder) endBlock(chainID string) {
-	c := b.coordinator.GetChain(chainID)
-
-	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
-
-	c.App.Commit()
-
-	c.Vals = c.NextVals
-
-	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
-
-	c.LastHeader = c.CurrentTMClientHeader()
-	// Store header to be used in UpdateClient
-	b.clientHeaders[chainID] = append(b.clientHeaders[chainID], c.LastHeader)
-
-	for _, e := range ebRes.Events {
-		if e.Type == channeltypes.EventTypeSendPacket {
-			packet, _ := ibctestingcore.ReconstructPacketFromEvent(e)
-			// Collect packets
-			b.link.AddPacket(chainID, packet)
-		}
-	}
-
-	// Commit packets emmitted up to this point
-	b.link.Commit(chainID)
-
-	newT := b.coordinator.CurrentTime.Add(b.initState.BlockInterval).UTC()
-
-	// increment the current header
-	c.CurrentHeader = tmproto.Header{
-		ChainID:            c.ChainID,
-		Height:             c.App.LastBlockHeight() + 1,
-		AppHash:            c.App.LastCommitID().Hash,
-		Time:               newT,
-		ValidatorsHash:     c.Vals.Hash(),
-		NextValidatorsHash: c.NextVals.Hash(),
-	}
-
-	c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
-}
-
 func (b *Builder) runSomeProtocolSteps() {
 
 	b.endBlock(b.consumer().ChainID)
@@ -653,7 +546,7 @@ func (b *Builder) configureProviderClientOnConsumer() {
 // after a full handshake, but the precise order of steps used to reach the
 // state does not necessarily mimic the order of steps that happen in a
 // live scenario.
-func GetZeroState(suite *suite.Suite, initState InitState) (*ibctesting.Path, []sdk.ValAddress, int64, int64) {
+func GetZeroState(suite *suite.Suite, initState InitState) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted int64, timeLastCommitted int64) {
 	b := Builder{initState: initState, suite: suite}
 
 	b.createChains()
@@ -696,8 +589,8 @@ func GetZeroState(suite *suite.Suite, initState InitState) (*ibctesting.Path, []
 	b.runSomeProtocolSteps()
 
 	// Height of the last committed block (current header is not committed)
-	heightLastCommitted := b.provider().CurrentHeader.Height - 1
+	heightLastCommitted = b.provider().CurrentHeader.Height - 1
 	// Time of the last committed block (current header is not committed)
-	timeLastCommitted := b.provider().CurrentHeader.Time.Add(-b.initState.BlockInterval).Unix()
+	timeLastCommitted = b.provider().CurrentHeader.Time.Add(-b.initState.BlockInterval).Unix()
 	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
 }
