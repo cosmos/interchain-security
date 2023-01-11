@@ -464,7 +464,7 @@ func (b *Builder) configureConsumerClientOnProvider() {
 }
 
 func (b *Builder) createConsumerClientGenesisState() *ibctmtypes.ClientState {
-	tmCfg := ibctesting.NewTendermintConfig()
+	tmCfg := b.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig)
 	tmCfg.UnbondingPeriod = b.initState.UnbondingP
 	tmCfg.TrustingPeriod = b.initState.Trusting
 	tmCfg.MaxClockDrift = b.initState.MaxClockDrift
