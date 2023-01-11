@@ -448,51 +448,6 @@ func (b *Builder) createLink() {
 	}
 }
 
-// Manually construct and send an empty VSC packet from the provider
-// to the consumer. This is necessary to complete the handshake, and thus
-// match the model init state, without any additional validator power changes.
-func (b *Builder) sendEmptyVSCPacket() {
-	vscID := b.providerKeeper().GetValidatorSetUpdateId(b.provider().GetContext())
-
-	timeout := uint64(b.provider().CurrentHeader.Time.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
-
-	pd := ccv.NewValidatorSetChangePacketData(
-		[]abci.ValidatorUpdate{},
-		vscID,
-		nil,
-	)
-
-	seq, ok := b.provider().App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
-		b.providerCtx(), ccv.ProviderPortID, b.path.EndpointB.ChannelID)
-
-	b.suite.Require().True(ok)
-
-	packet := channeltypes.NewPacket(pd.GetBytes(), seq, ccv.ProviderPortID, b.endpoint(P).ChannelID,
-		ccv.ConsumerPortID, b.endpoint(C).ChannelID, clienttypes.Height{}, timeout)
-
-	channelCap := b.endpoint(P).Chain.GetChannelCapability(packet.GetSourcePort(), packet.GetSourceChannel())
-
-	err := b.endpoint(P).Chain.App.GetIBCKeeper().ChannelKeeper.SendPacket(b.providerCtx(), channelCap, packet)
-
-	b.suite.Require().NoError(err)
-
-	// Double commit the packet
-	b.endBlock(b.provider().ChainID)
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
-	b.beginBlock(b.provider().ChainID)
-	b.endBlock(b.provider().ChainID)
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
-	b.mustBeginBlock[P] = true
-
-	b.updateClient(b.consumer().ChainID)
-
-	ack, err := simibc.TryRecvPacket(b.endpoint(P), b.endpoint(C), packet)
-
-	b.link.AddAck(b.consumer().ChainID, ack, packet)
-
-	b.suite.Require().NoError(err)
-}
-
 // idempotentBeginBlock begins a new block on chain
 // if it is necessary to do so.
 func (b *Builder) idempotentBeginBlock(chain string) {
@@ -590,13 +545,7 @@ func (b *Builder) endBlock(chainID string) {
 }
 
 func (b *Builder) runSomeProtocolSteps() {
-	// Catch up consumer to have the same height and timestamp as provider
-	b.endBlock(b.consumer().ChainID)
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
-	b.beginBlock(b.consumer().ChainID)
-	b.endBlock(b.consumer().ChainID)
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
-	b.beginBlock(b.consumer().ChainID)
+
 	b.endBlock(b.consumer().ChainID)
 	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
 	b.mustBeginBlock[C] = true
@@ -742,7 +691,8 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	// Send an empty VSC packet from the provider to the consumer to finish
 	// the handshake. This is necessary because the model starts from a
 	// completely initialized state, with a completed handshake.
-	b.sendEmptyVSCPacket()
+
+	b.consumerKeeper().SetProviderChannel(b.consumerCtx(), b.endpoint(C).ChannelID)
 
 	b.runSomeProtocolSteps()
 

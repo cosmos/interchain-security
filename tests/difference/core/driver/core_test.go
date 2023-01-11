@@ -212,13 +212,13 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 
 func (s *CoreSuite) endAndBeginBlock(chain string) {
 	s.simibc.EndAndBeginBlock(s.chainID(chain), s.initState.BlockInterval, func() {
-		s.matchState()
+		s.compareModelAndSystemState()
 	})
 }
 
-// matchState compares the state in the SUT to the state in the
+// compareModelAndSystemState compares the state in the SUT to the state in the
 // the model.
-func (s *CoreSuite) matchState() {
+func (s *CoreSuite) compareModelAndSystemState() {
 
 	// Get a diagnostic for debugging
 	diagnostic := s.traces.Diagnostic()
@@ -433,6 +433,7 @@ func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
 		Data: LoadTraces("traces.json"),
 	}
+	// s.traces.Data = []TraceData{s.traces.Data[214]}
 	shortest := -1
 	shortestLen := 10000000000
 	for i := range s.traces.Data {
