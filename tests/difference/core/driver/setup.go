@@ -110,6 +110,11 @@ func (b *Builder) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(b.validator(i))
 }
 
+// getTestValidator returns the validator private key using the given seed index
+func (b *Builder) getTestValidator(seedIx int) *testcrypto.CryptoIdentity {
+	return testcrypto.NewCryptoIdentityFromBytesSeed([]byte(b.initState.PKSeeds[seedIx]))
+}
+
 func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingApp, genesis map[string]json.RawMessage,
 	validators *tmtypes.ValidatorSet) ([]byte, []ibctesting.SenderAccount) {
 
@@ -541,11 +546,6 @@ func (b *Builder) deliverAcks(chainID string) {
 			b.coordinator.Fatal("deliverAcks")
 		}
 	}
-}
-
-// getTestValidator returns the validator private key using the given seed index
-func (b *Builder) getTestValidator(seedIx int) *testcrypto.CryptoIdentity {
-	return testcrypto.NewCryptoIdentityFromBytesSeed([]byte(b.initState.PKSeeds[seedIx]))
 }
 
 func (b *Builder) endBlock(chainID string) {
