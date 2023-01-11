@@ -653,8 +653,7 @@ func (b *Builder) configureProviderClientOnConsumer() {
 // after a full handshake, but the precise order of steps used to reach the
 // state does not necessarily mimic the order of steps that happen in a
 // live scenario.
-func GetZeroState(suite *suite.Suite, initState InitState) (
-	*ibctesting.Path, []sdk.ValAddress, int64, int64) {
+func GetZeroState(suite *suite.Suite, initState InitState) (*ibctesting.Path, []sdk.ValAddress, int64, int64) {
 	b := Builder{initState: initState, suite: suite}
 
 	b.createChains()
