@@ -67,27 +67,24 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 }
 
 // RegisterRESTRoutes implements AppModuleBasic interface
-// TODO
 func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the ibc-consumer module.
-// TODO
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 	err := consumertypes.RegisterQueryHandlerClient(context.Background(), mux, consumertypes.NewQueryClient(clientCtx))
 	if err != nil {
+		// same behavior as in cosmos-sdk
 		panic(err)
 	}
 }
 
 // GetTxCmd implements AppModuleBasic interface
-// TODO
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
 	return nil
 }
 
 // GetQueryCmd implements AppModuleBasic interface
-// TODO
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 	return cli.NewQueryCmd()
 }
@@ -155,14 +152,16 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	channelID, found := am.keeper.GetProviderChannel(ctx)
 	if found && am.keeper.IsChannelClosed(ctx, channelID) {
-		// the CCV channel was established, but it was then closed;
-		// the consumer chain is no longer safe
-
+		// The CCV channel was established, but it was then closed;
+		// the consumer chain is no longer safe, thus it MUST shut down.
+		// This is achieved by panicking, similar as it's done in the
+		// x/upgrade module of cosmos-sdk.
 		channelClosedMsg := fmt.Sprintf("CCV channel %q was closed - shutdown consumer chain since it is not secured anymore", channelID)
 		am.keeper.Logger(ctx).Error(channelClosedMsg)
 		panic(channelClosedMsg)
 	}
 
+	// map next block height to the vscID of the current block height
 	blockHeight := uint64(ctx.BlockHeight())
 	vID := am.keeper.GetHeightValsetUpdateID(ctx, blockHeight)
 	am.keeper.SetHeightValsetUpdateID(ctx, blockHeight+1, vID)
@@ -174,11 +173,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 // EndBlock implements the AppModule interface
 // Flush PendingChanges to ABCI, send pending packets, write acknowledgements for packets that have finished unbonding.
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	// distribution transmission
-	err := am.keeper.DistributeToProviderValidatorSet(ctx)
-	if err != nil {
-		panic(err)
-	}
+	// Execute EndBlock logic for the Reward Distribution sub-protocol
+	am.keeper.EndBlockRD(ctx)
 
 	// NOTE: Slash packets are queued in BeginBlock via the Slash function
 	// Packet ordering is managed by the PendingPackets queue.
