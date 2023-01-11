@@ -237,7 +237,6 @@ func (s *CoreSuite) matchState() {
 		for j := 0; j < initState.NumValidators; j++ {
 			s.Require().Equalf(int64(s.traces.Tokens(j)), s.providerTokens(int64(j)), diagnostic+"P tokens mismatch for val %d", j)
 		}
-		// TODO: delegations
 		s.Require().Equalf(int64(s.traces.DelegatorTokens()), s.delegatorBalance(), diagnostic+"P del balance mismatch")
 		for j := 0; j < initState.NumValidators; j++ {
 			a := s.traces.Jailed(j) != nil
@@ -256,7 +255,6 @@ func (s *CoreSuite) matchState() {
 				s.Require().Errorf(err, diagnostic+" power mismatch for val %d, expect 0 (nil), got %d", j, actual)
 			}
 		}
-		// TODO: outstanding downtime
 	}
 }
 
@@ -313,7 +311,11 @@ func (s *CoreSuite) TestAssumptions() {
 		s.T().Fatal(FAIL_MSG)
 	}
 
-	// TODO: write assumption that checks that throttle params are appropriate
+	// TODO: Write a check to make sure that the slash throttle params are set correctly.
+	// 		 The params should be set such that the slash throttle never kicks in and stop a slash.
+	// 		 This is because the model assumes that a slash will always be executed, no matter
+	// 		 how many. This can be achieve by setting the slash factor to e.g. 1.0 and the refresh
+	// 		 period to 1 block.
 
 	// Delegator balance is correct
 	s.Require().Equal(int64(initState.InitialDelegatorTokens), s.delegatorBalance())
