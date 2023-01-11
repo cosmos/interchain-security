@@ -496,7 +496,10 @@ func (b *Builder) configureProviderClientOnConsumer() {
 // after a full handshake, but the precise order of steps used to reach the
 // state does not necessarily mimic the order of steps that happen in a
 // live scenario.
-func GetZeroState(suite *suite.Suite, initState InitState) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted int64, timeLastCommitted int64) {
+func GetZeroState(
+	suite *suite.Suite,
+	initState InitState,
+) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted int64, timeLastCommitted int64) {
 	b := Builder{initState: initState, suite: suite}
 
 	b.createChains()
@@ -527,30 +530,28 @@ func GetZeroState(suite *suite.Suite, initState InitState) (path *ibctesting.Pat
 	b.coordinator.CreateConnections(b.path)
 	b.coordinator.CreateChannels(b.path)
 
-	// Send an empty VSC packet from the provider to the consumer to finish
-	// the handshake. This is necessary because the model starts from a
-	// completely initialized state, with a completed handshake.
-
 	b.consumerKeeper().SetProviderChannel(b.consumerCtx(), b.endpoint(C).ChannelID)
 
-	simibc.BeginBlock(b.provider(), time.Second*5)
 	// Catch up consumer height to provider height
-	hC0, _ := simibc.EndBlock(b.consumer(), func() {})
-	simibc.BeginBlock(b.consumer(), time.Second*5)
+	simibc.EndBlock(b.consumer(), func() {})
+	simibc.BeginBlock(b.consumer(), initState.BlockInterval)
+	simibc.BeginBlock(b.provider(), initState.BlockInterval)
 
-	hP0, _ := simibc.EndBlock(b.provider(), func() {})
-	hC1, _ := simibc.EndBlock(b.consumer(), func() {})
+	lastProviderHeader, _ := simibc.EndBlock(b.provider(), func() {})
+	lastConsumerHeader, _ := simibc.EndBlock(b.consumer(), func() {})
 
-	simibc.BeginBlock(b.provider(), time.Second*5)
-	simibc.BeginBlock(b.consumer(), time.Second*5)
+	// Want the height and time of last COMMITTED block
+	heightLastCommitted = b.provider().CurrentHeader.Height
+	timeLastCommitted = b.provider().CurrentHeader.Time.Unix()
 
-	_ = simibc.UpdateReceiverClient(b.endpoint(C), b.endpoint(P), hC0)
-	_ = simibc.UpdateReceiverClient(b.endpoint(C), b.endpoint(P), hC1)
-	_ = simibc.UpdateReceiverClient(b.endpoint(P), b.endpoint(C), hP0)
+	// Begin the next block.
+	simibc.BeginBlock(b.provider(), initState.BlockInterval)
+	simibc.BeginBlock(b.consumer(), initState.BlockInterval)
 
-	// Height of the last committed block (current header is not committed)
-	heightLastCommitted = b.provider().CurrentHeader.Height - 1
-	// Time of the last committed block (current header is not committed)
-	timeLastCommitted = b.provider().CurrentHeader.Time.Add(-b.initState.BlockInterval).Unix()
+	// Ignore errors for brevity. Everything is checked in Assuptions test.
+	// Update clients to the latest header.
+	_ = simibc.UpdateReceiverClient(b.endpoint(C), b.endpoint(P), lastConsumerHeader)
+	_ = simibc.UpdateReceiverClient(b.endpoint(P), b.endpoint(C), lastProviderHeader)
+
 	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
 }
