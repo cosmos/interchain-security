@@ -37,6 +37,5 @@ const (
 	AttributeDistributionNextHeight    = "next_distribution_height"
 	AttributeDistributionFraction      = "distribution_fraction"
 	AttributeDistributionTotal         = "total"
-	AttributeDistributionToConsumer    = "consumer_amount"
 	AttributeDistributionToProvider    = "provider_amount"
 )

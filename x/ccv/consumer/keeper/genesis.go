@@ -73,11 +73,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 			}
 
 			// set last transmission block height
-			err := k.SetLastTransmissionBlockHeight(ctx, state.LastTransmissionBlockHeight)
-			if err != nil {
-				panic(fmt.Sprintf("could not set last transmission block height: %v", err))
-			}
-
+			k.SetLastTransmissionBlockHeight(ctx, state.LastTransmissionBlockHeight)
 		}
 
 		// set pending consumer pending packets
@@ -118,12 +114,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			panic("provider client does not exist although provider channel does exist")
 		}
 
-		// TODO: update GetLastTransmissionBlockHeight to not return an error
-		ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
-		if err != nil {
-			panic(err)
-		}
-
 		genesis = consumertypes.NewRestartGenesisState(
 			clientID,
 			channelID,
@@ -132,7 +122,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			k.GetAllHeightToValsetUpdateIDs(ctx),
 			k.GetPendingPackets(ctx),
 			k.GetAllOutstandingDowntimes(ctx),
-			*ltbh,
+			k.GetLastTransmissionBlockHeight(ctx),
 			params,
 		)
 	} else {

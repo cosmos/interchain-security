@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,22 +15,50 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-// Simple model, send tokens to the fee pool of the provider validator set
-// reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
-func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
+// EndBlockRD executes EndBlock logic for the Reward Distribution sub-protocol.
+// Reward Distribution follows a simple model: send tokens to the fee pool
+// of the provider validator set
+func (k Keeper) EndBlockRD(ctx sdk.Context) {
+	// Split blocks rewards.
+	// It panics in case of marshalling / unmarshalling errors or
+	// if sending coins between module accounts fails.
+	k.DistributeRewardsInternally(ctx)
 
-	ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
-	if err != nil {
-		return err
+	if !k.shouldSendRewardsToProvider(ctx) {
+		return
 	}
 
+	// Try to send rewards to provider
+	cachedCtx, writeCache := ctx.CacheContext()
+	if err := k.SendRewardsToProvider(cachedCtx); err != nil {
+		k.Logger(ctx).Error("attempt to sent rewards to provider failed", "error", err)
+	} else {
+		// The cached context is created with a new EventManager so we merge the event
+		// into the original context
+		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
+		// write cache
+		writeCache()
+	}
+
+	// Update LastTransmissionBlockHeight
+	newLtbh := types.LastTransmissionBlockHeight{
+		Height: ctx.BlockHeight(),
+	}
+	k.SetLastTransmissionBlockHeight(ctx, newLtbh)
+}
+
+// DistributeRewardsInternally splits the block rewards according to the
+// ConsumerRedistributionFrac param.
+// Returns true if it's time to send rewards to provider
+func (k Keeper) DistributeRewardsInternally(ctx sdk.Context) {
 	consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
 	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
 
 	// split the fee pool, send the consumer's fraction to the consumer redistribution address
 	frac, err := sdk.NewDecFromStr(k.GetConsumerRedistributionFrac(ctx))
 	if err != nil {
-		return err
+		// ConsumerRedistributionFrac was already validated when set as a param
+		panic(fmt.Errorf("ConsumerRedistributionFrac is invalid: %w", err))
 	}
 	decFPTokens := sdk.NewDecCoinsFromCoins(fpTokens...)
 	// NOTE the truncated decimal remainder will be sent to the provider fee pool
@@ -37,7 +66,11 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
 		types.ConsumerRedistributeName, consRedistrTokens)
 	if err != nil {
-		return err
+		// SendCoinsFromModuleToModule will panic if either module account does not exist,
+		// while SendCoins (called inside) returns an error upon failure.
+		// It is the common behavior in cosmos-sdk to panic if SendCoinsFromModuleToModule
+		// returns error.
+		panic(err)
 	}
 
 	// Send the remainder to the Provider fee pool over ibc. Buffer these
@@ -49,17 +82,25 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
 		types.ConsumerToSendToProviderName, remainingTokens)
 	if err != nil {
-		return err
+		// SendCoinsFromModuleToModule will panic if either module account does not exist,
+		// while SendCoins (called inside) returns an error upon failure.
+		// It is the common behavior in cosmos-sdk to panic if SendCoinsFromModuleToModule
+		// returns error.
+		panic(err)
 	}
+}
 
+// Check whether it's time to send rewards to provider
+func (k Keeper) shouldSendRewardsToProvider(ctx sdk.Context) bool {
 	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
 	curHeight := ctx.BlockHeight()
+	ltbh := k.GetLastTransmissionBlockHeight(ctx)
+	return (curHeight - ltbh.Height) >= bpdt
+}
 
-	if (curHeight - ltbh.Height) < bpdt {
-		// not enough blocks have passed for  a transmission to occur
-		return nil
-	}
-
+// SendRewardsToProvider attempts to send to the provider (via IBC)
+// all the block rewards allocated for the provider
+func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 	// empty out the toSendToProviderTokens address
 	ch := k.GetDistributionTransmissionChannel(ctx)
 	transferChannel, found := k.channelKeeper.GetChannel(ctx, transfertypes.PortID, ch)
@@ -86,57 +127,49 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 			}
 		}
 
+		consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
+		fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
+
 		k.Logger(ctx).Info("sent block rewards to provider",
 			"total fee pool", fpTokens.String(),
 			"sent", tstProviderTokens.String(),
 		)
+		currentHeight := ctx.BlockHeight()
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				ccv.EventTypeFeeDistribution,
+				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+				sdk.NewAttribute(ccv.AttributeDistributionCurrentHeight, strconv.Itoa(int(currentHeight))),
+				sdk.NewAttribute(ccv.AttributeDistributionNextHeight, strconv.Itoa(int(currentHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
+				sdk.NewAttribute(ccv.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
+				sdk.NewAttribute(ccv.AttributeDistributionTotal, fpTokens.String()),
+				sdk.NewAttribute(ccv.AttributeDistributionToProvider, tstProviderTokens.String()),
+			),
+		)
 	}
 
-	newLtbh := types.LastTransmissionBlockHeight{
-		Height: ctx.BlockHeight(),
-	}
-
-	ctx.EventManager().EmitEvent(
-		sdk.NewEvent(
-			ccv.EventTypeFeeDistribution,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(ccv.AttributeDistributionCurrentHeight, strconv.Itoa(int(curHeight))),
-			sdk.NewAttribute(ccv.AttributeDistributionNextHeight, strconv.Itoa(int(curHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
-			sdk.NewAttribute(ccv.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
-			sdk.NewAttribute(ccv.AttributeDistributionTotal, fpTokens.String()),
-			sdk.NewAttribute(ccv.AttributeDistributionToConsumer, consRedistrTokens.String()),
-			sdk.NewAttribute(ccv.AttributeDistributionToProvider, remainingTokens.String()),
-		),
-	)
-
-	return k.SetLastTransmissionBlockHeight(ctx, newLtbh)
+	return nil
 }
 
-func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) (
-	*types.LastTransmissionBlockHeight, error) {
-
+func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) types.LastTransmissionBlockHeight {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.LastDistributionTransmissionKey())
-	ltbh := &types.LastTransmissionBlockHeight{}
+	ltbh := types.LastTransmissionBlockHeight{}
 	if bz != nil {
-		err := ltbh.Unmarshal(bz)
-		if err != nil {
-			return ltbh, err
+		if err := ltbh.Unmarshal(bz); err != nil {
+			panic(fmt.Errorf("failed to unmarshal LastTransmissionBlockHeight: %w", err))
 		}
 	}
-	return ltbh, nil
+	return ltbh
 }
 
-func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context,
-	ltbh types.LastTransmissionBlockHeight) error {
-
+func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context, ltbh types.LastTransmissionBlockHeight) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := ltbh.Marshal()
 	if err != nil {
-		return err
+		panic(fmt.Errorf("failed to marshal LastTransmissionBlockHeight: %w", err))
 	}
 	store.Set(types.LastDistributionTransmissionKey(), bz)
-	return nil
 }
 
 func (k Keeper) ChannelOpenInit(ctx sdk.Context, msg *channeltypes.MsgChannelOpenInit) (
@@ -155,12 +188,8 @@ func (k Keeper) GetConnectionHops(ctx sdk.Context, srcPort, srcChan string) ([]s
 
 // GetEstimatedNextFeeDistribution returns data about next fee distribution. Data represents an estimation of
 // accumulated fees at the current block height.
-func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) (types.NextFeeDistributionEstimate, error) {
-	lastH, err := k.GetLastTransmissionBlockHeight(ctx)
-	if err != nil {
-		return types.NextFeeDistributionEstimate{}, err
-	}
-
+func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) types.NextFeeDistributionEstimate {
+	lastH := k.GetLastTransmissionBlockHeight(ctx)
 	nextH := lastH.GetHeight() + k.GetBlocksPerDistributionTransmission(ctx)
 
 	consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
@@ -169,7 +198,8 @@ func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) (types.NextFeeD
 	fracParam := k.GetConsumerRedistributionFrac(ctx)
 	frac, err := sdk.NewDecFromStr(fracParam)
 	if err != nil {
-		return types.NextFeeDistributionEstimate{}, err
+		// ConsumerRedistributionFrac was already validated when set as a param
+		panic(fmt.Errorf("ConsumerRedistributionFrac is invalid: %w", err))
 	}
 
 	totalTokens := sdk.NewDecCoinsFromCoins(total...)
@@ -185,5 +215,5 @@ func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) (types.NextFeeD
 		Total:                totalTokens.String(),
 		ToProvider:           sdk.NewDecCoinsFromCoins(providerTokens...).String(),
 		ToConsumer:           sdk.NewDecCoinsFromCoins(consumerTokens...).String(),
-	}, nil
+	}
 }
