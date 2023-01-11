@@ -78,14 +78,6 @@ func (b *Builder) consumerCtx() sdk.Context {
 	return b.consumer().GetContext()
 }
 
-func (b *Builder) providerChainID() string {
-	return ibctesting.GetChainID(0)
-}
-
-func (b *Builder) consumerChainID() string {
-	return ibctesting.GetChainID(1)
-}
-
 func (b *Builder) providerStakingKeeper() stakingkeeper.Keeper {
 	return b.provider().App.(*appProvider.App).StakingKeeper
 }
@@ -480,18 +472,18 @@ func (b *Builder) sendEmptyVSCPacket() {
 	b.suite.Require().NoError(err)
 
 	// Double commit the packet
-	b.endBlock(b.providerChainID())
+	b.endBlock(b.provider().ChainID)
 	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
-	b.beginBlock(b.providerChainID())
-	b.endBlock(b.providerChainID())
+	b.beginBlock(b.provider().ChainID)
+	b.endBlock(b.provider().ChainID)
 	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
 	b.mustBeginBlock[P] = true
 
-	b.updateClient(b.consumerChainID())
+	b.updateClient(b.consumer().ChainID)
 
 	ack, err := simibc.TryRecvPacket(b.endpoint(P), b.endpoint(C), packet)
 
-	b.link.AddAck(b.consumerChainID(), ack, packet)
+	b.link.AddAck(b.consumer().ChainID, ack, packet)
 
 	b.suite.Require().NoError(err)
 }
@@ -599,38 +591,38 @@ func (b *Builder) endBlock(chainID string) {
 
 func (b *Builder) runSomeProtocolSteps() {
 	// Catch up consumer to have the same height and timestamp as provider
-	b.endBlock(b.consumerChainID())
+	b.endBlock(b.consumer().ChainID)
 	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
-	b.beginBlock(b.consumerChainID())
-	b.endBlock(b.consumerChainID())
+	b.beginBlock(b.consumer().ChainID)
+	b.endBlock(b.consumer().ChainID)
 	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
-	b.beginBlock(b.consumerChainID())
-	b.endBlock(b.consumerChainID())
+	b.beginBlock(b.consumer().ChainID)
+	b.endBlock(b.consumer().ChainID)
 	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
 	b.mustBeginBlock[C] = true
 
 	// Progress chains in unison, allowing first VSC to mature.
 	for i := 0; i < 11; i++ {
 		b.idempotentBeginBlock(P)
-		b.endBlock(b.providerChainID())
+		b.endBlock(b.provider().ChainID)
 		b.idempotentBeginBlock(C)
-		b.endBlock(b.consumerChainID())
+		b.endBlock(b.consumer().ChainID)
 		b.mustBeginBlock = map[string]bool{P: true, C: true}
 		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockInterval).UTC()
 	}
 
 	b.idempotentBeginBlock(P)
 	// Deliver outstanding ack
-	b.deliverAcks(b.providerChainID())
+	b.deliverAcks(b.provider().ChainID)
 	// Deliver the maturity from the first VSC (needed to complete handshake)
-	b.deliver(b.providerChainID())
+	b.deliver(b.provider().ChainID)
 
 	for i := 0; i < 2; i++ {
 		b.idempotentBeginBlock(P)
-		b.endBlock(b.providerChainID())
+		b.endBlock(b.provider().ChainID)
 		b.idempotentBeginBlock(C)
-		b.deliverAcks(b.consumerChainID())
-		b.endBlock(b.consumerChainID())
+		b.deliverAcks(b.consumer().ChainID)
+		b.endBlock(b.consumer().ChainID)
 		b.mustBeginBlock = map[string]bool{P: true, C: true}
 		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockInterval).UTC()
 	}
@@ -638,13 +630,13 @@ func (b *Builder) runSomeProtocolSteps() {
 	b.idempotentBeginBlock(P)
 	b.idempotentBeginBlock(C)
 
-	b.endBlock(b.providerChainID())
-	b.endBlock(b.consumerChainID())
+	b.endBlock(b.provider().ChainID)
+	b.endBlock(b.consumer().ChainID)
 	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockInterval).UTC()
-	b.beginBlock(b.providerChainID())
-	b.beginBlock(b.consumerChainID())
-	b.updateClient(b.providerChainID())
-	b.updateClient(b.consumerChainID())
+	b.beginBlock(b.provider().ChainID)
+	b.beginBlock(b.consumer().ChainID)
+	b.updateClient(b.provider().ChainID)
+	b.updateClient(b.consumer().ChainID)
 }
 
 func (b *Builder) configureIBCTestingPath() {
