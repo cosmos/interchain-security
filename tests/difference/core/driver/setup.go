@@ -82,8 +82,12 @@ func (b *Builder) consumerKeeper() consumerkeeper.Keeper {
 	return b.consumer().App.(*appConsumer.App).ConsumerKeeper
 }
 
-func (b *Builder) endpoint(chain string) *ibctesting.Endpoint {
-	return map[string]*ibctesting.Endpoint{P: b.path.EndpointB, C: b.path.EndpointA}[chain]
+func (b *Builder) providerEndpoint() *ibctesting.Endpoint {
+	return b.path.EndpointB
+}
+
+func (b *Builder) consumerEndpoint() *ibctesting.Endpoint {
+	return b.path.EndpointA
 }
 
 func (b *Builder) validator(i int64) sdk.ValAddress {
@@ -530,7 +534,7 @@ func GetZeroState(
 	b.coordinator.CreateConnections(b.path)
 	b.coordinator.CreateChannels(b.path)
 
-	b.consumerKeeper().SetProviderChannel(b.consumerCtx(), b.endpoint(C).ChannelID)
+	b.consumerKeeper().SetProviderChannel(b.consumerCtx(), b.consumerEndpoint().ChannelID)
 
 	// Catch up consumer height to provider height
 	simibc.EndBlock(b.consumer(), func() {})
@@ -550,8 +554,8 @@ func GetZeroState(
 
 	// Ignore errors for brevity. Everything is checked in Assuptions test.
 	// Update clients to the latest header.
-	_ = simibc.UpdateReceiverClient(b.endpoint(C), b.endpoint(P), lastConsumerHeader)
-	_ = simibc.UpdateReceiverClient(b.endpoint(P), b.endpoint(C), lastProviderHeader)
+	_ = simibc.UpdateReceiverClient(b.consumerEndpoint(), b.providerEndpoint(), lastConsumerHeader)
+	_ = simibc.UpdateReceiverClient(b.providerEndpoint(), b.consumerEndpoint(), lastProviderHeader)
 
 	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
 }
