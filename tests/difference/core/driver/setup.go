@@ -507,9 +507,6 @@ func GetZeroState(suite *suite.Suite, initState InitState) (path *ibctesting.Pat
 
 	b.createChains()
 
-	// Create a simulated network link link
-	b.createLink()
-
 	// TODO: tidy up before merging into main
 	prams := b.providerKeeper().GetParams(b.providerCtx())
 	prams.SlashMeterReplenishFraction = "1.0"

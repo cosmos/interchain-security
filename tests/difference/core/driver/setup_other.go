@@ -120,6 +120,9 @@ func (b *Builder) endBlock(chainID string) {
 
 func (b *Builder) runSomeProtocolSteps() {
 
+	// Create a simulated network link link
+	b.createLink()
+
 	b.endBlock(b.consumer().ChainID)
 	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
 	b.mustBeginBlock[C] = true
