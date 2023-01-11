@@ -314,7 +314,7 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 	return tmtypes.NewValidatorSet(validators), signers, addresses
 }
 
-func (b *Builder) createChains() {
+func (b *Builder) createProviderAndConsumer() {
 
 	coordinator := ibctesting.NewCoordinator(b.suite.T(), 0)
 
@@ -506,9 +506,8 @@ func GetZeroState(
 ) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted int64, timeLastCommitted int64) {
 	b := Builder{initState: initState, suite: suite}
 
-	b.createChains()
+	b.createProviderAndConsumer()
 
-	// TODO: tidy up before merging into main
 	prams := b.providerKeeper().GetParams(b.providerCtx())
 	prams.SlashMeterReplenishFraction = "1.0"
 	prams.SlashMeterReplenishPeriod = time.Second * 1
@@ -548,12 +547,12 @@ func GetZeroState(
 	heightLastCommitted = b.provider().CurrentHeader.Height
 	timeLastCommitted = b.provider().CurrentHeader.Time.Unix()
 
-	// Begin the next block.
+	// Get ready to update clients.
 	simibc.BeginBlock(b.provider(), initState.BlockInterval)
 	simibc.BeginBlock(b.consumer(), initState.BlockInterval)
 
-	// Ignore errors for brevity. Everything is checked in Assuptions test.
 	// Update clients to the latest header.
+	// Ignore errors for brevity. Everything is checked in Assuptions test.
 	_ = simibc.UpdateReceiverClient(b.consumerEndpoint(), b.providerEndpoint(), lastConsumerHeader)
 	_ = simibc.UpdateReceiverClient(b.providerEndpoint(), b.consumerEndpoint(), lastProviderHeader)
 
