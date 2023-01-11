@@ -72,25 +72,17 @@ func (k Keeper) HandleLeadingVSCMaturedPackets(ctx sdk.Context) {
 //
 // Note: This method should only panic for a system critical error like a
 // failed marshal/unmarshal, or persistence of critical data.
-//
-// TODO: Unit test this method.
 func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv.VSCMaturedPacketData) {
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
-	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
 	var maturedIds []uint64
-	for _, unbondingOp := range unbondingOps {
-		// remove consumer chain ID from unbonding op record
-		unbondingOp.UnbondingConsumerChains, _ = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
-		k.Logger(ctx).Debug("unbonding operation matured on consumer", "chainID", chainID, "opID", unbondingOp.Id)
-
-		// If unbonding op is completely unbonded from all relevant consumer chains
-		if len(unbondingOp.UnbondingConsumerChains) == 0 {
+	for _, unbondingOp := range k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId) {
+		// Remove consumer chain ID from unbonding op record.
+		// Note that RemoveConsumerFromUnbondingOp cannot panic here
+		// as all the unbonding ops returned by GetUnbondingOpsFromIndex
+		// are retrieved via GetUnbondingOp.
+		if k.RemoveConsumerFromUnbondingOp(ctx, unbondingOp.Id, chainID) {
 			// Store id of matured unbonding op for later completion of unbonding in staking module
 			maturedIds = append(maturedIds, unbondingOp.Id)
-			// Delete unbonding op
-			k.DeleteUnbondingOp(ctx, unbondingOp.Id)
-		} else {
-			k.SetUnbondingOp(ctx, unbondingOp)
 		}
 	}
 	k.AppendMaturedUnbondingOps(ctx, maturedIds)
@@ -112,14 +104,12 @@ func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv
 
 // CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations
 func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
-	ids, err := k.ConsumeMaturedUnbondingOps(ctx)
-	if err != nil {
-		panic(fmt.Sprintf("could not get the list of matured unbonding ops: %s", err.Error()))
-	}
-	for _, id := range ids {
+	for _, id := range k.ConsumeMaturedUnbondingOps(ctx) {
 		// Attempt to complete unbonding in staking module
 		err := k.stakingKeeper.UnbondingCanComplete(ctx, id)
 		if err != nil {
+			// UnbondingCanComplete fails if the unbonding operation was not found,
+			// which means that the state of the x/staking module of cosmos-sdk is invalid.
 			panic(fmt.Sprintf("could not complete unbonding op: %s", err.Error()))
 		}
 		k.Logger(ctx).Debug("unbonding operation matured on all consumers", "opID", id)
@@ -213,6 +203,8 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 				k.Logger(ctx).Debug("IBC client is expired, cannot send VSC, leaving packet data stored:", "chainID", chainID, "vscid", data.ValsetUpdateId)
 				return
 			}
+			// TODO do not panic if the send fails
+			// https://github.com/cosmos/interchain-security/issues/649
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
 		// set the VSC send timestamp for this packet;
@@ -226,20 +218,19 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 // QueueVSCPackets queues latest validator updates for every registered consumer chain
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // curent valset update ID
-	// get the validator updates from the staking module
+	// Get the validator updates from the staking module.
+	// Note: GetValidatorUpdates panics if the updates provided by the x/staking module
+	// of cosmos-sdk is invalid.
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
-		// apply the key assignment to the validator updates
-		valUpdates, err := k.ApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, valUpdates)
-		if err != nil {
-			panic(fmt.Sprintf("could not apply key assignment to validator updates for chain %s: %s", chain.ChainId, err.Error()))
-		}
+		// Apply the key assignment to the validator updates.
+		valUpdates := k.MustApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, valUpdates)
 
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations
 		// w/o changes in the voting power of the validators in the validator set
-		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chain.ChainId, valUpdateID)
+		unbondingOps := k.GetUnbondingOpsFromIndex(ctx, chain.ChainId, valUpdateID)
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 			// construct validator set change packet data
 			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chain.ChainId))
@@ -495,6 +486,10 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				"chainID", initTimeoutTimestamp.ChainId)
 			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
 			if err != nil {
+				if ccv.ErrConsumerChainNotFound.Is(err) {
+					// consumer chain not found
+					continue
+				}
 				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 			}
 		}
@@ -505,6 +500,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 		// exceed the current block time.
 		// Checking the first send timestamp for each chain is sufficient since
 		// timestamps are ordered by vsc ID.
+		// Note: GetFirstVscSendTimestamp panics if the internal state is invalid
 		vscSendTimestamp, found := k.GetFirstVscSendTimestamp(ctx, channelToChain.ChainId)
 		if found {
 			timeoutTimestamp := vscSendTimestamp.Timestamp.Add(k.GetParams(ctx).VscTimeoutPeriod)
@@ -517,21 +513,15 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				)
 				err := k.StopConsumerChain(ctx, channelToChain.ChainId, true)
 				if err != nil {
+					if ccv.ErrConsumerChainNotFound.Is(err) {
+						// consumer chain not found
+						continue
+					}
 					panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 				}
 			}
 		}
 	}
-}
-
-func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
-	for _, y := range slice {
-		if x != y {
-			newSlice = append(newSlice, y)
-		}
-	}
-
-	return newSlice, len(slice) - len(newSlice)
 }
 
 // getMappedInfractionHeight gets the infraction height mapped from val set ID for the given chain ID

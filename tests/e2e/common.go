@@ -300,13 +300,9 @@ func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, onHold boo
 }
 
 func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID string, valUpdateID uint64, found bool, msgAndArgs ...interface{}) {
-	entries, wasFound := s.providerApp.GetProviderKeeper().GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
-	s.Require().Equal(
-		found,
-		wasFound,
-		fmt.Sprintf("checkCCVUnbondingOp failed - GetUnbondingOpsFromIndex; %s", msgAndArgs...),
-	)
+	entries := s.providerApp.GetProviderKeeper().GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
 	if found {
+		s.Require().NotEmpty(entries, fmt.Sprintf("checkCCVUnbondingOp failed - should not be empty; %s", msgAndArgs...))
 		s.Require().Greater(
 			len(entries),
 			0,
