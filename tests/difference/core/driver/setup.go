@@ -427,12 +427,18 @@ func (b *Builder) addExtraProviderValidators() {
 	}
 }
 
-func (b *Builder) setSlashParams() {
+func (b *Builder) setProviderParams() {
 	// Set the slash factors on the provider to match the model
-	sparams := b.providerSlashingKeeper().GetParams(b.providerCtx())
-	sparams.SlashFractionDoubleSign = b.initState.SlashDoublesign
-	sparams.SlashFractionDowntime = b.initState.SlashDowntime
-	b.providerSlashingKeeper().SetParams(b.providerCtx(), sparams)
+	slash := b.providerSlashingKeeper().GetParams(b.providerCtx())
+	slash.SlashFractionDoubleSign = b.initState.SlashDoublesign
+	slash.SlashFractionDowntime = b.initState.SlashDowntime
+	b.providerSlashingKeeper().SetParams(b.providerCtx(), slash)
+
+	// Set the throttle factors
+	throttle := b.providerKeeper().GetParams(b.providerCtx())
+	throttle.SlashMeterReplenishFraction = "1.0"
+	throttle.SlashMeterReplenishPeriod = time.Second * 1
+	b.providerKeeper().SetParams(b.providerCtx(), throttle)
 }
 
 func (b *Builder) configureIBCTestingPath() {
@@ -508,12 +514,9 @@ func GetZeroState(
 
 	b.createProviderAndConsumer()
 
-	prams := b.providerKeeper().GetParams(b.providerCtx())
-	prams.SlashMeterReplenishFraction = "1.0"
-	prams.SlashMeterReplenishPeriod = time.Second * 1
-	b.providerKeeper().SetParams(b.providerCtx(), prams)
+	b.setProviderParams()
+
 	b.providerKeeper().InitializeSlashMeter(b.providerCtx())
-	b.setSlashParams()
 
 	b.addExtraProviderValidators()
 
