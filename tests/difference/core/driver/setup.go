@@ -441,7 +441,7 @@ func (b *Builder) setProviderParams() {
 	b.providerKeeper().SetParams(b.providerCtx(), throttle)
 }
 
-func (b *Builder) configureIBCTestingPath() {
+func (b *Builder) configurePath() {
 	b.path = ibctesting.NewPath(b.consumer(), b.provider())
 	b.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
 	b.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
@@ -523,7 +523,7 @@ func GetZeroState(
 	// Commit the additional validators
 	b.coordinator.CommitBlock(b.provider())
 
-	b.configureIBCTestingPath()
+	b.configurePath()
 	b.configureConsumerClientOnProvider()
 
 	provClient := b.createConsumerClientGenesisState()
