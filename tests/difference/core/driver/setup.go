@@ -443,28 +443,28 @@ func (b *Builder) setProviderParams() {
 
 func (b *Builder) configurePath() {
 	b.path = ibctesting.NewPath(b.consumer(), b.provider())
-	b.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
-	b.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
-	b.path.EndpointA.ChannelConfig.Version = ccv.Version
-	b.path.EndpointB.ChannelConfig.Version = ccv.Version
-	b.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
-	b.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
+	b.consumerEndpoint().ChannelConfig.PortID = ccv.ConsumerPortID
+	b.providerEndpoint().ChannelConfig.PortID = ccv.ProviderPortID
+	b.consumerEndpoint().ChannelConfig.Version = ccv.Version
+	b.providerEndpoint().ChannelConfig.Version = ccv.Version
+	b.consumerEndpoint().ChannelConfig.Order = channeltypes.ORDERED
+	b.providerEndpoint().ChannelConfig.Order = channeltypes.ORDERED
 }
 
 func (b *Builder) createProvidersLocalClient() {
 	// Configure and create the consumer Client
-	tmCfg := b.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
+	tmCfg := b.providerEndpoint().ClientConfig.(*ibctesting.TendermintConfig)
 	tmCfg.UnbondingPeriod = b.initState.UnbondingC
 	tmCfg.TrustingPeriod = b.initState.Trusting
 	tmCfg.MaxClockDrift = b.initState.MaxClockDrift
-	err := b.path.EndpointB.CreateClient()
+	err := b.providerEndpoint().CreateClient()
 	b.suite.Require().NoError(err)
 	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.providerCtx(), b.consumer().ChainID, b.path.EndpointB.ClientID)
+	b.providerKeeper().SetConsumerClientId(b.providerCtx(), b.consumer().ChainID, b.providerEndpoint().ClientID)
 }
 
 func (b *Builder) createConsumersLocalClientGenesis() *ibctmtypes.ClientState {
-	tmCfg := b.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig)
+	tmCfg := b.consumerEndpoint().ClientConfig.(*ibctesting.TendermintConfig)
 	tmCfg.UnbondingPeriod = b.initState.UnbondingP
 	tmCfg.TrustingPeriod = b.initState.Trusting
 	tmCfg.MaxClockDrift = b.initState.MaxClockDrift
@@ -476,7 +476,7 @@ func (b *Builder) createConsumersLocalClientGenesis() *ibctmtypes.ClientState {
 	)
 }
 
-func (b *Builder) createConsumerGenesis(provClient *ibctmtypes.ClientState) *consumertypes.GenesisState {
+func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consumertypes.GenesisState {
 	providerConsState := b.provider().LastHeader.ConsensusState()
 
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.provider().Vals)
@@ -491,15 +491,7 @@ func (b *Builder) createConsumerGenesis(provClient *ibctmtypes.ClientState) *con
 		consumertypes.DefaultHistoricalEntries,
 		b.initState.UnbondingC,
 	)
-	return consumertypes.NewInitialGenesisState(provClient, providerConsState, valUpdates, params)
-}
-
-func (b *Builder) configureProviderClientOnConsumer() {
-	providerClientID, ok := b.consumerKeeper().GetProviderClientID(b.consumerCtx())
-	if !ok {
-		panic("must already have provider client on consumer chain")
-	}
-	b.path.EndpointA.ClientID = providerClientID
+	return consumertypes.NewInitialGenesisState(client, providerConsState, valUpdates, params)
 }
 
 // The state of the data returned is equivalent to the state of two chains
@@ -516,6 +508,8 @@ func GetZeroState(
 
 	b.setProviderParams()
 
+	// This is the simplest way to initialize the slash meter
+	// after a change to the param value.
 	b.providerKeeper().InitializeSlashMeter(b.providerCtx())
 
 	b.addExtraProviderValidators()
@@ -524,25 +518,43 @@ func GetZeroState(
 	b.coordinator.CommitBlock(b.provider())
 
 	b.configurePath()
+
+	// Create a client for the provider chain to use, using ibc go testing.
 	b.createProvidersLocalClient()
 
-	provClient := b.createConsumersLocalClientGenesis()
-	consumerGenesis := b.createConsumerGenesis(provClient)
+	// Manually create a client for the consumer chain to and bootstrap
+	// via genesis.
+	clientState := b.createConsumersLocalClientGenesis()
+
+	consumerGenesis := b.createConsumerGenesis(clientState)
 
 	b.consumerKeeper().InitGenesis(b.consumerCtx(), consumerGenesis)
-	b.configureProviderClientOnConsumer()
+
+	// Client ID is set in InitGenesis and we treat it as a block box. So
+	// must query it to use it with the endpoint.
+	clientID, _ := b.consumerKeeper().GetProviderClientID(b.consumerCtx())
+	b.consumerEndpoint().ClientID = clientID
 
 	// Handshake
 	b.coordinator.CreateConnections(b.path)
 	b.coordinator.CreateChannels(b.path)
 
+	// Usually the consumer sets the channel ID when it receives a first VSC packet
+	// to the provider. For testing purposes, we can set it here. This is because
+	// we model a blank slate: a provider and consumer that have fully established
+	// their channel, and are ready for anything to happen.
 	b.consumerKeeper().SetProviderChannel(b.consumerCtx(), b.consumerEndpoint().ChannelID)
 
-	// Catch up consumer height to provider height
+	// Catch up consumer height to provider height. The provider was one ahead
+	// from committing additional validators.
 	simibc.EndBlock(b.consumer(), func() {})
+
 	simibc.BeginBlock(b.consumer(), initState.BlockInterval)
 	simibc.BeginBlock(b.provider(), initState.BlockInterval)
 
+	// Commit a block on both chains, giving us two committed headers from
+	// the same time and height. This is the starting point for all our
+	// data driven testing.
 	lastProviderHeader, _ := simibc.EndBlock(b.provider(), func() {})
 	lastConsumerHeader, _ := simibc.EndBlock(b.consumer(), func() {})
 
@@ -554,7 +566,7 @@ func GetZeroState(
 	simibc.BeginBlock(b.provider(), initState.BlockInterval)
 	simibc.BeginBlock(b.consumer(), initState.BlockInterval)
 
-	// Update clients to the latest header.
+	// Update clients to the latest header. Now everything is ready to go!
 	// Ignore errors for brevity. Everything is checked in Assuptions test.
 	_ = simibc.UpdateReceiverClient(b.consumerEndpoint(), b.providerEndpoint(), lastConsumerHeader)
 	_ = simibc.UpdateReceiverClient(b.providerEndpoint(), b.consumerEndpoint(), lastProviderHeader)
