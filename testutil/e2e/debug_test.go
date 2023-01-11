@@ -72,8 +72,16 @@ func TestDemocracyGovernanceWhitelisting(t *testing.T) {
 // Distribution tests
 //
 
+func TestSendRewardsRetries(t *testing.T) {
+	runCCVTestByName(t, "TestSendRewardsRetries")
+}
+
 func TestRewardsDistribution(t *testing.T) {
 	runCCVTestByName(t, "TestRewardsDistribution")
+}
+
+func TestEndBlockRD(t *testing.T) {
+	runCCVTestByName(t, "TestEndBlockRD")
 }
 
 //
