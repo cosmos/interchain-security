@@ -34,9 +34,10 @@ type Packet struct {
 //
 // NOTE: OrderedOutbox MAY be used independently of the rest of simibc.
 type OrderedOutbox struct {
-	// An ordered sequence of packets
+	// An ordered sequence of packets from each sender
 	OutboxPackets map[string][]Packet
-	OutboxAcks    map[string][]Ack
+	// An ordered sequence of acks from each sender
+	OutboxAcks map[string][]Ack
 }
 
 // MakeOrderedOutbox creates a new empty OrderedOutbox.

@@ -189,7 +189,7 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool)
 		if e.Type == channeltypes.EventTypeSendPacket {
 			packet, err := ibctestingcore.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
-			s.simibc.Link.AddPacket(s.chainID(C), packet)
+			s.simibc.Outboxes.AddPacket(s.chainID(C), packet)
 		}
 	}
 }
@@ -422,10 +422,10 @@ func (s *CoreSuite) TestAssumptions() {
 	s.Require().Equal(s.offsetHeight, s.height(C)-1)
 
 	// Network is empty
-	s.Require().Empty(s.simibc.Link.OutboxPackets[P])
-	s.Require().Empty(s.simibc.Link.OutboxPackets[C])
-	s.Require().Empty(s.simibc.Link.OutboxAcks[P])
-	s.Require().Empty(s.simibc.Link.OutboxAcks[C])
+	s.Require().Empty(s.simibc.Outboxes.OutboxPackets[P])
+	s.Require().Empty(s.simibc.Outboxes.OutboxPackets[C])
+	s.Require().Empty(s.simibc.Outboxes.OutboxAcks[P])
+	s.Require().Empty(s.simibc.Outboxes.OutboxAcks[C])
 }
 
 // Test a set of traces

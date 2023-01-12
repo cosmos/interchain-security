@@ -16,4 +16,4 @@ The utilities in simibc do not have any side effects, making it very easy to und
 
 ## How do I use this?
 
-Please see the function docstrings and the example test to get an idea of how you could use this package. This README is intentionally short because it is easier to maintain code and docstrings instead of markdown.
+Please see the function docstrings to get an idea of how you could use this package. This README is intentionally short because it is easier to maintain code and docstrings instead of markdown.
