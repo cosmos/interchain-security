@@ -16,7 +16,7 @@ type RelayedPath struct {
 	t             *testing.T
 	path          *ibctesting.Path
 	clientHeaders map[string][]*ibctmtypes.Header
-	Link          OrderedLink
+	Link          OrderedOutbox
 }
 
 // MakeRelayedPath returns an initialized RelayedPath

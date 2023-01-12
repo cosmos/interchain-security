@@ -49,7 +49,7 @@ import (
 
 type Builder struct {
 	suite          *suite.Suite
-	link           simibc.OrderedLink
+	link           simibc.OrderedOutbox
 	path           *ibctesting.Path
 	coordinator    *ibctesting.Coordinator
 	clientHeaders  map[string][]*ibctmtypes.Header

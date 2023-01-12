@@ -22,33 +22,33 @@ type Packet struct {
 	Commits int
 }
 
-type OrderedLink struct {
+type OrderedOutbox struct {
 	OutboxPackets map[string][]Packet
 	OutboxAcks    map[string][]Ack
 }
 
 // MakeOrderedLink creates a new empty network link.
-func MakeOrderedLink() OrderedLink {
-	return OrderedLink{
+func MakeOrderedLink() OrderedOutbox {
+	return OrderedOutbox{
 		OutboxPackets: map[string][]Packet{},
 		OutboxAcks:    map[string][]Ack{},
 	}
 }
 
 // AddPacket adds an outbound packet from the sender to the counterparty.
-func (n OrderedLink) AddPacket(sender string, packet channeltypes.Packet) {
+func (n OrderedOutbox) AddPacket(sender string, packet channeltypes.Packet) {
 	n.OutboxPackets[sender] = append(n.OutboxPackets[sender], Packet{packet, 0})
 }
 
 // AddAck adds an outbound ack, for future delivery to the sender of the packet
 // being acked.
-func (n OrderedLink) AddAck(sender string, ack []byte, packet channeltypes.Packet) {
+func (n OrderedOutbox) AddAck(sender string, ack []byte, packet channeltypes.Packet) {
 	n.OutboxAcks[sender] = append(n.OutboxAcks[sender], Ack{ack, packet, 0})
 }
 
 // ConsumePackets returns the first num packets with 2 or more commits. Returned
 // packets are removed from the outbox and will not be returned again (consumed).
-func (n OrderedLink) ConsumePackets(sender string, num int) []Packet {
+func (n OrderedOutbox) ConsumePackets(sender string, num int) []Packet {
 	ret := []Packet{}
 	sz := len(n.OutboxPackets[sender])
 	if sz < num {
@@ -67,7 +67,7 @@ func (n OrderedLink) ConsumePackets(sender string, num int) []Packet {
 
 // ConsumerAcks returns the first num packets with 2 or more commits. Returned
 // acks are removed from the outbox and will not be returned again (consumed).
-func (n OrderedLink) ConsumeAcks(sender string, num int) []Ack {
+func (n OrderedOutbox) ConsumeAcks(sender string, num int) []Ack {
 	ret := []Ack{}
 	sz := len(n.OutboxAcks[sender])
 	if sz < num {
@@ -92,7 +92,7 @@ func (n OrderedLink) ConsumeAcks(sender string, num int) []Ack {
 //   - 1st commit is necessary for the packet to included in the block
 //   - 2nd commit is necessary because in practice the ibc light client
 //     needs to have block h + 1 to be able to verify the packet in block h.
-func (n OrderedLink) Commit(sender string) {
+func (n OrderedOutbox) Commit(sender string) {
 	for i := range n.OutboxPackets[sender] {
 		n.OutboxPackets[sender][i].Commits += 1
 	}
