@@ -25,7 +25,7 @@ func MakeRelayedPath(t *testing.T, path *ibctesting.Path) RelayedPath {
 		t:             t,
 		clientHeaders: map[string][]*ibctmtypes.Header{},
 		path:          path,
-		Link:          MakeOrderedLink(),
+		Link:          MakeOrderedOutbox(),
 	}
 }
 

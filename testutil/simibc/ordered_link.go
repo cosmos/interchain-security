@@ -22,13 +22,21 @@ type Packet struct {
 	Commits int
 }
 
+// OrderedOutbox is a collection of packets and acks that have been sent
+// by different chains, but have not yet been delivered to their target.
+// The methods take care of bookkeeping, making it easier to simulate
+// a real relayed IBC connection.
+//
+// Each sent packet or ack can be added here. When a sufficient number of
+// block commits have followed each sent packet or ack, they can be consumed:
+// delivered to their target.
 type OrderedOutbox struct {
 	OutboxPackets map[string][]Packet
 	OutboxAcks    map[string][]Ack
 }
 
-// MakeOrderedLink creates a new empty network link.
-func MakeOrderedLink() OrderedOutbox {
+// MakeOrderedOutbox creates a new empty network link.
+func MakeOrderedOutbox() OrderedOutbox {
 	return OrderedOutbox{
 		OutboxPackets: map[string][]Packet{},
 		OutboxAcks:    map[string][]Ack{},
