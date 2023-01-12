@@ -15,7 +15,8 @@ import (
 
 var verbose = flag.Bool("verbose", false, "turn verbose logging on/off")
 var happyPathOnly = flag.Bool("happy-path-only", false, "run happy path tests only")
-var multiconsumer = flag.Bool("multiconsumer", false, "include multiconsumer tests in run")
+var includeMultiConsumer = flag.Bool("include-multi-consumer", false, "include multiconsumer tests in run")
+var parallel = flag.Bool("parallel", false, "run all tests in parallel")
 var localSdkPath = flag.String("local-sdk-path", "",
 	"path of a local sdk version to build and reference in integration tests")
 
@@ -26,6 +27,7 @@ func main() {
 	flag.Parse()
 
 	if happyPathOnly != nil && *happyPathOnly {
+		fmt.Println("=============== running happy path only ===============")
 		tr := DefaultTestRun()
 		tr.SetLocalSDKPath(*localSdkPath)
 		tr.ValidateStringLiterals()
@@ -35,38 +37,50 @@ func main() {
 		return
 	}
 
-	start := time.Now()
-	tr := DefaultTestRun()
-	tr.SetLocalSDKPath(*localSdkPath)
-	tr.ValidateStringLiterals()
-	tr.startDocker()
-	tr.ExecuteSteps(happyPathSteps)
-	tr.teardownDocker()
-
-	dmc := DemocracyTestRun()
-	dmc.SetLocalSDKPath(*localSdkPath)
-	dmc.ValidateStringLiterals()
-	dmc.startDocker()
-	dmc.ExecuteSteps(democracySteps)
-	dmc.teardownDocker()
-
-	slash := SlashThrottleTestRun()
-	slash.SetLocalSDKPath(*localSdkPath)
-	slash.ValidateStringLiterals()
-	slash.startDocker()
-	slash.ExecuteSteps(slashThrottleSteps)
-	slash.teardownDocker()
-
-	if multiconsumer != nil && *multiconsumer {
-		mul := MultiConsumerTestRun()
-		mul.SetLocalSDKPath(*localSdkPath)
-		mul.ValidateStringLiterals()
-		mul.startDocker()
-		mul.ExecuteSteps(multipleConsumers)
-		mul.teardownDocker()
+	testRuns := []testRunWithSteps{
+		{DefaultTestRun(), happyPathSteps},
+		{DemocracyTestRun(), democracySteps},
+		{SlashThrottleTestRun(), slashThrottleSteps},
+	}
+	if includeMultiConsumer != nil && *includeMultiConsumer {
+		testRuns = append(testRuns, testRunWithSteps{MultiConsumerTestRun(), multipleConsumers})
 	}
 
+	start := time.Now()
+	if parallel != nil && *parallel {
+		fmt.Println("=============== running all tests in parallel ===============")
+		var wg sync.WaitGroup
+		for _, run := range testRuns {
+			wg.Add(1)
+			go func(run testRunWithSteps) {
+				defer wg.Done()
+				tr := run.testRun
+				tr.SetLocalSDKPath(*localSdkPath)
+				tr.ValidateStringLiterals()
+				tr.startDocker()
+				tr.ExecuteSteps(run.steps)
+				tr.teardownDocker()
+			}(run)
+		}
+		wg.Wait()
+		fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
+		return
+	}
+
+	for _, run := range testRuns {
+		tr := run.testRun
+		tr.SetLocalSDKPath(*localSdkPath)
+		tr.ValidateStringLiterals()
+		tr.startDocker()
+		tr.ExecuteSteps(run.steps)
+		tr.teardownDocker()
+	}
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
+}
+
+type testRunWithSteps struct {
+	testRun TestRun
+	steps   []Step
 }
 
 func (tr *TestRun) runStep(step Step, verbose bool) {
@@ -132,12 +146,6 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		pretty.Print("model state", modelState)
 		log.Fatal(`actual state (-) not equal to model state (+): ` + pretty.Compare(actualState, modelState))
 	}
-}
-
-// ExecuteStepsInWaitGroup runs steps in a WaitGroup so that the test run can be run in parallel.
-func (tr *TestRun) ExecuteStepsInWaitGroup(wg *sync.WaitGroup, steps []Step) {
-	defer wg.Done()
-	tr.ExecuteSteps(steps)
 }
 
 // ExecuteSteps sequentially runs steps.
