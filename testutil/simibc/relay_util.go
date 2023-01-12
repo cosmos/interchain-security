@@ -22,7 +22,7 @@ import (
 // NOTE: this function MAY be used independently of the rest of simibc.
 func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, header *ibctmtypes.Header) (err error) {
 
-	header, err = constructTMHeader(receiver.Chain, header, sender.Chain, receiver.ClientID, clienttypes.ZeroHeight())
+	err = augmentHeader(receiver.Chain, sender.Chain, receiver.ClientID, header)
 
 	if err != nil {
 		return err
@@ -141,12 +141,12 @@ func TryRecvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, pack
 	return nil
 }
 
-// constructTMHeader is a helper function
-func constructTMHeader(chain *ibctesting.TestChain, header *ibctmtypes.Header, counterparty *ibctesting.TestChain, clientID string, trustedHeight clienttypes.Height) (*ibctmtypes.Header, error) {
-	// Relayer must query for LatestHeight on client to get TrustedHeight if the trusted height is not set
-	if trustedHeight.IsZero() {
-		trustedHeight = chain.GetClientState(clientID).GetLatestHeight().(clienttypes.Height)
-	}
+// augmentHeader is a helper that augments the header with the height and validators that are most recently trusted
+// by the receiver chain.
+func augmentHeader(receiver *ibctesting.TestChain, sender *ibctesting.TestChain, clientID string, header *ibctmtypes.Header) error {
+
+	trustedHeight := receiver.GetClientState(clientID).GetLatestHeight().(clienttypes.Height)
+
 	var (
 		tmTrustedVals *tmtypes.ValidatorSet
 		ok            bool
@@ -154,27 +154,26 @@ func constructTMHeader(chain *ibctesting.TestChain, header *ibctmtypes.Header, c
 	// Once we get TrustedHeight from client, we must query the validators from the counterparty chain
 	// If the LatestHeight == LastHeader.Height, then TrustedValidators are current validators
 	// If LatestHeight < LastHeader.Height, we can query the historical validator set from HistoricalInfo
-	if trustedHeight == counterparty.LastHeader.GetHeight() {
-		tmTrustedVals = counterparty.Vals
+	if trustedHeight == sender.LastHeader.GetHeight() {
+		tmTrustedVals = sender.Vals
 	} else {
 		// NOTE: We need to get validators from counterparty at height: trustedHeight+1
 		// since the last trusted validators for a header at height h
 		// is the NextValidators at h+1 committed to in header h by
 		// NextValidatorsHash
-		tmTrustedVals, ok = counterparty.GetValsAtHeight(int64(trustedHeight.RevisionHeight + 1))
+		tmTrustedVals, ok = sender.GetValsAtHeight(int64(trustedHeight.RevisionHeight + 1))
 		if !ok {
-			return nil, sdkerrors.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight)
+			return sdkerrors.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight)
 		}
+	}
+	trustedVals, err := tmTrustedVals.ToProto()
+	if err != nil {
+		return err
 	}
 	// inject trusted fields into last header
 	// for now assume revision number is 0
 	header.TrustedHeight = trustedHeight
-
-	trustedVals, err := tmTrustedVals.ToProto()
-	if err != nil {
-		return nil, err
-	}
 	header.TrustedValidators = trustedVals
 
-	return header, nil
+	return nil
 }

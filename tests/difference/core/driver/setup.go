@@ -485,7 +485,7 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 }
 
 func (b *Builder) createLink() {
-	b.link = simibc.MakeOrderedLink()
+	b.link = simibc.MakeOrderedOutbox()
 	// init utility data structures
 	b.mustBeginBlock = map[string]bool{P: true, C: true}
 	b.clientHeaders = map[string][]*ibctmtypes.Header{}
