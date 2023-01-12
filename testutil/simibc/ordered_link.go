@@ -30,12 +30,14 @@ type Packet struct {
 // Each sent packet or ack can be added here. When a sufficient number of
 // block commits have followed each sent packet or ack, they can be consumed:
 // delivered to their target.
+//
+// NOTE: OrderedOutbox may be used independently of the rest of simibc.
 type OrderedOutbox struct {
 	OutboxPackets map[string][]Packet
 	OutboxAcks    map[string][]Ack
 }
 
-// MakeOrderedOutbox creates a new empty network link.
+// MakeOrderedOutbox creates a new empty OrderedOutbox.
 func MakeOrderedOutbox() OrderedOutbox {
 	return OrderedOutbox{
 		OutboxPackets: map[string][]Packet{},
@@ -43,13 +45,12 @@ func MakeOrderedOutbox() OrderedOutbox {
 	}
 }
 
-// AddPacket adds an outbound packet from the sender to the counterparty.
+// AddPacket adds an outbound packet from the sender.
 func (n OrderedOutbox) AddPacket(sender string, packet channeltypes.Packet) {
 	n.OutboxPackets[sender] = append(n.OutboxPackets[sender], Packet{packet, 0})
 }
 
-// AddAck adds an outbound ack, for future delivery to the sender of the packet
-// being acked.
+// AddAck adds an outbound ack from the sender. The ack is a response to the packet.
 func (n OrderedOutbox) AddAck(sender string, ack []byte, packet channeltypes.Packet) {
 	n.OutboxAcks[sender] = append(n.OutboxAcks[sender], Ack{ack, packet, 0})
 }
