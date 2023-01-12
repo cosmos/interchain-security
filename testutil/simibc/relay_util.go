@@ -22,7 +22,7 @@ import (
 // NOTE: this function MAY be used independently of the rest of simibc.
 func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, header *ibctmtypes.Header) (err error) {
 
-	err = augmentHeader(receiver.Chain, sender.Chain, receiver.ClientID, header)
+	err = augmentHeader(sender.Chain, receiver.Chain, receiver.ClientID, header)
 
 	if err != nil {
 		return err
@@ -142,8 +142,8 @@ func TryRecvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, pack
 }
 
 // augmentHeader is a helper that augments the header with the height and validators that are most recently trusted
-// by the receiver chain.
-func augmentHeader(receiver *ibctesting.TestChain, sender *ibctesting.TestChain, clientID string, header *ibctmtypes.Header) error {
+// by the receiver chain. If there is an error, the header will not be modified.
+func augmentHeader(sender *ibctesting.TestChain, receiver *ibctesting.TestChain, clientID string, header *ibctmtypes.Header) error {
 
 	trustedHeight := receiver.GetClientState(clientID).GetLatestHeight().(clienttypes.Height)
 
