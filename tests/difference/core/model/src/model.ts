@@ -7,7 +7,6 @@ import { strict as assert } from 'node:assert';
  * This model may need updating pending
  * https://github.com/cosmos/ibc/issues/825 (model updated, spec has open PR)
  * https://github.com/cosmos/ibc/issues/796 (model updated, spec awaiting PR)
- * TODO: implement automatic commit hash comparison warning against spec
  */
 
 import {

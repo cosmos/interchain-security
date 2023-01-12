@@ -238,7 +238,6 @@ func (s *CoreSuite) compareModelAndSystemState() {
 		for j := 0; j < s.initState.NumValidators; j++ {
 			s.Require().Equalf(int64(s.traces.Tokens(j)), s.providerTokens(int64(j)), diagnostic+"P tokens mismatch for val %d", j)
 		}
-		// TODO: delegations
 		s.Require().Equalf(int64(s.traces.DelegatorTokens()), s.delegatorBalance(), diagnostic+"P del balance mismatch")
 		for j := 0; j < s.initState.NumValidators; j++ {
 			a := s.traces.Jailed(j) != nil
@@ -257,7 +256,6 @@ func (s *CoreSuite) compareModelAndSystemState() {
 				s.Require().Errorf(err, diagnostic+" power mismatch for val %d, expect 0 (nil), got %d", j, actual)
 			}
 		}
-		// TODO: outstanding downtime
 	}
 }
 

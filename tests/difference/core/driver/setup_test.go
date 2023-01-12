@@ -7,10 +7,10 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// TestSetupAssumptions tests that the assumptions used to write the difftest
+// TestAssumptionsSetup tests that the assumptions used to write the difftest
 // driver hold. This test therefore does not test the system, but only that
 // the driver is correctly setup.
-func (s *CoreSuite) TestSetupAssumptions() {
+func (s *CoreSuite) TestAssumptionsSetup() {
 
 	const FAIL_MSG = "Assumptions for core diff test failed: there is a problem with the driver or how the test is setup."
 
@@ -22,7 +22,11 @@ func (s *CoreSuite) TestSetupAssumptions() {
 		s.T().Fatal(FAIL_MSG)
 	}
 
-	// TODO: write assumption that checks that throttle params are appropriate
+	// TODO: Write a check to make sure that the slash throttle params are set correctly.
+	// 		 The params should be set such that the slash throttle never kicks in and stop a slash.
+	// 		 This is because the model assumes that a slash will always be executed, no matter
+	// 		 how many. This can be achieve by setting the slash factor to e.g. 1.0 and the refresh
+	// 		 period to 1 block.
 
 	// Delegator balance is correct
 	s.Require().Equal(int64(s.initState.InitialDelegatorTokens), s.delegatorBalance())
