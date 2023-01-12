@@ -55,11 +55,7 @@ func main() {
 			go func(run testRunWithSteps) {
 				defer wg.Done()
 				tr := run.testRun
-				tr.SetLocalSDKPath(*localSdkPath)
-				tr.ValidateStringLiterals()
-				tr.startDocker()
-				tr.ExecuteSteps(run.steps)
-				tr.teardownDocker()
+				tr.Run(run.steps, *localSdkPath)
 			}(run)
 		}
 		wg.Wait()
@@ -69,13 +65,19 @@ func main() {
 
 	for _, run := range testRuns {
 		tr := run.testRun
-		tr.SetLocalSDKPath(*localSdkPath)
-		tr.ValidateStringLiterals()
-		tr.startDocker()
-		tr.ExecuteSteps(run.steps)
-		tr.teardownDocker()
+		tr.Run(run.steps, *localSdkPath)
 	}
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
+}
+
+// Run sets up docker container and executs the steps in the test run.
+// Docker containers are torn down after the test run is complete.
+func (tr *TestRun) Run(steps []Step, localSdkPath string) {
+	tr.SetLocalSDKPath(localSdkPath)
+	tr.ValidateStringLiterals()
+	tr.startDocker()
+	tr.ExecuteSteps(steps)
+	tr.teardownDocker()
 }
 
 type testRunWithSteps struct {
