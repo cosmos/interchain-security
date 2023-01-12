@@ -12,6 +12,10 @@ Answers questions like:
 - how to improve it in the future (ignore code related stuff, focus on concepts)
 - other things you find important
 
+Extra
+
+- difference between this and atomkraft/mbt?
+
 # Main motivation
 
 The motivation to do diff testing is the goal to find more, deeper, bugs in the long run life of the project in a more cost effective way than can be done by other testing methods (unit, full node, integration, model based testing).
