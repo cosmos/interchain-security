@@ -22,17 +22,19 @@ type Packet struct {
 	Commits int
 }
 
-// OrderedOutbox is a collection of packets and acks that have been sent
+// OrderedOutbox is a collection of ORDERED packets and acks that have been sent
 // by different chains, but have not yet been delivered to their target.
 // The methods take care of bookkeeping, making it easier to simulate
 // a real relayed IBC connection.
 //
 // Each sent packet or ack can be added here. When a sufficient number of
 // block commits have followed each sent packet or ack, they can be consumed:
-// delivered to their target.
+// delivered to their target. Since the sequences are ordered, this is useful
+// for testing ORDERED ibc channels.
 //
 // NOTE: OrderedOutbox may be used independently of the rest of simibc.
 type OrderedOutbox struct {
+	// An ordered sequence of packets
 	OutboxPackets map[string][]Packet
 	OutboxAcks    map[string][]Ack
 }
