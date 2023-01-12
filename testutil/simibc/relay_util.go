@@ -13,8 +13,13 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-// UpdateReceiverClient is used to send a header to the receiving endpoint and update
-// the client of the respective chain.
+// UpdateReceiverClient DELIVERs a header to the receiving endpoint
+// and update the respective client of the receiving chain.
+//
+// The header is a header of the sender chain. The receiver chain
+// must have a client of the sender chain that it can update.
+//
+// NOTE: this function MAY be used independently of the rest of simibc.
 func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, header *ibctmtypes.Header) (err error) {
 
 	header, err = constructTMHeader(receiver.Chain, header, sender.Chain, receiver.ClientID, clienttypes.ZeroHeight())
@@ -55,7 +60,12 @@ func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endp
 	return nil
 }
 
-// Try to receive a packet on receiver. Returns ack.
+// TryRecvPacket will try once to DELIVER a packet from sender to receiver. If successful,
+// it will return the acknowledgement bytes.
+//
+// The packet must be sent from the sender chain to the receiver chain, and the
+// receiver chain must have a client for the sender chain which has been updated
+// to a recent height of the sender chain so that it can verify the packet.
 func TryRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
 	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 	proof, proofHeight := sender.Chain.QueryProof(packetKey)
@@ -93,7 +103,12 @@ func TryRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, p
 	return ack, nil
 }
 
-// Try to receive an ack on receiver.
+// TryRecvAck will try once to DELIVER an ack from sender to receiver.
+//
+// The ack must have been sent from the sender to the receiver, in response
+// to packet which was previously delivered from the receiver to the sender.
+// The receiver chain must have a client for the sender chain which has been
+// updated to a recent height of the sender chain so that it can verify the packet.
 func TryRecvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet, ack []byte) (err error) {
 	p := packet
 	packetKey := host.PacketAcknowledgementKey(p.GetDestPort(), p.GetDestChannel(), p.GetSequence())
@@ -126,8 +141,7 @@ func TryRecvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, pack
 	return nil
 }
 
-// constructTMHeader will augment a valid 07-tendermint Header with data needed to update
-// light client.
+// constructTMHeader is a helper function
 func constructTMHeader(chain *ibctesting.TestChain, header *ibctmtypes.Header, counterparty *ibctesting.TestChain, clientID string, trustedHeight clienttypes.Height) (*ibctmtypes.Header, error) {
 	// Relayer must query for LatestHeight on client to get TrustedHeight if the trusted height is not set
 	if trustedHeight.IsZero() {
