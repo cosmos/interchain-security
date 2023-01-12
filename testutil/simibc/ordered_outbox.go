@@ -32,7 +32,7 @@ type Packet struct {
 // delivered to their target. Since the sequences are ordered, this is useful
 // for testing ORDERED ibc channels.
 //
-// NOTE: OrderedOutbox may be used independently of the rest of simibc.
+// NOTE: OrderedOutbox MAY be used independently of the rest of simibc.
 type OrderedOutbox struct {
 	// An ordered sequence of packets
 	OutboxPackets map[string][]Packet
