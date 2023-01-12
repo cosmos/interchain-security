@@ -24,8 +24,8 @@ test-diff:
 test-integration-short:
 	go run ./tests/integration/... --happy-path-only
 
-# run full integration tests
-test-integration-full:
+# run full integration tests in sequence (including multiconsumer)
+test-integration:
 	go run ./tests/integration/... --include-multi-consumer
 
 # run full integration tests in parallel (including multiconsumer)
