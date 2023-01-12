@@ -2,22 +2,26 @@ package simibc
 
 import channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
-// Ack represents and ack committed to block state
+// Ack represents a (sent) ack committed to block state
 type Ack struct {
-	Ack     []byte
-	Packet  channeltypes.Packet
+	Ack []byte
+	// The packet to which this ack is a response
+	Packet channeltypes.Packet
+	// The number of App.Commits that have occurred since this ack was sent
+	// For example, if the ack was sent at height h, and the blockchain
+	// has headers ..., h, h+1, h+2 then Commits = 3
 	Commits int
 }
 
-// Packet represents a packet committed to block state
+// Packet represents a (sent) packet committed to block state
 type Packet struct {
-	Packet  channeltypes.Packet
+	Packet channeltypes.Packet
+	// The number of App.Commits that have occurred since this packet was sent
+	// For example, if the ack was sent at height h, and the blockchain
+	// has headers ..., h, h+1, h+2 then Commits = 3
 	Commits int
 }
 
-// OrderedLink contains outboxes of packets and acknowledgements and
-// allows fine-grained control over delivery of acks and packets
-// to mimic a real relaying relationship between two chains.
 type OrderedLink struct {
 	OutboxPackets map[string][]Packet
 	OutboxAcks    map[string][]Ack
