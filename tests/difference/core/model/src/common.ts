@@ -111,7 +111,7 @@ type InvariantSnapshot = {
   status: Status[];
   undelegationQ: Undelegation[];
   delegatorTokens: number;
-  consumerPower: (number | undefined)[];
+  consumerPower: (number | null)[];
   vscIDtoH: Record<number, number>;
   hToVscID: Record<number, number>;
 };
@@ -137,9 +137,9 @@ interface Consequence {
   tokens?: number[];
   delegation?: number[];
   delegatorTokens?: number;
-  jailed?: (number | undefined)[];
+  jailed?: (number | null)[];
   status?: Status[];
-  consumerPower?: (number | undefined)[];
+  consumerPower?: (number | null)[];
   outstandingDowntime?: boolean[];
 }
 
@@ -161,7 +161,7 @@ type ModelInitState = {
     status: Status[];
     undelegationQ: Undelegation[];
     validatorQ: Unval[];
-    jailed: (number | undefined)[];
+    jailed: (number | null)[];
     delegatorTokens: number;
     opID: number;
     changes: Record<Validator, number>;
@@ -173,7 +173,7 @@ type ModelInitState = {
     pendingChanges: Record<Validator, number>[];
     maturingVscs: Map<number, number>;
     outstandingDowntime: boolean[];
-    consumerPower: (number | undefined)[];
+    consumerPower: (number | null)[];
   };
   ccvP: {
     initialHeight: number;

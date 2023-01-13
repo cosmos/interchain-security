@@ -348,8 +348,7 @@ function gen(seconds: number, checkProperties: boolean) {
     // Log progress stats
     if (i % 10000 === 0) {
       console.log(
-        `done ${i}, actions per second ${
-          (i * NUM_ACTIONS) / (elapsedMillis / 1000)
+        `done ${i}, actions per second ${(i * NUM_ACTIONS) / (elapsedMillis / 1000)
         }`,
       );
     }
@@ -391,7 +390,7 @@ function replay(actions: TraceAction[]) {
  */
 function replayFile(fn: string, ix: number, numActions: number) {
   const traces = JSON.parse(fs.readFileSync(fn, 'utf8'));
-  const trace = ix !== undefined ? traces[ix] : traces[0];
+  const trace = traces[ix];
   const traceActions = trace.actions as TraceAction[];
   const actions = traceActions.slice(0, numActions);
   replay(actions);

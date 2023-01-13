@@ -112,8 +112,8 @@ class Staking {
   // Unbonding validator queue
   validatorQ: Unval[];
   // Validator jail timestamp
-  // Undefined if validator is not jailed
-  jailed: (number | undefined)[];
+  // null if validator is not jailed
+  jailed: (number | null)[];
   // Initial balance of the sole delegator account.
   // Only a single delegator is modelled, as this seems sufficient
   // to exercise all Interchain Security logic.
@@ -140,7 +140,7 @@ class Staking {
    */
   newVals = () => {
     const valid = (i: number): boolean =>
-      1 <= this.tokens[i] && this.jailed[i] === undefined;
+      1 <= this.tokens[i] && this.jailed[i] === null;
     let vals = _.range(NUM_VALIDATORS);
     // stable sort => breaks ties based on validator
     // address numerical value. This mimics staking module.
@@ -458,7 +458,7 @@ class CCVProvider {
   };
 
   onReceiveSlash = (data: Slash) => {
-    let infractionHeight = undefined;
+    let infractionHeight;
 
     if (data.vscID === 0) {
       infractionHeight = this.initialHeight;
@@ -510,8 +510,8 @@ class CCVConsumer {
   // is there an outstanding downtime operation for a validator?
   outstandingDowntime: boolean[];
   // array of validators to power
-  // value undefined if validator is not known to consumer
-  consumerPower: (number | undefined)[];
+  // value null if validator is not known to consumer
+  consumerPower: (number | null)[];
 
   constructor(model: Model, { ccvC }: ModelInitState) {
     this.m = model;
@@ -556,14 +556,14 @@ class CCVConsumer {
 
     changes.forEach((power, val) => {
       if (0 < power) {
-        if (this.consumerPower[val] === undefined) {
+        if (this.consumerPower[val] === null) {
           this.m.events.push(Event.CONSUMER_ADD_VAL);
         } else {
           this.m.events.push(Event.CONSUMER_UPDATE_VAL);
         }
         this.consumerPower[val] = power;
       } else {
-        this.consumerPower[val] = undefined;
+        this.consumerPower[val] = null;
         this.m.events.push(Event.CONSUMER_DEL_VAL);
       }
     });

@@ -93,7 +93,7 @@ class PartialOrder {
     }
     if (bestV === -1) {
       // No greatest predecessor exists.
-      return undefined;
+      return;
     }
     return bestV;
   };
@@ -120,7 +120,7 @@ class PartialOrder {
     }
     if (bestAnswer === -1) {
       // No least successor exists.
-      return undefined;
+      return;
     }
     return bestAnswer;
   };
@@ -239,7 +239,7 @@ function validatorSetReplication(hist: BlockHistory): boolean {
     assert(valsetC.length === statusP.length, 'this should never happen.');
     assert(valsetC.length === tokensP.length, 'this should never happen.');
     valsetC.forEach((power, i) => {
-      if (power !== undefined) { // undefined means the validator is not in the set
+      if (power !== null) { // null means the validator is not in the set
         // Check that the consumer power is strictly equal to the provider power
         good = good && (tokensP[i] === power);
       }
@@ -252,7 +252,7 @@ function validatorSetReplication(hist: BlockHistory): boolean {
       }
       else {
         // Ensure that the consumer validator set does not contain a non-bonded validator
-        good = good && (valsetC[i] === undefined);
+        good = good && (valsetC[i] === null);
       }
     })
 
@@ -333,7 +333,7 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
           hp + 1,
         );
         const powerC = powerConsumer(blocks[C].get(hc) as CommittedBlock);
-        if (powerC[i] !== undefined) {
+        if (powerC[i] !== null) {
           if (powerP[i] < (powerC[i] as number)) {
             return false;
           }
