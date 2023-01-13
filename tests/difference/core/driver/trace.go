@@ -19,7 +19,7 @@ type Action struct {
 	Val              int    `json:"val,omitempty"`
 }
 
-type Consequence struct {
+type PartialState struct {
 	Delegation          []int    `json:"delegation,omitempty"`
 	DelegatorTokens     int      `json:"delegatorTokens,omitempty"`
 	Jailed              []*int   `json:"jailed,omitempty"`
@@ -31,21 +31,21 @@ type Consequence struct {
 	T                   int      `json:"t,omitempty"`
 }
 
-type ActionAndConsequence struct {
-	Action      Action      `json:"action"`
-	Consequence Consequence `json:"consequence"`
-	Ix          int         `json:"ix"`
+type ActionAndPartialState struct {
+	Action       Action       `json:"action"`
+	PartialState PartialState `json:"partialState"`
+	Ix           int          `json:"ix"`
 }
 
 type TraceData struct {
-	Actions   []ActionAndConsequence `json:"actions"`
+	Actions   []ActionAndPartialState `json:"actions"`
 	Constants struct {
 		BlockSeconds            int     `json:"BLOCK_SECONDS"`
 		C                       string  `json:"C"`
 		DelegateAmtMax          int     `json:"DELEGATE_AMT_MAX"`
 		DelegateAmtMin          int     `json:"DELEGATE_AMT_MIN"`
 		InitialDelegatorTokens  int     `json:"INITIAL_DELEGATOR_TOKENS"`
-		IsdowntimeProbability   float64 `json:"ISDOWNTIME_PROBABILITY"`
+		IsDowntimeProbability   float64 `json:"ISDOWNTIME_PROBABILITY"`
 		JailSeconds             int     `json:"JAIL_SECONDS"`
 		MaxNumPacketsForDeliver int     `json:"MAX_NUM_PACKETS_FOR_DELIVER"`
 		MaxValidators           int     `json:"MAX_VALIDATORS"`
@@ -111,7 +111,7 @@ func (t *Traces) Diagnostic() string {
 func (t *Traces) Trace() TraceData {
 	return t.Data[t.CurrentTraceIx]
 }
-func (t *Traces) Actions() []ActionAndConsequence {
+func (t *Traces) Actions() []ActionAndPartialState {
 	return t.Trace().Actions
 }
 
@@ -119,8 +119,8 @@ func (t *Traces) Action() Action {
 	return t.Data[t.CurrentTraceIx].Actions[t.CurrentActionIx].Action
 }
 
-func (t *Traces) Consequence() Consequence {
-	return t.Data[t.CurrentTraceIx].Actions[t.CurrentActionIx].Consequence
+func (t *Traces) Consequence() PartialState {
+	return t.Data[t.CurrentTraceIx].Actions[t.CurrentActionIx].PartialState
 }
 
 func (t *Traces) Delegation(i int) int {

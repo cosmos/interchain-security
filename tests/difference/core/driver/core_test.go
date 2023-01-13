@@ -431,12 +431,12 @@ func (s *CoreSuite) TestAssumptions() {
 // Test a set of traces
 func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
-		Data: LoadTraces("traces.json"),
+		Data: LoadTraces("tracesAlt.json"),
 	}
 	shortest := -1
 	shortestLen := 10000000000
 	for i := range s.traces.Data {
-		if !s.Run(fmt.Sprintf("Trace num: %d", i), func() {
+		if !s.Run(fmt.Sprintf("Trace ix: %d", i), func() {
 			// Setup a new pair of chains for each trace
 			s.SetupTest()
 
