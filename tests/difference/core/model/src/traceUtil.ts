@@ -196,6 +196,7 @@ function createSmallSubsetOfCoveringTraces(
   }
   //////////////////////////////////////////////////////////
 
+  // Condense all the traces into one file
   const allTraces: any[] = [];
   outputFilenames.forEach((fn) => {
     const traceJson = JSON.parse(fs.readFileSync(fn, 'utf8'));

@@ -345,7 +345,6 @@ function generateTraces(seconds: number, checkProperties: boolean) {
         // If a property does not hold, we write the trace to file for debugging
         // (and replaying).
         if (!validatorSetReplication(hist)) {
-
           dumpTrace(`${DIR}trace_${i}.json`, actions, events);
           throw 'validatorSetReplication property failure, trace written.';
         }
