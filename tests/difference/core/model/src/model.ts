@@ -580,7 +580,7 @@ class CCVConsumer {
   };
 
   onReceive = (data: PacketData) => {
-    this.onReceiveVSC(data as Vsc); // TODO: remove type assumption
+    this.onReceiveVSC(data as Vsc);
   };
 
   onReceiveVSC = (data: Vsc) => {
@@ -619,7 +619,7 @@ class CCVConsumer {
 
 class Model {
   h;
-  t;
+  t; // The network outboxes for each chain
   outbox: Record<string, Outbox> = {
     provider: new Outbox(this, P),
     consumer: new Outbox(this, C),
@@ -627,15 +627,15 @@ class Model {
   staking: Staking;
   ccvP: CCVProvider;
   ccvC: CCVConsumer;
-  blocks: BlockHistory;
+  history: BlockHistory;
   events: Event[];
 
   constructor(
-    blocks: BlockHistory,
+    history: BlockHistory,
     events: Event[],
     state: ModelInitState,
   ) {
-    this.blocks = blocks;
+    this.history = history;
     this.events = events;
     this.h = state.h;
     this.t = state.t;
@@ -646,11 +646,11 @@ class Model {
     // model initial blocks on P and C because C starts with
     // the same validator set as P (and thus must have received
     // a packet from P).
-    this.blocks.partialOrder.deliver(C, 0, 0);
-    this.blocks.commitBlock(P, this.propertiesSystemState());
-    this.blocks.commitBlock(C, this.propertiesSystemState());
-    this.beginBlock(P);
-    this.beginBlock(C);
+    this.history.partialOrder.deliver(C, 0, 0);
+    this.history.commitBlock(P, this.propertiesSystemState());
+    this.history.commitBlock(C, this.propertiesSystemState());
+    this.beginBlock(P, BLOCK_SECONDS);
+    this.beginBlock(C, BLOCK_SECONDS);
   }
 
   propertiesSystemState = (): PropertiesSystemState => {
@@ -667,6 +667,12 @@ class Model {
     });
   };
 
+  /*
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  MODEL API
+  */
+
   delegate = (val: number, amt: number) => {
     this.staking.delegate(val, amt);
   };
@@ -675,7 +681,7 @@ class Model {
     this.staking.undelegate(val, amt);
   };
 
-  consumerSlash = (
+  consumerInitiatedSlash = (
     val: number,
     infractionHeight: number,
     isDowntime: boolean,
@@ -684,19 +690,23 @@ class Model {
   };
 
   updateClient = (_: Chain) => {
-    // noop
+    // noop. We do not explicitly model the client update process
+    // but we must call this function at appropriate times in order
+    // to test the SUT using this model. This is because
+    // if we allow too much time to elapse between updates, the light
+    // clients in the SUT will expire, and the test will fail.
   };
 
   deliver = (chain: Chain, num: number) => {
     if (chain === P) {
       this.outbox[C].consume(num).forEach((p) => {
-        this.blocks.partialOrder.deliver(P, p.sendHeight, this.h[P]);
+        this.history.partialOrder.deliver(P, p.sendHeight, this.h[P]);
         this.ccvP.onReceive(p.data);
       });
     }
     if (chain === C) {
       this.outbox[P].consume(num).forEach((p) => {
-        this.blocks.partialOrder.deliver(C, p.sendHeight, this.h[C]);
+        this.history.partialOrder.deliver(C, p.sendHeight, this.h[C]);
         this.ccvC.onReceive(p.data);
       });
     }
@@ -704,26 +714,36 @@ class Model {
 
   endAndBeginBlock = (chain: Chain) => {
     this.endBlock(chain);
-    this.beginBlock(chain);
+    this.beginBlock(chain, BLOCK_SECONDS);
   };
+
+  /*
+  END MODEL API
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  */
 
   endBlock = (chain: Chain) => {
     if (chain === P) {
+      // Mimic real provider app behavior
       this.staking.endBlock();
       this.ccvP.endBlock();
     }
     if (chain === C) {
       this.ccvC.endBlock();
     }
+    // Commit all packets sent by the chain
     this.outbox[chain].commit();
-    this.blocks.commitBlock(chain, this.propertiesSystemState());
+    // Record a slice of the system state for checking properties
+    this.history.commitBlock(chain, this.propertiesSystemState());
   };
 
-  beginBlock = (chain: Chain) => {
+  beginBlock = (chain: Chain, dt: number) => {
     this.h[chain] += 1;
-    this.t[chain] += BLOCK_SECONDS;
+    this.t[chain] += dt;
     if (chain === P) {
-      // No op
+      // No op. There is nothing interesting
+      // to do at the beginning of a block on P.
     }
     if (chain === C) {
       this.ccvC.beginBlock();

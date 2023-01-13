@@ -214,7 +214,7 @@ function doAction(model: Model, action: Action): PartialState {
   }
   if (kind === 'ConsumerSlash') {
     const a = action as ConsumerSlash;
-    model.consumerSlash(a.val, a.infractionHeight, a.isDowntime);
+    model.consumerInitiatedSlash(a.val, a.infractionHeight, a.isDowntime);
     return {
       h: model.h[C],
       t: model.t[C],
