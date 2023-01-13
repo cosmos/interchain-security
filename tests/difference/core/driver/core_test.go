@@ -431,7 +431,7 @@ func (s *CoreSuite) TestAssumptions() {
 // Test a set of traces
 func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
-		Data: LoadTraces("tracesAlt.json"),
+		Data: LoadTraces("traces.json"),
 	}
 	shortest := -1
 	shortestLen := 10000000000
