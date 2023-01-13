@@ -5,7 +5,6 @@ import { strict as assert } from 'node:assert';
 
 /**
  * This model may need updating pending
- * https://github.com/cosmos/ibc/issues/825 (model updated, spec has open PR)
  * https://github.com/cosmos/ibc/issues/796 (model updated, spec awaiting PR)
  */
 
@@ -25,12 +24,12 @@ import {
   Undelegation,
   Unval,
   Vsc,
-  VscMatured,
+  VscMaturity,
   Packet,
   Chain,
   Validator,
   PacketData,
-  Slash,
+  ConsumerInitiatedSlash,
   InvariantSnapshot,
   Status,
   ModelInitState,
@@ -87,8 +86,14 @@ class Outbox {
    * Commit the packets in the outbox. Once a packet has been
    * committed twice it is available for delivery, as per the
    * ibc light-client functioning.
+   * 
+   * A packet must be committed once to make it to the chain
+   * permanently. A packet must be committed twice for IBC
+   * to deliver it, in practice, because the IBC light client
+   * requires a header H+1 to process a packet in 
    */
   commit = () => {
+    // Bump the number of commits by 1
     this.fifo = this.fifo.map((e) => [e[0], e[1] + 1]);
   };
 }
@@ -374,7 +379,7 @@ class CCVProvider {
   // unbonding operations to be completed in EndBlock
   matureUnbondingOps: number[];
   // queue
-  queue: (Slash | VscMatured)[];
+  queue: (ConsumerInitiatedSlash | VscMaturity)[];
 
   constructor(model: Model, { ccvP }: ModelInitState) {
     this.m = model;
@@ -430,7 +435,7 @@ class CCVProvider {
     */
     if (this.queue.length == 0 && !('isDowntime' in data)) {
       // Skip the queue
-      this.onReceiveVSCMatured(data as VscMatured);
+      this.onReceiveVSCMatured(data as VscMaturity);
     } else {
       this.queue.push(data);
     }
@@ -448,7 +453,7 @@ class CCVProvider {
     this.queue = [];
   };
 
-  onReceiveVSCMatured = (data: VscMatured) => {
+  onReceiveVSCMatured = (data: VscMaturity) => {
     if (this.vscIDtoOpIDs.has(data.vscID)) {
       this.vscIDtoOpIDs.get(data.vscID)!.forEach((opID: number) => {
         this.matureUnbondingOps.push(opID);
@@ -457,7 +462,7 @@ class CCVProvider {
     }
   };
 
-  onReceiveSlash = (data: Slash) => {
+  onReceiveSlash = (data: ConsumerInitiatedSlash) => {
     let infractionHeight;
 
     if (data.vscID === 0) {
@@ -535,7 +540,7 @@ class CCVConsumer {
     })();
     // Send a maturity packet for each matured VSC
     matured.forEach((vscID) => {
-      const data: VscMatured = { vscID };
+      const data: VscMaturity = { vscID };
       this.m.events.push(Event.CONSUMER_SEND_MATURATION);
       this.m.outbox[C].add(data);
       this.maturingVscs.delete(vscID);
@@ -596,7 +601,7 @@ class CCVConsumer {
       this.m.events.push(Event.DOWNTIME_SLASH_REQUEST_OUTSTANDING);
       return;
     }
-    const data: Slash = {
+    const data: ConsumerInitiatedSlash = {
       val,
       vscID: this.hToVscID[infractionHeight],
       isDowntime,

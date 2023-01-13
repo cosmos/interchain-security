@@ -9,7 +9,8 @@ enum Status {
 }
 
 /**
- * Represents undelegation logic in the staking module.
+ * All the data needed to represent an undelegation occuring
+ * in the sdk staking module.
  */
 interface Undelegation {
   val: Validator;
@@ -23,7 +24,8 @@ interface Undelegation {
 }
 
 /**
- * Represents unbonding validator logic in the staking module.
+ * All the data needed to represent an unbonding validator
+ * occuring in the sdk staking module.
  */
 interface Unval {
   val: Validator;
@@ -34,7 +36,8 @@ interface Unval {
 }
 
 /**
- * Validator Set Change data structure
+ * A representation of the validator set change data structure
+ * sent from the provider to the consumer.
  */
 interface Vsc {
   vscID: number;
@@ -45,62 +48,72 @@ interface Vsc {
 /**
  * Validator Set Change Maturity notification data structure
  */
-interface VscMatured {
+interface VscMaturity {
   vscID: number;
 }
 
 /**
- * Consumer Initiated Slash data structure
+ * A representation of the packet sent by the consumer to the
+ * provider when slashing.
  */
-interface Slash {
+interface ConsumerInitiatedSlash {
   val: Validator;
   vscID: number;
   isDowntime: boolean;
 }
 
-type PacketData = Vsc | VscMatured | Slash;
+type PacketData = Vsc | VscMaturity | ConsumerInitiatedSlash;
 
 interface Packet {
   data: PacketData;
+  // Necessary to deduce a partial order between the provider
+  // and consumer chain, as dictated by packet sending and
+  // receiving.
   sendHeight: number;
 }
 
 interface Action {
+  // A tag to identify the action type
   kind: string;
 }
 
 type Delegate = {
   kind: string;
-  val: Validator;
-  amt: number;
+  val: Validator; // Validator to delegate to
+  amt: number; // Amount to delegate
 };
 
 type Undelegate = {
   kind: string;
-  val: Validator;
-  amt: number;
+  val: Validator; // Validator to undelegate from
+  amt: number; // Max amount to undelegate
 };
 
 type ConsumerSlash = {
   kind: string;
-  val: Validator;
-  infractionHeight: number;
-  isDowntime: boolean;
+  val: Validator; // Validator to slash
+  infractionHeight: number; // Height of the infraction on consumer
+  isDowntime: boolean; // Whether the slash is for downtime (or double sign)
 };
 
 type UpdateClient = {
   kind: string;
+  // The chain who will receive the light client header TX
+  // (details not modelled explicitly)
   chain: Chain;
 };
 
 type Deliver = {
   kind: string;
+  // The chain who will receive packets which have been sent to it
   chain: Chain;
+  // The MAX number of packets to deliver, from those available
   numPackets: number;
 };
 
 type EndAndBeginBlock = {
   kind: string;
+  // Which chain will end and begin a block?
   chain: Chain;
 };
 
@@ -194,7 +207,7 @@ type ModelInitState = {
     downtimeSlashAcks: number[];
     tombstoned: boolean[];
     matureUnbondingOps: number[];
-    queue: (Slash | VscMatured)[];
+    queue: (ConsumerInitiatedSlash | VscMaturity)[];
   };
 };
 
@@ -217,8 +230,8 @@ export {
   Undelegation,
   Unval,
   Vsc,
-  VscMatured,
-  Slash,
+  VscMaturity,
+  ConsumerInitiatedSlash,
   PacketData,
   Packet,
 };
