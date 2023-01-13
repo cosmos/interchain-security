@@ -126,7 +126,6 @@ interface CommittedBlock {
 }
 
 /**
- * 
  * A partial snapshot of model state. It is the state
  * needed to check that the SUT is behaving correctly
  * when compared to the model.
@@ -136,6 +135,10 @@ interface CommittedBlock {
  * needed adds up quickly. Also, a concise representation
  * makes traces much more readable and easier to debug
  * by inspection.
+ * 
+ * Fields are optional because not of the state is interesting
+ * for all of the possible actions. This could be achieved
+ * with a union type.
  */
 interface PartialState {
   h?: number; // Chain local height
