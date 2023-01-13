@@ -109,4 +109,4 @@ The same model can be used to create drivers for, and test, many different imple
 
 ## Recommendation going forward
 
-In the long run I suggest scrapping the existing model and trace, and using property based testing instead. The existing driver can easily be adapted to take input from a property based testing library like
+In the long run I suggest scrapping the existing model and trace, and using property based testing instead. The existing driver can easily be adapted to take input from a property based testing library like [golang's Rapid](https://github.com/flyingmutant/rapid). The properties from `properties.ts` can easily be written in go and tested in go. A model will not be needed at all, only the action generation heuristics.
