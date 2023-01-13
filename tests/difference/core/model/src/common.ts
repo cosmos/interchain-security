@@ -117,7 +117,14 @@ type EndAndBeginBlock = {
   chain: Chain;
 };
 
-type InvariantSnapshot = {
+/**
+ * A snapshot of a portion of the model state at the time
+ * that a block is committed on one of the chains. 
+ * 
+ * The state is exactly the state that is needed to check
+ * system properties.
+ */
+type PropertiesSystemState = {
   h: Record<Chain, number>;
   t: Record<Chain, number>;
   tokens: number[];
@@ -135,7 +142,7 @@ type InvariantSnapshot = {
  */
 interface CommittedBlock {
   chain: Chain;
-  invariantSnapshot: InvariantSnapshot;
+  propertiesSystemState: PropertiesSystemState;
 }
 
 /**
@@ -225,7 +232,7 @@ export {
   UpdateClient,
   Deliver,
   EndAndBeginBlock,
-  InvariantSnapshot,
+  PropertiesSystemState,
   Status,
   Undelegation,
   Unval,
