@@ -2,7 +2,7 @@
 
 Contains information about the differential/difference testing method in general and how it impacts the project.
 
-# Motivation
+## Motivation
 
 The goal is to find more, deeper, bugs in the long run life of the project in a more cost effective way than can be done by other testing methods (unit, full node, integration, model based testing).
 
@@ -111,6 +111,10 @@ Example languages: [TLA+](https://en.wikipedia.org/wiki/TLA%2B), [Quint](https:/
 
 Why not use model checking? They require expert knowledge which is hard to onboard, the State Space Explosion Problem can be very real in practice, and the tooling e.g TLA+ is generally not industrial strength in terms of maintainability ect.
 
+Note that the Apalache team at Informal is working hard to make MBT a powerful practical tool. They have made leaps and bounds in the last year since diff testing began in April 2022. In particular they have created a new programming language called Quint which should be an industrial strength formal specification language. They have also added powerful exploration capabilities (see [::simulate](https://apalache.informal.systems/docs/apalache/running.html?highlight=simulate#running-the-tool)) which combines random exploration with optimized model checker based exploration.
+
+ I recommend checking out [Apalache](https://github.com/informalsystems/apalache) and [Quint](https://github.com/informalsystems/quint) and consulting with Igor.
+
 ## Comparison to Property Based Testing
 
 Property Based Testing is a loose term for testing properties of your system. Generally the idea is to make API calls using random heuristics and known tricks, and check that the result satisfies properties. Please see [this page](https://github.com/cosmos/interchain-security/blob/danwt/pbt-prototype/tests/pbt/tutorial.md) for a full tutorial on using a golang PBT library.
@@ -119,4 +123,6 @@ Property Based Testing is a loose term for testing properties of your system. Ge
 
 ## Recommendation going forward
 
-In the long run I suggest scrapping the existing model and trace, and using property based testing instead. The existing driver can easily be adapted to take input from a property based testing library like [golang's Rapid](https://github.com/flyingmutant/rapid). The properties from `properties.ts` can easily be written in go and tested in go. A model will not be needed at all, only the action generation heuristics.
+In the long run I suggest scrapping the existing model and trace, and using property based testing instead. The existing driver can easily be adapted to take input from a property based testing library like [golang's Rapid](https://github.com/flyingmutant/rapid). The properties from `properties.ts` can easily be written in go and tested in go. A model will not be needed at all, only the action generation heuristics. I think PBT will be able to achieve the same or better results without having to maintain the model.
+
+In the long run I **also** suggest incorporating Informals tools [Apalache](https://github.com/informalsystems/apalache) and [Quint](https://github.com/informalsystems/quint). Please consult with Igor on this.
