@@ -56,13 +56,13 @@ interface VscMaturity {
  * A representation of the packet sent by the consumer to the
  * provider when slashing.
  */
-interface ConsumerInitiatedSlash {
+interface ConsumerInitiatedSlashPacketData {
   val: Validator;
   vscID: number;
   isDowntime: boolean;
 }
 
-type PacketData = Vsc | VscMaturity | ConsumerInitiatedSlash;
+type PacketData = Vsc | VscMaturity | ConsumerInitiatedSlashPacketData;
 
 interface Packet {
   data: PacketData;
@@ -207,7 +207,7 @@ type ModelInitState = {
     downtimeSlashAcks: number[];
     tombstoned: boolean[];
     matureUnbondingOps: number[];
-    queue: (ConsumerInitiatedSlash | VscMaturity)[];
+    queue: (ConsumerInitiatedSlashPacketData | VscMaturity)[];
   };
 };
 
@@ -231,7 +231,7 @@ export {
   Unval,
   Vsc,
   VscMaturity,
-  ConsumerInitiatedSlash,
+  ConsumerInitiatedSlashPacketData,
   PacketData,
   Packet,
 };

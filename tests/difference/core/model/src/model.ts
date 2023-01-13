@@ -29,7 +29,7 @@ import {
   Chain,
   Validator,
   PacketData,
-  ConsumerInitiatedSlash,
+  ConsumerInitiatedSlashPacketData,
   InvariantSnapshot,
   Status,
   ModelInitState,
@@ -378,8 +378,9 @@ class CCVProvider {
   tombstoned: boolean[];
   // unbonding operations to be completed in EndBlock
   matureUnbondingOps: number[];
-  // queue
-  queue: (ConsumerInitiatedSlash | VscMaturity)[];
+  // queue of packets to be processed
+  // there is only one consumer so global queue is not needed
+  queue: (ConsumerInitiatedSlashPacketData | VscMaturity)[];
 
   constructor(model: Model, { ccvP }: ModelInitState) {
     this.m = model;
@@ -462,7 +463,7 @@ class CCVProvider {
     }
   };
 
-  onReceiveSlash = (data: ConsumerInitiatedSlash) => {
+  onReceiveSlash = (data: ConsumerInitiatedSlashPacketData) => {
     let infractionHeight;
 
     if (data.vscID === 0) {
@@ -601,7 +602,7 @@ class CCVConsumer {
       this.m.events.push(Event.DOWNTIME_SLASH_REQUEST_OUTSTANDING);
       return;
     }
-    const data: ConsumerInitiatedSlash = {
+    const data: ConsumerInitiatedSlashPacketData = {
       val,
       vscID: this.hToVscID[infractionHeight],
       isDowntime,
