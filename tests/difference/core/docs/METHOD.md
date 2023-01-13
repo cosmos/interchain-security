@@ -83,8 +83,6 @@ func foo(x uint64) {
 
 By testing foo with uniformly randomly chosen x's 80 million times per second you will never find the bug. This is a contrived example, but it illustrates the point that you cannot rely on randomness.
 
-## Conceptual Improvements
-
 ## Influences
 
 In creating diff testing I was influenced ideas from Model Based Testing (see [section](#comparison-to-model-based-testing)). Both methods share the notions of model, driver, and trace but the way the model is written and the traces are generated is different.
@@ -105,7 +103,19 @@ The same model can be used to create drivers for, and test, many different imple
 
 ## Comparison to Model Based Testing
 
+Informal Systems uses the term model based testing to refer to, essentially diff testing, with two major differences
+
+- The model is written in a formal specification language with semantics and properties that make it amenable to formal verification and automated reasoning techniques.\
+Example languages: [TLA+](https://en.wikipedia.org/wiki/TLA%2B), [Quint](https://github.com/informalsystems/quint). Example semantic: [Temporal Logic of Actions](https://en.wikipedia.org/wiki/Temporal_logic_of_actions). Example techniques: [SAT Solving](https://en.wikipedia.org/wiki/SAT_solver), [Symbolic Model Checking](https://blog.acolyer.org/2019/11/29/tla-model-checking-made-symbolic/), [State Enumerating Model Checking](https://en.wikipedia.org/wiki/State_space_enumeration). Example tools: [TLC](https://github.com/tlaplus/tlaplus), [Apalache](https://apalache.informal.systems/).
+- The model is explored not by randomness and heuristics but by using a [*model checker*](https://en.wikipedia.org/wiki/Model_checking). Model checkers pull on a massive field of research and they're about applying efficient techniques for exploring program behaviors. While modern model checkers are highly optimized and capable, they are not silver bullets, as they all suffer from the [State Space Explosion Problem](https://en.wikipedia.org/wiki/Combinatorial_explosion). See [this wiki page](https://en.wikipedia.org/wiki/Model_checking#Techniques) for more info.
+
+Why not use model checking? They require expert knowledge which is hard to onboard, the State Space Explosion Problem can be very real in practice, and the tooling e.g TLA+ is generally not industrial strength in terms of maintainability ect.
+
 ## Comparison to Property Based Testing
+
+Property Based Testing is a loose term for testing properties of your system. Generally the idea is to make API calls using random heuristics and known tricks, and check that the result satisfies properties. Please see [this page](https://github.com/cosmos/interchain-security/blob/danwt/pbt-prototype/tests/pbt/tutorial.md) for a full tutorial on using a golang PBT library.
+
+~~Why not use property based testing?~~ I suggest using it. See next section.
 
 ## Recommendation going forward
 
