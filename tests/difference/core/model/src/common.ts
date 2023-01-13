@@ -126,12 +126,18 @@ interface CommittedBlock {
 }
 
 /**
- * A snapshot of model state which is the consequence
- * of doing an Action against the model. Used
- * for state comparisons with the SUT, and to make
- * traces human readable.
+ * 
+ * A partial snapshot of model state. It is the state
+ * needed to check that the SUT is behaving correctly
+ * when compared to the model.
+ * 
+ * NOTE: This is not a complete snapshot of the model state
+ * because not all of the data is needed, and the space
+ * needed adds up quickly. Also, a concise representation
+ * makes traces much more readable and easier to debug
+ * by inspection.
  */
-interface Consequence {
+interface PartialState {
   h?: number; // Chain local height
   t?: number; // Chain local timestamp
   tokens?: number[];
@@ -146,11 +152,13 @@ interface Consequence {
 interface TraceAction {
   ix: number;
   action: Action;
-  consequence: Consequence;
+  partialState: PartialState;
 }
 
 /**
- * See model.ts for field docstrings
+ * The initial state of a new model instances.
+ * 
+ * See model.ts for details of each field.
  */
 type ModelInitState = {
   h: Record<Chain, number>;
@@ -189,7 +197,7 @@ type ModelInitState = {
 
 export {
   ModelInitState,
-  Consequence,
+  PartialState,
   TraceAction,
   CommittedBlock,
   Chain,

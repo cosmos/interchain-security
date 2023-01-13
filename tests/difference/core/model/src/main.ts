@@ -26,7 +26,7 @@ import {
   EndAndBeginBlock,
   TraceAction,
   Chain,
-  Consequence,
+  PartialState,
 } from './common.js';
 
 import {
@@ -188,7 +188,7 @@ class ActionGenerator {
  * @param model The model instance
  * @param action The action to be executed against the model
  */
-function doAction(model: Model, action: Action): Consequence {
+function doAction(model: Model, action: Action): PartialState {
   const kind = action.kind;
   if (kind === 'Delegate') {
     const a = action as Delegate;
@@ -329,13 +329,14 @@ function generateTraces(seconds: number, checkProperties: boolean) {
     const actions: TraceAction[] = [];
     for (let j = 0; j < NUM_ACTIONS; j++) {
       const a = actionGenerator.get();
-      const consequence = doAction(model, a);
+      const partialState = doAction(model, a);
       actions.push({
         ix: j,
         // Store the action taken
         action: a,
-        // Store the consequence of the action for model comparison
-        consequence: cloneDeep(consequence),
+        // Store the portion of the model state which is relevant
+        // for checking that this action was processed correctly.
+        partialState: cloneDeep(partialState),
       });
       if (checkProperties) {
         // Checking properties is flagged because it is computationally
