@@ -2,23 +2,9 @@
 
 Contains information about the differential/difference testing method in general and how it impacts the project.
 
-Answers questions like:
+# Motivation
 
-- main motivation and concepts to used to create the framework
-- your biggest influences in writing it (maybe some references to books, articlest etc)
-- what tradeoff you had to make
-- what do you think is missing with this approach (compared to other approaches)
-- what you feel is the main benefit of the framework
-- how to improve it in the future (ignore code related stuff, focus on concepts)
-- other things you find important
-
-Extra
-
-- difference between this and atomkraft/mbt?
-
-# Main motivation
-
-The motivation to do diff testing is the goal to find more, deeper, bugs in the long run life of the project in a more cost effective way than can be done by other testing methods (unit, full node, integration, model based testing).
+The goal is to find more, deeper, bugs in the long run life of the project in a more cost effective way than can be done by other testing methods (unit, full node, integration, model based testing).
 
 Each of the traditional methods has draw backs
 
@@ -43,10 +29,84 @@ Everything should run in memory, cheaply. It should be possible to use the debug
 Diff testing does not
 
 - Try to find every bug\
-Diff testing is based on randomness and heuristics and these can only get you so far in finding bugs. More on this later.
+Diff testing is based on randomness and heuristics and these can only get you so far in finding bugs. More on this in [Limitations](#limitations).
 
 ## Concepts
 
-For this section we don't use any academic parlance, just the terminology as it is already being used in the project.
+Here we use terminology as it is already used in the project, we do **not** use academic parlance.
+
+We have a system under test (SUT) and we want to test that it satisfies all our design properties (e.g. Validator Set Replication). Diff testing works by making a simplified implementation of the business logic of our system, observing executions of the simplified implementation, and then checking that those observations 'match' what is happening in the real system.
 
 ![diagram0](./diagrams/diagram0.png)
+
+We have three major components, a model and driver, and the SUT. The creation of each part could go something like
+
+1. Figure out what parts of the system state you need to observe to know that your system is working. E.g. token balances, voting powers.
+2. Figure out which API calls influence that state.
+3. Create the simplest possible implementation of those API calls that results in the correct state. This is the raw model.
+4. Randomly make API calls against your model. You might need some heuristics or bespoke logic to make sure these random calls result in good coverage (see [Limitations](#limitations)).
+5. Record the random API calls made ('actions') and obervations of the state made at regular intervals. Together this data forms a trace. Repeated many times from the zero state you obtain *traces*.
+6. Create a 'driver': some code that wraps the API of the SUT and can interpret traces and 'test' those traces against the SUT. For each tested trace, setup the SUT to a suitable zero state, and make each API call as in the trace. For each state observation in the trace, check that the SUT state corresponds.
+
+## Benefits
+
+- You know that the system behavior matches the model behavior.
+- The model should be much simpler and easier to check properties for. It will have clear boundaries.
+- A well written model can be the specification.
+- You can instrument the model with arbitrary code to make sure that your random API calls get good coverage. This can go well beyond statement/branch coverage.
+- Based on my anecdotal experience, the ratio of confidence gained per line of code written and maintained can be much much higher for this kind of testing than for unit tests, integration tests, full node tests.
+- You can find deep bugs because the random exploration will find many cases that humans won't think of.
+
+## Limitations
+
+- You have to maintain a model and all the surrounding framework.
+- If you want to make a major change to your system you will have to change the model and the SUT.\
+NOTE: Change the model first, and THEN change the SUT. This is TDD.
+
+and...
+
+The biggest limitation is that random exploration can be severely limited. This warrants more explanation:
+
+### Random exploration
+
+It's easy to find example programs where random exploration will have very poor results. Consider
+
+```go
+func foo(x uint64) {
+    if x = 123456 {
+        // BUG
+    } else {
+        // NO BUG
+    }
+}
+```
+
+By testing foo with uniformly randomly chosen x's 80 million times per second you will never find the bug. This is a contrived example, but it illustrates the point that you cannot rely on randomness.
+
+## Conceptual Improvements
+
+## Influences
+
+In creating diff testing I was influenced ideas from Model Based Testing (see [section](#comparison-to-model-based-testing)). Both methods share the notions of model, driver, and trace but the way the model is written and the traces are generated is different.
+
+## Other
+
+### Random exploration good or bad?
+
+While you shouldn't rely on random exploration for good coverage it proves to be practical and useful in many real life systems. You should definitely measure the coverage of your exploration. With measurements, you can freely experiment with adding heuristic rules to restrict the randomness in particular ways. You can also look at qualities of your particular system and try to make combinatorial or probabilistic arguments for coverage.
+
+### Usage of model as the spec
+
+The model could be the spec, if you want it to be. All the dependencies should be abstracted away behind contract satisfying interfaces, and any implementation detail related to performance or environment boilerplate can be omitted.
+
+### Creating many implementations from a single model
+
+The same model can be used to create drivers for, and test, many different implementations of the system in any language, environment ect
+
+## Comparison to Model Based Testing
+
+## Comparison to Property Based Testing
+
+## Recommendation going forward
+
+In the long run I suggest scrapping the existing model and trace, and using property based testing instead. The existing driver can easily be adapted to take input from a property based testing library like
