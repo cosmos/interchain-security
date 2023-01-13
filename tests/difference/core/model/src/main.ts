@@ -286,7 +286,7 @@ function doAction(model: Model, action: Action): Consequence {
  * @param checkProperties If true, will check properties and only write trace
  * if property is violated.
  */
-function gen(seconds: number, checkProperties: boolean) {
+function generateTraces(seconds: number, checkProperties: boolean) {
   // Compute millis run time
   const runTimeMillis = seconds * 1000;
   let elapsedMillis = 0;
@@ -340,7 +340,11 @@ function gen(seconds: number, checkProperties: boolean) {
       if (checkProperties) {
         // Checking properties is flagged because it is computationally
         // expensive.
+
+        // If a property does not hold, we write the trace to file for debugging
+        // (and replaying).
         if (!validatorSetReplication(hist)) {
+
           dumpTrace(`${DIR}trace_${i}.json`, actions, events);
           throw 'validatorSetReplication property failure, trace written.';
         }
@@ -354,6 +358,8 @@ function gen(seconds: number, checkProperties: boolean) {
         }
       }
     }
+    // Only write trace if not checking properties because disk IO,
+    // and we are not interested in the trace if the properties hold.
     if (!checkProperties) {
       // Write the trace to file, along with metadata.
       dumpTrace(`${DIR}trace_${i}.json`, actions, events);
@@ -385,7 +391,7 @@ function gen(seconds: number, checkProperties: boolean) {
  * 
  * @param actions
  */
-function replay(actions: TraceAction[]) {
+function replayActions(actions: TraceAction[]) {
   const hist = new BlockHistory();
   const events: Event[] = [];
   const model = new Model(hist, events, MODEL_INIT_STATE);
@@ -413,7 +419,7 @@ function replayFile(fn: string, ix: number, numActions: number) {
   const trace = traces[ix];
   const traceActions = trace.actions as TraceAction[];
   const actions = traceActions.slice(0, numActions);
-  replay(actions);
+  replayActions(actions);
 }
 
 console.log(`running main`);
@@ -431,7 +437,7 @@ if (process.argv[2] === 'gen') {
   console.log(`gen`);
   console.log(`generating traces to /traces`);
   const seconds = parseInt(process.argv[3]);
-  gen(seconds, false);
+  generateTraces(seconds, false);
 } else if (process.argv[2] === 'properties') {
   /*
    * Check properties of the model for <seconds> seconds.
@@ -447,7 +453,7 @@ if (process.argv[2] === 'gen') {
   console.log(`properties`);
   console.log(`checking that random executions satisfy properties`);
   const seconds = parseInt(process.argv[3]);
-  gen(seconds, true);
+  generateTraces(seconds, true);
 } else if (process.argv[2] === 'subset') {
   /*
    * Creates a trace file containing several traces, in a way that ensures
@@ -495,4 +501,4 @@ if (process.argv[2] === 'gen') {
 
 console.log(`finished running main`);
 
-export { gen };
+export { generateTraces as gen };
