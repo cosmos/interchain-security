@@ -281,6 +281,7 @@ function doAction(model: Model, action: Action): Consequence {
  * The trace consists of data including the actions taken, and the
  * successive model states that result from the actions. Additional
  * data is included
+ * 
  * @param seconds Duration to generate traces.
  * @param checkProperties If true, will check properties and only write trace
  * if property is violated.
@@ -289,17 +290,33 @@ function gen(seconds: number, checkProperties: boolean) {
   // Compute millis run time
   const runTimeMillis = seconds * 1000;
   let elapsedMillis = 0;
+
   // Number of actions to execute against each model instance
-  // Free parameter!
+  // Free parameter! 200 is a good default for this model.
+  //
+  // INFO: A number of actions MAY or MAY NOT lead to interesting
+  //       system states.
+  //       A very large number of actions MAY result in a state
+  //       which is 'stuck': further actions change the state very little or 
+  //       explore nearby areas.
+  //       A very small number of actions MAY not explore the model
+  //       deeply enough to uncover bugs.
+  //       You should choose this number based on coverage measurements
+  //       and your intuition about the model.
   const NUM_ACTIONS = 200;
+
   // Directory to output traces in json format
   const DIR = 'traces/';
+  // Make or clear the output directory. WARNING: may delete data.
   forceMakeEmptyDir(DIR);
-  let i = 0;
+
+  let i = 0; // Used to measure operations per second
+
   // Track the model events that occur during the generation process
   // this data is used to check that all events are emitted by some
   // trace.
   const allEvents = [];
+
   while (elapsedMillis < runTimeMillis) {
     i += 1;
     const end = timeSpan();
@@ -362,8 +379,10 @@ function gen(seconds: number, checkProperties: boolean) {
  * a failing test against the SUT. In this manner it is possible
  * to step through the model execution and the SUT execution of trace
  * side-by-side.
+ * 
  * The model is deterministic, thus a fixed list of actions always
  * results in the same behavior and model states.
+ * 
  * @param actions
  */
 function replay(actions: TraceAction[]) {
@@ -373,14 +392,15 @@ function replay(actions: TraceAction[]) {
   const actionGenerator = new ActionGenerator(model);
   for (let i = 0; i < actions.length; i++) {
     const a = actions[i];
-    console.log(a);
     actionGenerator.do(a.action);
     doAction(model, a.action);
-    bondBasedConsumerVotingPower(hist);
   }
 }
 
 /**
+ * Takes a path to a json file containing traces and replays the trace
+ * at the given index, for the given number of actions.
+ * 
  * @param fn filename of the file containing the json traces
  * @param ix the index of the trace in the json
  * @param numActions The number of actions to replay from the trace. If numActions
@@ -401,31 +421,56 @@ console.log(`running main`);
 /*
  * Generate new traces and write them to files, for <seconds> seconds.
  *
+ * Use a mixture of randomness and heuristics to generate random actions
+ * and run them against the model. This is done many times, and the results
+ * of each run are written to a file called a trace.
+ *
  * yarn start gen <seconds>
  */
 if (process.argv[2] === 'gen') {
   console.log(`gen`);
+  console.log(`generating traces to /traces`);
   const seconds = parseInt(process.argv[3]);
   gen(seconds, false);
 } else if (process.argv[2] === 'properties') {
   /*
    * Check properties of the model for <seconds> seconds.
    *
+   * The system has properties that must be true at all times. We
+   * can check that the model satisfies these properties by running
+   * random sequences of actions (as in the gen command) and checking
+   * that after each action, the model is still in a state that satisfies
+   * all the properties.
+   *
    * yarn start properties <seconds>
    */
   console.log(`properties`);
+  console.log(`checking that random executions satisfy properties`);
   const seconds = parseInt(process.argv[3]);
   gen(seconds, true);
 } else if (process.argv[2] === 'subset') {
   /*
    * Creates a trace file containing several traces, in a way that ensures
    * each interesting model event is emitted by some trace.
+   * 
+   * When generating millions of traces, many of them will be very similar
+   * and you will not need all of them to get a good test coverage of your system.
+   * It is useful to select a small subset of the traces, which can be run
+   * efficiently and which cover all interesting events. 
    *
    * yarn start subset <output file abs path> <num event instances (optional)>
+   * 
+   * NOTE: num event instances = n means that the resulting subset of traces will
+   * overall contain the event at least n times (if possible). If, over all traces,
+   * the event occurs less than n times, then the subset will include all traces
+   * including that event. WARNING: make sure that all events are covered!
    */
   console.log(`createSmallSubsetOfCoveringTraces`);
+  console.log(`selecting a small subset of traces that cover all events`);
   const outFile = process.argv[3];
-  let eventInstances = 20;
+
+  let eventInstances = 400; // Sensible, conservative default. 
+
   if (3 < process.argv.length) {
     eventInstances = parseInt(process.argv[4]);
   }
@@ -434,13 +479,18 @@ if (process.argv[2] === 'gen') {
   /*
    * Replay a trace from a a file, up to a given number of actions.
    *
+   * This is useful for debugging. If you have a failed test, you can 
+   * step through the model and the SUT side-by-side using a debugger
+   * or print statements.
+   *
    * yarn start replay <filename> <list index> <num actions>
    */
   console.log(`replay`);
+  console.log(`replaying the actions of a trace against a new model instance`);
   const [fn, traceNum, numActions] = process.argv.slice(3, 6);
   replayFile(fn, parseInt(traceNum), parseInt(numActions));
 } else {
-  console.log(`did not execute any function`);
+  console.log(`did not execute any function, please specify a function to run`);
 }
 
 console.log(`finished running main`);
