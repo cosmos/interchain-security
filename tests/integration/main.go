@@ -29,11 +29,7 @@ func main() {
 	if happyPathOnly != nil && *happyPathOnly {
 		fmt.Println("=============== running happy path only ===============")
 		tr := DefaultTestRun()
-		tr.SetLocalSDKPath(*localSdkPath)
-		tr.ValidateStringLiterals()
-		tr.startDocker()
-		tr.ExecuteSteps(happyPathSteps)
-		tr.teardownDocker()
+		tr.Run(happyPathSteps, *localSdkPath)
 		return
 	}
 
@@ -70,13 +66,13 @@ func main() {
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
 }
 
-// Run sets up docker container and executs the steps in the test run.
+// Run sets up docker container and executes the steps in the test run.
 // Docker containers are torn down after the test run is complete.
 func (tr *TestRun) Run(steps []Step, localSdkPath string) {
 	tr.SetLocalSDKPath(localSdkPath)
-	tr.ValidateStringLiterals()
+	tr.validateStringLiterals()
 	tr.startDocker()
-	tr.ExecuteSteps(steps)
+	tr.executeSteps(steps)
 	tr.teardownDocker()
 }
 
@@ -150,8 +146,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 	}
 }
 
-// ExecuteSteps sequentially runs steps.
-func (tr *TestRun) ExecuteSteps(steps []Step) {
+// executeSteps sequentially runs steps.
+func (tr *TestRun) executeSteps(steps []Step) {
 	fmt.Printf("=============== started %s tests ===============\n", tr.name)
 
 	start := time.Now()
