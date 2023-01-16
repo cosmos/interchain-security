@@ -8,6 +8,8 @@ import (
 	"pgregory.net/rapid"
 )
 
+var localT *testing.T
+
 // Model is a description of a rapid state machine for testing
 type Model struct {
 	// simulate a relayed path
@@ -25,14 +27,15 @@ type Model struct {
 // Init is an action for initializing  a Model instance.
 func (m *Model) Init(t *rapid.T) {
 	state := initState
-	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(t, state)
+	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(localT, state)
 	m.valAddresses = valAddresses
 	m.offsetHeight = offsetHeight
 	m.offsetTimeUnix = offsetTimeUnix
-	m.simibc = simibc.MakeRelayedPath(t, path)
+	m.simibc = simibc.MakeRelayedPath(localT, path)
 }
 
 func (m *Model) Cleanup() {
+	localT = nil // TODO: ????
 }
 
 // Check runs after every action and verifies that all required invariants hold.
@@ -66,5 +69,6 @@ func (m *Model) Check(t *rapid.T) {
 //
 // go test -v -timeout 10m -run Queue -rapid.checks=1000 -rapid.steps=1000
 func TestPBT(t *testing.T) {
+	localT = t
 	rapid.Check(t, rapid.Run[*Model]())
 }

@@ -373,7 +373,6 @@ func (b *Builder) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.ValAdd
 	addr, err := sdk.ValAddressFromHex(val.Address.String())
 
 	NoErrorTemporary(b.t, err)
-	b.t.Require()
 	PK := privVal.PrivKey.PubKey()
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
 	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{},
