@@ -29,8 +29,7 @@ type Model struct {
 
 	// offsets: the model time and heights start at 0
 	// so offsets are needed for comparisons.
-	offsetTimeUnix int64
-	offsetHeight   int64
+	initialChainHeight int64
 
 	didSlash           []bool
 	tLastTrustedHeader map[string]time.Time
@@ -136,23 +135,12 @@ func (s *Model) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
 	}
 }
 
-// deliver numPackets packets from the network to chain
-func (s *Model) deliver(chain string, numPackets int) {
-	// Makes sure client is updated
-	s.updateClient(chain)
-	// Deliver any outstanding acks
-	s.simibc.DeliverAcks(s.chainID(chain), 999999)
-	// Consume deliverable packets from the network
-	s.simibc.DeliverPackets(s.chainID(chain), numPackets)
-}
-
 // Init is an action for initializing  a Model instance.
 func (m *Model) Init(t *rapid.T) {
 	state := initState
-	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(localT, state)
+	path, valAddresses, initialChainHeight, _ := GetZeroState(localT, state)
 	m.valAddresses = valAddresses
-	m.offsetHeight = offsetHeight
-	m.offsetTimeUnix = offsetTimeUnix
+	m.initialChainHeight = initialChainHeight
 	m.simibc = simibc.MakeRelayedPath(localT, path)
 
 	//////////////////////////////////////////////////////////////////////
@@ -168,7 +156,10 @@ func (m *Model) Init(t *rapid.T) {
 }
 
 func (m *Model) Cleanup() {
-	localT = nil // TODO: ????
+	// Keeping this line in seems to cause an error immediately
+	// Not exactly sure when Rapid calls Cleanup
+
+	// localT = nil // TODO: ????
 }
 
 // Check runs after every action and verifies that all required invariants hold.
@@ -195,7 +186,7 @@ func (m *Model) ConsumerSlash(t *rapid.T) {
 	// TODO: make sure not validators will be slashed, dynamic cons
 	// h := rapid.Int64Range(0, 100).Draw(t, "h") // TODO: proper range!
 	currH := m.height(C)
-	lower := m.offsetHeight
+	lower := m.initialChainHeight
 	upper := currH - 1
 	if upper < lower {
 		lower = upper
@@ -228,7 +219,10 @@ func (m *Model) Deliver(t *rapid.T) {
 	chain := rapid.SampledFrom(options).Draw(t, "chain")
 	num := rapid.IntRange(0, 10).Draw(t, "num")
 	m.updateClient(chain)
-	m.deliver(chain, num)
+	// Deliver any outstanding acks
+	m.simibc.DeliverAcks(m.chainID(chain), 999999)
+	// Consume deliverable packets from the network
+	m.simibc.DeliverPackets(m.chainID(chain), num)
 }
 
 func (m *Model) EndAndBeginBlock(t *rapid.T) {
