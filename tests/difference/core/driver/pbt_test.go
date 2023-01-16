@@ -32,6 +32,10 @@ type Model struct {
 	// so offsets are needed for comparisons.
 	offsetTimeUnix int64
 	offsetHeight   int64
+
+	didSlash           []bool
+	tLastTrustedHeader map[string]time.Time
+	tLastCommit        map[string]time.Time
 }
 
 // ctx returns the sdk.Context for the chain
@@ -206,6 +210,11 @@ func (m *Model) Init(t *rapid.T) {
 	m.offsetHeight = offsetHeight
 	m.offsetTimeUnix = offsetTimeUnix
 	m.simibc = simibc.MakeRelayedPath(localT, path)
+
+	//////////
+	m.didSlash = []bool{false, false, false, false}
+	m.tLastTrustedHeader = map[string]time.Time{}
+	m.tLastCommit = map[string]time.Time{}
 }
 
 func (m *Model) Cleanup() {
@@ -220,28 +229,52 @@ func (m *Model) Check(t *rapid.T) {
 }
 
 func (m *Model) Delegate(t *rapid.T) {
-	m.delegate(0, 0)
+	val := rapid.Int64Range(0, 3).Draw(t, "val")
+	amt := rapid.Int64Range(1000, 5000).Draw(t, "amt")
+	m.delegate(val, amt)
 }
 
 func (m *Model) Undelegate(t *rapid.T) {
-	m.undelegate(0, 0)
+	val := rapid.Int64Range(0, 3).Draw(t, "val")
+	amt := rapid.Int64Range(1000, 5000).Draw(t, "amt")
+	m.undelegate(val, amt)
 }
 
 func (m *Model) ConsumerSlash(t *rapid.T) {
 	cons := m.consAddr(0)
-	m.consumerSlash(cons, 0, false)
+	// TODO: make sure not validators will be slashed, dynamic cons
+	h := rapid.Int64Range(0, 100).Draw(t, "h") // TODO: proper range!
+	isDowntime := rapid.Bool().Draw(t, "isDowntime")
+	m.consumerSlash(cons, h, isDowntime)
+
 }
 
 func (m *Model) UpdateClient(t *rapid.T) {
-	m.updateClient("")
+	options := []string{P, C}
+	chain := rapid.SampledFrom(options).Draw(t, "chain")
+	m.updateClient(chain)
+	// TODO: update model data
 }
 
 func (m *Model) Deliver(t *rapid.T) {
-	m.deliver("", 0)
+	options := []string{P, C}
+	chain := rapid.SampledFrom(options).Draw(t, "chain")
+	num := rapid.IntRange(0, 10).Draw(t, "num")
+	// TODO: update client
+	m.deliver(chain, num)
 }
 
 func (m *Model) EndAndBeginBlock(t *rapid.T) {
-	m.endAndBeginBlock("")
+	options := []string{P, C}
+	chain := rapid.SampledFrom(options).Draw(t, "chain")
+
+	valid := func() bool {
+		return true
+	}
+
+	if valid() {
+		m.endAndBeginBlock(chain)
+	}
 }
 
 // See args prefixed with `rapid` in output of `go test -args -h`
