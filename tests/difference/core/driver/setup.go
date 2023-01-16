@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"testing"
 	"time"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -10,8 +11,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -47,8 +46,14 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
+func NoErrorTemporary(t *testing.T, err error) {
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 type Builder struct {
-	suite          *suite.Suite
+	t              *testing.T
 	link           simibc.OrderedLink
 	path           *ibctesting.Path
 	coordinator    *ibctesting.Coordinator
@@ -176,7 +181,9 @@ func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingAp
 		extra := b.initState.ValStates.ValidatorExtraTokens[i]
 
 		tokens := sdk.NewInt(int64(delegation + extra))
-		b.suite.Require().Equal(status, stakingtypes.Bonded, "All genesis validators should be bonded")
+		if status != stakingtypes.Bonded {
+			b.t.Fatalf("All genesis validators should be bonded")
+		}
 		sumBonded = sumBonded.Add(tokens)
 		// delegator account receives delShares shares
 		delShares := sdk.NewDec(int64(delegation))
@@ -184,9 +191,11 @@ func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingAp
 		sumShares := sdk.NewDec(int64(delegation + extra))
 
 		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
-		require.NoError(b.suite.T(), err)
+
+		NoErrorTemporary(b.t, err)
 		pkAny, err := codectypes.NewAnyWithValue(pk)
-		require.NoError(b.suite.T(), err)
+
+		NoErrorTemporary(b.t, err)
 
 		validator := stakingtypes.Validator{
 			OperatorAddress:   sdk.ValAddress(val.Address).String(),
@@ -243,7 +252,8 @@ func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingAp
 	genesis[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(genesisBank)
 
 	stateBytes, err := json.MarshalIndent(genesis, "", " ")
-	require.NoError(b.suite.T(), err)
+
+	NoErrorTemporary(b.t, err)
 
 	return stateBytes, senderAccounts
 
@@ -280,7 +290,7 @@ func (b *Builder) newChain(coord *ibctesting.Coordinator, appInit ibctesting.App
 	)
 
 	chain := &ibctesting.TestChain{
-		T:           b.suite.T(),
+		T:           b.t,
 		Coordinator: coord,
 		ChainID:     chainID,
 		App:         app,
@@ -317,11 +327,13 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 		privVal := b.getValidatorPK(i)
 
 		pubKey, err := privVal.GetPubKey()
-		require.NoError(b.suite.T(), err)
+
+		NoErrorTemporary(b.t, err)
 
 		// Compute address
 		addr, err := sdk.ValAddressFromHex(pubKey.Address().String())
-		require.NoError(b.suite.T(), err)
+
+		NoErrorTemporary(b.t, err)
 		addresses = append(addresses, addr)
 
 		// Save signer
@@ -336,7 +348,7 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 
 func (b *Builder) createChains() {
 
-	coordinator := ibctesting.NewCoordinator(b.suite.T(), 0)
+	coordinator := ibctesting.NewCoordinator(b.t, 0)
 
 	// Create validators
 	validators, signers, addresses := b.createValidators()
@@ -355,15 +367,19 @@ func (b *Builder) createChains() {
 func (b *Builder) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.ValAddress) {
 	privVal := b.getValidatorPK(seedIx)
 	pubKey, err := privVal.GetPubKey()
-	b.suite.Require().NoError(err)
+
+	NoErrorTemporary(b.t, err)
 	val := tmtypes.NewValidator(pubKey, 0)
 	addr, err := sdk.ValAddressFromHex(val.Address.String())
-	b.suite.Require().NoError(err)
+
+	NoErrorTemporary(b.t, err)
+	b.t.Require()
 	PK := privVal.PrivKey.PubKey()
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
 	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{},
 		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
-	b.suite.Require().NoError(err)
+
+	NoErrorTemporary(b.t, err)
 	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
 	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.ctx(P)), msg)
 	return privVal, addr
@@ -396,7 +412,9 @@ func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
 		// The result will be 0 if a==b, -1 if a < b, and +1 if a > b.
 		res := bytes.Compare(lesserKey, greaterKey)
 		// Confirm that validator precedence is the same in code as in model
-		b.suite.Require().Equal(-1, res)
+		if res != -1 {
+			b.t.Fatal()
+		}
 	}
 
 	// In order to match the model to the system under test it is necessary
@@ -421,7 +439,8 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	msg := stakingtypes.NewMsgDelegate(d, val, coins)
 	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
 	_, err := pskServer.Delegate(sdk.WrapSDKContext(b.ctx(P)), msg)
-	b.suite.Require().NoError(err)
+
+	NoErrorTemporary(b.t, err)
 }
 
 func (b *Builder) addExtraValidators() {
@@ -430,7 +449,7 @@ func (b *Builder) addExtraValidators() {
 		if status == stakingtypes.Unbonded {
 			val, addr := b.createValidator(i)
 			pubKey, err := val.GetPubKey()
-			b.suite.Require().Nil(err)
+			NoErrorTemporary(b.t, err)
 			b.valAddresses = append(b.valAddresses, addr)
 			b.providerChain().Signers[pubKey.Address().String()] = val
 			b.consumerChain().Signers[pubKey.Address().String()] = val
@@ -516,7 +535,8 @@ func (b *Builder) doIBCHandshake() {
 	tmConfig.TrustingPeriod = b.initState.Trusting
 	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
 	err := b.path.EndpointB.CreateClient()
-	b.suite.Require().NoError(err)
+
+	NoErrorTemporary(b.t, err)
 
 	// Create the Consumer chain ID mapping in the provider state
 	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.path.EndpointB.ClientID)
@@ -543,7 +563,9 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 	seq, ok := b.providerChain().App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
 		b.ctx(P), ccv.ProviderPortID, b.path.EndpointB.ChannelID)
 
-	b.suite.Require().True(ok)
+	if !ok {
+		b.t.Fatal()
+	}
 
 	packet := channeltypes.NewPacket(pd.GetBytes(), seq, ccv.ProviderPortID, b.endpoint(P).ChannelID,
 		ccv.ConsumerPortID, b.endpoint(C).ChannelID, clienttypes.Height{}, timeout)
@@ -552,7 +574,7 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 
 	err := b.endpoint(P).Chain.App.GetIBCKeeper().ChannelKeeper.SendPacket(b.ctx(P), channelCap, packet)
 
-	b.suite.Require().NoError(err)
+	NoErrorTemporary(b.t, err)
 
 	// Double commit the packet
 	b.endBlock(b.chainID(P))
@@ -568,7 +590,7 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 
 	b.link.AddAck(b.chainID(C), ack, packet)
 
-	b.suite.Require().NoError(err)
+	NoErrorTemporary(b.t, err)
 }
 
 // idempotentBeginBlock begins a new block on chain
@@ -761,9 +783,9 @@ func (b *Builder) build() {
 // after a full handshake, but the precise order of steps used to reach the
 // state does not necessarily mimic the order of steps that happen in a
 // live scenario.
-func GetZeroState(suite *suite.Suite, initState InitState) (
+func GetZeroState(t *testing.T, initState InitState) (
 	*ibctesting.Path, []sdk.ValAddress, int64, int64) {
-	b := Builder{initState: initState, suite: suite}
+	b := Builder{initState: initState, t: t}
 	b.build()
 	// Height of the last committed block (current header is not committed)
 	heightLastCommitted := b.chain(P).CurrentHeader.Height - 1
