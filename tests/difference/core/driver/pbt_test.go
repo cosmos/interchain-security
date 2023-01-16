@@ -182,8 +182,28 @@ func (m *Model) Undelegate(t *rapid.T) {
 }
 
 func (m *Model) ConsumerSlash(t *rapid.T) {
-	cons := m.consAddr(0)
-	// TODO: make sure not validators will be slashed, dynamic cons
+	val := rapid.Int64Range(0, 3).Draw(t, "val")
+
+	valid := func() bool {
+		numNotSlashed := 0
+		for _, slashed := range m.didSlash {
+			if !slashed {
+				numNotSlashed += 1
+			}
+		}
+		slashed := m.didSlash[val]
+
+		willNotJailAllValidators :=
+			(1 < numNotSlashed) || slashed
+		return willNotJailAllValidators
+	}
+
+	if !valid() {
+		return
+	}
+
+	cons := m.consAddr(val)
+
 	// h := rapid.Int64Range(0, 100).Draw(t, "h") // TODO: proper range!
 	currH := m.height(C)
 	lower := m.initialChainHeight
@@ -192,9 +212,11 @@ func (m *Model) ConsumerSlash(t *rapid.T) {
 		lower = upper
 	}
 	h := rapid.Int64Range(lower, upper).Draw(t, "h") // TODO: check bounds!
-	isDowntime := rapid.Bool().Draw(t, "isDowntime")
-	m.consumerSlash(cons, h, isDowntime)
 
+	isDowntime := rapid.Bool().Draw(t, "isDowntime")
+
+	m.didSlash[val] = true
+	m.consumerSlash(cons, h, isDowntime)
 }
 
 func (m *Model) updateClient(chain string) {
