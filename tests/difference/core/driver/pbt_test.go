@@ -5,7 +5,6 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -64,10 +63,6 @@ func (b *Model) providerStakingKeeper() stakingkeeper.Keeper {
 	return b.providerChain().App.(*appProvider.App).StakingKeeper
 }
 
-func (b *Model) providerSlashingKeeper() slashingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).SlashingKeeper
-}
-
 func (b *Model) consumerKeeper() consumerkeeper.Keeper {
 	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
 }
@@ -95,47 +90,6 @@ func (s *Model) validator(i int64) sdk.ValAddress {
 // consAddr returns the ConsAdd for the validator with id (ix) i
 func (s *Model) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(s.validator(i))
-}
-
-// isJailed returns the jail status of validator with id (ix) i
-func (s *Model) isJailed(i int64) bool {
-	val, _ := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-	return val.IsJailed()
-}
-
-// consumerPower returns the power on the consumer chain for
-// validator with id (ix) i
-func (s *Model) consumerPower(i int64) (int64, error) {
-	v, _ := s.consumerKeeper().GetCCValidator(s.ctx(C), s.validator(i))
-	return v.Power, nil
-}
-
-// delegation returns the number of delegated tokens in the delegation from
-// the delegator account to the validator with id (ix) i
-func (s *Model) delegation(i int64) int64 {
-	d, _ := s.providerStakingKeeper().GetDelegation(s.ctx(P), s.delegator(), s.validator(i))
-	return d.Shares.TruncateInt64()
-}
-
-// validatorStatus returns the validator status for validator with id (ix) i
-// on the provider chain
-func (s *Model) validatorStatus(i int64) stakingtypes.BondStatus {
-	v, _ := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-	return v.GetStatus()
-}
-
-// providerTokens returns the number of tokens that the validator with
-// id (ix) i has delegated to it in total on the provider chain
-func (s *Model) providerTokens(i int64) int64 {
-	v, _ := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-	return v.Tokens.Int64()
-}
-
-// delegatorBalance returns the balance of the delegator account
-func (s *Model) delegatorBalance() int64 {
-	d := s.delegator()
-	bal := s.providerChain().App.(*appProvider.App).BankKeeper.GetBalance(s.ctx(P), d, sdk.DefaultBondDenom)
-	return bal.Amount.Int64()
 }
 
 // delegate delegates amt tokens to validator val
@@ -182,10 +136,6 @@ func (s *Model) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
 	}
 }
 
-func (s *Model) updateClient(chain string) {
-	s.simibc.UpdateClient(s.chainID(chain))
-}
-
 // deliver numPackets packets from the network to chain
 func (s *Model) deliver(chain string, numPackets int) {
 	// Makes sure client is updated
@@ -194,12 +144,6 @@ func (s *Model) deliver(chain string, numPackets int) {
 	s.simibc.DeliverAcks(s.chainID(chain), 999999)
 	// Consume deliverable packets from the network
 	s.simibc.DeliverPackets(s.chainID(chain), numPackets)
-}
-
-func (s *Model) endAndBeginBlock(chain string) {
-	s.simibc.EndAndBeginBlock(s.chainID(chain), initState.BlockSeconds,
-		func() {
-		})
 }
 
 // Init is an action for initializing  a Model instance.
@@ -211,10 +155,16 @@ func (m *Model) Init(t *rapid.T) {
 	m.offsetTimeUnix = offsetTimeUnix
 	m.simibc = simibc.MakeRelayedPath(localT, path)
 
-	//////////
+	//////////////////////////////////////////////////////////////////////
 	m.didSlash = []bool{false, false, false, false}
-	m.tLastTrustedHeader = map[string]time.Time{}
-	m.tLastCommit = map[string]time.Time{}
+
+	// I THINK for this value, we can use the time of the last commit
+	// because the last steps of Setup() are to end block on both chains
+	// then begin a new block and update latest client
+
+	tee := m.time(P).Add(-initState.BlockSeconds)
+	m.tLastTrustedHeader = map[string]time.Time{P: tee, C: tee}
+	m.tLastCommit = map[string]time.Time{P: tee, C: tee}
 }
 
 func (m *Model) Cleanup() {
@@ -243,24 +193,41 @@ func (m *Model) Undelegate(t *rapid.T) {
 func (m *Model) ConsumerSlash(t *rapid.T) {
 	cons := m.consAddr(0)
 	// TODO: make sure not validators will be slashed, dynamic cons
-	h := rapid.Int64Range(0, 100).Draw(t, "h") // TODO: proper range!
+	// h := rapid.Int64Range(0, 100).Draw(t, "h") // TODO: proper range!
+	currH := m.height(C)
+	lower := m.offsetHeight
+	upper := currH - 1
+	if upper < lower {
+		lower = upper
+	}
+	h := rapid.Int64Range(lower, upper).Draw(t, "h") // TODO: check bounds!
 	isDowntime := rapid.Bool().Draw(t, "isDowntime")
 	m.consumerSlash(cons, h, isDowntime)
 
+}
+
+func (m *Model) updateClient(chain string) {
+	other := C
+
+	if chain == C {
+		other = P
+	}
+
+	m.tLastTrustedHeader[chain] = m.tLastCommit[other]
+	m.simibc.UpdateClient(m.chainID(chain))
 }
 
 func (m *Model) UpdateClient(t *rapid.T) {
 	options := []string{P, C}
 	chain := rapid.SampledFrom(options).Draw(t, "chain")
 	m.updateClient(chain)
-	// TODO: update model data
 }
 
 func (m *Model) Deliver(t *rapid.T) {
 	options := []string{P, C}
 	chain := rapid.SampledFrom(options).Draw(t, "chain")
 	num := rapid.IntRange(0, 10).Draw(t, "num")
-	// TODO: update client
+	m.updateClient(chain)
 	m.deliver(chain, num)
 }
 
@@ -269,38 +236,52 @@ func (m *Model) EndAndBeginBlock(t *rapid.T) {
 	chain := rapid.SampledFrom(options).Draw(t, "chain")
 
 	valid := func() bool {
-		return true
+		tee := m.time(chain)
+		teeLastTrusted := m.tLastTrustedHeader[chain]
+		// chain time + block seconds < time last trusted header + trusting period
+		willNotCauseClientExpiry := tee.Add(initState.BlockSeconds).Before(teeLastTrusted.Add(initState.Trusting))
+		return willNotCauseClientExpiry
 	}
 
 	if valid() {
-		m.endAndBeginBlock(chain)
+		m.tLastCommit[chain] = m.time(chain)
+		m.simibc.EndAndBeginBlock(
+			m.chainID(chain),
+			initState.BlockSeconds,
+			func() {
+			})
+	} else {
+		// TODO: log something?
 	}
 }
 
-// See args prefixed with `rapid` in output of `go test -args -h`
-// -rapid.checks int
-// rapid: number of checks to perform (default 100)
-// -rapid.debug
-// rapid: debugging output
-// -rapid.debugvis
-// rapid: debugging visualization
-// -rapid.failfile string
-// rapid: fail file to use to reproduce test failure
-// -rapid.log
-// rapid: eager verbose output to stdout (to aid with unrecoverable test failures)
-// -rapid.nofailfile
-// rapid: do not write fail files on test failures
-// -rapid.seed uint
-// rapid: PRNG seed to start with (0 to use a random one)
-// -rapid.shrinktime duration
-// rapid: maximum time to spend on test case minimization (default 30s)
-// -rapid.steps int
-// rapid: number of state machine steps to perform (default 100)
-// -rapid.v
-// rapid: verbose output
-//
 // go test -v -timeout 10m -run Queue -rapid.checks=1000 -rapid.steps=1000
 func TestPBT(t *testing.T) {
 	localT = t
 	rapid.Check(t, rapid.Run[*Model]())
+
+	/*
+	 See args prefixed with `rapid` in output of `go test -args -h`
+	 -rapid.checks int
+	 rapid: number of checks to perform (default 100)
+	 -rapid.debug
+	 rapid: debugging output
+	 -rapid.debugvis
+	 rapid: debugging visualization
+	 -rapid.failfile string
+	 rapid: fail file to use to reproduce test failure
+	 -rapid.log
+	 rapid: eager verbose output to stdout (to aid with unrecoverable test failures)
+	 -rapid.nofailfile
+	 rapid: do not write fail files on test failures
+	 -rapid.seed uint
+	 rapid: PRNG seed to start with (0 to use a random one)
+	 -rapid.shrinktime duration
+	 rapid: maximum time to spend on test case minimization (default 30s)
+	 -rapid.steps int
+	 rapid: number of state machine steps to perform (default 100)
+	 -rapid.v
+	 rapid: verbose output
+	*/
+
 }
