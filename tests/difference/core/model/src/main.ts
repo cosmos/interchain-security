@@ -45,20 +45,35 @@ import {
   MODEL_INIT_STATE,
 } from './constants.js';
 
+/**
+ * A mechanism for generating actions (API calls) in a way that
+ * ensures good coverage of a range of system behaviors. In order
+ * to achieve this, some bookkeeping state is kept around, that is
+ * NOT state of the model, but is used to inform the action generation.
+ * 
+ * For example, we explore behaviors where the IBC clients of the chains
+ * do not expire. To achieve this, we keep track of the last time a client
+ */
 class ActionGenerator {
   model;
-  // was the validator slashed?
+  // Was the validator slashed? This is used to prevent jailing all validators
+  // It does not make sense to jail all validators, because we know this will
+  // kill the chain, and we want to explore other behaviors.
   didSlash = new Array(NUM_VALIDATORS).fill(false);
-  // the timestamp contained in the latest trusted header
+  // For each chain CHAIN, the timestamp contained in the last header from the 
+  // OPPOSING chain that was trusted by the light client on CHAIN.
+  // This is used to prevent the light clients from expiring.
   tLastTrustedHeader = { provider: 0, consumer: 0 };
-  // the timestamp of the last committed block
+  // For each chain CHAIN, the timestamp of the last block that was committed
+  // on CHAIN.
+  // This is used to prevent the light clients from expiring.
   tLastCommit = { provider: 0, consumer: 0 };
 
   constructor(model: Model) {
     this.model = model;
   }
 
-  create = (): Action => {
+  createCandidateAction = (): Action => {
     const kind = _.sample([
       'Delegate',
       'Undelegate',
@@ -70,45 +85,51 @@ class ActionGenerator {
     if (kind === 'Delegate') {
       return {
         kind,
-        val: _.random(0, NUM_VALIDATORS - 1),
-        amt: _.random(DELEGATE_AMT_MIN, DELEGATE_AMT_MAX),
+        val: _.random(0, NUM_VALIDATORS - 1), // Choose any validator
+        amt: _.random(DELEGATE_AMT_MIN, DELEGATE_AMT_MAX), // An amount
       } as Delegate;
     }
     if (kind === 'Undelegate') {
       return {
         kind,
-        val: _.random(0, NUM_VALIDATORS - 1),
-        amt: _.random(UNDELEGATE_AMT_MIN, UNDELEGATE_AMT_MAX),
+        val: _.random(0, NUM_VALIDATORS - 1), // Any validator
+        amt: _.random(UNDELEGATE_AMT_MIN, UNDELEGATE_AMT_MAX), // An amount
       } as Undelegate;
     }
     if (kind === 'ConsumerSlash') {
       return {
         kind,
-        val: _.random(0, NUM_VALIDATORS - 1),
+        val: _.random(0, NUM_VALIDATORS - 1), // Any validator
+        // Any height up to the current height of the chain
         infractionHeight: Math.floor(Math.random() * this.model.h[C]),
+        // Choose downtime or doublesign
         isDowntime: Math.random() < ISDOWNTIME_PROBABILITY,
       } as ConsumerSlash;
     }
     if (kind === 'UpdateClient') {
-      return { kind, chain: _.sample([P, C]) as Chain } as UpdateClient;
+      return {
+        kind,
+        // Any chain
+        chain: _.sample([P, C]) as Chain
+      } as UpdateClient;
     }
     if (kind === 'Deliver') {
       return {
         kind,
-        chain: _.sample([P, C]) as Chain,
-        numPackets: _.random(1, MAX_NUM_PACKETS_FOR_DELIVER),
+        chain: _.sample([P, C]) as Chain, // Any chain
+        numPackets: _.random(1, MAX_NUM_PACKETS_FOR_DELIVER), // Any number of packets
       } as Deliver;
     }
     if (kind === 'EndAndBeginBlock') {
       return {
         kind,
-        chain: _.sample([P, C]) as Chain,
+        chain: _.sample([P, C]) as Chain, // Any chain
       } as EndAndBeginBlock;
     }
     throw `kind doesn't match`;
   };
 
-  valid = (a: Action): boolean => {
+  validAction = (a: Action): boolean => {
     if (a.kind === 'Delegate') {
       return true;
     }
@@ -125,8 +146,13 @@ class ActionGenerator {
       return true;
     }
     if (a.kind === 'EndAndBeginBlock') {
+      // It is only possible for a chain to progress if progressing
+      // will not cause its light client to expire.
       const chain = (a as EndAndBeginBlock).chain;
       return (
+        // If this holds, adding BLOCK_SECONDS to the chain time
+        // will not cause the the last trusted header timestamp
+        // to fall outside of the trusted period.
         this.model.t[chain] + BLOCK_SECONDS <
         this.tLastTrustedHeader[chain] + TRUSTING_SECONDS
       );
@@ -154,7 +180,8 @@ class ActionGenerator {
         this.tLastTrustedHeader[chain] + TRUSTING_SECONDS <=
         this.model.t[chain]
       ) {
-        // Sanity check to make sure client cannot expire
+        // This implies the client has expired. This should not happen.
+        // Sanity check to make sure.
         throw 'Client expired (updateClient), model is not written correctly.';
       }
       this.tLastTrustedHeader[chain] =
@@ -168,14 +195,16 @@ class ActionGenerator {
   };
 
   /**
+   * Get a sensible (valid) action, which can be executed against the model.
    * @returns A valid model action.
    */
-  get = () => {
+  get = (): Action => {
+    // Loop not infinite: some actions are always valid (e.g. Delegate)
     /* eslint no-constant-condition: 1*/
     while (true) {
-      // Ok because some action is always valid
-      const a = this.create();
-      if (this.valid(a)) {
+      const a = this.createCandidateAction();
+      if (this.validAction(a)) {
+        // Update the internal state of the action generator
         this.do(a);
         return a;
       }
