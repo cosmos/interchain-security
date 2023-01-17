@@ -33,8 +33,10 @@ type Model struct {
 	// keep around validators for easy access
 	valAddresses []sdk.ValAddress
 
-	// offsets: the model time and heights start at 0
-	// so offsets are needed for comparisons.
+	// Need initial chain height to calculate possible
+	// infraction heights on consumer chain
+	// Note that provider and consumer have the same
+	// initial chain height
 	initialChainHeight int64
 
 	didSlash           []bool
