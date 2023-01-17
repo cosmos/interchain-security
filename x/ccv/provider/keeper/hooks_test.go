@@ -33,7 +33,7 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 			setup: func(ctx sdk.Context, k providerkeeper.Keeper) {
 				// We are trying to add a new validator, but its address has already been used
 				// by another validator
-				k.SetValidatorByConsumerAddr(ctx, "chainid", newValidator.SDKConsAddress(), anotherValidator0.SDKConsAddress())
+				k.SetValidatorByConsumerAddr(ctx, "chainid", newValidator.SDKValConsAddress(), anotherValidator0.SDKValConsAddress())
 			},
 			expect: true,
 		},
@@ -42,8 +42,8 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 			setup: func(ctx sdk.Context, k providerkeeper.Keeper) {
 				// We are trying to add a new validator, but its address has already been used
 				// by another validator, of which there are several, across potentially several chains
-				k.SetValidatorByConsumerAddr(ctx, "chainid0", newValidator.SDKConsAddress(), anotherValidator0.SDKConsAddress())
-				k.SetValidatorByConsumerAddr(ctx, "chainid1", anotherValidator1.SDKConsAddress(), anotherValidator1.SDKConsAddress())
+				k.SetValidatorByConsumerAddr(ctx, "chainid0", newValidator.SDKValConsAddress(), anotherValidator0.SDKValConsAddress())
+				k.SetValidatorByConsumerAddr(ctx, "chainid1", anotherValidator1.SDKValConsAddress(), anotherValidator1.SDKValConsAddress())
 			},
 			expect: true,
 		},

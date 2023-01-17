@@ -103,6 +103,6 @@ func (v *CryptoIdentity) SDKValOpAddress() sdktypes.ValAddress {
 	return v.ValAddress
 }
 
-func (v *CryptoIdentity) SDKConsAddress() sdktypes.ConsAddress {
+func (v *CryptoIdentity) SDKValConsAddress() sdktypes.ConsAddress {
 	return sdktypes.ConsAddress(v.SDKPubKey().Address())
 }

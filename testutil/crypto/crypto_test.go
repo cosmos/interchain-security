@@ -17,7 +17,7 @@ func TestCryptoIdentityAddresses(t *testing.T) {
 
 	for i := 0; i < 99; i++ {
 		ci := testcrypto.NewCryptoIdentityFromIntSeed(i)
-		require.False(t, ci.SDKConsAddress().Equals(ci.SDKValOpAddress()))
+		require.False(t, ci.SDKValConsAddress().Equals(ci.SDKValOpAddress()))
 		require.False(t, keys[ci.PrivKey.String()])
 		require.False(t, valAddrs[ci.SDKValOpAddress().String()])
 
