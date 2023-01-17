@@ -130,6 +130,7 @@ func (s *Model) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
 
 // Init is an action for initializing  a Model instance.
 func (m *Model) Init(t *rapid.T) {
+
 	state := initState
 	path, valAddresses, initialChainHeight, _ := GetZeroState(localT, state)
 	m.valAddresses = valAddresses
@@ -265,6 +266,8 @@ func (m *Model) EndAndBeginBlock(t *rapid.T) {
 }
 
 // go test -v -timeout 10m -run Queue -rapid.checks=1000 -rapid.steps=1000
+// `checks` is the number of new models to run steps for
+// `steps` is the number of actions to run for each model
 func TestPBT(t *testing.T) {
 	localT = t
 	rapid.Check(t, rapid.Run[*Model]())
