@@ -121,7 +121,12 @@ func (b *Builder) consAddr(i int64) sdk.ConsAddress {
 
 // getValidatorPK returns the validator private key using the given seed index
 func (b *Builder) getValidatorPK(seedIx int) mock.PV {
-	seed := []byte(b.initState.PKSeeds[seedIx])
+	// seed := []byte(b.initState.PKSeeds[seedIx])
+	seed := make([]byte, 32)
+	for i := 0; i < 32; i++ {
+		seed[i] = byte(seedIx)
+	}
+
 	//lint:ignore SA1019 We don't care because this is only a test.
 	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 }
