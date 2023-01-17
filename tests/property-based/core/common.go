@@ -13,6 +13,8 @@ import (
 const P = "provider"
 const C = "consumer"
 
+var initState InitState
+
 // ValStates represents the total delegation
 // and bond status of a validator
 type ValStates struct {
@@ -38,11 +40,12 @@ type InitState struct {
 	MaxEntries             int
 }
 
-var initState InitState
-
 func init() {
 	//	tokens === power
 	sdk.DefaultPowerReduction = sdk.NewInt(1)
+	/*
+		These initial values heuristically lead to reasonably good exploration of behaviors.
+	*/
 	initState = InitState{
 		NumValidators:          4,
 		MaxValidators:          2,
@@ -51,9 +54,9 @@ func init() {
 		SlashDowntime:          sdk.NewDec(0),
 		UnbondingP:             time.Second * 70,
 		UnbondingC:             time.Second * 50,
-		Trusting:               time.Second * 49,
+		Trusting:               time.Second * 49, // Must be less than least unbonding
 		MaxClockDrift:          time.Second * 10000,
-		BlockInterval:          time.Second * 6,
+		BlockInterval:          time.Second * 6, // Time between blocks in setup
 		ValStates: ValStates{
 			Delegation:           []int{4000, 3000, 2000, 1000},
 			Tokens:               []int{5000, 4000, 3000, 2000},
@@ -69,7 +72,7 @@ func init() {
 			},
 			Evidence: &tmproto.EvidenceParams{
 				MaxAgeNumBlocks: 302400,
-				MaxAgeDuration:  504 * time.Hour, // 3 weeks is the max duration
+				MaxAgeDuration:  504 * time.Hour, // 3 weeks
 				MaxBytes:        10000,
 			},
 			Validator: &tmproto.ValidatorParams{
