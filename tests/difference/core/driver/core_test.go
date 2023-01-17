@@ -21,7 +21,7 @@ import (
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 )
 
-type CoreSuite struct {
+type AssumptionsModel struct {
 	// suite.Suite
 	t *testing.T
 
@@ -38,63 +38,63 @@ type CoreSuite struct {
 }
 
 // ctx returns the sdk.Context for the chain
-func (s *CoreSuite) ctx(chain string) sdk.Context {
+func (s *AssumptionsModel) ctx(chain string) sdk.Context {
 	return s.chain(chain).GetContext()
 }
 
 // chain returns the TestChain for a given chain identifier
-func (s *CoreSuite) chain(chain string) *ibctesting.TestChain {
+func (s *AssumptionsModel) chain(chain string) *ibctesting.TestChain {
 	return map[string]*ibctesting.TestChain{P: s.providerChain(), C: s.consumerChain()}[chain]
 }
 
-func (s *CoreSuite) providerChain() *ibctesting.TestChain {
+func (s *AssumptionsModel) providerChain() *ibctesting.TestChain {
 	return s.simibc.Chain(ibctesting.GetChainID(0))
 }
 
-func (s *CoreSuite) consumerChain() *ibctesting.TestChain {
+func (s *AssumptionsModel) consumerChain() *ibctesting.TestChain {
 	return s.simibc.Chain(ibctesting.GetChainID(1))
 }
 
-func (b *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
+func (b *AssumptionsModel) providerStakingKeeper() stakingkeeper.Keeper {
 	return b.providerChain().App.(*appProvider.App).StakingKeeper
 }
 
-func (b *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {
+func (b *AssumptionsModel) providerSlashingKeeper() slashingkeeper.Keeper {
 	return b.providerChain().App.(*appProvider.App).SlashingKeeper
 }
 
-func (b *CoreSuite) consumerKeeper() consumerkeeper.Keeper {
+func (b *AssumptionsModel) consumerKeeper() consumerkeeper.Keeper {
 	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
 }
 
 // height returns the height of the current header of chain
-func (s *CoreSuite) height(chain string) int64 {
+func (s *AssumptionsModel) height(chain string) int64 {
 	return s.chain(chain).CurrentHeader.GetHeight()
 }
 
 // time returns the time of the current header of chain
-func (s *CoreSuite) time(chain string) time.Time {
+func (s *AssumptionsModel) time(chain string) time.Time {
 	return s.chain(chain).CurrentHeader.Time
 }
 
 // delegator retrieves the address for the delegator account
-func (s *CoreSuite) delegator() sdk.AccAddress {
+func (s *AssumptionsModel) delegator() sdk.AccAddress {
 	return s.providerChain().SenderAccount.GetAddress()
 }
 
 // validator returns the address for the validator with id (ix) i
-func (s *CoreSuite) validator(i int64) sdk.ValAddress {
+func (s *AssumptionsModel) validator(i int64) sdk.ValAddress {
 	return s.valAddresses[i]
 }
 
 // consAddr returns the ConsAdd for the validator with id (ix) i
-func (s *CoreSuite) consAddr(i int64) sdk.ConsAddress {
+func (s *AssumptionsModel) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(s.validator(i))
 }
 
 // delegation returns the number of delegated tokens in the delegation from
 // the delegator account to the validator with id (ix) i
-func (s *CoreSuite) delegation(i int64) int64 {
+func (s *AssumptionsModel) delegation(i int64) int64 {
 	d, found := s.providerStakingKeeper().GetDelegation(s.ctx(P), s.delegator(), s.validator(i))
 	assert.Truef(s.t, found, "GetDelegation() -> !found")
 	return d.Shares.TruncateInt64()
@@ -102,7 +102,7 @@ func (s *CoreSuite) delegation(i int64) int64 {
 
 // validatorStatus returns the validator status for validator with id (ix) i
 // on the provider chain
-func (s *CoreSuite) validatorStatus(i int64) stakingtypes.BondStatus {
+func (s *AssumptionsModel) validatorStatus(i int64) stakingtypes.BondStatus {
 	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
 	assert.Truef(s.t, found, "GetValidator() -> !found")
 	return v.GetStatus()
@@ -110,23 +110,37 @@ func (s *CoreSuite) validatorStatus(i int64) stakingtypes.BondStatus {
 
 // providerTokens returns the number of tokens that the validator with
 // id (ix) i has delegated to it in total on the provider chain
-func (s *CoreSuite) providerTokens(i int64) int64 {
+func (s *AssumptionsModel) providerTokens(i int64) int64 {
 	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
 	assert.Truef(s.t, found, "GetValidator() -> !found")
 	return v.Tokens.Int64()
 }
 
 // delegatorBalance returns the balance of the delegator account
-func (s *CoreSuite) delegatorBalance() int64 {
+func (s *AssumptionsModel) delegatorBalance() int64 {
 	d := s.delegator()
 	bal := s.providerChain().App.(*appProvider.App).BankKeeper.GetBalance(s.ctx(P), d, sdk.DefaultBondDenom)
 	return bal.Amount.Int64()
 }
 
+// Init sets up the test suite in a 'zero' state which matches
+// the initial state in the model.
+func (s *AssumptionsModel) Init() {
+	state := initState
+	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(s.t, state)
+	s.valAddresses = valAddresses
+	s.offsetHeight = offsetHeight
+	s.offsetTimeUnix = offsetTimeUnix
+	s.simibc = simibc.MakeRelayedPath(s.t, path)
+}
+
 // TestAssumptions tests that the assumptions used to write the difftest
 // driver hold. This test therefore does not test the system, but only that
 // the driver is correctly setup.
-func (s *CoreSuite) TestAssumptions() {
+func TestAssumptions(t *testing.T) {
+	s := AssumptionsModel{}
+	s.t = t
+	s.Init()
 
 	const FAIL_MSG = "Assumptions for core diff test failed: there is a problem with the driver or how the test is setup."
 
@@ -253,18 +267,4 @@ func (s *CoreSuite) TestAssumptions() {
 	assert.Empty(s.t, s.simibc.Link.OutboxPackets[C])
 	assert.Empty(s.t, s.simibc.Link.OutboxAcks[P])
 	assert.Empty(s.t, s.simibc.Link.OutboxAcks[C])
-}
-
-// SetupTest sets up the test suite in a 'zero' state which matches
-// the initial state in the model.
-func (s *CoreSuite) SetupTest() {
-	state := initState
-	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(s.t, state)
-	s.valAddresses = valAddresses
-	s.offsetHeight = offsetHeight
-	s.offsetTimeUnix = offsetTimeUnix
-	s.simibc = simibc.MakeRelayedPath(s.t, path)
-}
-
-func TestAssumptions(t *testing.T) {
 }
