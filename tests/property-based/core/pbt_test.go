@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -151,8 +150,7 @@ func (m *Harness) updateClient(chain string) {
 	m.simibc.UpdateClient(m.chainID(chain))
 }
 
-func (m Harness) saveProviderValset() {
-	fmt.Println("save!")
+func (m *Harness) saveProviderValset() {
 	powers := make([]int64, len(m.valAddresses))
 	m.providerStakingKeeper().IterateLastValidatorPowers(m.ctx(P), func(addr sdk.ValAddress, power int64) bool {
 		for i, valAddr := range m.valAddresses {
@@ -160,13 +158,10 @@ func (m Harness) saveProviderValset() {
 				powers[i] = power
 			}
 		}
-		fmt.Println("save inner!")
 
 		return false // Do not break early
 	})
-	fmt.Println("save appending!")
 	m.providerValsets = append(m.providerValsets, powers)
-	fmt.Println("m.providerValsets", m.providerValsets)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -205,14 +200,11 @@ func (m *Harness) validatorSetReplication() bool {
 		// We found the power
 		valsetC[valP] = valC.GetPower()
 	}
-	fmt.Println("valsetC", valsetC)
 
 	good := false
 	// See if any of the provider valsets match the consumer valset
-	fmt.Println("m.providerValsets", m.providerValsets)
 
 	for _, valsetP := range m.providerValsets {
-		fmt.Println("valsetP", valsetP)
 
 		innerGood := true
 		for i := 0; i < len(m.valAddresses); i++ {
@@ -235,7 +227,6 @@ func (m *Harness) validatorSetReplication() bool {
 
 // Init is run by rapid first, to setup a model instance.
 func (m *Harness) Init(t *rapid.T) {
-	fmt.Println("init!")
 
 	z := setup.GetZeroState(localT)
 	m.valAddresses = z.Addrs
@@ -351,6 +342,7 @@ func (m *Harness) EndAndBeginBlockAction(t *rapid.T) {
 
 // Check runs after every action and verifies that all required invariants hold.
 func (m *Harness) Check(t *rapid.T) {
+
 	// fatal if bad
 	if !m.validatorSetReplication() {
 		t.Fatal("validator set replication failed")
