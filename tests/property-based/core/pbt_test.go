@@ -204,7 +204,6 @@ func (m *Harness) ConsumerSlash(t *rapid.T) {
 		return
 	}
 
-	// cons := m.consAddr(val)
 	cons := sdk.ConsAddress(m.valAddresses[val])
 
 	// h := rapid.Int64Range(0, 100).Draw(t, "h") // TODO: proper range!
