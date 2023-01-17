@@ -130,7 +130,7 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 	case slashThrottleDequeue:
 		tr.waitForSlashThrottleDequeue(action, verbose)
 	default:
-		log.Fatalf(fmt.Sprintf(`unknown action in testRun %s: %#v`, tr.name, action))
+		log.Fatalf("unknown action in testRun %s: %#v", tr.name, action)
 	}
 
 	modelState := step.state
