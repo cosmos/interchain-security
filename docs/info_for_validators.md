@@ -4,7 +4,7 @@ Validators may want to read this document.
 
 ##  Key Assignment
 
-The key assignment feature enables validators to use different consensus keys for each consumer chain. The provider allows validators to submit an AssignConsumerKey transaction to the provider chain. Pseudocode for type:
+The key assignment feature enables validators to use different consensus keys for each consumer chain. The feature allows validators to submit an AssignConsumerKey transaction to the provider chain. Pseudocode for type:
 
 ```txt
 message MsgAssignConsumerKey {
@@ -28,4 +28,4 @@ Note that keys can be assigned for a chain X before the addition proposal for X 
 
 There are also some added rule(s) about creating _new_ validators.
 
-1. A new validator on the provider cannot use a consensus key K if K is already used by any validator on any consumer chain X
+1. A new validator on the provider cannot use a consensus key K if K is already used by any validator on any consumer chain
