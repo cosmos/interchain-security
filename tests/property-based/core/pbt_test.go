@@ -143,10 +143,10 @@ func (m *Harness) updateClient(chain string) {
 func (m *Harness) Init(t *rapid.T) {
 
 	state := initState
-	path, valAddresses, initialChainHeight, _ := GetZeroState(localT, state)
-	m.valAddresses = valAddresses
-	m.initialChainHeight = initialChainHeight
-	m.simibc = simibc.MakeRelayedPath(localT, path)
+	z := GetZeroState(localT, state)
+	m.valAddresses = z.addrs
+	m.initialChainHeight = z.heightLastCommit
+	m.simibc = simibc.MakeRelayedPath(localT, z.path)
 
 	//////////////////////////////////////////////////////////////////////
 	m.didSlash = []bool{false, false, false, false}
@@ -156,6 +156,9 @@ func (m *Harness) Init(t *rapid.T) {
 	// then begin a new block and update latest client
 
 	tee := m.time(P).Add(-initState.BlockInterval)
+	if tee != z.timeLastCommit {
+		panic("REALLY BAD")
+	}
 	m.tLastTrustedHeader = map[string]time.Time{P: tee, C: tee}
 	m.tLastCommit = map[string]time.Time{P: tee, C: tee}
 }

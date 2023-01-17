@@ -466,6 +466,14 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 	return consumertypes.NewInitialGenesisState(client, providerConsState, valUpdates, params)
 }
 
+type ZeroState struct {
+	path             *ibctesting.Path
+	addrs            []sdk.ValAddress
+	heightLastCommit int64
+	timeLastCommit   time.Time
+	trustDuration    time.Duration
+}
+
 // The state of the data returned is equivalent to the state of two chains
 // after a full handshake, but the precise order of steps used to reach the
 // state does not necessarily mimic the order of steps that happen in a
@@ -473,7 +481,7 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 func GetZeroState(
 	t *testing.T,
 	initState InitState,
-) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted int64, timeLastCommitted int64) {
+) ZeroState {
 	b := Builder{initState: initState, t: t}
 
 	b.createProviderAndConsumer()
@@ -531,8 +539,8 @@ func GetZeroState(
 	lastConsumerHeader, _ := simibc.EndBlock(b.consumer(), func() {})
 
 	// Want the height and time of last COMMITTED block
-	heightLastCommitted = b.provider().CurrentHeader.Height
-	timeLastCommitted = b.provider().CurrentHeader.Time.Unix()
+	heightLastCommitted := b.provider().CurrentHeader.Height
+	timeLastCommitted := b.provider().CurrentHeader.Time
 
 	// Get ready to update clients.
 	simibc.BeginBlock(b.provider(), initState.BlockInterval)
@@ -543,5 +551,12 @@ func GetZeroState(
 	_ = simibc.UpdateReceiverClient(b.consumerEndpoint(), b.providerEndpoint(), lastConsumerHeader)
 	_ = simibc.UpdateReceiverClient(b.providerEndpoint(), b.consumerEndpoint(), lastProviderHeader)
 
-	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
+	z := ZeroState{}
+	z.path = b.path
+	z.addrs = b.valAddresses
+	z.heightLastCommit = heightLastCommitted
+	z.timeLastCommit = timeLastCommitted
+	z.trustDuration = initState.Trusting
+	return z
+
 }

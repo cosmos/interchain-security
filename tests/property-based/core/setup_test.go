@@ -129,11 +129,12 @@ func TestAssumptions(t *testing.T) {
 	s := AssumptionsHelper{}
 	s.t = t
 	state := initState
-	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(s.t, state)
-	s.valAddresses = valAddresses
-	s.offsetHeight = offsetHeight
-	s.offsetTimeUnix = offsetTimeUnix
-	s.simibc = simibc.MakeRelayedPath(s.t, path)
+	z := GetZeroState(t, state)
+
+	s.valAddresses = z.addrs
+	s.offsetHeight = z.heightLastCommit
+	s.offsetTimeUnix = z.timeLastCommit.Unix()
+	s.simibc = simibc.MakeRelayedPath(s.t, z.path)
 
 	const FAIL_MSG = "Assumptions for core diff test failed: there is a problem with the driver or how the test is setup."
 
