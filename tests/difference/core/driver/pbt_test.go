@@ -17,6 +17,12 @@ import (
 	"pgregory.net/rapid"
 )
 
+/*
+The rapid library does not currently provide a way to inject custom state into
+the harness (Model, in this case). We need a handle to a testing.T in the harness
+to be able to use ibc-go/testing::TestChain. Therefore, we set a global as a hack.
+See https://github.com/flyingmutant/rapid/issues/48
+*/
 var localT *testing.T
 
 // Model is a description of a rapid state machine for testing
