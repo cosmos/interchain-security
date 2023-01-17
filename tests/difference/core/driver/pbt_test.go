@@ -94,11 +94,6 @@ func (s *Model) validator(i int64) sdk.ValAddress {
 	return s.valAddresses[i]
 }
 
-// consAddr returns the ConsAdd for the validator with id (ix) i
-func (s *Model) consAddr(i int64) sdk.ConsAddress {
-	return sdk.ConsAddress(s.validator(i))
-}
-
 // delegate delegates amt tokens to validator val
 func (s *Model) delegate(val int64, amt int64) {
 	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
@@ -209,7 +204,8 @@ func (m *Model) ConsumerSlash(t *rapid.T) {
 		return
 	}
 
-	cons := m.consAddr(val)
+	// cons := m.consAddr(val)
+	cons := sdk.ConsAddress(m.valAddresses[val])
 
 	// h := rapid.Int64Range(0, 100).Draw(t, "h") // TODO: proper range!
 	currH := m.height(C)
