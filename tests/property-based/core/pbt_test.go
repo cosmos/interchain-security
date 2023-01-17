@@ -273,6 +273,14 @@ func (m *Harness) Undelegate(t *rapid.T) {
 	m.undelegate(val, amt)
 }
 
+/*
+TODO: implement a REDELEGATE action
+*/
+
+/*
+TODO: implement an UNJAIL (on provider) action
+*/
+
 func (m *Harness) ConsumerSlash(t *rapid.T) {
 	val := rapid.Int64Range(minVal, maxVal).Draw(t, "val")
 
@@ -289,6 +297,10 @@ func (m *Harness) ConsumerSlash(t *rapid.T) {
 		return willNotJailAllValidators
 	}
 
+	/*
+		Rapid may have generated this action, but we want to ignore it if
+		it would cause all validators to get jailed.
+	*/
 	if !valid() {
 		return
 	}
@@ -344,6 +356,10 @@ func (m *Harness) EndAndBeginBlockAction(t *rapid.T) {
 		return willNotCauseClientExpiry
 	}
 
+	/*
+		Rapid may have generated this action, but we want to ignore it in the case
+		that it would cause any light client to expire.
+	*/
 	if valid() {
 		m.tLastCommit[chain] = m.time(chain)
 		m.simibc.EndAndBeginBlock(
@@ -355,13 +371,11 @@ func (m *Harness) EndAndBeginBlockAction(t *rapid.T) {
 				}
 			})
 	}
-	// TODO: log something? in else case?
 }
 
 // Check runs after every action and verifies that all required invariants hold.
 func (m *Harness) Check(t *rapid.T) {
 
-	// fatal if bad
 	if !m.validatorSetReplication() {
 		t.Fatal("validator set replication failed")
 	}
