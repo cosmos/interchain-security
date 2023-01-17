@@ -44,7 +44,7 @@ import (
 const P = "provider"
 const C = "consumer"
 
-var initState InitState
+var varInitState InitState
 
 // ValStates represents the total delegation
 // and bond status of a validator
@@ -77,7 +77,7 @@ func init() {
 	/*
 		These initial values heuristically lead to reasonably good exploration of behaviors.
 	*/
-	initState = InitState{
+	varInitState = InitState{
 		NumValidators:          4,
 		MaxValidators:          2,
 		InitialDelegatorTokens: 10000000000000,
@@ -552,11 +552,8 @@ type ZeroState struct {
 // after a full handshake, but the precise order of steps used to reach the
 // state does not necessarily mimic the order of steps that happen in a
 // live scenario.
-func GetZeroState(
-	t *testing.T,
-	// initState InitState,
-) ZeroState {
-	b := builder{initState: initState, t: t}
+func GetZeroState(t *testing.T) ZeroState {
+	b := builder{initState: varInitState, t: t}
 
 	b.createProviderAndConsumer()
 
@@ -603,8 +600,8 @@ func GetZeroState(
 	// from committing additional validators.
 	simibc.EndBlock(b.consumer(), func() {})
 
-	simibc.BeginBlock(b.consumer(), initState.BlockInterval)
-	simibc.BeginBlock(b.provider(), initState.BlockInterval)
+	simibc.BeginBlock(b.consumer(), varInitState.BlockInterval)
+	simibc.BeginBlock(b.provider(), varInitState.BlockInterval)
 
 	// Commit a block on both chains, giving us two committed headers from
 	// the same time and height. This is the starting point for all our
@@ -617,8 +614,8 @@ func GetZeroState(
 	timeLastCommitted := b.provider().CurrentHeader.Time
 
 	// Get ready to update clients.
-	simibc.BeginBlock(b.provider(), initState.BlockInterval)
-	simibc.BeginBlock(b.consumer(), initState.BlockInterval)
+	simibc.BeginBlock(b.provider(), varInitState.BlockInterval)
+	simibc.BeginBlock(b.consumer(), varInitState.BlockInterval)
 
 	// Update clients to the latest header. Now everything is ready to go!
 	// Ignore errors for brevity. Everything is checked in Assuptions test.
@@ -630,7 +627,7 @@ func GetZeroState(
 	z.Addrs = b.valAddresses
 	z.HeightLastCommit = heightLastCommitted
 	z.TimeLastCommit = timeLastCommitted
-	z.TrustDuration = initState.Trusting
+	z.TrustDuration = varInitState.Trusting
 	return z
 
 }

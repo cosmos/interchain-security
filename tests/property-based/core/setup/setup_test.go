@@ -138,7 +138,7 @@ func TestAssumptions(t *testing.T) {
 	const FAIL_MSG = "Assumptions for core diff test failed: there is a problem with the driver or how the test is setup."
 
 	// Staking module maxValidators param is correct
-	maxValsE := uint32(initState.MaxValidators)
+	maxValsE := uint32(varInitState.MaxValidators)
 	maxVals := s.providerStakingKeeper().GetParams(s.ctx(P)).MaxValidators
 
 	if maxValsE != maxVals {
@@ -152,20 +152,20 @@ func TestAssumptions(t *testing.T) {
 	// 		 period to 1 block.
 
 	// Delegator balance is correct
-	assert.Equal(s.t, int64(initState.InitialDelegatorTokens), s.delegatorBalance())
+	assert.Equal(s.t, int64(varInitState.InitialDelegatorTokens), s.delegatorBalance())
 
 	// Slash factors are correct
-	assert.Equal(s.t, initState.SlashDowntime, s.providerSlashingKeeper().SlashFractionDowntime(s.ctx(P)))
-	assert.Equal(s.t, initState.SlashDoublesign, s.providerSlashingKeeper().SlashFractionDoubleSign(s.ctx(P)))
+	assert.Equal(s.t, varInitState.SlashDowntime, s.providerSlashingKeeper().SlashFractionDowntime(s.ctx(P)))
+	assert.Equal(s.t, varInitState.SlashDoublesign, s.providerSlashingKeeper().SlashFractionDoubleSign(s.ctx(P)))
 
 	// Provider unbonding period is correct
 	stakeParams := s.providerStakingKeeper().GetParams(s.ctx(P))
-	assert.Equal(s.t, stakeParams.UnbondingTime, initState.UnbondingP)
+	assert.Equal(s.t, stakeParams.UnbondingTime, varInitState.UnbondingP)
 	// Consumer unbonding period is correct
-	assert.Equal(s.t, s.consumerKeeper().UnbondingTime(s.ctx(C)), initState.UnbondingC)
+	assert.Equal(s.t, s.consumerKeeper().UnbondingTime(s.ctx(C)), varInitState.UnbondingC)
 
 	// Each validator has signing info
-	for i := 0; i < len(initState.ValStates.Tokens); i++ {
+	for i := 0; i < len(varInitState.ValStates.Tokens); i++ {
 		_, found := s.providerSlashingKeeper().GetValidatorSigningInfo(s.ctx(P), s.consAddr(int64(i)))
 		if !found {
 			s.t.Fatal(FAIL_MSG)
@@ -173,8 +173,8 @@ func TestAssumptions(t *testing.T) {
 	}
 
 	// Provider delegations are correct
-	for i := 0; i < len(initState.ValStates.Delegation); i++ {
-		E := int64(initState.ValStates.Delegation[i])
+	for i := 0; i < len(varInitState.ValStates.Delegation); i++ {
+		E := int64(varInitState.ValStates.Delegation[i])
 		A := s.delegation(int64(i))
 		if E != A {
 			s.t.Fatal(FAIL_MSG)
@@ -182,8 +182,8 @@ func TestAssumptions(t *testing.T) {
 	}
 
 	// Provider validator tokens are correct
-	for i := 0; i < len(initState.ValStates.Tokens); i++ {
-		E := int64(initState.ValStates.Tokens[i])
+	for i := 0; i < len(varInitState.ValStates.Tokens); i++ {
+		E := int64(varInitState.ValStates.Tokens[i])
 		A := s.providerTokens(int64(i))
 		if E != A {
 			s.t.Fatal(FAIL_MSG)
@@ -191,8 +191,8 @@ func TestAssumptions(t *testing.T) {
 	}
 
 	// Provider validator status is correct
-	for i := 0; i < len(initState.ValStates.Status); i++ {
-		E := initState.ValStates.Status[i]
+	for i := 0; i < len(varInitState.ValStates.Status); i++ {
+		E := varInitState.ValStates.Status[i]
 		A := s.validatorStatus(int64(i))
 		if E != A {
 			s.t.Fatal(FAIL_MSG)
@@ -231,9 +231,9 @@ func TestAssumptions(t *testing.T) {
 	}
 
 	// Consumer power
-	for i := 0; i < len(initState.ValStates.Status); i++ {
-		expectFound := initState.ValStates.Status[i] == stakingtypes.Bonded
-		expectPower := initState.ValStates.Tokens[i]
+	for i := 0; i < len(varInitState.ValStates.Status); i++ {
+		expectFound := varInitState.ValStates.Status[i] == stakingtypes.Bonded
+		expectPower := varInitState.ValStates.Tokens[i]
 		addr := s.validator(int64(i))
 		val, found := s.consumerKeeper().GetCCValidator(s.ctx(C), addr)
 		assert.Equal(s.t, expectFound, found)
@@ -247,8 +247,8 @@ func TestAssumptions(t *testing.T) {
 	// The offset time is the last committed time, but the SUT is +1 block ahead
 	// because the currentHeader time is ahead of the last committed. Therefore sub
 	// the difference (duration of 1 block).
-	assert.Equal(s.t, int64(s.offsetTimeUnix), s.time(P).Add(-initState.BlockInterval).Unix())
-	assert.Equal(s.t, int64(s.offsetTimeUnix), s.time(C).Add(-initState.BlockInterval).Unix())
+	assert.Equal(s.t, int64(s.offsetTimeUnix), s.time(P).Add(-varInitState.BlockInterval).Unix())
+	assert.Equal(s.t, int64(s.offsetTimeUnix), s.time(C).Add(-varInitState.BlockInterval).Unix())
 
 	// The offset height is the last committed height, but the SUT is +1 because
 	// the currentHeader is +1 ahead of the last committed. Therefore sub 1.
