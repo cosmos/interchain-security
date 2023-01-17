@@ -1,6 +1,6 @@
 # Info for Validators
 
-Validators may want to read this
+Validators may want to read this document.
 
 ##  Key Assignment
 
@@ -21,4 +21,11 @@ On receiving the transaction, if the assignment is valid, the provider will use 
 
 There are some rules about which keys can and can't be assigned:
 
-1.
+1. validator A cannot assign consumer key K to consumer chain X if there is already validator B (B!=A) using K _on the provider_
+2. validator A cannot assign consumer key K to consumer chain X if there is already a validator B using K on X
+
+Note that keys can be assigned for a chain X before the addition proposal for X has passed.
+
+There are also some added rule(s) about creating _new_ validators.
+
+1. A new validator on the provider cannot use a consensus key K if K is already used by any validator on any consumer chain X
