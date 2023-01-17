@@ -23,7 +23,6 @@ type ValStates struct {
 }
 
 type InitState struct {
-	PKSeeds                []string
 	NumValidators          int
 	MaxValidators          int
 	InitialDelegatorTokens int
@@ -45,14 +44,6 @@ func init() {
 	//	tokens === power
 	sdk.DefaultPowerReduction = sdk.NewInt(1)
 	initState = InitState{
-		PKSeeds: []string{
-			// Fixed seeds are used to create the private keys for validators.
-			// The seeds are chosen to ensure that the resulting validators are
-			// sorted in descending order by the staking module.
-			"bbaaaababaabbaabababbaabbbbbbaaa",
-			"abbbababbbabaaaaabaaabbbbababaab",
-			"bbabaabaabbbbbabbbaababbbbabbbbb",
-			"aabbbabaaaaababbbabaabaabbbbbbba"},
 		NumValidators:          4,
 		MaxValidators:          2,
 		InitialDelegatorTokens: 10000000000000,
