@@ -41,7 +41,81 @@ import (
 	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 )
 
-type Builder struct {
+const P = "provider"
+const C = "consumer"
+
+var initState InitState
+
+// ValStates represents the total delegation
+// and bond status of a validator
+type ValStates struct {
+	Delegation           []int
+	Tokens               []int
+	ValidatorExtraTokens []int
+	Status               []stakingtypes.BondStatus
+}
+
+type InitState struct {
+	NumValidators          int
+	MaxValidators          int
+	InitialDelegatorTokens int
+	SlashDoublesign        sdk.Dec
+	SlashDowntime          sdk.Dec
+	UnbondingP             time.Duration
+	UnbondingC             time.Duration
+	Trusting               time.Duration
+	MaxClockDrift          time.Duration
+	BlockInterval          time.Duration
+	ConsensusParams        *abci.ConsensusParams
+	ValStates              ValStates
+	MaxEntries             int
+}
+
+func init() {
+	//	tokens === power
+	sdk.DefaultPowerReduction = sdk.NewInt(1)
+	/*
+		These initial values heuristically lead to reasonably good exploration of behaviors.
+	*/
+	initState = InitState{
+		NumValidators:          4,
+		MaxValidators:          2,
+		InitialDelegatorTokens: 10000000000000,
+		SlashDoublesign:        sdk.NewDec(0),
+		SlashDowntime:          sdk.NewDec(0),
+		UnbondingP:             time.Second * 70,
+		UnbondingC:             time.Second * 50,
+		Trusting:               time.Second * 49, // Must be less than least unbonding
+		MaxClockDrift:          time.Second * 10000,
+		BlockInterval:          time.Second * 6, // Time between blocks in setup
+		ValStates: ValStates{
+			Delegation:           []int{4000, 3000, 2000, 1000},
+			Tokens:               []int{5000, 4000, 3000, 2000},
+			ValidatorExtraTokens: []int{1000, 1000, 1000, 1000},
+			Status: []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded,
+				stakingtypes.Unbonded, stakingtypes.Unbonded},
+		},
+		MaxEntries: 1000000,
+		ConsensusParams: &abci.ConsensusParams{
+			Block: &abci.BlockParams{
+				MaxBytes: 9223372036854775807,
+				MaxGas:   9223372036854775807,
+			},
+			Evidence: &tmproto.EvidenceParams{
+				MaxAgeNumBlocks: 302400,
+				MaxAgeDuration:  504 * time.Hour, // 3 weeks
+				MaxBytes:        10000,
+			},
+			Validator: &tmproto.ValidatorParams{
+				PubKeyTypes: []string{
+					tmtypes.ABCIPubKeyTypeEd25519,
+				},
+			},
+		},
+	}
+}
+
+type builder struct {
 	t            *testing.T
 	path         *ibctesting.Path
 	coordinator  *ibctesting.Coordinator
@@ -49,56 +123,56 @@ type Builder struct {
 	initState    InitState
 }
 
-func (b *Builder) provider() *ibctesting.TestChain {
+func (b *builder) provider() *ibctesting.TestChain {
 	return b.coordinator.GetChain(ibctesting.GetChainID(0))
 }
 
-func (b *Builder) consumer() *ibctesting.TestChain {
+func (b *builder) consumer() *ibctesting.TestChain {
 	return b.coordinator.GetChain(ibctesting.GetChainID(1))
 }
 
-func (b *Builder) providerCtx() sdk.Context {
+func (b *builder) providerCtx() sdk.Context {
 	return b.provider().GetContext()
 }
 
-func (b *Builder) consumerCtx() sdk.Context {
+func (b *builder) consumerCtx() sdk.Context {
 	return b.consumer().GetContext()
 }
 
-func (b *Builder) providerStakingKeeper() stakingkeeper.Keeper {
+func (b *builder) providerStakingKeeper() stakingkeeper.Keeper {
 	return b.provider().App.(*appProvider.App).StakingKeeper
 }
 
-func (b *Builder) providerSlashingKeeper() slashingkeeper.Keeper {
+func (b *builder) providerSlashingKeeper() slashingkeeper.Keeper {
 	return b.provider().App.(*appProvider.App).SlashingKeeper
 }
 
-func (b *Builder) providerKeeper() providerkeeper.Keeper {
+func (b *builder) providerKeeper() providerkeeper.Keeper {
 	return b.provider().App.(*appProvider.App).ProviderKeeper
 }
 
-func (b *Builder) consumerKeeper() consumerkeeper.Keeper {
+func (b *builder) consumerKeeper() consumerkeeper.Keeper {
 	return b.consumer().App.(*appConsumer.App).ConsumerKeeper
 }
 
-func (b *Builder) providerEndpoint() *ibctesting.Endpoint {
+func (b *builder) providerEndpoint() *ibctesting.Endpoint {
 	return b.path.EndpointB
 }
 
-func (b *Builder) consumerEndpoint() *ibctesting.Endpoint {
+func (b *builder) consumerEndpoint() *ibctesting.Endpoint {
 	return b.path.EndpointA
 }
 
-func (b *Builder) validator(i int64) sdk.ValAddress {
+func (b *builder) validator(i int64) sdk.ValAddress {
 	return b.valAddresses[i]
 }
 
-func (b *Builder) consAddr(i int64) sdk.ConsAddress {
+func (b *builder) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(b.validator(i))
 }
 
 // getTestValidator returns the validator private key using the given seed index
-func (b *Builder) getTestValidator(seedIx int) *testcrypto.CryptoIdentity {
+func (b *builder) getTestValidator(seedIx int) *testcrypto.CryptoIdentity {
 	seed := make([]byte, 32)
 	for i := 0; i < 32; i++ {
 		seed[i] = byte(seedIx)
@@ -106,7 +180,7 @@ func (b *Builder) getTestValidator(seedIx int) *testcrypto.CryptoIdentity {
 	return testcrypto.NewCryptoIdentityFromBytesSeed(seed)
 }
 
-func (b *Builder) getAppBytesAndSenders(
+func (b *builder) getAppBytesAndSenders(
 	chainID string,
 	app ibctesting.TestingApp,
 	genesis map[string]json.RawMessage,
@@ -238,7 +312,7 @@ func (b *Builder) getAppBytesAndSenders(
 
 }
 
-func (b *Builder) newChain(
+func (b *builder) newChain(
 	coord *ibctesting.Coordinator,
 	appInit ibctesting.AppIniter,
 	chainID string,
@@ -299,7 +373,7 @@ func (b *Builder) newChain(
 	return chain
 }
 
-func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.PrivValidator, []sdk.ValAddress) {
+func (b *builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.PrivValidator, []sdk.ValAddress) {
 	addresses := []sdk.ValAddress{}
 	signers := map[string]tmtypes.PrivValidator{}
 	validators := []*tmtypes.Validator{}
@@ -317,7 +391,7 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 	return tmtypes.NewValidatorSet(validators), signers, addresses
 }
 
-func (b *Builder) createProviderAndConsumer() {
+func (b *builder) createProviderAndConsumer() {
 
 	coordinator := ibctesting.NewCoordinator(b.t, 0)
 
@@ -334,7 +408,7 @@ func (b *Builder) createProviderAndConsumer() {
 }
 
 // setSigningInfos sets the validator signing info in the provider Slashing module
-func (b *Builder) setSigningInfos() {
+func (b *builder) setSigningInfos() {
 	for i := 0; i < b.initState.NumValidators; i++ {
 		info := slashingtypes.NewValidatorSigningInfo(
 			b.consAddr(int64(i)),
@@ -350,7 +424,7 @@ func (b *Builder) setSigningInfos() {
 
 // delegate is used to delegate tokens to newly created
 // validators in the setup process.
-func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
+func (b *builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	d := b.provider().SenderAccounts[del].SenderAccount.GetAddress()
 	coins := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	msg := stakingtypes.NewMsgDelegate(d, val, coins)
@@ -361,7 +435,7 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 
 // addValidatorToStakingModule creates an additional validator with zero commission
 // and zero tokens (zero voting power).
-func (b *Builder) addValidatorToStakingModule(testVal *testcrypto.CryptoIdentity) {
+func (b *builder) addValidatorToStakingModule(testVal *testcrypto.CryptoIdentity) {
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
 	msg, err := stakingtypes.NewMsgCreateValidator(
 		testVal.SDKValAddress(),
@@ -375,7 +449,7 @@ func (b *Builder) addValidatorToStakingModule(testVal *testcrypto.CryptoIdentity
 	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.providerCtx()), msg)
 }
 
-func (b *Builder) addExtraProviderValidators() {
+func (b *builder) addExtraProviderValidators() {
 
 	for i, status := range b.initState.ValStates.Status {
 		if status == stakingtypes.Unbonded {
@@ -399,7 +473,7 @@ func (b *Builder) addExtraProviderValidators() {
 	}
 }
 
-func (b *Builder) setProviderParams() {
+func (b *builder) setProviderParams() {
 	// Set the slash factors on the provider to match the model
 	slash := b.providerSlashingKeeper().GetParams(b.providerCtx())
 	slash.SlashFractionDoubleSign = b.initState.SlashDoublesign
@@ -413,7 +487,7 @@ func (b *Builder) setProviderParams() {
 	b.providerKeeper().SetParams(b.providerCtx(), throttle)
 }
 
-func (b *Builder) configurePath() {
+func (b *builder) configurePath() {
 	b.path = ibctesting.NewPath(b.consumer(), b.provider())
 	b.consumerEndpoint().ChannelConfig.PortID = ccv.ConsumerPortID
 	b.providerEndpoint().ChannelConfig.PortID = ccv.ProviderPortID
@@ -423,7 +497,7 @@ func (b *Builder) configurePath() {
 	b.providerEndpoint().ChannelConfig.Order = channeltypes.ORDERED
 }
 
-func (b *Builder) createProvidersLocalClient() {
+func (b *builder) createProvidersLocalClient() {
 	// Configure and create the consumer Client
 	tmCfg := b.providerEndpoint().ClientConfig.(*ibctesting.TendermintConfig)
 	tmCfg.UnbondingPeriod = b.initState.UnbondingC
@@ -435,7 +509,7 @@ func (b *Builder) createProvidersLocalClient() {
 	b.providerKeeper().SetConsumerClientId(b.providerCtx(), b.consumer().ChainID, b.providerEndpoint().ClientID)
 }
 
-func (b *Builder) createConsumersLocalClientGenesis() *ibctmtypes.ClientState {
+func (b *builder) createConsumersLocalClientGenesis() *ibctmtypes.ClientState {
 	tmCfg := b.consumerEndpoint().ClientConfig.(*ibctesting.TendermintConfig)
 	tmCfg.UnbondingPeriod = b.initState.UnbondingP
 	tmCfg.TrustingPeriod = b.initState.Trusting
@@ -448,7 +522,7 @@ func (b *Builder) createConsumersLocalClientGenesis() *ibctmtypes.ClientState {
 	)
 }
 
-func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consumertypes.GenesisState {
+func (b *builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consumertypes.GenesisState {
 	providerConsState := b.provider().LastHeader.ConsensusState()
 
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.provider().Vals)
@@ -482,7 +556,7 @@ func GetZeroState(
 	t *testing.T,
 	// initState InitState,
 ) ZeroState {
-	b := Builder{initState: initState, t: t}
+	b := builder{initState: initState, t: t}
 
 	b.createProviderAndConsumer()
 
