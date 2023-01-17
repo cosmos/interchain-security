@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"testing"
 	"time"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -11,7 +12,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -43,7 +43,7 @@ import (
 )
 
 type Builder struct {
-	suite        *suite.Suite
+	t            *testing.T
 	path         *ibctesting.Path
 	coordinator  *ibctesting.Coordinator
 	valAddresses []sdk.ValAddress
@@ -166,7 +166,7 @@ func (b *Builder) getAppBytesAndSenders(
 		extra := b.initState.ValStates.ValidatorExtraTokens[i]
 
 		tokens := sdk.NewInt(int64(delegation + extra))
-		assert.Equal(b.suite.T(), status, stakingtypes.Bonded, "All genesis validators should be bonded")
+		assert.Equal(b.t, status, stakingtypes.Bonded, "All genesis validators should be bonded")
 		sumBonded = sumBonded.Add(tokens)
 		// delegator account receives delShares shares
 		delShares := sdk.NewDec(int64(delegation))
@@ -174,9 +174,9 @@ func (b *Builder) getAppBytesAndSenders(
 		sumShares := sdk.NewDec(int64(delegation + extra))
 
 		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
-		assert.NoError(b.suite.T(), err)
+		assert.NoError(b.t, err)
 		pkAny, err := codectypes.NewAnyWithValue(pk)
-		assert.NoError(b.suite.T(), err)
+		assert.NoError(b.t, err)
 
 		validator := stakingtypes.Validator{
 			OperatorAddress:   sdk.ValAddress(val.Address).String(),
@@ -233,7 +233,7 @@ func (b *Builder) getAppBytesAndSenders(
 	genesis[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(genesisBank)
 
 	stateBytes, err := json.MarshalIndent(genesis, "", " ")
-	assert.NoError(b.suite.T(), err)
+	assert.NoError(b.t, err)
 
 	return stateBytes, senderAccounts
 
@@ -275,7 +275,7 @@ func (b *Builder) newChain(
 	)
 
 	chain := &ibctesting.TestChain{
-		T:           b.suite.T(),
+		T:           b.t,
 		Coordinator: coord,
 		ChainID:     chainID,
 		App:         app,
@@ -320,7 +320,7 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 
 func (b *Builder) createProviderAndConsumer() {
 
-	coordinator := ibctesting.NewCoordinator(b.suite.T(), 0)
+	coordinator := ibctesting.NewCoordinator(b.t, 0)
 
 	// Create validators
 	validators, signers, addresses := b.createValidators()
@@ -361,7 +361,7 @@ func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
 		// The result will be 0 if a==b, -1 if a < b, and +1 if a > b.
 		res := bytes.Compare(lesserKey, greaterKey)
 		// Confirm that validator precedence is the same in code as in model
-		assert.Equal(b.suite.T(), -1, res)
+		assert.Equal(b.t, -1, res)
 	}
 
 	// In order to match the model to the system under test it is necessary
@@ -386,7 +386,7 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	msg := stakingtypes.NewMsgDelegate(d, val, coins)
 	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
 	_, err := pskServer.Delegate(sdk.WrapSDKContext(b.providerCtx()), msg)
-	assert.NoError(b.suite.T(), err)
+	assert.NoError(b.t, err)
 }
 
 // addValidatorToStakingModule creates an additional validator with zero commission
@@ -400,7 +400,7 @@ func (b *Builder) addValidatorToStakingModule(testVal *testcrypto.CryptoIdentity
 		stakingtypes.Description{},
 		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
 		sdk.ZeroInt())
-	assert.NoError(b.suite.T(), err)
+	assert.NoError(b.t, err)
 	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
 	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.providerCtx()), msg)
 }
@@ -462,7 +462,7 @@ func (b *Builder) createProvidersLocalClient() {
 	tmCfg.TrustingPeriod = b.initState.Trusting
 	tmCfg.MaxClockDrift = b.initState.MaxClockDrift
 	err := b.providerEndpoint().CreateClient()
-	assert.NoError(b.suite.T(), err)
+	assert.NoError(b.t, err)
 	// Create the Consumer chain ID mapping in the provider state
 	b.providerKeeper().SetConsumerClientId(b.providerCtx(), b.consumer().ChainID, b.providerEndpoint().ClientID)
 }
@@ -503,10 +503,10 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 // state does not necessarily mimic the order of steps that happen in a
 // live scenario.
 func GetZeroState(
-	suite *suite.Suite,
+	t *testing.T,
 	initState InitState,
 ) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted int64, timeLastCommitted int64) {
-	b := Builder{initState: initState, suite: suite}
+	b := Builder{initState: initState, t: t}
 
 	b.createProviderAndConsumer()
 
