@@ -144,7 +144,7 @@ func (m *Harness) updateClient(chain string) {
 	m.simibc.UpdateClient(m.chainID(chain))
 }
 
-// Init is an action for initializing  a Model instance.
+// Init is run by rapid first, to setup a model instance.
 func (m *Harness) Init(t *rapid.T) {
 	z := setup.GetZeroState(localT)
 	m.valAddresses = z.Addrs
@@ -163,11 +163,8 @@ func (m *Harness) Init(t *rapid.T) {
 	m.tLastCommit = map[string]time.Time{P: z.TimeLastCommit, C: z.TimeLastCommit}
 }
 
+// Cleanup is deffered by rapid and can be used for freeing resource
 func (m *Harness) Cleanup() {
-	// Keeping this line in seems to cause an error immediately
-	// Not exactly sure when Rapid calls Cleanup
-
-	// localT = nil // TODO: ????
 }
 
 // Check runs after every action and verifies that all required invariants hold.
