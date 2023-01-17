@@ -144,7 +144,7 @@ func (m *Model) Init(t *rapid.T) {
 	// because the last steps of Setup() are to end block on both chains
 	// then begin a new block and update latest client
 
-	tee := m.time(P).Add(-initState.BlockSeconds)
+	tee := m.time(P).Add(-initState.BlockInterval)
 	m.tLastTrustedHeader = map[string]time.Time{P: tee, C: tee}
 	m.tLastCommit = map[string]time.Time{P: tee, C: tee}
 }
@@ -247,7 +247,7 @@ func (m *Model) EndAndBeginBlock(t *rapid.T) {
 		tee := m.time(chain)
 		teeLastTrusted := m.tLastTrustedHeader[chain]
 		// chain time + block seconds < time last trusted header + trusting period
-		willNotCauseClientExpiry := tee.Add(initState.BlockSeconds).Before(teeLastTrusted.Add(initState.Trusting))
+		willNotCauseClientExpiry := tee.Add(initState.BlockInterval).Before(teeLastTrusted.Add(initState.Trusting))
 		return willNotCauseClientExpiry
 	}
 
@@ -255,7 +255,7 @@ func (m *Model) EndAndBeginBlock(t *rapid.T) {
 		m.tLastCommit[chain] = m.time(chain)
 		m.simibc.EndAndBeginBlock(
 			m.chainID(chain),
-			initState.BlockSeconds,
+			initState.BlockInterval,
 			func() {
 			})
 	}

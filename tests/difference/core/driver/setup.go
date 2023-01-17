@@ -673,7 +673,7 @@ func (b *Builder) endBlock(chainID string) {
 	// Commit packets emmitted up to this point
 	b.link.Commit(chainID)
 
-	newT := b.coordinator.CurrentTime.Add(b.initState.BlockSeconds).UTC()
+	newT := b.coordinator.CurrentTime.Add(b.initState.BlockInterval).UTC()
 
 	// increment the current header
 	c.CurrentHeader = tmproto.Header{
@@ -747,7 +747,7 @@ func (b *Builder) build() {
 		b.idempotentBeginBlock(C)
 		b.endBlock(b.chainID(C))
 		b.mustBeginBlock = map[string]bool{P: true, C: true}
-		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockSeconds).UTC()
+		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockInterval).UTC()
 	}
 
 	b.idempotentBeginBlock(P)
@@ -763,7 +763,7 @@ func (b *Builder) build() {
 		b.deliverAcks(b.chainID(C))
 		b.endBlock(b.chainID(C))
 		b.mustBeginBlock = map[string]bool{P: true, C: true}
-		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockSeconds).UTC()
+		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockInterval).UTC()
 	}
 
 	b.idempotentBeginBlock(P)
@@ -771,7 +771,7 @@ func (b *Builder) build() {
 
 	b.endBlock(b.chainID(P))
 	b.endBlock(b.chainID(C))
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockSeconds).UTC()
+	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockInterval).UTC()
 	b.beginBlock(b.chainID(P))
 	b.beginBlock(b.chainID(C))
 	b.updateClient(b.chainID(P))
@@ -789,6 +789,6 @@ func GetZeroState(t *testing.T, initState InitState) (
 	// Height of the last committed block (current header is not committed)
 	heightLastCommitted := b.chain(P).CurrentHeader.Height - 1
 	// Time of the last committed block (current header is not committed)
-	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(-b.initState.BlockSeconds).Unix()
+	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(-b.initState.BlockInterval).Unix()
 	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
 }

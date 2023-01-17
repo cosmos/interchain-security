@@ -254,8 +254,8 @@ func TestAssumptions(t *testing.T) {
 	// The offset time is the last committed time, but the SUT is +1 block ahead
 	// because the currentHeader time is ahead of the last committed. Therefore sub
 	// the difference (duration of 1 block).
-	assert.Equal(s.t, int64(s.offsetTimeUnix), s.time(P).Add(-initState.BlockSeconds).Unix())
-	assert.Equal(s.t, int64(s.offsetTimeUnix), s.time(C).Add(-initState.BlockSeconds).Unix())
+	assert.Equal(s.t, int64(s.offsetTimeUnix), s.time(P).Add(-initState.BlockInterval).Unix())
+	assert.Equal(s.t, int64(s.offsetTimeUnix), s.time(C).Add(-initState.BlockInterval).Unix())
 
 	// The offset height is the last committed height, but the SUT is +1 because
 	// the currentHeader is +1 ahead of the last committed. Therefore sub 1.
