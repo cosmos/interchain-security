@@ -1,4 +1,4 @@
-package core
+package setup
 
 import (
 	"math"
@@ -128,13 +128,12 @@ func (s *AssumptionsHelper) delegatorBalance() int64 {
 func TestAssumptions(t *testing.T) {
 	s := AssumptionsHelper{}
 	s.t = t
-	state := initState
-	z := GetZeroState(t, state)
+	z := GetZeroState(t)
 
-	s.valAddresses = z.addrs
-	s.offsetHeight = z.heightLastCommit
-	s.offsetTimeUnix = z.timeLastCommit.Unix()
-	s.simibc = simibc.MakeRelayedPath(s.t, z.path)
+	s.valAddresses = z.Addrs
+	s.offsetHeight = z.HeightLastCommit
+	s.offsetTimeUnix = z.TimeLastCommit.Unix()
+	s.simibc = simibc.MakeRelayedPath(s.t, z.Path)
 
 	const FAIL_MSG = "Assumptions for core diff test failed: there is a problem with the driver or how the test is setup."
 

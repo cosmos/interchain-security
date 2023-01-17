@@ -12,10 +12,14 @@ import (
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	"github.com/cosmos/interchain-security/tests/property-based/core/setup"
 	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	"pgregory.net/rapid"
 )
+
+const P = setup.P
+const C = setup.C
 
 /*
 The rapid library does not currently provide a way to inject custom state into
@@ -42,6 +46,7 @@ type Harness struct {
 	didSlash           []bool
 	tLastTrustedHeader map[string]time.Time
 	tLastCommit        map[string]time.Time
+	trustDuration      time.Duration
 }
 
 func (s *Harness) ctx(chain string) sdk.Context {
@@ -141,12 +146,11 @@ func (m *Harness) updateClient(chain string) {
 
 // Init is an action for initializing  a Model instance.
 func (m *Harness) Init(t *rapid.T) {
-
-	state := initState
-	z := GetZeroState(localT, state)
-	m.valAddresses = z.addrs
-	m.initialChainHeight = z.heightLastCommit
-	m.simibc = simibc.MakeRelayedPath(localT, z.path)
+	z := setup.GetZeroState(localT)
+	m.valAddresses = z.Addrs
+	m.initialChainHeight = z.HeightLastCommit
+	m.simibc = simibc.MakeRelayedPath(localT, z.Path)
+	m.trustDuration = z.TrustDuration
 
 	//////////////////////////////////////////////////////////////////////
 	m.didSlash = []bool{false, false, false, false}
@@ -155,12 +159,8 @@ func (m *Harness) Init(t *rapid.T) {
 	// because the last steps of Setup() are to end block on both chains
 	// then begin a new block and update latest client
 
-	tee := m.time(P).Add(-initState.BlockInterval)
-	if tee != z.timeLastCommit {
-		panic("REALLY BAD")
-	}
-	m.tLastTrustedHeader = map[string]time.Time{P: tee, C: tee}
-	m.tLastCommit = map[string]time.Time{P: tee, C: tee}
+	m.tLastTrustedHeader = map[string]time.Time{P: z.TimeLastCommit, C: z.TimeLastCommit}
+	m.tLastCommit = map[string]time.Time{P: z.TimeLastCommit, C: z.TimeLastCommit}
 }
 
 func (m *Harness) Cleanup() {
@@ -254,7 +254,7 @@ func (m *Harness) EndAndBeginBlockAction(t *rapid.T) {
 		tee := m.time(chain)
 		teeLastTrusted := m.tLastTrustedHeader[chain]
 		// chain time + block seconds < time last trusted header + trusting period
-		willNotCauseClientExpiry := tee.Add(dt).Before(teeLastTrusted.Add(initState.Trusting))
+		willNotCauseClientExpiry := tee.Add(dt).Before(teeLastTrusted.Add(m.trustDuration))
 		return willNotCauseClientExpiry
 	}
 

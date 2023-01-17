@@ -1,4 +1,4 @@
-package core
+package setup
 
 import (
 	"encoding/json"
@@ -467,11 +467,11 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 }
 
 type ZeroState struct {
-	path             *ibctesting.Path
-	addrs            []sdk.ValAddress
-	heightLastCommit int64
-	timeLastCommit   time.Time
-	trustDuration    time.Duration
+	Path             *ibctesting.Path
+	Addrs            []sdk.ValAddress
+	HeightLastCommit int64
+	TimeLastCommit   time.Time
+	TrustDuration    time.Duration
 }
 
 // The state of the data returned is equivalent to the state of two chains
@@ -480,7 +480,7 @@ type ZeroState struct {
 // live scenario.
 func GetZeroState(
 	t *testing.T,
-	initState InitState,
+	// initState InitState,
 ) ZeroState {
 	b := Builder{initState: initState, t: t}
 
@@ -552,11 +552,11 @@ func GetZeroState(
 	_ = simibc.UpdateReceiverClient(b.providerEndpoint(), b.consumerEndpoint(), lastProviderHeader)
 
 	z := ZeroState{}
-	z.path = b.path
-	z.addrs = b.valAddresses
-	z.heightLastCommit = heightLastCommitted
-	z.timeLastCommit = timeLastCommitted
-	z.trustDuration = initState.Trusting
+	z.Path = b.path
+	z.Addrs = b.valAddresses
+	z.HeightLastCommit = heightLastCommitted
+	z.TimeLastCommit = timeLastCommitted
+	z.TrustDuration = initState.Trusting
 	return z
 
 }
