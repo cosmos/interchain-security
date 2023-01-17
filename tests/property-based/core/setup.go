@@ -100,7 +100,11 @@ func (b *Builder) consAddr(i int64) sdk.ConsAddress {
 
 // getTestValidator returns the validator private key using the given seed index
 func (b *Builder) getTestValidator(seedIx int) *testcrypto.CryptoIdentity {
-	return testcrypto.NewCryptoIdentityFromBytesSeed([]byte(b.initState.PKSeeds[seedIx]))
+	seed := make([]byte, 32)
+	for i := 0; i < 32; i++ {
+		seed[i] = byte(seedIx)
+	}
+	return testcrypto.NewCryptoIdentityFromBytesSeed(seed)
 }
 
 func (b *Builder) getAppBytesAndSenders(
