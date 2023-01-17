@@ -265,32 +265,8 @@ func (m *Model) EndAndBeginBlock(t *rapid.T) {
 // go test -v -timeout 10m -run Queue -rapid.checks=1000 -rapid.steps=1000
 // `checks` is the number of new models to run steps for
 // `steps` is the number of actions to run for each model
-func TestPBT(t *testing.T) {
+// See `go test -args -h` for a full list of arguments
+func TestPropertyBased(t *testing.T) {
 	localT = t
 	rapid.Check(t, rapid.Run[*Model]())
-
-	/*
-	 See args prefixed with `rapid` in output of `go test -args -h`
-	 -rapid.checks int
-	 rapid: number of checks to perform (default 100)
-	 -rapid.debug
-	 rapid: debugging output
-	 -rapid.debugvis
-	 rapid: debugging visualization
-	 -rapid.failfile string
-	 rapid: fail file to use to reproduce test failure
-	 -rapid.log
-	 rapid: eager verbose output to stdout (to aid with unrecoverable test failures)
-	 -rapid.nofailfile
-	 rapid: do not write fail files on test failures
-	 -rapid.seed uint
-	 rapid: PRNG seed to start with (0 to use a random one)
-	 -rapid.shrinktime duration
-	 rapid: maximum time to spend on test case minimization (default 30s)
-	 -rapid.steps int
-	 rapid: number of state machine steps to perform (default 100)
-	 -rapid.v
-	 rapid: verbose output
-	*/
-
 }
