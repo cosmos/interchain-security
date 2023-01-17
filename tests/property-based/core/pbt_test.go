@@ -22,6 +22,15 @@ import (
 const P = setup.P
 const C = setup.C
 
+const minVal = 0
+const maxVal = 3
+const minDelegate = 1
+const maxDelegate = 10000
+const minUndelegate = 1
+const maxUndelegate = 10000
+const maxDeliverNumPackets = 6
+const maxBlockInterval = 38
+
 /*
 The rapid library does not currently provide a way to inject custom state into
 the harness (Model, in this case). We need a handle to a testing.T in the harness
@@ -169,7 +178,16 @@ func (m *Harness) saveProviderValset() {
 
 func (m *Harness) validatorSetReplication() bool {
 
-	getConsumerAddressToValidatorMap := func() map[string]int {
+	/*
+		WARNING: this function is potentially very expensive. I did not optimize
+		at all, to keep things simple. Since properties are checked often, if this
+		function is expensive, it could slow down the overall rate (tests per second)
+		dramatically.
+		Suggestion: profile, and if this function is slow, extract out the map building
+		and optimize the lookups.
+	*/
+
+	buildConsumerAddressToValidatorMap := func() map[string]int {
 		ret := make(map[string]int)
 		for i, valAddr := range m.valAddresses {
 			valP, found := m.providerStakingKeeper().GetValidator(m.ctx(P), valAddr)
@@ -186,7 +204,7 @@ func (m *Harness) validatorSetReplication() bool {
 		return ret
 	}
 
-	special := getConsumerAddressToValidatorMap()
+	special := buildConsumerAddressToValidatorMap()
 
 	valsC := m.consumerKeeper().GetAllCCValidator(m.ctx(C))
 	// Build a list of powers for the consumer validator set where the
@@ -209,7 +227,7 @@ func (m *Harness) validatorSetReplication() bool {
 		innerGood := true
 		for i := 0; i < len(m.valAddresses); i++ {
 			if valsetP[i] != valsetC[i] {
-				// No match, try the next one
+				// No match, try the next valset
 				innerGood = false
 				break
 			}
@@ -244,19 +262,19 @@ func (m *Harness) Init(t *rapid.T) {
 }
 
 func (m *Harness) Delegate(t *rapid.T) {
-	val := rapid.Int64Range(0, 3).Draw(t, "val")
-	amt := rapid.Int64Range(1000, 5000).Draw(t, "amt")
+	val := rapid.Int64Range(minVal, maxVal).Draw(t, "val")
+	amt := rapid.Int64Range(minDelegate, maxDelegate).Draw(t, "amt")
 	m.delegate(val, amt)
 }
 
 func (m *Harness) Undelegate(t *rapid.T) {
-	val := rapid.Int64Range(0, 3).Draw(t, "val")
-	amt := rapid.Int64Range(1000, 5000).Draw(t, "amt")
+	val := rapid.Int64Range(minVal, maxVal).Draw(t, "val")
+	amt := rapid.Int64Range(minUndelegate, maxUndelegate).Draw(t, "amt")
 	m.undelegate(val, amt)
 }
 
 func (m *Harness) ConsumerSlash(t *rapid.T) {
-	val := rapid.Int64Range(0, 3).Draw(t, "val")
+	val := rapid.Int64Range(minVal, maxVal).Draw(t, "val")
 
 	valid := func() bool {
 		numNotSlashed := 0
@@ -301,7 +319,7 @@ func (m *Harness) UpdateClientAction(t *rapid.T) {
 func (m *Harness) DeliverAction(t *rapid.T) {
 	options := []string{P, C}
 	chain := rapid.SampledFrom(options).Draw(t, "chain")
-	num := rapid.IntRange(0, 10).Draw(t, "num")
+	num := rapid.IntRange(1, maxDeliverNumPackets).Draw(t, "num")
 	m.updateClient(chain)
 	// Deliver any outstanding acks
 	m.simibc.DeliverAcks(m.chainID(chain), 999999)
@@ -315,7 +333,7 @@ func (m *Harness) EndAndBeginBlockAction(t *rapid.T) {
 
 	// The number of seconds to between the current block
 	// and the header of the next block.
-	dtNumSeconds := rapid.IntRange(1, 10).Draw(t, "dt")
+	dtNumSeconds := rapid.IntRange(1, maxBlockInterval).Draw(t, "dt")
 	dt := time.Duration(dtNumSeconds) * time.Second
 
 	valid := func() bool {
