@@ -122,24 +122,18 @@ func (s *AssumptionsHelper) delegatorBalance() int64 {
 	return bal.Amount.Int64()
 }
 
-// Init sets up the test suite in a 'zero' state which matches
-// the initial state in the model.
-func (s *AssumptionsHelper) Init() {
-	state := initState
-	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(s.t, state)
-	s.valAddresses = valAddresses
-	s.offsetHeight = offsetHeight
-	s.offsetTimeUnix = offsetTimeUnix
-	s.simibc = simibc.MakeRelayedPath(s.t, path)
-}
-
 // TestAssumptions tests that the assumptions used to write the difftest
 // driver hold. This test therefore does not test the system, but only that
 // the driver is correctly setup.
 func TestAssumptions(t *testing.T) {
 	s := AssumptionsHelper{}
 	s.t = t
-	s.Init()
+	state := initState
+	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(s.t, state)
+	s.valAddresses = valAddresses
+	s.offsetHeight = offsetHeight
+	s.offsetTimeUnix = offsetTimeUnix
+	s.simibc = simibc.MakeRelayedPath(s.t, path)
 
 	const FAIL_MSG = "Assumptions for core diff test failed: there is a problem with the driver or how the test is setup."
 
