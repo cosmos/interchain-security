@@ -169,17 +169,8 @@ func (m Harness) saveProviderValset() {
 func (m *Harness) validatorSetReplication() bool {
 
 	getConsumerAddressToValidatorMap := func() map[string]int {
-	}
-
-	special := getConsumerAddressToValidatorMap()
-
-	valsC := m.consumerKeeper().GetAllCCValidator(m.ctx(C))
-	for i, valC := range valsC {
-		addrC := valC.GetAddress()
-		// addr is the result of doing x.Address() on an
-		// sdktypes.PubKey
-		good := false
-		for _, valAddr := range m.valAddresses {
+		ret := make(map[string]int)
+		for i, valAddr := range m.valAddresses {
 			valP, found := m.providerStakingKeeper().GetValidator(m.ctx(P), valAddr)
 			if !found {
 				panic("very bad!")
@@ -189,16 +180,42 @@ func (m *Harness) validatorSetReplication() bool {
 				panic("also very bad!")
 			}
 			addrP := pk.Address()
-			if addrP.String() == bytes.HexBytes(addrC).String() {
-				good = true
+			ret[addrP.String()] = i
+		}
+		return ret
+	}
+
+	special := getConsumerAddressToValidatorMap()
+
+	valsC := m.consumerKeeper().GetAllCCValidator(m.ctx(C))
+	// Build a list of powers for the consumer validator set where the
+	// validators are in the same order as they are in the provider set.
+	valsetC := make([]int64, len(m.valAddresses))
+	for _, valC := range valsC {
+		// addrC is the result of doing x.Address() on an sdktypes.PubKey
+		addrC := valC.GetAddress()
+		// Gymnastics needed to see through the various type systems
+		valP := special[bytes.HexBytes(addrC).String()]
+		// We found the power
+		valsetC[valP] = valC.GetPower()
+	}
+	good := false
+	// See if any of the provider valsets match the consumer valset
+	for _, valsetP := range m.providerValsets {
+		innerGood := true
+		for i := 0; i < len(m.valAddresses); i++ {
+			if valsetP[i] != valsetC[i] {
+				// No match, try the next one
+				innerGood = false
+				break
 			}
 		}
-		if !good {
-			panic("not good!")
+		if innerGood {
+			good = true
+			break
 		}
-		_ = i
 	}
-	return true
+	return good
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
