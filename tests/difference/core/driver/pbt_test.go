@@ -44,7 +44,6 @@ type Model struct {
 	tLastCommit        map[string]time.Time
 }
 
-// ctx returns the sdk.Context for the chain
 func (s *Model) ctx(chain string) sdk.Context {
 	return s.chain(chain).GetContext()
 }
@@ -53,7 +52,6 @@ func (s *Model) chainID(chain string) string {
 	return map[string]string{P: ibctesting.GetChainID(0), C: ibctesting.GetChainID(1)}[chain]
 }
 
-// chain returns the TestChain for a given chain identifier
 func (s *Model) chain(chain string) *ibctesting.TestChain {
 	return map[string]*ibctesting.TestChain{P: s.providerChain(), C: s.consumerChain()}[chain]
 }
@@ -74,27 +72,22 @@ func (b *Model) consumerKeeper() consumerkeeper.Keeper {
 	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
 }
 
-// height returns the height of the current header of chain
 func (s *Model) height(chain string) int64 {
 	return s.chain(chain).CurrentHeader.GetHeight()
 }
 
-// time returns the time of the current header of chain
 func (s *Model) time(chain string) time.Time {
 	return s.chain(chain).CurrentHeader.Time
 }
 
-// delegator retrieves the address for the delegator account
 func (s *Model) delegator() sdk.AccAddress {
 	return s.providerChain().SenderAccount.GetAddress()
 }
 
-// validator returns the address for the validator with id (ix) i
 func (s *Model) validator(i int64) sdk.ValAddress {
 	return s.valAddresses[i]
 }
 
-// delegate delegates amt tokens to validator val
 func (s *Model) delegate(val int64, amt int64) {
 	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
@@ -106,7 +99,6 @@ func (s *Model) delegate(val int64, amt int64) {
 	_ = err
 }
 
-// undelegate undelegates amt tokens from validator val
 func (s *Model) undelegate(val int64, amt int64) {
 	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
@@ -118,8 +110,6 @@ func (s *Model) undelegate(val int64, amt int64) {
 	_ = err
 }
 
-// consumerSlash simulates a slash event occurring on the consumer chain.
-// It can be for a downtime or doublesign.
 func (s *Model) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
 	kind := stakingtypes.DoubleSign
 	if isDowntime {
