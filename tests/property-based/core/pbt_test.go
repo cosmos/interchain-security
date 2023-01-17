@@ -25,8 +25,8 @@ See https://github.com/flyingmutant/rapid/issues/48
 */
 var localT *testing.T
 
-// Model is a description of a rapid state machine for testing
-type Model struct {
+// Harness is a description of a rapid state machine for testing
+type Harness struct {
 	// simulate a relayed path
 	simibc simibc.RelayedPath
 
@@ -44,73 +44,73 @@ type Model struct {
 	tLastCommit        map[string]time.Time
 }
 
-func (s *Model) ctx(chain string) sdk.Context {
+func (s *Harness) ctx(chain string) sdk.Context {
 	return s.chain(chain).GetContext()
 }
 
-func (s *Model) chainID(chain string) string {
+func (s *Harness) chainID(chain string) string {
 	return map[string]string{P: ibctesting.GetChainID(0), C: ibctesting.GetChainID(1)}[chain]
 }
 
-func (s *Model) chain(chain string) *ibctesting.TestChain {
+func (s *Harness) chain(chain string) *ibctesting.TestChain {
 	return map[string]*ibctesting.TestChain{P: s.providerChain(), C: s.consumerChain()}[chain]
 }
 
-func (s *Model) providerChain() *ibctesting.TestChain {
+func (s *Harness) providerChain() *ibctesting.TestChain {
 	return s.simibc.Chain(ibctesting.GetChainID(0))
 }
 
-func (s *Model) consumerChain() *ibctesting.TestChain {
+func (s *Harness) consumerChain() *ibctesting.TestChain {
 	return s.simibc.Chain(ibctesting.GetChainID(1))
 }
 
-func (b *Model) providerStakingKeeper() stakingkeeper.Keeper {
+func (b *Harness) providerStakingKeeper() stakingkeeper.Keeper {
 	return b.providerChain().App.(*appProvider.App).StakingKeeper
 }
 
-func (b *Model) consumerKeeper() consumerkeeper.Keeper {
+func (b *Harness) consumerKeeper() consumerkeeper.Keeper {
 	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
 }
 
-func (s *Model) height(chain string) int64 {
+func (s *Harness) height(chain string) int64 {
 	return s.chain(chain).CurrentHeader.GetHeight()
 }
 
-func (s *Model) time(chain string) time.Time {
+func (s *Harness) time(chain string) time.Time {
 	return s.chain(chain).CurrentHeader.Time
 }
 
-func (s *Model) delegator() sdk.AccAddress {
+func (s *Harness) delegator() sdk.AccAddress {
 	return s.providerChain().SenderAccount.GetAddress()
 }
 
-func (s *Model) validator(i int64) sdk.ValAddress {
+func (s *Harness) validator(i int64) sdk.ValAddress {
 	return s.valAddresses[i]
 }
 
-func (s *Model) delegate(val int64, amt int64) {
+func (s *Harness) delegate(val int64, amt int64) {
 	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
 	_, err := server.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
-	// There may or may not be an error, depending on the trace
+	// There may or may not be an error because the delegator might not have enough funds
 	_ = err
 }
 
-func (s *Model) undelegate(val int64, amt int64) {
+func (s *Harness) undelegate(val int64, amt int64) {
 	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
 	_, err := server.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
-	// There may or may not be an error, depending on the trace
+	// There may or may not be an error because the delegator might not have enough shares
 	_ = err
 }
 
-func (s *Model) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
+func (s *Harness) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
 	kind := stakingtypes.DoubleSign
 	if isDowntime {
 		kind = stakingtypes.Downtime
@@ -128,8 +128,19 @@ func (s *Model) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
 	}
 }
 
+func (m *Harness) updateClient(chain string) {
+	other := C
+
+	if chain == C {
+		other = P
+	}
+
+	m.tLastTrustedHeader[chain] = m.tLastCommit[other]
+	m.simibc.UpdateClient(m.chainID(chain))
+}
+
 // Init is an action for initializing  a Model instance.
-func (m *Model) Init(t *rapid.T) {
+func (m *Harness) Init(t *rapid.T) {
 
 	state := initState
 	path, valAddresses, initialChainHeight, _ := GetZeroState(localT, state)
@@ -149,7 +160,7 @@ func (m *Model) Init(t *rapid.T) {
 	m.tLastCommit = map[string]time.Time{P: tee, C: tee}
 }
 
-func (m *Model) Cleanup() {
+func (m *Harness) Cleanup() {
 	// Keeping this line in seems to cause an error immediately
 	// Not exactly sure when Rapid calls Cleanup
 
@@ -157,23 +168,23 @@ func (m *Model) Cleanup() {
 }
 
 // Check runs after every action and verifies that all required invariants hold.
-func (m *Model) Check(t *rapid.T) {
+func (m *Harness) Check(t *rapid.T) {
 	// fatal if bad
 }
 
-func (m *Model) Delegate(t *rapid.T) {
+func (m *Harness) Delegate(t *rapid.T) {
 	val := rapid.Int64Range(0, 3).Draw(t, "val")
 	amt := rapid.Int64Range(1000, 5000).Draw(t, "amt")
 	m.delegate(val, amt)
 }
 
-func (m *Model) Undelegate(t *rapid.T) {
+func (m *Harness) Undelegate(t *rapid.T) {
 	val := rapid.Int64Range(0, 3).Draw(t, "val")
 	amt := rapid.Int64Range(1000, 5000).Draw(t, "amt")
 	m.undelegate(val, amt)
 }
 
-func (m *Model) ConsumerSlash(t *rapid.T) {
+func (m *Harness) ConsumerSlash(t *rapid.T) {
 	val := rapid.Int64Range(0, 3).Draw(t, "val")
 
 	valid := func() bool {
@@ -211,24 +222,13 @@ func (m *Model) ConsumerSlash(t *rapid.T) {
 	m.consumerSlash(cons, h, isDowntime)
 }
 
-func (m *Model) updateClient(chain string) {
-	other := C
-
-	if chain == C {
-		other = P
-	}
-
-	m.tLastTrustedHeader[chain] = m.tLastCommit[other]
-	m.simibc.UpdateClient(m.chainID(chain))
-}
-
-func (m *Model) UpdateClient(t *rapid.T) {
+func (m *Harness) UpdateClientAction(t *rapid.T) {
 	options := []string{P, C}
 	chain := rapid.SampledFrom(options).Draw(t, "chain")
 	m.updateClient(chain)
 }
 
-func (m *Model) Deliver(t *rapid.T) {
+func (m *Harness) DeliverAction(t *rapid.T) {
 	options := []string{P, C}
 	chain := rapid.SampledFrom(options).Draw(t, "chain")
 	num := rapid.IntRange(0, 10).Draw(t, "num")
@@ -239,7 +239,7 @@ func (m *Model) Deliver(t *rapid.T) {
 	m.simibc.DeliverPackets(m.chainID(chain), num)
 }
 
-func (m *Model) EndAndBeginBlock(t *rapid.T) {
+func (m *Harness) EndAndBeginBlockAction(t *rapid.T) {
 	options := []string{P, C}
 	chain := rapid.SampledFrom(options).Draw(t, "chain")
 
@@ -262,11 +262,11 @@ func (m *Model) EndAndBeginBlock(t *rapid.T) {
 	// TODO: log something? in else case?
 }
 
-// go test -v -timeout 10m -run Queue -rapid.checks=1000 -rapid.steps=1000
+// go test -v -timeout 10m -run PropertyBased -rapid.checks=1000 -rapid.steps=1000 -rapid.log
 // `checks` is the number of new models to run steps for
 // `steps` is the number of actions to run for each model
 // See `go test -args -h` for a full list of arguments
 func TestPropertyBased(t *testing.T) {
 	localT = t
-	rapid.Check(t, rapid.Run[*Model]())
+	rapid.Check(t, rapid.Run[*Harness]())
 }
