@@ -30,7 +30,6 @@ require (
 
 require (
 	github.com/confio/ics23/go v0.7.0
-	github.com/cosmos/gaia/v9 v9.0.0-20230117204623-8192046a698b
 	github.com/golang/mock v1.6.0
 	github.com/oxyno-zeta/gomock-extra-matcher v1.1.0
 	github.com/regen-network/cosmos-proto v0.3.1
@@ -52,7 +51,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/coinbase/rosetta-sdk-go v0.7.9 // indirect
 	github.com/cosmos/btcutil v1.0.4 // indirect
-	github.com/cosmos/gaia/v9 v9.0.0-20230117204623-8192046a698b // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gorocksdb v1.2.0 // indirect
 	github.com/cosmos/iavl v0.19.4 // indirect
@@ -120,7 +118,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.14.0 // indirect
-	github.com/strangelove-ventures/packet-forward-middleware/v3 v3.1.1 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tendermint/btcd v0.1.1 // indirect
