@@ -158,9 +158,7 @@ func (m *Model) Cleanup() {
 
 // Check runs after every action and verifies that all required invariants hold.
 func (m *Model) Check(t *rapid.T) {
-	if 0 != 0 {
-		t.Fatalf("wrong!")
-	}
+	// fatal if bad
 }
 
 func (m *Model) Delegate(t *rapid.T) {
@@ -260,9 +258,8 @@ func (m *Model) EndAndBeginBlock(t *rapid.T) {
 			initState.BlockSeconds,
 			func() {
 			})
-	} else {
-		// TODO: log something?
 	}
+	// TODO: log something? in else case?
 }
 
 // go test -v -timeout 10m -run Queue -rapid.checks=1000 -rapid.steps=1000
