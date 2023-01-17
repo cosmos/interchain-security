@@ -144,6 +144,16 @@ func (m *Harness) updateClient(chain string) {
 	m.simibc.UpdateClient(m.chainID(chain))
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+// PROPERTIES / INVARIANTS BELOW
+
+func (m *Harness) validatorSetReplication() bool {
+	return true
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// RAPID METHODS BELOW
+
 // Init is run by rapid first, to setup a model instance.
 func (m *Harness) Init(t *rapid.T) {
 	z := setup.GetZeroState(localT)
@@ -161,15 +171,6 @@ func (m *Harness) Init(t *rapid.T) {
 
 	m.tLastTrustedHeader = map[string]time.Time{P: z.TimeLastCommit, C: z.TimeLastCommit}
 	m.tLastCommit = map[string]time.Time{P: z.TimeLastCommit, C: z.TimeLastCommit}
-}
-
-// Cleanup is deffered by rapid and can be used for freeing resource
-func (m *Harness) Cleanup() {
-}
-
-// Check runs after every action and verifies that all required invariants hold.
-func (m *Harness) Check(t *rapid.T) {
-	// fatal if bad
 }
 
 func (m *Harness) Delegate(t *rapid.T) {
@@ -206,14 +207,14 @@ func (m *Harness) ConsumerSlash(t *rapid.T) {
 
 	cons := sdk.ConsAddress(m.valAddresses[val])
 
-	// h := rapid.Int64Range(0, 100).Draw(t, "h") // TODO: proper range!
-	currH := m.height(C)
 	lower := m.initialChainHeight
-	upper := currH - 1
+	currH := m.height(C)
+	// TODO: can infraction be for current height?
+	upper := currH - 1 //
 	if upper < lower {
 		lower = upper
 	}
-	h := rapid.Int64Range(lower, upper).Draw(t, "h") // TODO: check bounds!
+	h := rapid.Int64Range(lower, upper).Draw(t, "h")
 
 	isDowntime := rapid.Bool().Draw(t, "isDowntime")
 
@@ -264,6 +265,18 @@ func (m *Harness) EndAndBeginBlockAction(t *rapid.T) {
 			})
 	}
 	// TODO: log something? in else case?
+}
+
+// Check runs after every action and verifies that all required invariants hold.
+func (m *Harness) Check(t *rapid.T) {
+	// fatal if bad
+	if !m.validatorSetReplication() {
+		t.Fatal("validator set replication failed")
+	}
+}
+
+// Cleanup is deffered by rapid and can be used for freeing resource
+func (m *Harness) Cleanup() {
 }
 
 // go test -v -timeout 10m -run PropertyBased -rapid.checks=1000 -rapid.steps=1000 -rapid.log
