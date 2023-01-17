@@ -197,10 +197,9 @@ func (m *Model) ConsumerSlash(t *rapid.T) {
 				numNotSlashed += 1
 			}
 		}
-		slashed := m.didSlash[val]
-
+		alreadySlashed := m.didSlash[val]
 		willNotJailAllValidators :=
-			(1 < numNotSlashed) || slashed
+			(1 < numNotSlashed) || alreadySlashed
 		return willNotJailAllValidators
 	}
 
