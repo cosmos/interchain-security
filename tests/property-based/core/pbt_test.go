@@ -40,14 +40,19 @@ type Harness struct {
 	// Need initial chain height to calculate possible
 	// infraction heights on consumer chain
 	// Note that provider and consumer have the same
-	// initial chain height
+	// initial chain height.
 	initialChainHeight int64
 
 	didSlash           []bool
 	tLastTrustedHeader map[string]time.Time
 	tLastCommit        map[string]time.Time
 	trustDuration      time.Duration
+
+	providerValsets [][]int64
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// HELPERS BELOW
 
 func (s *Harness) ctx(chain string) sdk.Context {
 	return s.chain(chain).GetContext()
@@ -144,6 +149,19 @@ func (m *Harness) updateClient(chain string) {
 	m.simibc.UpdateClient(m.chainID(chain))
 }
 
+func (m Harness) saveProviderValset() {
+	m.providerStakingKeeper().IterateLastValidatorPowers(m.ctx(P), func(addr sdk.ValAddress, power int64) bool {
+		powers := make([]int64, len(m.valAddresses))
+		for i, valAddr := range m.valAddresses {
+			if valAddr.Equals(addr) {
+				powers[i] = power
+			}
+		}
+		m.providerValsets = append(m.providerValsets, powers)
+		return false // Do not break early
+	})
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////
 // PROPERTIES / INVARIANTS BELOW
 
@@ -162,15 +180,13 @@ func (m *Harness) Init(t *rapid.T) {
 	m.simibc = simibc.MakeRelayedPath(localT, z.Path)
 	m.trustDuration = z.TrustDuration
 
-	//////////////////////////////////////////////////////////////////////
-	m.didSlash = []bool{false, false, false, false}
-
-	// I THINK for this value, we can use the time of the last commit
-	// because the last steps of Setup() are to end block on both chains
-	// then begin a new block and update latest client
+	m.didSlash = make([]bool, len(m.valAddresses))
 
 	m.tLastTrustedHeader = map[string]time.Time{P: z.TimeLastCommit, C: z.TimeLastCommit}
 	m.tLastCommit = map[string]time.Time{P: z.TimeLastCommit, C: z.TimeLastCommit}
+
+	m.providerValsets = [][]int64{}
+	m.saveProviderValset() // Save the initial val set
 }
 
 func (m *Harness) Delegate(t *rapid.T) {
@@ -262,6 +278,9 @@ func (m *Harness) EndAndBeginBlockAction(t *rapid.T) {
 			m.chainID(chain),
 			dt,
 			func() {
+				if chain == P {
+					m.saveProviderValset()
+				}
 			})
 	}
 	// TODO: log something? in else case?
