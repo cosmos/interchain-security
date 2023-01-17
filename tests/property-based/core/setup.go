@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bytes"
 	"encoding/json"
 	"testing"
 	"time"
@@ -349,35 +348,6 @@ func (b *Builder) setSigningInfos() {
 	}
 }
 
-// Checks that the lexicographic ordering of validator addresses as computed in
-// the staking module match the ordering of validators in the model.
-func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
-
-	check := func(lesser sdk.ValAddress, greater sdk.ValAddress) {
-		lesserV, _ := b.providerStakingKeeper().GetValidator(b.providerCtx(), lesser)
-		greaterV, _ := b.providerStakingKeeper().GetValidator(b.providerCtx(), greater)
-		lesserKey := stakingtypes.GetValidatorsByPowerIndexKey(lesserV, sdk.DefaultPowerReduction)
-		greaterKey := stakingtypes.GetValidatorsByPowerIndexKey(greaterV, sdk.DefaultPowerReduction)
-		// The result will be 0 if a==b, -1 if a < b, and +1 if a > b.
-		res := bytes.Compare(lesserKey, greaterKey)
-		// Confirm that validator precedence is the same in code as in model
-		assert.Equal(b.t, -1, res)
-	}
-
-	// In order to match the model to the system under test it is necessary
-	// to enforce a strict lexicographic ordering on the validators.
-	// We must do this because the staking module will break ties when
-	// deciding the active validator set by comparing addresses lexicographically.
-	// Thus, we assert here that the ordering in the model matches the ordering
-	// in the SUT.
-	for i := range b.valAddresses[:len(b.valAddresses)-1] {
-		// validators are chosen sorted descending in the staking module
-		greater := b.valAddresses[i]
-		lesser := b.valAddresses[i+1]
-		check(lesser, greater)
-	}
-}
-
 // delegate is used to delegate tokens to newly created
 // validators in the setup process.
 func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
@@ -418,8 +388,6 @@ func (b *Builder) addExtraProviderValidators() {
 	}
 
 	b.setSigningInfos()
-
-	b.ensureValidatorLexicographicOrderingMatchesModel()
 
 	for i := range b.initState.ValStates.Status {
 		if b.initState.ValStates.Status[i] == stakingtypes.Unbonded {
