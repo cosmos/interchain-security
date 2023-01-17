@@ -1,39 +1,25 @@
 package crypto_test
 
 import (
-	"encoding/binary"
-	"fmt"
 	"testing"
 
 	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
+	"github.com/stretchr/testify/require"
 )
 
-func TestCryptoIdentity(t *testing.T) {
-	iUint64 := uint64(1)
-	seed := []byte("AAAAAAAAabcdefghijklmnopqrstuvwx") // 8+24 bytes
-	binary.LittleEndian.PutUint64(seed[:8], iUint64)
-	fmt.Println(seed, len(seed), cap(seed))
+// TestCryptoIdentityAddresses tests that crypto identities have different
+// consensus and validator addresses when generated from the same seed
+func TestCryptoIdentityAddresses(t *testing.T) {
+	keys := map[string]bool{}
+	valAddrs := map[string]bool{}
 
-	testcrypto.CreateOpAddressFromByteSeed(seed)
+	for i := 0; i < 99; i++ {
+		ci := testcrypto.NewCryptoIdentityFromIntSeed(i)
+		require.False(t, ci.SDKConsAddress().Equals(ci.SDKValAddress()))
+		require.False(t, keys[ci.PrivKey.String()])
+		require.False(t, valAddrs[ci.SDKValAddress().String()])
 
-	// fmt.Println(ci.PrivKey.Bytes())
-	// fmt.Println(seed, len(seed), cap(seed))
-
-	// iUint64 = uint64(2)
-	// seed = []byte("AAAAAAAAabcdefghijklmnopqrstuvwx") // 8+24 bytes
-	// binary.LittleEndian.PutUint64(seed[:8], iUint64)
-	// ci = testcrypto.NewCryptoIdentityFromBytesSeed(seed)
-
-	// iUint64 = uint64(2)
-
-	// binary.LittleEndian.PutUint64(seed[:8], iUint64)
-	// fmt.Println(string(seed))
-
-	// fmt.Println(ci.PrivKey.Bytes())
-	// fmt.Println(seed, len(seed), cap(seed))
-	// ci := testcrypto.NewCryptoIdentityFromIntSeed(1)
-	// ci1 := testcrypto.NewCryptoIdentityFromIntSeed(2)
-
-	// fmt.Println(ci.PrivKey.Bytes())
-	// fmt.Println(ci1.PrivKey.Bytes())
+		keys[ci.PrivKey.String()] = true
+		keys[ci.SDKValAddress().String()] = true
+	}
 }
