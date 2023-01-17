@@ -15,6 +15,7 @@ import (
 	"github.com/cosmos/interchain-security/tests/property-based/core/setup"
 	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
+	"github.com/tendermint/tendermint/libs/bytes"
 	"pgregory.net/rapid"
 )
 
@@ -166,6 +167,37 @@ func (m Harness) saveProviderValset() {
 // PROPERTIES / INVARIANTS BELOW
 
 func (m *Harness) validatorSetReplication() bool {
+
+	getConsumerAddressToValidatorMap := func() map[string]int {
+	}
+
+	special := getConsumerAddressToValidatorMap()
+
+	valsC := m.consumerKeeper().GetAllCCValidator(m.ctx(C))
+	for i, valC := range valsC {
+		addrC := valC.GetAddress()
+		// addr is the result of doing x.Address() on an
+		// sdktypes.PubKey
+		good := false
+		for _, valAddr := range m.valAddresses {
+			valP, found := m.providerStakingKeeper().GetValidator(m.ctx(P), valAddr)
+			if !found {
+				panic("very bad!")
+			}
+			pk, err := valP.ConsPubKey()
+			if err != nil {
+				panic("also very bad!")
+			}
+			addrP := pk.Address()
+			if addrP.String() == bytes.HexBytes(addrC).String() {
+				good = true
+			}
+		}
+		if !good {
+			panic("not good!")
+		}
+		_ = i
+	}
 	return true
 }
 
