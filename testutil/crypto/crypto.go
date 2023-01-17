@@ -26,11 +26,10 @@ import (
 type CryptoIdentity struct {
 	// private key of crypto identity consensus address
 	ibcmock.PV
-	// crypto identity validator address
+	// operator address
 	sdk.ValAddress
 }
 
-// NewCryptoIdentityFromBytesSeed returns a crypto identity from the given random seed.
 func NewCryptoIdentityFromBytesSeed(seed []byte) *CryptoIdentity {
 	//lint:ignore SA1019 We don't care because this is only a test.
 
@@ -43,12 +42,12 @@ func NewCryptoIdentityFromBytesSeed(seed []byte) *CryptoIdentity {
 		panic(err)
 	}
 
-	// generate private key for validator address
-	valPrivKey := &sdkcryptokeys.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}
+	// generate private key for operator address
+	opPrivKey := &sdkcryptokeys.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}
 
 	return &CryptoIdentity{
 		PV:         consPrivKey,
-		ValAddress: sdk.ValAddress(valPrivKey.PubKey().Address()),
+		ValAddress: sdk.ValAddress(opPrivKey.PubKey().Address()),
 	}
 }
 
@@ -83,12 +82,8 @@ func (v *CryptoIdentity) TMCryptoPubKey() tmcrypto.PubKey {
 	return ret
 }
 
-func (v *CryptoIdentity) SDKStakingOperator() sdktypes.ValAddress {
-	return v.SDKStakingValidator().GetOperator()
-}
-
 func (v *CryptoIdentity) SDKStakingValidator() sdkstakingtypes.Validator {
-	ret, err := sdkstakingtypes.NewValidator(v.SDKValAddress(), v.SDKPubKey(), sdkstakingtypes.Description{})
+	ret, err := sdkstakingtypes.NewValidator(v.SDKValOpAddress(), v.SDKPubKey(), sdkstakingtypes.Description{})
 	if err != nil {
 		panic(err)
 	}
@@ -104,7 +99,7 @@ func (v *CryptoIdentity) SDKPubKey() sdkcryptotypes.PubKey {
 	return ret
 }
 
-func (v *CryptoIdentity) SDKValAddress() sdktypes.ValAddress {
+func (v *CryptoIdentity) SDKValOpAddress() sdktypes.ValAddress {
 	return v.ValAddress
 }
 

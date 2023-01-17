@@ -392,7 +392,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 						consumerIdentities[0].SDKConsAddress(),
 					).Return(stakingtypes.Validator{}, false),
 					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-						ctx, providerIdentities[0].SDKValAddress(),
+						ctx, providerIdentities[0].SDKValOpAddress(),
 					).Return(int64(0)),
 				)
 			},
@@ -416,13 +416,13 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 						consumerIdentities[0].SDKConsAddress(),
 					).Return(stakingtypes.Validator{}, false),
 					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-						ctx, providerIdentities[0].SDKValAddress(),
+						ctx, providerIdentities[0].SDKValOpAddress(),
 					).Return(int64(0)),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[1].SDKConsAddress(),
 					).Return(stakingtypes.Validator{}, false),
 					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-						ctx, providerIdentities[0].SDKValAddress(),
+						ctx, providerIdentities[0].SDKValOpAddress(),
 					).Return(int64(0)),
 				)
 			},
@@ -451,7 +451,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 						consumerIdentities[0].SDKConsAddress(),
 					).Return(stakingtypes.Validator{}, false),
 					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-						ctx, providerIdentities[0].SDKValAddress(),
+						ctx, providerIdentities[0].SDKValOpAddress(),
 					).Return(int64(0)),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerIdentities[0].SDKConsAddress(),

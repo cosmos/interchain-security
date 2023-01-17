@@ -53,14 +53,14 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().GetValidator(ctx,
-				newValidator.SDKStakingOperator(),
+				newValidator.SDKStakingValidator().GetOperator(),
 			).Return(newValidator.SDKStakingValidator(), true),
 		)
 
 		tt.setup(ctx, k)
 
 		t.Run(tt.name, func(t *testing.T) {
-			if actual := providerkeeper.ValidatorConsensusKeyInUse(&k, ctx, newValidator.SDKStakingOperator()); actual != tt.expect {
+			if actual := providerkeeper.ValidatorConsensusKeyInUse(&k, ctx, newValidator.SDKStakingValidator().GetOperator()); actual != tt.expect {
 				t.Errorf("validatorConsensusKeyInUse() = %v, want %v", actual, tt.expect)
 			}
 		})
