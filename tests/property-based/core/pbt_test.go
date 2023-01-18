@@ -311,7 +311,7 @@ func (m *Harness) Redelegate(t *rapid.T) {
 			break
 		}
 	}
-	amt := rapid.Int64Range(minUndelegate, maxUndelegate).Draw(t, "amt")
+	amt := rapid.Int64Range(minRedelegate, maxRedelegate).Draw(t, "amt")
 	m.redelegate(valFrom, valTo, amt)
 }
 
