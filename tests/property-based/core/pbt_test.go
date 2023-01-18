@@ -28,6 +28,8 @@ const minDelegate = 1
 const maxDelegate = 10000
 const minUndelegate = 1
 const maxUndelegate = 10000
+const minRedelegate = 1
+const maxRedelegate = 10000
 const maxDeliverNumPackets = 6
 const maxBlockInterval = 38
 
@@ -126,6 +128,18 @@ func (s *Harness) undelegate(val int64, amt int64) {
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
 	_, err := server.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
+	// There may or may not be an error because the delegator might not have enough shares
+	_ = err
+}
+
+func (s *Harness) redelegate(valFrom int64, valTo int64, amt int64) {
+	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
+	d := s.delegator()
+	to := s.validator(valTo)
+	from := s.validator(valFrom)
+	msg := stakingtypes.NewMsgBeginRedelegate(d, from, to, coin)
+	_, err := server.BeginRedelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 	// There may or may not be an error because the delegator might not have enough shares
 	_ = err
 }
@@ -273,9 +287,18 @@ func (m *Harness) Undelegate(t *rapid.T) {
 	m.undelegate(val, amt)
 }
 
-/*
-TODO: implement a REDELEGATE action
-*/
+func (m *Harness) Redelegate(t *rapid.T) {
+	valFrom := rapid.Int64Range(minVal, maxVal).Draw(t, "valFrom")
+	var valTo int64 = -1
+	for {
+		valTo = rapid.Int64Range(minVal, maxVal).Draw(t, "valTo")
+		if valTo != valFrom {
+			break
+		}
+	}
+	amt := rapid.Int64Range(minUndelegate, maxUndelegate).Draw(t, "amt")
+	m.redelegate(valFrom, valTo, amt)
+}
 
 /*
 TODO: implement an UNJAIL (on provider) action
