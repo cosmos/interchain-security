@@ -21,7 +21,7 @@ import (
 )
 
 // TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper
-func TestProviderClientID(t *testing.T)
+func TestProviderClientID(t *testing.T) {
 
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
