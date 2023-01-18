@@ -28,16 +28,6 @@ func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
 }
 
-// TODO: uncomment with gaia using ibc-go v4.2.0
-// GaiaAppIniter implements ibctesting.AppIniter for the gaia app
-// func GaiaAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
-// 	encoding := gaiaApp.MakeTestEncodingConfig()
-// 	app := gaiaApp.NewGaiaApp(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-// 		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
-// 	testApp := ibctesting.TestingApp(app)
-// 	return testApp, gaiaApp.NewDefaultGenesisState()
-// }
-
 // ConsumerAppIniter implements ibctesting.AppIniter for a consumer app
 func ConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	encoding := cosmoscmd.MakeEncodingConfig(appConsumer.ModuleBasics)

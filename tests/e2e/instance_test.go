@@ -54,16 +54,3 @@ func TestConsumerDemocracyTestSuite(t *testing.T) {
 	// Run tests
 	suite.Run(t, democSuite)
 }
-
-// TODO: uncomment with gaia using ibc-go v4.2.0
-// Executes the standard group of ccv tests against a generic consumer app.go implementation and Gaia as the provider.
-// func TestCCVTestSuiteGaia(t *testing.T) {
-
-// 	// Pass in concrete app types that implement the interfaces defined in /testutil/e2e/interfaces.go
-// 	ccvSuite := e2e.NewCCVTestSuite[*gaiaApp.GaiaApp, *appConsumer.App](
-// 		// Pass in ibctesting.AppIniters for gaia (provider) and consumer.
-// 		icstestingutils.GaiaAppIniter, icstestingutils.ConsumerAppIniter, []string{})
-
-// 	// Run tests
-// 	suite.Run(t, ccvSuite)
-// }
