@@ -24,6 +24,7 @@ import (
 const P = setup.P
 const C = setup.C
 
+// for guiding the random action generation of Rapid
 const minVal = 0
 const maxVal = 3
 const minDelegate = 1
@@ -177,6 +178,7 @@ func (s *Harness) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
 	}
 }
 
+// updateClient is a helper method used update the ibc light client of a chain
 func (m *Harness) updateClient(chain string) {
 	other := C
 
@@ -188,6 +190,8 @@ func (m *Harness) updateClient(chain string) {
 	m.simibc.UpdateClient(m.chainID(chain))
 }
 
+// saveProviderValset saves the current validator set on the provider chain
+// into the harness for checking the validator set replication property
 func (m *Harness) saveProviderValset() {
 	powers := make([]int64, len(m.valAddresses))
 	m.providerStakingKeeper().IterateLastValidatorPowers(m.ctx(P), func(addr sdk.ValAddress, power int64) bool {
@@ -205,6 +209,8 @@ func (m *Harness) saveProviderValset() {
 /////////////////////////////////////////////////////////////////////////////////////////
 // PROPERTIES / INVARIANTS BELOW
 
+// validatorSetReplication checks that the validator set on the consumer chain was
+// a validator set on the provider chain
 func (m *Harness) validatorSetReplication() bool {
 
 	/*
@@ -290,19 +296,22 @@ func (m *Harness) Init(t *rapid.T) {
 	m.saveProviderValset() // Save the initial val set
 }
 
-func (m *Harness) Delegate(t *rapid.T) {
+// Delegate some tokens from the delegator account to a validator
+func (m *Harness) DelegateAction(t *rapid.T) {
 	val := rapid.Int64Range(minVal, maxVal).Draw(t, "val")
 	amt := rapid.Int64Range(minDelegate, maxDelegate).Draw(t, "amt")
 	m.delegate(val, amt)
 }
 
-func (m *Harness) Undelegate(t *rapid.T) {
+// UndelegateAction undelegates some tokens from a validator
+func (m *Harness) UndelegateAction(t *rapid.T) {
 	val := rapid.Int64Range(minVal, maxVal).Draw(t, "val")
 	amt := rapid.Int64Range(minUndelegate, maxUndelegate).Draw(t, "amt")
 	m.undelegate(val, amt)
 }
 
-func (m *Harness) Redelegate(t *rapid.T) {
+// RedelegateAction redelegates some tokens from a validator to another
+func (m *Harness) RedelegateAction(t *rapid.T) {
 	valFrom := rapid.Int64Range(minVal, maxVal).Draw(t, "valFrom")
 	var valTo int64 = -1
 	for {
@@ -315,12 +324,14 @@ func (m *Harness) Redelegate(t *rapid.T) {
 	m.redelegate(valFrom, valTo, amt)
 }
 
-func (m *Harness) Unjail(t *rapid.T) {
+// UnjailAction unjails a validator (noop if not jailed)
+func (m *Harness) UnjailAction(t *rapid.T) {
 	val := rapid.Int64Range(minVal, maxVal).Draw(t, "val")
 	m.unjail(val)
 }
 
-func (m *Harness) ConsumerSlash(t *rapid.T) {
+// ConsumerSlash action causes the consumer chain to slash a validator
+func (m *Harness) ConsumerSlashAction(t *rapid.T) {
 	val := rapid.Int64Range(minVal, maxVal).Draw(t, "val")
 
 	valid := func() bool {
@@ -361,12 +372,15 @@ func (m *Harness) ConsumerSlash(t *rapid.T) {
 	m.consumerSlash(cons, h, isDowntime)
 }
 
+// UpdateClientAction updates the ibc light client for a chain
 func (m *Harness) UpdateClientAction(t *rapid.T) {
 	options := []string{P, C}
 	chain := rapid.SampledFrom(options).Draw(t, "chain")
 	m.updateClient(chain)
 }
 
+// DeliverAction updates the ibc light client for a chain AND then
+// delivers some packets from the network to the chain
 func (m *Harness) DeliverAction(t *rapid.T) {
 	options := []string{P, C}
 	chain := rapid.SampledFrom(options).Draw(t, "chain")
@@ -378,6 +392,8 @@ func (m *Harness) DeliverAction(t *rapid.T) {
 	m.simibc.DeliverPackets(m.chainID(chain), num)
 }
 
+// EndAndBeginBlockAction ends and commits the current block for a chain
+// and then begins a new block some time later for that chain
 func (m *Harness) EndAndBeginBlockAction(t *rapid.T) {
 
 	options := []string{P, C}
@@ -414,14 +430,15 @@ func (m *Harness) EndAndBeginBlockAction(t *rapid.T) {
 	}
 }
 
-// Check runs after every action and verifies that all required invariants hold.
+// Check is a rapid library method that will be called every so often and should
+// be used to check that properties and invariants of the system hold.
 func (m *Harness) Check(t *rapid.T) {
 	if !m.validatorSetReplication() {
 		t.Fatal("validator set replication failed")
 	}
 }
 
-// Cleanup is deffered by rapid and can be used for freeing resource
+// Cleanup is a rapid library method that can be used for freeing resources
 func (m *Harness) Cleanup() {
 }
 
