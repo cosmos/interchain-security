@@ -379,6 +379,7 @@ func (m *Harness) DeliverAction(t *rapid.T) {
 }
 
 func (m *Harness) EndAndBeginBlockAction(t *rapid.T) {
+
 	options := []string{P, C}
 	chain := rapid.SampledFrom(options).Draw(t, "chain")
 
@@ -400,6 +401,7 @@ func (m *Harness) EndAndBeginBlockAction(t *rapid.T) {
 		that it would cause any light client to expire.
 	*/
 	if valid() {
+
 		m.tLastCommit[chain] = m.time(chain)
 		m.simibc.EndAndBeginBlock(
 			m.chainID(chain),
@@ -423,10 +425,16 @@ func (m *Harness) Check(t *rapid.T) {
 func (m *Harness) Cleanup() {
 }
 
-// go test -v -timeout 10m -run PropertyBased -rapid.checks=1000 -rapid.steps=1000 -rapid.log
-// `checks` is the number of new models to run steps for
-// `steps` is the number of actions to run for each model
-// See `go test -args -h` for a full list of arguments
+// go test -v -timeout 10m -run PropertyBased -rapid.checks=1000 -rapid.steps=50 -rapid.log
+//
+// `checks` is the number of new models to run steps for.
+// `steps` is the number of actions to run for each model.
+// Adjust these as necessary.
+//
+// # See `go test -args -h` for a full list of arguments
+//
+// With coverage:
+// go test -coverprofile=pbt.out -coverpkg=./... -timeout 60m ./tests/property-based/core/pbt_test.go -rapid.checks=1000 -rapid.steps=50
 func TestPropertyBased(t *testing.T) {
 	localT = t
 	rapid.Check(t, rapid.Run[*Harness]())
