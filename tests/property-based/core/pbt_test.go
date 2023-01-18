@@ -434,7 +434,7 @@ func (m *Harness) Cleanup() {
 // # See `go test -args -h` for a full list of arguments
 //
 // With coverage:
-// go test -coverprofile=pbt.out -coverpkg=./... -timeout 60m ./tests/property-based/core/pbt_test.go -rapid.checks=1000 -rapid.steps=50
+// go test -coverprofile=pbt.out -coverpkg=./... -timeout 60m ./tests/property-based/core/pbt_test.go -rapid.checks=1000 -rapid.steps=1000
 func TestPropertyBased(t *testing.T) {
 	localT = t
 	rapid.Check(t, rapid.Run[*Harness]())
