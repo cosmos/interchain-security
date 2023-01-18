@@ -5,6 +5,8 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -90,6 +92,10 @@ func (b *Harness) providerStakingKeeper() stakingkeeper.Keeper {
 	return b.providerChain().App.(*appProvider.App).StakingKeeper
 }
 
+func (b *Harness) providerSlashingKeeper() slashingkeeper.Keeper {
+	return b.providerChain().App.(*appProvider.App).SlashingKeeper
+}
+
 func (b *Harness) consumerKeeper() consumerkeeper.Keeper {
 	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
 }
@@ -140,19 +146,16 @@ func (s *Harness) redelegate(valFrom int64, valTo int64, amt int64) {
 	from := s.validator(valFrom)
 	msg := stakingtypes.NewMsgBeginRedelegate(d, from, to, coin)
 	_, err := server.BeginRedelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
-	// There may or may not be an error because the delegator might not have enough shares
+	// TODO: explain
 	_ = err
 }
 
-func (s *Harness) unjail(valFrom int64, valTo int64, amt int64) {
-	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
-	d := s.delegator()
-	to := s.validator(valTo)
-	from := s.validator(valFrom)
-	msg := stakingtypes.NewMsgBeginRedelegate(d, from, to, coin)
-	_, err := server.BeginRedelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
-	// There may or may not be an error because the delegator might not have enough shares
+func (s *Harness) unjail(val int64) {
+	server := slashingkeeper.NewMsgServerImpl(slashingkeeper.Keeper(s.providerSlashingKeeper()))
+	v := s.validator(val)
+	msg := slashingtypes.NewMsgUnjail(v)
+	_, err := server.Unjail(sdk.WrapSDKContext(s.ctx(P)), msg)
+	// TODO: explain
 	_ = err
 }
 
@@ -312,9 +315,10 @@ func (m *Harness) Redelegate(t *rapid.T) {
 	m.redelegate(valFrom, valTo, amt)
 }
 
-/*
-TODO: implement an UNJAIL (on provider) action
-*/
+func (m *Harness) Unjail(t *rapid.T) {
+	val := rapid.Int64Range(minVal, maxVal).Draw(t, "val")
+	m.unjail(val)
+}
 
 func (m *Harness) ConsumerSlash(t *rapid.T) {
 	val := rapid.Int64Range(minVal, maxVal).Draw(t, "val")
