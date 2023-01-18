@@ -94,7 +94,7 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 }
 
 type StakingKeeper interface {
-	GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
+	GetLastValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
 }
 
 // AppModule represents the AppModule for this module
@@ -193,7 +193,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		for _, val := range initialValSet {
 			initialSetFlag[val.PubKey.String()] = true
 		}
-		for _, val := range am.sk.GetAllValidators(ctx) {
+		for _, val := range am.sk.GetLastValidators(ctx) {
 			update := val.ABCIValidatorUpdateZero()
 			if !initialSetFlag[update.PubKey.String()] {
 				initialValSet = append(initialValSet, update)

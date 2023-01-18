@@ -508,7 +508,7 @@ func New(
 		ccvdistrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
-		ibcconsumertypes.ModuleName, // Note: consumer initiation before staking module
+		ibcconsumertypes.ModuleName, // Note: consumer beginblocker before staking module
 		ccvstakingtypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -524,7 +524,7 @@ func New(
 	app.MM.SetOrderEndBlockers(
 		crisistypes.ModuleName,
 		ccvgovtypes.ModuleName,
-		ibcconsumertypes.ModuleName, // Note: consumer initiation before staking module
+		ibcconsumertypes.ModuleName, // Note: consumer endblocker before staking module
 		ccvstakingtypes.ModuleName,
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
