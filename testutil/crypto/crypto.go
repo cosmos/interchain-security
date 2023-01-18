@@ -19,11 +19,11 @@ import (
 
 // CryptoIdentity is a test helper for generating keys and addresses of
 // various interfaces and types used by the SDK and Tendermint from a single
-// 'root' private key.
+// 'root' seed.
 type CryptoIdentity struct {
-	// private key of crypto identity consensus address
+	// private key for validators to run consensus
 	consensus sdkcryptotypes.PrivKey
-	// operator address
+	// key for validator operator account
 	operator sdkcryptotypes.PrivKey
 }
 
