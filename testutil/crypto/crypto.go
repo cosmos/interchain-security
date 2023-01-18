@@ -6,10 +6,10 @@ import (
 	ibcmock "github.com/cosmos/ibc-go/v3/testing/mock"
 
 	cryptoEd25519 "crypto/ed25519"
-	"crypto/rand"
 
 	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdkcryptokeys "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdkcryptoEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdkcryptoSecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdkcryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkstakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -34,16 +34,9 @@ func NewCryptoIdentityFromBytesSeed(seed []byte) *CryptoIdentity {
 	//lint:ignore SA1019 We don't care because this is only a test.
 
 	// generate private key for consensus address
-	consPrivKey := ibcmock.PV{PrivKey: &sdkcryptokeys.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
+	consPrivKey := ibcmock.PV{PrivKey: &sdkcryptoEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 
-	// randomize seed
-	_, err := rand.Read(seed)
-	if err != nil {
-		panic(err)
-	}
-
-	// generate private key for operator address
-	opPrivKey := &sdkcryptokeys.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}
+	opPrivKey := sdkcryptoSecp256k1.GenPrivKeyFromSecret(seed)
 
 	return &CryptoIdentity{
 		PV:         consPrivKey,
