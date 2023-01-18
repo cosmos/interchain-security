@@ -31,11 +31,11 @@ func NewCryptoIdentityFromBytesSeed(seed []byte) *CryptoIdentity {
 	//lint:ignore SA1019 We don't care because this is only a test.
 
 	consKey := &sdkcryptoEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}
-	opPrivKey := sdkcryptoSecp256k1.GenPrivKeyFromSecret(seed)
+	opKey := sdkcryptoSecp256k1.GenPrivKeyFromSecret(seed)
 
 	return &CryptoIdentity{
 		consensus: consKey,
-		operator:  opPrivKey,
+		operator:  opKey,
 	}
 }
 
