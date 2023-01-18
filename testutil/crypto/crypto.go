@@ -3,18 +3,15 @@ package crypto
 import (
 	"encoding/binary"
 
-	ibcmock "github.com/cosmos/ibc-go/v3/testing/mock"
-
 	cryptoEd25519 "crypto/ed25519"
-	"crypto/rand"
 
 	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdkcryptokeys "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdkcryptoEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdkcryptoSecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdkcryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkstakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	tmcrypto "github.com/tendermint/tendermint/crypto"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -22,32 +19,23 @@ import (
 
 // CryptoIdentity is a test helper for generating keys and addresses of
 // various interfaces and types used by the SDK and Tendermint from a single
-// 'root' private key.
+// 'root' seed.
 type CryptoIdentity struct {
-	// private key of crypto identity consensus address
-	ibcmock.PV
-	// operator address
-	sdk.ValAddress
+	// private key for validators to run consensus
+	consensus sdkcryptotypes.PrivKey
+	// key for validator operator account
+	operator sdkcryptotypes.PrivKey
 }
 
 func NewCryptoIdentityFromBytesSeed(seed []byte) *CryptoIdentity {
 	//lint:ignore SA1019 We don't care because this is only a test.
 
-	// generate private key for consensus address
-	consPrivKey := ibcmock.PV{PrivKey: &sdkcryptokeys.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
-
-	// randomize seed
-	_, err := rand.Read(seed)
-	if err != nil {
-		panic(err)
-	}
-
-	// generate private key for operator address
-	opPrivKey := &sdkcryptokeys.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}
+	consKey := &sdkcryptoEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}
+	opKey := sdkcryptoSecp256k1.GenPrivKeyFromSecret(seed)
 
 	return &CryptoIdentity{
-		PV:         consPrivKey,
-		ValAddress: sdk.ValAddress(opPrivKey.PubKey().Address()),
+		consensus: consKey,
+		operator:  opKey,
 	}
 }
 
@@ -59,7 +47,7 @@ func NewCryptoIdentityFromIntSeed(i int) *CryptoIdentity {
 }
 
 func (v *CryptoIdentity) ABCIAddressBytes() []byte {
-	return v.SDKPubKey().Address()
+	return v.ConsensusSDKPubKey().Address()
 }
 
 func (v *CryptoIdentity) TMValidator(power int64) *tmtypes.Validator {
@@ -67,7 +55,7 @@ func (v *CryptoIdentity) TMValidator(power int64) *tmtypes.Validator {
 }
 
 func (v *CryptoIdentity) TMProtoCryptoPublicKey() tmprotocrypto.PublicKey {
-	ret, err := sdkcryptocodec.ToTmProtoPublicKey(v.SDKPubKey())
+	ret, err := sdkcryptocodec.ToTmProtoPublicKey(v.ConsensusSDKPubKey())
 	if err != nil {
 		panic(err)
 	}
@@ -75,7 +63,7 @@ func (v *CryptoIdentity) TMProtoCryptoPublicKey() tmprotocrypto.PublicKey {
 }
 
 func (v *CryptoIdentity) TMCryptoPubKey() tmcrypto.PubKey {
-	ret, err := v.GetPubKey()
+	ret, err := sdkcryptocodec.ToTmPubKeyInterface(v.ConsensusSDKPubKey())
 	if err != nil {
 		panic(err)
 	}
@@ -83,26 +71,25 @@ func (v *CryptoIdentity) TMCryptoPubKey() tmcrypto.PubKey {
 }
 
 func (v *CryptoIdentity) SDKStakingValidator() sdkstakingtypes.Validator {
-	ret, err := sdkstakingtypes.NewValidator(v.SDKValOpAddress(), v.SDKPubKey(), sdkstakingtypes.Description{})
+	ret, err := sdkstakingtypes.NewValidator(v.SDKValOpAddress(), v.ConsensusSDKPubKey(), sdkstakingtypes.Description{})
 	if err != nil {
 		panic(err)
 	}
 	return ret
 }
 
-func (v *CryptoIdentity) SDKPubKey() sdkcryptotypes.PubKey {
-	tmcryptoPubKey := v.TMCryptoPubKey()
-	ret, err := sdkcryptocodec.FromTmPubKeyInterface(tmcryptoPubKey)
-	if err != nil {
-		panic(err)
-	}
-	return ret
+func (v *CryptoIdentity) ConsensusSDKPubKey() sdkcryptotypes.PubKey {
+	return v.consensus.PubKey()
+}
+
+func (v *CryptoIdentity) OperatorSDKPubKey() sdkcryptotypes.PubKey {
+	return v.operator.PubKey()
 }
 
 func (v *CryptoIdentity) SDKValOpAddress() sdktypes.ValAddress {
-	return v.ValAddress
+	return sdktypes.ValAddress(v.OperatorSDKPubKey().Address())
 }
 
 func (v *CryptoIdentity) SDKValConsAddress() sdktypes.ConsAddress {
-	return sdktypes.ConsAddress(v.SDKPubKey().Address())
+	return sdktypes.ConsAddress(v.ConsensusSDKPubKey().Address())
 }

@@ -103,7 +103,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			tc.setup(ctx, k, mocks)
 
 			msg, err := types.NewMsgAssignConsumerKey(tc.chainID,
-				testValProvider.SDKValOpAddress(), testValConsumer.SDKPubKey(),
+				testValProvider.SDKValOpAddress(), testValConsumer.ConsensusSDKPubKey(),
 			)
 
 			require.NoError(t, err)
