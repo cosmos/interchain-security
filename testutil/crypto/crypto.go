@@ -46,10 +46,6 @@ func NewCryptoIdentityFromIntSeed(i int) *CryptoIdentity {
 	return NewCryptoIdentityFromBytesSeed(seed)
 }
 
-func (v *CryptoIdentity) ABCIAddressBytes() []byte {
-	return v.ConsensusSDKPubKey().Address()
-}
-
 func (v *CryptoIdentity) TMValidator(power int64) *tmtypes.Validator {
 	return tmtypes.NewValidator(v.TMCryptoPubKey(), power)
 }
@@ -82,12 +78,8 @@ func (v *CryptoIdentity) ConsensusSDKPubKey() sdkcryptotypes.PubKey {
 	return v.consensus.PubKey()
 }
 
-func (v *CryptoIdentity) OperatorSDKPubKey() sdkcryptotypes.PubKey {
-	return v.operator.PubKey()
-}
-
 func (v *CryptoIdentity) SDKValOpAddress() sdktypes.ValAddress {
-	return sdktypes.ValAddress(v.OperatorSDKPubKey().Address())
+	return sdktypes.ValAddress(v.operator.PubKey().Address())
 }
 
 func (v *CryptoIdentity) SDKValConsAddress() sdktypes.ConsAddress {
