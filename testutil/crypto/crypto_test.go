@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestCryptoIdentityAddresses tests that crypto identities have different
-// consensus and validator addresses when using the same random seed.
-// It also briefly verifies that there is no collision when generating
-// multiple crypto identities.
-func TestCryptoIdentityAddresses(t *testing.T) {
+// TestNewCryptoIdentityFromIntSeed tests that crypto identities are generated
+// with different validator consensus and operator addresses using a given integer seed,
+// and also checks for any collisions in addresses and private keys when generating
+// multiple crypto identities with different seeds.
+func TestNewCryptoIdentityFromIntSeed(t *testing.T) {
 	keys := map[string]bool{}
 	valAddrs := map[string]bool{}
 
