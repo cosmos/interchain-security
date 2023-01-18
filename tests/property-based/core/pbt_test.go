@@ -144,6 +144,18 @@ func (s *Harness) redelegate(valFrom int64, valTo int64, amt int64) {
 	_ = err
 }
 
+func (s *Harness) unjail(valFrom int64, valTo int64, amt int64) {
+	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
+	d := s.delegator()
+	to := s.validator(valTo)
+	from := s.validator(valFrom)
+	msg := stakingtypes.NewMsgBeginRedelegate(d, from, to, coin)
+	_, err := server.BeginRedelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
+	// There may or may not be an error because the delegator might not have enough shares
+	_ = err
+}
+
 func (s *Harness) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
 	kind := stakingtypes.DoubleSign
 	if isDowntime {
@@ -398,7 +410,6 @@ func (m *Harness) EndAndBeginBlockAction(t *rapid.T) {
 
 // Check runs after every action and verifies that all required invariants hold.
 func (m *Harness) Check(t *rapid.T) {
-
 	if !m.validatorSetReplication() {
 		t.Fatal("validator set replication failed")
 	}
