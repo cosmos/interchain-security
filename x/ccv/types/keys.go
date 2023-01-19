@@ -6,7 +6,7 @@ const (
 
 	// Version defines the current version the IBC CCV provider and consumer
 	// module supports
-	Version = "1"
+	Version = "ics28-1"
 
 	// ProviderPortID is the default port id the provider CCV module binds to
 	ProviderPortID = "provider"

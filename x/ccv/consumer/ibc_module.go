@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"fmt"
+	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -14,6 +15,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -28,9 +30,19 @@ func (am AppModule) OnChanOpenInit(
 	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	version string,
-	// TODO: look at ICS26 for correct version string to return here
-	// https://github.com/cosmos/ibc/blob/main/spec/core/ics-026-routing-module/README.md#technical-specification
 ) (string, error) {
+
+	// set to the default version if the provided version is empty according to the ICS26 spec
+	// https://github.com/cosmos/ibc/blob/main/spec/core/ics-026-routing-module/README.md#technical-specification
+	if strings.TrimSpace(version) == "" {
+		version = types.Version
+	}
+
+	// check that provided version is correct
+	if version != types.Version {
+		return "", sdkerrors.Wrapf(types.ErrInvalidVersion, "got %s, expected %s", version, types.Version)
+	}
+
 	// ensure provider channel hasn't already been created
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok {
 		return version, sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
