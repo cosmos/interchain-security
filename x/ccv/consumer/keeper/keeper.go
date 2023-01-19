@@ -32,6 +32,7 @@ type Keeper struct {
 	portKeeper        ccv.PortKeeper
 	connectionKeeper  ccv.ConnectionKeeper
 	clientKeeper      ccv.ClientKeeper
+	stakingKeeper     ccv.StakingKeeper
 	slashingKeeper    ccv.SlashingKeeper
 	hooks             ccv.ConsumerHooks
 	bankKeeper        ccv.BankKeeper
@@ -49,6 +50,7 @@ func NewKeeper(
 	scopedKeeper ccv.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
+	stakingKeeper ccv.StakingKeeper,
 	slashingKeeper ccv.SlashingKeeper, bankKeeper ccv.BankKeeper, accountKeeper ccv.AccountKeeper,
 	ibcTransferKeeper ccv.IBCTransferKeeper, ibcCoreKeeper ccv.IBCCoreKeeper,
 	feeCollectorName string,
@@ -67,6 +69,7 @@ func NewKeeper(
 		portKeeper:        portKeeper,
 		connectionKeeper:  connectionKeeper,
 		clientKeeper:      clientKeeper,
+		stakingKeeper:     stakingKeeper,
 		slashingKeeper:    slashingKeeper,
 		bankKeeper:        bankKeeper,
 		authKeeper:        accountKeeper,
@@ -205,6 +208,22 @@ func (k Keeper) GetPendingChanges(ctx sdk.Context) (*ccv.ValidatorSetChangePacke
 func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.PendingChangesKey())
+}
+
+func (k Keeper) LastSovereignHeight(ctx sdk.Context) int64 {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.LastSovereignHeightKey())
+	if bz == nil {
+		return 0
+	}
+	height := sdk.BigEndianToUint64(bz)
+	return int64(height)
+}
+
+func (k Keeper) SetLastSovereignHeight(ctx sdk.Context, height int64) {
+	bz := sdk.Uint64ToBigEndian(uint64(height))
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.LastSovereignHeightKey(), bz)
 }
 
 func (k Keeper) IsPreCCV(ctx sdk.Context) bool {

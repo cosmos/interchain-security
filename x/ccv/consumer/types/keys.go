@@ -65,11 +65,14 @@ const (
 	// because the client is expired
 	PendingDataPacketsBytePrefix
 
-	// CrossChainValidatorPrefix is the byte prefix that will store cross-chain validators by consensus address
+	// CrossChainValidatorPrefix is the byte that will store cross-chain validators by consensus address
 	CrossChainValidatorBytePrefix
 
-	// PreCCVPrefix is the byte prefix to store the consumer is running on democracy staking module without consumer
-	PreCCVPrefix
+	// PreCCVByteKey is the byte to store the consumer is running on democracy staking module without consumer
+	PreCCVByteKey
+
+	// LastSovereignHeightByteKey is the byte that will store last sovereign height
+	LastSovereignHeightByteKey
 )
 
 // PortKey returns the key to the port ID in the store
@@ -103,7 +106,11 @@ func PendingChangesKey() []byte {
 }
 
 func PreCCVKey() []byte {
-	return []byte{PreCCVPrefix}
+	return []byte{PreCCVByteKey}
+}
+
+func LastSovereignHeightKey() []byte {
+	return []byte{LastSovereignHeightByteKey}
 }
 
 // PacketMaturityTimeKey returns the key for storing maturity time for a given received VSC packet id

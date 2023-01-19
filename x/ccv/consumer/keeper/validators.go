@@ -60,28 +60,70 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 // IterateValidators - unimplemented on CCV keeper but perform a no-op in order to pass the slashing module InitGenesis.
 // It is allowed since the condition verifying validator public keys in HandleValidatorSignature (x/slashing/keeper/infractions.go) is removed
 // therefore it isn't required to store any validator public keys to the slashing states during genesis.
-func (k Keeper) IterateValidators(sdk.Context, func(index int64, validator stakingtypes.ValidatorI) (stop bool)) {
+func (k Keeper) IterateValidators(ctx sdk.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool)) {
+	lastSovereignHeight := k.LastSovereignHeight(ctx)
+	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+		if k.stakingKeeper == nil {
+			panic("empty staking keeper")
+		}
+
+		k.stakingKeeper.IterateValidators(ctx, f)
+	}
 }
 
 // Validator - unimplemented on CCV keeper
 func (k Keeper) Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.ValidatorI {
+	lastSovereignHeight := k.LastSovereignHeight(ctx)
+	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+		if k.stakingKeeper == nil {
+			panic("empty staking keeper")
+		}
+
+		return k.stakingKeeper.Validator(ctx, addr)
+	}
 	panic("unimplemented on CCV keeper")
 }
 
 // IsJailed returns the outstanding slashing flag for the given validator adddress
 func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
+	lastSovereignHeight := k.LastSovereignHeight(ctx)
+	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+		if k.stakingKeeper == nil {
+			panic("empty staking keeper")
+		}
+
+		return k.stakingKeeper.IsValidatorJailed(ctx, addr)
+	}
 	return k.OutstandingDowntime(ctx, addr)
 }
 
 // ValidatorByConsAddr returns an empty validator
-func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.ValidatorI {
+func (k Keeper) ValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) stakingtypes.ValidatorI {
+	lastSovereignHeight := k.LastSovereignHeight(ctx)
+	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+		if k.stakingKeeper == nil {
+			return stakingtypes.Validator{}
+		}
+
+		return k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr)
+	}
 	return stakingtypes.Validator{}
 }
 
 // Slash queues a slashing request for the the provider chain
 // All queued slashing requests will be cleared in EndBlock
-func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, _ sdk.Dec, infraction stakingtypes.InfractionType) {
+func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec, infraction stakingtypes.InfractionType) {
 	if infraction == stakingtypes.InfractionEmpty {
+		return
+	}
+
+	lastSovereignHeight := k.LastSovereignHeight(ctx)
+	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+		if k.stakingKeeper == nil {
+			return
+		}
+
+		k.stakingKeeper.Slash(ctx, addr, infractionHeight, power, slashFactor, infraction)
 		return
 	}
 
@@ -97,18 +139,54 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 }
 
 // Jail - unimplemented on CCV keeper
-func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {}
+func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {
+	lastSovereignHeight := k.LastSovereignHeight(ctx)
+	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+		if k.stakingKeeper == nil {
+			return
+		}
+
+		k.stakingKeeper.Jail(ctx, addr)
+		return
+	}
+}
 
 // Unjail - unimplemented on CCV keeper
-func (k Keeper) Unjail(sdk.Context, sdk.ConsAddress) {}
+func (k Keeper) Unjail(ctx sdk.Context, addr sdk.ConsAddress) {
+	lastSovereignHeight := k.LastSovereignHeight(ctx)
+	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+		if k.stakingKeeper == nil {
+			return
+		}
+
+		k.stakingKeeper.Unjail(ctx, addr)
+	}
+}
 
 // Delegation - unimplemented on CCV keeper
-func (k Keeper) Delegation(sdk.Context, sdk.AccAddress, sdk.ValAddress) stakingtypes.DelegationI {
+func (k Keeper) Delegation(ctx sdk.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) stakingtypes.DelegationI {
+	lastSovereignHeight := k.LastSovereignHeight(ctx)
+	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+		if k.stakingKeeper == nil {
+			panic("empty staking keeper")
+		}
+
+		return k.stakingKeeper.Delegation(ctx, addr, valAddr)
+	}
 	panic("unimplemented on CCV keeper")
 }
 
 // MaxValidators - unimplemented on CCV keeper
-func (k Keeper) MaxValidators(sdk.Context) uint32 {
+func (k Keeper) MaxValidators(ctx sdk.Context) uint32 {
+	lastSovereignHeight := k.LastSovereignHeight(ctx)
+	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+		if k.stakingKeeper == nil {
+			panic("empty staking keeper")
+		}
+
+		return k.stakingKeeper.MaxValidators(ctx)
+	}
+
 	panic("unimplemented on CCV keeper")
 }
 

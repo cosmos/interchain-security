@@ -419,6 +419,7 @@ func New(
 		&app.IBCKeeper.PortKeeper,
 		app.IBCKeeper.ConnectionKeeper,
 		app.IBCKeeper.ClientKeeper,
+		app.StakingKeeper,
 		app.SlashingKeeper,
 		app.BankKeeper,
 		app.AccountKeeper,

@@ -186,6 +186,8 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		// Note: validator set update is only done on consumer chain from first endblocker
 		// on soft fork from existing chain
 		am.keeper.DeletePreCCV(ctx)
+		// set last sovereign height
+		am.keeper.SetLastSovereignHeight(ctx, ctx.BlockHeight())
 		// populate cross chain validators states with initial valset
 		am.keeper.ApplyCCValidatorChanges(ctx, initialValSet)
 
