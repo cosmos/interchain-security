@@ -56,6 +56,25 @@ func TestOnChanOpenInit(t *testing.T) {
 			}, true,
 		},
 		{
+			"should succeed when IBC module version isn't provided", func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+				params.version = ""
+				gomock.InOrder(
+					mocks.MockScopedKeeper.EXPECT().ClaimCapability(
+						params.ctx, params.chanCap, host.ChannelCapabilityPath(
+							params.portID, params.channelID)).Return(nil).Times(1),
+					mocks.MockConnectionKeeper.EXPECT().GetConnection(
+						params.ctx, "connectionIDToProvider").Return(
+						conntypes.ConnectionEnd{ClientId: "clientIDToProvider"}, true).Times(1),
+				)
+			}, true,
+		},
+		{
+			"invalid non-empty IBC module version",
+			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+				params.version = "2"
+			}, false,
+		},
+		{
 			"invalid: channel to provider already established",
 			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				keeper.SetProviderChannel(params.ctx, "existingProviderChanID")
@@ -124,8 +143,7 @@ func TestOnChanOpenInit(t *testing.T) {
 
 		tc.setup(&consumerKeeper, &params, mocks)
 
-		// TODO: assert correct version
-		_, err := consumerModule.OnChanOpenInit(
+		version, err := consumerModule.OnChanOpenInit(
 			params.ctx,
 			params.order,
 			params.connectionHops,
@@ -137,6 +155,8 @@ func TestOnChanOpenInit(t *testing.T) {
 		)
 
 		if tc.expPass {
+			// assert correct version
+			require.Equal(t, ccv.Version, version)
 			require.NoError(t, err)
 		} else {
 			require.Error(t, err)

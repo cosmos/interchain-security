@@ -31,7 +31,6 @@ func TestOnChanOpenInit(t *testing.T) {
 	providerModule := provider.NewAppModule(&providerKeeper)
 
 	// OnChanOpenInit must error for provider even with correct arguments
-	// TODO: assert correct version
 	_, err := providerModule.OnChanOpenInit(
 		ctx,
 		channeltypes.ORDERED,
