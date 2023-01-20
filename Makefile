@@ -20,9 +20,17 @@ test-short:
 test-diff:
 	go test ./tests/difference/...
 
-# run integration tests
+# run only happy path integration tests
+test-integration-short:
+	go run ./tests/integration/... --happy-path-only
+
+# run full integration tests in sequence (including multiconsumer)
 test-integration:
-	go run ./tests/integration/...
+	go run ./tests/integration/... --include-multi-consumer
+
+# run full integration tests in parallel (including multiconsumer)
+test-integration-parallel:
+	go run ./tests/integration/... --include-multi-consumer --parallel
 
 # run all tests with caching disabled
 test-no-cache:
