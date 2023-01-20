@@ -5,7 +5,7 @@
 name: nightly-integration-main
 on:
   schedule:
-    # run every day at 03:00 (AM)
+    # run every day at 03:00 UTC
     #        ┌───────────── minute (0 - 59)
     #        │  ┌───────────── hour (0 - 23)
     #        │  │ ┌───────────── day of the month (1 - 31)
