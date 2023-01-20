@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/cosmos/cosmos-sdk v0.45.11
-	github.com/cosmos/ibc-go/v3 v3.4.0
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
@@ -30,6 +29,7 @@ require (
 
 require (
 	github.com/confio/ics23/go v0.7.0
+	github.com/cosmos/ibc-go/v4 v4.2.0
 	github.com/golang/mock v1.6.0
 	github.com/oxyno-zeta/gomock-extra-matcher v1.1.0
 	github.com/regen-network/cosmos-proto v0.3.1
