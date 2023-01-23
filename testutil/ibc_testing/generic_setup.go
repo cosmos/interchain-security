@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	e2eutil "github.com/cosmos/interchain-security/testutil/e2e"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
