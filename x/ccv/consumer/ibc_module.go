@@ -2,18 +2,20 @@ package consumer
 
 import (
 	"fmt"
+	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
+	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -28,10 +30,22 @@ func (am AppModule) OnChanOpenInit(
 	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	version string,
-) error {
+) (string, error) {
+
+	// set to the default version if the provided version is empty according to the ICS26 spec
+	// https://github.com/cosmos/ibc/blob/main/spec/core/ics-026-routing-module/README.md#technical-specification
+	if strings.TrimSpace(version) == "" {
+		version = types.Version
+	}
+
+	// check that provided version is correct
+	if version != types.Version {
+		return "", sdkerrors.Wrapf(types.ErrInvalidVersion, "got %s, expected %s", version, types.Version)
+	}
+
 	// ensure provider channel hasn't already been created
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok {
-		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
+		return version, sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
 			"provider channel: %s already set", providerChannel)
 	}
 
@@ -39,12 +53,12 @@ func (am AppModule) OnChanOpenInit(
 	if err := validateCCVChannelParams(
 		ctx, am.keeper, order, portID, version,
 	); err != nil {
-		return err
+		return version, err
 	}
 
 	// ensure the counterparty port ID matches the expected provider port ID
 	if counterparty.PortId != ccv.ProviderPortID {
-		return sdkerrors.Wrapf(porttypes.ErrInvalidPort,
+		return version, sdkerrors.Wrapf(porttypes.ErrInvalidPort,
 			"invalid counterparty port: %s, expected %s", counterparty.PortId, ccv.ProviderPortID)
 	}
 
@@ -52,10 +66,10 @@ func (am AppModule) OnChanOpenInit(
 	if err := am.keeper.ClaimCapability(
 		ctx, chanCap, host.ChannelCapabilityPath(portID, channelID),
 	); err != nil {
-		return err
+		return version, err
 	}
 
-	return am.keeper.VerifyProviderChain(ctx, connectionHops)
+	return version, am.keeper.VerifyProviderChain(ctx, connectionHops)
 }
 
 // validateCCVChannelParams validates a ccv channel
@@ -210,7 +224,7 @@ func (am AppModule) OnRecvPacket(
 		data ccv.ValidatorSetChangePacketData
 	)
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		errAck := channeltypes.NewErrorAcknowledgement("cannot unmarshal CCV packet data")
+		errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("cannot unmarshal CCV packet data"))
 		ack = &errAck
 	} else {
 		ack = am.keeper.OnRecvVSCPacket(ctx, packet, data)
