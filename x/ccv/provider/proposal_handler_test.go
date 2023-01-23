@@ -6,7 +6,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 
 	"testing"
 	"time"

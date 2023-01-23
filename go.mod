@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/cosmos/cosmos-sdk v0.45.11
-	github.com/cosmos/ibc-go/v3 v3.4.0
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
@@ -30,7 +29,7 @@ require (
 
 require (
 	github.com/confio/ics23/go v0.7.0
-	github.com/cosmos/gaia/v8 v8.0.0-20230108202408-c3c3586e5ab8
+	github.com/cosmos/ibc-go/v4 v4.2.0
 	github.com/golang/mock v1.6.0
 	github.com/oxyno-zeta/gomock-extra-matcher v1.1.0
 	github.com/regen-network/cosmos-proto v0.3.1
@@ -119,7 +118,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.14.0 // indirect
-	github.com/strangelove-ventures/packet-forward-middleware/v3 v3.0.0 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tendermint/btcd v0.1.1 // indirect
