@@ -78,6 +78,10 @@ func (v *CryptoIdentity) ConsensusSDKPubKey() sdkcryptotypes.PubKey {
 	return v.consensus.PubKey()
 }
 
+func (v *CryptoIdentity) OperatorSDKPubKey() sdkcryptotypes.PubKey {
+	return v.operator.PubKey()
+}
+
 func (v *CryptoIdentity) SDKValOpAddress() sdktypes.ValAddress {
 	return sdktypes.ValAddress(v.operator.PubKey().Address())
 }
