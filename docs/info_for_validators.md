@@ -10,9 +10,9 @@ The key assignment feature enables validators to use different consensus keys fo
 message MsgAssignConsumerKey {
   // The chain id of the consumer chain to assign a consensus public key to
   string chain_id;
-  // The validator address on the provider
+  // The validator's operator address on the provider
   string provider_addr;
-  // The consensus public key to use on the consumer
+  // The validator's consensus public key to use on the consumer
   google.protobuf.Any;
 }
 ```
