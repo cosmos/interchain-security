@@ -3,7 +3,7 @@ package crypto
 import (
 	"encoding/binary"
 
-	ibcmock "github.com/cosmos/ibc-go/v3/testing/mock"
+	ibcmock "github.com/cosmos/ibc-go/v4/testing/mock"
 
 	cryptoEd25519 "crypto/ed25519"
 
