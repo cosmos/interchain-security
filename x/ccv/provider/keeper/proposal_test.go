@@ -466,7 +466,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 }
 
 // Tests the StopConsumerChain method against the spec,
-// with more granularity than what's covered in TestHandleConsumerRemovalProposal, or e2e tests.
+// with more granularity than what's covered in TestHandleConsumerRemovalProposal, or integration tests.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stcc1
 // Spec tag: [CCV-PCF-STCC.1]
 func TestStopConsumerChain(t *testing.T) {

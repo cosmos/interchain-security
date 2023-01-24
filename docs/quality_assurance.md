@@ -75,7 +75,7 @@ The main concern addressed in this section is the correctness of the provider ch
 - one single consumer chain;
 - multiple consumer chains.
 
-| ID | Concern | Code Review | Unit Testing | E2e | Diff. Testing | Testnet | Protocol audit |
+| ID | Concern | Code Review | Unit Testing | Intg | Diff. Testing | Testnet | Protocol audit |
 | -- | ------- | ----------- | ------------ | --- | ------------- | ------- | -------------- |
 | 4.01 | Liveness of undelegations <br> - unbonding delegation entries are eventually removed from `UnbondingDelegation` | `Scheduled` | `NA` | `Done` <br> [unbonding_test.go](../tests/e2e/unbonding.go) | `Done` | `Scheduled` | `NA` |
 | 4.02 | Liveness of redelegations <br> - redelegations entries are eventually removed from `Redelegations` | `Scheduled` | `NA` | `Scheduled` | `Scheduled` | `Scheduled` | `NA` |
@@ -105,7 +105,7 @@ In addition, the implementation MUST guarantee the following [system properties]
 
 ---
 
-| ID | Concern re. _Channel Uniqueness_ | Code Review | Unit Testing | E2e Testing | Diff. Testing | Testnet | Protocol audit |
+| ID | Concern re. _Channel Uniqueness_ | Code Review | Unit Testing | Intg Testing | Diff. Testing | Testnet | Protocol audit |
 | -- | -------------------------------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
 | 5.01 | `HandleConsumerAdditionProposal()` should fail if a consumer with `chainId` is already registered | `Scheduled` | `Done` [TestCreateConsumerClient](../x/ccv/provider/keeper/proposal_test.go#L116) | `NA` | `NA` | `Scheduled` | `NA` |
 | 5.02 | The channel handshake for a consumer with `chainId` should fail if there is already an established CCV channel for `chainId`  | `Scheduled` | `Done` [TestOnChanOpenTry](../x/ccv/provider/ibc_module_test.go#L103), [TestOnChanOpenInit](../x/ccv/consumer/ibc_module_test.go#L59) | `NA` | `NA` | `Scheduled` | `NA` |
@@ -114,7 +114,7 @@ In addition, the implementation MUST guarantee the following [system properties]
 
 ---
 
-| ID | Concern re. _Validator Set Replication_ | Code Review | Unit Testing | E2e Testing | Diff. testing | Testnet | Protocol audit |
+| ID | Concern re. _Validator Set Replication_ | Code Review | Unit Testing | Intg Testing | Diff. testing | Testnet | Protocol audit |
 | -- | --------------------------------------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
 | 6.01 | Every validator set on any consumer chain MUST either be or have been a validator set on the provider chain. | `Scheduled` | `NA` | `NA` | `Done` | `Scheduled` | `Scheduled` |
 | 6.02 | Any update in the power of a validator `val` on the provider, as a result of <br> - (increase) `Delegate()` / `Redelegate()` to `val` <br> - (increase) `val` joining the provider validator set <br> - (decrease) `Undelegate()` / `Redelegate()` from `val` <br> - (decrease) `Slash(val)` <br> - (decrease) `val` leaving the provider validator set <br> MUST be present in a `ValidatorSetChangePacket` that is sent to all registered consumer chains | `Scheduled` | `NA` | `NA` | `Done` | `Scheduled` | `Scheduled` |
@@ -122,21 +122,21 @@ In addition, the implementation MUST guarantee the following [system properties]
 
 ---
 
-| ID | Concern re. _Bond-Based Consumer Voting Power_ | Code Review | Unit Testing | E2e Testing | Diff. Testing | Testnet | Protocol audit |
+| ID | Concern re. _Bond-Based Consumer Voting Power_ | Code Review | Unit Testing | Intg Testing | Diff. Testing | Testnet | Protocol audit |
 | -- | ---------------------------------------------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
 | 7.01 | For every `ValidatorSetChangePacket` received by a consumer chain at time `t`, a `MaturedVSCPacket` is sent back to the provider in the first block with a timestamp `>= t + UnbondingPeriod` | `Scheduled` | `NA` | `NA` | `Done` | `Scheduled` | `Scheduled` |
 | 7.02 | If an unbonding operation resulted in a `ValidatorSetChangePacket` sent to all registered consumer chains, then it cannot complete before receiving matching `MaturedVSCPacket`s from these consumer chains (unless some of these consumer chains are removed) | `Scheduled` | `NA` | `NA` | `Done` | `Scheduled` | `Scheduled` |
 
 ---
 
-| ID | Concern re. _Slashable Consumer Misbehavior_ | Code Review | Unit Testing | E2e Testing | Diff. testing | Testnet | Protocol audit |
+| ID | Concern re. _Slashable Consumer Misbehavior_ | Code Review | Unit Testing | Intg Testing | Diff. testing | Testnet | Protocol audit |
 | -- | -------------------------------------------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
 | 8.01 | Multiple downtime infractions committed by the same validator `val` on the same consumer chain without `val` requesting to `Unjail` itself result in a single `SlashPacket` | `Scheduled` | `NA` | `NA` | `Done` | `Scheduled` | `NA` |
 | 8.02 | If evidence of misbehavior is submitted on a consumer chain within the unbonding period targeting an amount `x` of staked tokens, the amount `x` cannot be unlocked on the provider before the corresponding `SlashPacket` is received <br> - `SlashPacket` will not arrive after the corresponding `MaturedVSCPacket`s | `Scheduled` | `NA` | `NA` | `Done` | `Scheduled` | `NA` |
 
 ---
 
-| ID | Concern re. _Consumer Rewards Distribution_ | Code Review | Unit Testing | E2e Testing | Diff. testing | Testnet | Protocol audit |
+| ID | Concern re. _Consumer Rewards Distribution_ | Code Review | Unit Testing | Intg Testing | Diff. testing | Testnet | Protocol audit |
 | -- | ------------------------------------------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
 | 9.01 | Validators on the provider chain receive rewards for participating in IS | `Scheduled` | `NA` | `Done` [TestRewardsDistribution](../tests/e2e/distribution.go) | `NA` | `Scheduled` | `NA` |
 | 9.02 | The rewards sent to the provider chain are escrowed on the consumer chains (no double spend) | `Scheduled` | `NA` | `Scheduled` | `NA` | `Scheduled` | `NA` |
@@ -151,7 +151,7 @@ The main concern addressed in this section is the correctness of the consumer ch
 - governance-enabled consumer chain ([gov-cc](https://github.com/cosmos/interchain-security/issues/141)), with the modified staking and distribution modules (see `x/ccv/staking` and `x/ccv/distribution`); also, must look at the [atom-gov module](https://github.com/cosmos/interchain-security/issues/162)
 - CosmWasm-enabled consumer chain ([wasm-cc](https://github.com/cosmos/interchain-security/issues/143)), with the CosmWasm module enabled
 
-| ID | Concern | Code Review | Unit Testing | E2e Testing | Diff. testing | Testnet | Protocol audit |
+| ID | Concern | Code Review | Unit Testing | Intg Testing | Diff. testing | Testnet | Protocol audit |
 | -- | ------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
 | 10.01 | Consumer chain liveness (blocks are being produced) | `Scheduled` | `NA` | `NA` | `NA` | `Scheduled` | `NA` |
 | 10.02 | A chain has the ability to restart as a consumer chain with no more than 24 hours downtime | `Scheduled` | `NA` | `NA` | `NA` | `Scheduled` | `NA` |

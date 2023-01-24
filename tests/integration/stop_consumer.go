@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,7 +13,7 @@ import (
 func (s *CCVTestSuite) TestStopConsumerChain() {
 
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	providerStakingKeeper := s.providerApp.GetIntgStakingKeeper()
 
 	firstBundle := s.getFirstBundle()
 
@@ -166,7 +166,7 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel bool) {
 	channelID := s.path.EndpointB.ChannelID
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	providerStakingKeeper := s.providerApp.GetIntgStakingKeeper()
 
 	if checkChannel {
 		// check channel's state is closed
