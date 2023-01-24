@@ -309,14 +309,14 @@ func (s *TestRun) SetLocalSDKPath(path string) {
 	s.localSdkPath = path
 }
 
-// ValidateStringLiterals enforces that configs follow the constraints
+// validateStringLiterals enforces that configs follow the constraints
 // necessary to to execute the tests
 //
 // Note: Network interfaces (name of virtual ethernet interfaces for ip link)
 // within the container will be named as "$CHAIN_ID-$VAL_ID-out" etc.
 // where this name is constrained to 15 bytes or less. Therefore each string literal
 // used as a validatorID or chainID needs to be 5 char or less.
-func (s *TestRun) ValidateStringLiterals() {
+func (s *TestRun) validateStringLiterals() {
 	for valID, valConfig := range s.validatorConfigs {
 
 		if len(valID) > 5 {
