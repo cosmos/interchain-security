@@ -16,7 +16,7 @@ To run integration tests against your own consumer/provider implementations, use
 
 ## Differential Tests (WIP)
 
-[Differential tests](./tests/difference/) is similar to e2e tests, but they compare the system state to an expected state generated from a model implementation. The implementation uses a model written in TypeScript
+[Differential tests](./tests/difference/) is similar to integration tests, but they compare the system state to an expected state generated from a model implementation.
 
 ## End-to-End (E2E) Tests 
 
@@ -29,13 +29,13 @@ Tests can be run using `make`:
 # run unit, integration, diff, and E2E tests
 make test
 
-# run unit and E2E tests - prefer this for local development
+# run unit and integration tests - prefer this for local development
 make test-short
 
 # run difference tests
 make test-diff
 
-# run e2e tests
+# run E2E tests
 make test-e2e
 
 # equivalent to make test with caching disabled
