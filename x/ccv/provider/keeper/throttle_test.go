@@ -565,11 +565,11 @@ func TestGlobalSlashEntries(t *testing.T) {
 	// Queue 3 entries for chainIDs 0, 1, 2, note their respective ibc seq nums are
 	// ordered differently than the chainIDs would be iterated.
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-		now.Local(), "chain-0", 15, cryptoutil.NewCryptoIdentityFromIntSeed(10).SDKConsAddress()))
+		now.Local(), "chain-0", 15, cryptoutil.NewCryptoIdentityFromIntSeed(10).SDKValConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-		now.Local(), "chain-1", 10, cryptoutil.NewCryptoIdentityFromIntSeed(11).SDKConsAddress()))
+		now.Local(), "chain-1", 10, cryptoutil.NewCryptoIdentityFromIntSeed(11).SDKValConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-		now.Local(), "chain-2", 5, cryptoutil.NewCryptoIdentityFromIntSeed(12).SDKConsAddress()))
+		now.Local(), "chain-2", 5, cryptoutil.NewCryptoIdentityFromIntSeed(12).SDKValConsAddress()))
 
 	globalEntries = providerKeeper.GetAllGlobalSlashEntries(ctx)
 	require.Equal(t, 3, len(globalEntries))
@@ -577,13 +577,13 @@ func TestGlobalSlashEntries(t *testing.T) {
 	// Queue 3 entries for chainIDs 0, 1, 2 an hour later, with incremented ibc seq nums
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		now.Add(time.Hour).Local(), "chain-0", 16, // should appear last for this recv time
-		cryptoutil.NewCryptoIdentityFromIntSeed(20).SDKConsAddress()))
+		cryptoutil.NewCryptoIdentityFromIntSeed(20).SDKValConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		now.Add(time.Hour).Local(), "chain-1", 11, // should appear middle for this recv time
-		cryptoutil.NewCryptoIdentityFromIntSeed(21).SDKConsAddress()))
+		cryptoutil.NewCryptoIdentityFromIntSeed(21).SDKValConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		now.Add(time.Hour).Local(), "chain-2", 6, // should appear first for this recv time
-		cryptoutil.NewCryptoIdentityFromIntSeed(22).SDKConsAddress()))
+		cryptoutil.NewCryptoIdentityFromIntSeed(22).SDKValConsAddress()))
 
 	// Retrieve entries from store
 	globalEntries = providerKeeper.GetAllGlobalSlashEntries(ctx)
@@ -600,13 +600,13 @@ func TestGlobalSlashEntries(t *testing.T) {
 	// Queue 3 entries for chainIDs 5, 6, 7 another hour later
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-5", 50, // should appear middle for this recv time
-			cryptoutil.NewCryptoIdentityFromIntSeed(96).SDKConsAddress()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(96).SDKValConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-6", 60, // should appear last for this recv time
-			cryptoutil.NewCryptoIdentityFromIntSeed(97).SDKConsAddress()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(97).SDKValConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-7", 40, // should appear first for this recv time
-			cryptoutil.NewCryptoIdentityFromIntSeed(98).SDKConsAddress()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(98).SDKValConsAddress()))
 
 	// Retrieve entries from store
 	globalEntries = providerKeeper.GetAllGlobalSlashEntries(ctx)
@@ -655,19 +655,19 @@ func TestDeleteGlobalSlashEntriesForConsumer(t *testing.T) {
 	// Queue 2 global entries for a consumer chain ID
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(time.Hour), "chain-78", 1,
-			cryptoutil.NewCryptoIdentityFromIntSeed(78).SDKConsAddress()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(78).SDKValConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(time.Hour), "chain-78", 2,
-			cryptoutil.NewCryptoIdentityFromIntSeed(79).SDKConsAddress()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(79).SDKValConsAddress()))
 
 	// Queue 1 global entry for two other consumer chain IDs
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(2*time.Hour), "chain-79", 1,
-			cryptoutil.NewCryptoIdentityFromIntSeed(80).SDKConsAddress()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(80).SDKValConsAddress()))
 
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(3*time.Hour), "chain-80", 1,
-			cryptoutil.NewCryptoIdentityFromIntSeed(81).SDKConsAddress()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(81).SDKValConsAddress()))
 
 	// Delete entries for chain-78, confirm those are deleted, and the other two remain
 	providerKeeper.DeleteGlobalSlashEntriesForConsumer(ctx, "chain-78")
@@ -691,13 +691,13 @@ func TestGlobalSlashEntryDeletion(t *testing.T) {
 
 	// Instantiate entries in the expected order we wish to get them back as (ordered by recv time)
 	entries = []providertypes.GlobalSlashEntry{}
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now, "chain-0", 1, cryptoutil.NewCryptoIdentityFromIntSeed(0).SDKConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(time.Hour).UTC(), "chain-1", 178, cryptoutil.NewCryptoIdentityFromIntSeed(1).SDKConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-2", 89, cryptoutil.NewCryptoIdentityFromIntSeed(2).SDKConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(3*time.Hour).In(time.FixedZone("UTC-8", -8*60*60)), "chain-3", 23423, cryptoutil.NewCryptoIdentityFromIntSeed(3).SDKConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(4*time.Hour).Local(), "chain-4", 323, cryptoutil.NewCryptoIdentityFromIntSeed(4).SDKConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(5*time.Hour).UTC(), "chain-5", 18, cryptoutil.NewCryptoIdentityFromIntSeed(5).SDKConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(6*time.Hour).Local(), "chain-6", 2, cryptoutil.NewCryptoIdentityFromIntSeed(6).SDKConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now, "chain-0", 1, cryptoutil.NewCryptoIdentityFromIntSeed(0).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(time.Hour).UTC(), "chain-1", 178, cryptoutil.NewCryptoIdentityFromIntSeed(1).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-2", 89, cryptoutil.NewCryptoIdentityFromIntSeed(2).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(3*time.Hour).In(time.FixedZone("UTC-8", -8*60*60)), "chain-3", 23423, cryptoutil.NewCryptoIdentityFromIntSeed(3).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(4*time.Hour).Local(), "chain-4", 323, cryptoutil.NewCryptoIdentityFromIntSeed(4).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(5*time.Hour).UTC(), "chain-5", 18, cryptoutil.NewCryptoIdentityFromIntSeed(5).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(6*time.Hour).Local(), "chain-6", 2, cryptoutil.NewCryptoIdentityFromIntSeed(6).SDKValConsAddress()))
 
 	// Instantiate shuffled copy of above slice
 	shuffledEntries := append([]providertypes.GlobalSlashEntry{}, entries...)
