@@ -9,9 +9,9 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v3/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
@@ -36,7 +36,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	}
 
 	if err := k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data); err != nil {
-		return channeltypes.NewErrorAcknowledgement(fmt.Sprintf(
+		return channeltypes.NewErrorAcknowledgement(fmt.Errorf(
 			"failed to queue VSCMatured packet data: %s", err.Error()))
 	}
 
@@ -309,7 +309,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 			"vscID", data.ValsetUpdateId,
 			"infractionType", data.Infraction,
 		)
-		return channeltypes.NewErrorAcknowledgement(err.Error())
+		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
 	// The slash packet validator address may be known only on the consumer chain,
@@ -331,7 +331,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
 	// to enforce order of handling between the two packet data types.
 	if err := k.QueueThrottledSlashPacketData(ctx, chainID, packet.Sequence, data); err != nil {
-		return channeltypes.NewErrorAcknowledgement(fmt.Sprintf("failed to queue slash packet data: %s", err.Error()))
+		return channeltypes.NewErrorAcknowledgement(fmt.Errorf("failed to queue slash packet data: %s", err.Error()))
 	}
 
 	k.Logger(ctx).Info("slash packet received and enqueued",
