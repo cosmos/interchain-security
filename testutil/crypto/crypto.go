@@ -83,7 +83,7 @@ func (v *CryptoIdentity) OperatorSDKPubKey() sdkcryptotypes.PubKey {
 }
 
 func (v *CryptoIdentity) SDKValOpAddress() sdktypes.ValAddress {
-	return sdktypes.ValAddress(v.operator.PubKey().Address())
+	return sdktypes.ValAddress(v.OperatorSDKPubKey().Address())
 }
 
 func (v *CryptoIdentity) SDKValConsAddress() sdktypes.ConsAddress {
