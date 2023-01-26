@@ -1,7 +1,7 @@
 
-# End To End Testing
+# Integration Testing
 
-Intg tests are categorized into files as follows:
+Integration tests are categorized into files as follows:
 
 - `setup.go` - setup for the integration tests
 - `common.go` - helper functions
