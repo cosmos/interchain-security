@@ -111,7 +111,7 @@ func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 	replenishPeriod := k.GetSlashMeterReplenishPeriod(ctx)
 
 	// Replenish slash meter if current time is equal to or after the current replenish candidate time.
-	if !ctx.BlockTime().UTC().Before(k.GetSlashMeterReplenishTimeCandidate(ctx)) {
+	if !ctx.BlockTime().UTC().Equal(k.GetSlashMeterReplenishTimeCandidate(ctx)) {
 		k.ReplenishSlashMeter(ctx)
 		// Set replenish time candidate to one replenish period from now, since we just replenished.
 		k.SetSlashMeterReplenishTimeCandidate(ctx, ctx.BlockTime().Add(replenishPeriod))

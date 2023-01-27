@@ -815,7 +815,6 @@ func (s *CCVTestSuite) replenishSlashMeterTillPositive() {
 
 func (s *CCVTestSuite) getCtxAfterReplenishCandidate(ctx sdktypes.Context) sdktypes.Context {
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	nextReplenishTime := providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx)
-
-	return ctx.WithBlockTime(nextReplenishTime.Add(time.Minute))
+	candidate := providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx)
+	return ctx.WithBlockTime(candidate.Add(time.Minute))
 }
