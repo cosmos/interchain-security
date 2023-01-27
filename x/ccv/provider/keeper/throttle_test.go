@@ -281,6 +281,71 @@ func TestSlashMeterReplenishment(t *testing.T) {
 	}
 }
 
+// Tests that the slash meter exhibits desired behavior when multiple replenishments are needed
+// to restore it to a full value.
+func TestConsecutiveReplenishments(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	now := time.Now()
+	ctx = ctx.WithBlockTime(now)
+
+	// Set desired params
+	params := providertypes.DefaultParams()
+	params.SlashMeterReplenishPeriod = time.Hour
+	params.SlashMeterReplenishFraction = "0.05"
+	providerKeeper.SetParams(ctx, params)
+
+	// Mock total power from staking keeper using test case value
+	// Any ctx is accepted, and the method will be called multiple times during the tests
+	gomock.InOrder(
+		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+			gomock.Any()).Return(sdktypes.NewInt(1000)).AnyTimes(),
+	)
+
+	// Now we can initialize the slash meter (this would happen in InitGenesis)
+	providerKeeper.InitializeSlashMeter(ctx)
+
+	// Confirm meter value is initialized to expected allowance
+	require.Equal(t, int64(50), providerKeeper.GetSlashMeter(ctx).Int64())
+
+	// Confirm last full time is current block time.
+	require.Equal(t, now.UTC(), providerKeeper.GetLastSlashMeterFullTime(ctx))
+
+	// Decrement slash meter to negative value that would take 4 replenishments to recover from
+	providerKeeper.SetSlashMeter(ctx, sdktypes.NewInt(-150))
+
+	// Confirm no replenishment occurs when no time has passed
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(-150), providerKeeper.GetSlashMeter(ctx))
+
+	// Now increment block time past replenishment period and confirm that meter is replenished ONCE
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour * 2))
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(-100), providerKeeper.GetSlashMeter(ctx))
+
+	// Simulate next block and check that no consecutive replenishments occur (replenish period has not passed)
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(5 * time.Second))
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(-100), providerKeeper.GetSlashMeter(ctx))
+
+	// Increment block time past replenishment period and confirm that meter is replenished ONCE more
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour * 1))
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(-50), providerKeeper.GetSlashMeter(ctx))
+
+	// Replenishments should happen if we increment block times past replenishment period
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour * 1))
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(0), providerKeeper.GetSlashMeter(ctx))
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(0), providerKeeper.GetSlashMeter(ctx))
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour * 1))
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(50), providerKeeper.GetSlashMeter(ctx))
+}
+
 // TestSlashMeterAllowanceChanges tests the behavior of a full slash meter
 // when total voting power becomes higher and lower.
 func TestTotalVotingPowerChanges(t *testing.T) {
