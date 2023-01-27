@@ -104,10 +104,8 @@ func (k Keeper) InitializeSlashMeter(ctx sdktypes.Context) {
 	k.SetSlashMeterReplenishTimeCandidate(ctx, ctx.BlockTime().Add(k.GetSlashMeterReplenishPeriod(ctx)))
 }
 
-// TODO: will need to change some docs as well.
-
 // CheckForSlashMeterReplenishment checks if the slash meter should be replenished, and if so, replenishes it.
-// Note: initial "last slash meter full time" is set in InitGenesis.
+// Note: initial slash meter replenish candidate time is set in InitGenesis.
 func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 
 	replenishPeriod := k.GetSlashMeterReplenishPeriod(ctx)
@@ -592,18 +590,17 @@ func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value sdktypes.Int) {
 // Otherwise this value will be updated in every future block until the slash meter becomes NOT full.
 func (k Keeper) GetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context) time.Time {
 	store := ctx.KVStore(k.storeKey)
-	// TODO: key and search
-	bz := store.Get(providertypes.LastSlashMeterFullTimeKey())
+	bz := store.Get(providertypes.SlashMeterReplenishTimeCandidate())
 	if bz == nil {
-		// Last slash meter full time should be set as a part of InitGenesis and periodically updated by throttle logic,
+		// Slash meter replenish time candidate should be set as a part of InitGenesis and periodically updated by throttle logic,
 		// there is no deletion method exposed, so nil bytes would indicate something is very wrong.
-		panic("last slash meter full time not set")
+		panic("slash meter replenish time candidate not set")
 	}
 	time, err := sdktypes.ParseTimeBytes(bz)
 	if err != nil {
-		// We should have obtained value bytes that were serialized in SetLastSlashMeterFullTime,
+		// We should have obtained value bytes that were serialized in SetSlashMeterReplenishTimeCandidate,
 		// so an error here would indicate something is very wrong.
-		panic(fmt.Sprintf("failed to parse last slash meter full time: %s", err))
+		panic(fmt.Sprintf("failed to parse slash meter replenish time candidate: %s", err))
 	}
 	return time.UTC()
 }
@@ -614,7 +611,5 @@ func (k Keeper) GetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context) time.T
 // Otherwise this value will be updated in every future block until the slash meter becomes NOT full.
 func (k Keeper) SetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context, time time.Time) {
 	store := ctx.KVStore(k.storeKey)
-	// TODO: keys
-	// TODO: search full time keys and replace
-	store.Set(providertypes.LastSlashMeterFullTimeKey(), sdktypes.FormatTimeBytes(time.UTC()))
+	store.Set(providertypes.SlashMeterReplenishTimeCandidate(), sdktypes.FormatTimeBytes(time.UTC()))
 }

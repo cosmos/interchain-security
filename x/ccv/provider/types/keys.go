@@ -47,9 +47,8 @@ const (
 	// SlashMeterByteKey is the byte key for storing the slash meter
 	SlashMeterByteKey
 
-	// LastSlashMeterFullTimeByteKey is the byte key for storing
-	// the last time the slash meter was full.
-	LastSlashMeterFullTimeByteKey
+	// SlashMeterReplenishTimeCandidateByteKey is the byte key for storing the slash meter replenish time candidate
+	SlashMeterReplenishTimeCandidateByteKey
 
 	// ChainToChannelBytePrefix is the byte prefix for storing mapping
 	// from chainID to the channel ID that is used to send over validator set changes.
@@ -146,9 +145,9 @@ func SlashMeterKey() []byte {
 	return []byte{SlashMeterByteKey}
 }
 
-// LastSlashMeterFullTimeKey returns the key storing the last time the slash meter was full
-func LastSlashMeterFullTimeKey() []byte {
-	return []byte{LastSlashMeterFullTimeByteKey}
+// SlashMeterReplenishTimeCandidate returns the key storing the slash meter replenish time candidate
+func SlashMeterReplenishTimeCandidate() []byte {
+	return []byte{SlashMeterReplenishTimeCandidateByteKey}
 }
 
 // ChainToChannelKey returns the key under which the CCV channel ID will be stored for the given consumer chain.
