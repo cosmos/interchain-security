@@ -97,20 +97,27 @@ One implementation-specific property introduced is that if any of the chain-spec
 
 Using on-chain params and the sub protocol defined, slash packet throttling is implemented such that the following invariant is maintained.
 
-For the following invariant to hold, these points must be true:
+First, we define the following:
 
-* We assume the total voting power of the chain (as a function of delegations) does not significantly increase over the course of the attack.
+* A consumer initiated slash attack "starts" when the first slash packet from such an attack is received by the provider.
+* The "initial validator set" for the attack is the set that existed when the attack started.
+* There is a list of honest validators s.t if they are jailed, `X`% of the initial validator set will be jailed.
+* The "final slashed validator" is the last element in the list of honest validators.
+
+For the following invariant to hold, these assumptions must be true:
+
+* We assume the total voting power of the chain (as a function of delegations) does not increase over the course of the attack.
 * The final slashed validator does not have more than `SlashMeterReplenishFraction` of total voting power on the provider.
 * `SlashMeterReplenishFraction` is large enough that `SlashMeterReplenishFraction` * `currentTotalVotingPower` > 1. Ie. the replenish fraction is set high enough that we can ignore the effects of rounding.
 * `SlashMeterReplenishPeriod` is sufficiently longer than the time it takes to produce a block.
 
+*Note if these assumptions do not hold, throttling will still slow down the described attack in most cases, just not in a way that can be succinctly described. It's possible that more complex invariants can be defined.*
+
 Invariant:
 
-> If we define a consumer initiated slash attack to start when the first slash packet from such an attack is received by the provider, and we define the initial validator set as the set that existed when the attack started, the time it takes to jail/tombstone `X`% of the initial validator set will be greater than or equal to `(X * SlashMeterReplenishPeriod / SlashMeterReplenishFraction) - 2 * SlashMeterReplenishPeriod`
+> The time it takes to jail/tombstone `X`% of the initial validator set will be greater than or equal to `(X * SlashMeterReplenishPeriod / SlashMeterReplenishFraction) - 2 * SlashMeterReplenishPeriod`
 
-Intuition: If jailings begin when the slash meter is full, then `SlashMeterReplenishFraction` of the provider validator set can be jailed immediately. The remaining jailings are only applied when the slash meter is positive in value, so the time it takes to jail the remaining `X - SlashMeterReplenishFraction` of the provider validator set is `(X - SlashMeterReplenishFraction) * SlashMeterReplenishPeriod / SlashMeterReplenishFraction`. However, the final validator could be jailed during the final replenishment period, with the meter being very small in value (causing it to go negative after jailing). So we subtract another `SlashMeterReplenishPeriod` term in the invariant to account for this.
-
-Note this invariant could be adjusted with different slash meter protocols, but the current scheme is the simplest to implement and understand.
+Intuition: If jailings begin when the slash meter is full, then `SlashMeterReplenishFraction` of the provider validator set can be jailed immediately. The remaining jailings are only applied when the slash meter is positive in value, so the time it takes to jail the remaining `X - SlashMeterReplenishFraction` of the provider validator set is `(X - SlashMeterReplenishFraction) * SlashMeterReplenishPeriod / SlashMeterReplenishFraction`. However, the final slashed validator could be jailed during the final replenishment period, with the meter being very small in value (causing it to go negative after jailing). So we subtract another `SlashMeterReplenishPeriod` term in the invariant to account for this.
 
 This invariant is useful because it allows us to reason about the time it takes to jail a certain percentage of the initial provider validator set from consumer initiated slash requests. For example, if `SlashMeterReplenishFraction` is set to 0.06, then it takes no less than 4 replenishment periods to jail 33% of the initial provider validator set on the Cosmos Hub. Note that as of writing this on 11/29/22, the Cosmos Hub does not have a validator with more than 6% of total voting power.
 
@@ -120,16 +127,17 @@ Note also that 4 replenishment period is a worst case scenario that depends on w
 
 ### Positive
 
-- Validators can use different consensus keys on the consumer chains.
+* The described attack is slowed down in seemingly all cases.
+* If certain assumptions hold, the described attack is slowed down in a way that can be precisely time-bounded.
 
 ### Negative
 
-- None
+* Throttling introduces a vector for a malicious consumer chain to halt the provider, see issue below. However, this is sacrificing liveness in a very edge case scenario for the sake of security.
 
 ### Neutral
 
-- The consensus state necessary to create a client to the consumer chain must use the hash returned by the `MakeConsumerGenesis` method as the `nextValsHash`.
-- The consumer chain can no longer check the initial validator set against the consensus state on `InitGenesis`.
+* Additional state is introduced to the provider chain.
+* VSCMatured and slash packet data is not always handled in the same block that it is received.
 
 ## References
 
