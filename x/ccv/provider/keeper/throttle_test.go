@@ -231,9 +231,9 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		// Confirm meter value is initialized to expected allowance
 		require.Equal(t, tc.expectedAllowance, providerKeeper.GetSlashMeter(ctx))
 
-		// Confirm next replenish time is set to now + replenish period
-		initialNextReplenishTime := providerKeeper.GetNextSlashMeterReplenishTime(ctx)
-		require.Equal(t, now.Add(providerKeeper.GetSlashMeterReplenishPeriod(ctx)), initialNextReplenishTime)
+		// Confirm replenish time candidate is set to now + replenish period
+		initialReplenishCandidate := providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx)
+		require.Equal(t, now.Add(providerKeeper.GetSlashMeterReplenishPeriod(ctx)), initialReplenishCandidate)
 
 		// Decrement slash meter
 		providerKeeper.SetSlashMeter(ctx, providerKeeper.GetSlashMeter(ctx).Sub(sdktypes.NewInt(3)))
@@ -244,8 +244,8 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		providerKeeper.CheckForSlashMeterReplenishment(ctx)
 		require.Equal(t, meterBefore, providerKeeper.GetSlashMeter(ctx))
 
-		// Confirm next replenishment time is not updated
-		require.Equal(t, initialNextReplenishTime, providerKeeper.GetNextSlashMeterReplenishTime(ctx))
+		// Confirm replenishment time candidate is not updated
+		require.Equal(t, initialReplenishCandidate, providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 		// Note: odd time formats are used as an extra sanity check that UTC format is persisted
 
@@ -257,8 +257,8 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		providerKeeper.CheckForSlashMeterReplenishment(ctx)
 		require.Equal(t, meterBefore, providerKeeper.GetSlashMeter(ctx))
 
-		// Confirm next replenishment time is not updated
-		require.Equal(t, initialNextReplenishTime, providerKeeper.GetNextSlashMeterReplenishTime(ctx))
+		// Confirm replenishment time candidate is not updated
+		require.Equal(t, initialReplenishCandidate, providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 		// Increment block time by more than replenish period
 		ctx = ctx.WithBlockTime(now.Add(tc.replenishPeriod * 2).In(time.FixedZone("UTC-8", -8*60*60)))
@@ -267,9 +267,9 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		providerKeeper.CheckForSlashMeterReplenishment(ctx)
 		require.Equal(t, tc.expectedAllowance, providerKeeper.GetSlashMeter(ctx))
 
-		// Next replenish time should be updated to block time + replenish period
-		require.NotEqual(t, initialNextReplenishTime, providerKeeper.GetNextSlashMeterReplenishTime(ctx))
-		require.Equal(t, ctx.BlockTime().Add(tc.replenishPeriod), providerKeeper.GetNextSlashMeterReplenishTime(ctx))
+		// Replenish time candidate should be updated to block time + replenish period
+		require.NotEqual(t, initialReplenishCandidate, providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
+		require.Equal(t, ctx.BlockTime().Add(tc.replenishPeriod), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 		// increment block time by more than replenish period again
 		ctx = ctx.WithBlockTime(ctx.BlockTime().Add(tc.replenishPeriod * 2))
@@ -278,8 +278,8 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		providerKeeper.CheckForSlashMeterReplenishment(ctx)
 		require.Equal(t, tc.expectedAllowance, providerKeeper.GetSlashMeter(ctx))
 
-		// Confirm next replenish time is updated, even though meter is already full
-		require.Equal(t, ctx.BlockTime().Add(tc.replenishPeriod), providerKeeper.GetNextSlashMeterReplenishTime(ctx))
+		// Confirm replenish candidate is updated, even though meter is already full
+		require.Equal(t, ctx.BlockTime().Add(tc.replenishPeriod), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 	}
 }
 
@@ -312,50 +312,50 @@ func TestConsecutiveReplenishments(t *testing.T) {
 	// Confirm meter value is initialized to expected allowance
 	require.Equal(t, int64(50), providerKeeper.GetSlashMeter(ctx).Int64())
 
-	// Confirm next replenish time is set to now + replenish period
-	require.Equal(t, now.Add(time.Hour), providerKeeper.GetNextSlashMeterReplenishTime(ctx))
+	// Confirm replenish candidate is set to now + replenish period
+	require.Equal(t, now.Add(time.Hour), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 	// Decrement slash meter to negative value that would take 4 replenishments to recover from
 	providerKeeper.SetSlashMeter(ctx, sdktypes.NewInt(-150))
 
-	// Confirm no replenishment occurs when no time has passed, next slash meter replenish time is not updated
+	// Confirm no replenishment occurs when no time has passed, replenish candidate is not updated
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
 	require.Equal(t, sdktypes.NewInt(-150), providerKeeper.GetSlashMeter(ctx))
-	require.Equal(t, now.Add(time.Hour), providerKeeper.GetNextSlashMeterReplenishTime(ctx))
+	require.Equal(t, now.Add(time.Hour), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 	// Now increment block time past replenishment period and confirm that meter is replenished ONCE,
-	// and next replenish time is updated to block time + replenish period
+	// and replenish candidate is updated to block time + replenish period
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(2 * time.Hour))
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
 	require.Equal(t, sdktypes.NewInt(-100), providerKeeper.GetSlashMeter(ctx))
-	require.Equal(t, now.Add(3*time.Hour), providerKeeper.GetNextSlashMeterReplenishTime(ctx)) // Note 3 hours, not 2
+	require.Equal(t, now.Add(3*time.Hour), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx)) // Note 3 hours, not 2
 
 	// Simulate next block and check that no consecutive replenishments occur (replenish period has not passed)
-	// and that next replenish time is not updated
+	// and replenish candidate is not updated
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(5 * time.Second))
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
 	require.Equal(t, sdktypes.NewInt(-100), providerKeeper.GetSlashMeter(ctx))
-	require.Equal(t, now.Add(3*time.Hour), providerKeeper.GetNextSlashMeterReplenishTime(ctx))
+	require.Equal(t, now.Add(3*time.Hour), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 	// Increment block time past replenishment period and confirm that meter is replenished ONCE more
-	// and next replenish time is updated to block time + replenish period
+	// and replenish candidate is updated to block time + replenish period
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour * 1))
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
 	require.Equal(t, sdktypes.NewInt(-50), providerKeeper.GetSlashMeter(ctx))
-	require.Equal(t, now.Add(4*time.Hour).Add(5*time.Second), providerKeeper.GetNextSlashMeterReplenishTime(ctx))
+	require.Equal(t, now.Add(4*time.Hour).Add(5*time.Second), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 	// Replenishments should happen if we increment block times past replenishment period
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour * 1))
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
 	require.Equal(t, sdktypes.NewInt(0), providerKeeper.GetSlashMeter(ctx))
-	require.Equal(t, now.Add(5*time.Hour).Add(5*time.Second), providerKeeper.GetNextSlashMeterReplenishTime(ctx))
+	require.Equal(t, now.Add(5*time.Hour).Add(5*time.Second), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
 	require.Equal(t, sdktypes.NewInt(0), providerKeeper.GetSlashMeter(ctx))
-	require.Equal(t, now.Add(5*time.Hour).Add(5*time.Second), providerKeeper.GetNextSlashMeterReplenishTime(ctx))
+	require.Equal(t, now.Add(5*time.Hour).Add(5*time.Second), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour * 1))
 	providerKeeper.CheckForSlashMeterReplenishment(ctx)
 	require.Equal(t, sdktypes.NewInt(50), providerKeeper.GetSlashMeter(ctx))
-	require.Equal(t, now.Add(6*time.Hour).Add(5*time.Second), providerKeeper.GetNextSlashMeterReplenishTime(ctx))
+	require.Equal(t, now.Add(6*time.Hour).Add(5*time.Second), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 }
 
 // TestSlashMeterAllowanceChanges tests the behavior of a full slash meter
@@ -1284,8 +1284,8 @@ func TestSlashMeter(t *testing.T) {
 	}
 }
 
-// TestNextSlashMeterReplenishTime tests the getter and setter for the next time the slash meter will be replenished
-func TestNextSlashMeterReplenishTime(t *testing.T) {
+// TestSlashMeterReplenishTimeCandidate tests the getter and setter for the slash meter replenish time candidate
+func TestSlashMeterReplenishTimeCandidate(t *testing.T) {
 
 	testCases := []time.Time{
 		time.Now(),
@@ -1304,8 +1304,8 @@ func TestNextSlashMeterReplenishTime(t *testing.T) {
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
-		providerKeeper.SetNextSlashMeterReplenishTime(ctx, tc)
-		gotTime := providerKeeper.GetNextSlashMeterReplenishTime(ctx)
+		providerKeeper.SetSlashMeterReplenishTimeCandidate(ctx, tc)
+		gotTime := providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx)
 		// Time should be returned in UTC
 		require.Equal(t, tc.UTC(), gotTime)
 	}
