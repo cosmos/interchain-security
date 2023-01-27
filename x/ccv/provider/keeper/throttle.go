@@ -98,14 +98,14 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 }
 
 // InitializeSlashMeter initializes the slash meter to it's max value (also its allowance),
-// and sets the next replenish time one replenish period from block time.
+// and sets the replenish time candidate to one replenish period from current block time.
 func (k Keeper) InitializeSlashMeter(ctx sdktypes.Context) {
 	k.SetSlashMeter(ctx, k.GetSlashMeterAllowance(ctx))
 	k.SetSlashMeterReplenishTimeCandidate(ctx, ctx.BlockTime().Add(k.GetSlashMeterReplenishPeriod(ctx)))
 }
 
 // CheckForSlashMeterReplenishment checks if the slash meter should be replenished, and if so, replenishes it.
-// Note: initial slash meter replenish candidate time is set in InitGenesis.
+// Note: initial slash meter replenish time candidate is set in InitGenesis.
 func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 
 	replenishPeriod := k.GetSlashMeterReplenishPeriod(ctx)

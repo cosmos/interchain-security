@@ -233,7 +233,7 @@ func TestSlashMeterReplenishment(t *testing.T) {
 
 		// Confirm replenish time candidate is set to now + replenish period
 		initialReplenishCandidate := providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx)
-		require.Equal(t, now.Add(providerKeeper.GetSlashMeterReplenishPeriod(ctx)), initialReplenishCandidate)
+		require.Equal(t, now.Add(tc.replenishPeriod), initialReplenishCandidate)
 
 		// Decrement slash meter
 		providerKeeper.SetSlashMeter(ctx, providerKeeper.GetSlashMeter(ctx).Sub(sdktypes.NewInt(3)))
@@ -278,7 +278,7 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		providerKeeper.CheckForSlashMeterReplenishment(ctx)
 		require.Equal(t, tc.expectedAllowance, providerKeeper.GetSlashMeter(ctx))
 
-		// Confirm replenish candidate is updated, even though meter is already full
+		// Confirm replenish candidate is updated, even though meter was not replenished
 		require.Equal(t, ctx.BlockTime().Add(tc.replenishPeriod), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 	}
 }
