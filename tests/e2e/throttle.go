@@ -44,9 +44,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		params.SlashMeterReplenishFraction = tc.replenishFraction
 		s.providerApp.GetProviderKeeper().SetParams(s.providerCtx(), params)
 
-		// Elapse a replenish period and check for replenishment, so new param is fully in effect.
-		customCtx := s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
-		s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
+		s.providerApp.GetProviderKeeper().InitializeSlashMeter(s.providerCtx())
 
 		slashMeter := s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
 		s.Require().Equal(tc.expectedMeterBeforeFirstSlash, slashMeter.Int64())
@@ -90,39 +88,58 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
 		s.Require().Equal(tc.expectedMeterAfterFirstSlash, slashMeter.Int64())
 
+		// For the remainder of this test we use a cached context in which we can mutate block time
+		cacheCtx := s.providerCtx()
+
 		// Replenish slash meter until it is positive
 		for i := 0; i < tc.expectedReplenishesTillPositive; i++ {
 
-			// Mutate context with a block time where replenish period has passed.
-			customCtx = s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
+			// Mutate cached context to have a block time after the current replenish candidate time.
+			cacheCtx = s.getCtxAfterReplenishCandidate(cacheCtx)
+			candidate := s.providerApp.GetProviderKeeper().GetSlashMeterReplenishTimeCandidate(cacheCtx)
+			s.Require().True(cacheCtx.BlockTime().After(candidate))
 
 			// CheckForSlashMeterReplenishment should replenish meter here.
-			slashMeterBefore := s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
-			s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
-			slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+			slashMeterBefore := s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx)
+			s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(cacheCtx)
+			slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx)
 			s.Require().True(slashMeter.GT(slashMeterBefore))
 
-			// Check that slash meter is still negative or 0,
-			// unless we are on the last iteration.
+			// Replenish candidate time should have been updated to be block time + replenish period.
+			expected := cacheCtx.BlockTime().Add(params.SlashMeterReplenishPeriod)
+			actual := s.providerApp.GetProviderKeeper().GetSlashMeterReplenishTimeCandidate(cacheCtx)
+			s.Require().Equal(expected, actual)
+
+			// CheckForSlashMeterReplenishment should not replenish meter here again (w/o another period elapsed).
+			// Replenish candidate should be in the future, and will not change.
+			candidate = s.providerApp.GetProviderKeeper().GetSlashMeterReplenishTimeCandidate(cacheCtx)
+			s.Require().True(cacheCtx.BlockTime().Before(candidate))
+			slashMeterBefore = s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx)
+			s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(cacheCtx)
+			s.Require().Equal(slashMeterBefore, s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx))
+			s.Require().Equal(candidate, s.providerApp.GetProviderKeeper().GetSlashMeterReplenishTimeCandidate(cacheCtx))
+
+			// Check that slash meter is still negative or 0, unless we are on the last iteration.
+			slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx)
 			if i != tc.expectedReplenishesTillPositive-1 {
 				s.Require().False(slashMeter.IsPositive())
 			}
 		}
 
 		// Meter is positive at this point, and ready to handle the second slash packet.
-		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx)
 		s.Require().True(slashMeter.IsPositive())
 
 		// Assert validator 2 is jailed once pending slash packets are handled in ccv endblocker.
 		s.providerChain.NextBlock()
-		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
+		vals = providerStakingKeeper.GetAllValidators(cacheCtx)
 		slashedVal = vals[2]
 		s.Require().True(slashedVal.IsJailed())
 
 		// Assert validator 2 has no power, this should be apparent next block,
 		// since the staking endblocker runs before the ccv endblocker.
 		s.providerChain.NextBlock()
-		lastValPower = providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), slashedVal.GetOperator())
+		lastValPower = providerStakingKeeper.GetLastValidatorPower(cacheCtx, slashedVal.GetOperator())
 		s.Require().Equal(int64(0), lastValPower)
 	}
 }
@@ -494,9 +511,8 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	delegateByIdx(s, delAddr, sdktypes.NewInt(9999999), 3)
 	s.providerChain.NextBlock()
 
-	// Replenish slash meter with default params and new total voting power.
-	customCtx := s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
-	s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
+	// Initialize slash meter
+	s.providerApp.GetProviderKeeper().InitializeSlashMeter(s.providerCtx())
 
 	// Assert that we start out with no jailings
 	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
@@ -797,8 +813,7 @@ func (s *CCVTestSuite) replenishSlashMeterTillPositive() {
 	}
 }
 
-func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sdktypes.Context {
-
+func (s *CCVTestSuite) getCtxAfterReplenishCandidate(ctx sdktypes.Context) sdktypes.Context {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	nextReplenishTime := providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx)
 
