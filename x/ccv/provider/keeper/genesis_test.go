@@ -123,8 +123,8 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, expectedSlashMeterValue, slashMeter)
 
 	// Expect slash meter replenishment time candidate to be set to the current block time + replenish period
-	expectedNextReplenishTime := ctx.BlockTime().Add(pk.GetSlashMeterReplenishPeriod(ctx))
-	require.Equal(t, expectedNextReplenishTime, pk.GetSlashMeterReplenishTimeCandidate(ctx))
+	expectedCandidate := ctx.BlockTime().Add(pk.GetSlashMeterReplenishPeriod(ctx))
+	require.Equal(t, expectedCandidate, pk.GetSlashMeterReplenishTimeCandidate(ctx))
 
 	// check local provider chain states
 	ubdOps, found := pk.GetUnbondingOp(ctx, vscID)
