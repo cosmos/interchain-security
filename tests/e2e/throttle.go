@@ -747,8 +747,8 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 	// Set slash meter to negative value to not allow any slash packets to be handled.
 	providerKeeper.SetSlashMeter(s.providerCtx(), sdktypes.NewInt(-1))
 
-	// Set last full time to block time, so no slash meter replenishment happens on end block.
-	providerKeeper.SetLastSlashMeterFullTime(s.providerCtx(), s.providerCtx().BlockTime())
+	// Set next replenish time so that no replenishment happens next block.
+	providerKeeper.SetNextSlashMeterReplenishTime(s.providerCtx(), s.providerCtx().BlockTime().Add(time.Hour))
 
 	// Execute end blocker to dequeue only the leading vsc matured packets.
 	s.providerChain.NextBlock()
@@ -800,8 +800,7 @@ func (s *CCVTestSuite) replenishSlashMeterTillPositive() {
 func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sdktypes.Context {
 
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	lastFullTime := providerKeeper.GetLastSlashMeterFullTime(ctx)
-	replenishPeriod := providerKeeper.GetSlashMeterReplenishPeriod(ctx)
+	nextReplenishTime := providerKeeper.GetNextSlashMeterReplenishTime(ctx)
 
-	return ctx.WithBlockTime(lastFullTime.Add(replenishPeriod).Add(time.Minute))
+	return ctx.WithBlockTime(nextReplenishTime.Add(time.Minute))
 }
