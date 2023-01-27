@@ -78,13 +78,13 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/interchain-security/testutil/e2e"
 	ibcconsumer "github.com/cosmos/interchain-security/x/ccv/consumer"
 	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	ibcconsumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
+	intgutil "github.com/cosmos/interchain-security/testutil/integration"
 )
 
 const (
@@ -646,30 +646,30 @@ func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
 }
 
-// ConsumerApp interface implementations for e2e tests
+// ConsumerApp interface implementations for integration tests
 
 // GetConsumerKeeper implements the ConsumerApp interface.
 func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
 	return app.ConsumerKeeper
 }
 
-// GetE2eBankKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
+// GetIntgBankKeeper implements the ConsumerApp interface.
+func (app *App) GetIntgBankKeeper() intgutil.IntgBankKeeper {
 	return app.BankKeeper
 }
 
-// GetE2eAccountKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eAccountKeeper() e2e.E2eAccountKeeper {
+// GetIntgAccountKeeper implements the ConsumerApp interface.
+func (app *App) GetIntgAccountKeeper() intgutil.IntgAccountKeeper {
 	return app.AccountKeeper
 }
 
-// GetE2eSlashingKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
+// GetIntgSlashingKeeper implements the ConsumerApp interface.
+func (app *App) GetIntgSlashingKeeper() intgutil.IntgSlashingKeeper {
 	return app.SlashingKeeper
 }
 
-// GetE2eEvidenceKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
+// GetIntgEvidenceKeeper implements the ConsumerApp interface.
+func (app *App) GetIntgEvidenceKeeper() intgutil.IntgEvidenceKeeper {
 	return app.EvidenceKeeper
 }
 

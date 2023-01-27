@@ -85,7 +85,7 @@ import (
 	ccvdistrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
 	ccvdistrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	ccvdistrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/cosmos/interchain-security/testutil/e2e"
+	intgutil "github.com/cosmos/interchain-security/testutil/integration"
 	ccvdistr "github.com/cosmos/interchain-security/x/ccv/democracy/distribution"
 
 	ccvstakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -758,50 +758,50 @@ func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
 }
 
-// DemocConsumerApp interface implementations for e2e tests
+// DemocConsumerApp interface implementations for integration tests
 
 // GetConsumerKeeper implements the ConsumerApp interface.
 func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
 	return app.ConsumerKeeper
 }
 
-// GetE2eBankKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
+// GetIntgBankKeeper implements the ConsumerApp interface.
+func (app *App) GetIntgBankKeeper() intgutil.IntgBankKeeper {
 	return app.BankKeeper
 }
 
-// GetE2eAccountKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eAccountKeeper() e2e.E2eAccountKeeper {
+// GetIntgAccountKeeper implements the ConsumerApp interface.
+func (app *App) GetIntgAccountKeeper() intgutil.IntgAccountKeeper {
 	return app.AccountKeeper
 }
 
-// GetE2eSlashingKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
+// GetIntgSlashingKeeper implements the ConsumerApp interface.
+func (app *App) GetIntgSlashingKeeper() intgutil.IntgSlashingKeeper {
 	return app.SlashingKeeper
 }
 
-// GetE2eEvidenceKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
+// GetIntgEvidenceKeeper implements the ConsumerApp interface.
+func (app *App) GetIntgEvidenceKeeper() intgutil.IntgEvidenceKeeper {
 	return app.EvidenceKeeper
 }
 
-// GetE2eStakingKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eStakingKeeper() e2e.E2eStakingKeeper {
+// GetIntgStakingKeeper implements the ConsumerApp interface.
+func (app *App) GetIntgStakingKeeper() intgutil.IntgStakingKeeper {
 	return app.StakingKeeper
 }
 
-// GetE2eDistributionKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eDistributionKeeper() e2e.E2eDistributionKeeper {
+// GetIntgDistributionKeeper implements the ConsumerApp interface.
+func (app *App) GetIntgDistributionKeeper() intgutil.IntgDistributionKeeper {
 	return app.DistrKeeper
 }
 
-// GetE2eMintKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eMintKeeper() e2e.E2eMintKeeper {
+// GetIntgMintKeeper implements the ConsumerApp interface.
+func (app *App) GetIntgMintKeeper() intgutil.IntgMintKeeper {
 	return app.MintKeeper
 }
 
-// GetE2eGovKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eGovKeeper() e2e.E2eGovKeeper {
+// GetIntgGovKeeper implements the ConsumerApp interface.
+func (app *App) GetIntgGovKeeper() intgutil.IntgGovKeeper {
 	return app.GovKeeper
 }
 

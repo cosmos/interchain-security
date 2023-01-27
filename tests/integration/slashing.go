@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 import (
 	"fmt"
@@ -50,8 +50,8 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 
 		validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
-		providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
-		providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
+		providerStakingKeeper := s.providerApp.GetIntgStakingKeeper()
+		providerSlashingKeeper := s.providerApp.GetIntgSlashingKeeper()
 		providerKeeper := s.providerApp.GetProviderKeeper()
 		firstConsumerKeeper := s.getFirstBundle().GetKeeper()
 
@@ -217,11 +217,11 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	s.Require().Error(err)
 }
 
-// TestHandleSlashPacketDoubleSigning tests the handling of a double-signing related slash packet, with e2e tests
+// TestHandleSlashPacketDoubleSigning tests the handling of a double-signing related slash packet, with integration tests
 func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 	providerKeeper := suite.providerApp.GetProviderKeeper()
-	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
-	providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
+	providerSlashingKeeper := suite.providerApp.GetIntgSlashingKeeper()
+	providerStakingKeeper := suite.providerApp.GetIntgStakingKeeper()
 
 	tmVal := suite.providerChain.Vals.Validators[0]
 	consAddr := sdk.ConsAddress(tmVal.Address)
@@ -257,11 +257,11 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 	suite.Require().True(signingInfo.Tombstoned)
 }
 
-// TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an e2e testing setting
+// TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an integration testing setting
 func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	providerKeeper := suite.providerApp.GetProviderKeeper()
-	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
+	providerSlashingKeeper := suite.providerApp.GetIntgSlashingKeeper()
 	firstBundle := suite.getFirstBundle()
 	consumerChainID := firstBundle.Chain.ChainID
 
@@ -378,7 +378,7 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 	valIndex := 0
 	bondAmt := sdk.NewInt(10000000)
 	halfBondAmt := bondAmt.Quo(sdk.NewInt(2))
-	slashFactor := suite.providerApp.GetE2eSlashingKeeper().SlashFractionDowntime(suite.providerCtx())
+	slashFactor := suite.providerApp.GetIntgSlashingKeeper().SlashFractionDowntime(suite.providerCtx())
 	slashAmountDec := slashFactor.MulInt(halfBondAmt)
 	slashAmount := slashAmountDec.TruncateInt()
 
@@ -389,7 +389,7 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 	var undelegateConsumerHeight uint64
 
 	consumerUnbondingPeriod := suite.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(suite.consumerCtx())
-	providerUnbondingPeriod := suite.providerApp.GetE2eStakingKeeper().UnbondingTime(suite.providerCtx())
+	providerUnbondingPeriod := suite.providerApp.GetIntgStakingKeeper().UnbondingTime(suite.providerCtx())
 
 	testCases := []struct {
 		name             string
@@ -597,8 +597,8 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 
 	for i, tc := range testCases {
 		providerKeeper := suite.providerApp.GetProviderKeeper()
-		providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
-		providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
+		providerStakingKeeper := suite.providerApp.GetIntgStakingKeeper()
+		providerSlashingKeeper := suite.providerApp.GetIntgSlashingKeeper()
 
 		suite.SetupCCVChannel(suite.path)
 
@@ -726,7 +726,7 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 	suite.SendEmptyVSCPacket()
 
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
-	consumerSlashingKeeper := suite.consumerApp.GetE2eSlashingKeeper()
+	consumerSlashingKeeper := suite.consumerApp.GetIntgSlashingKeeper()
 	consumerIBCKeeper := suite.consumerApp.GetIBCKeeper()
 
 	// sync suite context after CCV channel is established
@@ -849,7 +849,7 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	}
 
 	// add validator signing-info to the store
-	suite.consumerApp.GetE2eSlashingKeeper().SetValidatorSigningInfo(ctx, consAddr, slashingtypes.ValidatorSigningInfo{
+	suite.consumerApp.GetIntgSlashingKeeper().SetValidatorSigningInfo(ctx, consAddr, slashingtypes.ValidatorSigningInfo{
 		Address:    consAddr.String(),
 		Tombstoned: false,
 	})
@@ -868,7 +868,7 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	expCommit := suite.commitSlashPacket(ctx, *packetData)
 
 	// expect to send slash packet when handling double-sign evidence
-	suite.consumerApp.GetE2eEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
+	suite.consumerApp.GetIntgEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
 
 	// check slash packet is queued
 	pendingPackets := suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)

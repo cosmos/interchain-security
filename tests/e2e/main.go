@@ -20,7 +20,7 @@ var parallel = flag.Bool("parallel", false, "run all tests in parallel")
 var localSdkPath = flag.String("local-sdk-path", "",
 	"path of a local sdk version to build and reference in integration tests")
 
-// runs integration tests
+// runs E2E tests
 // all docker containers are built sequentially to avoid race conditions when using local cosmos-sdk
 // after building docker containers, all tests are run in parallel using their respective docker containers
 func main() {
@@ -163,7 +163,7 @@ func (tr *TestRun) executeSteps(steps []Step) {
 
 func (tr *TestRun) startDocker() {
 	fmt.Printf("=============== building %s testRun ===============\n", tr.name)
-	scriptStr := "tests/integration/testnet-scripts/start-docker.sh " +
+	scriptStr := "tests/e2e/testnet-scripts/start-docker.sh " +
 		tr.containerConfig.containerName + " " +
 		tr.containerConfig.instanceName + " " +
 		tr.localSdkPath

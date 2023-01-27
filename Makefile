@@ -8,33 +8,33 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cd
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cdd
 
-# run all tests: unit, e2e, diff, and integration
+# run all tests: unit, integration, diff, and E2E
 test: 
-	go test ./... && go run ./tests/integration/... 
+	go test ./... && go run ./tests/e2e/... 
 
-# run e2e and unit tests
+# run integration and unit tests
 test-short:
-	go test ./tests/e2e/... ./x/... ./app/...
+	go test ./tests/integration/... ./x/... ./app/...
 
 # run difference tests
 test-diff:
 	go test ./tests/difference/...
 
-# run only happy path integration tests
-test-integration-short:
-	go run ./tests/integration/... --happy-path-only
+# run only happy path E2E tests
+test-e2e-short:
+	go run ./tests/e2e/... --happy-path-only
 
-# run full integration tests in sequence (including multiconsumer)
-test-integration:
-	go run ./tests/integration/... --include-multi-consumer
+# run full E2E tests in sequence (including multiconsumer)
+test-e2e:
+	go run ./tests/e2e/... --include-multi-consumer
 
-# run full integration tests in parallel (including multiconsumer)
-test-integration-parallel:
-	go run ./tests/integration/... --include-multi-consumer --parallel
+# run full E2E tests in parallel (including multiconsumer)
+test-e2e-parallel:
+	go run ./tests/e2e/... --include-multi-consumer --parallel
 
 # run all tests with caching disabled
 test-no-cache:
-	go test ./... -count=1 && go run ./tests/integration/...
+	go test ./... -count=1 && go run ./tests/e2e/...
 
 BUILD_TARGETS := build
 

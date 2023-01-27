@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 import (
 	"strings"
@@ -29,8 +29,8 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(2))
 	s.consumerChain.NextBlock()
 
-	consumerAccountKeeper := s.consumerApp.GetE2eAccountKeeper()
-	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
+	consumerAccountKeeper := s.consumerApp.GetIntgAccountKeeper()
+	consumerBankKeeper := s.consumerApp.GetIntgBankKeeper()
 
 	//send coins to the fee pool which is used for reward distribution
 	consumerFeePoolAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), authtypes.FeeCollectorName).GetAddress()
@@ -66,7 +66,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 
 	relayAllCommittedPackets(s, s.consumerChain, s.transferPath, transfertypes.PortID, s.transferPath.EndpointA.ChannelID, 1)
 	s.providerChain.NextBlock()
-	communityCoins := s.providerApp.GetE2eDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
+	communityCoins := s.providerApp.GetIntgDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
 	ibcCoinIndex := -1
 	for i, coin := range communityCoins {
 		if strings.HasPrefix(coin.Denom, "ibc") {
@@ -93,7 +93,7 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 	// relay VSC packets from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
-	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
+	consumerBankKeeper := s.consumerApp.GetIntgBankKeeper()
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
 	// reward for the provider chain will be sent after each 1000 blocks
@@ -150,7 +150,7 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 // number of block have passed. It also checks that the IBC transfer transfer states are discarded if
 // the reward distribution to the provider has failed.
 //
-// Note: this method is effectively a unit test for EndBLockRD(), but is written as an e2e test to avoid excessive mocking.
+// Note: this method is effectively a unit test for EndBLockRD(), but is written as an integration test to avoid excessive mocking.
 func (s *CCVTestSuite) TestEndBlockRD() {
 
 	testCases := []struct {
@@ -199,7 +199,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
 		consumerKeeper := s.consumerApp.GetConsumerKeeper()
-		consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
+		consumerBankKeeper := s.consumerApp.GetIntgBankKeeper()
 
 		// reward for the provider chain will be sent after each 1000 blocks
 		consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
@@ -247,7 +247,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 
 // getEscrowBalance gets the current balances in the escrow account holding the transfered tokens to the provider
 func (s CCVTestSuite) getEscrowBalance() sdk.Coins {
-	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
+	consumerBankKeeper := s.consumerApp.GetIntgBankKeeper()
 	transChanID := s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(s.consumerCtx())
 	escAddr := transfertypes.GetEscrowAddress(transfertypes.PortID, transChanID)
 	return consumerBankKeeper.GetAllBalances(s.consumerCtx(), escAddr)
