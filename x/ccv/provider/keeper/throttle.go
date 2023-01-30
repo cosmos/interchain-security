@@ -590,7 +590,7 @@ func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value sdktypes.Int) {
 // Otherwise this value will be updated in every future block until the slash meter becomes NOT full.
 func (k Keeper) GetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context) time.Time {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(providertypes.SlashMeterReplenishTimeCandidate())
+	bz := store.Get(providertypes.SlashMeterReplenishTimeCandidateKey())
 	if bz == nil {
 		// Slash meter replenish time candidate should be set as a part of InitGenesis and periodically updated by throttle logic,
 		// there is no deletion method exposed, so nil bytes would indicate something is very wrong.
@@ -611,5 +611,5 @@ func (k Keeper) GetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context) time.T
 // Otherwise this value will be updated in every future block until the slash meter becomes NOT full.
 func (k Keeper) SetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context, time time.Time) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(providertypes.SlashMeterReplenishTimeCandidate(), sdktypes.FormatTimeBytes(time.UTC()))
+	store.Set(providertypes.SlashMeterReplenishTimeCandidateKey(), sdktypes.FormatTimeBytes(time.UTC()))
 }

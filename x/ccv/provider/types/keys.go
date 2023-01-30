@@ -145,8 +145,8 @@ func SlashMeterKey() []byte {
 	return []byte{SlashMeterByteKey}
 }
 
-// SlashMeterReplenishTimeCandidate returns the key storing the slash meter replenish time candidate
-func SlashMeterReplenishTimeCandidate() []byte {
+// SlashMeterReplenishTimeCandidateKey returns the key storing the slash meter replenish time candidate
+func SlashMeterReplenishTimeCandidateKey() []byte {
 	return []byte{SlashMeterReplenishTimeCandidateByteKey}
 }
 
