@@ -8,15 +8,18 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
-// NewConsumerChainProposalHandler defines the handler for consumer addition and consumer removal proposals.
+// NewProviderProposalHandler defines the handler for consumer addition,
+// consumer removal and equivocation proposals.
 // Passed proposals are executed during EndBlock.
-func NewConsumerChainProposalHandler(k keeper.Keeper) govtypes.Handler {
+func NewProviderProposalHandler(k keeper.Keeper) govtypes.Handler {
 	return func(ctx sdk.Context, content govtypes.Content) error {
 		switch c := content.(type) {
 		case *types.ConsumerAdditionProposal:
 			return k.HandleConsumerAdditionProposal(ctx, c)
 		case *types.ConsumerRemovalProposal:
 			return k.HandleConsumerRemovalProposal(ctx, c)
+		case *types.EquivocationProposal:
+			return k.HandleEquivocationProposal(ctx, c)
 		default:
 			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized ccv proposal content type: %T", c)
 		}
