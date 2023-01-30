@@ -44,7 +44,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = providertypes.MaturedUnbondingOpsKey(), i+1
 	keys[i], i = providertypes.ValidatorSetUpdateIdKey(), i+1
 	keys[i], i = providertypes.SlashMeterKey(), i+1
-	keys[i], i = providertypes.LastSlashMeterFullTimeKey(), i+1
+	keys[i], i = providertypes.SlashMeterReplenishTimeCandidateKey(), i+1
 	keys[i], i = []byte{providertypes.ChainToChannelBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChannelToChainBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChainToClientBytePrefix}, i+1
