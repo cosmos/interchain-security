@@ -101,20 +101,18 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 // and sets the replenish time candidate to one replenish period from current block time.
 func (k Keeper) InitializeSlashMeter(ctx sdktypes.Context) {
 	k.SetSlashMeter(ctx, k.GetSlashMeterAllowance(ctx))
-	k.SetSlashMeterReplenishTimeCandidate(ctx, ctx.BlockTime().Add(k.GetSlashMeterReplenishPeriod(ctx)))
+	k.SetSlashMeterReplenishTimeCandidate(ctx)
 }
 
 // CheckForSlashMeterReplenishment checks if the slash meter should be replenished, and if so, replenishes it.
 // Note: initial slash meter replenish time candidate is set in InitGenesis.
 func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 
-	replenishPeriod := k.GetSlashMeterReplenishPeriod(ctx)
-
 	// Replenish slash meter if current time is equal to or after the current replenish candidate time.
 	if !ctx.BlockTime().UTC().Before(k.GetSlashMeterReplenishTimeCandidate(ctx)) {
 		k.ReplenishSlashMeter(ctx)
 		// Set replenish time candidate to one replenish period from now, since we just replenished.
-		k.SetSlashMeterReplenishTimeCandidate(ctx, ctx.BlockTime().Add(replenishPeriod))
+		k.SetSlashMeterReplenishTimeCandidate(ctx)
 	}
 
 	// The following logic exists to ensure the slash meter is not greater than the allowance for this block,
@@ -126,7 +124,7 @@ func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 
 		// Update/set replenish time candidate to one replenish period from now.
 		// This time candidate will be updated in every future block until the slash meter becomes NOT full.
-		k.SetSlashMeterReplenishTimeCandidate(ctx, ctx.BlockTime().Add(replenishPeriod))
+		k.SetSlashMeterReplenishTimeCandidate(ctx)
 
 		// Ensure the slash meter is not greater than allowance this block,
 		// considering current total voting power.
@@ -605,11 +603,13 @@ func (k Keeper) GetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context) time.T
 	return time.UTC()
 }
 
-// SetSlashMeterReplenishTimeCandidate sets the next time the slash meter may be replenished.
+// SetSlashMeterReplenishTimeCandidate sets the next time the slash meter may be replenished
+// to the current block time + the configured slash meter replenish period.
 //
 // Note: this value is the next time the slash meter will be replenished IFF the slash meter is NOT full.
 // Otherwise this value will be updated in every future block until the slash meter becomes NOT full.
-func (k Keeper) SetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context, time time.Time) {
+func (k Keeper) SetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(providertypes.SlashMeterReplenishTimeCandidateKey(), sdktypes.FormatTimeBytes(time.UTC()))
+	timeToStore := ctx.BlockTime().UTC().Add(k.GetSlashMeterReplenishPeriod(ctx))
+	store.Set(providertypes.SlashMeterReplenishTimeCandidateKey(), sdktypes.FormatTimeBytes(timeToStore))
 }

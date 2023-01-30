@@ -764,7 +764,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 	providerKeeper.SetSlashMeter(s.providerCtx(), sdktypes.NewInt(-1))
 
 	// Set replenish time candidate so that no replenishment happens next block.
-	providerKeeper.SetSlashMeterReplenishTimeCandidate(s.providerCtx(), s.providerCtx().BlockTime().Add(time.Hour))
+	providerKeeper.SetSlashMeterReplenishTimeCandidate(s.providerCtx())
 
 	// Execute end blocker to dequeue only the leading vsc matured packets.
 	s.providerChain.NextBlock()

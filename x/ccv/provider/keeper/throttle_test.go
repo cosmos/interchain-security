@@ -1287,16 +1287,19 @@ func TestSlashMeter(t *testing.T) {
 // TestSlashMeterReplenishTimeCandidate tests the getter and setter for the slash meter replenish time candidate
 func TestSlashMeterReplenishTimeCandidate(t *testing.T) {
 
-	testCases := []time.Time{
-		time.Now(),
-		time.Now().Add(1 * time.Hour).UTC(),
-		time.Now().Add(2 * time.Hour).Local(),
-		time.Now().Add(3 * time.Hour).In(time.FixedZone("UTC-8", -8*60*60)),
-		time.Now().Add(4 * time.Hour).Local(),
-		time.Now().Add(-1 * time.Hour).UTC(),
-		time.Now().Add(-2 * time.Hour).Local(),
-		time.Now().Add(-3 * time.Hour).UTC(),
-		time.Now().Add(-4 * time.Hour).Local(),
+	testCases := []struct {
+		blockTime       time.Time
+		replenishPeriod time.Duration
+	}{
+		{time.Now(), time.Hour},
+		{time.Now().Add(1 * time.Hour).UTC(), time.Hour},
+		{time.Now().Add(2 * time.Hour).Local(), 5 * time.Hour},
+		{time.Now().Add(3 * time.Hour).In(time.FixedZone("UTC-8", -8*60*60)), 10 * time.Hour},
+		{time.Now().Add(4 * time.Hour).Local(), 15 * time.Minute},
+		{time.Now().Add(-1 * time.Hour).UTC(), time.Minute},
+		{time.Now().Add(-2 * time.Hour).Local(), 2 * time.Minute},
+		{time.Now().Add(-3 * time.Hour).UTC(), 3 * time.Minute},
+		{time.Now().Add(-4 * time.Hour).Local(), 4 * time.Minute},
 	}
 
 	for _, tc := range testCases {
@@ -1304,10 +1307,16 @@ func TestSlashMeterReplenishTimeCandidate(t *testing.T) {
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
-		providerKeeper.SetSlashMeterReplenishTimeCandidate(ctx, tc)
+		ctx = ctx.WithBlockTime(tc.blockTime)
+		params := providertypes.DefaultParams()
+		params.SlashMeterReplenishPeriod = tc.replenishPeriod
+		providerKeeper.SetParams(ctx, params)
+
+		providerKeeper.SetSlashMeterReplenishTimeCandidate(ctx)
 		gotTime := providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx)
+
 		// Time should be returned in UTC
-		require.Equal(t, tc.UTC(), gotTime)
+		require.Equal(t, tc.blockTime.Add(tc.replenishPeriod).UTC(), gotTime)
 	}
 }
 
