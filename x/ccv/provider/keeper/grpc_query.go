@@ -165,10 +165,10 @@ func (k Keeper) QueryThrottleState(goCtx context.Context, req *types.QueryThrott
 	}
 
 	return &types.QueryThrottleStateResponse{
-		SlashMeter:            meter.Int64(),
-		SlashMeterAllowance:   allowance.Int64(),
-		NextReplenishCandiate: candidate,
-		Packets:               packets,
+		SlashMeter:             meter.Int64(),
+		SlashMeterAllowance:    allowance.Int64(),
+		NextReplenishCandidate: candidate,
+		Packets:                packets,
 	}, nil
 }
 
