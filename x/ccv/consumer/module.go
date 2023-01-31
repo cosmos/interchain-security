@@ -23,8 +23,8 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/consumer/client/cli"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 var (
@@ -93,19 +93,15 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 	return cli.NewQueryCmd()
 }
 
-type StakingKeeper interface {
-	GetLastValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
-}
-
 // AppModule represents the AppModule for this module
 type AppModule struct {
 	AppModuleBasic
 	keeper keeper.Keeper
-	sk     StakingKeeper
+	sk     ccvtypes.DemocracyStakingKeeper
 }
 
 // NewAppModule creates a new consumer module
-func NewAppModule(k keeper.Keeper, sk StakingKeeper) AppModule {
+func NewAppModule(k keeper.Keeper, sk ccvtypes.DemocracyStakingKeeper) AppModule {
 	return AppModule{
 		keeper: k,
 		sk:     sk,

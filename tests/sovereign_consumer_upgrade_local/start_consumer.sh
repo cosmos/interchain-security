@@ -51,7 +51,7 @@ $SOVEREIGN_BINARY add-genesis-account $(jq -r .address $SOVEREIGN_HOME/consumer_
 $SOVEREIGN_BINARY add-genesis-account $(jq -r .address $SOVEREIGN_HOME/sovereign_validator_keypair.json) 1000000000000stake --home $SOVEREIGN_HOME
 
 # generate genesis for sovereign chain
-$SOVEREIGN_BINARY gentx $SOVEREIGN_VALIDATOR 10000000000stake $KEYRING --chain-id=$CONSUMER_CHAIN_ID --home $SOVEREIGN_HOME
+$SOVEREIGN_BINARY gentx $SOVEREIGN_VALIDATOR 11000000000stake $KEYRING --chain-id=$CONSUMER_CHAIN_ID --home $SOVEREIGN_HOME
 $SOVEREIGN_BINARY collect-gentxs --home $SOVEREIGN_HOME
 sed -i '' 's/"voting_period": "172800s"/"voting_period": "20s"/g' $SOVEREIGN_HOME/config/genesis.json
 
@@ -131,77 +131,6 @@ $SOVEREIGN_BINARY start \
 #        --trace \
 #        &> $CONSUMER_HOME1/logs &        
 sleep 10
-
-###########################UPGRADE TO SOVEREIGN CHAIN##########################
-
-$SOVEREIGN_BINARY tx gov submit-proposal software-upgrade "v07-Theta" --upgrade-height=7 \
---title="upgrade to consumer chain" --description="upgrade to consumer chain description" \
---from=$SOVEREIGN_VALIDATOR $KEYRING --chain-id=$CONSUMER_CHAIN_ID \
---home=$SOVEREIGN_HOME --yes -b block --deposit="100000000stake"
-
-# Vote yes to proposal
-$SOVEREIGN_BINARY tx gov vote 1 yes --from $SOVEREIGN_VALIDATOR --chain-id $CONSUMER_CHAIN_ID --node tcp://$SOVEREIGN_RPC_LADDR \
---home $SOVEREIGN_HOME -b block -y $KEYRING
-sleep 30
-
-###########################START BINARIES AGAIN AFTER UPGRADE##########################
-$SOVEREIGN_BINARY query gov proposals --node tcp://$SOVEREIGN_RPC_LADDR
-$SOVEREIGN_BINARY status --node tcp://$SOVEREIGN_RPC_LADDR
-$SOVEREIGN_BINARY status --node tcp://$CONSUMER_RPC_LADDR
-# $SOVEREIGN_BINARY status --node tcp://$CONSUMER_RPC_LADDR1
-
-killall $SOVEREIGN_BINARY &> /dev/null || true
-
-# Add ccv section to SOVEREIGN_HOME genesis to be used on upgrade handler
-if ! $PROVIDER_BINARY q provider consumer-genesis "$CONSUMER_CHAIN_ID" --node "$PROVIDER_NODE_ADDRESS" --output json > "$SOVEREIGN_HOME"/consumer_section.json; 
-then
-       echo "Failed to get consumer genesis for the chain-id '$CONSUMER_CHAIN_ID'! Finalize genesis failed. For more details please check the log file in output directory."
-       exit 1
-fi
-
-jq -s '.[0].app_state.ccvconsumer = .[1] | .[0]' "$SOVEREIGN_HOME"/config/genesis.json "$SOVEREIGN_HOME"/consumer_section.json > "$SOVEREIGN_HOME"/genesis_consumer.json && \
-	mv "$SOVEREIGN_HOME"/genesis_consumer.json "$SOVEREIGN_HOME"/config/genesis.json
-
-# Modify genesis params
-jq ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"70\" | .app_state.tokenfactory.paused = { \"paused\": false }" \
-  $SOVEREIGN_HOME/config/genesis.json > \
-   $SOVEREIGN_HOME/edited_genesis.json && mv $SOVEREIGN_HOME/edited_genesis.json $SOVEREIGN_HOME/config/genesis.json
-sleep 1
-
-
-$CONSUMER_BINARY start \
-       --home $SOVEREIGN_HOME \
-       --rpc.laddr tcp://${SOVEREIGN_RPC_LADDR} \
-       --grpc.address ${SOVEREIGN_GRPC_ADDR} \
-       --address tcp://${NODE_IP}:26645 \
-       --p2p.laddr tcp://${NODE_IP}:26646 \
-       --grpc-web.enable=false \
-       --log_level trace \
-       --trace \
-       &> $SOVEREIGN_HOME/logs &
-
-$CONSUMER_BINARY start \
-       --home $CONSUMER_HOME \
-       --rpc.laddr tcp://${CONSUMER_RPC_LADDR} \
-       --grpc.address ${CONSUMER_GRPC_ADDR} \
-       --address tcp://${NODE_IP}:26635 \
-       --p2p.laddr tcp://${NODE_IP}:26636 \
-       --grpc-web.enable=false \
-       --log_level trace \
-       --trace \
-       &> $CONSUMER_HOME/logs &
-  
-# $CONSUMER_BINARY start \
-#        --home $CONSUMER_HOME1 \
-#        --rpc.laddr tcp://${CONSUMER_RPC_LADDR1} \
-#        --grpc.address ${CONSUMER_GRPC_ADDR1} \
-#        --address tcp://${NODE_IP}:26625 \
-#        --p2p.laddr tcp://${NODE_IP}:26626 \
-#        --grpc-web.enable=false \
-#        --log_level trace \
-#        --trace \
-#        &> $CONSUMER_HOME1/logs &        
-sleep 30
 
 ######################################HERMES###################################
 
@@ -284,14 +213,129 @@ hermes keys restore --mnemonic "$(jq -r .mnemonic $PROVIDER_HOME/keypair.json)" 
 
 sleep 5
 
+hermes create client consumer provider
+hermes create client provider consumer
+# hermes query clients consumer
+# hermes query client consensus consumer 07-tendermint-0
+# hermes query clients provider
 hermes create connection $CONSUMER_CHAIN_ID --client-a 07-tendermint-0 --client-b 07-tendermint-0
-hermes create channel $CONSUMER_CHAIN_ID --port-a consumer --port-b provider -o ordered --channel-version 1 connection-0
+hermes create channel $CONSUMER_CHAIN_ID --port-a transfer --port-b transfer connection-0
 
 sleep 1
 
 hermes -j start &> ~/.hermes/logs &
 
-############################################################
+# Build consumer chain proposal file
+tee $PROVIDER_HOME/consumer-proposal.json<<EOF
+{
+    "title": "Create a chain",
+    "description": "Gonna be a great chain",
+    "chain_id": "consumer",
+    "initial_height": {
+        "revision_number": 0,
+        "revision_height": 29
+    },
+    "genesis_hash": "519df96a862c30f53e67b1277e6834ab4bd59dfdd08c781d1b7cf3813080fb28",
+    "binary_hash": "09184916f3e85aa6fa24d3c12f1e5465af2214f13db265a52fa9f4617146dea5",
+    "spawn_time": "2022-06-01T09:10:00.000000000-00:00", 
+    "deposit": "10000001stake",
+    "consumer_redistribution_fraction": "0.75",
+    "blocks_per_distribution_transmission": 1000,
+    "ccv_timeout_period": 2419200000000000,
+    "transfer_timeout_period": 3600000000000,
+    "historical_entries": 10000,
+    "unbonding_period": 1200000000000
+}
+EOF
+
+$PROVIDER_BINARY tx gov submit-proposal consumer-addition $PROVIDER_HOME/consumer-proposal.json \
+	--chain-id $PROVIDER_CHAIN_ID --node tcp://$PROVIDER_RPC_LADDR --from $VALIDATOR --home $PROVIDER_HOME --keyring-backend test -b block -y
+sleep 1
+
+# Vote yes to proposal
+$PROVIDER_BINARY tx gov vote 1 yes --from $VALIDATOR --chain-id $PROVIDER_CHAIN_ID --node tcp://$PROVIDER_RPC_LADDR --home $PROVIDER_HOME -b block -y --keyring-backend test
+sleep 5
+
+# ###########################UPGRADE TO SOVEREIGN CHAIN##########################
+
+$SOVEREIGN_BINARY tx gov submit-proposal software-upgrade "v07-Theta" --upgrade-height=26 \
+--title="upgrade to consumer chain" --description="upgrade to consumer chain description" \
+--from=$SOVEREIGN_VALIDATOR $KEYRING --chain-id=$CONSUMER_CHAIN_ID \
+--home=$SOVEREIGN_HOME --yes -b block --deposit="100000000stake"
+
+# Vote yes to proposal
+$SOVEREIGN_BINARY tx gov vote 1 yes --from $SOVEREIGN_VALIDATOR --chain-id $CONSUMER_CHAIN_ID --node tcp://$SOVEREIGN_RPC_LADDR \
+--home $SOVEREIGN_HOME -b block -y $KEYRING
+sleep 30
+
+###########################START BINARIES AGAIN AFTER UPGRADE##########################
+$SOVEREIGN_BINARY query gov proposals --node tcp://$SOVEREIGN_RPC_LADDR
+$SOVEREIGN_BINARY status --node tcp://$SOVEREIGN_RPC_LADDR
+$SOVEREIGN_BINARY status --node tcp://$CONSUMER_RPC_LADDR
+# $SOVEREIGN_BINARY status --node tcp://$CONSUMER_RPC_LADDR1
+
+killall $SOVEREIGN_BINARY &> /dev/null || true
+
+# Add ccv section to SOVEREIGN_HOME genesis to be used on upgrade handler
+if ! $PROVIDER_BINARY q provider consumer-genesis "$CONSUMER_CHAIN_ID" --node "$PROVIDER_NODE_ADDRESS" --output json > "$SOVEREIGN_HOME"/consumer_section.json; 
+then
+       echo "Failed to get consumer genesis for the chain-id '$CONSUMER_CHAIN_ID'! Finalize genesis failed. For more details please check the log file in output directory."
+       exit 1
+fi
+
+jq -s '.[0].app_state.ccvconsumer = .[1] | .[0]' "$SOVEREIGN_HOME"/config/genesis.json "$SOVEREIGN_HOME"/consumer_section.json > "$SOVEREIGN_HOME"/genesis_consumer.json && \
+	mv "$SOVEREIGN_HOME"/genesis_consumer.json "$SOVEREIGN_HOME"/config/genesis.json
+
+# Modify genesis params
+jq ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"70\" | .app_state.tokenfactory.paused = { \"paused\": false }" \
+  $SOVEREIGN_HOME/config/genesis.json > \
+   $SOVEREIGN_HOME/edited_genesis.json && mv $SOVEREIGN_HOME/edited_genesis.json $SOVEREIGN_HOME/config/genesis.json
+sleep 1
+
+
+$CONSUMER_BINARY start \
+       --home $SOVEREIGN_HOME \
+       --rpc.laddr tcp://${SOVEREIGN_RPC_LADDR} \
+       --grpc.address ${SOVEREIGN_GRPC_ADDR} \
+       --address tcp://${NODE_IP}:26645 \
+       --p2p.laddr tcp://${NODE_IP}:26646 \
+       --grpc-web.enable=false \
+       --log_level trace \
+       --trace \
+       &> $SOVEREIGN_HOME/logs &
+
+$CONSUMER_BINARY start \
+       --home $CONSUMER_HOME \
+       --rpc.laddr tcp://${CONSUMER_RPC_LADDR} \
+       --grpc.address ${CONSUMER_GRPC_ADDR} \
+       --address tcp://${NODE_IP}:26635 \
+       --p2p.laddr tcp://${NODE_IP}:26636 \
+       --grpc-web.enable=false \
+       --log_level trace \
+       --trace \
+       &> $CONSUMER_HOME/logs &
+  
+# $CONSUMER_BINARY start \
+#        --home $CONSUMER_HOME1 \
+#        --rpc.laddr tcp://${CONSUMER_RPC_LADDR1} \
+#        --grpc.address ${CONSUMER_GRPC_ADDR1} \
+#        --address tcp://${NODE_IP}:26625 \
+#        --p2p.laddr tcp://${NODE_IP}:26626 \
+#        --grpc-web.enable=false \
+#        --log_level trace \
+#        --trace \
+#        &> $CONSUMER_HOME1/logs &        
+sleep 30
+
+# # create channel between consumer and provider between provider port and consumer port
+# hermes query clients consumer
+# hermes query clients provider
+# hermes query client consensus consumer 07-tendermint-1
+# hermes query client consensus provider 07-tendermint-1
+hermes create connection $CONSUMER_CHAIN_ID --client-a 07-tendermint-1 --client-b 07-tendermint-1
+hermes create channel $CONSUMER_CHAIN_ID --port-a consumer --port-b provider -o ordered --channel-version 1 connection-1
+
+# ############################################################
 
 PROVIDER_VALIDATOR_ADDRESS=$(jq -r .address $PROVIDER_HOME/keypair.json)
 DELEGATIONS=$($PROVIDER_BINARY q staking delegations $PROVIDER_VALIDATOR_ADDRESS --home $PROVIDER_HOME --node tcp://${PROVIDER_RPC_LADDR} -o json)
@@ -311,5 +355,5 @@ $PROVIDER_BINARY status --node=tcp://${PROVIDER_RPC_LADDR}
 $CONSUMER_BINARY status --node tcp://$SOVEREIGN_RPC_LADDR
 $CONSUMER_BINARY status --node tcp://$CONSUMER_RPC_LADDR
 
-$CONSUMER_BINARY query staking params --node=tcp://$CONSUMER_RPC_LADDR
-$PROVIDER_BINARY query staking params --node=tcp://${PROVIDER_RPC_LADDR}
+# $CONSUMER_BINARY query staking params --node=tcp://$CONSUMER_RPC_LADDR
+# $PROVIDER_BINARY query staking params --node=tcp://${PROVIDER_RPC_LADDR}

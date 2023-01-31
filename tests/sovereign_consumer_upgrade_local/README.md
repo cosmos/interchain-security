@@ -10,6 +10,8 @@ Binaries:
 
 ### Commands
 
+Copy `start_consumer.sh`, `start_provider.sh` from one of the directories and execute following commands.
+
 ```sh
 rm -rf /Users/admin/.provider1
 rm -rf /Users/admin/.provider
@@ -33,32 +35,14 @@ jq -s '.[0].app_state.ccvconsumer = .[1] | .[0]' "$CONSUMER_HOME"/config/genesis
 	mv "$CONSUMER_HOME"/genesis_consumer.json "$CONSUMER_HOME"/config/genesis.json
 ```
 
-### Initial validator set on consumer chain
-
-```json
-      "initial_val_set": [
-        {
-          "pub_key": {
-            "ed25519": "6s4FU4uSsWNjnqhNc9vhyZBqrLjib+z/mfh1LhvkalE="
-          },
-          "power": "1"
-        },
-        {
-          "pub_key": {
-            "ed25519": "JCFnTza2T2jlkTWxC0kY9lczh7F+jQ/bGyhHFFNr7/w="
-          },
-          "power": "100"
-        }
-      ],
-```
-
 ### Process of execution of soft upgrade from sovereign chain to consumer chain
 
-1. Start provider chain with two validators and register consumer chain
+1. Start provider chain and register consumer chain
 2. Build normal sovereign chain daemon
 3. Start single validator sovereign chain
-4. Two provider chain validators with sovereign chain
+4. Provider chain validator with sovereign chain
 5. Raise Upgrade proposal on sovereign chain and vote
 6. Build consumer chain daemon with upgrade handler for ccv module and relevant modules
-7. Once chain halt, restart 3 nodes
+7. Once chain halt, restart 2 nodes to move from sovereign chain to consumer chain
 8. Ensure blocks are being produced without the first node used for sovereign chain
+9. Execute delegation on provider chain and ensure consumer chain validators' voting power changes

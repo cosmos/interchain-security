@@ -57,12 +57,9 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 	return ret
 }
 
-// IterateValidators - unimplemented on CCV keeper but perform a no-op in order to pass the slashing module InitGenesis.
-// It is allowed since the condition verifying validator public keys in HandleValidatorSignature (x/slashing/keeper/infractions.go) is removed
-// therefore it isn't required to store any validator public keys to the slashing states during genesis.
+// IterateValidators iterate democracy staking validators when the block height is before the last sovereign height
 func (k Keeper) IterateValidators(ctx sdk.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool)) {
-	lastSovereignHeight := k.LastSovereignHeight(ctx)
-	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			panic("empty staking keeper")
 		}
@@ -71,23 +68,21 @@ func (k Keeper) IterateValidators(ctx sdk.Context, f func(index int64, validator
 	}
 }
 
-// Validator - unimplemented on CCV keeper
+// Validator returns democracy staking validator when the block height is before the last sovereign height
 func (k Keeper) Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.ValidatorI {
-	lastSovereignHeight := k.LastSovereignHeight(ctx)
-	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			panic("empty staking keeper")
 		}
 
 		return k.stakingKeeper.Validator(ctx, addr)
 	}
-	panic("unimplemented on CCV keeper")
+	panic("unused after preCCV")
 }
 
 // IsJailed returns the outstanding slashing flag for the given validator adddress
 func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
-	lastSovereignHeight := k.LastSovereignHeight(ctx)
-	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			panic("empty staking keeper")
 		}
@@ -99,8 +94,7 @@ func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
 
 // ValidatorByConsAddr returns an empty validator
 func (k Keeper) ValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) stakingtypes.ValidatorI {
-	lastSovereignHeight := k.LastSovereignHeight(ctx)
-	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			return stakingtypes.Validator{}
 		}
@@ -117,8 +111,7 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		return
 	}
 
-	lastSovereignHeight := k.LastSovereignHeight(ctx)
-	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			return
 		}
@@ -138,10 +131,9 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 	)
 }
 
-// Jail - unimplemented on CCV keeper
+// Jail performs jail operation on democracy staking validator if block height after last sovereign height
 func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {
-	lastSovereignHeight := k.LastSovereignHeight(ctx)
-	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			return
 		}
@@ -151,10 +143,9 @@ func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {
 	}
 }
 
-// Unjail - unimplemented on CCV keeper
+// Unjail performs unjail operation on democracy staking validator if block height after last sovereign height
 func (k Keeper) Unjail(ctx sdk.Context, addr sdk.ConsAddress) {
-	lastSovereignHeight := k.LastSovereignHeight(ctx)
-	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			return
 		}
@@ -163,31 +154,28 @@ func (k Keeper) Unjail(ctx sdk.Context, addr sdk.ConsAddress) {
 	}
 }
 
-// Delegation - unimplemented on CCV keeper
+// Delegation returns delegation from an address to a democracy staking validator if block height after last sovereign height
 func (k Keeper) Delegation(ctx sdk.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) stakingtypes.DelegationI {
-	lastSovereignHeight := k.LastSovereignHeight(ctx)
-	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			panic("empty staking keeper")
 		}
 
 		return k.stakingKeeper.Delegation(ctx, addr, valAddr)
 	}
-	panic("unimplemented on CCV keeper")
+	panic("unused after preCCV")
 }
 
-// MaxValidators - unimplemented on CCV keeper
+// MaxValidators returns max number of validators on democracy staking if block height after last sovereign height
 func (k Keeper) MaxValidators(ctx sdk.Context) uint32 {
-	lastSovereignHeight := k.LastSovereignHeight(ctx)
-	if lastSovereignHeight == 0 || ctx.BlockHeight() <= lastSovereignHeight {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			panic("empty staking keeper")
 		}
 
 		return k.stakingKeeper.MaxValidators(ctx)
 	}
-
-	panic("unimplemented on CCV keeper")
+	panic("unused after preCCV")
 }
 
 // UnbondingTime returns consumer unbonding period, satisfying the staking keeper interface
