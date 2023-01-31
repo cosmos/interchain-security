@@ -3,7 +3,7 @@ module github.com/cosmos/interchain-security
 go 1.18
 
 require (
-	github.com/cosmos/cosmos-sdk v0.45.11
+	github.com/cosmos/cosmos-sdk v0.45.13-0.20230126131910-3920d0892030
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
