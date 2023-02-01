@@ -136,8 +136,8 @@ message QueryThrottleStateResponse {
   // allowance of voting power units (int) that the slash meter is given per replenish period
   // this also serves as the max value for the meter.
   int64 slash_meter_allowance = 2;
-  // last time the slash meter was full
-  google.protobuf.Timestamp last_full_time = 3
+  // next time the slash meter could potentially be replenished, iff it's not full
+  google.protobuf.Timestamp next_replenish_candidate = 3
     [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
   // data relevant to currently throttled slash packets
   repeated ThrottledSlashPacket packets = 4;

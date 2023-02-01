@@ -263,7 +263,7 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// Note: CheckForSlashMeterReplenishment contains panics for the following scenarios, any of which should never occur
 	// if the protocol is correct and external data is properly validated:
 	//
-	// - Either SlashMeter or LastSlashMeterFullTime have not been set (both of which should be set in InitGenesis, see InitializeSlashMeter).
+	// - Either SlashMeter or SlashMeterReplenishTimeCandidate have not been set (both of which should be set in InitGenesis, see InitializeSlashMeter).
 	// - Params not being set (all of which should be set in InitGenesis).
 	// - Marshaling and/or store corruption errors.
 	// - Setting invalid slash meter values (see SetSlashMeter).
