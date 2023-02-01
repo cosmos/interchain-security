@@ -287,12 +287,11 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				timeout: 80 * time.Second,
 			},
 			state: State{
-				// no changes in state should occur
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
 						validatorID("bob"):   0,
-						validatorID("carol"): 500, // should be 0
+						validatorID("carol"): 0, // Carol is jailed upon packet being handled on provider
 					},
 					GlobalSlashQueueSize: uintPointer(0), // slash packets dequeued
 					ConsumerChainQueueSizes: &map[chainID]uint{
