@@ -85,11 +85,7 @@ while meter.IsPositiveOrZero() && entriesExist() {
 
 ### System Properties
 
-TODO: Introduce the following change to CCV spec
-
-Implementing this feature will introduce one change to CCV system properties. `Provider Slashing Warranty` will now need to accommodate that slash requests are not always applied on the same block that the provider receives a slash packet.
-
-All other CCV system properties should be maintained by implementing this feature, see: [CCV spec - Consumer Initiated Slashing](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#consumer-initiated-slashing).
+All CCV system properties should be maintained by implementing this feature, see: [CCV spec - Consumer Initiated Slashing](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#consumer-initiated-slashing).
 
 One implementation-specific property introduced is that if any of the chain-specific packet data queues become larger than `MaxThrottledPackets (param)`, then the provider binary will panic, and the provider chain will halt. Therefore this param should be set carefully. See [SetThrottledPacketDataSize](../x/ccv/provider/keeper/throttle.go#L269). This behavior ensures that if the provider binaries are queuing up more packet data than machines can handle, the provider chain halts deterministically between validators.
 
