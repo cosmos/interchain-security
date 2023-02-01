@@ -12,8 +12,8 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	keepertestutil "github.com/cosmos/interchain-security/testutil/keeper"
 	tmtypes "github.com/tendermint/tendermint/types"
 
@@ -213,7 +213,7 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))
 	s.Require().NoError(err)
 
-	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewErrorAcknowledgement("another error"))
+	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewErrorAcknowledgement(fmt.Errorf("another error")))
 	s.Require().Error(err)
 }
 
@@ -288,9 +288,8 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	errAck := providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
 	suite.Require().False(errAck.Success())
 	errAckCast := errAck.(channeltypes.Acknowledgement)
-	suite.Require().Equal(
-		fmt.Sprintf("cannot find infraction height matching the validator update id 0 for chain %s",
-			firstBundle.Chain.ChainID), errAckCast.GetError())
+	// TODO: see if there's a way to get error reason like before
+	suite.Require().Equal("ABCI code: 1: error handling packet: see events for details", errAckCast.GetError())
 
 	// Restore init chain height
 	providerKeeper.SetInitChainHeight(ctx, consumerChainID, initChainHeight)
@@ -300,8 +299,8 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
 	suite.Require().False(errAck.Success())
 	errAckCast = errAck.(channeltypes.Acknowledgement)
-	suite.Require().Equal(
-		fmt.Sprintf("invalid infraction type: %s", packetData.Infraction.String()), errAckCast.GetError())
+	// TODO: see if there's a way to get error reason like before
+	suite.Require().Equal("ABCI code: 1: error handling packet: see events for details", errAckCast.GetError())
 
 	// save current VSC ID
 	vscID := providerKeeper.GetValidatorSetUpdateId(ctx)
@@ -316,9 +315,8 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
 	suite.Require().False(errAck.Success())
 	errAckCast = errAck.(channeltypes.Acknowledgement)
-	suite.Require().Equal(
-		fmt.Sprintf("cannot find infraction height matching the validator update id %d for chain %s",
-			vscID, firstBundle.Chain.ChainID), errAckCast.GetError())
+	// TODO: see if there's a way to get error reason like before
+	suite.Require().Equal("ABCI code: 1: error handling packet: see events for details", errAckCast.GetError())
 
 	// construct slashing packet with non existing validator
 	slashingPkt := ccv.NewSlashPacketData(
