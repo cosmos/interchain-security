@@ -33,18 +33,18 @@ type InitState struct {
 	UnbondingC             time.Duration
 	Trusting               time.Duration
 	MaxClockDrift          time.Duration
-	BlockSeconds           time.Duration
+	BlockInterval          time.Duration
 	ConsensusParams        *abci.ConsensusParams
 	ValStates              ValStates
 	MaxEntries             int
 }
 
-var initState InitState
+var initStateVar InitState
 
 func init() {
 	//	tokens === power
 	sdk.DefaultPowerReduction = sdk.NewInt(1)
-	initState = InitState{
+	initStateVar = InitState{
 		PKSeeds: []string{
 			// Fixed seeds are used to create the private keys for validators.
 			// The seeds are chosen to ensure that the resulting validators are
@@ -62,7 +62,7 @@ func init() {
 		UnbondingC:             time.Second * 50,
 		Trusting:               time.Second * 49,
 		MaxClockDrift:          time.Second * 10000,
-		BlockSeconds:           time.Second * 6,
+		BlockInterval:          time.Second * 6,
 		ValStates: ValStates{
 			Delegation:           []int{4000, 3000, 2000, 1000},
 			Tokens:               []int{5000, 4000, 3000, 2000},
