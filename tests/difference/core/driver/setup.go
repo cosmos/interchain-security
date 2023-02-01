@@ -2,11 +2,12 @@ package core
 
 import (
 	"bytes"
+	cryptoEd25519 "crypto/ed25519"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -26,6 +27,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	"github.com/cosmos/ibc-go/v4/testing/mock"
 
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -39,8 +41,6 @@ import (
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-
-	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 )
 
 type Builder struct {
@@ -99,9 +99,10 @@ func (b *Builder) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(b.validator(i))
 }
 
-// getTestValidator returns the validator private key using the given seed index
-func (b *Builder) getTestValidator(seedIx int) *testcrypto.CryptoIdentity {
-	return testcrypto.NewCryptoIdentityFromBytesSeed([]byte(b.initState.PKSeeds[seedIx]))
+// getValidatorPK returns the validator private key using the given seed index
+func (b *Builder) getValidatorPK(seedIx int) mock.PV {
+	seed := []byte(b.initState.PKSeeds[seedIx])
+	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 }
 
 func (b *Builder) getAppBytesAndSenders(
@@ -306,10 +307,21 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 		if b.initState.ValStates.Status[i] != stakingtypes.Bonded {
 			continue
 		}
-		testVal := b.getTestValidator(i)
-		signers[testVal.TMCryptoPubKey().Address().String()] = testVal
-		addresses = append(addresses, testVal.SDKValAddress())
-		validators = append(validators, testVal.TMValidator(int64(power)))
+		privVal := b.getValidatorPK(i)
+
+		pubKey, err := privVal.GetPubKey()
+		require.NoError(b.suite.T(), err)
+
+		// Compute address
+		addr, err := sdk.ValAddressFromHex(pubKey.Address().String())
+		require.NoError(b.suite.T(), err)
+		addresses = append(addresses, addr)
+
+		// Save signer
+		signers[pubKey.Address().String()] = privVal
+
+		// Save validator with power
+		validators = append(validators, tmtypes.NewValidator(pubKey, int64(power)))
 	}
 
 	return tmtypes.NewValidatorSet(validators), signers, addresses
@@ -388,11 +400,22 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 
 // addValidatorToStakingModule creates an additional validator with zero commission
 // and zero tokens (zero voting power).
-func (b *Builder) addValidatorToStakingModule(testVal *testcrypto.CryptoIdentity) {
+func (b *Builder) addValidatorToStakingModule(privVal mock.PV) {
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
+
+	pubKey, err := privVal.GetPubKey()
+	require.NoError(b.suite.T(), err)
+
+	// Compute address
+	addr, err := sdk.ValAddressFromHex(pubKey.Address().String())
+	require.NoError(b.suite.T(), err)
+
+	sdkPK, err := cryptocodec.FromTmPubKeyInterface(pubKey)
+	require.NoError(b.suite.T(), err)
+
 	msg, err := stakingtypes.NewMsgCreateValidator(
-		testVal.SDKValAddress(),
-		testVal.SDKPubKey(),
+		addr,
+		sdkPK,
 		coin,
 		stakingtypes.Description{},
 		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
@@ -406,11 +429,17 @@ func (b *Builder) addExtraProviderValidators() {
 
 	for i, status := range b.initState.ValStates.Status {
 		if status == stakingtypes.Unbonded {
-			testVal := b.getTestValidator(i)
-			b.addValidatorToStakingModule(testVal)
-			b.valAddresses = append(b.valAddresses, testVal.SDKValAddress())
-			b.provider().Signers[testVal.TMCryptoPubKey().Address().String()] = testVal
-			b.consumer().Signers[testVal.TMCryptoPubKey().Address().String()] = testVal
+			privVal := b.getValidatorPK(i)
+			b.addValidatorToStakingModule(privVal)
+			pubKey, err := privVal.GetPubKey()
+			require.NoError(b.suite.T(), err)
+
+			addr, err := sdk.ValAddressFromHex(pubKey.Address().String())
+			require.NoError(b.suite.T(), err)
+
+			b.valAddresses = append(b.valAddresses, addr)
+			b.provider().Signers[pubKey.Address().String()] = privVal
+			b.consumer().Signers[pubKey.Address().String()] = privVal
 		}
 	}
 
@@ -506,11 +535,6 @@ func GetZeroState(
 	b := Builder{initState: initState, suite: suite}
 
 	b.createProviderAndConsumer()
-
-	b.providerStakingKeeper().IterateValidators(b.providerCtx(), func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
-		fmt.Println(validator.GetOperator().String())
-		return false
-	})
 
 	b.setProviderParams()
 
