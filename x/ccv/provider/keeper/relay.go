@@ -317,10 +317,6 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
-	// Replace data.Validator.Address with the proper provider chain consensus address,
-	// for later use in HandleSlashPacket
-	data.Validator.Address = providerConsAddr.Bytes()
-
 	// Queue a slash entry to the global queue, which will be seen by the throttling logic
 	k.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		ctx.BlockTime(),   // recv time
@@ -376,12 +372,12 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		"infractionType", data.Infraction,
 	)
 
-	// Obtain provider chain consensus address from packet data
-	// (overwritten with proper provider chain cons address in OnRecvSlashPacket)
-	providerConsAddr := sdk.ConsAddress(data.Validator.Address)
+	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
+	// Obtain provider chain consensus address using the consumer chain consensus address
+	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
 	// Obtain validator from staking keeper
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, data.Validator.Address)
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr)
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
@@ -424,7 +420,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		// then append the validator address to the slash ack for its chain id
 		slashFraction = k.slashingKeeper.SlashFractionDowntime(ctx)
 		jailTime = ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
-		k.AppendSlashAck(ctx, chainID, providerConsAddr.String())
+		k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
 	case stakingtypes.DoubleSign:
 		// set double-signing slash fraction and infinite jail duration
 		// then tombstone the validator

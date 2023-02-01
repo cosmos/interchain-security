@@ -63,15 +63,14 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		s.Require().Nil(err)
 		consAddr := sdk.GetConsAddress(pubkey)
 		// map consumer consensus address to provider consensus address
-		if providerAddr, found := providerKeeper.GetValidatorByConsumerAddr(
+		providerAddr, found := providerKeeper.GetValidatorByConsumerAddr(
 			s.providerCtx(),
 			s.consumerChain.ChainID,
 			consAddr,
-		); found {
-			consAddr = providerAddr
-		}
+		)
+		s.Require().True(found)
 
-		valData, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
+		valData, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerAddr)
 		s.Require().True(found)
 		valOldBalance := valData.Tokens
 
@@ -154,7 +153,7 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		}
 
 		// check that the validator is successfully jailed on provider
-		validatorJailed, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
+		validatorJailed, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerAddr)
 		s.Require().True(ok)
 		s.Require().True(validatorJailed.Jailed)
 		s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
@@ -173,7 +172,7 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		s.Require().Equal(resultingTokens, validatorJailed.GetTokens())
 
 		// check that the validator's unjailing time is updated on provider
-		valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), consAddr)
+		valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), providerAddr)
 		s.Require().True(found)
 		s.Require().True(valSignInfo.JailedUntil.After(s.providerCtx().BlockHeader().Time))
 
