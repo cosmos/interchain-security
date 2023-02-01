@@ -370,6 +370,7 @@ func TestValidateSlashPacket(t *testing.T) {
 }
 
 // TestHandleSlashPacket tests the handling of slash packets.
+// Note that only downtime slash packets are processed by HandleSlashPacket.
 func TestHandleSlashPacket(t *testing.T) {
 
 	chainId := "consumer-id"
@@ -452,26 +453,7 @@ func TestHandleSlashPacket(t *testing.T) {
 					ctx, mocks, expectedPacketData, stakingtypes.Validator{Jailed: true})
 			},
 		},
-		{
-			"full double sign packet handling, uses init chain height and jailed validator",
-			*ccv.NewSlashPacketData(abci.Validator{}, 0, stakingtypes.DoubleSign),
-			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
-				expectedPacketData ccv.SlashPacketData,
-			) []*gomock.Call {
-				return testkeeper.GetMocksForHandleSlashPacket(
-					ctx, mocks, expectedPacketData, stakingtypes.Validator{Jailed: true})
-			},
-		},
-		{
-			"full double sign packet handling, uses valid vsc id and non-jailed validator",
-			*ccv.NewSlashPacketData(abci.Validator{}, validVscID, stakingtypes.DoubleSign),
-			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
-				expectedPacketData ccv.SlashPacketData,
-			) []*gomock.Call {
-				return testkeeper.GetMocksForHandleSlashPacket(
-					ctx, mocks, expectedPacketData, stakingtypes.Validator{Jailed: false})
-			},
-		},
+		// Note: double-sign slash packet handling should not occur, see OnRecvSlashPacket.
 	}
 
 	for _, tc := range testCases {
