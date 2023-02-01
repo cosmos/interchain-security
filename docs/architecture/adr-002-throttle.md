@@ -16,29 +16,29 @@ Before the throttling feature was implemented, the following attack was possible
 
 ## Decision
 
-The throttling feature was designed to slow down the mentioned attack from above, allowing validators and the community to appropriately respond to the attack. Ie. this feature limits (enforced by on-chain params) the rate that the provider validator set can be jailed/tombstoned over time.
+The throttling feature was designed to slow down the mentioned attack from above, allowing validators and the community to appropriately respond to the attack. Ie. this feature limits (enforced by on-chain params) the rate that the provider validator set can be jailed over time.
 
 ### State Required - Slash Meter
 
-There exists one slash meter on the provider which stores an amount of voting power (integer), corresponding to an allowance of validators that can be jailed/tombstoned over time. This meter is initialized to a certain value on genesis, decremented whenever a slash packet is handled, and periodically replenished as decided by on-chain params.
+There exists one slash meter on the provider which stores an amount of voting power (integer), corresponding to an allowance of validators that can be jailed over time. This meter is initialized to a certain value on genesis, decremented by the amount of voting power jailed whenever a slash packet is handled, and periodically replenished as decided by on-chain params.
 
 ### State Required - Global entry queue
 
-There exists a single queue which stores "pending slash packet entries". These entries allow the provider to appropriately handle slash packets sent from any consumer in FIFO ordering. This queue is responsible for coordinating the order that slash packets (from multiple chains) are handled over time.
+There exists a single queue which stores "global slash entries". These entries allow the provider to appropriately handle slash packets sent from any consumer in FIFO ordering. This queue is responsible for coordinating the order that slash packets (from multiple chains) are handled over time.
 
 ### State Required - Per-chain data queue
 
-For each established consumer, there exists a queue which stores "pending packet data". Ie. pending slash packet data is queued together with pending VSC matured packet data in FIFO ordering. Order is enforced by IBC sequence number. These "per-chain" queues are responsible for coordinating the order that slash packets are handled in relation to VSC matured packets from the same chain.
+For each established consumer, there exists a queue which stores "throttled packet data". Ie. pending slash packet data is queued together with pending VSC matured packet data in FIFO ordering. Order is enforced by IBC sequence number. These "per-chain" queues are responsible for coordinating the order that slash packets are handled in relation to VSC matured packets from the same chain.
 
 ### Reasoning - Multiple queues
 
-For reasoning on why this feature was implemented with multiple queues, see [spec](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#consumer-initiated-slashing). Specifically the section on _VSC Maturity and Slashing Order_. There are other ways to ensure such a property (like a queue of linked lists, etc.), but the implemented algorithm seemed to be the most understandable and easiest to implement with a KV store.
+For reasoning on why this feature was implemented with multiple queues, see [spec](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#consumer-initiated-slashing). Specifically the section on _VSC Maturity and Slashing Order_. There are other ways to ensure such a property (like a queue of linked lists, etc.), but the implemented protocol seemed to be the most understandable and easiest to implement with a KV store.
 
 ### Protocol Overview - OnRecvSlashPacket
 
 Upon the provider receiving a slash packet from any of the established consumers during block execution, two things occur:
 
-1. A pending slash packet entry is queued.
+1. A global slash entry is queued.
 2. The data of such a packet is added to the per-chain queue.
 
 ### Protocol Overview - OnRecvVSCMaturedPacket
@@ -49,27 +49,27 @@ Upon the provider receiving a VSCMatured packet from any of the established cons
 
 Once the slash meter becomes not full, it'll be replenished after `SlashMeterReplenishPeriod (param)` by incrementing the meter with its allowance for the replenishment block, where `allowance` = `SlashMeterReplenishFraction (param)` * `currentTotalVotingPower`. The slash meter will never exceed its current allowance (fn of the total voting power for the block) in value. Note a few things:
 
-1. The slash meter can go negative in value, and will do so when handling a single slash packet that jails a validator with significant voting power. In such a scenario, the slash meter may take multiple replenishment periods to once again reach a positive value, meaning no other slash packets may be handled for multiple replenishment periods.
-2. Total voting power of a chain changes over time, especially as validators are jailed/tombstoned. As validators are jailed, total voting power decreases, and so does the slashing allowance for specific blocks.
+1. The slash meter can go negative in value, and will do so when handling a single slash packet that jails a validator with significant voting power. In such a scenario, the slash meter may take multiple replenishment periods to once again reach a positive value (or 0), meaning no other slash packets may be handled for multiple replenishment periods.
+2. Total voting power of a chain changes over time, especially as validators are jailed. As validators are jailed, total voting power decreases, and so does the jailing allowance. See below for more detailed invariant discussion.
 3. The voting power allowance added to the slash meter during replenishment will always be greater than or equal to 1. If the `SlashMeterReplenishFraction (param)` is set too low, integer rounding will put this minimum value into effect. That is, if `SlashMeterReplenishFraction` * `currentTotalVotingPower` < 1, then the effective allowance would be 1. This min value of allowance ensures that there's some packets handled over time, even if that is a very long time. It's a crude solution to an edge case caused by too small of a replenishment fraction.
 
 The behavior described above is achieved by executing `CheckForSlashMeterReplenishment()` every endblock, BEFORE `HandleThrottleQueues()` is executed.
 
 ### Endblocker Step 2 - HandleLeadingVSCMaturedPackets
 
-Every block it is possible that that VSCMatured packet data was queued before any slash packet data. Since this leading VSCMatured packet data does not have to be throttled (see _VSC Maturity and Slashing Order_), we can handle all VSCMatured packet data at the head of the queue, before the throttling logic executes.
+Every block it is possible that VSCMatured packet data was queued before any slash packet data. Since this "leading" VSCMatured packet data does not have to be throttled (see _VSC Maturity and Slashing Order_), we can handle all VSCMatured packet data at the head of the queue, before the any throttling or packet data handling logic executes.
 
 ### Endblocker Step 3 - HandleThrottleQueues
 
-Every endblocker the following psuedocode is executed to handle data from the throttle queues.
+Every endblocker the following pseudo-code is executed to handle data from the throttle queues.
 
 ```typescript
 meter := getSlashMeter()
 
-// Keep iterating as long as the meter has positive gas and slash packet entries exist 
-while meter.IsPositive() && entriesExist() {
+// Keep iterating as long as the meter has a positive (or 0) value, and global slash entries exist 
+while meter.IsPositiveOrZero() && entriesExist() {
      // Get next entry in queue
-     entry := getNextSlashPacketEntry()
+     entry := getNextGlobalSlashEntry()
      // Decrement slash meter by the voting power that will be removed from the valset from handling this slash packet
      valPower := entry.getValPower()
      meter = meter - valPower
@@ -100,7 +100,7 @@ Using on-chain params and the sub protocol defined, slash packet throttling is i
 First, we define the following:
 
 * A consumer initiated slash attack "starts" when the first slash packet from such an attack is received by the provider.
-* The "initial validator set" for the attack is the set that existed when the attack started.
+* The "initial validator set" for the attack is the validator set that existed on the provider when the attack started.
 * There is a list of honest validators s.t if they are jailed, `X`% of the initial validator set will be jailed.
 * The "final slashed validator" is the last element in the list of honest validators.
 
@@ -111,13 +111,13 @@ For the following invariant to hold, these assumptions must be true:
 * `SlashMeterReplenishFraction` is large enough that `SlashMeterReplenishFraction` * `currentTotalVotingPower` > 1. Ie. the replenish fraction is set high enough that we can ignore the effects of rounding.
 * `SlashMeterReplenishPeriod` is sufficiently longer than the time it takes to produce a block.
 
-*Note if these assumptions do not hold, throttling will still slow down the described attack in most cases, just not in a way that can be succinctly described. It's possible that more complex invariants can be defined.*
+_Note if these assumptions do not hold, throttling will still slow down the described attack in most cases, just not in a way that can be succinctly described. It's possible that more complex invariants can be defined._
 
 Invariant:
 
 > The time it takes to jail/tombstone `X`% of the initial validator set will be greater than or equal to `(X * SlashMeterReplenishPeriod / SlashMeterReplenishFraction) - 2 * SlashMeterReplenishPeriod`
 
-Intuition: If jailings begin when the slash meter is full, then `SlashMeterReplenishFraction` of the provider validator set can be jailed immediately. The remaining jailings are only applied when the slash meter is positive in value, so the time it takes to jail the remaining `X - SlashMeterReplenishFraction` of the provider validator set is `(X - SlashMeterReplenishFraction) * SlashMeterReplenishPeriod / SlashMeterReplenishFraction`. However, the final slashed validator could be jailed during the final replenishment period, with the meter being very small in value (causing it to go negative after jailing). So we subtract another `SlashMeterReplenishPeriod` term in the invariant to account for this.
+Intuition: If jailings begin when the slash meter is full, then `SlashMeterReplenishFraction` of the initial validator set can be jailed immediately. The remaining jailings are only applied when the slash meter is positive in value (or 0), so the time it takes to jail the remaining `X - SlashMeterReplenishFraction` of the provider validator set is `(X - SlashMeterReplenishFraction) * SlashMeterReplenishPeriod / SlashMeterReplenishFraction`. However, the final slashed validator could be jailed during the final replenishment period, with the meter being very small in value (causing it to go negative after jailing). So we subtract another `SlashMeterReplenishPeriod` term in the invariant to account for this.
 
 This invariant is useful because it allows us to reason about the time it takes to jail a certain percentage of the initial provider validator set from consumer initiated slash requests. For example, if `SlashMeterReplenishFraction` is set to 0.06, then it takes no less than 4 replenishment periods to jail 33% of the initial provider validator set on the Cosmos Hub. Note that as of writing this on 11/29/22, the Cosmos Hub does not have a validator with more than 6% of total voting power.
 
