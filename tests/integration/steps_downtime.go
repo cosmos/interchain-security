@@ -281,7 +281,10 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				chain:            chainID(consumerName),
 				currentQueueSize: 1,
 				nextQueueSize:    0,
-				timeout:          time.Minute, // panic after reaching timeout
+				// Slash meter replenish fraction is set to 10%, replenish period is 20 seconds, see config.go
+				// Meter is initially at 10%, decremented to -23% from bob being jailed. It'll then take three replenishments
+				// for meter to become positive again. 3*20 = 60 seconds + buffer = 80 seconds
+				timeout: 80 * time.Second,
 			},
 			state: State{
 				// no changes in state should occur
@@ -289,7 +292,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
 						validatorID("bob"):   0,
-						validatorID("carol"): 500,
+						validatorID("carol"): 500, // should be 0
 					},
 					GlobalSlashQueueSize: uintPointer(0), // slash packets dequeued
 					ConsumerChainQueueSizes: &map[chainID]uint{
