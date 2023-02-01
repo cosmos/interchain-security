@@ -230,9 +230,36 @@ func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
 	require.True(t, found)
 }
 
-// TestOnRecvSlashPacket tests the OnRecvSlashPacket method, and how it interacts with the
-// parent and per-chain slash packet queues.
-func TestOnRecvSlashPacket(t *testing.T) {
+// TestOnRecvSlashPacket tests the OnRecvSlashPacket method specifically for double-sign slash packets.
+func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+
+	// Set channel to chain (faking multiple established channels)
+	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
+	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
+
+	// Generate a new slash packet data instance with double sign infraction type
+	packetData := testkeeper.GetNewSlashPacketData()
+	packetData.Infraction = stakingtypes.DoubleSign
+
+	// Set a block height for the valset update id in the generated packet data
+	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
+
+	// Receive the double-sign slash packet for chain-1 and confirm the expected acknowledgement
+	ack := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
+	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
+
+	// Nothing should be queued
+	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
+	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
+	require.Equal(t, 0, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
+}
+
+// TestOnRecvSlashPacket tests the OnRecvSlashPacket method specifically for downtime slash packets,
+// and how the method interacts with the parent and per-chain slash packet queues.
+func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -242,14 +269,14 @@ func TestOnRecvSlashPacket(t *testing.T) {
 	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
 	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
 
-	// Generate a new slash packet data instance with valid infraction type
+	// Generate a new slash packet data instance with downtime infraction type
 	packetData := testkeeper.GetNewSlashPacketData()
-	packetData.Infraction = stakingtypes.DoubleSign
+	packetData.Infraction = stakingtypes.Downtime
 
 	// Set a block height for the valset update id in the generated packet data
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
 
-	// Receive a slash packet for chain-1 at time.Now()
+	// Receive the downtime slash packet for chain-1 at time.Now()
 	ctx = ctx.WithBlockTime(time.Now())
 	ack := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
@@ -260,14 +287,14 @@ func TestOnRecvSlashPacket(t *testing.T) {
 	require.Equal(t, "chain-1", globalEntries[0].ConsumerChainID)
 	require.Equal(t, uint64(1), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1")) // per chain queue
 
-	// Generate a new packet data instance with valid infraction type
+	// Generate a new downtime packet data instance with downtime infraction type
 	packetData = testkeeper.GetNewSlashPacketData()
 	packetData.Infraction = stakingtypes.Downtime
 
 	// Set a block height for the valset update id in the generated packet data
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
 
-	// Receive a slash packet for chain-2 at time.Now(Add(1 *time.Hour))
+	// Receive a downtime slash packet for chain-2 at time.Now(Add(1 *time.Hour))
 	ctx = ctx.WithBlockTime(time.Now().Add(1 * time.Hour))
 	ack = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2, packetData)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
