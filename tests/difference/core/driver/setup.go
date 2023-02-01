@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -505,6 +506,11 @@ func GetZeroState(
 	b := Builder{initState: initState, suite: suite}
 
 	b.createProviderAndConsumer()
+
+	b.providerStakingKeeper().IterateValidators(b.providerCtx(), func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
+		fmt.Println(validator.GetOperator().String())
+		return false
+	})
 
 	b.setProviderParams()
 
