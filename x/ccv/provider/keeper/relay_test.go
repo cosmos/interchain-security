@@ -467,7 +467,8 @@ func TestHandleSlashPacket(t *testing.T) {
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
 				return testkeeper.GetMocksForHandleSlashPacket(
-					ctx, mocks, expectedPacketData, stakingtypes.Validator{Jailed: false})
+					ctx, mocks, expectedPacketData, stakingtypes.Validator{Jailed: false},
+					true) // expectJailing = true
 			},
 		},
 		{
@@ -477,7 +478,8 @@ func TestHandleSlashPacket(t *testing.T) {
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
 				return testkeeper.GetMocksForHandleSlashPacket(
-					ctx, mocks, expectedPacketData, stakingtypes.Validator{Jailed: true})
+					ctx, mocks, expectedPacketData, stakingtypes.Validator{Jailed: true},
+					false) // expectJailing = false, validator is already jailed.
 			},
 		},
 		// Note: double-sign slash packet handling should not occur, see OnRecvSlashPacket.

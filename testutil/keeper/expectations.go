@@ -92,7 +92,7 @@ func GetMocksForStopConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomo
 }
 
 func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
-	expectedPacketData ccv.SlashPacketData, valToReturn stakingtypes.Validator) []*gomock.Call {
+	expectedPacketData ccv.SlashPacketData, valToReturn stakingtypes.Validator, expectJailing bool) []*gomock.Call {
 
 	// These first two calls are always made.
 	calls := []*gomock.Call{
@@ -106,8 +106,7 @@ func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 			sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(false).Times(1),
 	}
 
-	// Jail() is only called if the validator is not already jailed.
-	if !valToReturn.IsJailed() {
+	if expectJailing {
 		calls = append(calls, mocks.MockStakingKeeper.EXPECT().Jail(
 			gomock.Eq(ctx),
 			gomock.Eq(sdk.ConsAddress(expectedPacketData.Validator.Address)),
