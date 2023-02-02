@@ -172,6 +172,10 @@ func TestPacketSpam(t *testing.T) {
 	runCCVTestByName(t, "TestPacketSpam")
 }
 
+func TestDoubleSignDoesNotAffectThrottling(t *testing.T) {
+	runCCVTestByName(t, "TestDoubleSignDoesNotAffectThrottling")
+}
+
 func TestQueueOrdering(t *testing.T) {
 	runCCVTestByName(t, "TestQueueOrdering")
 }
