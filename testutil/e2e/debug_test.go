@@ -124,10 +124,6 @@ func TestOnRecvSlashPacketErrors(t *testing.T) {
 	runCCVTestByName(t, "TestOnRecvSlashPacketErrors")
 }
 
-func TestSlashUndelegation(t *testing.T) {
-	runCCVTestByName(t, "TestSlashUndelegation")
-}
-
 func TestValidatorDowntime(t *testing.T) {
 	runCCVTestByName(t, "TestValidatorDowntime")
 }
