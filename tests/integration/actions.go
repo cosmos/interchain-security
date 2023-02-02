@@ -1227,7 +1227,7 @@ func (tr TestRun) waitForSlashThrottleDequeue(
 		}
 
 		if globalQueueSize == chainQueueSize && globalQueueSize == action.nextQueueSize {
-			return
+			break
 		}
 
 		if time.Now().After(timeout) {
@@ -1236,6 +1236,8 @@ func (tr TestRun) waitForSlashThrottleDequeue(
 
 		time.Sleep(500 * time.Millisecond)
 	}
+	// Sleep 20 seconds to pass a block, allowing the jailing to be incorporated into voting power
+	time.Sleep(20 * time.Second)
 }
 
 func uintPointer(i uint) *uint {
