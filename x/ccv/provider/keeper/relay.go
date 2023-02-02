@@ -381,8 +381,8 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 	return nil
 }
 
-// HandleSlashPacket potentially slashes, jails and/or tombstones
-// a misbehaving validator according to infraction type.
+// HandleSlashPacket potentially jails a misbehaving validator for a downtime infraction.
+// This method should NEVER be called with a double-sign infraction.
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
 
 	k.Logger(ctx).Debug("handling slash packet",
