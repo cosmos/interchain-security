@@ -216,8 +216,9 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	s.Require().Error(err)
 }
 
-// TestHandleSlashPacketDoubleSigning tests the handling of a double-signing related slash packet, with e2e tests
-func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
+// TestHandleSlashPacketDowntime tests the handling of a downtime related slash packet, with e2e tests.
+// Note that only downtime slash packets are processed by HandleSlashPacket.
+func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
 	providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
@@ -244,7 +245,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 		*ccv.NewSlashPacketData(
 			abci.Validator{Address: tmVal.Address, Power: 0},
 			uint64(0),
-			stakingtypes.DoubleSign,
+			stakingtypes.Downtime,
 		),
 	)
 
@@ -252,8 +253,8 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 	suite.Require().True(providerStakingKeeper.IsValidatorJailed(suite.providerCtx(), consAddr))
 
 	signingInfo, _ := providerSlashingKeeper.GetValidatorSigningInfo(suite.providerCtx(), consAddr)
-	suite.Require().True(signingInfo.JailedUntil.Equal(evidencetypes.DoubleSignJailEndTime))
-	suite.Require().True(signingInfo.Tombstoned)
+	jailDuration := providerSlashingKeeper.DowntimeJailDuration(suite.providerCtx())
+	suite.Require().Equal(suite.providerCtx().BlockTime().Add(jailDuration), signingInfo.JailedUntil)
 }
 
 // TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an e2e testing setting
