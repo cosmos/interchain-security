@@ -108,8 +108,12 @@ func TestHistoricalInfo(t *testing.T) {
 // Slashing tests
 //
 
-func TestRelayAndApplySlashPacket(t *testing.T) {
-	runCCVTestByName(t, "TestRelayAndApplySlashPacket")
+func TestRelayAndApplyDowntimePacket(t *testing.T) {
+	runCCVTestByName(t, "TestRelayAndApplyDowntimePacket")
+}
+
+func TestRelayAndApplyDoubleSignPacket(t *testing.T) {
+	runCCVTestByName(t, "TestRelayAndApplyDoubleSignPacket")
 }
 
 func TestSlashPacketAcknowledgement(t *testing.T) {
