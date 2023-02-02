@@ -79,6 +79,16 @@ func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
 
 // ValidatorByConsAddr returns an empty validator
 func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.ValidatorI {
+	/*
+		NOTE:
+
+		The evidence module will call this function when it handles equivocation evidence.
+		The returned value must not be nil and must not have an UNBONDED validator status,
+		or evidence will reject it.
+
+		Also, the slashing module will cal lthis function when it observes downtime. In that case
+		the only requirement on the returned value is that it isn't null.
+	*/
 	return stakingtypes.Validator{}
 }
 
