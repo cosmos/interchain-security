@@ -996,6 +996,7 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		`--chain-id`, string(tr.chainConfigs[action.provider].chainId),
 		`--home`, tr.getValidatorHome(action.provider, action.validator),
 		`--node`, tr.getValidatorNode(action.provider, action.validator),
+		`--gas`, "900000",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -1008,6 +1009,10 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait a bit so the tx get included in a block
+	// and packets commited before proceeding
+	time.Sleep(20 * time.Second)
 }
 
 type registerRepresentativeAction struct {
