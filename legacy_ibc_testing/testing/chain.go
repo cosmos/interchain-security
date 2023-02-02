@@ -494,6 +494,10 @@ func (chain *TestChain) CreateTMClientHeader(chainID string, blockHeight int64, 
 	vsetHash := tmValSet.Hash()
 	nextValHash := nextVals.Hash()
 
+	if tmValSet == nil {
+		panic("tmValSet cannot be nil")
+	}
+
 	tmHeader := tmtypes.Header{
 		Version:            tmprotoversion.Consensus{Block: tmversion.BlockProtocol, App: 2},
 		ChainID:            chainID,
@@ -521,6 +525,9 @@ func (chain *TestChain) CreateTMClientHeader(chainID string, blockHeight int64, 
 	var signerArr []tmtypes.PrivValidator
 
 	for _, v := range tmValSet.Validators {
+		if v == nil {
+			panic("validator in tmValSet cannot be nil")
+		}
 		signerArr = append(signerArr, signers[v.Address.String()])
 	}
 
