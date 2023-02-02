@@ -112,6 +112,11 @@ func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 			gomock.Eq(ctx),
 			gomock.Eq(sdk.ConsAddress(expectedPacketData.Validator.Address)),
 		).Return())
+
+		// JailUntil is set in this code path.
+		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour).Times(1))
+		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().JailUntil(ctx,
+			sdk.ConsAddress(expectedPacketData.Validator.Address), gomock.Any()).Times(1))
 	}
 
 	return calls
