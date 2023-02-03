@@ -481,7 +481,7 @@ class CCVProvider {
 
     // jail validator
     this.m.staking.jailUntil(data.val, this.m.t[P] + JAIL_SECONDS);
-    // update slashing acks
+    // update slash acks
     this.downtimeSlashAcks.push(data.val);
  
   };
