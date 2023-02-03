@@ -445,7 +445,6 @@ class CCVProvider {
 
   processPackets = () => {
     this.queue.forEach((data) => {
-      
       // It's sufficient to use isDowntime field as differentiator
       if ('isDowntime' in data) {
         this.onReceiveSlash(data);
@@ -467,18 +466,23 @@ class CCVProvider {
 
   onReceiveSlash = (data: Slash) => {
 
-    // Drop double sign infraction
+    // Check validator status
     if (this.m.staking.status[data.val] === Status.UNBONDED) {
       this.m.events.push(Event.RECEIVE_SLASH_REQUEST_UNBONDED);
       return;
     }
 
-    // TODO: Differentiate jailUntil to Jailed states
-    this.m.staking.jailUntil(data.val, this.m.t[P] + JAIL_SECONDS);
-
-
-    this.downtimeSlashAcks.push(data.val);
     this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_REQUEST);
+
+
+    if (this.tombstoned[data.val]) {
+      return
+    }
+
+    // jail validator
+    this.m.staking.jailUntil(data.val, this.m.t[P] + JAIL_SECONDS);
+    // update slashing acks
+    this.downtimeSlashAcks.push(data.val);
  
   };
 
