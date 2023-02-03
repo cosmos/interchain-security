@@ -772,6 +772,7 @@ func (tr TestRun) relayPackets(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+	time.Sleep(10 * time.Second)
 }
 
 type relayRewardPacketsToProviderAction struct {
@@ -1008,6 +1009,8 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	time.Sleep(20 * time.Second)
 }
 
 type registerRepresentativeAction struct {
