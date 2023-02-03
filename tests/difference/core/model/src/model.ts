@@ -423,7 +423,7 @@ class CCVProvider {
 
   onReceive = (data: PacketData) => {
 
-    // Drop slash packets for double-signing infraction
+    // Drop slash packets for double-sign infraction
     if ('isDowntime' in data && ! data.isDowntime) {
       this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_REQUEST);
       return;
@@ -445,6 +445,7 @@ class CCVProvider {
 
   processPackets = () => {
     this.queue.forEach((data) => {
+      
       // It's sufficient to use isDowntime field as differentiator
       if ('isDowntime' in data) {
         this.onReceiveSlash(data);
@@ -466,7 +467,7 @@ class CCVProvider {
 
   onReceiveSlash = (data: Slash) => {
 
-
+    // Drop double sign infraction
     if (this.m.staking.status[data.val] === Status.UNBONDED) {
       this.m.events.push(Event.RECEIVE_SLASH_REQUEST_UNBONDED);
       return;
