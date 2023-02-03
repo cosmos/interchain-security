@@ -202,7 +202,6 @@ func stepsDemocracy(consumerName string) []Step {
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						// 1% of bob's stake should be slashed as set in config.go
 						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
