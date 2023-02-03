@@ -428,7 +428,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// for double-signing infractions are already dropped when received
 
 	// append the validator address to the slash ack for its chain id
-	k.AppendSlashAck(ctx, chainID, providerConsAddr.String())
+	k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
 
 	// jail validator
 	if !validator.IsJailed() {

@@ -45,17 +45,16 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.Require().NoError(err)
 	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
 	s.Require().Nil(err)
-	consAddr := sdk.GetConsAddress(pubkey)
+	consumerConsAddr := sdk.GetConsAddress(pubkey)
 	// map consumer consensus address to provider consensus address
-	if providerAddr, found := providerKeeper.GetValidatorByConsumerAddr(
+	providerConsAddr, found := providerKeeper.GetValidatorByConsumerAddr(
 		s.providerCtx(),
 		s.consumerChain.ChainID,
-		consAddr,
-	); found {
-		consAddr = providerAddr
-	}
+		consumerConsAddr,
+	)
+	s.Require().True(found)
 
-	stakingVal, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
+	stakingVal, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr)
 	s.Require().True(found)
 	valOldBalance := stakingVal.Tokens
 
@@ -72,8 +71,8 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
 	s.Require().NoError(err)
 
-	// Set outstanding slashing flag for first consumer if testing a downtime slash packet
-	firstConsumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consAddr)
+	// Set outstanding slashing flag for first consumer, it's important to use the consumer's cons addr here
+	firstConsumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consumerConsAddr)
 
 	// Note: RecvPacket advances two blocks. Let's say the provider is currently at height N.
 	// The received slash packet will be queued during N, and handled by the ccv module during
@@ -127,7 +126,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	}
 
 	// Get staking keeper's validator obj after the relayed slash packet
-	stakingValAfter, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
+	stakingValAfter, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr)
 	s.Require().True(ok)
 
 	// check that the validator's tokens were NOT slashed on provider
@@ -135,7 +134,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.Require().Equal(valOldBalance, valNewBalance)
 
 	// Get signing info for the validator
-	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), consAddr)
+	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), providerConsAddr)
 	s.Require().True(found)
 
 	// check that the validator is successfully jailed on provider
@@ -146,8 +145,9 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.Require().True(valSignInfo.JailedUntil.After(s.providerCtx().BlockHeader().Time))
 
 	// check that the outstanding slashing flag is reset on first consumer,
-	// since that consumer originally sent the slash packet
-	pFlag := firstConsumerKeeper.OutstandingDowntime(s.consumerCtx(), consAddr)
+	// since that consumer originally sent the slash packet.
+	// It's important to use the consumer's cons addr here.
+	pFlag := firstConsumerKeeper.OutstandingDowntime(s.consumerCtx(), consumerConsAddr)
 	s.Require().False(pFlag)
 
 	// check that slashing packet gets acknowledged successfully
@@ -175,17 +175,15 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	s.Require().NoError(err)
 	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
 	s.Require().Nil(err)
-	consAddr := sdk.GetConsAddress(pubkey)
+	consumerConsAddr := sdk.GetConsAddress(pubkey)
 	// map consumer consensus address to provider consensus address
-	if providerAddr, found := providerKeeper.GetValidatorByConsumerAddr(
+	providerConsAddr, found := providerKeeper.GetValidatorByConsumerAddr(
 		s.providerCtx(),
 		s.consumerChain.ChainID,
-		consAddr,
-	); found {
-		consAddr = providerAddr
-	}
+		consumerConsAddr)
+	s.Require().True(found)
 
-	stakingVal, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
+	stakingVal, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr)
 	s.Require().True(found)
 	valOldBalance := stakingVal.Tokens
 
@@ -215,7 +213,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain)
 
 	// Get staking keeper's validator obj after the relayed slash packet
-	stakingValAfter, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
+	stakingValAfter, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr)
 	s.Require().True(ok)
 
 	// check that the validator's tokens were NOT slashed on provider
@@ -223,7 +221,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	s.Require().Equal(valOldBalance, valNewBalance)
 
 	// Get signing info for the validator
-	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), consAddr)
+	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), providerConsAddr)
 	s.Require().True(found)
 
 	// check that the validator's unjailing time is NOT updated on provider
