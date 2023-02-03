@@ -476,7 +476,7 @@ class CCVProvider {
 
 
     if (this.tombstoned[data.val]) {
-      return
+      return;
     }
 
     // jail validator
