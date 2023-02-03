@@ -772,7 +772,6 @@ func (tr TestRun) relayPackets(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
-	time.Sleep(10 * time.Second)
 }
 
 type relayRewardPacketsToProviderAction struct {
@@ -997,6 +996,7 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		`--chain-id`, string(tr.chainConfigs[action.provider].chainId),
 		`--home`, tr.getValidatorHome(action.provider, action.validator),
 		`--node`, tr.getValidatorNode(action.provider, action.validator),
+		`--gas`, "900000",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -1010,7 +1010,9 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	time.Sleep(20 * time.Second)
+	// wait for 2 blocks to be sure that tx got included in a block
+	// and packets commited before proceeding
+	tr.waitBlocks(action.provider, 2, time.Minute)
 }
 
 type registerRepresentativeAction struct {
@@ -1239,8 +1241,9 @@ func (tr TestRun) waitForSlashThrottleDequeue(
 
 		time.Sleep(500 * time.Millisecond)
 	}
-	// Sleep 20 seconds to pass a block, allowing the jailing to be incorporated into voting power
-	time.Sleep(20 * time.Second)
+	// wair for 2 blocks to be created
+	// allowing the jailing to be incorporated into voting power
+	tr.waitBlocks(action.chain, 2, time.Minute)
 }
 
 func uintPointer(i uint) *uint {
