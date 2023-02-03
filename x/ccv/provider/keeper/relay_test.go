@@ -558,7 +558,7 @@ func TestSlashAckAppendAfterHandleSlashPacket(t *testing.T) {
 				return testkeeper.GetMocksForHandleSlashPacket(
 					ctx, mocks, expectedPacketData, providerConsAddr, stakingtypes.Validator{Jailed: false})
 			},
-			0, // no slash acks for double - only tombstone
+			0, // no slash acks for double sign - only tombstone
 		},
 	}
 

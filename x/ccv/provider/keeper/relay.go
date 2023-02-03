@@ -365,16 +365,17 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 // a misbehaving validator according to infraction type.
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
 
-	k.Logger(ctx).Debug("handling slash packet",
-		"chainID", chainID,
-		"provider cons addr", sdk.ConsAddress(data.Validator.Address).String(),
-		"vscID", data.ValsetUpdateId,
-		"infractionType", data.Infraction,
-	)
-
 	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
 	// Obtain provider chain consensus address using the consumer chain consensus address
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
+
+	k.Logger(ctx).Debug("handling slash packet",
+		"chainID", chainID,
+		"consumer cons addr", consumerConsAddr.String(),
+		"provider cons addr", providerConsAddr.String(),
+		"vscID", data.ValsetUpdateId,
+		"infractionType", data.Infraction,
+	)
 
 	// Obtain validator from staking keeper
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr)
