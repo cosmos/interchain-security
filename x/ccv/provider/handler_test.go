@@ -46,11 +46,11 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
-						ctx, testValProvider.SDKValAddress(),
+						ctx, testValProvider.SDKValOpAddress(),
 						// Return a valid validator, found!
 					).Return(testValProvider.SDKStakingValidator(), true).Times(1),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-						testValConsumer.SDKConsAddress(),
+						testValConsumer.SDKValConsAddress(),
 					).Return(stakingtypes.Validator{}, false),
 				)
 			},
@@ -64,7 +64,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
-						ctx, testValProvider.SDKValAddress(),
+						ctx, testValProvider.SDKValOpAddress(),
 						// return false: not found!
 					).Return(stakingtypes.Validator{}, false).Times(1),
 				)
@@ -78,15 +78,15 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
 
 				// Use the consumer key already
-				k.SetValidatorByConsumerAddr(ctx, "chainid", testValConsumer.SDKConsAddress(), testValProvider.SDKConsAddress())
+				k.SetValidatorByConsumerAddr(ctx, "chainid", testValConsumer.SDKValConsAddress(), testValProvider.SDKValConsAddress())
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
-						ctx, testValProvider.SDKValAddress(),
+						ctx, testValProvider.SDKValOpAddress(),
 						// Return a valid validator, found!
 					).Return(testValProvider.SDKStakingValidator(), true).Times(1),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-						testValConsumer.SDKConsAddress(),
+						testValConsumer.SDKValConsAddress(),
 					).Return(stakingtypes.Validator{}, false),
 				)
 			},
@@ -103,7 +103,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			tc.setup(ctx, k, mocks)
 
 			msg, err := types.NewMsgAssignConsumerKey(tc.chainID,
-				testValProvider.SDKValAddress(), testValConsumer.SDKPubKey(),
+				testValProvider.SDKValOpAddress(), testValConsumer.ConsensusSDKPubKey(),
 			)
 
 			require.NoError(t, err)
