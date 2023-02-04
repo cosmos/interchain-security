@@ -533,7 +533,7 @@ func TestHandleSlashPacket(t *testing.T) {
 
 		// Setup consumer address to provider address mapping.
 		require.NotEmpty(t, tc.packetData.Validator.Address)
-		providerKeeper.SetValidatorByConsumerAddr(ctx, chainId, sdk.ConsAddress(tc.packetData.Validator.Address), providerConsAddr)
+		providerKeeper.SetValidatorByConsumerAddr(ctx, chainId, consumerConsAddr, providerConsAddr)
 
 		// Execute method and assert expected mock calls.
 		providerKeeper.HandleSlashPacket(ctx, chainId, tc.packetData)
