@@ -92,30 +92,31 @@ func GetMocksForStopConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomo
 }
 
 func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
-	expectedPacketData ccv.SlashPacketData, valToReturn stakingtypes.Validator, expectJailing bool) []*gomock.Call {
+	expectedProviderValConsAddr sdk.ConsAddress,
+	valToReturn stakingtypes.Validator, expectJailing bool) []*gomock.Call {
 
 	// These first two calls are always made.
 	calls := []*gomock.Call{
 
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-			ctx, sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(
+			ctx, expectedProviderValConsAddr).Return(
 			valToReturn, true,
 		).Times(1),
 
 		mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
-			sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(false).Times(1),
+			sdk.ConsAddress(expectedProviderValConsAddr)).Return(false).Times(1),
 	}
 
 	if expectJailing {
 		calls = append(calls, mocks.MockStakingKeeper.EXPECT().Jail(
 			gomock.Eq(ctx),
-			gomock.Eq(sdk.ConsAddress(expectedPacketData.Validator.Address)),
+			gomock.Eq(sdk.ConsAddress(expectedProviderValConsAddr)),
 		).Return())
 
 		// JailUntil is set in this code path.
 		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour).Times(1))
 		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().JailUntil(ctx,
-			sdk.ConsAddress(expectedPacketData.Validator.Address), gomock.Any()).Times(1))
+			sdk.ConsAddress(expectedProviderValConsAddr), gomock.Any()).Times(1))
 	}
 
 	return calls
