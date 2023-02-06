@@ -37,6 +37,7 @@ func main() {
 		{DefaultTestRun(), happyPathSteps},
 		{DemocracyTestRun(), democracySteps},
 		{SlashThrottleTestRun(), slashThrottleSteps},
+		{EquivocationProposalTestRun(), equivocationProposalSteps},
 	}
 	if includeMultiConsumer != nil && *includeMultiConsumer {
 		testRuns = append(testRuns, testRunWithSteps{MultiConsumerTestRun(), multipleConsumers})
@@ -73,7 +74,7 @@ func (tr *TestRun) Run(steps []Step, localSdkPath string) {
 	tr.validateStringLiterals()
 	tr.startDocker()
 	tr.executeSteps(steps)
-	tr.teardownDocker()
+	// tr.teardownDocker()
 }
 
 type testRunWithSteps struct {
@@ -93,6 +94,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.submitConsumerAdditionProposal(action, verbose)
 	case submitConsumerRemovalProposalAction:
 		tr.submitConsumerRemovalProposal(action, verbose)
+	case submitEquivocationProposalAction:
+		tr.submitEquivocationProposal(action, verbose)
 	case submitParamChangeProposalAction:
 		tr.submitParamChangeProposal(action, verbose)
 	case voteGovProposalAction:
