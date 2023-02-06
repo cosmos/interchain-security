@@ -38,7 +38,6 @@ var democracySteps = concatSteps(
 	stepsDemocracy("democ"),
 )
 
-//nolint
 var multipleConsumers = concatSteps(
 	stepsStartChains([]string{"consu", "densu"}, false),
 	stepsMultiConsumerDelegate("consu", "densu"),
@@ -47,4 +46,10 @@ var multipleConsumers = concatSteps(
 	stepsMultiConsumerDowntimeFromConsumer("consu", "densu"),
 	stepsMultiConsumerDowntimeFromProvider("consu", "densu"),
 	stepsDoubleSign("consu", "densu"), // double sign on one of the chains
+)
+
+var equivocationProposalSteps = concatSteps(
+	stepsStartChains([]string{"consu"}, false),
+	stepsDelegate("consu"),
+	stepsSubmitEquivocationProposal("consu"),
 )
