@@ -119,6 +119,14 @@ This invariant is useful because it allows us to reason about the time it takes 
 
 Note also that 4 replenishment period is a worst case scenario that depends on well crafted attack timings.
 
+### How Unjailing Affects the Invariant
+
+Note that the jailing allowance is directly proportional to the current total voting power of the provider chain. Therefore, if honest validators don't unjail themselves during the attack, the total voting power of the provider chain will decrease over the course of the attack, and the attack will be slowed down, invariant maintained.
+
+If honest validators do unjail themselves, the total voting power of the provider chain will still not become higher than when the attack started (unless new token delegations happen), therefore the invariant is still maintained. Moreover, honest validators unjailing themselves helps prevent the attacking validators from gaining control of the provider.
+
+In summary, the throttling mechanism as designed has desirable properties whether or not honest validators unjail themselves over the course of the attack.
+
 ## Consequences
 
 ### Positive
