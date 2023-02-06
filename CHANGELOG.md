@@ -20,7 +20,6 @@ RS consist of the following core features:
 - **Consumer Initiated Slashing**: Enables the provider to jail validators for downtime infractions on the consumer chains. 
 - **Reward Distribution**: Enables the consumers to transfer to the provider (over IBC) a portion of their block rewards as payment for the security provided. Once transferred, these rewards are distributed on the provider using the protocol in the [distribution module of Cosmos SDK](https://docs.cosmos.network/v0.45/modules/distribution/). 
 - **Consumer Chain Removal**: Enables the provider to remove a consumer either after a `ConsumerRemovalProposal` passes governance or after one of the timeout periods elapses -- `InitTimeoutPeriod`, `VscTimeoutPeriod`, `IBCTimeoutPeriod`.
-
 In addition, RS has the following features:
 
 - **Key Assignment**: Enables validator operators to use different consensus keys for each consumer chain validator node that they operate.
