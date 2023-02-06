@@ -1,0 +1,59 @@
+# ADR 004: Consumer expiration
+
+# ADR 004: Consumer chain halts if the VSC packet is no longer received.
+
+## Changelog
+
+- 2023-02-06: Initial draft
+
+## Status
+
+Proposed
+
+## Context
+
+Currently a consumer chain can’t live if the IBC channel is closed or if the channel freezes (which happens if there’s no IBC activity during 2/3 of the provider unbonding period time).
+
+Unbound tokens on the provider chain must ensure the consumer chain have sent a VSC matured Packet to approve the unbonding.
+
+We believe this could be simplified.
+
+## Decision
+
+Let’s add a `max_time_without_vsc_packet` parameter inside the consumer Params and ensure the chain halts in case no validator set updates were received after that time.
+
+This time must be:
+
+- Lower than 1/2 of the provider unbonding period
+
+eg: The cosmoshub unbonding period is **21 days.** 
+
+We could by default set the `max_time_without_vsc_packet` to 2/5 of the `provider_unbonding_period` which would make **8 days** on the cosmoshub.
+
+```tsx
+provider_unbonding_period = 21 // days
+max_time_without_vsc_packet = Math.round(provider_unbonding_period * 2/5) // days
+
+if (max_time_without_vsc_packet > (provider_unbonding_period / 2)) {
+	throw "max_time_without_vsc_packet must be higher than half ot the provider unbonding period"
+}
+```
+
+## Consequences
+
+The consumer chain can’t live if it’s hasn’t received an VSC packet in less than half the `provider_unbonding_period`  . That ensures the provider chain the valset on the consumer chain is up-to-date about the unbonding system and no longer requires to wait for VSC Matured Packet to allow unbonding.
+
+### Positive
+
+- Code is much simpler.
+- Unbonding is still possible if the consumer chain or IBC channel is down.
+
+### Negative
+
+- Chain could stop in case of issues on the relayers
+
+### Neutral
+
+## References
+
+- [ICS SPECS - completion-of-unbonding-operations](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#completion-of-unbonding-operations)

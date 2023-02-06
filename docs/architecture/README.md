@@ -28,3 +28,4 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 | ADR \# | Description | Status |
 | ------ | ----------- | ------ |
 | [001](./adr-001-key-assignment.md) | Consumer chain key assignment | Accepted, Implemented |
+| [004](./adr-004-consumer-expiration.md) | Consumer chain expiration | Proposed |
