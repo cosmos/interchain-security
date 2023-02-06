@@ -601,3 +601,11 @@ func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRe
 	err = k.StopConsumerChain(ctx, p.ChainId, true)
 	return
 }
+
+// HandleEquivocationProposal handles an equivocation proposal.
+func (k Keeper) HandleEquivocationProposal(ctx sdk.Context, p *types.EquivocationProposal) error {
+	for _, ev := range p.Equivocations {
+		k.evidenceKeeper.HandleEquivocationEvidence(ctx, ev)
+	}
+	return nil
+}
