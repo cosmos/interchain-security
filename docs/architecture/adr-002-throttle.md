@@ -128,7 +128,7 @@ Note also that 4 replenishment period is a worst case scenario that depends on w
 
 ### Negative
 
-* Throttling introduces a vector for a malicious consumer chain to halt the provider, see issue below. However, this is sacrificing liveness in a very edge case scenario for the sake of security.
+* Throttling introduces a vector for a malicious consumer chain to halt the provider, see issue below. However, this is sacrificing liveness in a edge case scenario for the sake of security.
 
 ### Neutral
 
@@ -139,3 +139,4 @@ Note also that 4 replenishment period is a worst case scenario that depends on w
 
 * [Original issue inspiring throttling feature](https://github.com/cosmos/interchain-security/issues/404)
 * [Issue on DOS vector](https://github.com/cosmos/interchain-security/issues/594)
+* [Consideration of another attack vector](https://github.com/cosmos/interchain-security/issues/685)
