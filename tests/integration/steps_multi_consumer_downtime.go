@@ -1,6 +1,9 @@
 package main
 
 // stepsDowntime tests validator jailing and slashing.
+// No slashing should occur for downtime slash initiated from the consumer chain
+// validators will simply be jailed in those cases
+// If an infraction is committed on the provider chain then the validator will be slashed
 func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
@@ -127,8 +130,8 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						// 1% of bob's stake should be slashed as set in config.go
-						validatorID("bob"):   495,
+						// bob's stake should not be slashed since slash comes from consumer1
+						validatorID("bob"):   500,
 						validatorID("carol"): 501,
 					},
 				},
@@ -161,14 +164,14 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 501,
 					},
 				},
 				chainID(consumer1): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495, // bob was slashed and changes relayed to consumer1
+						validatorID("bob"):   500, // change has arrived to consumer1 (no slashing)
 						validatorID("carol"): 501,
 					},
 				},
@@ -192,21 +195,21 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 501,
 					},
 				},
 				chainID(consumer1): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495, // bob was slashed and changes relayed to consumer1
+						validatorID("bob"):   500, // change has arrived to consumer1 (no slashing)
 						validatorID("carol"): 501,
 					},
 				},
 				chainID(consumer2): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495, // change has arrived to consumer2
+						validatorID("bob"):   500, // change has arrived to consumer2 (no slashing)
 						validatorID("carol"): 501,
 					},
 				},
@@ -216,6 +219,7 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 }
 
 // stepsMultiConsumerDowntimeFromProvider tests validator jailing and slashing.
+// When the infraction is committed on the provider chain then the validator will be slashed
 func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step {
 	return []Step{
 		// Now we test provider initiated downtime/slashing
@@ -229,21 +233,21 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 					ValPowers: &map[validatorID]uint{
 						// Non faulty validators still maintain just above 2/3 power here
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 0,
 					},
 				},
 				chainID(consumer1): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 501,
 					},
 				},
 				chainID(consumer2): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 501,
 					},
 				},
@@ -260,7 +264,7 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 					ValPowers: &map[validatorID]uint{
 						// Non faulty validators still maintain just above 2/3 power here
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 0,
 					},
 				},
@@ -268,7 +272,7 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 				chainID(consumer1): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 0,
 					},
 				},
@@ -276,7 +280,7 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 				chainID(consumer2): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 501,
 					},
 				},
@@ -293,14 +297,14 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 					ValPowers: &map[validatorID]uint{
 						// Non faulty validators still maintain just above 2/3 power here
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 0,
 					},
 				},
 				chainID(consumer1): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 0,
 					},
 				},
@@ -308,7 +312,7 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 				chainID(consumer2): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 0,
 					},
 				},
@@ -323,21 +327,21 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
-						validatorID("carol"): 495,
+						validatorID("bob"):   500,
+						validatorID("carol"): 495, // slashed because infraction was commited on provider
 					},
 				},
 				chainID(consumer1): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 0,
 					},
 				},
 				chainID(consumer2): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 0,
 					},
 				},
@@ -353,14 +357,14 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 495,
 					},
 				},
 				chainID(consumer1): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 495,
 					},
 				},
@@ -368,7 +372,7 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 				chainID(consumer2): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 0,
 					},
 				},
@@ -384,21 +388,21 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 495,
 					},
 				},
 				chainID(consumer1): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 495,
 					},
 				},
 				chainID(consumer2): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 495,
 					},
 				},

@@ -10,7 +10,6 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
 
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
@@ -21,179 +20,224 @@ import (
 	"github.com/tendermint/tendermint/crypto/ed25519"
 )
 
-const (
-	downtimeTestCase = iota
-	doubleSignTestCase
-)
-
-// TestRelayAndApplySlashPacket tests that slash packets can be properly relayed
-// from consumer to provider, handled by provider, with a VSC and jailing/tombstoning
+// TestRelayAndApplySlashPacket tests that downtime slash packets can be properly relayed
+// from consumer to provider, handled by provider, with a VSC and jailing
 // eventually effective on consumer and provider.
 //
 // Note: This method does not test the actual slash packet sending logic for downtime
 // and double-signing, see TestValidatorDowntime and TestValidatorDoubleSigning for
 // those types of tests.
-func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
+func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 
-	testCases := []int{
-		downtimeTestCase,
-		doubleSignTestCase,
+	// Setup CCV channel for all instantiated consumers
+	s.SetupAllCCVChannels()
+
+	validatorsPerChain := len(s.consumerChain.Vals.Validators)
+
+	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	firstConsumerKeeper := s.getFirstBundle().GetKeeper()
+
+	// pick first consumer validator
+	tmVal := s.consumerChain.Vals.Validators[0]
+	val, err := tmVal.ToProto()
+	s.Require().NoError(err)
+	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
+	s.Require().Nil(err)
+	consumerConsAddr := sdk.GetConsAddress(pubkey)
+	// map consumer consensus address to provider consensus address
+	providerConsAddr, found := providerKeeper.GetValidatorByConsumerAddr(
+		s.providerCtx(),
+		s.consumerChain.ChainID,
+		consumerConsAddr,
+	)
+	s.Require().True(found)
+
+	stakingVal, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr)
+	s.Require().True(found)
+	valOldBalance := stakingVal.Tokens
+
+	// Setup first val with mapped consensus addresss to be jailed on provider by setting signing info
+	// convert validator to TM type
+	pk, err := stakingVal.ConsPubKey()
+	s.Require().NoError(err)
+	tmPk, err := cryptocodec.ToTmPubKeyInterface(pk)
+	s.Require().NoError(err)
+	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
+
+	// Send slash packet from the first consumer chain
+	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Downtime, 1)
+	err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
+	s.Require().NoError(err)
+
+	// Set outstanding slashing flag for first consumer, it's important to use the consumer's cons addr here
+	firstConsumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consumerConsAddr)
+
+	// Note: RecvPacket advances two blocks. Let's say the provider is currently at height N.
+	// The received slash packet will be queued during N, and handled by the ccv module during
+	// the endblocker of N. The staking module will then register a validator update from that
+	// packet during the endblocker of N+1 (note that staking endblocker runs before ccv endblocker,
+	// hence why the VSC is registered on N+1). Then the ccv module sends VSC packets to each consumer
+	// during the endblocker of N+1. The new validator set will be committed to in block N+2,
+	// and will be in effect for the provider during block N+3.
+
+	valsetUpdateIdN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
+
+	// receive the slash packet on the provider chain. RecvPacket() calls the provider endblocker twice
+	err = s.path.EndpointB.RecvPacket(packet)
+	s.Require().NoError(err)
+
+	// We've now advanced two blocks.
+
+	// VSC packets should have been sent from provider during block N+1 to each consumer
+	expectedSentValsetUpdateId := valsetUpdateIdN + 1
+	for _, bundle := range s.consumerBundles {
+		_, found := providerKeeper.GetVscSendTimestamp(s.providerCtx(),
+			bundle.Chain.ChainID, expectedSentValsetUpdateId)
+		s.Require().True(found)
 	}
 
-	for _, tc := range testCases {
+	// Confirm the valset update Id was incremented twice on provider,
+	// since two endblockers have passed.
+	s.Require().Equal(valsetUpdateIdN+2,
+		providerKeeper.GetValidatorSetUpdateId(s.providerCtx()))
 
-		// Reset test state
-		s.SetupTest()
+	// Call next block so provider is now on block N + 3 mentioned above
+	s.providerChain.NextBlock()
 
-		// Setup CCV channel for all instantiated consumers
-		s.SetupAllCCVChannels()
+	// check that the validator was removed from the provider validator set by N + 3
+	s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
 
-		validatorsPerChain := len(s.consumerChain.Vals.Validators)
+	for _, bundle := range s.consumerBundles {
+		// Relay VSC packets from provider to each consumer
+		relayAllCommittedPackets(s, s.providerChain, bundle.Path,
+			ccv.ProviderPortID, bundle.Path.EndpointB.ChannelID, 1)
 
-		providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
-		providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
-		providerKeeper := s.providerApp.GetProviderKeeper()
-		firstConsumerKeeper := s.getFirstBundle().GetKeeper()
+		// check that each consumer updated its VSC ID for the subsequent block
+		consumerKeeper := bundle.GetKeeper()
+		ctx := bundle.GetCtx()
+		actualValsetUpdateID := consumerKeeper.GetHeightValsetUpdateID(
+			ctx, uint64(ctx.BlockHeight())+1)
+		s.Require().Equal(expectedSentValsetUpdateId, actualValsetUpdateID)
 
-		// pick first consumer validator
-		tmVal := s.consumerChain.Vals.Validators[0]
-		val, err := tmVal.ToProto()
-		s.Require().NoError(err)
-		pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
-		s.Require().Nil(err)
-		consAddr := sdk.GetConsAddress(pubkey)
-		// map consumer consensus address to provider consensus address
-		if providerAddr, found := providerKeeper.GetValidatorByConsumerAddr(
-			s.providerCtx(),
-			s.consumerChain.ChainID,
-			consAddr,
-		); found {
-			consAddr = providerAddr
-		}
-
-		valData, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
-		s.Require().True(found)
-		valOldBalance := valData.Tokens
-
-		// Setup first val with mapped consensus addresss to be jailed on provider by setting signing info
-		// convert validator to TM type
-		pk, err := valData.ConsPubKey()
-		s.Require().NoError(err)
-		tmPk, err := cryptocodec.ToTmPubKeyInterface(pk)
-		s.Require().NoError(err)
-		s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, valData.ConsensusPower(sdk.DefaultPowerReduction)))
-
-		// Construct packet depending on the test case
-		var infractionType stakingtypes.InfractionType
-		if tc == downtimeTestCase {
-			infractionType = stakingtypes.Downtime
-		} else if tc == doubleSignTestCase {
-			infractionType = stakingtypes.DoubleSign
-		}
-
-		// Send slash packet from the first consumer chain
-		packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, infractionType, 1)
-		err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
-		s.Require().NoError(err)
-
-		if tc == downtimeTestCase {
-			// Set outstanding slashing flag for first consumer if testing a downtime slash packet
-			firstConsumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consAddr)
-		}
-
-		// Note: RecvPacket advances two blocks. Let's say the provider is currently at height N.
-		// The received slash packet will be queued during N, and handled by the ccv module during
-		// the endblocker of N. The staking module will then register a validator update from that
-		// packet during the endblocker of N+1 (note that staking endblocker runs before ccv endblocker,
-		// hence why the VSC is registered on N+1). Then the ccv module sends VSC packets to each consumer
-		// during the endblocker of N+1. The new validator set will be committed to in block N+2,
-		// and will be in effect for the provider during block N+3.
-
-		valsetUpdateIdN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
-
-		// receive the downtime packet on the provider chain.
-		// RecvPacket() calls the provider endblocker twice
-		err = s.path.EndpointB.RecvPacket(packet)
-		s.Require().NoError(err)
-
-		// We've now advanced two blocks.
-
-		// VSC packets should have been sent from provider during block N+1 to each consumer
-		expectedSentValsetUpdateId := valsetUpdateIdN + 1
-		for _, bundle := range s.consumerBundles {
-			_, found := providerKeeper.GetVscSendTimestamp(s.providerCtx(),
-				bundle.Chain.ChainID, expectedSentValsetUpdateId)
-			s.Require().True(found)
-		}
-
-		// Confirm the valset update Id was incremented twice on provider,
-		// since two endblockers have passed.
-		s.Require().Equal(valsetUpdateIdN+2,
-			providerKeeper.GetValidatorSetUpdateId(s.providerCtx()))
-
-		// Call next block so provider is now on block N + 3 mentioned above
-		s.providerChain.NextBlock()
-
-		// check that the validator was removed from the provider validator set by N + 3
-		s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
-
-		for _, bundle := range s.consumerBundles {
-			// Relay VSC packets from provider to each consumer
-			relayAllCommittedPackets(s, s.providerChain, bundle.Path,
-				ccv.ProviderPortID, bundle.Path.EndpointB.ChannelID, 1)
-
-			// check that each consumer updated its VSC ID for the subsequent block
-			consumerKeeper := bundle.GetKeeper()
-			ctx := bundle.GetCtx()
-			actualValsetUpdateID := consumerKeeper.GetHeightValsetUpdateID(
-				ctx, uint64(ctx.BlockHeight())+1)
-			s.Require().Equal(expectedSentValsetUpdateId, actualValsetUpdateID)
-
-			// check that slashed validator was removed from each consumer validator set
-			s.Require().Len(bundle.Chain.Vals.Validators, validatorsPerChain-1)
-		}
-
-		// check that the validator is successfully jailed on provider
-		validatorJailed, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
-		s.Require().True(ok)
-		s.Require().True(validatorJailed.Jailed)
-		s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
-
-		// check that the slashed validator's tokens were indeed slashed on provider
-		var slashFraction sdk.Dec
-		if tc == downtimeTestCase {
-			slashFraction = providerSlashingKeeper.SlashFractionDowntime(s.providerCtx())
-
-		} else if tc == doubleSignTestCase {
-			slashFraction = providerSlashingKeeper.SlashFractionDoubleSign(s.providerCtx())
-		}
-		slashedAmount := slashFraction.Mul(valOldBalance.ToDec())
-
-		resultingTokens := valOldBalance.Sub(slashedAmount.TruncateInt())
-		s.Require().Equal(resultingTokens, validatorJailed.GetTokens())
-
-		// check that the validator's unjailing time is updated on provider
-		valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), consAddr)
-		s.Require().True(found)
-		s.Require().True(valSignInfo.JailedUntil.After(s.providerCtx().BlockHeader().Time))
-
-		if tc == downtimeTestCase {
-			// check that the outstanding slashing flag is reset on first consumer,
-			// since that consumer originally sent the slash packet
-			pFlag := firstConsumerKeeper.OutstandingDowntime(s.consumerCtx(), consAddr)
-			s.Require().False(pFlag)
-
-			// check that slashing packet gets acknowledged successfully
-			ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-			err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
-			s.Require().NoError(err)
-
-		} else if tc == doubleSignTestCase {
-			// check that validator was tombstoned on provider
-			s.Require().True(valSignInfo.Tombstoned)
-			s.Require().True(valSignInfo.JailedUntil.Equal(evidencetypes.DoubleSignJailEndTime))
-		}
+		// check that jailed validator was removed from each consumer validator set
+		s.Require().Len(bundle.Chain.Vals.Validators, validatorsPerChain-1)
 	}
+
+	// Get staking keeper's validator obj after the relayed slash packet
+	stakingValAfter, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr)
+	s.Require().True(ok)
+
+	// check that the validator's tokens were NOT slashed on provider
+	valNewBalance := stakingValAfter.GetTokens()
+	s.Require().Equal(valOldBalance, valNewBalance)
+
+	// Get signing info for the validator
+	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), providerConsAddr)
+	s.Require().True(found)
+
+	// check that the validator is successfully jailed on provider
+	s.Require().True(stakingValAfter.Jailed)
+	s.Require().Equal(stakingValAfter.Status, stakingtypes.Unbonding)
+
+	// check that the validator's unjailing time is updated on provider
+	s.Require().True(valSignInfo.JailedUntil.After(s.providerCtx().BlockHeader().Time))
+
+	// check that the outstanding slashing flag is reset on first consumer,
+	// since that consumer originally sent the slash packet.
+	// It's important to use the consumer's cons addr here.
+	pFlag := firstConsumerKeeper.OutstandingDowntime(s.consumerCtx(), consumerConsAddr)
+	s.Require().False(pFlag)
+
+	// check that slashing packet gets acknowledged successfully
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
+	s.Require().NoError(err)
+}
+
+// Similar setup to TestRelayAndApplyDowntimePacket, but with a double sign slash packet.
+// Note that double-sign slash packets should not affect the provider validator set.
+func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
+
+	// Setup CCV channel for all instantiated consumers
+	s.SetupAllCCVChannels()
+
+	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
+
+	validatorsPerChain := len(s.consumerChain.Vals.Validators)
+
+	// pick first consumer validator
+	tmVal := s.consumerChain.Vals.Validators[0]
+	val, err := tmVal.ToProto()
+	s.Require().NoError(err)
+	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
+	s.Require().Nil(err)
+	consumerConsAddr := sdk.GetConsAddress(pubkey)
+	// map consumer consensus address to provider consensus address
+	providerConsAddr, found := providerKeeper.GetValidatorByConsumerAddr(
+		s.providerCtx(),
+		s.consumerChain.ChainID,
+		consumerConsAddr)
+	s.Require().True(found)
+
+	stakingVal, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr)
+	s.Require().True(found)
+	valOldBalance := stakingVal.Tokens
+
+	// Setup first val with mapped consensus addresss to be jailed on provider by setting signing info
+	// convert validator to TM type
+	pk, err := stakingVal.ConsPubKey()
+	s.Require().NoError(err)
+	tmPk, err := cryptocodec.ToTmPubKeyInterface(pk)
+	s.Require().NoError(err)
+	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
+
+	// Send slash packet from the first consumer chain
+	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.DoubleSign, 1)
+	err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
+	s.Require().NoError(err)
+
+	// receive the slash packet on the provider chain. RecvPacket() advances two blocks
+	err = s.path.EndpointB.RecvPacket(packet)
+	s.Require().NoError(err)
+
+	// Advance a few more blocks to make sure any voting power changes would be reflected
+	s.providerChain.NextBlock()
+	s.providerChain.NextBlock()
+	s.providerChain.NextBlock()
+
+	// Confirm validator was NOT removed from provider validator set
+	s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain)
+
+	// Get staking keeper's validator obj after the relayed slash packet
+	stakingValAfter, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr)
+	s.Require().True(ok)
+
+	// check that the validator's tokens were NOT slashed on provider
+	valNewBalance := stakingValAfter.GetTokens()
+	s.Require().Equal(valOldBalance, valNewBalance)
+
+	// Get signing info for the validator
+	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), providerConsAddr)
+	s.Require().True(found)
+
+	// check that the validator's unjailing time is NOT updated on provider
+	s.Require().Zero(valSignInfo.JailedUntil)
+
+	// check that the validator is not jailed and still bonded on provider
+	s.Require().False(stakingValAfter.Jailed)
+	s.Require().Equal(stakingValAfter.Status, stakingtypes.Bonded)
+
+	// check that validator was NOT tombstoned on provider
+	s.Require().False(valSignInfo.Tombstoned)
+
+	// check that slashing packet gets acknowledged successfully
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
+	s.Require().NoError(err)
 }
 
 func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
@@ -217,8 +261,9 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	s.Require().Error(err)
 }
 
-// TestHandleSlashPacketDoubleSigning tests the handling of a double-signing related slash packet, with e2e tests
-func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
+// TestHandleSlashPacketDowntime tests the handling of a downtime related slash packet, with e2e tests.
+// Note that only downtime slash packets are processed by HandleSlashPacket.
+func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
 	providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
@@ -245,7 +290,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 		*ccv.NewSlashPacketData(
 			abci.Validator{Address: tmVal.Address, Power: 0},
 			uint64(0),
-			stakingtypes.DoubleSign,
+			stakingtypes.Downtime,
 		),
 	)
 
@@ -253,8 +298,8 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 	suite.Require().True(providerStakingKeeper.IsValidatorJailed(suite.providerCtx(), consAddr))
 
 	signingInfo, _ := providerSlashingKeeper.GetValidatorSigningInfo(suite.providerCtx(), consAddr)
-	suite.Require().True(signingInfo.JailedUntil.Equal(evidencetypes.DoubleSignJailEndTime))
-	suite.Require().True(signingInfo.Tombstoned)
+	jailDuration := providerSlashingKeeper.DowntimeJailDuration(suite.providerCtx())
+	suite.Require().Equal(suite.providerCtx().BlockTime().Add(jailDuration), signingInfo.JailedUntil)
 }
 
 // TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an e2e testing setting
@@ -366,355 +411,11 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	suite.Require().Equal(uint64(0), (providerKeeper.GetThrottledPacketDataSize(ctx, consumerChainID)))
 
 	// expect to queue entries for the slash request
-	slashingPkt.Infraction = stakingtypes.DoubleSign
+	slashingPkt.Infraction = stakingtypes.Downtime
 	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
 	suite.Require().True(ack.Success())
 	suite.Require().Equal(1, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
 	suite.Require().Equal(uint64(1), (providerKeeper.GetThrottledPacketDataSize(ctx, consumerChainID)))
-}
-
-// TestSlashUndelegation tests the slashing of an undelegation balance in various scenarios
-func (suite *CCVTestSuite) TestSlashUndelegation() {
-	valIndex := 0
-	bondAmt := sdk.NewInt(10000000)
-	halfBondAmt := bondAmt.Quo(sdk.NewInt(2))
-	slashFactor := suite.providerApp.GetE2eSlashingKeeper().SlashFractionDowntime(suite.providerCtx())
-	slashAmountDec := slashFactor.MulInt(halfBondAmt)
-	slashAmount := slashAmountDec.TruncateInt()
-
-	var powerBeforeDelegate int64
-	var powerBeforeUndelegate int64
-	var powerAfterUndelegate int64
-	var delegateConsumerHeight uint64
-	var undelegateConsumerHeight uint64
-
-	consumerUnbondingPeriod := suite.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(suite.consumerCtx())
-	providerUnbondingPeriod := suite.providerApp.GetE2eStakingKeeper().UnbondingTime(suite.providerCtx())
-
-	testCases := []struct {
-		name             string
-		slash            func(consAddr sdk.ConsAddress)
-		expSlashOccurred bool
-	}{
-		// infraction - delegate - undelegate - slash - mature consumer - mature provider
-		// TODO: this behavior is unexpected
-		// - neither the delegation nor undelegation should be slashed
-		{
-			"infraction before delegate, detected before maturity on consumer",
-			func(consAddr sdk.ConsAddress) {
-				// increment time by half of consumer unbonding period
-				// for the undelegation to not reach maturity yet
-				incrementTime(suite, consumerUnbondingPeriod/2)
-
-				// slash
-				suite.consumerApp.GetConsumerKeeper().Slash(
-					suite.consumerCtx(),
-					consAddr,
-					int64(delegateConsumerHeight)-1,
-					powerBeforeDelegate,
-					sdk.ZeroDec(),
-					stakingtypes.Downtime,
-				)
-
-				// increment time so that the unbonding period ends on the consumer
-				incrementTime(suite, consumerUnbondingPeriod)
-
-				// relay all packets from consumer to provider
-				relayAllCommittedPackets(
-					suite,
-					suite.consumerChain,
-					suite.path,
-					ccv.ConsumerPortID,
-					suite.path.EndpointA.ChannelID,
-					3, // 2 VSCMaturedPackets and 1 SlashPacket
-				)
-			},
-			true, // TODO: this should be false!
-		},
-		// delegate - infraction - undelegate - slash - mature consumer - mature provider
-		// slash
-		{
-			"infraction after delegate, before undelegate, detected before maturity on consumer",
-			func(consAddr sdk.ConsAddress) {
-				// increment time by half of consumer unbonding period
-				// for the undelegation to not reach maturity yet
-				incrementTime(suite, consumerUnbondingPeriod/2)
-
-				// slash
-				suite.consumerApp.GetConsumerKeeper().Slash(
-					suite.consumerCtx(),
-					consAddr,
-					int64(undelegateConsumerHeight)-1,
-					powerBeforeUndelegate,
-					sdk.ZeroDec(),
-					stakingtypes.Downtime,
-				)
-
-				// increment time so that the unbonding period ends on the consumer
-				incrementTime(suite, consumerUnbondingPeriod)
-
-				// relay all packets from consumer to provider
-				relayAllCommittedPackets(
-					suite,
-					suite.consumerChain,
-					suite.path,
-					ccv.ConsumerPortID,
-					suite.path.EndpointA.ChannelID,
-					3, // 2 VSCMaturedPackets and 1 SlashPacket
-				)
-			},
-			// infraction before undelegate; slash successful
-			true,
-		},
-		// delegate - undelegate - infraction - slash - mature consumer - mature provider
-		// no slash
-		{
-			"infraction after undelegate, detected before maturity on consumer",
-			func(consAddr sdk.ConsAddress) {
-				// increment time by half of consumer unbonding period
-				// for the undelegation to not reach maturity yet
-				incrementTime(suite, consumerUnbondingPeriod/2)
-
-				// slash
-				suite.consumerApp.GetConsumerKeeper().Slash(
-					suite.consumerCtx(),
-					consAddr,
-					int64(undelegateConsumerHeight)+1,
-					powerAfterUndelegate,
-					sdk.ZeroDec(),
-					stakingtypes.Downtime,
-				)
-
-				// increment time so that the unbonding period ends on the consumer
-				incrementTime(suite, consumerUnbondingPeriod)
-
-				// relay all packets from consumer to provider
-				relayAllCommittedPackets(
-					suite,
-					suite.consumerChain,
-					suite.path,
-					ccv.ConsumerPortID,
-					suite.path.EndpointA.ChannelID,
-					3,
-				)
-			},
-			// undelegation occurred before infraction, thus it is not slashed
-			false,
-		},
-		// delegate - infraction - undelegate - mature consumer - slash - mature provider
-		// slash
-		{
-			"infraction before undelegate, detected after maturity on consumer, before maturity on provider",
-			func(consAddr sdk.ConsAddress) {
-				// increment time so that the unbonding period ends on the consumer
-				incrementTime(suite, consumerUnbondingPeriod+time.Hour)
-
-				// relay all packets from consumer to provider
-				relayAllCommittedPackets(
-					suite,
-					suite.consumerChain,
-					suite.path,
-					ccv.ConsumerPortID,
-					suite.path.EndpointA.ChannelID,
-					2,
-				)
-
-				// slash
-				suite.consumerApp.GetConsumerKeeper().Slash(
-					suite.consumerCtx(),
-					consAddr,
-					int64(undelegateConsumerHeight)-1,
-					powerBeforeUndelegate,
-					sdk.ZeroDec(),
-					stakingtypes.Downtime,
-				)
-
-				// commit state on consumer
-				suite.coordinator.CommitBlock(suite.consumerChain)
-
-				// relay all packets from consumer to provider
-				relayAllCommittedPackets(
-					suite,
-					suite.consumerChain,
-					suite.path,
-					ccv.ConsumerPortID,
-					suite.path.EndpointA.ChannelID,
-					1,
-				)
-			},
-			// the undelegation was only matured on the consumer,
-			// thus the slash was successful
-			true,
-		},
-		// delegate - infraction - undelegate - mature consumer - mature provider - slash
-		// no slash
-		{
-			"infraction before undelegate, detected after maturity on both chain",
-			func(consAddr sdk.ConsAddress) {
-				// increment time so that the unbonding period ends on the consumer
-				incrementTime(suite, consumerUnbondingPeriod+time.Hour)
-
-				// relay all packets from consumer to provider
-				relayAllCommittedPackets(
-					suite,
-					suite.consumerChain,
-					suite.path,
-					ccv.ConsumerPortID,
-					suite.path.EndpointA.ChannelID,
-					2,
-				)
-
-				// increment time so that the unbonding period ends on the provider
-				incrementTime(suite, providerUnbondingPeriod)
-
-				// slash
-				suite.consumerApp.GetConsumerKeeper().Slash(
-					suite.consumerCtx(),
-					consAddr,
-					int64(undelegateConsumerHeight)-1,
-					powerBeforeUndelegate,
-					sdk.ZeroDec(),
-					stakingtypes.Downtime,
-				)
-
-				// commit state on consumer
-				suite.coordinator.CommitBlock(suite.consumerChain)
-
-				// relay all packets from consumer to provider
-				relayAllCommittedPackets(
-					suite,
-					suite.consumerChain,
-					suite.path,
-					ccv.ConsumerPortID,
-					suite.path.EndpointA.ChannelID,
-					1,
-				)
-			},
-			// the undelegation is already matured, thus it is not slashed
-			false,
-		},
-	}
-
-	for i, tc := range testCases {
-		providerKeeper := suite.providerApp.GetProviderKeeper()
-		providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
-		providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
-
-		suite.SetupCCVChannel(suite.path)
-
-		// get the power before delegate
-		validator, _ := suite.getValByIdx(valIndex)
-		powerBeforeDelegate = validator.GetConsensusPower(sdk.DefaultPowerReduction)
-
-		// delegate some tokens
-		delAddr := suite.providerChain.SenderAccount.GetAddress()
-		initBalance, shares, valAddr := delegateByIdx(suite, delAddr, bondAmt, valIndex)
-
-		// commit state on provider
-		suite.coordinator.CommitBlock(suite.providerChain)
-
-		// relay VSCPacket w/ delegation from provider to consumer
-		relayAllCommittedPackets(
-			suite,
-			suite.providerChain,
-			suite.path,
-			ccv.ProviderPortID,
-			suite.path.EndpointB.ChannelID,
-			1,
-			"test: "+tc.name,
-		)
-
-		// get the height when the consumer "applied" the delegation
-		delegateConsumerHeight = suite.getHeightOfVSCPacketRecv(suite.getFirstBundle(), 1, 0, "delegateConsumerHeight, test: "+tc.name)
-
-		// get the power before undelegate
-		validator = suite.getVal(suite.providerCtx(), valAddr)
-		powerBeforeUndelegate = validator.GetConsensusPower(sdk.DefaultPowerReduction)
-		expectedPowerDelegated := (bondAmt.Quo(sdk.DefaultPowerReduction)).Int64()
-		suite.Require().Equal(
-			powerBeforeDelegate+expectedPowerDelegated,
-			powerBeforeUndelegate,
-			"unexpected power after delegation; test: "+tc.name,
-		)
-
-		// undelegate half of the delegated shares
-		vscID := undelegate(suite, delAddr, valAddr, shares.QuoInt64(2))
-		// - check that staking unbonding op was created and onHold is true
-		checkStakingUnbondingOps(suite, 1, true, true, "test: "+tc.name)
-		// - check that CCV unbonding op was created
-		checkCCVUnbondingOp(suite, suite.providerCtx(), suite.consumerChain.ChainID, vscID, true, "test: "+tc.name)
-		// - check undelegation entry balance
-		ubd, found := providerStakingKeeper.GetUnbondingDelegation(suite.providerCtx(), delAddr, valAddr)
-		suite.Require().True(found)
-		suite.Require().True(ubd.Entries[0].Balance.Equal(bondAmt.Quo(sdk.NewInt(2))))
-
-		// commit state on provider
-		suite.coordinator.CommitBlock(suite.providerChain)
-
-		// get the power after undelegate
-		validator = suite.getVal(suite.providerCtx(), valAddr)
-		powerAfterUndelegate = validator.GetConsensusPower(sdk.DefaultPowerReduction)
-		expectedPowerDelegated = (bondAmt.Quo(sdk.DefaultPowerReduction).Quo(sdk.NewInt(2))).Int64()
-		suite.Require().Equal(
-			powerBeforeDelegate+expectedPowerDelegated,
-			powerAfterUndelegate,
-			"unexpected power after undelegation; test: "+tc.name,
-		)
-
-		// relay VSCPacket w/ undelegation from provider to consumer
-		relayAllCommittedPackets(
-			suite,
-			suite.providerChain,
-			suite.path,
-			ccv.ProviderPortID,
-			suite.path.EndpointB.ChannelID,
-			1,
-			"test: "+tc.name,
-		)
-
-		// get the height when the consumer "applied" the undelegation
-		undelegateConsumerHeight = suite.getHeightOfVSCPacketRecv(suite.getFirstBundle(), 2, 1, "undelegateConsumerHeight; test: "+tc.name)
-
-		// create validator signing info to test slashing
-		valConsAddr, err := validator.GetConsAddr()
-		suite.Require().NoError(err, "test: "+tc.name)
-		providerSlashingKeeper.SetValidatorSigningInfo(
-			suite.providerChain.GetContext(),
-			valConsAddr,
-			slashingtypes.ValidatorSigningInfo{Address: valConsAddr.String()},
-		)
-
-		// slash validator on consumer chain
-		consumerKey, found := providerKeeper.GetValidatorConsumerPubKey(suite.providerCtx(), suite.consumerChain.ChainID, valConsAddr)
-		suite.Require().True(found)
-		consumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
-		suite.Require().NoError(err)
-		tc.slash(consumerAddr)
-
-		// increment time so that the unbonding period ends on the provider
-		incrementTime(suite, providerUnbondingPeriod)
-
-		var expectedBalance sdk.Int
-		var errMsg string
-		if tc.expSlashOccurred {
-			expectedBalance = initBalance.Sub(halfBondAmt).Sub(slashAmount)
-			errMsg = "delegator should have been slashed"
-		} else {
-			expectedBalance = initBalance.Sub(halfBondAmt)
-			errMsg = "delegator should not have been slashed"
-		}
-		suite.Require().Equal(
-			expectedBalance,
-			getBalance(suite, suite.providerCtx(), delAddr),
-			errMsg,
-		)
-
-		if i+1 < len(testCases) {
-			// reset suite to reset provider client
-			suite.SetupTest()
-		}
-	}
-
 }
 
 // TestValidatorDowntime tests if a slash packet is sent

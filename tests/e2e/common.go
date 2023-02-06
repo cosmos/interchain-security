@@ -611,38 +611,3 @@ func (s *CCVTestSuite) setupValidatorPowers() {
 	}
 	s.Require().Equal(int64(4000), stakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
 }
-
-// getHeightOfVSCPacketRecv returns the height of when the consumer received a VSCPacket.
-// If expectedMaturityTimesLen > 0, then it's expected to find expectedMaturityTimesLen
-// maturity times (i.e., VSCPakcets not yet matured). The vscID of the VSCPacket is retrieved
-// from the maturity time with maturityTimesIndex.
-func (s *CCVTestSuite) getHeightOfVSCPacketRecv(
-	bundle icstestingutils.ConsumerBundle,
-	expectedMaturityTimesLen int,
-	maturityTimesIndex int,
-	msgAndArgs ...interface{},
-) (height uint64) {
-	maturityTimes := bundle.GetKeeper().GetAllPacketMaturityTimes(bundle.GetCtx())
-	if expectedMaturityTimesLen > 0 {
-		s.Require().Len(
-			maturityTimes,
-			expectedMaturityTimesLen,
-			fmt.Sprintf("unexpected number of maturity times; %s", msgAndArgs...),
-		)
-	}
-	vscID := maturityTimes[maturityTimesIndex].VscId
-	hToVSCids := bundle.GetKeeper().GetAllHeightToValsetUpdateIDs(bundle.GetCtx())
-	found := false
-	for _, hToVSCid := range hToVSCids {
-		if hToVSCid.ValsetUpdateId == vscID {
-			height = hToVSCid.Height
-			found = true
-			break
-		}
-	}
-	s.Require().True(
-		found,
-		fmt.Sprintf("cannot find height mapped to vscID; %s", msgAndArgs...),
-	)
-	return
-}

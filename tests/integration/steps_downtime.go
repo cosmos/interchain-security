@@ -8,6 +8,10 @@ import "time"
 // only one consumer initiated slash is implemented. Throttling is also
 // psuedo-disabled in this test by setting the slash meter replenish
 // fraction to 1.0 in the config file.
+//
+// No slashing should occur for downtime slash initiated from the consumer chain
+// validators will simply be jailed in those cases
+// If an infraction is committed on the provider chain then the validator will be slashed
 func stepsDowntime(consumerName string) []Step {
 	return []Step{
 		{
@@ -85,8 +89,9 @@ func stepsDowntime(consumerName string) []Step {
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						// 1% of bob's stake should be slashed as set in config.go
-						validatorID("bob"):   495,
+						// bob's stake should not be slashed
+						// since the slash was initiated from consumer
+						validatorID("bob"):   500,
 						validatorID("carol"): 501,
 					},
 				},
@@ -109,7 +114,9 @@ func stepsDowntime(consumerName string) []Step {
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						// bob's stake should not be slashed
+						// since the slash was initiated from consumer
+						validatorID("bob"):   500,
 						validatorID("carol"): 501,
 					},
 				},
@@ -126,14 +133,16 @@ func stepsDowntime(consumerName string) []Step {
 					ValPowers: &map[validatorID]uint{
 						// Non faulty validators still maintain just above 2/3 power here
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
+						// Carol's stake should be slashed and jailed
+						// downtime slash was initiated from provider
 						validatorID("carol"): 0,
 					},
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 501,
 					},
 				},
@@ -149,7 +158,7 @@ func stepsDowntime(consumerName string) []Step {
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 0,
 					},
 				},
@@ -164,14 +173,14 @@ func stepsDowntime(consumerName string) []Step {
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 495,
 					},
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 0,
 					},
 				},
@@ -187,7 +196,7 @@ func stepsDowntime(consumerName string) []Step {
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 495,
 					},
 				},
@@ -200,6 +209,8 @@ func stepsDowntime(consumerName string) []Step {
 }
 
 // stepsThrottledDowntime creates two consumer initiated downtime slash events and relays packets
+// No slashing should occur since the downtime slash was initiated from the consumer chain
+// Validators will simply be jailed
 func stepsThrottledDowntime(consumerName string) []Step {
 	return []Step{
 		{

@@ -9,6 +9,7 @@ import (
 
 	_go "github.com/confio/ics23/go"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/golang/mock/gomock"
@@ -998,4 +999,30 @@ func TestBeginBlockCCR(t *testing.T) {
 	found = providerKeeper.PendingConsumerRemovalPropExists(
 		ctx, invalidProp.ChainId, invalidProp.StopTime)
 	require.False(t, found)
+}
+
+func TestHandleEquivocationProposal(t *testing.T) {
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	keeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	equivocation1 := &evidencetypes.Equivocation{
+		Time:             time.Now(),
+		Height:           1,
+		Power:            1,
+		ConsensusAddress: "addr1",
+	}
+	equivocation2 := &evidencetypes.Equivocation{
+		Time:             time.Now(),
+		Height:           1,
+		Power:            1,
+		ConsensusAddress: "addr2",
+	}
+	prop := &providertypes.EquivocationProposal{
+		Equivocations: []*evidencetypes.Equivocation{equivocation1, equivocation2},
+	}
+	mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocation1)
+	mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocation2)
+
+	err := keeper.HandleEquivocationProposal(ctx, prop)
+
+	require.NoError(t, err)
 }
