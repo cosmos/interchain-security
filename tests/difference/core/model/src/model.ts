@@ -425,7 +425,7 @@ class CCVProvider {
 
     // Drop slash packets for double-sign infraction
     if ('isDowntime' in data && ! data.isDowntime) {
-      this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_REQUEST);
+      this.m.events.push(Event.RECEIVE_DOUBLE_SIGN_SLASH_REQUEST);
       return;
     }
 
