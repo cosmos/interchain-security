@@ -4,20 +4,21 @@ import (
 	"testing"
 	"time"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v4/modules/core/exported"
+	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
+	"github.com/cosmos/interchain-security/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	"github.com/golang/mock/gomock"
-
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/golang/mock/gomock"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmtypes "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -402,16 +403,25 @@ func TestHandleSlashPacket(t *testing.T) {
 
 	chainId := "consumer-id"
 	validVscID := uint64(234)
+	cid := crypto.NewCryptoIdentityFromIntSeed(78932)
+	providerConsAddr := cid.SDKValConsAddress()
+	cid = crypto.NewCryptoIdentityFromIntSeed(3242334)
+	consumerConsAddr := cid.SDKValConsAddress()
 
 	testCases := []struct {
 		name       string
 		packetData ccv.SlashPacketData
 		// The mocks that we expect to be called for the specified packet data.
-		expectedCalls func(sdk.Context, testkeeper.MockedKeepers, ccv.SlashPacketData) []*gomock.Call
+		expectedCalls        func(sdk.Context, testkeeper.MockedKeepers, ccv.SlashPacketData) []*gomock.Call
+		expectedSlashAcksLen int
 	}{
 		{
-			"not found validator",
-			ccv.SlashPacketData{},
+			"unfound validator",
+			ccv.SlashPacketData{
+				Validator:      tmtypes.Validator{Address: consumerConsAddr},
+				ValsetUpdateId: validVscID,
+				Infraction:     stakingtypes.Downtime,
+			},
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
@@ -419,68 +429,92 @@ func TestHandleSlashPacket(t *testing.T) {
 					// We only expect a single call to GetValidatorByConsAddr.
 					// Method will return once validator is not found.
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-						ctx, sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(
+						ctx, providerConsAddr).Return(
 						stakingtypes.Validator{}, false, // false = Not found.
 					).Times(1),
 				}
 			},
+			0,
 		},
 		{
 			"found, but tombstoned validator",
-			ccv.SlashPacketData{},
+			ccv.SlashPacketData{
+				Validator:      tmtypes.Validator{Address: consumerConsAddr},
+				ValsetUpdateId: validVscID,
+				Infraction:     stakingtypes.Downtime,
+			},
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
 				return []*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-						ctx, sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(
+						ctx, providerConsAddr).Return(
 						stakingtypes.Validator{}, true, // true = Found.
 					).Times(1),
 					// Execution will stop after this call as validator is tombstoned.
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
-						sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(true).Times(1),
+						providerConsAddr).Return(true).Times(1),
 				}
 			},
+			0,
 		},
 		{
 			"drop packet when infraction height not found",
-			ccv.SlashPacketData{ValsetUpdateId: 78}, // Keeper doesn't have a height mapped to this vscID.
+			ccv.SlashPacketData{
+				Validator:      tmtypes.Validator{Address: consumerConsAddr},
+				ValsetUpdateId: 78, // Keeper doesn't have a height mapped to this vscID.
+				Infraction:     stakingtypes.Downtime,
+			},
+
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
 				return []*gomock.Call{
 
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-						ctx, sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(
+						ctx, providerConsAddr).Return(
 						stakingtypes.Validator{}, true,
 					).Times(1),
 
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
-						sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(false).Times(1),
+						providerConsAddr).Return(false).Times(1),
 				}
 			},
+			0,
 		},
 		{
 			"full downtime packet handling, uses init chain height and non-jailed validator",
-			*ccv.NewSlashPacketData(abci.Validator{}, 0, stakingtypes.Downtime), // ValsetUpdateId = 0 uses init chain height.
+			*ccv.NewSlashPacketData(
+				tmtypes.Validator{Address: consumerConsAddr},
+				0, // ValsetUpdateId = 0 uses init chain height.
+				stakingtypes.Downtime),
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
 				return testkeeper.GetMocksForHandleSlashPacket(
-					ctx, mocks, expectedPacketData, stakingtypes.Validator{Jailed: false},
-					true) // expectJailing = true
+					ctx, mocks,
+					providerConsAddr,                      // expected provider cons addr returned from GetProviderAddrFromConsumerAddr
+					stakingtypes.Validator{Jailed: false}, // staking keeper val to return
+					true)                                  // expectJailing = true
 			},
+			1,
 		},
 		{
 			"full downtime packet handling, uses valid vscID and jailed validator",
-			*ccv.NewSlashPacketData(abci.Validator{}, validVscID, stakingtypes.Downtime),
+			*ccv.NewSlashPacketData(
+				tmtypes.Validator{Address: consumerConsAddr},
+				validVscID,
+				stakingtypes.Downtime),
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
 				return testkeeper.GetMocksForHandleSlashPacket(
-					ctx, mocks, expectedPacketData, stakingtypes.Validator{Jailed: true},
-					false) // expectJailing = false, validator is already jailed.
+					ctx, mocks,
+					providerConsAddr,                     // expected provider cons addr returned from GetProviderAddrFromConsumerAddr
+					stakingtypes.Validator{Jailed: true}, // staking keeper val to return
+					false)                                // expectJailing = false, validator is already jailed.
 			},
+			1,
 		},
 		// Note: double-sign slash packet handling should not occur, see OnRecvSlashPacket.
 	}
@@ -497,8 +531,22 @@ func TestHandleSlashPacket(t *testing.T) {
 		providerKeeper.SetInitChainHeight(ctx, chainId, 5)
 		providerKeeper.SetValsetUpdateBlockHeight(ctx, validVscID, 99)
 
+		// Setup consumer address to provider address mapping.
+		require.NotEmpty(t, tc.packetData.Validator.Address)
+		providerKeeper.SetValidatorByConsumerAddr(ctx, chainId, consumerConsAddr, providerConsAddr)
+
 		// Execute method and assert expected mock calls.
 		providerKeeper.HandleSlashPacket(ctx, chainId, tc.packetData)
+
+		require.Equal(t, tc.expectedSlashAcksLen, len(providerKeeper.GetSlashAcks(ctx, chainId)))
+
+		if tc.expectedSlashAcksLen == 1 {
+			// must match the consumer address
+			require.Equal(t, consumerConsAddr.String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
+			require.NotEqual(t, providerConsAddr.String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
+			require.NotEqual(t, providerConsAddr.String(), consumerConsAddr.String())
+		}
+
 		ctrl.Finish()
 	}
 }

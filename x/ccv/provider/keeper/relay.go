@@ -333,10 +333,6 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	}
 
-	// Replace data.Validator.Address with the proper provider chain consensus address,
-	// for later use in HandleSlashPacket
-	data.Validator.Address = providerConsAddr.Bytes()
-
 	// Queue a slash entry to the global queue, which will be seen by the throttling logic
 	k.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		ctx.BlockTime(),   // recv time
@@ -385,19 +381,20 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 // This method should NEVER be called with a double-sign infraction.
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
 
+	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
+	// Obtain provider chain consensus address using the consumer chain consensus address
+	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
+
 	k.Logger(ctx).Debug("handling slash packet",
 		"chainID", chainID,
-		"provider cons addr", sdk.ConsAddress(data.Validator.Address).String(),
+		"consumer cons addr", consumerConsAddr.String(),
+		"provider cons addr", providerConsAddr.String(),
 		"vscID", data.ValsetUpdateId,
 		"infractionType", data.Infraction,
 	)
 
-	// Obtain provider chain consensus address from packet data
-	// (overwritten with proper provider chain cons address in OnRecvSlashPacket)
-	providerConsAddr := sdk.ConsAddress(data.Validator.Address)
-
 	// Obtain validator from staking keeper
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, data.Validator.Address)
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr)
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
@@ -431,7 +428,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// for double-signing infractions are already dropped when received
 
 	// append the validator address to the slash ack for its chain id
-	k.AppendSlashAck(ctx, chainID, providerConsAddr.String())
+	k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
 
 	// jail validator
 	if !validator.IsJailed() {
