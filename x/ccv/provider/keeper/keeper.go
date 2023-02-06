@@ -38,6 +38,7 @@ type Keeper struct {
 	clientKeeper     ccv.ClientKeeper
 	stakingKeeper    ccv.StakingKeeper
 	slashingKeeper   ccv.SlashingKeeper
+	evidenceKeeper   ccv.EvidenceKeeper
 	feeCollectorName string
 }
 
@@ -47,7 +48,8 @@ func NewKeeper(
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
-	accountKeeper ccv.AccountKeeper, feeCollectorName string,
+	accountKeeper ccv.AccountKeeper, evidenceKeeper ccv.EvidenceKeeper,
+	feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -66,6 +68,7 @@ func NewKeeper(
 		clientKeeper:     clientKeeper,
 		stakingKeeper:    stakingKeeper,
 		slashingKeeper:   slashingKeeper,
+		evidenceKeeper:   evidenceKeeper,
 		feeCollectorName: feeCollectorName,
 	}
 }
@@ -569,8 +572,8 @@ func (k Keeper) ConsumeMaturedUnbondingOps(ctx sdk.Context) []uint64 {
 
 // Retrieves the underlying client state corresponding to a connection ID.
 func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (
-	clientID string, tmClient *ibctmtypes.ClientState, err error) {
-
+	clientID string, tmClient *ibctmtypes.ClientState, err error,
+) {
 	conn, ok := k.connectionKeeper.GetConnection(ctx, connectionID)
 	if !ok {
 		return "", nil, sdkerrors.Wrapf(conntypes.ErrConnectionNotFound,
