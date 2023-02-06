@@ -29,5 +29,5 @@ In addition, RS has the following features:
 ### Dependencies
 
 - [ibc-go](https://github.com/cosmos/ibc-go): [v4.2.0](https://github.com/cosmos/ibc-go/blob/release/v4.2.x/CHANGELOG.md)
-- [cosmos-sdk](https://github.com/cosmos/cosmos-sdk): [v0.45.11-ics](https://github.com/cosmos/cosmos-sdk/tree/v0.45.11-ics)
+- [cosmos-sdk](https://github.com/cosmos/cosmos-sdk): [v0.45.12-ics](https://github.com/cosmos/cosmos-sdk/tree/v0.45.12-ics)
 - [tendermint](https://github.com/informalsystems/tendermint): [0.34.24](https://github.com/informalsystems/tendermint/tree/v0.34.24)
