@@ -2,7 +2,7 @@
 
 ## v1.0.0
 
-Date: TBA
+Date: February 6th, 2023
 
 This is the first version of Interchain Security (ICS), also known as _Replicated Security_ (RS). 
 Replicated Security is a feature which will allow a chain -- referred to as the _provider_ -- to share security with other chains -- referred to as _consumers_. 
@@ -20,6 +20,8 @@ RS consist of the following core features:
 - **Consumer Initiated Slashing**: Enables the provider to jail validators for downtime infractions on the consumer chains. 
 - **Reward Distribution**: Enables the consumers to transfer to the provider (over IBC) a portion of their block rewards as payment for the security provided. Once transferred, these rewards are distributed on the provider using the protocol in the [distribution module of Cosmos SDK](https://docs.cosmos.network/v0.45/modules/distribution/). 
 - **Consumer Chain Removal**: Enables the provider to remove a consumer either after a `ConsumerRemovalProposal` passes governance or after one of the timeout periods elapses -- `InitTimeoutPeriod`, `VscTimeoutPeriod`, `IBCTimeoutPeriod`.
+- **Social Slashing**: Equivocation offenses (double signing etc.) on consumer chains are logged, and then can be used in a governance proposal to slash the validators responsible.
+
 In addition, RS has the following features:
 
 - **Key Assignment**: Enables validator operators to use different consensus keys for each consumer chain validator node that they operate.
