@@ -134,7 +134,7 @@ func stepsDowntime(consumerName string) []Step {
 						// Non faulty validators still maintain just above 2/3 power here
 						validatorID("alice"): 509,
 						validatorID("bob"):   500,
-						// Carol's stake should be slashed
+						// Carol's stake should be slashed and jailed
 						// downtime slash was initiated from provider
 						validatorID("carol"): 0,
 					},
