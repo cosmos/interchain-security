@@ -27,6 +27,10 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		(*sdk.Msg)(nil),
 		&MsgAssignConsumerKey{},
 	)
+	registry.RegisterImplementations(
+		(*govtypes.Content)(nil),
+		&EquivocationProposal{},
+	)
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 
