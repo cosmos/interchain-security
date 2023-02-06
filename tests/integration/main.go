@@ -74,7 +74,7 @@ func (tr *TestRun) Run(steps []Step, localSdkPath string) {
 	tr.validateStringLiterals()
 	tr.startDocker()
 	tr.executeSteps(steps)
-	// tr.teardownDocker()
+	tr.teardownDocker()
 }
 
 type testRunWithSteps struct {
