@@ -3,6 +3,7 @@ package e2e
 import (
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
@@ -186,26 +187,16 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	valsToSlash := []tmtypes.Validator{}
 	for _, bundle := range senderBundles {
 
-		// Alternate between downtime and double sign infractions
-		downtime := idx%2 == 0
-		var infractionType stakingtypes.InfractionType
-		if downtime {
-			infractionType = stakingtypes.Downtime
-		} else {
-			infractionType = stakingtypes.DoubleSign
-		}
-
 		// Setup signing info for validator to be jailed
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[idx])
 
-		// Send slash packet from consumer to provider
-
+		// Send downtime slash packet from consumer to provider
 		tmVal := s.providerChain.Vals.Validators[idx]
 		valsToSlash = append(valsToSlash, *tmVal)
 		packet := s.constructSlashPacketFromConsumer(
 			*bundle,
 			*tmVal,
-			infractionType,
+			stakingtypes.Downtime,
 			3, // use sequence 3, 1 and 2 are used above.
 		)
 		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
@@ -342,6 +333,81 @@ func (s *CCVTestSuite) TestPacketSpam() {
 	s.Require().Empty(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()))
 }
 
+func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
+
+	// Setup ccv channels to all consumers
+	s.SetupAllCCVChannels()
+
+	// Setup validator powers to be 25%, 25%, 25%, 25%
+	s.setupValidatorPowers()
+
+	// Explicitly set params, initialize slash meter
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	params := providerKeeper.GetParams(s.providerCtx())
+	params.SlashMeterReplenishFraction = "0.1"
+	providerKeeper.SetParams(s.providerCtx(), params)
+	providerKeeper.InitializeSlashMeter(s.providerCtx())
+
+	// The packets to be recv in a single block, ordered as they will be recv.
+	packets := []channeltypes.Packet{}
+
+	firstBundle := s.getFirstBundle()
+
+	// Slash first 3 but not 4th validator
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[1])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
+
+	// Track and increment ibc seq num for each packet, since these need to be unique.
+	ibcSeqNum := uint64(0)
+
+	// Construct 500 double-sign slash packets
+	for ibcSeqNum < 500 {
+		// Increment ibc seq num for each packet (starting at 1)
+		ibcSeqNum++
+		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
+		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, stakingtypes.DoubleSign, ibcSeqNum))
+	}
+
+	// Recv 500 packets from consumer to provider in same block
+	for _, packet := range packets {
+		consumerPacketData := ccvtypes.ConsumerPacketData{}
+		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketData)
+		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
+	}
+
+	// Execute block to handle packets in endblock
+	s.providerChain.NextBlock()
+
+	// Confirm all packets are dropped (queues empty)
+	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(
+		s.providerCtx(), firstBundle.Chain.ChainID))
+	slashData, vscMData, _, _ := providerKeeper.GetAllThrottledPacketData(
+		s.providerCtx(), firstBundle.Chain.ChainID)
+	s.Require().Empty(slashData)
+	s.Require().Empty(vscMData)
+	s.Require().Empty(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()))
+
+	// Confirm that slash meter is not affected
+	s.Require().Equal(providerKeeper.GetSlashMeterAllowance(s.providerCtx()),
+		providerKeeper.GetSlashMeter(s.providerCtx()))
+
+	// Advance two blocks and confirm no validator is jailed
+	s.providerChain.NextBlock()
+	s.providerChain.NextBlock()
+
+	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	for _, val := range s.providerChain.Vals.Validators {
+		power := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
+		s.Require().Equal(int64(1000), power)
+		stakingVal, found := stakingKeeper.GetValidatorByConsAddr(s.providerCtx(), sdktypes.ConsAddress(val.Address))
+		if !found {
+			s.Require().Fail("validator not found")
+		}
+		s.Require().False(stakingVal.Jailed)
+	}
+}
+
 // TestQueueOrdering validates that the ordering of slash packet entries
 // in the global queue (relevant to a single chain) matches the ordering of slash packet
 // data in the chain specific queues, even in the presence of packet spam.
@@ -387,15 +453,8 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 		}
 		// Else instantiate a slash packet
 
-		// Set infraction type based on even/odd index.
-		var infractionType stakingtypes.InfractionType
-		if ibcSeqNum%2 == 0 {
-			infractionType = stakingtypes.Downtime
-		} else {
-			infractionType = stakingtypes.DoubleSign
-		}
 		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
-		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum))
+		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, stakingtypes.Downtime, ibcSeqNum))
 	}
 
 	// Recv 500 packets from consumer to provider in same block
@@ -530,7 +589,7 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	tmval1 := s.providerChain.Vals.Validators[1]
 	tmval2 := s.providerChain.Vals.Validators[2]
 	tmval3 := s.providerChain.Vals.Validators[3]
-	packet1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 1)
+	packet1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Downtime, 1)
 	packet2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2)
 	packet3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3)
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet1)
@@ -609,9 +668,9 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Downtime, 1),
 		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2),
 		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 4),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.DoubleSign, 5),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.DoubleSign, 6),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Downtime, 4),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 5),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 6),
 	}
 
 	// Recv and queue all slash packets.
@@ -667,17 +726,10 @@ func (s CCVTestSuite) TestSlashAllValidators() {
 	}
 
 	// add 5 more slash packets for each validator, that will be handled in the same block.
-	for idx, val := range s.providerChain.Vals.Validators {
-		// Set infraction type based on even/odd index.
-		var infractionType stakingtypes.InfractionType
-		if idx%2 == 0 {
-			infractionType = stakingtypes.Downtime
-		} else {
-			infractionType = stakingtypes.DoubleSign
-		}
+	for _, val := range s.providerChain.Vals.Validators {
 		for i := 0; i < 5; i++ {
 			packets = append(packets, s.constructSlashPacketFromConsumer(
-				s.getFirstBundle(), *val, infractionType, ibcSeqNum))
+				s.getFirstBundle(), *val, stakingtypes.Downtime, ibcSeqNum))
 			ibcSeqNum++
 		}
 	}
