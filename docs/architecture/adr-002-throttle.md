@@ -113,7 +113,21 @@ Invariant:
 
 > The time it takes to jail/tombstone `X`% of the initial validator set will be greater than or equal to `(X * SlashMeterReplenishPeriod / SlashMeterReplenishFraction) - 2 * SlashMeterReplenishPeriod`
 
-Intuition: If jailings begin when the slash meter is full, then `SlashMeterReplenishFraction` of the initial validator set can be jailed immediately. The remaining jailings are only applied when the slash meter is positive in value (or 0), so the time it takes to jail the remaining `X - SlashMeterReplenishFraction` of the provider validator set is `(X - SlashMeterReplenishFraction) * SlashMeterReplenishPeriod / SlashMeterReplenishFraction`. However, the final slashed validator could be jailed during the final replenishment period, with the meter being very small in value (causing it to go negative after jailing). So we subtract another `SlashMeterReplenishPeriod` term in the invariant to account for this.
+Intuition:
+`C`: Number of replenishment cycles
+`P`: `SlashMeterReplenishPeriod`
+`F`: `SlashMeterReplenishFraction`
+`Vmax`: Max power of a validator as a fraction of total voting power (equal to `F`)
+
+In C number of replenishment cycles, the fraction of total voting power that can be removed, `a`, is `n <= F * C + Vmax`  
+
+So `C >= (a - Vmax) / F`
+
+If jailings begin when the slash meter is full, then `F` of the initial validator set can be jailed immediately. For the remaining `X - F`% of the initial validator set to be jailed, it takes at least `C >= ((X - F) - Vmax) / F` or `(X - F - F) / F` cycles.
+
+`(X - 2F) / F` cycles to jail `X - F`% of the initial validator set corresponds to `P * (X - 2F) / F` time.
+
+Or the attack must take >= `P * X / F - 2 * P` time.
 
 This invariant is useful because it allows us to reason about the time it takes to jail a certain percentage of the initial provider validator set from consumer initiated slash requests. For example, if `SlashMeterReplenishFraction` is set to 0.06, then it takes no less than 4 replenishment periods to jail 33% of the initial provider validator set on the Cosmos Hub. Note that as of writing this on 11/29/22, the Cosmos Hub does not have a validator with more than 6% of total voting power.
 
