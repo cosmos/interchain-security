@@ -3,7 +3,7 @@ package main
 import "time"
 
 // submits an equivocation proposal, votes on it, and tomstones the equivocating validator
-func stepsSubmitEquivocationProposal(consumerName string) []Step {
+func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Step {
 	s := []Step{
 		{
 			// bob submits a proposal to slash himself
@@ -19,15 +19,15 @@ func stepsSubmitEquivocationProposal(consumerName string) []Step {
 			state: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
+						validatorID("alice"): 509,
 						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+						validatorID("carol"): 495,
 					},
 					ValBalances: &map[validatorID]uint{
 						validatorID("bob"): 9489999999,
 					},
 					Proposals: &map[uint]Proposal{
-						2: EquivocationProposal{
+						propNumber: EquivocationProposal{
 							Deposit:          10000001,
 							Status:           "PROPOSAL_STATUS_VOTING_PERIOD",
 							ConsensusAddress: "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
@@ -38,9 +38,9 @@ func stepsSubmitEquivocationProposal(consumerName string) []Step {
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
+						validatorID("alice"): 509,
 						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+						validatorID("carol"): 495,
 					},
 				},
 			},
@@ -50,17 +50,17 @@ func stepsSubmitEquivocationProposal(consumerName string) []Step {
 				chain:      chainID("provi"),
 				from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
 				vote:       []string{"yes", "yes", "yes"},
-				propNumber: 2,
+				propNumber: propNumber,
 			},
 			state: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
+						validatorID("alice"): 509,
 						validatorID("bob"):   0, // bob is slashed after proposal passes
-						validatorID("carol"): 500,
+						validatorID("carol"): 495,
 					},
 					Proposals: &map[uint]Proposal{
-						2: EquivocationProposal{
+						propNumber: EquivocationProposal{
 							Deposit:          10000001,
 							Status:           "PROPOSAL_STATUS_PASSED",
 							ConsensusAddress: "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
@@ -71,9 +71,9 @@ func stepsSubmitEquivocationProposal(consumerName string) []Step {
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
+						validatorID("alice"): 509,
 						validatorID("bob"):   500, // slash not reflected in consumer chain
-						validatorID("carol"): 500,
+						validatorID("carol"): 495,
 					},
 				},
 			},
@@ -88,16 +88,16 @@ func stepsSubmitEquivocationProposal(consumerName string) []Step {
 			state: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
+						validatorID("alice"): 509,
 						validatorID("bob"):   0,
-						validatorID("carol"): 500,
+						validatorID("carol"): 495,
 					},
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
+						validatorID("alice"): 509,
 						validatorID("bob"):   0, // slash relayed to consumer chain
-						validatorID("carol"): 500,
+						validatorID("carol"): 495,
 					},
 				},
 			},
