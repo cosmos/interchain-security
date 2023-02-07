@@ -300,7 +300,8 @@ QUERY_RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658"
 QUERY_GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:9091"
 QUERY_LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26655"
 QUERY_P2P_ADDRESS="--p2p.laddr tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26656"
-QUERY_LOG_LEVEL="--log_level info" # Keep as "trace" to see panic messages
+# QUERY_LOG_LEVEL="--log_level trace" # switch to trace to see panic messages and rich and all debug msgs
+QUERY_LOG_LEVEL="--log_level info"
 QUERY_ENABLE_WEBGRPC="--grpc-web.enable=false"
 
 QUERY_PERSISTENT_PEERS=""
