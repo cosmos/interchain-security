@@ -105,7 +105,6 @@ import (
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	consumer "github.com/cosmos/interchain-security/x/ccv/consumer"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
 	// unnamed import of statik for swagger UI support
@@ -762,7 +761,7 @@ func (app *App) SimulationManager() *module.SimulationManager {
 // DemocConsumerApp interface implementations for e2e tests
 
 // GetConsumerKeeper implements the ConsumerApp interface.
-func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
+func (app *App) GetConsumerKeeper() consumerkeeper.Keeper {
 	return app.ConsumerKeeper
 }
 
