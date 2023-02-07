@@ -118,21 +118,21 @@ Intuition:
 Let's use the following notation:
 
 * $C$: Number of replenishment cycles
-* $P$: `SlashMeterReplenishPeriod`
-* $F$: `SlashMeterReplenishFraction`
-* $Vmax$: Max power of a validator as a fraction of total voting power
+* $P$: $\text{SlashMeterReplenishPeriod}$
+* $F$: $\text{SlashMeterReplenishFraction}$
+* $V_{\mathit{max}}$: Max power of a validator as a fraction of total voting power
 
-In $C$ number of replenishment cycles, the fraction of total voting power that can be removed, $a$, is $a <= F * C + Vmax$ (where $Vmax$ is there to account for the power fraction of the last validator removed, one which pushes the meter to the negative value).
+In $C$ number of replenishment cycles, the fraction of total voting power that can be removed, $a$, is $a \leq F \cdot C + V_{\mathit{max}}$ (where $V_{\mathit{max}}$ is there to account for the power fraction of the last validator removed, one which pushes the meter to the negative value).
 
-So, we need at least $C >= (a - Vmax) / F$ cycles to remove $a$ fraction of the total voting power.
+So, we need at least $C \geq \frac{a - V_{\mathit{max}}}{F}$ cycles to remove $a$ fraction of the total voting power.
 
-Since we defined the start of the attack to be the moment when the first slash request arrives, then $F$ fraction of the initial validator set can be jailed immediately. For the remaining $X - F$ fraction of the initial validator set to be jailed, it takes at least $C >= ((X - F) - Vmax) / F$ cycles. Using the assumption that $Vmax <= F$ (assumption 2), we get $C >= (X - F - F) / F$ cycles.
+Since we defined the start of the attack to be the moment when the first slash request arrives, then $F$ fraction of the initial validator set can be jailed immediately. For the remaining $X - F$ fraction of the initial validator set to be jailed, it takes at least $C \geq \frac{(X - F) - V_{\mathit{max}}}{F}$ cycles. Using the assumption that $V_{\mathit{max}} \leq F$ (assumption 2), we get $C \geq \frac{X - 2F}{F}$ cycles.
 
-In order to execute $C$ cycles, we need $C * P$ time.
+In order to execute $C$ cycles, we need $C \cdot P$ time.
 
-Thus, jailing the remaining $X - F$ fraction of the initial validator set corresponds to $P * (X - 2F) / F$ time.
+Thus, jailing the remaining $X - F$ fraction of the initial validator set corresponds to $\frac{P \cdot (X - 2F)}{F}$ time.
 
-In other words, the attack must take at least $(P*X/F)-(2P)$ time (in the units of replenish period $P$).
+In other words, the attack must take at least $\frac{P \cdot X}{F} - 2P$ time (in the units of replenish period $P$).
 
 This property is useful because it allows us to reason about the time it takes to jail a certain percentage of the initial provider validator set from consumer initiated slash requests. For example, if `SlashMeterReplenishFraction` is set to 0.06, then it takes no less than 4 replenishment periods to jail 33% of the initial provider validator set on the Cosmos Hub. Note that as of writing this on 11/29/22, the Cosmos Hub does not have a validator with more than 6% of total voting power.
 
