@@ -489,14 +489,13 @@ func (chain *TestChain) CreateTMClientHeader(chainID string, blockHeight int64, 
 		valSet      *tmproto.ValidatorSet
 		trustedVals *tmproto.ValidatorSet
 	)
-	require.NotNil(chain.T, tmValSet)
-
-	vsetHash := tmValSet.Hash()
-	nextValHash := nextVals.Hash()
 
 	if tmValSet == nil {
 		panic("tmValSet cannot be nil")
 	}
+
+	vsetHash := tmValSet.Hash()
+	nextValHash := nextVals.Hash()
 
 	tmHeader := tmtypes.Header{
 		Version:            tmprotoversion.Consensus{Block: tmversion.BlockProtocol, App: 2},
