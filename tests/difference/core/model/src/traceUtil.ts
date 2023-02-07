@@ -32,7 +32,7 @@ const meta = {
   // Commit of interchain-security/ that the trace was generated.
   commit: childProcess.execSync('git rev-parse HEAD').toString().trim(),
   // Diff between the working tree and the commit.
-  diff: childProcess.execSync('git diff').toString().trim(),
+  // diff: childProcess.execSync('git diff').toString().trim(),
 };
 
 /**

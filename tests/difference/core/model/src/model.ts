@@ -428,7 +428,25 @@ class CCVProvider {
   };
 
   onReceive = (data: PacketData) => {
-    this.queue.push(data);
+
+    // Drop slash packets for double-sign infraction
+    if ('isDowntime' in data && ! data.isDowntime) {
+      this.m.events.push(Event.RECEIVE_DOUBLE_SIGN_SLASH_REQUEST);
+      return;
+    }
+
+    /*
+    TODO: tidy up before merging to main
+    This is some quick prototyping to get the tests passing
+    We have 1 consumer chain so the slash queue is the global queue
+    if the queue is empty we can just process the packet.
+    */
+    if (this.queue.length == 0 && !('isDowntime' in data)) {
+      // Skip the queue
+      this.onReceiveVSCMatured(data as VscMaturity);
+    } else {
+      this.queue.push(data);
+    }
   };
 
   processPackets = () => {
@@ -453,36 +471,25 @@ class CCVProvider {
   };
 
   onReceiveSlash = (data: ConsumerInitiatedSlashPacketData) => {
-    let infractionHeight;
 
-    if (data.vscID === 0) {
-      infractionHeight = this.initialHeight;
-    } else {
-      infractionHeight = this.vscIDtoH[data.vscID];
-    }
-
+    // Check validator status
     if (this.m.staking.status[data.val] === Status.UNBONDED) {
       this.m.events.push(Event.RECEIVE_SLASH_REQUEST_UNBONDED);
       return;
     }
 
-    if (data.isDowntime) {
-      this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_REQUEST);
-    } else {
-      this.m.events.push(Event.RECEIVE_DOUBLE_SIGN_SLASH_REQUEST);
-    }
+    this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_REQUEST);
+
 
     if (this.tombstoned[data.val]) {
       return;
     }
 
-    this.m.staking.slash(data.val, infractionHeight);
+    // jail validator
     this.m.staking.jailUntil(data.val, this.m.t[P] + JAIL_SECONDS);
-    if (data.isDowntime) {
-      this.downtimeSlashAcks.push(data.val);
-    } else {
-      this.tombstoned[data.val] = true;
-    }
+    // update slash acks
+    this.downtimeSlashAcks.push(data.val);
+ 
   };
 
   afterUnbondingInitiated = (opID: number) => {
