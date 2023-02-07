@@ -61,7 +61,12 @@ type TestRun struct {
 	containerConfig  ContainerConfig
 	validatorConfigs map[validatorID]ValidatorConfig
 	chainConfigs     map[chainID]ChainConfig
-	localSdkPath     string
+	// override config.toml parameters
+	// usually used to override timeout_commit
+	// having shorter timeout_commit reduces the test runtime because blocks are produced faster
+	// lengthening the timeout_commit increases the test runtime because blocks are produced slower but the test is more reliable
+	tendermintConfigOverride string
+	localSdkPath             string
 
 	name string
 }
@@ -166,6 +171,8 @@ func SlashThrottleTestRun() TestRun {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
+		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
 }
 
@@ -207,6 +214,8 @@ func DefaultTestRun() TestRun {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
+		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
 }
 
@@ -248,6 +257,8 @@ func DemocracyTestRun() TestRun {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
+		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
 }
 
@@ -299,6 +310,8 @@ func MultiConsumerTestRun() TestRun {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
+		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "3s"/;` +
+			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "100ms"/;`,
 	}
 }
 
@@ -340,6 +353,8 @@ func EquivocationProposalTestRun() TestRun {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
+		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "3s"/;` +
+			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "100ms"/;`,
 	}
 }
 
