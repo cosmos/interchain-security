@@ -11,9 +11,11 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
-// BeginBlock updates the current header and calls the app.BeginBlock() method.
+// BeginBlock updates the current header and calls the app.BeginBlock method.
 // The new block height is the previous block height + 1.
 // The new block time is the previous block time + dt.
+//
+// NOTE: this method may be used independently of the rest of simibc.
 func BeginBlock(c *ibctesting.TestChain, dt time.Duration) {
 
 	c.CurrentHeader = tmproto.Header{
@@ -28,7 +30,14 @@ func BeginBlock(c *ibctesting.TestChain, dt time.Duration) {
 	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
 }
 
-// EndBlock and calls the preCommitCallback before the app.Commit() is called.
+// EndBlock calls app.EndBlock and executes preCommitCallback BEFORE calling app.Commit
+// The callback is useful for testing purposes to execute arbitrary code before the
+// chain sdk context is cleared in .Commit().
+// For example, app.EndBlock may lead to a new state, which you would like to query
+// to check that it is correct. However, the sdk context is cleared after .Commit(),
+// so you can query the state inside the callback.
+//
+// NOTE: this method may be used independently of the rest of simibc.
 func EndBlock(c *ibctesting.TestChain, preCommitCallback func()) (*ibctmtypes.Header, []channeltypes.Packet) {
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
 
