@@ -98,14 +98,13 @@ First, we define the following:
 * A consumer initiated slash attack "starts" when the first slash packet from such an attack is received by the provider.
 * The "initial validator set" for the attack is the validator set that existed on the provider when the attack started.
 * There is a list of honest validators s.t if they are jailed, `X`% of the initial validator set will be jailed.
-* The "final slashed validator" is the last element in the list of honest validators.
 
 For the following invariant to hold, these assumptions must be true:
 
-* We assume the total voting power of the chain (as a function of delegations) does not increase over the course of the attack.
-* The final slashed validator does not have more than `SlashMeterReplenishFraction` of total voting power on the provider.
-* `SlashMeterReplenishFraction` is large enough that `SlashMeterReplenishFraction` * `currentTotalVotingPower` > 1. Ie. the replenish fraction is set high enough that we can ignore the effects of rounding.
-* `SlashMeterReplenishPeriod` is sufficiently longer than the time it takes to produce a block.
+1. We assume the total voting power of the chain (as a function of delegations) does not increase over the course of the attack.
+2. No validator has more than `SlashMeterReplenishFraction` of total voting power on the provider.
+3. `SlashMeterReplenishFraction` is large enough that `SlashMeterReplenishFraction` * `currentTotalVotingPower` > 1. Ie. the replenish fraction is set high enough that we can ignore the effects of rounding.
+4. `SlashMeterReplenishPeriod` is sufficiently longer than the time it takes to produce a block.
 
 _Note if these assumptions do not hold, throttling will still slow down the described attack in most cases, just not in a way that can be succinctly described. It's possible that more complex invariants can be defined._
 
@@ -114,20 +113,23 @@ Invariant:
 > The time it takes to jail/tombstone `X`% of the initial validator set will be greater than or equal to `(X * SlashMeterReplenishPeriod / SlashMeterReplenishFraction) - 2 * SlashMeterReplenishPeriod`
 
 Intuition:
-`C`: Number of replenishment cycles
-`P`: `SlashMeterReplenishPeriod`
-`F`: `SlashMeterReplenishFraction`
-`Vmax`: Max power of a validator as a fraction of total voting power (equal to `F`)
 
-In C number of replenishment cycles, the fraction of total voting power that can be removed, `a`, is `n <= F * C + Vmax`  
+Let's use the following notation:
+- `C`: Number of replenishment cycles
+- `P`: `SlashMeterReplenishPeriod`
+- `F`: `SlashMeterReplenishFraction`
+- `Vmax`: Max power of a validator as a fraction of total voting power
 
-So `C >= (a - Vmax) / F`
+In `C` number of replenishment cycles, the fraction of total voting power that can be removed, `a`, is `a <= F * C + Vmax` (where `Vmax` is there to account for the power fraction of the last validator removed, one which pushes the meter to the negative value).
 
-If jailings begin when the slash meter is full, then `F` of the initial validator set can be jailed immediately. For the remaining `X - F`% of the initial validator set to be jailed, it takes at least `C >= ((X - F) - Vmax) / F` or `(X - F - F) / F` cycles.
+So, we need at least `C >= (a - Vmax) / F` cycles to remove `a` fraction of the total voting power.
 
-`(X - 2F) / F` cycles to jail `X - F`% of the initial validator set corresponds to `P * (X - 2F) / F` time.
+Since we defined the start of the attack to be the moment when the first slash request arrives, then `F` fraction of the initial validator set can be jailed immediately. For the remaining `X - F` fraction of the initial validator set to be jailed, it takes at least `C >= ((X - F) - Vmax) / F` cycles. Using the assumption that `Vmax <= F` (assumption 2), we get `C >= (X - F - F) / F` cycles.
 
-Or the attack must take >= `P * X / F - 2 * P` time.
+In order to execute `C` cyles, we need `C * P` time. 
+Thus, jailing the remaining `X - F` fraction of the initial validator set corresponds to `P * (X - 2F) / F` time.
+
+In other words, the attack must take at least `P * X / F - 2 * P` time (in the units of replenish period `P`).
 
 This invariant is useful because it allows us to reason about the time it takes to jail a certain percentage of the initial provider validator set from consumer initiated slash requests. For example, if `SlashMeterReplenishFraction` is set to 0.06, then it takes no less than 4 replenishment periods to jail 33% of the initial provider validator set on the Cosmos Hub. Note that as of writing this on 11/29/22, the Cosmos Hub does not have a validator with more than 6% of total voting power.
 
