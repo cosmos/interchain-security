@@ -122,7 +122,7 @@ Let's use the following notation:
 * $F$: `SlashMeterReplenishFraction`
 * $Vmax$: Max power of a validator as a fraction of total voting power
 
-In $C$ number of replenishment cycles, the fraction of total voting power that can be removed, $a$, is $a <= F * C + Vmax$ (where `Vmax` is there to account for the power fraction of the last validator removed, one which pushes the meter to the negative value).
+In $C$ number of replenishment cycles, the fraction of total voting power that can be removed, $a$, is $a <= F * C + Vmax$ (where $Vmax$ is there to account for the power fraction of the last validator removed, one which pushes the meter to the negative value).
 
 So, we need at least $C >= (a - Vmax) / F$ cycles to remove $a$ fraction of the total voting power.
 
