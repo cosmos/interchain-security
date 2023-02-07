@@ -37,7 +37,6 @@ func main() {
 		{DefaultTestRun(), happyPathSteps},
 		{DemocracyTestRun(), democracySteps},
 		{SlashThrottleTestRun(), slashThrottleSteps},
-		{EquivocationProposalTestRun(), equivocationProposalSteps},
 	}
 	if includeMultiConsumer != nil && *includeMultiConsumer {
 		testRuns = append(testRuns, testRunWithSteps{MultiConsumerTestRun(), multipleConsumers})

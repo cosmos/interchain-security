@@ -315,49 +315,6 @@ func MultiConsumerTestRun() TestRun {
 	}
 }
 
-func EquivocationProposalTestRun() TestRun {
-	return TestRun{
-		name: "equivocation",
-		containerConfig: ContainerConfig{
-			containerName: "interchain-security-equiv-container",
-			instanceName:  "interchain-security-equiv-instance",
-			ccvVersion:    "1",
-			now:           time.Now(),
-		},
-		validatorConfigs: getDefaultValidators(),
-		chainConfigs: map[chainID]ChainConfig{
-			chainID("provi"): {
-				chainId:        chainID("provi"),
-				binaryName:     "interchain-security-pd",
-				ipPrefix:       "7.7.7",
-				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
-					// Custom slashing parameters for testing validator downtime functionality
-					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
-					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
-					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
-					".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
-			},
-			chainID("consu"): {
-				chainId:        chainID("consu"),
-				binaryName:     "interchain-security-cd",
-				ipPrefix:       "7.7.8",
-				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
-					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
-			},
-		},
-		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "3s"/;` +
-			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "100ms"/;`,
-	}
-}
-
 func (s *TestRun) SetLocalSDKPath(path string) {
 	if path != "" {
 		fmt.Println("USING LOCAL SDK", path)

@@ -20,14 +20,15 @@ var happyPathSteps = concatSteps(
 	stepsUnbond("consu"),
 	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
-	stepsStopChain("consu"),
+	stepsSubmitEquivocationProposal("consu", 2),
+	stepsStopChain("consu", 3),
 )
 
 var slashThrottleSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
 	stepsThrottledDowntime("consu"),
-	stepsStopChain("consu"),
+	stepsStopChain("consu", 2),
 )
 
 var democracySteps = concatSteps(
@@ -46,10 +47,4 @@ var multipleConsumers = concatSteps(
 	stepsMultiConsumerDowntimeFromConsumer("consu", "densu"),
 	stepsMultiConsumerDowntimeFromProvider("consu", "densu"),
 	stepsDoubleSign("consu", "densu"), // double sign on one of the chains
-)
-
-var equivocationProposalSteps = concatSteps(
-	stepsStartChains([]string{"consu"}, false),
-	stepsDelegate("consu"),
-	stepsSubmitEquivocationProposal("consu"),
 )
