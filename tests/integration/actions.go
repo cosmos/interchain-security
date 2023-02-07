@@ -1083,8 +1083,8 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	// wait for 2 blocks to be sure that tx got included in a block
-	// and packets commited before proceeding
+	// wait for 1 blocks to make sure that tx got included
+	// in a block and packets commited before proceeding
 	tr.waitBlocks(action.provider, 1, time.Minute)
 }
 
