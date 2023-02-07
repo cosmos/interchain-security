@@ -50,7 +50,7 @@ Upon the provider receiving a VSCMatured packet from any of the established cons
 Once the slash meter becomes not full, it'll be replenished after `SlashMeterReplenishPeriod (param)` by incrementing the meter with its allowance for the replenishment block, where `allowance` = `SlashMeterReplenishFraction (param)` * `currentTotalVotingPower`. The slash meter will never exceed its current allowance (fn of the total voting power for the block) in value. Note a few things:
 
 1. The slash meter can go negative in value, and will do so when handling a single slash packet that jails a validator with significant voting power. In such a scenario, the slash meter may take multiple replenishment periods to once again reach a positive value (or 0), meaning no other slash packets may be handled for multiple replenishment periods.
-2. Total voting power of a chain changes over time, especially as validators are jailed. As validators are jailed, total voting power decreases, and so does the jailing allowance. See below for more detailed invariant discussion.
+2. Total voting power of a chain changes over time, especially as validators are jailed. As validators are jailed, total voting power decreases, and so does the jailing allowance. See below for more detailed throttling property discussion.
 3. The voting power allowance added to the slash meter during replenishment will always be greater than or equal to 1. If the `SlashMeterReplenishFraction (param)` is set too low, integer rounding will put this minimum value into effect. That is, if `SlashMeterReplenishFraction` * `currentTotalVotingPower` < 1, then the effective allowance would be 1. This min value of allowance ensures that there's some packets handled over time, even if that is a very long time. It's a crude solution to an edge case caused by too small of a replenishment fraction.
 
 The behavior described above is achieved by executing `CheckForSlashMeterReplenishment()` every endblock, BEFORE `HandleThrottleQueues()` is executed.
@@ -89,9 +89,9 @@ All CCV system properties should be maintained by implementing this feature, see
 
 One implementation-specific property introduced is that if any of the chain-specific packet data queues become larger than `MaxThrottledPackets (param)`, then the provider binary will panic, and the provider chain will halt. Therefore this param should be set carefully. See [SetThrottledPacketDataSize](../x/ccv/provider/keeper/throttle.go#L269). This behavior ensures that if the provider binaries are queuing up more packet data than machines can handle, the provider chain halts deterministically between validators.
 
-### Throttling Invariant
+### Main Throttling Property
 
-Using on-chain params and the sub protocol defined, slash packet throttling is implemented such that the following invariant is maintained.
+Using on-chain params and the sub protocol defined, slash packet throttling is implemented such that the following property holds under some conditions.
 
 First, we define the following:
 
@@ -99,26 +99,27 @@ First, we define the following:
 * The "initial validator set" for the attack is the validator set that existed on the provider when the attack started.
 * There is a list of honest validators s.t if they are jailed, `X`% of the initial validator set will be jailed.
 
-For the following invariant to hold, these assumptions must be true:
+For the following property to hold, these assumptions must be true:
 
 1. We assume the total voting power of the chain (as a function of delegations) does not increase over the course of the attack.
 2. No validator has more than `SlashMeterReplenishFraction` of total voting power on the provider.
 3. `SlashMeterReplenishFraction` is large enough that `SlashMeterReplenishFraction` * `currentTotalVotingPower` > 1. Ie. the replenish fraction is set high enough that we can ignore the effects of rounding.
 4. `SlashMeterReplenishPeriod` is sufficiently longer than the time it takes to produce a block.
 
-_Note if these assumptions do not hold, throttling will still slow down the described attack in most cases, just not in a way that can be succinctly described. It's possible that more complex invariants can be defined._
+_Note if these assumptions do not hold, throttling will still slow down the described attack in most cases, just not in a way that can be succinctly described. It's possible that more complex properties can be defined._
 
-Invariant:
+Property:
 
 > The time it takes to jail/tombstone `X`% of the initial validator set will be greater than or equal to `(X * SlashMeterReplenishPeriod / SlashMeterReplenishFraction) - 2 * SlashMeterReplenishPeriod`
 
 Intuition:
 
 Let's use the following notation:
-- `C`: Number of replenishment cycles
-- `P`: `SlashMeterReplenishPeriod`
-- `F`: `SlashMeterReplenishFraction`
-- `Vmax`: Max power of a validator as a fraction of total voting power
+
+* `C`: Number of replenishment cycles
+* `P`: `SlashMeterReplenishPeriod`
+* `F`: `SlashMeterReplenishFraction`
+* `Vmax`: Max power of a validator as a fraction of total voting power
 
 In `C` number of replenishment cycles, the fraction of total voting power that can be removed, `a`, is `a <= F * C + Vmax` (where `Vmax` is there to account for the power fraction of the last validator removed, one which pushes the meter to the negative value).
 
@@ -131,15 +132,15 @@ Thus, jailing the remaining `X - F` fraction of the initial validator set corres
 
 In other words, the attack must take at least `P * X / F - 2 * P` time (in the units of replenish period `P`).
 
-This invariant is useful because it allows us to reason about the time it takes to jail a certain percentage of the initial provider validator set from consumer initiated slash requests. For example, if `SlashMeterReplenishFraction` is set to 0.06, then it takes no less than 4 replenishment periods to jail 33% of the initial provider validator set on the Cosmos Hub. Note that as of writing this on 11/29/22, the Cosmos Hub does not have a validator with more than 6% of total voting power.
+This property is useful because it allows us to reason about the time it takes to jail a certain percentage of the initial provider validator set from consumer initiated slash requests. For example, if `SlashMeterReplenishFraction` is set to 0.06, then it takes no less than 4 replenishment periods to jail 33% of the initial provider validator set on the Cosmos Hub. Note that as of writing this on 11/29/22, the Cosmos Hub does not have a validator with more than 6% of total voting power.
 
 Note also that 4 replenishment period is a worst case scenario that depends on well crafted attack timings.
 
-### How Unjailing Affects the Invariant
+### How Unjailing Affects the Main Throttling Property
 
-Note that the jailing allowance is directly proportional to the current total voting power of the provider chain. Therefore, if honest validators don't unjail themselves during the attack, the total voting power of the provider chain will decrease over the course of the attack, and the attack will be slowed down, invariant maintained.
+Note that the jailing allowance is directly proportional to the current total voting power of the provider chain. Therefore, if honest validators don't unjail themselves during the attack, the total voting power of the provider chain will decrease over the course of the attack, and the attack will be slowed down, main throttling property is maintained.
 
-If honest validators do unjail themselves, the total voting power of the provider chain will still not become higher than when the attack started (unless new token delegations happen), therefore the invariant is still maintained. Moreover, honest validators unjailing themselves helps prevent the attacking validators from gaining control of the provider.
+If honest validators do unjail themselves, the total voting power of the provider chain will still not become higher than when the attack started (unless new token delegations happen), therefore the main property is still maintained. Moreover, honest validators unjailing themselves helps prevent the attacking validators from gaining control of the provider.
 
 In summary, the throttling mechanism as designed has desirable properties whether or not honest validators unjail themselves over the course of the attack.
 
