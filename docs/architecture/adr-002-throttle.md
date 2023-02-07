@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-The CCV spec is based around the assumption that the provider binary and all consumers binaries are non-malicious, and follow the defined protocols. In practice, this assumption may not hold. A malicious consumer binary could potentially include code which is able to send many downtime or double signing packets at once to the provider.
+The CCV spec is based around the assumption that the provider binary and all consumers binaries are non-malicious, and follow the defined protocols. In practice, this assumption may not hold. A malicious consumer binary could potentially include code which is able to send many slash/jail packets at once to the provider.
 
 Before the throttling feature was implemented, the following attack was possible. Attacker(s) would create provider validators just below the provider's active set. Using a malicious consumer binary, slash packets would be relayed to the provider, that would slash/jail a significant portion (or all) of honest validator at once. Control of the provider would then pass over to the attackers' validators. This enables the attacker(s) to halt the provider. Or even worse, commit arbitrary state on the provider, potentially stealing all tokens bridged to the provider over IBC.
 
