@@ -9,6 +9,16 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
+// A validator's consensus address on the provider chain
+type ProviderConsAddr struct {
+	sdk.ConsAddress
+}
+
+// A validator's assigned consensus address for a consumer chain
+type ConsumerConsAddr struct {
+	sdk.ConsAddress
+}
+
 // KeyAssignmentValidateBasic validates all the genesis state for key assignment
 // This is a utility. Key Assignment does not define any new proto types, but
 // has a lot of nested data.

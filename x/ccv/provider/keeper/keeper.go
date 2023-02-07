@@ -729,10 +729,10 @@ func (k Keeper) DeleteSlashAcks(ctx sdk.Context, chainID string) {
 	store.Delete(types.SlashAcksKey(chainID))
 }
 
-// AppendSlashAck appends the given slash ack to the given chain ID slash acks in store
-func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID, ack string) {
+// AppendSlashAck appends a consumer consensus address as a "slash ack" for a given chain ID
+func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID string, consumerAddr ConsumerConsAddr) {
 	acks := k.GetSlashAcks(ctx, chainID)
-	acks = append(acks, ack)
+	acks = append(acks, consumerAddr.String())
 	k.SetSlashAcks(ctx, chainID, acks)
 }
 
