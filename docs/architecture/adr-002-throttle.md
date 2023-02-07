@@ -1,4 +1,4 @@
-# ADR 001: Key Assignment
+# ADR 002: Jail Throttling
 
 ## Changelog
 
