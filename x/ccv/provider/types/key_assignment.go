@@ -21,7 +21,7 @@ func KeyAssignmentValidateBasic(
 		if strings.TrimSpace(e.ChainId) == "" {
 			return sdkerrors.Wrap(ccvtypes.ErrInvalidGenesis, "consumer chain id must not be blank")
 		}
-		if err := sdk.VerifyAddressFormat(e.ProviderAddr); err != nil {
+		if err := sdk.VerifyAddressFormat(e.ProviderAddr.Address); err != nil {
 			return sdkerrors.Wrap(ccvtypes.ErrInvalidGenesis, fmt.Sprintf("invalid provider address: %s", e.ProviderAddr))
 		}
 		if e.ConsumerKey == nil {
@@ -32,10 +32,10 @@ func KeyAssignmentValidateBasic(
 		if strings.TrimSpace(e.ChainId) == "" {
 			return sdkerrors.Wrap(ccvtypes.ErrInvalidGenesis, "consumer chain id must not be blank")
 		}
-		if err := sdk.VerifyAddressFormat(e.ProviderAddr); err != nil {
+		if err := sdk.VerifyAddressFormat(e.ProviderAddr.Address); err != nil {
 			return sdkerrors.Wrap(ccvtypes.ErrInvalidGenesis, fmt.Sprintf("invalid provider address: %s", e.ProviderAddr))
 		}
-		if err := sdk.VerifyAddressFormat(e.ConsumerAddr); err != nil {
+		if err := sdk.VerifyAddressFormat(e.ConsumerAddr.Address); err != nil {
 			return sdkerrors.Wrap(ccvtypes.ErrInvalidGenesis, fmt.Sprintf("invalid consumer address: %s", e.ConsumerAddr))
 		}
 	}
@@ -45,7 +45,7 @@ func KeyAssignmentValidateBasic(
 		}
 		// Don't check e.vscid, it's an unsigned integer
 		for _, a := range e.ConsumerAddrs.Addresses {
-			if err := sdk.VerifyAddressFormat(a); err != nil {
+			if err := sdk.VerifyAddressFormat(a.Address); err != nil {
 				return sdkerrors.Wrap(ccvtypes.ErrInvalidGenesis, fmt.Sprintf("invalid consumer address: %s", a))
 			}
 		}

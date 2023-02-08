@@ -892,6 +892,9 @@ func (m *VscSendTimestamp) GetTimestamp() time.Time {
 	return time.Time{}
 }
 
+// A validator's assigned consensus address for a consumer chain.
+// Note this type is for type safety within provider code, consumer code uses normal sdk.ConsAddress,
+// since there's no notion of provider vs consumer address.
 type ConsumerConsAddress struct {
 	Address []byte `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
@@ -936,6 +939,7 @@ func (m *ConsumerConsAddress) GetAddress() []byte {
 	return nil
 }
 
+// A validator's consensus address on the provider chain
 type ProviderConsAddress struct {
 	Address []byte `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }

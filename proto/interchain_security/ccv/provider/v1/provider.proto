@@ -195,10 +195,14 @@ message VscSendTimestamp {
 // Key assignment section
 //
 
+// A validator's assigned consensus address for a consumer chain. 
+// Note this type is for type safety within provider code, consumer code uses normal sdk.ConsAddress, 
+// since there's no notion of provider vs consumer address.
 message ConsumerConsAddress {
   bytes address = 1;
 }
 
+// A validator's consensus address on the provider chain
 message ProviderConsAddress {
   bytes address = 1;
 }
