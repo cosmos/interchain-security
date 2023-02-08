@@ -5,7 +5,6 @@ import { strict as assert } from 'node:assert';
 
 /**
  * This model may need updating pending
- * https://github.com/cosmos/ibc/issues/825 (model updated, spec has open PR)
  * https://github.com/cosmos/ibc/issues/796 (model updated, spec awaiting PR)
  */
 
@@ -25,13 +24,13 @@ import {
   Undelegation,
   Unval,
   Vsc,
-  VscMatured,
+  VscMaturity,
   Packet,
   Chain,
   Validator,
   PacketData,
-  Slash,
-  InvariantSnapshot,
+  ConsumerInitiatedSlashPacketData,
+  PropertiesSystemState,
   Status,
   ModelInitState,
 } from './common.js';
@@ -87,8 +86,14 @@ class Outbox {
    * Commit the packets in the outbox. Once a packet has been
    * committed twice it is available for delivery, as per the
    * ibc light-client functioning.
+   * 
+   * A packet must be committed once to make it to the chain
+   * permanently. A packet must be committed twice for IBC
+   * to deliver it, in practice, because the IBC light client
+   * requires a header H+1 to process a packet in 
    */
   commit = () => {
+    // Bump the number of commits by 1
     this.fifo = this.fifo.map((e) => [e[0], e[1] + 1]);
   };
 }
@@ -112,8 +117,8 @@ class Staking {
   // Unbonding validator queue
   validatorQ: Unval[];
   // Validator jail timestamp
-  // Undefined if validator is not jailed
-  jailed: (number | undefined)[];
+  // null if validator is not jailed
+  jailed: (number | null)[];
   // Initial balance of the sole delegator account.
   // Only a single delegator is modelled, as this seems sufficient
   // to exercise all Interchain Security logic.
@@ -140,7 +145,7 @@ class Staking {
    */
   newVals = () => {
     const valid = (i: number): boolean =>
-      1 <= this.tokens[i] && this.jailed[i] === undefined;
+      1 <= this.tokens[i] && this.jailed[i] === null;
     let vals = _.range(NUM_VALIDATORS);
     // stable sort => breaks ties based on validator
     // address numerical value. This mimics staking module.
@@ -373,8 +378,9 @@ class CCVProvider {
   tombstoned: boolean[];
   // unbonding operations to be completed in EndBlock
   matureUnbondingOps: number[];
-  // queue
-  queue: (Slash | VscMatured)[];
+  // queue of packets to be processed
+  // there is only one consumer so global queue is not needed
+  queue: (ConsumerInitiatedSlashPacketData | VscMaturity)[];
 
   constructor(model: Model, { ccvP }: ModelInitState) {
     this.m = model;
@@ -437,7 +443,7 @@ class CCVProvider {
     */
     if (this.queue.length == 0 && !('isDowntime' in data)) {
       // Skip the queue
-      this.onReceiveVSCMatured(data as VscMatured);
+      this.onReceiveVSCMatured(data as VscMaturity);
     } else {
       this.queue.push(data);
     }
@@ -455,7 +461,7 @@ class CCVProvider {
     this.queue = [];
   };
 
-  onReceiveVSCMatured = (data: VscMatured) => {
+  onReceiveVSCMatured = (data: VscMaturity) => {
     if (this.vscIDtoOpIDs.has(data.vscID)) {
       this.vscIDtoOpIDs.get(data.vscID)!.forEach((opID: number) => {
         this.matureUnbondingOps.push(opID);
@@ -464,7 +470,7 @@ class CCVProvider {
     }
   };
 
-  onReceiveSlash = (data: Slash) => {
+  onReceiveSlash = (data: ConsumerInitiatedSlashPacketData) => {
 
     // Check validator status
     if (this.m.staking.status[data.val] === Status.UNBONDED) {
@@ -506,8 +512,8 @@ class CCVConsumer {
   // is there an outstanding downtime operation for a validator?
   outstandingDowntime: boolean[];
   // array of validators to power
-  // value undefined if validator is not known to consumer
-  consumerPower: (number | undefined)[];
+  // value null if validator is not known to consumer
+  consumerPower: (number | null)[];
 
   constructor(model: Model, { ccvC }: ModelInitState) {
     this.m = model;
@@ -531,7 +537,7 @@ class CCVConsumer {
     })();
     // Send a maturity packet for each matured VSC
     matured.forEach((vscID) => {
-      const data: VscMatured = { vscID };
+      const data: VscMaturity = { vscID };
       this.m.events.push(Event.CONSUMER_SEND_MATURATION);
       this.m.outbox[C].add(data);
       this.maturingVscs.delete(vscID);
@@ -552,14 +558,14 @@ class CCVConsumer {
 
     changes.forEach((power, val) => {
       if (0 < power) {
-        if (this.consumerPower[val] === undefined) {
+        if (this.consumerPower[val] === null) {
           this.m.events.push(Event.CONSUMER_ADD_VAL);
         } else {
           this.m.events.push(Event.CONSUMER_UPDATE_VAL);
         }
         this.consumerPower[val] = power;
       } else {
-        this.consumerPower[val] = undefined;
+        this.consumerPower[val] = null;
         this.m.events.push(Event.CONSUMER_DEL_VAL);
       }
     });
@@ -570,7 +576,7 @@ class CCVConsumer {
   };
 
   onReceive = (data: PacketData) => {
-    this.onReceiveVSC(data as Vsc); // TODO: remove type assumption
+    this.onReceiveVSC(data as Vsc);
   };
 
   onReceiveVSC = (data: Vsc) => {
@@ -592,7 +598,7 @@ class CCVConsumer {
       this.m.events.push(Event.DOWNTIME_SLASH_REQUEST_OUTSTANDING);
       return;
     }
-    const data: Slash = {
+    const data: ConsumerInitiatedSlashPacketData = {
       val,
       vscID: this.hToVscID[infractionHeight],
       isDowntime,
@@ -609,7 +615,7 @@ class CCVConsumer {
 
 class Model {
   h;
-  t;
+  t; // The network outboxes for each chain
   outbox: Record<string, Outbox> = {
     provider: new Outbox(this, P),
     consumer: new Outbox(this, C),
@@ -617,15 +623,15 @@ class Model {
   staking: Staking;
   ccvP: CCVProvider;
   ccvC: CCVConsumer;
-  blocks: BlockHistory;
+  history: BlockHistory;
   events: Event[];
 
   constructor(
-    blocks: BlockHistory,
+    history: BlockHistory,
     events: Event[],
     state: ModelInitState,
   ) {
-    this.blocks = blocks;
+    this.history = history;
     this.events = events;
     this.h = state.h;
     this.t = state.t;
@@ -636,14 +642,14 @@ class Model {
     // model initial blocks on P and C because C starts with
     // the same validator set as P (and thus must have received
     // a packet from P).
-    this.blocks.partialOrder.deliver(C, 0, 0);
-    this.blocks.commitBlock(P, this.invariantSnapshot());
-    this.blocks.commitBlock(C, this.invariantSnapshot());
-    this.beginBlock(P);
-    this.beginBlock(C);
+    this.history.partialOrder.deliver(C, 0, 0);
+    this.history.commitBlock(P, this.propertiesSystemState());
+    this.history.commitBlock(C, this.propertiesSystemState());
+    this.beginBlock(P, BLOCK_SECONDS);
+    this.beginBlock(C, BLOCK_SECONDS);
   }
 
-  invariantSnapshot = (): InvariantSnapshot => {
+  propertiesSystemState = (): PropertiesSystemState => {
     return cloneDeep({
       h: this.h,
       t: this.t,
@@ -657,6 +663,12 @@ class Model {
     });
   };
 
+  /*
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  MODEL API
+  */
+
   delegate = (val: number, amt: number) => {
     this.staking.delegate(val, amt);
   };
@@ -665,7 +677,7 @@ class Model {
     this.staking.undelegate(val, amt);
   };
 
-  consumerSlash = (
+  consumerInitiatedSlash = (
     val: number,
     infractionHeight: number,
     isDowntime: boolean,
@@ -674,19 +686,23 @@ class Model {
   };
 
   updateClient = (_: Chain) => {
-    // noop
+    // noop. We do not explicitly model the client update process
+    // but we must call this function at appropriate times in order
+    // to test the SUT using this model. This is because
+    // if we allow too much time to elapse between updates, the light
+    // clients in the SUT will expire, and the test will fail.
   };
 
   deliver = (chain: Chain, num: number) => {
     if (chain === P) {
       this.outbox[C].consume(num).forEach((p) => {
-        this.blocks.partialOrder.deliver(P, p.sendHeight, this.h[P]);
+        this.history.partialOrder.deliver(P, p.sendHeight, this.h[P]);
         this.ccvP.onReceive(p.data);
       });
     }
     if (chain === C) {
       this.outbox[P].consume(num).forEach((p) => {
-        this.blocks.partialOrder.deliver(C, p.sendHeight, this.h[C]);
+        this.history.partialOrder.deliver(C, p.sendHeight, this.h[C]);
         this.ccvC.onReceive(p.data);
       });
     }
@@ -694,26 +710,36 @@ class Model {
 
   endAndBeginBlock = (chain: Chain) => {
     this.endBlock(chain);
-    this.beginBlock(chain);
+    this.beginBlock(chain, BLOCK_SECONDS);
   };
+
+  /*
+  END MODEL API
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  */
 
   endBlock = (chain: Chain) => {
     if (chain === P) {
+      // Mimic real provider app behavior
       this.staking.endBlock();
       this.ccvP.endBlock();
     }
     if (chain === C) {
       this.ccvC.endBlock();
     }
+    // Commit all packets sent by the chain
     this.outbox[chain].commit();
-    this.blocks.commitBlock(chain, this.invariantSnapshot());
+    // Record a slice of the system state for checking properties
+    this.history.commitBlock(chain, this.propertiesSystemState());
   };
 
-  beginBlock = (chain: Chain) => {
+  beginBlock = (chain: Chain, dt: number) => {
     this.h[chain] += 1;
-    this.t[chain] += BLOCK_SECONDS;
+    this.t[chain] += dt;
     if (chain === P) {
-      // No op
+      // No op. There is nothing interesting
+      // to do at the beginning of a block on P.
     }
     if (chain === C) {
       this.ccvC.beginBlock();
