@@ -566,6 +566,8 @@ func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 
 // GetProviderAddrFromConsumerAddr returns the consensus address of a validator with
 // consAddr set as the consensus address on a consumer chain
+//
+// TODO: communicate better that this method may return a consumer addr
 func (k Keeper) GetProviderAddrFromConsumerAddr(
 	ctx sdk.Context,
 	chainID string,

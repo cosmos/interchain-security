@@ -146,7 +146,7 @@ message HandshakeMetadata {
 // SlashAcks contains cons addresses of consumer chain validators
 // successfully slashed on the provider chain
 message SlashAcks {
-  repeated ConsumerConsAddress addresses = 1;
+  repeated string addresses = 1;
 }
 
 // ConsumerAdditionProposals holds pending governance proposals on the provider chain to spawn a new chain.
