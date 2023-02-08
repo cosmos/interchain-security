@@ -262,20 +262,20 @@ func ParseVscSendingTimestampKey(bz []byte) (string, uint64, error) {
 
 // ConsumerValidatorsKey returns the key under which the
 // validator assigned keys for every consumer chain are stored
-func ConsumerValidatorsKey(chainID string, addr sdk.ConsAddress) []byte {
-	return ChainIdAndConsAddrKey(ConsumerValidatorsBytePrefix, chainID, addr)
+func ConsumerValidatorsKey(chainID string, addr ProviderConsAddress) []byte {
+	return ChainIdAndConsAddrKey(ConsumerValidatorsBytePrefix, chainID, addr.Address)
 }
 
 // ValidatorsByConsumerAddrKey returns the key under which the mapping from validator addresses
 // on consumer chains to validator addresses on the provider chain is stored
-func ValidatorsByConsumerAddrKey(chainID string, addr sdk.ConsAddress) []byte {
-	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr)
+func ValidatorsByConsumerAddrKey(chainID string, addr ConsumerConsAddress) []byte {
+	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr.Address)
 }
 
 // KeyAssignmentReplacementsKey returns the key under which the
 // key assignments that need to be replaced in the current block are stored
-func KeyAssignmentReplacementsKey(chainID string, addr sdk.ConsAddress) []byte {
-	return ChainIdAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr)
+func KeyAssignmentReplacementsKey(chainID string, addr ProviderConsAddress) []byte {
+	return ChainIdAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr.Address)
 }
 
 // ConsumerAddrsToPruneKey returns the key under which the
