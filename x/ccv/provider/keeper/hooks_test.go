@@ -7,6 +7,7 @@ import (
 	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
 )
 
@@ -33,7 +34,10 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 			setup: func(ctx sdk.Context, k providerkeeper.Keeper) {
 				// We are trying to add a new validator, but its address has already been used
 				// by another validator
-				k.SetValidatorByConsumerAddr(ctx, "chainid", newValidator.SDKValConsAddress(), anotherValidator0.SDKValConsAddress())
+				k.SetValidatorByConsumerAddr(ctx, "chainid",
+					providertypes.ConsumerConsAddress{newValidator.SDKValConsAddress()},
+					providertypes.ProviderConsAddress{anotherValidator0.SDKValConsAddress()},
+				)
 			},
 			expect: true,
 		},
@@ -42,8 +46,14 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 			setup: func(ctx sdk.Context, k providerkeeper.Keeper) {
 				// We are trying to add a new validator, but its address has already been used
 				// by another validator, of which there are several, across potentially several chains
-				k.SetValidatorByConsumerAddr(ctx, "chainid0", newValidator.SDKValConsAddress(), anotherValidator0.SDKValConsAddress())
-				k.SetValidatorByConsumerAddr(ctx, "chainid1", anotherValidator1.SDKValConsAddress(), anotherValidator1.SDKValConsAddress())
+				k.SetValidatorByConsumerAddr(ctx, "chainid0",
+					providertypes.ConsumerConsAddress{newValidator.SDKValConsAddress()},
+					providertypes.ProviderConsAddress{anotherValidator0.SDKValConsAddress()},
+				)
+				k.SetValidatorByConsumerAddr(ctx, "chainid1",
+					providertypes.ConsumerConsAddress{anotherValidator1.SDKValConsAddress()},
+					providertypes.ProviderConsAddress{anotherValidator1.SDKValConsAddress()},
+				)
 			},
 			expect: true,
 		},

@@ -7,6 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 )
 
@@ -85,7 +86,7 @@ func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddre
 	inUse := false
 
 	for _, validatorConsumerAddrs := range k.GetAllValidatorsByConsumerAddr(ctx, nil) {
-		if sdk.ConsAddress(validatorConsumerAddrs.ConsumerAddr).Equals(consensusAddr) {
+		if sdk.ConsAddress(validatorConsumerAddrs.ConsumerAddr.Address).Equals(consensusAddr) {
 			inUse = true
 			break
 		}
@@ -103,14 +104,14 @@ func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
 
 func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddress, valAddr sdk.ValAddress) {
 	for _, validatorConsumerPubKey := range h.k.GetAllValidatorConsumerPubKeys(ctx, nil) {
-		if sdk.ConsAddress(validatorConsumerPubKey.ProviderAddr).Equals(valConsAddr) {
+		if sdk.ConsAddress(validatorConsumerPubKey.ProviderAddr.Address).Equals(valConsAddr) {
 			consumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(*validatorConsumerPubKey.ConsumerKey)
 			if err != nil {
 				// An error here would indicate something is very wrong
 				panic("cannot get address of consumer key")
 			}
-			h.k.DeleteValidatorByConsumerAddr(ctx, validatorConsumerPubKey.ChainId, consumerAddr)
-			h.k.DeleteValidatorConsumerPubKey(ctx, validatorConsumerPubKey.ChainId, validatorConsumerPubKey.ProviderAddr)
+			h.k.DeleteValidatorByConsumerAddr(ctx, validatorConsumerPubKey.ChainId, providertypes.ConsumerConsAddress{Address: consumerAddr})
+			h.k.DeleteValidatorConsumerPubKey(ctx, validatorConsumerPubKey.ChainId, *validatorConsumerPubKey.ProviderAddr)
 		}
 	}
 }
