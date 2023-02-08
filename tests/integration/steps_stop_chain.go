@@ -3,7 +3,7 @@ package main
 import "time"
 
 // submits a consumer-removal proposal and removes the chain
-func stepsStopChain(consumerName string) []Step {
+func stepsStopChain(consumerName string, propNumber uint) []Step {
 	s := []Step{
 		{
 			action: submitConsumerRemovalProposalAction{
@@ -19,7 +19,7 @@ func stepsStopChain(consumerName string) []Step {
 						validatorID("bob"): 9489999999,
 					},
 					Proposals: &map[uint]Proposal{
-						2: ConsumerRemovalProposal{
+						propNumber: ConsumerRemovalProposal{
 							Deposit:  10000001,
 							Chain:    chainID(consumerName),
 							StopTime: 0,
@@ -35,12 +35,12 @@ func stepsStopChain(consumerName string) []Step {
 				chain:      chainID("provi"),
 				from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
 				vote:       []string{"yes", "yes", "yes"},
-				propNumber: 2,
+				propNumber: propNumber,
 			},
 			state: State{
 				chainID("provi"): ChainState{
 					Proposals: &map[uint]Proposal{
-						2: ConsumerRemovalProposal{
+						propNumber: ConsumerRemovalProposal{
 							Deposit:  10000001,
 							Chain:    chainID(consumerName),
 							StopTime: 0,

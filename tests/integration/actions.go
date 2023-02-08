@@ -126,9 +126,11 @@ func (tr TestRun) startChain(
 		"/testnet-scripts/start-chain.sh", chainConfig.binaryName, string(vals),
 		string(chainConfig.chainId), chainConfig.ipPrefix, genesisChanges,
 		fmt.Sprint(action.skipGentx),
-		`s/timeout_commit = "5s"/timeout_commit = "1s"/;`+
-			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
-		// `s/flush_throttle_timeout = "100ms"/flush_throttle_timeout = "10ms"/`,
+		// override config/config.toml for each node on chain
+		// usually timeout_commit and peer_gossip_sleep_duration are changed to vary the test run duration
+		// lower timeout_commit means the blocks are produced faster making the test run shorter
+		// with short timeout_commit (eg. timeout_commit = 1s) some nodes may miss blocks causing the test run to fail
+		tr.tendermintConfigOverride,
 	)
 
 	cmdReader, err := cmd.StdoutPipe()
@@ -1054,8 +1056,8 @@ type unjailValidatorAction struct {
 // Sends an unjail transaction to the provider chain
 func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 
-	// Wait just past the downtime_jail_duration set in config.go
-	time.Sleep(3 * time.Second)
+	// wait a block to be sure downtime_jail_duration has elapsed
+	tr.waitBlocks(action.provider, 1, time.Minute)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
@@ -1081,9 +1083,9 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	// wait for 2 blocks to be sure that tx got included in a block
-	// and packets commited before proceeding
-	tr.waitBlocks(action.provider, 2, time.Minute)
+	// wait for 1 blocks to make sure that tx got included
+	// in a block and packets commited before proceeding
+	tr.waitBlocks(action.provider, 1, time.Minute)
 }
 
 type registerRepresentativeAction struct {
