@@ -305,7 +305,7 @@ func (s *CoreSuite) TestTraces() {
 	shortest := -1
 	shortestLen := 10000000000
 	for i := range s.traces.Data {
-		if !s.Run(fmt.Sprintf("Trace num: %d", i), func() {
+		if !s.Run(fmt.Sprintf("Trace ix: %d", i), func() {
 			// Setup a new pair of chains for each trace
 			s.SetupTest()
 
