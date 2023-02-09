@@ -312,7 +312,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 	// The slash packet validator address may be known only on the consumer chain,
 	// in this case, it must be mapped back to the consensus address on the provider chain
-	consumerConsAddr := providertypes.ConsumerConsAddress{data.Validator.Address}
+	consumerConsAddr := providertypes.NewConsumerConsAddress(data.Validator.Address)
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
 	if data.Infraction == stakingtypes.DoubleSign {
@@ -381,7 +381,7 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 // This method should NEVER be called with a double-sign infraction.
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
 
-	consumerConsAddr := providertypes.ConsumerConsAddress{data.Validator.Address}
+	consumerConsAddr := providertypes.NewConsumerConsAddress(data.Validator.Address)
 	// Obtain provider chain consensus address using the consumer chain consensus address
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 

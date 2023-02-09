@@ -6,7 +6,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 )
@@ -36,7 +35,7 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 		return nil
 	}
 	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
-	unbondingOp := types.UnbondingOp{
+	unbondingOp := providertypes.UnbondingOp{
 		Id:                      ID,
 		UnbondingConsumerChains: consumerChainIDS,
 	}
@@ -105,12 +104,13 @@ func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
 func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddress, valAddr sdk.ValAddress) {
 	for _, validatorConsumerPubKey := range h.k.GetAllValidatorConsumerPubKeys(ctx, nil) {
 		if sdk.ConsAddress(validatorConsumerPubKey.ProviderAddr.Address).Equals(valConsAddr) {
-			consumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(*validatorConsumerPubKey.ConsumerKey)
+			consumerAddrTmp, err := utils.TMCryptoPublicKeyToConsAddr(*validatorConsumerPubKey.ConsumerKey)
 			if err != nil {
 				// An error here would indicate something is very wrong
 				panic("cannot get address of consumer key")
 			}
-			h.k.DeleteValidatorByConsumerAddr(ctx, validatorConsumerPubKey.ChainId, providertypes.ConsumerConsAddress{Address: consumerAddr})
+			consumerAddr := providertypes.NewConsumerConsAddress(consumerAddrTmp)
+			h.k.DeleteValidatorByConsumerAddr(ctx, validatorConsumerPubKey.ChainId, consumerAddr)
 			h.k.DeleteValidatorConsumerPubKey(ctx, validatorConsumerPubKey.ChainId, *validatorConsumerPubKey.ProviderAddr)
 		}
 	}

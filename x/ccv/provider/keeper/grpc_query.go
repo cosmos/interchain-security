@@ -7,7 +7,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"google.golang.org/grpc/codes"
@@ -97,7 +96,7 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 	if err != nil {
 		return nil, err
 	}
-	providerAddr := providertypes.ProviderConsAddress{Address: providerAddrTmp}
+	providerAddr := types.NewProviderConsAddress(providerAddrTmp)
 
 	consumerKey, found := k.GetValidatorConsumerPubKey(ctx, req.ChainId, providerAddr)
 	if !found {
@@ -125,7 +124,7 @@ func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.Que
 	if err != nil {
 		return nil, err
 	}
-	consumerAddr := providertypes.ConsumerConsAddress{Address: consumerAddrTmp}
+	consumerAddr := types.NewConsumerConsAddress(consumerAddrTmp)
 
 	providerAddr, found := k.GetValidatorByConsumerAddr(ctx, req.ChainId, consumerAddr)
 	if !found {

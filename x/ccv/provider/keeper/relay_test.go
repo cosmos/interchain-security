@@ -403,10 +403,8 @@ func TestHandleSlashPacket(t *testing.T) {
 
 	chainId := "consumer-id"
 	validVscID := uint64(234)
-	cid := crypto.NewCryptoIdentityFromIntSeed(78932)
-	providerConsAddr := providertypes.ProviderConsAddress{cid.SDKValConsAddress()}
-	cid = crypto.NewCryptoIdentityFromIntSeed(3242334)
-	consumerConsAddr := providertypes.ConsumerConsAddress{cid.SDKValConsAddress()}
+	providerConsAddr := crypto.NewCryptoIdentityFromIntSeed(7842334).ProviderConsAddress()
+	consumerConsAddr := crypto.NewCryptoIdentityFromIntSeed(784987634).ConsumerConsAddress()
 
 	testCases := []struct {
 		name       string
