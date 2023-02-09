@@ -132,7 +132,7 @@ func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.Que
 	}
 
 	return &types.QueryValidatorProviderAddrResponse{
-		ProviderAddress: providerAddr.String(),
+		ProviderAddress: providerAddr.ToSdkConsAddr().String(), // Return string formatted from sdk.ConsAddress
 	}, nil
 }
 
