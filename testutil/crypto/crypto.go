@@ -91,10 +91,16 @@ func (v *CryptoIdentity) SDKValConsAddress() sdktypes.ConsAddress {
 	return sdktypes.ConsAddress(v.ConsensusSDKPubKey().Address())
 }
 
+// Returns the cons address of the crypto identity as a ProviderConsAddress.
+// In most cases, one crypto identity should NOT be casted to both a ProviderConsAddress and ConsumerConsAddress.
+// However, test intention is left to the caller.
 func (v *CryptoIdentity) ProviderConsAddress() providertypes.ProviderConsAddress {
 	return providertypes.NewProviderConsAddress(v.SDKValConsAddress())
 }
 
+// Returns the cons address of the crypto identity as a ConsumerConsAddress.
+// In most cases, one crypto identity should NOT be casted to both a ProviderConsAddress and ConsumerConsAddress.
+// However, test intention is left to the caller.
 func (v *CryptoIdentity) ConsumerConsAddress() providertypes.ConsumerConsAddress {
 	return providertypes.NewConsumerConsAddress(v.SDKValConsAddress())
 }
