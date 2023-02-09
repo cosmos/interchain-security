@@ -322,8 +322,8 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		// TODO: would be better to have a warning, but there is no Warn() function
 		k.Logger(ctx).Error("SlashPacket received for double-signing",
 			"chainID", chainID,
-			"consumer cons addr", consumerConsAddr.String(), // TODO: test out print formatting
-			"provider cons addr", providerConsAddr.String(),
+			"consumer cons addr", consumerConsAddr.ToSdkConsAddr().String(),
+			"provider cons addr", providerConsAddr.ToSdkConsAddr().String(),
 			"vscID", data.ValsetUpdateId,
 			"infractionHeight", infractionHeight,
 		)
@@ -348,8 +348,8 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 	k.Logger(ctx).Info("slash packet received and enqueued",
 		"chainID", chainID,
-		"consumer cons addr", consumerConsAddr.String(),
-		"provider cons addr", providerConsAddr.String(),
+		"consumer cons addr", consumerConsAddr.ToSdkConsAddr().String(),
+		"provider cons addr", providerConsAddr.ToSdkConsAddr().String(),
 		"vscID", data.ValsetUpdateId,
 		"infractionType", data.Infraction,
 	)
@@ -387,14 +387,14 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	k.Logger(ctx).Debug("handling slash packet",
 		"chainID", chainID,
-		"consumer cons addr", consumerConsAddr.String(),
-		"provider cons addr", providerConsAddr.String(),
+		"consumer cons addr", consumerConsAddr.ToSdkConsAddr().String(),
+		"provider cons addr", providerConsAddr.ToSdkConsAddr().String(),
 		"vscID", data.ValsetUpdateId,
 		"infractionType", data.Infraction,
 	)
 
 	// Obtain validator from staking keeper
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr.Address)
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr.ToSdkConsAddr())
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
@@ -403,16 +403,16 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		// Note that it is impossible for the validator to be not found or unbonded if both the provider
 		// and the consumer are following the protocol. Thus if this branch is taken then one or both
 		// chains is incorrect, but it is impossible to tell which.
-		k.Logger(ctx).Error("validator not found or is unbonded", "validator", data.Validator.Address)
+		k.Logger(ctx).Error("validator not found or is unbonded", "validator", providerConsAddr.ToSdkConsAddr().String())
 		return
 	}
 
 	// tombstoned validators should not be slashed multiple times.
-	if k.slashingKeeper.IsTombstoned(ctx, providerConsAddr.Address) {
+	if k.slashingKeeper.IsTombstoned(ctx, providerConsAddr.ToSdkConsAddr()) {
 		// Log and drop packet if validator is tombstoned.
 		k.Logger(ctx).Info(
 			"slash packet dropped because validator is already tombstoned",
-			"provider cons addr", providerConsAddr.String(),
+			"provider cons addr", providerConsAddr.ToSdkConsAddr().String(),
 		)
 		return
 	}
@@ -433,17 +433,17 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// jail validator
 	if !validator.IsJailed() {
-		k.stakingKeeper.Jail(ctx, providerConsAddr.Address)
-		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.String())
+		k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
+		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.ToSdkConsAddr().String())
 		jailTime := ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
-		k.slashingKeeper.JailUntil(ctx, providerConsAddr.Address, jailTime)
+		k.slashingKeeper.JailUntil(ctx, providerConsAddr.ToSdkConsAddr(), jailTime)
 	}
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypeExecuteConsumerChainSlash,
 			sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
-			sdk.NewAttribute(ccv.AttributeValidatorAddress, providerConsAddr.String()),
+			sdk.NewAttribute(ccv.AttributeValidatorAddress, providerConsAddr.ToSdkConsAddr().String()),
 			sdk.NewAttribute(ccv.AttributeInfractionType, data.Infraction.String()),
 			sdk.NewAttribute(ccv.AttributeInfractionHeight, strconv.Itoa(int(infractionHeight))),
 			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))),
