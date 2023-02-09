@@ -2,8 +2,7 @@
 
 This directory contains model and trace generation code for the differential approach to testing Interchain Security. In particular, this work is used to test 'core' (normal operation) features of the protocol.
 
-At a high level, the model consists of one Provider chain and one Consumer chain. There is a single delegator account on the Provider, whose actions will change the delegation and thus the tokens and voting power of the validators. The voting power changes are relayed to the Consumer chain. The entire cycle of unbonding operation maturity is captured, because the Consumer will
-send unbonding maturity packets. Moreoever, slashing is modelled, as the Consumer can initiate slashing actions.
+At a high level, the model consists of one Provider chain and one Consumer chain. There is a single delegator account on the Provider, whose actions will change the delegation and thus the tokens and voting power of the validators. The voting power changes are relayed to the Consumer chain. The entire cycle of unbonding operation maturity is captured, because the Consumer will send unbonding maturity packets. Moreoever, slashing is modelled, as the Consumer can initiate slashing actions.
 
 ## Scope
 
@@ -24,7 +23,7 @@ The following aspects of the system are tested
 - [x] Validator tombstoning
 - [x] Packet acknowledgements
 - [x] The 'Bond Based Consumer Voting Power' property ([link](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties))
-- [ ] The 'Validator Set Replication' property ([link](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties))
+- [x] The 'Validator Set Replication' property ([link](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties))
 - [ ] The 'Slashable Consumer Misbehavior' property ([link](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties)) (_maybe_)
 - [ ] PendingVSC when consumer start (_maybe_)
 - [ ] Redelegation operations
