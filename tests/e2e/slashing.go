@@ -46,7 +46,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.Require().NoError(err)
 	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
 	s.Require().Nil(err)
-	consumerConsAddr := providertypes.NewConsumerConsAddress(sdk.ConsAddress(pubkey.Address()))
+	consumerConsAddr := providertypes.NewConsumerConsAddress(sdk.GetConsAddress(pubkey))
 	// map consumer consensus address to provider consensus address
 	providerConsAddr, found := providerKeeper.GetValidatorByConsumerAddr(
 		s.providerCtx(),
