@@ -9,6 +9,27 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
+// NewProviderConsAddress creates a new ProviderConsAddress
+func NewProviderConsAddress(addr sdk.ConsAddress) ProviderConsAddress {
+	return ProviderConsAddress{
+		Address: addr,
+	}
+}
+func (p *ProviderConsAddress) ToSdkConsAddr() sdk.ConsAddress {
+	return sdk.ConsAddress(p.Address)
+}
+
+// NewConsumerConsAddress creates a new ConsumerConsAddress
+func NewConsumerConsAddress(addr sdk.ConsAddress) ConsumerConsAddress {
+	return ConsumerConsAddress{
+		Address: addr,
+	}
+}
+
+func (c *ConsumerConsAddress) ToSdkConsAddr() sdk.ConsAddress {
+	return sdk.ConsAddress(c.Address)
+}
+
 // KeyAssignmentValidateBasic validates all the genesis state for key assignment
 // This is a utility. Key Assignment does not define any new proto types, but
 // has a lot of nested data.
