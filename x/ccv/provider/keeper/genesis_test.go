@@ -154,7 +154,9 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, provAddr, providerAddr)
 
 	addrs := pk.GetConsumerAddrsToPrune(ctx, cChainIDs[0], vscID)
-	require.Equal(t, []*providertypes.ConsumerConsAddress{&consumerConsAddr}, addrs)
+	// Expect same list as what was provided in provGenesis
+	expectedAddrList := providertypes.ConsumerAddressList{Addresses: []*providertypes.ConsumerConsAddress{&consumerConsAddr}}
+	require.Equal(t, expectedAddrList, addrs)
 
 	// check provider chain's consumer chain states
 	assertConsumerChainStates(ctx, t, pk, provGenesis.ConsumerStates...)
