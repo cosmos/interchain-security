@@ -28,3 +28,4 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 | ADR \# | Description | Status |
 | ------ | ----------- | ------ |
 | [001](./adr-001-key-assignment.md) | Consumer chain key assignment | Accepted, Implemented |
+| [003](./adr-003-equivocation-gov-proposal.md) | Equivocation governance proposal | Accepted, Implemented |
