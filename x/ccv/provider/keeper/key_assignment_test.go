@@ -406,7 +406,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
 					consumerIdentities[0].ConsumerConsAddress())
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].SDKValConsAddress(), providerAddr)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
 			},
 		},
 		{
@@ -442,7 +442,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
 					consumerIdentities[1].ConsumerConsAddress())
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].SDKValConsAddress(), providerAddr)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
 			},
 		},
 		{
@@ -475,7 +475,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
 					consumerIdentities[0].ConsumerConsAddress())
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].SDKValConsAddress(), providerAddr)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
 			},
 		},
 		{
@@ -514,7 +514,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
 					consumerIdentities[0].ConsumerConsAddress())
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].SDKValConsAddress(), providerAddr)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
 			},
 		},
 		{
@@ -543,7 +543,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
 					consumerIdentities[1].ConsumerConsAddress())
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].SDKValConsAddress(), providerAddr)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
 			},
 		},
 		{
@@ -572,7 +572,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
 					consumerIdentities[0].ConsumerConsAddress())
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].SDKValConsAddress(), providerAddr)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
 			},
 		},
 		{

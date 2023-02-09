@@ -21,7 +21,7 @@ import (
 	"github.com/tendermint/tendermint/crypto/ed25519"
 )
 
-// TestRelayAndApplySlashPacket tests that downtime slash packets can be properly relayed
+// TestRelayAndApplyDowntimePacket tests that downtime slash packets can be properly relayed
 // from consumer to provider, handled by provider, with a VSC and jailing
 // eventually effective on consumer and provider.
 //
@@ -46,7 +46,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.Require().NoError(err)
 	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
 	s.Require().Nil(err)
-	consumerConsAddr := providertypes.ConsumerConsAddress{sdk.GetConsAddress(pubkey)}
+	consumerConsAddr := providertypes.NewConsumerConsAddress(sdk.ConsAddress(pubkey.Address()))
 	// map consumer consensus address to provider consensus address
 	providerConsAddr, found := providerKeeper.GetValidatorByConsumerAddr(
 		s.providerCtx(),
