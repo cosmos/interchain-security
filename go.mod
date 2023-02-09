@@ -136,6 +136,6 @@ replace (
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.13-ics
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/stretchr/testify => github.com/stretchr/testify v1.7.1
-	github.com/tendermint/tendermint => github.com/informalsystems/tendermint v0.34.24
+	github.com/tendermint/tendermint => github.com/informalsystems/tendermint v0.34.26
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )
