@@ -63,7 +63,7 @@ func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
 ) sdktypes.Int {
 	// Obtain staking module val object from the provider's consensus address.
 	// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
-	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr.Address)
+	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr.ToSdkConsAddr())
 
 	if !found || val.IsJailed() {
 		// If validator is not found, or found but jailed, it's power is 0. This path is explicitly defined since the

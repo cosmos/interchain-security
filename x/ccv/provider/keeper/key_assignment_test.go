@@ -85,7 +85,7 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 	}
 	// sorting by ValidatorConsumerPubKey.ProviderAddr
 	sort.Slice(expectedGetAllOneConsumerOrder, func(i, j int) bool {
-		return bytes.Compare(expectedGetAllOneConsumerOrder[i].ProviderAddr.Address, expectedGetAllOneConsumerOrder[j].ProviderAddr.Address) == -1
+		return bytes.Compare(expectedGetAllOneConsumerOrder[i].ProviderAddr.ToSdkConsAddr(), expectedGetAllOneConsumerOrder[j].ProviderAddr.ToSdkConsAddr()) == -1
 	})
 
 	for _, assignment := range testAssignments {
@@ -220,7 +220,7 @@ func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 	expectedGetAllOrder := testAssignments
 	// sorting by KeyAssignmentReplacement.ProviderAddr
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
-		return bytes.Compare(expectedGetAllOrder[i].ProviderAddr.Address, expectedGetAllOrder[j].ProviderAddr.Address) == -1
+		return bytes.Compare(expectedGetAllOrder[i].ProviderAddr.ToSdkConsAddr(), expectedGetAllOrder[j].ProviderAddr.ToSdkConsAddr()) == -1
 	})
 
 	pk.SetKeyAssignmentReplacement(ctx, "consumer-2", *testAssignments[0].ProviderAddr, *testAssignments[0].PrevCKey, testAssignments[0].Power)
@@ -850,7 +850,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
 					// Find the corresponding provider validator (must always be found)
 					for j, idP := range providerValset.identities {
-						if idP.SDKValConsAddress().Equals(sdk.ConsAddress(consP.Address)) {
+						if idP.SDKValConsAddress().Equals(consP.ToSdkConsAddr()) {
 							// Ensure powers are the same
 							require.Equal(t, providerValset.power[j], consumerValset.power[i])
 						}
@@ -883,7 +883,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 					// Get the provider who assigned the key
 					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
 
-					if _, found := historicSlashQueries[string(consC.Address)]; !found {
+					if _, found := historicSlashQueries[consC.ToSdkConsAddr().String()]; !found {
 						historicSlashQueries[consC.ToSdkConsAddr().String()] = map[uint64]string{}
 					}
 

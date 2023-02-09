@@ -176,7 +176,8 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	s.Require().NoError(err)
 	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
 	s.Require().Nil(err)
-	consumerConsAddr := providertypes.ConsumerConsAddress{sdk.GetConsAddress(pubkey)}
+	sdkConsAddr := sdk.GetConsAddress(pubkey)
+	consumerConsAddr := providertypes.NewConsumerConsAddress(sdkConsAddr)
 	// map consumer consensus address to provider consensus address
 	providerConsAddr, found := providerKeeper.GetValidatorByConsumerAddr(
 		s.providerCtx(),
@@ -184,7 +185,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 		consumerConsAddr)
 	s.Require().True(found)
 
-	stakingVal, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.Address)
+	stakingVal, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
 	s.Require().True(found)
 	valOldBalance := stakingVal.Tokens
 
@@ -214,7 +215,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain)
 
 	// Get staking keeper's validator obj after the relayed slash packet
-	stakingValAfter, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.Address)
+	stakingValAfter, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
 	s.Require().True(ok)
 
 	// check that the validator's tokens were NOT slashed on provider
@@ -222,7 +223,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	s.Require().Equal(valOldBalance, valNewBalance)
 
 	// Get signing info for the validator
-	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), providerConsAddr.Address)
+	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
 	s.Require().True(found)
 
 	// check that the validator's unjailing time is NOT updated on provider

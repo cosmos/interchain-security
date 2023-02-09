@@ -29,7 +29,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 
 	// create validator keys and addresses for key assignment
 	providerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7896)
-	provAddr := providertypes.ProviderConsAddress{Address: providerCryptoId.SDKValConsAddress()}
+	provAddr := providerCryptoId.ProviderConsAddress()
 
 	consumerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7897)
 	consumerTmPubKey := consumerCryptoId.TMProtoCryptoPublicKey()
