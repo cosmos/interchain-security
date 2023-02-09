@@ -55,7 +55,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	)
 	s.Require().True(found)
 
-	stakingVal, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.Address)
+	stakingVal, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
 	s.Require().True(found)
 	valOldBalance := stakingVal.Tokens
 
@@ -73,7 +73,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.Require().NoError(err)
 
 	// Set outstanding slashing flag for first consumer, it's important to use the consumer's cons addr here
-	firstConsumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consumerConsAddr.Address)
+	firstConsumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consumerConsAddr.ToSdkConsAddr())
 
 	// Note: RecvPacket advances two blocks. Let's say the provider is currently at height N.
 	// The received slash packet will be queued during N, and handled by the ccv module during
@@ -127,7 +127,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	}
 
 	// Get staking keeper's validator obj after the relayed slash packet
-	stakingValAfter, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.Address)
+	stakingValAfter, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
 	s.Require().True(ok)
 
 	// check that the validator's tokens were NOT slashed on provider
@@ -135,7 +135,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.Require().Equal(valOldBalance, valNewBalance)
 
 	// Get signing info for the validator
-	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), providerConsAddr.Address)
+	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
 	s.Require().True(found)
 
 	// check that the validator is successfully jailed on provider
@@ -148,7 +148,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	// check that the outstanding slashing flag is reset on first consumer,
 	// since that consumer originally sent the slash packet.
 	// It's important to use the consumer's cons addr here.
-	pFlag := firstConsumerKeeper.OutstandingDowntime(s.consumerCtx(), consumerConsAddr.Address)
+	pFlag := firstConsumerKeeper.OutstandingDowntime(s.consumerCtx(), consumerConsAddr.ToSdkConsAddr())
 	s.Require().False(pFlag)
 
 	// check that slashing packet gets acknowledged successfully

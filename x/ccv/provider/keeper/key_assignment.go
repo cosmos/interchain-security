@@ -404,7 +404,7 @@ func (k Keeper) AssignConsumerKey(
 	}
 	providerAddr := types.NewProviderConsAddress(consAddrTmp)
 
-	if existingVal, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consumerAddr.Address); found {
+	if existingVal, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consumerAddr.ToSdkConsAddr()); found {
 		// If there is a validator using the consumer key to validate on the provider
 		// we prevent assigning the consumer key, unless the validator is assigning validator.
 		// This ensures that a validator joining the active set who has not explicitly assigned

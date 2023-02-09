@@ -162,7 +162,7 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 	}
 	// sorting by ValidatorByConsumerAddr.ConsumerAddr
 	sort.Slice(expectedGetAllOneConsumerOrder, func(i, j int) bool {
-		return bytes.Compare(expectedGetAllOneConsumerOrder[i].ConsumerAddr.Address, expectedGetAllOneConsumerOrder[j].ConsumerAddr.Address) == -1
+		return bytes.Compare(expectedGetAllOneConsumerOrder[i].ConsumerAddr.ToSdkConsAddr(), expectedGetAllOneConsumerOrder[j].ConsumerAddr.ToSdkConsAddr()) == -1
 	})
 
 	for _, assignment := range testAssignments {
@@ -325,14 +325,13 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 	willBePruned := map[string]bool{}
 	for _, consAddrToPrune := range k.GetAllConsumerAddrsToPrune(ctx, chainID) {
 		for _, cAddr := range consAddrToPrune.ConsumerAddrs.Addresses {
-			addr := sdk.ConsAddress(cAddr.Address)
-			willBePruned[addr.String()] = true
+			willBePruned[cAddr.ToSdkConsAddr().String()] = true
 		}
 	}
 
 	good := true
 	for _, valByConsAddr := range k.GetAllValidatorsByConsumerAddr(ctx, nil) {
-		if _, ok := willBePruned[sdk.ConsAddress(valByConsAddr.ConsumerAddr.Address).String()]; ok {
+		if _, ok := willBePruned[valByConsAddr.ConsumerAddr.ToSdkConsAddr().String()]; ok {
 			// Address will be pruned, everything is fine.
 			continue
 		}
@@ -340,7 +339,7 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 		isCurrentlyAssigned := false
 		for _, valconsPubKey := range k.GetAllValidatorConsumerPubKeys(ctx, &valByConsAddr.ChainId) {
 			consumerAddr, _ := utils.TMCryptoPublicKeyToConsAddr(*valconsPubKey.ConsumerKey)
-			if consumerAddr.Equals(sdk.ConsAddress(valByConsAddr.ConsumerAddr.Address)) {
+			if consumerAddr.Equals(valByConsAddr.ConsumerAddr.ToSdkConsAddr()) {
 				isCurrentlyAssigned = true
 				break
 			}
@@ -885,12 +884,12 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
 
 					if _, found := historicSlashQueries[string(consC.Address)]; !found {
-						historicSlashQueries[string(consC.Address)] = map[uint64]string{}
+						historicSlashQueries[consC.ToSdkConsAddr().String()] = map[uint64]string{}
 					}
 
 					vscid := k.GetValidatorSetUpdateId(ctx) - 1 // -1 since it was incremented before
 					// Record the slash query result obtained at this block
-					historicSlashQueries[string(consC.Address)][vscid] = string(consP.Address)
+					historicSlashQueries[consC.ToSdkConsAddr().String()][vscid] = consP.ToSdkConsAddr().String()
 				}
 			}
 

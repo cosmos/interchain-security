@@ -33,7 +33,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 
 	consumerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7897)
 	consumerTmPubKey := consumerCryptoId.TMProtoCryptoPublicKey()
-	consumerConsAddr := providertypes.ConsumerConsAddress{Address: consumerCryptoId.SDKValConsAddress()}
+	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
 
 	// create genesis struct
 	provGenesis := providertypes.NewGenesisState(vscID,

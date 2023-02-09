@@ -30,10 +30,10 @@ func TestInvalidMsg(t *testing.T) {
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 	providerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(0)
-	providerConsAddr := providertypes.ProviderConsAddress{Address: providerCryptoId.SDKValConsAddress()}
+	providerConsAddr := providerCryptoId.ProviderConsAddress()
 
 	consumerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(1)
-	consumerConsAddr := providertypes.ConsumerConsAddress{Address: consumerCryptoId.SDKValConsAddress()}
+	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
 	consumerKey := consumerCryptoId.ConsensusSDKPubKey()
 
 	testCases := []struct {
