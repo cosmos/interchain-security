@@ -427,7 +427,7 @@ func TestHandleSlashPacket(t *testing.T) {
 					// We only expect a single call to GetValidatorByConsAddr.
 					// Method will return once validator is not found.
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-						ctx, providerConsAddr).Return(
+						ctx, providerConsAddr.ToSdkConsAddr()).Return(
 						stakingtypes.Validator{}, false, // false = Not found.
 					).Times(1),
 				}
@@ -446,12 +446,12 @@ func TestHandleSlashPacket(t *testing.T) {
 			) []*gomock.Call {
 				return []*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-						ctx, providerConsAddr).Return(
+						ctx, providerConsAddr.ToSdkConsAddr()).Return(
 						stakingtypes.Validator{}, true, // true = Found.
 					).Times(1),
 					// Execution will stop after this call as validator is tombstoned.
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
-						providerConsAddr).Return(true).Times(1),
+						providerConsAddr.ToSdkConsAddr()).Return(true).Times(1),
 				}
 			},
 			0,
@@ -470,12 +470,12 @@ func TestHandleSlashPacket(t *testing.T) {
 				return []*gomock.Call{
 
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-						ctx, providerConsAddr).Return(
+						ctx, providerConsAddr.ToSdkConsAddr()).Return(
 						stakingtypes.Validator{}, true,
 					).Times(1),
 
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
-						providerConsAddr).Return(false).Times(1),
+						providerConsAddr.ToSdkConsAddr()).Return(false).Times(1),
 				}
 			},
 			0,
