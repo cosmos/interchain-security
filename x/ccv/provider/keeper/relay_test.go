@@ -539,10 +539,11 @@ func TestHandleSlashPacket(t *testing.T) {
 		require.Equal(t, tc.expectedSlashAcksLen, len(providerKeeper.GetSlashAcks(ctx, chainId)))
 
 		if tc.expectedSlashAcksLen == 1 {
-			// must match the consumer address
-			require.Equal(t, consumerConsAddr.String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
-			require.NotEqual(t, providerConsAddr.String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
-			require.NotEqual(t, providerConsAddr.String(), consumerConsAddr.String())
+			// must match the consumer address casted to an sdk cons address, then string
+			// Note: consumerConsAddr.String() is not the same as consumerConsAddr.ToSdkConsAddr().String() !!!
+			require.Equal(t, consumerConsAddr.ToSdkConsAddr().String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
+			require.NotEqual(t, providerConsAddr.ToSdkConsAddr().String(), providerKeeper.GetSlashAcks(ctx, chainId)[0])
+			require.NotEqual(t, providerConsAddr.ToSdkConsAddr().String(), consumerConsAddr.ToSdkConsAddr().String())
 		}
 
 		ctrl.Finish()

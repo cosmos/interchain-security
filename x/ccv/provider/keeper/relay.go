@@ -429,7 +429,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// append the validator address to the slash ack for its chain id
 	// TODO: consumer cons address should be accepted here
-	k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
+	k.AppendSlashAck(ctx, chainID, consumerConsAddr.ToSdkConsAddr().String())
 
 	// jail validator
 	if !validator.IsJailed() {
