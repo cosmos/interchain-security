@@ -15,8 +15,15 @@ func NewProviderConsAddress(addr sdk.ConsAddress) ProviderConsAddress {
 		Address: addr,
 	}
 }
+
 func (p *ProviderConsAddress) ToSdkConsAddr() sdk.ConsAddress {
 	return sdk.ConsAddress(p.Address)
+}
+
+// String implements the Stringer interface for ProviderConsAddress,
+// in the same format as sdk.ConsAddress
+func (p *ProviderConsAddress) String() string {
+	return p.ToSdkConsAddr().String()
 }
 
 // NewConsumerConsAddress creates a new ConsumerConsAddress
@@ -28,6 +35,12 @@ func NewConsumerConsAddress(addr sdk.ConsAddress) ConsumerConsAddress {
 
 func (c *ConsumerConsAddress) ToSdkConsAddr() sdk.ConsAddress {
 	return sdk.ConsAddress(c.Address)
+}
+
+// String implements the Stringer interface for ConsumerConsAddress,
+// in the same format as sdk.ConsAddress
+func (c *ConsumerConsAddress) String() string {
+	return c.ToSdkConsAddr().String()
 }
 
 // KeyAssignmentValidateBasic validates all the genesis state for key assignment

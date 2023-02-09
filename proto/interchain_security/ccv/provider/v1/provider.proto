@@ -199,11 +199,15 @@ message VscSendTimestamp {
 // Note this type is for type safety within provider code, consumer code uses normal sdk.ConsAddress, 
 // since there's no notion of provider vs consumer address.
 message ConsumerConsAddress {
+  // Do not generate stringer for this type, we'll use sdk.ConsAddress.String() instead
+  option (gogoproto.goproto_stringer) = false;
   bytes address = 1;
 }
 
 // A validator's consensus address on the provider chain
 message ProviderConsAddress {
+  // Do not generate stringer for this type, we'll use sdk.ConsAddress.String() instead
+  option (gogoproto.goproto_stringer) = false;
   bytes address = 1;
 }
 

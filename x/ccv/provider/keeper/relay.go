@@ -322,8 +322,8 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		// TODO: would be better to have a warning, but there is no Warn() function
 		k.Logger(ctx).Error("SlashPacket received for double-signing",
 			"chainID", chainID,
-			"consumer cons addr", consumerConsAddr.ToSdkConsAddr().String(),
-			"provider cons addr", providerConsAddr.ToSdkConsAddr().String(),
+			"consumer cons addr", consumerConsAddr.String(),
+			"provider cons addr", providerConsAddr.String(),
 			"vscID", data.ValsetUpdateId,
 			"infractionHeight", infractionHeight,
 		)
@@ -348,8 +348,8 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 	k.Logger(ctx).Info("slash packet received and enqueued",
 		"chainID", chainID,
-		"consumer cons addr", consumerConsAddr.ToSdkConsAddr().String(),
-		"provider cons addr", providerConsAddr.ToSdkConsAddr().String(),
+		"consumer cons addr", consumerConsAddr.String(),
+		"provider cons addr", providerConsAddr.String(),
 		"vscID", data.ValsetUpdateId,
 		"infractionType", data.Infraction,
 	)
@@ -387,8 +387,8 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	k.Logger(ctx).Debug("handling slash packet",
 		"chainID", chainID,
-		"consumer cons addr", consumerConsAddr.ToSdkConsAddr().String(),
-		"provider cons addr", providerConsAddr.ToSdkConsAddr().String(),
+		"consumer cons addr", consumerConsAddr.String(),
+		"provider cons addr", providerConsAddr.String(),
 		"vscID", data.ValsetUpdateId,
 		"infractionType", data.Infraction,
 	)
@@ -403,7 +403,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		// Note that it is impossible for the validator to be not found or unbonded if both the provider
 		// and the consumer are following the protocol. Thus if this branch is taken then one or both
 		// chains is incorrect, but it is impossible to tell which.
-		k.Logger(ctx).Error("validator not found or is unbonded", "validator", providerConsAddr.ToSdkConsAddr().String())
+		k.Logger(ctx).Error("validator not found or is unbonded", "validator", providerConsAddr.String())
 		return
 	}
 
@@ -412,7 +412,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		// Log and drop packet if validator is tombstoned.
 		k.Logger(ctx).Info(
 			"slash packet dropped because validator is already tombstoned",
-			"provider cons addr", providerConsAddr.ToSdkConsAddr().String(),
+			"provider cons addr", providerConsAddr.String(),
 		)
 		return
 	}
@@ -429,12 +429,12 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// append the validator address to the slash ack for its chain id
 	// TODO: consumer cons address should be accepted here
-	k.AppendSlashAck(ctx, chainID, consumerConsAddr.ToSdkConsAddr().String())
+	k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
 
 	// jail validator
 	if !validator.IsJailed() {
 		k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
-		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.ToSdkConsAddr().String())
+		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.String())
 		jailTime := ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
 		k.slashingKeeper.JailUntil(ctx, providerConsAddr.ToSdkConsAddr(), jailTime)
 	}
@@ -443,7 +443,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		sdk.NewEvent(
 			ccv.EventTypeExecuteConsumerChainSlash,
 			sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
-			sdk.NewAttribute(ccv.AttributeValidatorAddress, providerConsAddr.ToSdkConsAddr().String()),
+			sdk.NewAttribute(ccv.AttributeValidatorAddress, providerConsAddr.String()),
 			sdk.NewAttribute(ccv.AttributeInfractionType, data.Infraction.String()),
 			sdk.NewAttribute(ccv.AttributeInfractionHeight, strconv.Itoa(int(infractionHeight))),
 			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))),

@@ -325,13 +325,13 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 	willBePruned := map[string]bool{}
 	for _, consAddrToPrune := range k.GetAllConsumerAddrsToPrune(ctx, chainID) {
 		for _, cAddr := range consAddrToPrune.ConsumerAddrs.Addresses {
-			willBePruned[cAddr.ToSdkConsAddr().String()] = true
+			willBePruned[cAddr.String()] = true
 		}
 	}
 
 	good := true
 	for _, valByConsAddr := range k.GetAllValidatorsByConsumerAddr(ctx, nil) {
-		if _, ok := willBePruned[valByConsAddr.ConsumerAddr.ToSdkConsAddr().String()]; ok {
+		if _, ok := willBePruned[valByConsAddr.ConsumerAddr.String()]; ok {
 			// Address will be pruned, everything is fine.
 			continue
 		}
@@ -883,13 +883,13 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 					// Get the provider who assigned the key
 					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
 
-					if _, found := historicSlashQueries[consC.ToSdkConsAddr().String()]; !found {
-						historicSlashQueries[consC.ToSdkConsAddr().String()] = map[uint64]string{}
+					if _, found := historicSlashQueries[consC.String()]; !found {
+						historicSlashQueries[consC.String()] = map[uint64]string{}
 					}
 
 					vscid := k.GetValidatorSetUpdateId(ctx) - 1 // -1 since it was incremented before
 					// Record the slash query result obtained at this block
-					historicSlashQueries[consC.ToSdkConsAddr().String()][vscid] = consP.ToSdkConsAddr().String()
+					historicSlashQueries[consC.String()][vscid] = consP.String()
 				}
 			}
 
