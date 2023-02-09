@@ -329,6 +329,25 @@ class Staking {
     this.m.events.push(Event.JAIL);
   };
 
+  unjail = (val: Validator) => {
+    // validator should be jailed
+    if (!this.jailed[val]) {
+      return
+    }
+
+    // validator shouldn't be tombstoned
+    if (this.m.ccvP.tombstoned[val]) {
+      return;
+    }
+
+    // check validator served its jail time
+    if (this.m.staking.jailed[val]! > this.m.t[P]){
+      return
+    }
+    this.jailed[val] = null;
+    this.m.events.push(Event.UNJAIL);
+  };
+
   unbondingCanComplete = (opID: number) => {
     {
       // Allow maturity of relevant validator
@@ -481,7 +500,7 @@ class CCVProvider {
     this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_REQUEST);
 
 
-    if (this.tombstoned[data.val]) {
+    if (this.m.ccvP.tombstoned[data.val]) {
       return;
     }
 
@@ -683,6 +702,11 @@ class Model {
     isDowntime: boolean,
   ) => {
     this.ccvC.sendSlashRequest(val, infractionHeight, isDowntime);
+  };
+
+  unjail = (val: number) => {
+    // unjail validator
+    this.staking.unjail(val);
   };
 
   updateClient = (_: Chain) => {

@@ -96,6 +96,11 @@ type ConsumerSlash = {
   isDowntime: boolean; // Whether the slash is for downtime (or double sign)
 };
 
+type Unjail = {
+  kind: string;
+  val: Validator;
+};
+
 type UpdateClient = {
   kind: string;
   // The chain who will receive the light client header TX
@@ -229,6 +234,7 @@ export {
   Delegate,
   Undelegate,
   ConsumerSlash,
+  Unjail,
   UpdateClient,
   Deliver,
   EndAndBeginBlock,

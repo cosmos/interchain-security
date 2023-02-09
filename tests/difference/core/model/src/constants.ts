@@ -98,6 +98,7 @@ enum Event {
   INSUFFICIENT_SHARES = 'insufficient_shares',
   SLASH_UNDEL = 'slash_undel',
   JAIL = 'jail',
+  UNJAIL= 'unjail',
   SEND_DOWNTIME_SLASH_REQUEST = 'send_downtime_slash_request',
   RECEIVE_DOWNTIME_SLASH_REQUEST = 'receive_downtime_slash_request',
   RECEIVE_DOWNTIME_SLASH_ACK = 'receive_downtime_slash_ack',

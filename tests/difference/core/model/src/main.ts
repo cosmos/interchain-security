@@ -21,6 +21,7 @@ import {
   Undelegate,
   Delegate,
   ConsumerSlash,
+  Unjail,
   UpdateClient,
   Deliver,
   EndAndBeginBlock,
@@ -78,6 +79,7 @@ class ActionGenerator {
       'Delegate',
       'Undelegate',
       'ConsumerSlash',
+      'Unjail',
       'EndAndBeginBlock',
       'Deliver',
       'UpdateClient',
@@ -105,6 +107,12 @@ class ActionGenerator {
         // Choose downtime or doublesign
         isDowntime: Math.random() < ISDOWNTIME_PROBABILITY,
       } as ConsumerSlash;
+    }
+    if (kind === 'Unjail') {
+      return {
+        kind,
+        val: _.random(0, NUM_VALIDATORS - 1), // Any validator
+      } as Unjail;
     }
     if (kind === 'UpdateClient') {
       return {
@@ -139,6 +147,10 @@ class ActionGenerator {
     if (a.kind === 'ConsumerSlash') {
       return 2 <= this.didSlash.filter((x) => !x).length;
     }
+    if (a.kind === 'Unjail') {
+      // only pick jailed validator
+      return this.didSlash[(a as Unjail).val];
+    }
     if (a.kind === 'UpdateClient') {
       return true;
     }
@@ -171,9 +183,11 @@ class ActionGenerator {
     if (a.kind === 'ConsumerSlash') {
       this.didSlash[(a as ConsumerSlash).val] = true;
     }
-    // Update internal state to prevent expiring light clients
-    // Client is also updated for Deliver, because this is needed in practice
-    // for SUT.
+    // TODO: understand why it breaks the jailing
+    // and why it's not even needed
+    // if (a.kind === 'Unjail') {
+      // this.didSlash[(a as Unjail).val] = false;
+    // }
     if (a.kind === 'UpdateClient' || a.kind === 'Deliver') {
       const chain = (a as UpdateClient).chain;
       if (
@@ -249,6 +263,19 @@ function doAction(model: Model, action: Action): PartialState {
       t: model.t[C],
       outstandingDowntime: model.ccvC.outstandingDowntime,
     };
+  }
+
+  if (kind === 'Unjail') {
+    const a = action as Unjail;
+    model.unjail(a.val)
+    return {
+      h: model.h[P],
+      t: model.t[P],
+    };
+    // Implement check according to jail until time stamp
+    // validator update
+    // send val update
+    // slash acks
   }
   if (kind === 'UpdateClient') {
     const a = action as UpdateClient;
