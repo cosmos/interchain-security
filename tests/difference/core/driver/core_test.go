@@ -190,7 +190,7 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool)
 		if e.Type == channeltypes.EventTypeSendPacket {
 			packet, err := ibctestingcore.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
-			s.simibc.Link.AddPacket(s.chainID(C), packet)
+			s.simibc.Outboxes.AddPacket(s.chainID(C), packet)
 		}
 	}
 }
@@ -305,7 +305,7 @@ func (s *CoreSuite) TestTraces() {
 	shortest := -1
 	shortestLen := 10000000000
 	for i := range s.traces.Data {
-		if !s.Run(fmt.Sprintf("Trace num: %d", i), func() {
+		if !s.Run(fmt.Sprintf("Trace ix: %d", i), func() {
 			// Setup a new pair of chains for each trace
 			s.SetupTest()
 

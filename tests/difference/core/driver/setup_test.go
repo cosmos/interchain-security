@@ -133,8 +133,8 @@ func (s *CoreSuite) TestAssumptionsSetup() {
 	s.Require().Equal(s.offsetHeight, s.height(C)-1)
 
 	// Network is empty
-	s.Require().Empty(s.simibc.Link.OutboxPackets[P])
-	s.Require().Empty(s.simibc.Link.OutboxPackets[C])
-	s.Require().Empty(s.simibc.Link.OutboxAcks[P])
-	s.Require().Empty(s.simibc.Link.OutboxAcks[C])
+	s.Require().Empty(s.simibc.Outboxes.OutboxPackets[P])
+	s.Require().Empty(s.simibc.Outboxes.OutboxPackets[C])
+	s.Require().Empty(s.simibc.Outboxes.OutboxAcks[P])
+	s.Require().Empty(s.simibc.Outboxes.OutboxAcks[C])
 }

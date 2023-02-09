@@ -52,7 +52,7 @@ const MODEL_INIT_STATE: ModelInitState = {
     pendingChanges: [],
     maturingVscs: new Map(),
     outstandingDowntime: [false, false, false, false],
-    consumerPower: [5000, 4000, undefined, undefined],
+    consumerPower: [5000, 4000, null, null],
   },
   ccvP: {
     initialHeight: 0,
@@ -76,7 +76,7 @@ const MODEL_INIT_STATE: ModelInitState = {
     ],
     undelegationQ: [],
     validatorQ: [],
-    jailed: [undefined, undefined, undefined, undefined],
+    jailed: [null, null, null, null],
     delegatorTokens: INITIAL_DELEGATOR_TOKENS,
     opID: 0,
     changes: {},
