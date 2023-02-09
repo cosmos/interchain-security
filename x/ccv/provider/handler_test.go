@@ -15,7 +15,6 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider"
 	keeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
@@ -55,7 +54,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 						// Return a valid validator, found!
 					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-						consumerConsAddr,
+						consumerConsAddr.ToSdkConsAddr(),
 					).Return(stakingtypes.Validator{}, false),
 				)
 			},
@@ -91,7 +90,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 						// Return a valid validator, found!
 					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-						consumerConsAddr,
+						consumerConsAddr.ToSdkConsAddr(),
 					).Return(stakingtypes.Validator{}, false),
 				)
 			},
@@ -107,7 +106,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 			tc.setup(ctx, k, mocks)
 
-			msg, err := types.NewMsgAssignConsumerKey(tc.chainID,
+			msg, err := providertypes.NewMsgAssignConsumerKey(tc.chainID,
 				providerCryptoId.SDKValOpAddress(), consumerKey,
 			)
 
