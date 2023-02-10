@@ -319,8 +319,8 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		// getMappedInfractionHeight is already checked in ValidateSlashPacket
 		infractionHeight, _ := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 
-		// TODO: would be better to have a warning, but there is no Warn() function
-		k.Logger(ctx).Error("SlashPacket received for double-signing",
+		k.SetSlashLog(ctx, providerConsAddr)
+		k.Logger(ctx).Info("SlashPacket received for double-signing",
 			"chainID", chainID,
 			"consumer cons addr", consumerConsAddr.String(),
 			"provider cons addr", providerConsAddr.String(),

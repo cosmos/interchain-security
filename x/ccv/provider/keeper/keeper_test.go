@@ -10,6 +10,7 @@ import (
 
 	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
 
+	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -517,4 +518,17 @@ func TestRemoveConsumerFromUnbondingOp(t *testing.T) {
 		canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "some_chain")
 		require.False(t, canComplete)
 	})
+}
+
+// TestSetSlashLog tests slash log getter and setter methods
+func TestSetSlashLog(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	addrWithDoubleSigns := cryptotestutil.NewCryptoIdentityFromIntSeed(1).SDKValConsAddress()
+	addrWithoutDoubleSigns := cryptotestutil.NewCryptoIdentityFromIntSeed(2).SDKValConsAddress()
+
+	providerKeeper.SetSlashLog(ctx, addrWithDoubleSigns)
+	require.True(t, providerKeeper.GetSlashLog(ctx, addrWithDoubleSigns))
+	require.False(t, providerKeeper.GetSlashLog(ctx, addrWithoutDoubleSigns))
 }
