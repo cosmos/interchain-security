@@ -2,6 +2,47 @@ package main
 
 import "time"
 
+// submits an invalid equivocation proposal which should be rejected
+func stepsRejectEquivocationProposal(consumerName string, propNumber uint) []Step {
+	return []Step{
+		{
+			// bob submits a proposal to slash himself
+			action: submitEquivocationProposalAction{
+				chain:     chainID("consu"),
+				from:      validatorID("bob"),
+				deposit:   10000001,
+				height:    10,
+				time:      time.Now(),
+				power:     500,
+				validator: validatorID("bob"),
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   500,
+						validatorID("carol"): 495,
+					},
+					ValBalances: &map[validatorID]uint{
+						validatorID("bob"): 9500000000,
+					},
+					Proposals: &map[uint]Proposal{
+						// proposal does not exist
+						propNumber: TextProposal{},
+					},
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   500,
+						validatorID("carol"): 495,
+					},
+				},
+			},
+		},
+	}
+}
+
 // submits an equivocation proposal, votes on it, and tomstones the equivocating validator
 func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Step {
 	s := []Step{
@@ -21,7 +62,7 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   500,
-						validatorID("carol"): 495,
+						validatorID("carol"): 0,
 					},
 					ValBalances: &map[validatorID]uint{
 						validatorID("bob"): 9489999999,
@@ -40,7 +81,7 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   500,
-						validatorID("carol"): 495,
+						validatorID("carol"): 0,
 					},
 				},
 			},
@@ -56,8 +97,8 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   0, // bob is slashed after proposal passes
-						validatorID("carol"): 495,
+						validatorID("bob"):   0, // bob is tombstoned after proposal passes
+						validatorID("carol"): 0,
 					},
 					Proposals: &map[uint]Proposal{
 						propNumber: EquivocationProposal{
@@ -73,7 +114,7 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   500, // slash not reflected in consumer chain
-						validatorID("carol"): 495,
+						validatorID("carol"): 0,
 					},
 				},
 			},
@@ -90,14 +131,14 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   0,
-						validatorID("carol"): 495,
+						validatorID("carol"): 0,
 					},
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   0, // slash relayed to consumer chain
-						validatorID("carol"): 495,
+						validatorID("carol"): 0,
 					},
 				},
 			},

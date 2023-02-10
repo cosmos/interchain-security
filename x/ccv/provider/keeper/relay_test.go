@@ -12,6 +12,7 @@ import (
 	exported "github.com/cosmos/ibc-go/v4/modules/core/exported"
 	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
 	"github.com/cosmos/interchain-security/testutil/crypto"
+	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -256,6 +257,11 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
 	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
 	require.Equal(t, 0, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
+	require.True(t, providerKeeper.GetSlashLog(ctx, sdk.ConsAddress(packetData.Validator.Address)))
+
+	// slash log should be empty for a random validator address in this testcase
+	randomAddress := cryptotestutil.NewCryptoIdentityFromIntSeed(100).SDKValConsAddress()
+	require.False(t, providerKeeper.GetSlashLog(ctx, randomAddress))
 }
 
 // TestOnRecvSlashPacket tests the OnRecvSlashPacket method specifically for downtime slash packets,
