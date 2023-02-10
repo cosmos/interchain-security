@@ -153,9 +153,9 @@ func TestGlobalSlashEntryKeyAndParse(t *testing.T) {
 	now := time.Now()
 
 	providerConsAddrs := []providertypes.ProviderConsAddress{
-		{cryptoutil.NewCryptoIdentityFromIntSeed(0).SDKValConsAddress()},
-		{cryptoutil.NewCryptoIdentityFromIntSeed(1).SDKValConsAddress()},
-		{cryptoutil.NewCryptoIdentityFromIntSeed(2).SDKValConsAddress()},
+		cryptoutil.NewCryptoIdentityFromIntSeed(0).ProviderConsAddress(),
+		cryptoutil.NewCryptoIdentityFromIntSeed(1).ProviderConsAddress(),
+		cryptoutil.NewCryptoIdentityFromIntSeed(2).ProviderConsAddress(),
 	}
 
 	entries := []providertypes.GlobalSlashEntry{}
