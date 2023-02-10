@@ -20,6 +20,8 @@ var happyPathSteps = concatSteps(
 	stepsUnbond("consu"),
 	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
+	stepsRejectEquivocationProposal("consu", 2),
+	stepsDoubleSign("consu"),
 	stepsSubmitEquivocationProposal("consu", 2),
 	stepsStopChain("consu", 3),
 )
@@ -46,5 +48,5 @@ var multipleConsumers = concatSteps(
 	stepsMultiConsumerRedelegate("consu", "densu"),
 	stepsMultiConsumerDowntimeFromConsumer("consu", "densu"),
 	stepsMultiConsumerDowntimeFromProvider("consu", "densu"),
-	stepsDoubleSign("consu", "densu"), // double sign on one of the chains
+	stepsMultiConsumerDoubleSign("consu", "densu"), // double sign on one of the chains
 )
