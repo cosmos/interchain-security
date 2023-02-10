@@ -9,7 +9,8 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-// NewProviderConsAddress creates a new ProviderConsAddress
+// NewProviderConsAddress creates a new ProviderConsAddress,
+// a validator's consensus address on the provider chain.
 func NewProviderConsAddress(addr sdk.ConsAddress) ProviderConsAddress {
 	return ProviderConsAddress{
 		Address: addr,
@@ -26,7 +27,10 @@ func (p *ProviderConsAddress) String() string {
 	return p.ToSdkConsAddr().String()
 }
 
-// NewConsumerConsAddress creates a new ConsumerConsAddress
+// NewConsumerConsAddress creates a new ConsumerConsAddress,
+// a validator's assigned consensus address for a consumer chain.
+// Note this type is for type safety within provider code, consumer code uses normal sdk.ConsAddress,
+// since there's no notion of provider vs consumer address.
 func NewConsumerConsAddress(addr sdk.ConsAddress) ConsumerConsAddress {
 	return ConsumerConsAddress{
 		Address: addr,
