@@ -57,6 +57,14 @@ func TestProviderProposalHandler(t *testing.T) {
 			expValidConsumerRemoval: true,
 		},
 		{
+			// no slash log for equivocation
+			name: "in valid equivocation posal",
+			content: providertypes.NewEquivocationProposal(
+				"title", "description", []*evidencetypes.Equivocation{equivocation}),
+			blockTime:            hourFromNow,
+			expValidEquivocation: false,
+		},
+		{
 			name: "valid equivocation posal",
 			content: providertypes.NewEquivocationProposal(
 				"title", "description", []*evidencetypes.Equivocation{equivocation}),
@@ -95,6 +103,9 @@ func TestProviderProposalHandler(t *testing.T) {
 			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
 
 		case tc.expValidEquivocation:
+			if tc.expValidEquivocation {
+				providerKeeper.SetSlashLog(ctx, equivocation.GetConsensusAddress())
+			}
 			mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocation)
 		}
 

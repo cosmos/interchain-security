@@ -1004,25 +1004,53 @@ func TestBeginBlockCCR(t *testing.T) {
 func TestHandleEquivocationProposal(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	keeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-	equivocation1 := &evidencetypes.Equivocation{
-		Time:             time.Now(),
-		Height:           1,
-		Power:            1,
-		ConsensusAddress: "addr1",
+	tcFail := []*evidencetypes.Equivocation{
+		&evidencetypes.Equivocation{
+			Time:             time.Now(),
+			Height:           1,
+			Power:            1,
+			ConsensusAddress: "addr1",
+		},
+		&evidencetypes.Equivocation{
+			Time:             time.Now(),
+			Height:           1,
+			Power:            1,
+			ConsensusAddress: "addr2",
+		},
 	}
-	equivocation2 := &evidencetypes.Equivocation{
-		Time:             time.Now(),
-		Height:           1,
-		Power:            1,
-		ConsensusAddress: "addr2",
-	}
-	prop := &providertypes.EquivocationProposal{
-		Equivocations: []*evidencetypes.Equivocation{equivocation1, equivocation2},
-	}
-	mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocation1)
-	mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocation2)
 
-	err := keeper.HandleEquivocationProposal(ctx, prop)
+	tcPass := []*evidencetypes.Equivocation{
+		&evidencetypes.Equivocation{
+			Time:             time.Now(),
+			Height:           1,
+			Power:            1,
+			ConsensusAddress: "addr3",
+		},
+		&evidencetypes.Equivocation{
+			Time:             time.Now(),
+			Height:           1,
+			Power:            1,
+			ConsensusAddress: "addr4",
+		},
+	}
 
+	// test failing prop
+	propFail := &providertypes.EquivocationProposal{
+		Equivocations: []*evidencetypes.Equivocation{tcFail[0], tcFail[1]},
+	}
+	err := keeper.HandleEquivocationProposal(ctx, propFail)
+	require.Error(t, err)
+
+	// test passing prop
+	propPass := &providertypes.EquivocationProposal{
+		Equivocations: []*evidencetypes.Equivocation{tcPass[0], tcPass[1]},
+	}
+	keeper.SetSlashLog(ctx, tcPass[0].GetConsensusAddress())
+	keeper.SetSlashLog(ctx, tcPass[0].GetConsensusAddress())
+
+	mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, tcPass[0])
+	mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, tcPass[1])
+
+	err = keeper.HandleEquivocationProposal(ctx, propPass)
 	require.NoError(t, err)
 }
