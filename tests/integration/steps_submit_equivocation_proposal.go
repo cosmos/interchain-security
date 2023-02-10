@@ -2,6 +2,7 @@ package main
 
 import "time"
 
+// submits an invalid equivocation proposal which should be rejected
 func stepsRejectEquivocationProposal(consumerName string, propNumber uint) []Step {
 	return []Step{
 		{
