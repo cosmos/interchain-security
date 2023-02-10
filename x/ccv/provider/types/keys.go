@@ -123,6 +123,10 @@ const (
 	// ConsumerAddrsToPruneBytePrefix is the byte prefix that will store the mapping from VSC ids
 	// to consumer validators addresses needed for pruning
 	ConsumerAddrsToPruneBytePrefix
+
+	// SlashLogBytePrefix is the byte prefix that will store the mapping from provider address to boolean
+	// denoting whether the provider address has commited any double signign infractions
+	SlashLogBytePrefix
 )
 
 // PortKey returns the key to the port ID in the store
@@ -438,4 +442,9 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
 	addr := bz[prefixL+8+int(chainIdL):]
 	return chainID, addr, nil
+}
+
+// SlashLogKey returns the key to a validator's slash log
+func SlashLogKey(providerAddr sdk.ConsAddress) []byte {
+	return append([]byte{SlashAcksBytePrefix}, providerAddr.Bytes()...)
 }

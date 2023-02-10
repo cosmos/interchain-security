@@ -360,7 +360,6 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 
 	// Track and increment ibc seq num for each packet, since these need to be unique.
 	ibcSeqNum := uint64(0)
-
 	// Construct 500 double-sign slash packets
 	for ibcSeqNum < 500 {
 		// Increment ibc seq num for each packet (starting at 1)
@@ -405,6 +404,13 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 			s.Require().Fail("validator not found")
 		}
 		s.Require().False(stakingVal.Jailed)
+
+		// 4th validator should have no slash log, all the others do
+		if val != s.providerChain.Vals.Validators[3] {
+			s.Require().True(providerKeeper.GetSlashLog(s.providerCtx(), sdk.ConsAddress(val.Address)))
+		} else {
+			s.Require().False(providerKeeper.GetSlashLog(s.providerCtx(), sdk.ConsAddress(val.Address)))
+		}
 	}
 }
 
