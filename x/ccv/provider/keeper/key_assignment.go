@@ -592,7 +592,7 @@ func (k Keeper) GetProviderAddrFromConsumerAddr(
 	}
 	// If mapping from consumer -> provider addr is not found, there is no assigned key,
 	// and the consumer addr is the provider addr
-	return types.ProviderConsAddress(consumerAddr)
+	return types.NewProviderConsAddress(consumerAddr.ToSdkConsAddr())
 }
 
 // PruneKeyAssignments prunes the consumer addresses no longer needed
