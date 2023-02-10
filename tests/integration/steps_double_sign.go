@@ -1,6 +1,7 @@
 package main
 
-func stepsDoubleSign(consumerName string) []Step {
+// Steps that make carol double sign on the provider, and bob double sign on a single consumer
+func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 	return []Step{
 		{
 			// provider double sign

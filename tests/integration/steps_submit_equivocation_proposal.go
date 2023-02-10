@@ -97,7 +97,7 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   0, // bob is slashed after proposal passes
+						validatorID("bob"):   0, // bob is tombstoned after proposal passes
 						validatorID("carol"): 0,
 					},
 					Proposals: &map[uint]Proposal{
