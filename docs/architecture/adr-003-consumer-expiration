@@ -24,7 +24,7 @@ Let’s add a `max_time_without_vsc_packet` parameter inside the consumer Params
 
 This time must be:
 
-- Lower than 1/2 of the provider unbonding period
+- Shorter than 1/2 of the provider unbonding period.
 
 eg: The cosmoshub unbonding period is **21 days.** 
 
@@ -41,7 +41,7 @@ if (max_time_without_vsc_packet > (provider_unbonding_period / 2)) {
 
 ## Consequences
 
-The consumer chain can’t live if it’s hasn’t received an VSC packet in less than half the `provider_unbonding_period`  . That ensures the provider chain the valset on the consumer chain is up-to-date about the unbonding system and no longer requires to wait for VSC Matured Packet to allow unbonding.
+The consumer chain can’t live if it hasn’t received an VSC packet in less than half the `provider_unbonding_period`. That ensures the provider chain valset on the consumer chain is up-to-date about the unbonding system and no longer requires to wait for VSC Matured Packet to allow unbonding.
 
 ### Positive
 
@@ -50,7 +50,7 @@ The consumer chain can’t live if it’s hasn’t received an VSC packet in les
 
 ### Negative
 
-- Chain could stop in case of issues on the relayers
+- Chain could stop in case of issues on the relayers.
 
 ### Neutral
 
