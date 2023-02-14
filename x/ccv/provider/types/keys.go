@@ -445,6 +445,6 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 }
 
 // SlashLogKey returns the key to a validator's slash log
-func SlashLogKey(providerAddr sdk.ConsAddress) []byte {
-	return append([]byte{SlashAcksBytePrefix}, providerAddr.Bytes()...)
+func SlashLogKey(providerAddr ProviderConsAddress) []byte {
+	return append([]byte{SlashAcksBytePrefix}, providerAddr.ToSdkConsAddr().Bytes()...)
 }

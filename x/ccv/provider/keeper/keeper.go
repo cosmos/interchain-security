@@ -1004,7 +1004,7 @@ func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSe
 // double signing slash packet was received by the provider from at least one consumer chain
 func (k Keeper) SetSlashLog(
 	ctx sdk.Context,
-	providerAddr sdk.ConsAddress,
+	providerAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.SlashLogKey(providerAddr), []byte{})
@@ -1014,7 +1014,7 @@ func (k Keeper) SetSlashLog(
 // True will be returned if an entry exists for a given validator address
 func (k Keeper) GetSlashLog(
 	ctx sdk.Context,
-	providerAddr sdk.ConsAddress,
+	providerAddr types.ProviderConsAddress,
 ) (found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SlashLogKey(providerAddr))

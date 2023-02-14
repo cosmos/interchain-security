@@ -1049,10 +1049,10 @@ func TestHandleEquivocationProposal(t *testing.T) {
 	// Set slash logs according to cons addrs in equivocations
 	consAddr := tcPass[0].GetConsensusAddress()
 	require.NotNil(t, consAddr, "consensus address could not be parsed")
-	keeper.SetSlashLog(ctx, consAddr)
+	keeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(consAddr))
 	consAddr = tcPass[1].GetConsensusAddress()
 	require.NotNil(t, consAddr, "consensus address could not be parsed")
-	keeper.SetSlashLog(ctx, consAddr)
+	keeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(consAddr))
 
 	mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, tcPass[0])
 	mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, tcPass[1])

@@ -257,10 +257,11 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
 	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
 	require.Equal(t, 0, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
-	require.True(t, providerKeeper.GetSlashLog(ctx, sdk.ConsAddress(packetData.Validator.Address)))
+	require.True(t, providerKeeper.GetSlashLog(ctx,
+		providertypes.NewProviderConsAddress(packetData.Validator.Address)))
 
 	// slash log should be empty for a random validator address in this testcase
-	randomAddress := cryptotestutil.NewCryptoIdentityFromIntSeed(100).SDKValConsAddress()
+	randomAddress := cryptotestutil.NewCryptoIdentityFromIntSeed(100).ProviderConsAddress()
 	require.False(t, providerKeeper.GetSlashLog(ctx, randomAddress))
 }
 
