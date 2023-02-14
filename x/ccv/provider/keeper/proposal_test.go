@@ -1005,32 +1005,32 @@ func TestHandleEquivocationProposal(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	keeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	tcFail := []*evidencetypes.Equivocation{
-		&evidencetypes.Equivocation{
+		{
 			Time:             time.Now(),
 			Height:           1,
 			Power:            1,
-			ConsensusAddress: "addr1",
+			ConsensusAddress: "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
 		},
-		&evidencetypes.Equivocation{
+		{
 			Time:             time.Now(),
 			Height:           1,
 			Power:            1,
-			ConsensusAddress: "addr2",
+			ConsensusAddress: "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
 		},
 	}
 
 	tcPass := []*evidencetypes.Equivocation{
-		&evidencetypes.Equivocation{
+		{
 			Time:             time.Now(),
 			Height:           1,
 			Power:            1,
-			ConsensusAddress: "addr3",
+			ConsensusAddress: "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
 		},
-		&evidencetypes.Equivocation{
+		{
 			Time:             time.Now(),
 			Height:           1,
 			Power:            1,
-			ConsensusAddress: "addr4",
+			ConsensusAddress: "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
 		},
 	}
 
@@ -1045,8 +1045,14 @@ func TestHandleEquivocationProposal(t *testing.T) {
 	propPass := &providertypes.EquivocationProposal{
 		Equivocations: []*evidencetypes.Equivocation{tcPass[0], tcPass[1]},
 	}
-	keeper.SetSlashLog(ctx, tcPass[0].GetConsensusAddress())
-	keeper.SetSlashLog(ctx, tcPass[0].GetConsensusAddress())
+
+	// Set slash logs according to cons addrs in equivocations
+	consAddr := tcPass[0].GetConsensusAddress()
+	require.NotNil(t, consAddr, "consensus address could not be parsed")
+	keeper.SetSlashLog(ctx, consAddr)
+	consAddr = tcPass[1].GetConsensusAddress()
+	require.NotNil(t, consAddr, "consensus address could not be parsed")
+	keeper.SetSlashLog(ctx, consAddr)
 
 	mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, tcPass[0])
 	mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, tcPass[1])
