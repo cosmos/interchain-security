@@ -62,7 +62,7 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+						validatorID("carol"): 495,
 					},
 					ValBalances: &map[validatorID]uint{
 						validatorID("bob"): 9489999999,
@@ -81,7 +81,7 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+						validatorID("carol"): 495,
 					},
 				},
 			},
@@ -98,7 +98,7 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   0, // bob is tombstoned after proposal passes
-						validatorID("carol"): 0,
+						validatorID("carol"): 495,
 					},
 					Proposals: &map[uint]Proposal{
 						propNumber: EquivocationProposal{
@@ -114,7 +114,7 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   500, // slash not reflected in consumer chain
-						validatorID("carol"): 0,
+						validatorID("carol"): 495,
 					},
 				},
 			},
@@ -131,14 +131,14 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   0,
-						validatorID("carol"): 0,
+						validatorID("carol"): 495,
 					},
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   0, // slash relayed to consumer chain
-						validatorID("carol"): 0,
+						validatorID("carol"): 495,
 					},
 				},
 			},
