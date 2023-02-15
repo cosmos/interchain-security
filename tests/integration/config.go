@@ -70,6 +70,9 @@ type TestRun struct {
 	useGaia                  bool
 	gaiaTag                  string
 
+	// run tests with gaia and cosmos-sdk located in /interchain-security directory
+	localStack bool
+
 	name string
 }
 
@@ -317,7 +320,7 @@ func MultiConsumerTestRun() TestRun {
 	}
 }
 
-func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string) {
+func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string, localStack bool) {
 	if localSdkPath != "" {
 		fmt.Println("USING LOCAL SDK", localSdkPath)
 	}
@@ -325,9 +328,14 @@ func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag str
 		fmt.Println("USING GAIA INSTEAD OF ICS provider app", gaiaTag)
 	}
 
-	s.useGaia = useGaia
-	s.gaiaTag = gaiaTag
-	s.localSdkPath = localSdkPath
+	if localStack {
+		s.localStack = true
+		s.useGaia = true
+	} else {
+		s.useGaia = useGaia
+		s.gaiaTag = gaiaTag
+		s.localSdkPath = localSdkPath
+	}
 }
 
 // validateStringLiterals enforces that configs follow the constraints

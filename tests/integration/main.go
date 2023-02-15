@@ -21,6 +21,7 @@ var localSdkPath = flag.String("local-sdk-path", "",
 	"path of a local sdk version to build and reference in integration tests")
 var useGaia = flag.Bool("use-gaia", false, "use gaia instead of ICS provider app")
 var gaiaTag = flag.String("gaia-tag", "", "gaia tag to use - default is latest")
+var localStack = flag.Bool("local-stack", false, "use gaia and cosmos-sdk located in the interchain-security directory -- causes use-gaia and gaia-tag to be ignored")
 
 // runs integration tests
 // all docker containers are built sequentially to avoid race conditions when using local cosmos-sdk
@@ -31,7 +32,7 @@ func main() {
 	if happyPathOnly != nil && *happyPathOnly {
 		fmt.Println("=============== running happy path only ===============")
 		tr := DefaultTestRun()
-		tr.Run(happyPathSteps, *localSdkPath, *useGaia, *gaiaTag)
+		tr.Run(happyPathSteps, *localSdkPath, *useGaia, *gaiaTag, *localStack)
 		return
 	}
 
@@ -53,7 +54,7 @@ func main() {
 			go func(run testRunWithSteps) {
 				defer wg.Done()
 				tr := run.testRun
-				tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag)
+				tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag, *localStack)
 			}(run)
 		}
 		wg.Wait()
@@ -63,15 +64,15 @@ func main() {
 
 	for _, run := range testRuns {
 		tr := run.testRun
-		tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag)
+		tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag, *localStack)
 	}
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
 }
 
 // Run sets up docker container and executes the steps in the test run.
 // Docker containers are torn down after the test run is complete.
-func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag string) {
-	tr.SetDockerConfig(localSdkPath, useGaia, gaiaTag)
+func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag string, localStack bool) {
+	tr.SetDockerConfig(localSdkPath, useGaia, gaiaTag, localStack)
 
 	tr.validateStringLiterals()
 	tr.startDocker()
@@ -180,15 +181,21 @@ func (tr *TestRun) startDocker() {
 			gaiaTag = tr.gaiaTag
 		}
 	}
+	localStack := "false"
+	if tr.localStack {
+		localStack = "true"
+	}
 	scriptStr := fmt.Sprintf(
-		"tests/integration/testnet-scripts/start-docker.sh %s %s %s %s %s",
+		"tests/integration/testnet-scripts/start-docker.sh %s %s %s %s %s %s",
 		tr.containerConfig.containerName,
 		tr.containerConfig.instanceName,
 		localSdk,
+		localStack,
 		useGaia,
 		gaiaTag,
 	)
-
+	fmt.Println("## START DOCKER ##", scriptStr)
+	// log.Fatalf("startDocker: %s", scriptStr)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("/bin/bash", "-c", scriptStr)
 

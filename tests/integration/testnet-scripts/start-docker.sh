@@ -7,8 +7,9 @@ set -eux
 CONTAINER_NAME=$1
 INSTANCE_NAME=$2
 LOCAL_SDK_PATH=${3:-"default"} # Sets this var to default if null or unset
-USE_GAIA_PROVIDER=${4:-"false"} # if true, use gaia as provider; if false, use ICS app
-USE_GAIA_TAG=${5:-""} # gaia tag to use if using gaia as provider; by default the latest tag is used
+LOCAL_STACK=${4:-"false"} # if true, use local gaia AND cosmos-sdk version; gaia and cosmos SDK must be in /interchain-security repo
+USE_GAIA_PROVIDER=${5:-"false"} # if true, use gaia as provider; if false, use ICS app
+USE_GAIA_TAG=${6:-""} # gaia tag to use if using gaia as provider; by default the latest tag is used
 
 # Remove existing container instance
 set +e
@@ -16,9 +17,9 @@ docker rm -f "$INSTANCE_NAME"
 set -e
 
 # Delete old sdk directory if it exists 
-if [ -d "./cosmos-sdk" ]; then
-    rm -rf ./cosmos-sdk/
-fi 
+# if [ -d "./cosmos-sdk" ]; then
+#     rm -rf ./cosmos-sdk/
+# fi 
 
 # Copy sdk directory to working dir if path was specified
 if [[ "$LOCAL_SDK_PATH" != "default" ]]
@@ -32,16 +33,23 @@ fi
 # Build the Docker container
 if [[ "$USE_GAIA_PROVIDER" = "true" ]]
 then
-    printf "\n\nUsing gaia as provider\n\n"
-    printf "\n\nUsing gaia tag %s\n\n" "$USE_GAIA_TAG"
-    docker build  -f Dockerfile.gaia -t "$CONTAINER_NAME" --build-arg USE_GAIA_TAG="$USE_GAIA_TAG" .
+    if  [[ "$LOCAL_STACK" = "true" ]]
+    then
+        printf "\n\n######## USING LOCAL GAIA && SDK #############\n\n"
+        docker build  -f Dockerfile.local -t "$CONTAINER_NAME" .
+    else
+        printf "\n\nUsing gaia as provider\n\n"
+        printf "\n\nUsing gaia tag %s\n\n" "$USE_GAIA_TAG"
+        # docker build  -f Dockerfile.gaia -t "$CONTAINER_NAME" --build-arg USE_GAIA_TAG="$USE_GAIA_TAG" .
+        docker build  -f Dockerfile.gaia -t "$CONTAINER_NAME" .
+    fi
 else
     printf "\n\nUsing ICS provider app as provider\n\n\n"
     docker build -f Dockerfile -t "$CONTAINER_NAME"  .
 fi
 
 # Remove copied sdk directory
-rm -rf ./cosmos-sdk/
+# rm -rf ./cosmos-sdk/
 
 # Run new test container instance with extended privileges.
 # Extended privileges are granted to the container here to allow for network namespace manipulation (bringing a node up/down) 

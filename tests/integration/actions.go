@@ -251,7 +251,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
 		"tx", "gov", "submit-proposal", "consumer-addition",
 		"/temp-proposal.json",
@@ -264,7 +264,14 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
-	).CombinedOutput()
+	)
+	fmt.Println("CMD", cmd.String())
+	bz, err = cmd.CombinedOutput()
+	fmt.Println(string(bz))
+
+	if verbose {
+		fmt.Println(string(bz))
+	}
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
@@ -438,6 +445,7 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	}
 
 	jsonStr := string(bz)
+	fmt.Println("PROP", jsonStr)
 	if strings.Contains(jsonStr, "'") {
 		log.Fatal("prop json contains single quote")
 	}
@@ -446,12 +454,13 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName,
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/equivocation-proposal.json")).CombinedOutput()
 
+	fmt.Println("COMMAND ##", string(bz))
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, providerChain.binaryName,
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, providerChain.binaryName,
 
 		"tx", "gov", "submit-proposal", "equivocation",
 		"/equivocation-proposal.json",
@@ -464,7 +473,10 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
-	).CombinedOutput()
+	)
+	fmt.Println("COMMAND ##", cmd.String())
+	bz, err = cmd.CombinedOutput()
+	fmt.Println("OUT", err, "\n", string(bz))
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))

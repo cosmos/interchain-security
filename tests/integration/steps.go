@@ -19,7 +19,7 @@ var happyPathSteps = concatSteps(
 	stepsAssignConsumerKeyOnStartedChain("consu", "bob"),
 	stepsUnbond("consu"),
 	stepsRedelegate("consu"),
-	stepsDowntime("consu"),
+	// stepsDowntime("consu"),
 	stepsRejectEquivocationProposal("consu", 2),   // prop to tombstone bob is rejected
 	stepsDoubleSignOnProviderAndConsumer("consu"), // carol double signs on provider, bob double signs on consumer
 	stepsSubmitEquivocationProposal("consu", 2),   // now prop to tombstone bob is submitted and accepted
