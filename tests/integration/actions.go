@@ -251,7 +251,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
 		"tx", "gov", "submit-proposal", "consumer-addition",
 		"/temp-proposal.json",
@@ -264,10 +264,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
-	)
-	fmt.Println("CMD", cmd.String())
-	bz, err = cmd.CombinedOutput()
-	fmt.Println(string(bz))
+	).CombinedOutput()
 
 	if verbose {
 		fmt.Println(string(bz))
