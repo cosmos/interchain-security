@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 
 # build latest tagged gaia
-FROM golang:1.18-alpine AS gaia-builder
+FROM golang:1.18-alpine AS gaia-builder 
+# WORKDIR is set to /go by default
 ARG USE_GAIA_TAG
 ENV GAIA_TAG=${USE_GAIA_TAG}
 
@@ -12,22 +13,30 @@ ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOFLAGS="-buildvcs=false"
 
+# Copy host machine's working directory into the container under /interchain-security
+ADD . /interchain-security
+
+RUN git clone https://github.com/cosmos/gaia.git
+WORKDIR /go/gaia
+
 # fetch gaia from tag and build it
-RUN git clone https://github.com/cosmos/gaia.git && \
-    cd gaia && \
+    RUN if [ -n "${GAIA_TAG}" ]; \
+        then git checkout "${GAIA_TAG}"; \
     # if GAIA_TAG is not set, build the latest tagged version
-    if [ -n "${GAIA_TAG}" ]; then \
-        git checkout "${GAIA_TAG}"; \
     else \
         git checkout $(git tag | tail -1); \
-    fi && \
-    # Also replace sdk version in the go.mod if specified
-    if [ -d "../cosmos-sdk" ]; then \
-        # Do not specify version here. It leads to odd replacement behavior 
-        go mod edit -replace github.com/cosmos/cosmos-sdk=../cosmos-sdk && \
-        go mod tidy; \
-    fi && \
-    make build
+    fi 
+
+# Also replace sdk version in the go.mod if specified
+RUN if [ -d "/interchain-security/cosmos-sdk" ]; then \
+    go mod edit -replace github.com/cosmos/cosmos-sdk=/interchain-security/cosmos-sdk && \
+    echo "local sdk version used in gaia build"; \
+fi
+
+RUN go mod tidy
+# Print the version of the sdk used in the build
+RUN go list -m github.com/cosmos/cosmos-sdk 
+RUN make build
 
 FROM golang:1.18-alpine AS is-builder
 
