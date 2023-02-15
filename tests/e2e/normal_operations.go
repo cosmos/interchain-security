@@ -10,8 +10,6 @@ import (
 
 // TestProviderKeeperFields tests that the provider keeper is initialized with non-zero and
 // non-nil values for all its fields. This is a direct test of the provider app initer given to the test suite.
-//
-// TODO: test against bad gaia version
 func (s CCVTestSuite) TestProviderKeeperFields() {
 
 	providerKeeper := s.providerApp.GetProviderKeeper()
@@ -20,19 +18,19 @@ func (s CCVTestSuite) TestProviderKeeperFields() {
 		accountKeeper, clientKeeper, stakingKeeper, slashingKeeper, evidenceKeeper,
 		feeColl := providerKeeper.ExposeAllFields()
 
-	s.Require().NotZero(reflect.ValueOf(cdc))              // 1
-	s.Require().NotZero(reflect.ValueOf(storeKey))         // 2
-	s.Require().NotZero(reflect.ValueOf(paramSpace))       // 3
-	s.Require().NotZero(reflect.ValueOf(scopedKeeper))     // 4
-	s.Require().NotZero(reflect.ValueOf(channelKeeper))    // 5
-	s.Require().NotZero(reflect.ValueOf(portKeeper))       // 6
-	s.Require().NotZero(reflect.ValueOf(connectionKeeper)) // 7
-	s.Require().NotZero(reflect.ValueOf(accountKeeper))    // 8
-	s.Require().NotZero(reflect.ValueOf(clientKeeper))     // 9
-	s.Require().NotZero(reflect.ValueOf(stakingKeeper))    // 10
-	s.Require().NotZero(reflect.ValueOf(slashingKeeper))   // 11
-	s.Require().NotZero(reflect.ValueOf(evidenceKeeper))   // 12
-	s.Require().NotZero(reflect.ValueOf(feeColl))          // 13
+	s.Require().False(reflect.ValueOf(cdc).IsZero())              // 1
+	s.Require().False(reflect.ValueOf(storeKey).IsZero())         // 2
+	s.Require().False(reflect.ValueOf(paramSpace).IsZero())       // 3
+	s.Require().False(reflect.ValueOf(scopedKeeper).IsZero())     // 4
+	s.Require().False(reflect.ValueOf(channelKeeper).IsZero())    // 5
+	s.Require().False(reflect.ValueOf(portKeeper).IsZero())       // 6
+	s.Require().False(reflect.ValueOf(connectionKeeper).IsZero()) // 7
+	s.Require().False(reflect.ValueOf(accountKeeper).IsZero())    // 8
+	s.Require().False(reflect.ValueOf(clientKeeper).IsZero())     // 9
+	s.Require().False(reflect.ValueOf(stakingKeeper).IsZero())    // 10
+	s.Require().False(reflect.ValueOf(slashingKeeper).IsZero())   // 11
+	s.Require().False(reflect.ValueOf(evidenceKeeper).IsZero())   // 12
+	s.Require().False(reflect.ValueOf(feeColl).IsZero())          // 13
 
 	// Ensures we didn't miss any fields
 	s.Require().Equal(13, reflect.ValueOf(providerKeeper).NumField())
@@ -47,21 +45,21 @@ func (s CCVTestSuite) TestConsumerKeeperFields() {
 		clientKeeper, slashingKeeper, hooks, bankKeeper, accountKeeper, ibcTransferKeeper,
 		ibcCoreKeeper, feeColl := consumerKeeper.ExposeAllFields()
 
-	s.Require().NotZero(reflect.ValueOf(storeKey))          // 1
-	s.Require().NotZero(reflect.ValueOf(cdc))               // 2
-	s.Require().NotZero(reflect.ValueOf(paramSpace))        // 3
-	s.Require().NotZero(reflect.ValueOf(scopedKeeper))      // 4
-	s.Require().NotZero(reflect.ValueOf(channelKeeper))     // 5
-	s.Require().NotZero(reflect.ValueOf(portKeeper))        // 6
-	s.Require().NotZero(reflect.ValueOf(connectionKeeper))  // 7
-	s.Require().NotZero(reflect.ValueOf(clientKeeper))      // 8
-	s.Require().NotZero(reflect.ValueOf(slashingKeeper))    // 9
-	s.Require().NotZero(reflect.ValueOf(hooks))             // 10
-	s.Require().NotZero(reflect.ValueOf(bankKeeper))        // 11
-	s.Require().NotZero(reflect.ValueOf(accountKeeper))     // 12
-	s.Require().NotZero(reflect.ValueOf(ibcTransferKeeper)) // 13
-	s.Require().NotZero(reflect.ValueOf(ibcCoreKeeper))     // 14
-	s.Require().NotZero(reflect.ValueOf(feeColl))           // 15
+	s.Require().False(reflect.ValueOf(storeKey).IsZero())          // 1
+	s.Require().False(reflect.ValueOf(cdc).IsZero())               // 2
+	s.Require().False(reflect.ValueOf(paramSpace).IsZero())        // 3
+	s.Require().False(reflect.ValueOf(scopedKeeper).IsZero())      // 4
+	s.Require().False(reflect.ValueOf(channelKeeper).IsZero())     // 5
+	s.Require().False(reflect.ValueOf(portKeeper).IsZero())        // 6
+	s.Require().False(reflect.ValueOf(connectionKeeper).IsZero())  // 7
+	s.Require().False(reflect.ValueOf(clientKeeper).IsZero())      // 8
+	s.Require().False(reflect.ValueOf(slashingKeeper).IsZero())    // 9
+	s.Require().False(reflect.ValueOf(hooks).IsZero())             // 10
+	s.Require().False(reflect.ValueOf(bankKeeper).IsZero())        // 11
+	s.Require().False(reflect.ValueOf(accountKeeper).IsZero())     // 12
+	s.Require().False(reflect.ValueOf(ibcTransferKeeper).IsZero()) // 13
+	s.Require().False(reflect.ValueOf(ibcCoreKeeper).IsZero())     // 14
+	s.Require().False(reflect.ValueOf(feeColl).IsZero())           // 15
 
 	// Ensures we didn't miss any fields
 	s.Require().Equal(15, reflect.ValueOf(consumerKeeper).NumField())
