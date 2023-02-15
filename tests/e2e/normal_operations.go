@@ -8,11 +8,11 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
-// TestProviderExternalKeepers tests that the provider keeper is initialized with non-zero and
+// TestProviderKeeperFields tests that the provider keeper is initialized with non-zero and
 // non-nil values for all its fields. This is a direct test of the provider app initer given to the test suite.
 //
 // TODO: test against bad gaia version
-func (s CCVTestSuite) TestProviderExternalKeepers() {
+func (s CCVTestSuite) TestProviderKeeperFields() {
 
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
@@ -20,44 +20,51 @@ func (s CCVTestSuite) TestProviderExternalKeepers() {
 		accountKeeper, clientKeeper, stakingKeeper, slashingKeeper, evidenceKeeper,
 		feeColl := providerKeeper.ExposeAllFields()
 
-	s.Require().NotZero(reflect.ValueOf(cdc))
-	s.Require().NotZero(reflect.ValueOf(storeKey))
-	s.Require().NotZero(reflect.ValueOf(paramSpace))
-	s.Require().NotZero(reflect.ValueOf(scopedKeeper))
-	s.Require().NotZero(reflect.ValueOf(channelKeeper))
-	s.Require().NotZero(reflect.ValueOf(portKeeper))
-	s.Require().NotZero(reflect.ValueOf(connectionKeeper))
-	s.Require().NotZero(reflect.ValueOf(accountKeeper))
-	s.Require().NotZero(reflect.ValueOf(clientKeeper))
-	s.Require().NotZero(reflect.ValueOf(stakingKeeper))
-	s.Require().NotZero(reflect.ValueOf(slashingKeeper))
-	s.Require().NotZero(reflect.ValueOf(evidenceKeeper))
-	s.Require().NotZero(reflect.ValueOf(feeColl))
+	s.Require().NotZero(reflect.ValueOf(cdc))              // 1
+	s.Require().NotZero(reflect.ValueOf(storeKey))         // 2
+	s.Require().NotZero(reflect.ValueOf(paramSpace))       // 3
+	s.Require().NotZero(reflect.ValueOf(scopedKeeper))     // 4
+	s.Require().NotZero(reflect.ValueOf(channelKeeper))    // 5
+	s.Require().NotZero(reflect.ValueOf(portKeeper))       // 6
+	s.Require().NotZero(reflect.ValueOf(connectionKeeper)) // 7
+	s.Require().NotZero(reflect.ValueOf(accountKeeper))    // 8
+	s.Require().NotZero(reflect.ValueOf(clientKeeper))     // 9
+	s.Require().NotZero(reflect.ValueOf(stakingKeeper))    // 10
+	s.Require().NotZero(reflect.ValueOf(slashingKeeper))   // 11
+	s.Require().NotZero(reflect.ValueOf(evidenceKeeper))   // 12
+	s.Require().NotZero(reflect.ValueOf(feeColl))          // 13
+
+	// Ensures we didn't miss any fields
+	s.Require().Equal(13, reflect.ValueOf(providerKeeper).NumField())
 }
 
-// TestConsumerExternalKeepers tests that the consumer keeper is initialized with non-zero and
+// TestConsumerKeeperFields tests that the consumer keeper is initialized with non-zero and
 // non-nil values for all its fields. This is a direct test of the consumer app initer given to the test suite.
-func (s CCVTestSuite) TestConsumerExternalKeepers() {
+func (s CCVTestSuite) TestConsumerKeeperFields() {
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
 	storeKey, cdc, paramSpace, scopedKeeper, channelKeeper, portKeeper, connectionKeeper,
-		clientKeeper, slashingKeeper, bankKeeper, accountKeeper, ibcTransferKeeper,
+		clientKeeper, slashingKeeper, hooks, bankKeeper, accountKeeper, ibcTransferKeeper,
 		ibcCoreKeeper, feeColl := consumerKeeper.ExposeAllFields()
 
-	s.Require().NotZero(reflect.ValueOf(storeKey))
-	s.Require().NotZero(reflect.ValueOf(cdc))
-	s.Require().NotZero(reflect.ValueOf(paramSpace))
-	s.Require().NotZero(reflect.ValueOf(scopedKeeper))
-	s.Require().NotZero(reflect.ValueOf(channelKeeper))
-	s.Require().NotZero(reflect.ValueOf(portKeeper))
-	s.Require().NotZero(reflect.ValueOf(connectionKeeper))
-	s.Require().NotZero(reflect.ValueOf(clientKeeper))
-	s.Require().NotZero(reflect.ValueOf(slashingKeeper))
-	s.Require().NotZero(reflect.ValueOf(bankKeeper))
-	s.Require().NotZero(reflect.ValueOf(accountKeeper))
-	s.Require().NotZero(reflect.ValueOf(ibcTransferKeeper))
-	s.Require().NotZero(reflect.ValueOf(ibcCoreKeeper))
-	s.Require().NotZero(reflect.ValueOf(feeColl))
+	s.Require().NotZero(reflect.ValueOf(storeKey))          // 1
+	s.Require().NotZero(reflect.ValueOf(cdc))               // 2
+	s.Require().NotZero(reflect.ValueOf(paramSpace))        // 3
+	s.Require().NotZero(reflect.ValueOf(scopedKeeper))      // 4
+	s.Require().NotZero(reflect.ValueOf(channelKeeper))     // 5
+	s.Require().NotZero(reflect.ValueOf(portKeeper))        // 6
+	s.Require().NotZero(reflect.ValueOf(connectionKeeper))  // 7
+	s.Require().NotZero(reflect.ValueOf(clientKeeper))      // 8
+	s.Require().NotZero(reflect.ValueOf(slashingKeeper))    // 9
+	s.Require().NotZero(reflect.ValueOf(hooks))             // 10
+	s.Require().NotZero(reflect.ValueOf(bankKeeper))        // 11
+	s.Require().NotZero(reflect.ValueOf(accountKeeper))     // 12
+	s.Require().NotZero(reflect.ValueOf(ibcTransferKeeper)) // 13
+	s.Require().NotZero(reflect.ValueOf(ibcCoreKeeper))     // 14
+	s.Require().NotZero(reflect.ValueOf(feeColl))           // 15
+
+	// Ensures we didn't miss any fields
+	s.Require().Equal(15, reflect.ValueOf(consumerKeeper).NumField())
 }
 
 // Tests the tracking of historical info in the context of new blocks being committed

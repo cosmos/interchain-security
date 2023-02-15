@@ -88,6 +88,7 @@ func (k Keeper) ExposeAllFields() (
 	ccv.ConnectionKeeper,
 	ccv.ClientKeeper,
 	ccv.SlashingKeeper,
+	ccv.ConsumerHooks,
 	ccv.BankKeeper,
 	ccv.AccountKeeper,
 	ccv.IBCTransferKeeper,
@@ -95,7 +96,7 @@ func (k Keeper) ExposeAllFields() (
 	string) {
 
 	return k.storeKey, k.cdc, k.paramStore, k.scopedKeeper, k.channelKeeper, k.portKeeper,
-		k.connectionKeeper, k.clientKeeper, k.slashingKeeper, k.bankKeeper, k.authKeeper,
+		k.connectionKeeper, k.clientKeeper, k.slashingKeeper, k.hooks, k.bankKeeper, k.authKeeper,
 		k.ibcTransferKeeper, k.ibcCoreKeeper, k.feeCollectorName
 }
 
