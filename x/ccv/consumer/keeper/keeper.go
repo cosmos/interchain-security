@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -58,7 +59,7 @@ func NewKeeper(
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return Keeper{
+	k := Keeper{
 		storeKey:          key,
 		cdc:               cdc,
 		paramStore:        paramSpace,
@@ -74,30 +75,64 @@ func NewKeeper(
 		ibcCoreKeeper:     ibcCoreKeeper,
 		feeCollectorName:  feeCollectorName,
 	}
+
+	k.mustValidateFields()
+	return k
 }
 
-// ExposeAllFields exposes (only by value) all the un-exported fields of the ccv consumer keeper,
-// purely for testing purposes. DO NOT Use this method outside of testing, as it breaks encapsulation.
-func (k Keeper) ExposeAllFields() (
-	sdk.StoreKey,
-	codec.BinaryCodec,
-	paramtypes.Subspace,
-	ccv.ScopedKeeper,
-	ccv.ChannelKeeper,
-	ccv.PortKeeper,
-	ccv.ConnectionKeeper,
-	ccv.ClientKeeper,
-	ccv.SlashingKeeper,
-	ccv.ConsumerHooks,
-	ccv.BankKeeper,
-	ccv.AccountKeeper,
-	ccv.IBCTransferKeeper,
-	ccv.IBCCoreKeeper,
-	string) {
+// Validates that the provider keeper is initialized with non-zero and
+// non-nil values for all its fields. Otherwise this method will panic.
+func (k Keeper) mustValidateFields() {
 
-	return k.storeKey, k.cdc, k.paramStore, k.scopedKeeper, k.channelKeeper, k.portKeeper,
-		k.connectionKeeper, k.clientKeeper, k.slashingKeeper, k.hooks, k.bankKeeper, k.authKeeper,
-		k.ibcTransferKeeper, k.ibcCoreKeeper, k.feeCollectorName
+	// Ensures no fields are missed in this validation
+	if reflect.ValueOf(k).NumField() != 15 {
+		panic("number of fields in provider keeper is not 15")
+	}
+
+	// Note 14 fields will be validated, hooks are explicitly set after the constructor
+
+	if reflect.ValueOf(k.storeKey).IsZero() { // 1
+		panic("storeKey is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.cdc).IsZero() { // 2
+		panic("cdc is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.paramStore).IsZero() { // 3
+		panic("paramStore is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.scopedKeeper).IsZero() { // 4
+		panic("scopedKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.channelKeeper).IsZero() { // 5
+		panic("channelKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.portKeeper).IsZero() { // 6
+		panic("portKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.connectionKeeper).IsZero() { // 7
+		panic("connectionKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.clientKeeper).IsZero() { // 8
+		panic("clientKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.slashingKeeper).IsZero() { // 9
+		panic("slashingKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.bankKeeper).IsZero() { // 10
+		panic("bankKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.authKeeper).IsZero() { // 11
+		panic("authKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.ibcTransferKeeper).IsZero() { // 12
+		panic("ibcTransferKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.ibcCoreKeeper).IsZero() { // 13
+		panic("ibcCoreKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.feeCollectorName).IsZero() { // 14
+		panic("feeCollectorName is zero-valued or nil")
+	}
 }
 
 // Logger returns a module-specific logger.

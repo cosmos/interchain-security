@@ -100,14 +100,6 @@ func TestConsumerPacketSendExpiredClient(t *testing.T) {
 // Normal operations tests
 //
 
-func TestProviderKeeperFields(t *testing.T) {
-	runCCVTestByName(t, "TestProviderKeeperFields")
-}
-
-func TestConsumerKeeperFields(t *testing.T) {
-	runCCVTestByName(t, "TestConsumerKeeperFields")
-}
-
 func TestHistoricalInfo(t *testing.T) {
 	runCCVTestByName(t, "TestHistoricalInfo")
 }

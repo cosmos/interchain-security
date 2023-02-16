@@ -1,69 +1,10 @@
 package e2e
 
 import (
-	"reflect"
-
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
-
-// TestProviderKeeperFields tests that the provider keeper is initialized with non-zero and
-// non-nil values for all its fields. This is a direct test of the provider app initer given to the test suite.
-func (s CCVTestSuite) TestProviderKeeperFields() {
-
-	providerKeeper := s.providerApp.GetProviderKeeper()
-
-	cdc, storeKey, paramSpace, scopedKeeper, channelKeeper, portKeeper, connectionKeeper,
-		accountKeeper, clientKeeper, stakingKeeper, slashingKeeper, evidenceKeeper,
-		feeColl := providerKeeper.ExposeAllFields()
-
-	s.Require().False(reflect.ValueOf(cdc).IsZero())              // 1
-	s.Require().False(reflect.ValueOf(storeKey).IsZero())         // 2
-	s.Require().False(reflect.ValueOf(paramSpace).IsZero())       // 3
-	s.Require().False(reflect.ValueOf(scopedKeeper).IsZero())     // 4
-	s.Require().False(reflect.ValueOf(channelKeeper).IsZero())    // 5
-	s.Require().False(reflect.ValueOf(portKeeper).IsZero())       // 6
-	s.Require().False(reflect.ValueOf(connectionKeeper).IsZero()) // 7
-	s.Require().False(reflect.ValueOf(accountKeeper).IsZero())    // 8
-	s.Require().False(reflect.ValueOf(clientKeeper).IsZero())     // 9
-	s.Require().False(reflect.ValueOf(stakingKeeper).IsZero())    // 10
-	s.Require().False(reflect.ValueOf(slashingKeeper).IsZero())   // 11
-	s.Require().False(reflect.ValueOf(evidenceKeeper).IsZero())   // 12
-	s.Require().False(reflect.ValueOf(feeColl).IsZero())          // 13
-
-	// Ensures we didn't miss any fields
-	s.Require().Equal(13, reflect.ValueOf(providerKeeper).NumField())
-}
-
-// TestConsumerKeeperFields tests that the consumer keeper is initialized with non-zero and
-// non-nil values for all its fields. This is a direct test of the consumer app initer given to the test suite.
-func (s CCVTestSuite) TestConsumerKeeperFields() {
-	consumerKeeper := s.consumerApp.GetConsumerKeeper()
-
-	storeKey, cdc, paramSpace, scopedKeeper, channelKeeper, portKeeper, connectionKeeper,
-		clientKeeper, slashingKeeper, hooks, bankKeeper, accountKeeper, ibcTransferKeeper,
-		ibcCoreKeeper, feeColl := consumerKeeper.ExposeAllFields()
-
-	s.Require().False(reflect.ValueOf(storeKey).IsZero())          // 1
-	s.Require().False(reflect.ValueOf(cdc).IsZero())               // 2
-	s.Require().False(reflect.ValueOf(paramSpace).IsZero())        // 3
-	s.Require().False(reflect.ValueOf(scopedKeeper).IsZero())      // 4
-	s.Require().False(reflect.ValueOf(channelKeeper).IsZero())     // 5
-	s.Require().False(reflect.ValueOf(portKeeper).IsZero())        // 6
-	s.Require().False(reflect.ValueOf(connectionKeeper).IsZero())  // 7
-	s.Require().False(reflect.ValueOf(clientKeeper).IsZero())      // 8
-	s.Require().False(reflect.ValueOf(slashingKeeper).IsZero())    // 9
-	s.Require().False(reflect.ValueOf(hooks).IsZero())             // 10
-	s.Require().False(reflect.ValueOf(bankKeeper).IsZero())        // 11
-	s.Require().False(reflect.ValueOf(accountKeeper).IsZero())     // 12
-	s.Require().False(reflect.ValueOf(ibcTransferKeeper).IsZero()) // 13
-	s.Require().False(reflect.ValueOf(ibcCoreKeeper).IsZero())     // 14
-	s.Require().False(reflect.ValueOf(feeColl).IsZero())           // 15
-
-	// Ensures we didn't miss any fields
-	s.Require().Equal(15, reflect.ValueOf(consumerKeeper).NumField())
-}
 
 // Tests the tracking of historical info in the context of new blocks being committed
 func (k CCVTestSuite) TestHistoricalInfo() {
