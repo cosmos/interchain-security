@@ -127,28 +127,6 @@ func (k Keeper) mustValidateFields() {
 	}
 }
 
-// ExposeAllFields exposes (only by value) all the un-exported fields of the ccv provider keeper,
-// purely for testing purposes. DO NOT Use this method outside of testing, as it breaks encapsulation.
-func (k Keeper) ExposeAllFields() (
-	codec.BinaryCodec,
-	sdk.StoreKey,
-	paramtypes.Subspace,
-	ccv.ScopedKeeper,
-	ccv.ChannelKeeper,
-	ccv.PortKeeper,
-	ccv.ConnectionKeeper,
-	ccv.AccountKeeper,
-	ccv.ClientKeeper,
-	ccv.StakingKeeper,
-	ccv.SlashingKeeper,
-	ccv.EvidenceKeeper,
-	string) {
-
-	return k.cdc, k.storeKey, k.paramSpace, k.scopedKeeper, k.channelKeeper,
-		k.portKeeper, k.connectionKeeper, k.accountKeeper, k.clientKeeper, k.stakingKeeper,
-		k.slashingKeeper, k.evidenceKeeper, k.feeCollectorName
-}
-
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+host.ModuleName+"-"+types.ModuleName)
