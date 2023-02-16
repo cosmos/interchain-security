@@ -1002,55 +1002,62 @@ func TestBeginBlockCCR(t *testing.T) {
 }
 
 func TestHandleEquivocationProposal(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	keeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-	tcFail := []*evidencetypes.Equivocation{
-		&evidencetypes.Equivocation{
+
+	equivocations := []*evidencetypes.Equivocation{
+		{
 			Time:             time.Now(),
 			Height:           1,
 			Power:            1,
-			ConsensusAddress: "addr1",
+			ConsensusAddress: "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
 		},
-		&evidencetypes.Equivocation{
+		{
 			Time:             time.Now(),
 			Height:           1,
 			Power:            1,
-			ConsensusAddress: "addr2",
+			ConsensusAddress: "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
 		},
 	}
 
-	tcPass := []*evidencetypes.Equivocation{
-		&evidencetypes.Equivocation{
-			Time:             time.Now(),
-			Height:           1,
-			Power:            1,
-			ConsensusAddress: "addr3",
-		},
-		&evidencetypes.Equivocation{
-			Time:             time.Now(),
-			Height:           1,
-			Power:            1,
-			ConsensusAddress: "addr4",
-		},
+	prop := &providertypes.EquivocationProposal{
+		Equivocations: []*evidencetypes.Equivocation{equivocations[0], equivocations[1]},
 	}
 
-	// test failing prop
-	propFail := &providertypes.EquivocationProposal{
-		Equivocations: []*evidencetypes.Equivocation{tcFail[0], tcFail[1]},
+	testCases := []struct {
+		name                string
+		setSlashLogs        bool
+		expectEquivsHandled bool
+		expectErr           bool
+	}{
+		{name: "slash logs not set", setSlashLogs: false, expectEquivsHandled: false, expectErr: true},
+		{name: "slash logs set", setSlashLogs: true, expectEquivsHandled: true, expectErr: false},
 	}
-	err := keeper.HandleEquivocationProposal(ctx, propFail)
-	require.Error(t, err)
+	for _, tc := range testCases {
 
-	// test passing prop
-	propPass := &providertypes.EquivocationProposal{
-		Equivocations: []*evidencetypes.Equivocation{tcPass[0], tcPass[1]},
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		keeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+
+		if tc.setSlashLogs {
+			// Set slash logs according to cons addrs in equivocations
+			consAddr := equivocations[0].GetConsensusAddress()
+			require.NotNil(t, consAddr, "consensus address could not be parsed")
+			keeper.SetSlashLog(ctx, consAddr)
+			consAddr = equivocations[1].GetConsensusAddress()
+			require.NotNil(t, consAddr, "consensus address could not be parsed")
+			keeper.SetSlashLog(ctx, consAddr)
+		}
+
+		if tc.expectEquivsHandled {
+			mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocations[0])
+			mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocations[1])
+		}
+
+		err := keeper.HandleEquivocationProposal(ctx, prop)
+
+		if tc.expectErr {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
+		ctrl.Finish()
 	}
-	keeper.SetSlashLog(ctx, tcPass[0].GetConsensusAddress())
-	keeper.SetSlashLog(ctx, tcPass[0].GetConsensusAddress())
-
-	mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, tcPass[0])
-	mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, tcPass[1])
-
-	err = keeper.HandleEquivocationProposal(ctx, propPass)
-	require.NoError(t, err)
 }
