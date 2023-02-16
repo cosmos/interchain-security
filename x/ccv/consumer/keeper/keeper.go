@@ -80,7 +80,7 @@ func NewKeeper(
 	return k
 }
 
-// Validates that the provider keeper is initialized with non-zero and
+// Validates that the consumer keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
 
