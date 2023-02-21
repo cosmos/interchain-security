@@ -41,7 +41,7 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 
 	// Setup mock calls
 	gomock.InOrder(
-		mockAccountKeeper.EXPECT().GetModuleAccount(ctx, "").
+		mockAccountKeeper.EXPECT().GetModuleAccount(ctx, authTypes.FeeCollectorName).
 			Return(mAcc).
 			Times(1),
 		mockBankKeeper.EXPECT().GetAllBalances(ctx, mAcc.GetAddress()).

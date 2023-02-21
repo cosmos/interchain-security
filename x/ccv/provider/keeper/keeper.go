@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -56,7 +57,7 @@ func NewKeeper(
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return Keeper{
+	k := Keeper{
 		cdc:              cdc,
 		storeKey:         key,
 		paramSpace:       paramSpace,
@@ -70,6 +71,59 @@ func NewKeeper(
 		slashingKeeper:   slashingKeeper,
 		evidenceKeeper:   evidenceKeeper,
 		feeCollectorName: feeCollectorName,
+	}
+
+	k.mustValidateFields()
+	return k
+}
+
+// Validates that the provider keeper is initialized with non-zero and
+// non-nil values for all its fields. Otherwise this method will panic.
+func (k Keeper) mustValidateFields() {
+
+	// Ensures no fields are missed in this validation
+	if reflect.ValueOf(k).NumField() != 13 {
+		panic("number of fields in provider keeper is not 13")
+	}
+
+	if reflect.ValueOf(k.cdc).IsZero() { // 1
+		panic("cdc is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.storeKey).IsZero() { // 2
+		panic("storeKey is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.paramSpace).IsZero() { // 3
+		panic("paramSpace is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.scopedKeeper).IsZero() { // 4
+		panic("scopedKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.channelKeeper).IsZero() { // 5
+		panic("channelKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.portKeeper).IsZero() { // 6
+		panic("portKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.connectionKeeper).IsZero() { // 7
+		panic("connectionKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.accountKeeper).IsZero() { // 8
+		panic("accountKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.clientKeeper).IsZero() { // 9
+		panic("clientKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.stakingKeeper).IsZero() { // 10
+		panic("stakingKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.slashingKeeper).IsZero() { // 11
+		panic("slashingKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.evidenceKeeper).IsZero() { // 12
+		panic("evidenceKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.feeCollectorName).IsZero() { // 13
+		panic("feeCollectorName is zero-valued or nil")
 	}
 }
 
