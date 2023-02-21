@@ -199,11 +199,6 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 
 		return initialValSet
 	}
-	// distribution transmission
-	err := am.keeper.DistributeToProviderValidatorSet(ctx)
-	if err != nil {
-		panic(err)
-	}
 
 	// Execute EndBlock logic for the Reward Distribution sub-protocol
 	am.keeper.EndBlockRD(ctx)
