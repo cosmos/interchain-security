@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	testutil "github.com/cosmos/interchain-security/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -75,7 +75,7 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
-					3, time.Hour, time.Hour, 30*time.Minute, time.Hour, "0.1", 400),
+					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, 30*time.Minute, time.Hour, "0.1", 400),
 				nil,
 				nil,
 				nil,
@@ -94,7 +94,7 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
-					3, time.Hour, time.Hour, 30*time.Minute, time.Hour, "0.1", 400),
+					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, 30*time.Minute, time.Hour, "0.1", 400),
 				nil,
 				nil,
 				nil,
@@ -113,7 +113,7 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
-					3, time.Hour, time.Hour, 30*time.Minute, time.Hour, "0.1", 400),
+					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, 30*time.Minute, time.Hour, "0.1", 400),
 				nil,
 				nil,
 				nil,
@@ -126,13 +126,13 @@ func TestValidateGenesisState(t *testing.T) {
 				types.DefaultValsetUpdateID,
 				nil,
 				nil,
-				[]ccv.UnbondingOp{{UnbondingConsumerChains: nil}},
+				[]types.UnbondingOp{{UnbondingConsumerChains: nil}},
 				nil,
 				nil,
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
-					3, time.Hour, time.Hour, 30*time.Minute, time.Hour, "0.1", 400),
+					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, 30*time.Minute, time.Hour, "0.1", 400),
 				nil,
 				nil,
 				nil,
@@ -157,7 +157,7 @@ func TestValidateGenesisState(t *testing.T) {
 					types.DefaultVscTimeoutPeriod,
 					types.DefaultSlashMeterReplenishPeriod,
 					types.DefaultSlashMeterReplenishFraction,
-					types.DefaultMaxPendingSlashPackets),
+					types.DefaultMaxThrottledPackets),
 				nil,
 				nil,
 				nil,
@@ -176,13 +176,13 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
-					0, // 0 trusting period fraction here
+					"0.0", // 0 trusting period fraction here
 					ccv.DefaultCCVTimeoutPeriod,
 					types.DefaultInitTimeoutPeriod,
 					types.DefaultVscTimeoutPeriod,
 					types.DefaultSlashMeterReplenishPeriod,
 					types.DefaultSlashMeterReplenishFraction,
-					types.DefaultMaxPendingSlashPackets),
+					types.DefaultMaxThrottledPackets),
 				nil,
 				nil,
 				nil,
@@ -207,7 +207,7 @@ func TestValidateGenesisState(t *testing.T) {
 					types.DefaultVscTimeoutPeriod,
 					types.DefaultSlashMeterReplenishPeriod,
 					types.DefaultSlashMeterReplenishFraction,
-					types.DefaultMaxPendingSlashPackets),
+					types.DefaultMaxThrottledPackets),
 				nil,
 				nil,
 				nil,
@@ -232,7 +232,7 @@ func TestValidateGenesisState(t *testing.T) {
 					types.DefaultVscTimeoutPeriod,
 					types.DefaultSlashMeterReplenishPeriod,
 					types.DefaultSlashMeterReplenishFraction,
-					types.DefaultMaxPendingSlashPackets),
+					types.DefaultMaxThrottledPackets),
 				nil,
 				nil,
 				nil,
@@ -257,7 +257,7 @@ func TestValidateGenesisState(t *testing.T) {
 					0, // 0 vsc timeout here
 					types.DefaultSlashMeterReplenishPeriod,
 					types.DefaultSlashMeterReplenishFraction,
-					types.DefaultMaxPendingSlashPackets),
+					types.DefaultMaxThrottledPackets),
 				nil,
 				nil,
 				nil,
@@ -282,7 +282,7 @@ func TestValidateGenesisState(t *testing.T) {
 					types.DefaultVscTimeoutPeriod,
 					0, // 0 slash meter replenish period here
 					types.DefaultSlashMeterReplenishFraction,
-					types.DefaultMaxPendingSlashPackets),
+					types.DefaultMaxThrottledPackets),
 				nil,
 				nil,
 				nil,
@@ -307,7 +307,7 @@ func TestValidateGenesisState(t *testing.T) {
 					types.DefaultVscTimeoutPeriod,
 					types.DefaultSlashMeterReplenishPeriod,
 					"1.15",
-					types.DefaultMaxPendingSlashPackets),
+					types.DefaultMaxThrottledPackets),
 				nil,
 				nil,
 				nil,
@@ -486,13 +486,125 @@ func TestValidateGenesisState(t *testing.T) {
 			false,
 		},
 		{
-			"invalid consumer state unbonding operation operation",
+			"invalid consumer state UnbondingOpsIndex - zero vscID",
 			types.NewGenesisState(
 				types.DefaultValsetUpdateID,
 				nil,
-				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
-					UnbondingOpsIndex: []types.UnbondingOpIndex{{}}}},
+				[]types.ConsumerState{
+					{
+						ChainId:           "chainid",
+						ChannelId:         "channel-0",
+						ClientId:          "client-id",
+						ConsumerGenesis:   getInitialConsumerGenesis(t, "chainid"),
+						UnbondingOpsIndex: []types.VscUnbondingOps{{}},
+					},
+				},
 				nil,
+				nil,
+				nil,
+				nil,
+				types.DefaultParams(),
+				nil,
+				nil,
+				nil,
+			),
+			false,
+		},
+		{
+			"invalid consumer state UnbondingOpsIndex - no IDs",
+			types.NewGenesisState(
+				types.DefaultValsetUpdateID,
+				nil,
+				[]types.ConsumerState{
+					{
+						ChainId:           "chainid",
+						ChannelId:         "channel-0",
+						ClientId:          "client-id",
+						ConsumerGenesis:   getInitialConsumerGenesis(t, "chainid"),
+						UnbondingOpsIndex: []types.VscUnbondingOps{{VscId: 1}},
+					},
+				},
+				nil,
+				nil,
+				nil,
+				nil,
+				types.DefaultParams(),
+				nil,
+				nil,
+				nil,
+			),
+			false,
+		},
+		{
+			"invalid consumer state UnbondingOp - no matching UnbondingOpsIndex",
+			types.NewGenesisState(
+				types.DefaultValsetUpdateID,
+				nil,
+				[]types.ConsumerState{
+					{
+						ChainId:         "chainid",
+						ChannelId:       "channel-0",
+						ClientId:        "client-id",
+						ConsumerGenesis: getInitialConsumerGenesis(t, "chainid"),
+						UnbondingOpsIndex: []types.VscUnbondingOps{
+							{
+								VscId: 1,
+							},
+						},
+					},
+				},
+				[]types.UnbondingOp{
+					{
+						Id:                      13,
+						UnbondingConsumerChains: []string{"chainid"},
+					},
+				},
+				nil,
+				nil,
+				nil,
+				types.DefaultParams(),
+				nil,
+				nil,
+				nil,
+			),
+			false,
+		},
+		{
+			"invalid consumer state UnbondingOp - no matching UnbondingOpsIndex 2",
+			types.NewGenesisState(
+				types.DefaultValsetUpdateID,
+				nil,
+				[]types.ConsumerState{
+					{
+						ChainId:         "chainid",
+						ChannelId:       "channel-0",
+						ClientId:        "client-id",
+						ConsumerGenesis: getInitialConsumerGenesis(t, "chainid"),
+						UnbondingOpsIndex: []types.VscUnbondingOps{
+							{
+								VscId:          1,
+								UnbondingOpIds: []uint64{13},
+							},
+						},
+					},
+					{
+						ChainId:         "chainid-2",
+						ChannelId:       "channel-0",
+						ClientId:        "client-id",
+						ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-2"),
+						UnbondingOpsIndex: []types.VscUnbondingOps{
+							{
+								VscId: 1,
+							},
+						},
+					},
+				},
+				[]types.UnbondingOp{
+					{
+						Id:                      13,
+						UnbondingConsumerChains: []string{"chainid", "chainid-2"},
+					},
+				},
 				nil,
 				nil,
 				nil,
@@ -509,7 +621,7 @@ func TestValidateGenesisState(t *testing.T) {
 				types.DefaultValsetUpdateID,
 				nil,
 				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
-					UnbondingOpsIndex: []types.UnbondingOpIndex{{ValsetUpdateId: 1}}}},
+					UnbondingOpsIndex: []types.VscUnbondingOps{{VscId: 1}}}},
 				nil,
 				nil,
 				nil,

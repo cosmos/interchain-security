@@ -4,12 +4,13 @@ package interchain_security.ccv.consumer.v1;
 
 option go_package = "github.com/cosmos/interchain-security/x/ccv/consumer/types";
 
-import "google/protobuf/duration.proto";
-import "ibc/lightclients/tendermint/v1/tendermint.proto";
-import "ibc/core/channel/v1/channel.proto";
-import "gogoproto/gogo.proto";
+import "interchain_security/ccv/v1/ccv.proto";
 import "interchain_security/ccv/consumer/v1/consumer.proto";
 import "tendermint/abci/types.proto";
+import "ibc/lightclients/tendermint/v1/tendermint.proto";
+import "ibc/core/channel/v1/channel.proto";
+import "google/protobuf/duration.proto";
+import "gogoproto/gogo.proto";
 
 // GenesisState defines the CCV consumer chain genesis state
 message GenesisState {
@@ -22,7 +23,7 @@ message GenesisState {
   // ProviderConsensusState filled in on new chain, nil on restart.
   ibc.lightclients.tendermint.v1.ConsensusState provider_consensus_state = 6;
   // MaturingPackets nil on new chain, filled in on restart.
-  repeated MaturingVSCPacket maturing_packets = 7
+  repeated interchain_security.ccv.consumer.v1.MaturingVSCPacket maturing_packets = 7
       [ (gogoproto.nullable) = false ];
   // InitialValset filled in on new chain and on restart.
   repeated .tendermint.abci.ValidatorUpdate initial_val_set = 8
@@ -34,19 +35,12 @@ message GenesisState {
   repeated OutstandingDowntime outstanding_downtime_slashing = 10
       [ (gogoproto.nullable) = false ];
    // PendingConsumerPackets nil on new chain, filled in on restart.
-   ConsumerPackets pending_consumer_packets = 11
+   interchain_security.ccv.v1.ConsumerPacketDataList pending_consumer_packets = 11
    [ (gogoproto.nullable) = false ];
   // LastTransmissionBlockHeight nil on new chain, filled in on restart.
   interchain_security.ccv.consumer.v1.LastTransmissionBlockHeight last_transmission_block_height = 12
   [ (gogoproto.nullable) = false ];
   bool preCCV = 13; // flag indicating whether the consumer CCV module starts in pre-CCV state
-}
-
-// MaturingVSCPacket defines the genesis information for the
-// unbonding VSC packet
-message MaturingVSCPacket {
-  uint64 vscId = 1;
-  uint64 maturity_time = 2;
 }
 
 // HeightValsetUpdateID defines the genesis information for the mapping 

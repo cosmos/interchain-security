@@ -39,6 +39,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		// and claims the returned capability
 		err := k.BindPort(ctx, ccv.ConsumerPortID)
 		if err != nil {
+			// If the binding fails, the chain MUST NOT start
 			panic(fmt.Sprintf("could not claim port capability: %v", err))
 		}
 	}
@@ -49,6 +50,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		// create the provider client in InitGenesis for new consumer chain. CCV Handshake must be established with this client id.
 		clientID, err := k.clientKeeper.CreateClient(ctx, state.ProviderClientState, state.ProviderConsensusState)
 		if err != nil {
+			// If the client creation fails, the chain MUST NOT start
 			panic(err)
 		}
 
@@ -77,10 +79,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 			}
 
 			// set last transmission block height
-			err := k.SetLastTransmissionBlockHeight(ctx, state.LastTransmissionBlockHeight)
-			if err != nil {
-				panic(fmt.Sprintf("could not set last transmission block height: %v", err))
-			}
+			k.SetLastTransmissionBlockHeight(ctx, state.LastTransmissionBlockHeight)
 		}
 
 		// set pending consumer pending packets
@@ -114,62 +113,25 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 	}
 
 	// export the current validator set
-	valset, err := k.GetCurrentValidatorsAsABCIUpdates(ctx)
-	if err != nil {
-		panic(fmt.Sprintf("fail to retrieve the validator set: %s", err))
-	}
+	valset := k.MustGetCurrentValidatorsAsABCIUpdates(ctx)
 
 	// export all the states created after a provider channel got established
 	if channelID, ok := k.GetProviderChannel(ctx); ok {
-		clientID, ok := k.GetProviderClientID(ctx)
-		if !ok {
-			panic("provider client does not exist")
-		}
-
-		maturingPackets := []consumertypes.MaturingVSCPacket{}
-		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) (stop bool) {
-			mat := consumertypes.MaturingVSCPacket{
-				VscId:        vscId,
-				MaturityTime: timeNs,
-			}
-			maturingPackets = append(maturingPackets, mat)
-			return false // do not stop the iteration
-		})
-
-		heightToVCIDs := []consumertypes.HeightToValsetUpdateID{}
-		k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) (stop bool) {
-			hv := consumertypes.HeightToValsetUpdateID{
-				Height:         height,
-				ValsetUpdateId: vscID,
-			}
-			heightToVCIDs = append(heightToVCIDs, hv)
-			return false // do not stop the iteration
-		})
-
-		outstandingDowntimes := []consumertypes.OutstandingDowntime{}
-		k.IterateOutstandingDowntime(ctx, func(addr string) (stop bool) {
-			od := consumertypes.OutstandingDowntime{
-				ValidatorConsensusAddress: addr,
-			}
-			outstandingDowntimes = append(outstandingDowntimes, od)
-			return false // do not stop the iteration
-		})
-
-		// TODO: update GetLastTransmissionBlockHeight to not return an error
-		ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
-		if err != nil {
-			panic(err)
+		clientID, found := k.GetProviderClientID(ctx)
+		if !found {
+			// This should never happen
+			panic("provider client does not exist although provider channel does exist")
 		}
 
 		genesis = consumertypes.NewRestartGenesisState(
 			clientID,
 			channelID,
-			maturingPackets,
+			k.GetAllPacketMaturityTimes(ctx),
 			valset,
-			k.GetHeightToValsetUpdateIDs(ctx),
+			k.GetAllHeightToValsetUpdateIDs(ctx),
 			k.GetPendingPackets(ctx),
-			outstandingDowntimes,
-			*ltbh,
+			k.GetAllOutstandingDowntimes(ctx),
+			k.GetLastTransmissionBlockHeight(ctx),
 			params,
 		)
 	} else {
@@ -186,7 +148,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			"",
 			nil,
 			valset,
-			k.GetHeightToValsetUpdateIDs(ctx),
+			k.GetAllHeightToValsetUpdateIDs(ctx),
 			k.GetPendingPackets(ctx),
 			nil,
 			consumertypes.LastTransmissionBlockHeight{},

@@ -17,4 +17,5 @@ var (
 	ErrNoValidatorProviderAddress      = sdkerrors.Register(ModuleName, 9, "error getting validator provider address")
 	ErrConsumerKeyInUse                = sdkerrors.Register(ModuleName, 10, "consumer key is already in use by a validator")
 	ErrInvalidConsumerParams           = sdkerrors.Register(ModuleName, 11, "invalid consumer params")
+	ErrInvalidProviderAddress          = sdkerrors.Register(ModuleName, 12, "invalid provider address")
 )

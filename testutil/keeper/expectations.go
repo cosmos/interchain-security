@@ -6,13 +6,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/golang/mock/gomock"
 
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	extra "github.com/oxyno-zeta/gomock-extra-matcher"
@@ -31,7 +31,7 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 	// append MakeConsumerGenesis and CreateClient expectations
 	expectations := GetMocksForMakeConsumerGenesis(ctx, mocks, time.Hour)
 	createClientExp := mocks.MockClientKeeper.EXPECT().CreateClient(
-		ctx,
+		gomock.Any(),
 		// Allows us to expect a match by field. These are the only two client state values
 		// that are dependant on parameters passed to CreateConsumerClient.
 		extra.StructMatcher().Field(
@@ -48,13 +48,14 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 // GetMocksForMakeConsumerGenesis returns mock expectations needed to call MakeConsumerGenesis().
 func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
 	unbondingTimeToInject time.Duration) []*gomock.Call {
-	return []*gomock.Call{
-		mocks.MockStakingKeeper.EXPECT().UnbondingTime(ctx).Return(unbondingTimeToInject).Times(1),
 
-		mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(ctx,
+	return []*gomock.Call{
+		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject).Times(1),
+
+		mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(),
 			clienttypes.GetSelfHeight(ctx)).Return(&ibctmtypes.ConsensusState{}, nil).Times(1),
 
-		mocks.MockStakingKeeper.EXPECT().IterateLastValidatorPowers(ctx, gomock.Any()).Times(1),
+		mocks.MockStakingKeeper.EXPECT().IterateLastValidatorPowers(gomock.Any(), gomock.Any()).Times(1),
 	}
 }
 
@@ -82,70 +83,41 @@ func GetMocksForSetConsumerChain(ctx sdk.Context, mocks *MockedKeepers,
 func GetMocksForStopConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomock.Call {
 	dummyCap := &capabilitytypes.Capability{}
 	return []*gomock.Call{
-		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, "channelID").Return(
+		mocks.MockChannelKeeper.EXPECT().GetChannel(gomock.Any(), ccv.ProviderPortID, "channelID").Return(
 			channeltypes.Channel{State: channeltypes.OPEN}, true,
 		).Times(1),
-		mocks.MockScopedKeeper.EXPECT().GetCapability(ctx, gomock.Any()).Return(dummyCap, true).Times(1),
-		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(ctx, ccv.ProviderPortID, "channelID", dummyCap).Times(1),
+		mocks.MockScopedKeeper.EXPECT().GetCapability(gomock.Any(), gomock.Any()).Return(dummyCap, true).Times(1),
+		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(gomock.Any(), ccv.ProviderPortID, "channelID", dummyCap).Times(1),
 	}
 }
 
 func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
-	expectedPacketData ccv.SlashPacketData, valToReturn stakingtypes.Validator) []*gomock.Call {
-
-	// An arbitrary slash fraction returned and later used by mock calls.
-	arbitrarySlashFraction := sdk.NewDec(1)
+	expectedProviderValConsAddr sdk.ConsAddress,
+	valToReturn stakingtypes.Validator, expectJailing bool) []*gomock.Call {
 
 	// These first two calls are always made.
 	calls := []*gomock.Call{
 
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-			ctx, sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(
+			ctx, expectedProviderValConsAddr).Return(
 			valToReturn, true,
 		).Times(1),
 
 		mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
-			sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(false).Times(1),
+			sdk.ConsAddress(expectedProviderValConsAddr)).Return(false).Times(1),
 	}
 
-	// Different calls are made depending on the type infraction.
-	if expectedPacketData.Infraction == stakingtypes.Downtime {
-		calls = append(calls,
-			mocks.MockSlashingKeeper.EXPECT().SlashFractionDowntime(ctx).Return(arbitrarySlashFraction).Times(1),
-			mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour).Times(1),
-		)
-
-	} else if expectedPacketData.Infraction == stakingtypes.DoubleSign {
-		calls = append(calls,
-			mocks.MockSlashingKeeper.EXPECT().SlashFractionDoubleSign(ctx).Return(arbitrarySlashFraction).Times(1),
-			mocks.MockSlashingKeeper.EXPECT().Tombstone(ctx,
-				sdk.ConsAddress(expectedPacketData.Validator.Address)).Times(1),
-		)
-	}
-
-	// Slash is always called.
-	calls = append(calls, mocks.MockStakingKeeper.EXPECT().Slash(
-		ctx,
-		sdk.ConsAddress(expectedPacketData.Validator.Address),
-		gomock.Any(), // infraction height
-		int64(0),     // power
-		arbitrarySlashFraction,
-		expectedPacketData.Infraction).Return().Times(1),
-	)
-
-	// Jail() is only called if the validator is not already jailed.
-	if !valToReturn.IsJailed() {
+	if expectJailing {
 		calls = append(calls, mocks.MockStakingKeeper.EXPECT().Jail(
 			gomock.Eq(ctx),
-			gomock.Eq(sdk.ConsAddress(expectedPacketData.Validator.Address)),
+			gomock.Eq(sdk.ConsAddress(expectedProviderValConsAddr)),
 		).Return())
-	}
 
-	// JailUntil() time is always updated.
-	calls = append(calls,
-		mocks.MockSlashingKeeper.EXPECT().JailUntil(ctx, sdk.ConsAddress(expectedPacketData.Validator.Address),
-			gomock.Any()).Times(1),
-	)
+		// JailUntil is set in this code path.
+		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour).Times(1))
+		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().JailUntil(ctx,
+			sdk.ConsAddress(expectedProviderValConsAddr), gomock.Any()).Times(1))
+	}
 
 	return calls
 }

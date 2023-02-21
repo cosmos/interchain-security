@@ -9,7 +9,8 @@ enum Status {
 }
 
 /**
- * Represents undelegation logic in the staking module.
+ * All the data needed to represent an undelegation occuring
+ * in the sdk staking module.
  */
 interface Undelegation {
   val: Validator;
@@ -23,7 +24,8 @@ interface Undelegation {
 }
 
 /**
- * Represents unbonding validator logic in the staking module.
+ * All the data needed to represent an unbonding validator
+ * occuring in the sdk staking module.
  */
 interface Unval {
   val: Validator;
@@ -34,7 +36,8 @@ interface Unval {
 }
 
 /**
- * Validator Set Change data structure
+ * A representation of the validator set change data structure
+ * sent from the provider to the consumer.
  */
 interface Vsc {
   vscID: number;
@@ -45,73 +48,92 @@ interface Vsc {
 /**
  * Validator Set Change Maturity notification data structure
  */
-interface VscMatured {
+interface VscMaturity {
   vscID: number;
 }
 
 /**
- * Consumer Initiated Slash data structure
+ * A representation of the packet sent by the consumer to the
+ * provider when slashing.
  */
-interface Slash {
+interface ConsumerInitiatedSlashPacketData {
   val: Validator;
   vscID: number;
   isDowntime: boolean;
 }
 
-type PacketData = Vsc | VscMatured | Slash;
+type PacketData = Vsc | VscMaturity | ConsumerInitiatedSlashPacketData;
 
 interface Packet {
   data: PacketData;
+  // Necessary to deduce a partial order between the provider
+  // and consumer chain, as dictated by packet sending and
+  // receiving.
   sendHeight: number;
 }
 
 interface Action {
+  // A tag to identify the action type
   kind: string;
 }
 
 type Delegate = {
   kind: string;
-  val: Validator;
-  amt: number;
+  val: Validator; // Validator to delegate to
+  amt: number; // Amount to delegate
 };
 
 type Undelegate = {
   kind: string;
-  val: Validator;
-  amt: number;
+  val: Validator; // Validator to undelegate from
+  amt: number; // Max amount to undelegate
 };
 
 type ConsumerSlash = {
   kind: string;
-  val: Validator;
-  infractionHeight: number;
-  isDowntime: boolean;
+  val: Validator; // Validator to slash
+  infractionHeight: number; // Height of the infraction on consumer
+  isDowntime: boolean; // Whether the slash is for downtime (or double sign)
 };
 
 type UpdateClient = {
   kind: string;
+  // The chain who will receive the light client header TX
+  // (details not modelled explicitly)
   chain: Chain;
 };
 
 type Deliver = {
   kind: string;
+  // The chain who will receive packets which have been sent to it
   chain: Chain;
+  // The MAX number of packets to deliver, from those available
   numPackets: number;
 };
 
 type EndAndBeginBlock = {
   kind: string;
+  // Which chain will end and begin a block?
   chain: Chain;
 };
 
-type InvariantSnapshot = {
+/**
+ * A snapshot of a portion of the model state at the time
+ * that a block is committed on one of the chains. 
+ * 
+ * The state is exactly the state that is needed to check
+ * system properties.
+ */
+type PropertiesSystemState = {
   h: Record<Chain, number>;
   t: Record<Chain, number>;
   tokens: number[];
   status: Status[];
   undelegationQ: Undelegation[];
   delegatorTokens: number;
-  consumerPower: (number | undefined)[];
+  consumerPower: (number | null)[];
+  vscIDtoH: Record<number, number>;
+  hToVscID: Record<number, number>;
 };
 
 /**
@@ -120,35 +142,46 @@ type InvariantSnapshot = {
  */
 interface CommittedBlock {
   chain: Chain;
-  invariantSnapshot: InvariantSnapshot;
+  propertiesSystemState: PropertiesSystemState;
 }
 
 /**
- * A snapshot of model state which is the consequence
- * of doing an Action against the model. Used
- * for state comparisons with the SUT, and to make
- * traces human readable.
+ * A partial snapshot of model state. It is the state
+ * needed to check that the SUT is behaving correctly
+ * when compared to the model.
+ * 
+ * NOTE: This is not a complete snapshot of the model state
+ * because not all of the data is needed, and the space
+ * needed adds up quickly. Also, a concise representation
+ * makes traces much more readable and easier to debug
+ * by inspection.
+ * 
+ * Fields are optional because not of the state is interesting
+ * for all of the possible actions. This could be achieved
+ * with a union type.
  */
-interface Consequence {
+interface PartialState {
   h?: number; // Chain local height
   t?: number; // Chain local timestamp
   tokens?: number[];
   delegation?: number[];
   delegatorTokens?: number;
-  jailed?: (number | undefined)[];
+  jailed?: (number | null)[];
   status?: Status[];
-  consumerPower?: (number | undefined)[];
+  consumerPower?: (number | null)[];
   outstandingDowntime?: boolean[];
 }
 
 interface TraceAction {
   ix: number;
   action: Action;
-  consequence: Consequence;
+  partialState: PartialState;
 }
 
 /**
- * See model.ts for field docstrings
+ * The initial state of a new model instances.
+ * 
+ * See model.ts for details of each field.
  */
 type ModelInitState = {
   h: Record<Chain, number>;
@@ -159,7 +192,7 @@ type ModelInitState = {
     status: Status[];
     undelegationQ: Undelegation[];
     validatorQ: Unval[];
-    jailed: (number | undefined)[];
+    jailed: (number | null)[];
     delegatorTokens: number;
     opID: number;
     changes: Record<Validator, number>;
@@ -171,7 +204,7 @@ type ModelInitState = {
     pendingChanges: Record<Validator, number>[];
     maturingVscs: Map<number, number>;
     outstandingDowntime: boolean[];
-    consumerPower: (number | undefined)[];
+    consumerPower: (number | null)[];
   };
   ccvP: {
     initialHeight: number;
@@ -181,12 +214,13 @@ type ModelInitState = {
     downtimeSlashAcks: number[];
     tombstoned: boolean[];
     matureUnbondingOps: number[];
+    queue: (ConsumerInitiatedSlashPacketData | VscMaturity)[];
   };
 };
 
 export {
   ModelInitState,
-  Consequence,
+  PartialState,
   TraceAction,
   CommittedBlock,
   Chain,
@@ -198,13 +232,13 @@ export {
   UpdateClient,
   Deliver,
   EndAndBeginBlock,
-  InvariantSnapshot,
+  PropertiesSystemState,
   Status,
   Undelegation,
   Unval,
   Vsc,
-  VscMatured,
-  Slash,
+  VscMaturity,
+  ConsumerInitiatedSlashPacketData,
   PacketData,
   Packet,
 };

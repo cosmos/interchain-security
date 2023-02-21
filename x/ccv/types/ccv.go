@@ -1,6 +1,8 @@
 package types
 
 import (
+	"fmt"
+
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -30,8 +32,8 @@ func (vsc ValidatorSetChangePacketData) GetBytes() []byte {
 	return valUpdateBytes
 }
 
-func NewVSCMaturedPacketData(valUpdateID uint64) VSCMaturedPacketData {
-	return VSCMaturedPacketData{
+func NewVSCMaturedPacketData(valUpdateID uint64) *VSCMaturedPacketData {
+	return &VSCMaturedPacketData{
 		ValsetUpdateId: valUpdateID,
 	}
 }
@@ -49,8 +51,8 @@ func (mat VSCMaturedPacketData) GetBytes() []byte {
 	return bytes
 }
 
-func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, infractionType stakingtypes.InfractionType) SlashPacketData {
-	return SlashPacketData{
+func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, infractionType stakingtypes.InfractionType) *SlashPacketData {
+	return &SlashPacketData{
 		Validator:      validator,
 		ValsetUpdateId: valUpdateId,
 		Infraction:     infractionType,
@@ -60,9 +62,6 @@ func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, infraction
 func (vdt SlashPacketData) ValidateBasic() error {
 	if len(vdt.Validator.Address) == 0 || vdt.Validator.Power == 0 {
 		return sdkerrors.Wrap(ErrInvalidPacketData, "validator fields cannot be empty")
-	}
-	if vdt.ValsetUpdateId == 0 {
-		return sdkerrors.Wrap(ErrInvalidPacketData, "valset update id cannot be equal to zero")
 	}
 
 	if vdt.Infraction == stakingtypes.InfractionEmpty {
@@ -75,4 +74,32 @@ func (vdt SlashPacketData) ValidateBasic() error {
 func (vdt SlashPacketData) GetBytes() []byte {
 	valDowntimeBytes := ModuleCdc.MustMarshalJSON(&vdt)
 	return valDowntimeBytes
+}
+
+func (cp ConsumerPacketData) ValidateBasic() (err error) {
+	switch cp.Type {
+	case VscMaturedPacket:
+		// validate VSCMaturedPacket
+		vscPacket := cp.GetVscMaturedPacketData()
+		if vscPacket == nil {
+			return fmt.Errorf("invalid consumer packet data: VscMaturePacketData data cannot be empty")
+		}
+		err = vscPacket.ValidateBasic()
+	case SlashPacket:
+		// validate SlashPacket
+		slashPacket := cp.GetSlashPacketData()
+		if slashPacket == nil {
+			return fmt.Errorf("invalid consumer packet data: SlashPacketData data cannot be empty")
+		}
+		err = slashPacket.ValidateBasic()
+	default:
+		err = fmt.Errorf("invalid consumer packet type: %q", cp.Type)
+	}
+
+	return
+}
+
+func (cp ConsumerPacketData) GetBytes() []byte {
+	bytes := ModuleCdc.MustMarshalJSON(&cp)
+	return bytes
 }

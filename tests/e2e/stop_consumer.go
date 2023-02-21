@@ -3,7 +3,8 @@ package e2e
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
@@ -14,8 +15,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
-	// default consumer chain ID
-	consumerChainID := s.consumerChain.ChainID
+	firstBundle := s.getFirstBundle()
 
 	// choose a validator
 	tmValidator := s.providerChain.Vals.Validators[0]
@@ -48,7 +48,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	}{
 		{
 			func(suite *CCVTestSuite) error {
-				suite.SetupCCVChannel(s.path)
+				suite.SetupAllCCVChannels()
 				suite.SetupTransferChannel()
 				return nil
 			},
@@ -75,8 +75,36 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 		},
 		{
 			func(suite *CCVTestSuite) error {
-				providerKeeper.SetSlashAcks(s.providerCtx(), consumerChainID, []string{"validator-1", "validator-2", "validator-3"})
-				providerKeeper.AppendPendingVSCPackets(s.providerCtx(), consumerChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
+				providerKeeper.SetSlashAcks(s.providerCtx(), firstBundle.Chain.ChainID, []string{"validator-1", "validator-2", "validator-3"})
+				providerKeeper.AppendPendingVSCPackets(s.providerCtx(), firstBundle.Chain.ChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
+				return nil
+			},
+		},
+		{
+			func(suite *CCVTestSuite) error {
+
+				// Queue slash and vsc packet data for consumer 0, these queue entries will be removed
+				firstBundle := s.getFirstBundle()
+				globalEntry := types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), firstBundle.Chain.ChainID, 7, []byte{})
+				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
+				err := providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), firstBundle.Chain.ChainID, 1,
+					ccv.SlashPacketData{ValsetUpdateId: 1})
+				suite.Require().NoError(err)
+				err = providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
+					firstBundle.Chain.ChainID, 2, ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
+				suite.Require().NoError(err)
+
+				// Queue slash and vsc packet data for consumer 1, these queue entries will be not be removed
+				secondBundle := s.getBundleByIdx(1)
+				globalEntry = types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), secondBundle.Chain.ChainID, 7, []byte{})
+				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
+				err = providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), secondBundle.Chain.ChainID, 1,
+					ccv.SlashPacketData{ValsetUpdateId: 1})
+				suite.Require().NoError(err)
+				err = providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
+					secondBundle.Chain.ChainID, 2, ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
+				suite.Require().NoError(err)
+
 				return nil
 			},
 		},
@@ -88,11 +116,20 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	}
 
 	// stop the consumer chain
-	err = providerKeeper.StopConsumerChain(s.providerCtx(), consumerChainID, true)
+	err = providerKeeper.StopConsumerChain(s.providerCtx(), firstBundle.Chain.ChainID, true)
 	s.Require().NoError(err)
 
 	// check all states are removed and the unbonding operation released
-	s.checkConsumerChainIsRemoved(consumerChainID, true)
+	s.checkConsumerChainIsRemoved(firstBundle.Chain.ChainID, true)
+
+	// check entries related to second consumer chain are not removed
+	s.Require().Len(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()), 1)
+
+	secondBundle := s.getBundleByIdx(1)
+	slashData, vscMaturedData, _, _ := providerKeeper.GetAllThrottledPacketData(
+		s.providerCtx(), secondBundle.Chain.ChainID)
+	s.Require().Len(slashData, 1)
+	s.Require().Len(vscMaturedData, 1)
 }
 
 // TODO Simon: implement OnChanCloseConfirm in IBC-GO testing to close the consumer chain's channel end
@@ -137,21 +174,16 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 	}
 
 	// check UnbondingOps were deleted and undelegation entries aren't onHold
-	providerKeeper.IterateOverUnbondingOpIndex(
-		s.providerCtx(),
-		chainID,
-		func(vscID uint64, ubdIndex []uint64) (stop bool) {
-			_, found := providerKeeper.GetUnbondingOpIndex(s.providerCtx(), chainID, uint64(vscID))
+	for _, unbondingOpsIndex := range providerKeeper.GetAllUnbondingOpIndexes(s.providerCtx(), chainID) {
+		_, found := providerKeeper.GetUnbondingOpIndex(s.providerCtx(), chainID, unbondingOpsIndex.VscId)
+		s.Require().False(found)
+		for _, ubdID := range unbondingOpsIndex.UnbondingOpIds {
+			_, found = providerKeeper.GetUnbondingOp(s.providerCtx(), unbondingOpsIndex.UnbondingOpIds[ubdID])
 			s.Require().False(found)
-			for _, ubdID := range ubdIndex {
-				_, found = providerKeeper.GetUnbondingOp(s.providerCtx(), ubdIndex[ubdID])
-				s.Require().False(found)
-				ubd, _ := providerStakingKeeper.GetUnbondingDelegationByUnbondingID(s.providerCtx(), ubdIndex[ubdID])
-				s.Require().Zero(ubd.Entries[ubdID].UnbondingOnHoldRefCount)
-			}
-			return false // do not stop the iteration
-		},
-	)
+			ubd, _ := providerStakingKeeper.GetUnbondingDelegationByUnbondingID(s.providerCtx(), unbondingOpsIndex.UnbondingOpIds[ubdID])
+			s.Require().Zero(ubd.Entries[ubdID].UnbondingOnHoldRefCount)
+		}
+	}
 
 	// verify consumer chain's states are removed
 	_, found := providerKeeper.GetConsumerGenesis(s.providerCtx(), chainID)
@@ -168,6 +200,17 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 	s.Require().Nil(providerKeeper.GetSlashAcks(s.providerCtx(), chainID))
 	s.Require().Zero(providerKeeper.GetInitChainHeight(s.providerCtx(), chainID))
 	s.Require().Empty(providerKeeper.GetPendingVSCPackets(s.providerCtx(), chainID))
+
+	// No remaining global entries for this consumer
+	allGlobalEntries := providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
+	for _, entry := range allGlobalEntries {
+		s.Require().NotEqual(chainID, entry.ConsumerChainID)
+	}
+
+	// No remaining per-chain entries for this consumer
+	slashData, vscMaturedData, _, _ := providerKeeper.GetAllThrottledPacketData(s.providerCtx(), chainID)
+	s.Require().Empty(slashData)
+	s.Require().Empty(vscMaturedData)
 }
 
 // TestProviderChannelClosed checks that a consumer chain panics

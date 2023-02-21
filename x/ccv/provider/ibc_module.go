@@ -6,10 +6,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -25,11 +25,12 @@ func (am AppModule) OnChanOpenInit(
 	connectionHops []string,
 	portID string,
 	channelID string,
-	chanCap *capabilitytypes.Capability,
+	channelCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	version string,
-) error {
-	return sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
+) (string, error) {
+
+	return version, sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
 }
 
 // OnChanOpenTry implements the IBCModule interface
@@ -174,18 +175,27 @@ func (am AppModule) OnRecvPacket(
 ) ibcexported.Acknowledgement {
 	var (
 		ack            ibcexported.Acknowledgement
-		vscMaturedData ccv.VSCMaturedPacketData
-		slashData      ccv.SlashPacketData
+		consumerPacket ccv.ConsumerPacketData
 	)
-	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &vscMaturedData); err == nil {
-		// handle VSCMaturedPacket
-		ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, vscMaturedData)
-	} else if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &slashData); err == nil {
-		// handle SlashPacket
-		ack = am.keeper.OnRecvSlashPacket(ctx, packet, slashData)
-	} else {
-		errAck := channeltypes.NewErrorAcknowledgement("cannot unmarshal CCV packet data")
+	// unmarshall consumer packet
+	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacket); err != nil {
+		errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("cannot unmarshal CCV packet data"))
 		ack = &errAck
+	} else {
+		// TODO: call ValidateBasic method on consumer packet data
+		// See: https://github.com/cosmos/interchain-security/issues/634
+
+		switch consumerPacket.Type {
+		case ccv.VscMaturedPacket:
+			// handle VSCMaturedPacket
+			ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, *consumerPacket.GetVscMaturedPacketData())
+		case ccv.SlashPacket:
+			// handle SlashPacket
+			ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
+		default:
+			errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type))
+			ack = &errAck
+		}
 	}
 
 	ctx.EventManager().EmitEvent(

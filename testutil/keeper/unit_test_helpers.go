@@ -1,8 +1,12 @@
 package keeper
 
 import (
+	"crypto/rand"
+	"encoding/binary"
 	"testing"
 	"time"
+
+	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -10,11 +14,13 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/crypto"
@@ -26,7 +32,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 )
 
 // Parameters needed to instantiate an in-memory keeper
@@ -39,8 +45,8 @@ type InMemKeeperParams struct {
 
 // NewInMemKeeperParams instantiates in-memory keeper params with default values
 func NewInMemKeeperParams(t testing.TB) InMemKeeperParams {
-	storeKey := sdk.NewKVStoreKey(types.StoreKey)
-	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
+	storeKey := sdk.NewKVStoreKey(ccvtypes.StoreKey)
+	memStoreKey := storetypes.NewMemoryStoreKey(ccvtypes.MemStoreKey)
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
@@ -80,6 +86,7 @@ type MockedKeepers struct {
 	*MockBankKeeper
 	*MockIBCTransferKeeper
 	*MockIBCCoreKeeper
+	*MockEvidenceKeeper
 }
 
 // NewMockedKeepers instantiates a struct with pointers to properly instantiated mocked keepers.
@@ -96,12 +103,12 @@ func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 		MockBankKeeper:        NewMockBankKeeper(ctrl),
 		MockIBCTransferKeeper: NewMockIBCTransferKeeper(ctrl),
 		MockIBCCoreKeeper:     NewMockIBCCoreKeeper(ctrl),
+		MockEvidenceKeeper:    NewMockEvidenceKeeper(ctrl),
 	}
 }
 
 // NewInMemProviderKeeper instantiates an in-mem provider keeper from params and mocked keepers
 func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) providerkeeper.Keeper {
-
 	return providerkeeper.NewKeeper(
 		params.Cdc,
 		params.StoreKey,
@@ -114,13 +121,13 @@ func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) provi
 		mocks.MockStakingKeeper,
 		mocks.MockSlashingKeeper,
 		mocks.MockAccountKeeper,
+		mocks.MockEvidenceKeeper,
 		"",
 	)
 }
 
 // NewInMemConsumerKeeper instantiates an in-mem consumer keeper from params and mocked keepers
 func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consumerkeeper.Keeper {
-
 	return consumerkeeper.NewKeeper(
 		params.Cdc,
 		params.StoreKey,
@@ -144,8 +151,8 @@ func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consu
 // Note: Calling ctrl.Finish() at the end of a test function ensures that
 // no unexpected calls to external keepers are made.
 func GetProviderKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
-	providerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers) {
-
+	providerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers,
+) {
 	ctrl := gomock.NewController(t)
 	mocks := NewMockedKeepers(ctrl)
 	return NewInMemProviderKeeper(params, mocks), params.Ctx, ctrl, mocks
@@ -156,8 +163,8 @@ func GetProviderKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 // Note: Calling ctrl.Finish() at the end of a test function ensures that
 // no unexpected calls to external keepers are made.
 func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
-	consumerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers) {
-
+	consumerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers,
+) {
 	ctrl := gomock.NewController(t)
 	mocks := NewMockedKeepers(ctrl)
 	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
@@ -185,11 +192,36 @@ func GenPubKey() (crypto.PubKey, error) {
 	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
 }
 
+// Obtains slash packet data with a newly generated key, and randomized field values
+func GetNewSlashPacketData() ccvtypes.SlashPacketData {
+	b1 := make([]byte, 8)
+	_, _ = rand.Read(b1)
+	b2 := make([]byte, 8)
+	_, _ = rand.Read(b2)
+	b3 := make([]byte, 8)
+	_, _ = rand.Read(b3)
+	return ccvtypes.SlashPacketData{
+		Validator: abci.Validator{
+			Address: ed25519.GenPrivKey().PubKey().Address(),
+			Power:   int64(binary.BigEndian.Uint64(b1)),
+		},
+		ValsetUpdateId: binary.BigEndian.Uint64(b2),
+		Infraction:     stakingtypes.InfractionType(binary.BigEndian.Uint64(b2) % 3),
+	}
+}
+
+// Obtains vsc matured packet data with a newly generated key
+func GetNewVSCMaturedPacketData() ccvtypes.VSCMaturedPacketData {
+	b := make([]byte, 8)
+	_, _ = rand.Read(b)
+	return ccvtypes.VSCMaturedPacketData{ValsetUpdateId: binary.BigEndian.Uint64(b)}
+}
+
 // SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
 // which asserts that a consumer chain was properly stopped from StopConsumerChain().
 func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
-	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers) {
-
+	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers,
+) {
 	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
 		"chainID", clienttypes.NewHeight(4, 5))
 	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
@@ -222,4 +254,15 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 	).(*providertypes.ConsumerAdditionProposal)
 
 	return prop
+}
+
+// Obtains a CrossChainValidator with a newly generated key, and randomized field values
+func GetNewCrossChainValidator(t *testing.T) consumertypes.CrossChainValidator {
+	b1 := make([]byte, 8)
+	_, _ = rand.Read(b1)
+	power := int64(binary.BigEndian.Uint64(b1))
+	privKey := ed25519.GenPrivKey()
+	validator, err := consumertypes.NewCCValidator(privKey.PubKey().Address(), power, privKey.PubKey())
+	require.NoError(t, err)
+	return validator
 }

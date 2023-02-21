@@ -17,8 +17,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-
-	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
+	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/consumer/client/cli"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
@@ -68,27 +67,24 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 }
 
 // RegisterRESTRoutes implements AppModuleBasic interface
-// TODO
 func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the ibc-consumer module.
-// TODO
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 	err := consumertypes.RegisterQueryHandlerClient(context.Background(), mux, consumertypes.NewQueryClient(clientCtx))
 	if err != nil {
+		// same behavior as in cosmos-sdk
 		panic(err)
 	}
 }
 
 // GetTxCmd implements AppModuleBasic interface
-// TODO
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
 	return nil
 }
 
 // GetQueryCmd implements AppModuleBasic interface
-// TODO
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 	return cli.NewQueryCmd()
 }
@@ -159,17 +155,20 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 
 	channelID, found := am.keeper.GetProviderChannel(ctx)
 	if found && am.keeper.IsChannelClosed(ctx, channelID) {
-		// the CCV channel was established, but it was then closed;
-		// the consumer chain is no longer safe
-
+		// The CCV channel was established, but it was then closed;
+		// the consumer chain is no longer safe, thus it MUST shut down.
+		// This is achieved by panicking, similar as it's done in the
+		// x/upgrade module of cosmos-sdk.
 		channelClosedMsg := fmt.Sprintf("CCV channel %q was closed - shutdown consumer chain since it is not secured anymore", channelID)
-		ctx.Logger().Error(channelClosedMsg)
+		am.keeper.Logger(ctx).Error(channelClosedMsg)
 		panic(channelClosedMsg)
 	}
 
+	// map next block height to the vscID of the current block height
 	blockHeight := uint64(ctx.BlockHeight())
 	vID := am.keeper.GetHeightValsetUpdateID(ctx, blockHeight)
 	am.keeper.SetHeightValsetUpdateID(ctx, blockHeight+1, vID)
+	am.keeper.Logger(ctx).Debug("block height was mapped to vscID", "height", blockHeight+1, "vscID", vID)
 
 	am.keeper.TrackHistoricalInfo(ctx)
 }
@@ -206,7 +205,10 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		panic(err)
 	}
 
-	// NOTE: Slash packets are queued in BeginBlock
+	// Execute EndBlock logic for the Reward Distribution sub-protocol
+	am.keeper.EndBlockRD(ctx)
+
+	// NOTE: Slash packets are queued in BeginBlock via the Slash function
 	// Packet ordering is managed by the PendingPackets queue.
 	am.keeper.QueueVSCMaturedPackets(ctx)
 
@@ -220,6 +222,8 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	// apply changes to cross-chain validator set
 	tendermintUpdates := am.keeper.ApplyCCValidatorChanges(ctx, data.ValidatorUpdates)
 	am.keeper.DeletePendingChanges(ctx)
+
+	am.keeper.Logger(ctx).Debug("sending validator updates to consensus engine", "len updates", len(tendermintUpdates))
 
 	return tendermintUpdates
 }

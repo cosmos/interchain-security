@@ -2,11 +2,11 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
-
 	"path/filepath"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -15,7 +15,7 @@ import (
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govrest "github.com/cosmos/cosmos-sdk/x/gov/client/rest"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/spf13/cobra"
 )
@@ -23,6 +23,7 @@ import (
 var (
 	ConsumerAdditionProposalHandler = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd, ConsumerAdditionProposalRESTHandler)
 	ConsumerRemovalProposalHandler  = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd, ConsumerRemovalProposalRESTHandler)
+	EquivocationProposalHandler     = govclient.NewProposalHandler(SubmitEquivocationProposalTxCmd, EquivocationProposalRESTHandler)
 )
 
 // SubmitConsumerAdditionPropTxCmd returns a CLI command handler for submitting
@@ -149,6 +150,64 @@ Where proposal.json contains:
 	}
 }
 
+// SubmitEquivocationProposalTxCmd returns a CLI command handler for submitting
+// a equivocation proposal via a transaction.
+func SubmitEquivocationProposalTxCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "equivocation [proposal-file]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Submit an equivocation proposal",
+		Long: fmt.Sprintf(`Submit an equivocation proposal along with an initial deposit.
+The proposal details must be supplied via a JSON file.
+
+Example:
+$ <appd> tx gov submit-proposal equivocation <path/to/proposal.json> --from=<key_or_address>
+
+Where proposal.json contains:
+{
+	 "title": "Equivoque Foo validator",
+	 "description": "He double-signs on the Foobar consumer chain",
+	 "equivocations": [
+		{
+			"height": 10420042,
+			"time": "2023-01-27T15:59:50.121607-08:00",
+			"power": 10,
+			"consensus_address": "%s1s5afhd6gxevu37mkqcvvsj8qeylhn0rz46zdlq"
+		}
+	 ],
+	 "deposit": "10000stake"
+}
+`, sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			proposal, err := ParseEquivocationProposalJSON(args[0])
+			if err != nil {
+				return err
+			}
+
+			content := types.NewEquivocationProposal(proposal.Title, proposal.Description, proposal.Equivocations)
+
+			from := clientCtx.GetFromAddress()
+
+			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
+			if err != nil {
+				return err
+			}
+
+			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			if err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+}
+
 type ConsumerAdditionProposalJSON struct {
 	Title         string             `json:"title"`
 	Description   string             `json:"description"`
@@ -223,6 +282,46 @@ type ConsumerRemovalProposalReq struct {
 
 	StopTime time.Time `json:"stopTime"`
 	Deposit  sdk.Coins `json:"deposit"`
+}
+
+type EquivocationProposalJSON struct {
+	// evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	types.EquivocationProposal
+
+	Deposit string `json:"deposit"`
+}
+
+type EquivocationProposalReq struct {
+	BaseReq  rest.BaseReq   `json:"base_req"`
+	Proposer sdk.AccAddress `json:"proposer"`
+
+	// evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	types.EquivocationProposal
+
+	Deposit sdk.Coins `json:"deposit"`
+}
+
+func ParseEquivocationProposalJSON(proposalFile string) (EquivocationProposalJSON, error) {
+	proposal := EquivocationProposalJSON{}
+
+	contents, err := ioutil.ReadFile(filepath.Clean(proposalFile))
+	if err != nil {
+		return proposal, err
+	}
+
+	if err := json.Unmarshal(contents, &proposal); err != nil {
+		return proposal, err
+	}
+
+	return proposal, nil
+}
+
+// EquivocationProposalRESTHandler returns a ProposalRESTHandler that exposes the equivocation rest handler.
+func EquivocationProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
+	return govrest.ProposalRESTHandler{
+		SubRoute: "equivocation",
+		Handler:  postEquivocationProposalHandlerFn(clientCtx),
+	}
 }
 
 func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalProposalJSON, error) {
@@ -302,6 +401,33 @@ func postConsumerRemovalProposalHandlerFn(clientCtx client.Context) http.Handler
 		content := types.NewConsumerRemovalProposal(
 			req.Title, req.Description, req.ChainId, req.StopTime,
 		)
+
+		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
+
+		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
+			return
+		}
+
+		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
+	}
+}
+
+func postEquivocationProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req EquivocationProposalReq
+		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
+			return
+		}
+
+		req.BaseReq = req.BaseReq.Sanitize()
+		if !req.BaseReq.ValidateBasic(w) {
+			return
+		}
+
+		content := types.NewEquivocationProposal(req.Title, req.Description, req.Equivocations)
 
 		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
 		if rest.CheckBadRequestError(w, err) {

@@ -9,6 +9,8 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 import "ibc/core/client/v1/client.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
+import "tendermint/crypto/keys.proto";
+import "cosmos/evidence/v1beta1/evidence.proto";
 
 // ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
 // If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time
@@ -64,7 +66,7 @@ message ConsumerAdditionProposal {
 // ConsumerRemovalProposal is a governance proposal on the provider chain to remove (and stop) a consumer chain.
 // If it passes, all the consumer chain's state is removed from the provider chain. The outstanding unbonding
 // operation funds are released.
- message ConsumerRemovalProposal {
+message ConsumerRemovalProposal {
     // the title of the proposal
     string title = 1;
     // the description of the proposal
@@ -73,14 +75,43 @@ message ConsumerAdditionProposal {
     string chain_id = 3;
     // the time on the provider chain at which all validators are responsible to stop their consumer chain validator node
     google.protobuf.Timestamp stop_time = 4
-    [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+        [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
  } 
 
+message EquivocationProposal {
+  // the title of the proposal
+  string title = 1;
+  // the description of the proposal
+  string description = 2;
+	// the list of equivocations that will be processed
+  repeated cosmos.evidence.v1beta1.Equivocation equivocations = 3;
+}
+
+// A persisted queue entry indicating that a slash packet data instance needs to be handled.
+// This type belongs in the "global" queue, to coordinate slash packet handling times between consumers.
+message GlobalSlashEntry {
+  // Block time that slash packet was received by provider chain.
+  // This field is used for store key iteration ordering.
+  google.protobuf.Timestamp recv_time = 1
+      [(gogoproto.stdtime) = true, (gogoproto.nullable) = false]; 
+  // The consumer that sent a slash packet.
+  string consumer_chain_id = 2
+      [(gogoproto.customname) = "ConsumerChainID"];
+  // The IBC sequence number of the recv packet.  
+  // This field is used in the store key to ensure uniqueness.
+  uint64 ibc_seq_num = 3; 
+  // The provider's consensus address of the validator being slashed. 
+  // This field is used to obtain validator power in HandleThrottleQueues.
+  // 
+  // This field is not used in the store key, but is persisted in value bytes, see QueueGlobalSlashEntry.
+  bytes provider_val_cons_addr = 4;
+}
+ 
 // Params defines the parameters for CCV Provider module
 message Params {
   ibc.lightclients.tendermint.v1.ClientState template_client = 1;
   // TrustingPeriodFraction is used to compute the consumer and provider IBC client's TrustingPeriod from the chain defined UnbondingPeriod
-  int64 trusting_period_fraction = 2;
+  string trusting_period_fraction = 2;
   // Sent IBC packets will timeout after this duration
   google.protobuf.Duration ccv_timeout_period = 3
       [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
@@ -102,9 +133,9 @@ message Params {
   // This param also serves as a maximum fraction of total voting power that the slash meter can hold.
   string slash_meter_replenish_fraction = 7;
 
-  // The maximum amount of pending slash packets that can be queued for a consumer
-  // before the provider chain halts.
-  int64 max_pending_slash_packets = 8;
+  // The maximum amount of throttled slash or vsc matured packets 
+  // that can be queued for a single consumer before the provider chain halts.
+  int64 max_throttled_packets = 8;
 }
 
 message HandshakeMetadata {
@@ -134,3 +165,40 @@ message ConsumerRemovalProposals {
 message AddressList {
   repeated bytes addresses = 1;
 }
+
+message ChannelToChain {
+  string channel_id = 1;
+  string chain_id = 2;
+}
+
+// VscUnbondingOps contains the IDs of unbonding operations that are waiting for
+// at least one VSCMaturedPacket with vscID from a consumer chain 
+message VscUnbondingOps {
+  uint64 vsc_id = 1;
+  repeated uint64 unbonding_op_ids = 2;
+}
+
+// UnbondingOp contains the ids of consumer chains that need to unbond before 
+// the unbonding operation with the given ID can unbond
+message UnbondingOp {
+  uint64 id = 1;
+  // consumer chains that are still unbonding
+  repeated string unbonding_consumer_chains = 2;
+}
+
+message InitTimeoutTimestamp {
+  string chain_id = 1;
+  uint64 timestamp = 2;
+}
+
+message VscSendTimestamp {
+  uint64 vsc_id = 1;
+  google.protobuf.Timestamp timestamp = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+message KeyAssignmentReplacement {
+  bytes provider_addr = 1;
+  tendermint.crypto.PublicKey prev_c_key = 2;
+  int64 power = 3;
+}
+

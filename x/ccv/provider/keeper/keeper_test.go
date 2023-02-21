@@ -2,15 +2,17 @@ package keeper_test
 
 import (
 	"fmt"
+	"sort"
 	"testing"
 	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
+	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
 
+	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
@@ -44,20 +46,51 @@ func TestValsetUpdateBlockHeight(t *testing.T) {
 	require.Equal(t, blockHeight, uint64(4))
 }
 
+// TestGetAllValsetUpdateBlockHeights tests GetAllValsetUpdateBlockHeights behaviour correctness
+func TestGetAllValsetUpdateBlockHeights(t *testing.T) {
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	cases := []types.ValsetUpdateIdToHeight{
+		{
+			ValsetUpdateId: 2,
+			Height:         22,
+		},
+		{
+			ValsetUpdateId: 1,
+			Height:         11,
+		},
+		{
+			// normal execution should not have two ValsetUpdateIdToHeight
+			// with the same Height, but let's test it anyway
+			ValsetUpdateId: 4,
+			Height:         11,
+		},
+		{
+			ValsetUpdateId: 3,
+			Height:         33,
+		},
+	}
+	expectedGetAllOrder := cases
+	// sorting by ValsetUpdateId
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].ValsetUpdateId < expectedGetAllOrder[j].ValsetUpdateId
+	})
+
+	for _, c := range cases {
+		pk.SetValsetUpdateBlockHeight(ctx, c.ValsetUpdateId, c.Height)
+	}
+
+	// iterate and check all results are returned in the expected order
+	result := pk.GetAllValsetUpdateBlockHeights(ctx)
+	require.Len(t, result, len(cases))
+	require.Equal(t, expectedGetAllOrder, result)
+}
+
 // TestSlashAcks tests the getter, setter, iteration, and deletion methods for stored slash acknowledgements
 func TestSlashAcks(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
-
-	var chainsAcks [][]string
-
-	penaltiesfN := func() (penalties []string) {
-		providerKeeper.IterateSlashAcks(ctx, func(id string, acks []string) (stop bool) {
-			chainsAcks = append(chainsAcks, acks)
-			return false // do not stop iteration
-		})
-		return
-	}
 
 	chainID := "consumer"
 
@@ -83,8 +116,12 @@ func TestSlashAcks(t *testing.T) {
 		providerKeeper.SetSlashAcks(ctx, c, p)
 	}
 
-	penaltiesfN()
-	require.Len(t, chainsAcks, len(chains))
+	for _, c := range chains {
+		require.Equal(t, p, providerKeeper.GetSlashAcks(ctx, c))
+		providerKeeper.DeleteSlashAcks(ctx, c)
+		acks = providerKeeper.GetSlashAcks(ctx, c)
+		require.Len(t, acks, 0)
+	}
 }
 
 // TestAppendSlashAck tests the append method for stored slash acknowledgements
@@ -183,30 +220,44 @@ func TestInitHeight(t *testing.T) {
 	}
 }
 
-func TestIterateOverUnbondingOpIndex(t *testing.T) {
-
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+// TestGetAllUnbondingOpIndexes tests GetAllUnbondingOpIndexes behavior correctness
+func TestGetAllUnbondingOpIndexes(t *testing.T) {
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "6"
+	ops := []types.VscUnbondingOps{
+		{
+			VscId:          2,
+			UnbondingOpIds: []uint64{4, 5, 6, 7},
+		},
+		{
+			VscId:          1,
+			UnbondingOpIds: []uint64{1, 2, 3},
+		},
+		{
+			VscId:          4,
+			UnbondingOpIds: []uint64{10},
+		},
+		{
+			VscId:          3,
+			UnbondingOpIds: []uint64{8, 9},
+		},
+	}
+	// sorting by CrossChainValidator.Address
+	expectedGetAllOrder := ops
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].VscId < expectedGetAllOrder[j].VscId
+	})
 
-	// mock an unbonding index
-	unbondingOpIndex := []uint64{0, 1, 2, 3, 4, 5, 6}
-
-	// set ubd ops by varying vsc ids and index slices
-	for i := 1; i < len(unbondingOpIndex); i++ {
-		providerKeeper.SetUnbondingOpIndex(ctx, chainID, uint64(i), unbondingOpIndex[:i])
+	pk.SetUnbondingOpIndex(ctx, "chain-2", 1, []uint64{1, 2, 3})
+	for _, op := range ops {
+		pk.SetUnbondingOpIndex(ctx, "chain-1", op.VscId, op.UnbondingOpIds)
 	}
 
-	// check iterator returns expected entries
-	i := 1
-	providerKeeper.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) (stop bool) {
-		require.Equal(t, uint64(i), vscID)
-		require.EqualValues(t, unbondingOpIndex[:i], ubdIndex)
-		i++
-		return false // do not stop the iteration
-	})
-	require.Equal(t, len(unbondingOpIndex), i)
+	// iterate and check all results are returned in the expected order
+	result := pk.GetAllUnbondingOpIndexes(ctx, "chain-1")
+	require.Len(t, result, len(ops))
+	require.Equal(t, result, expectedGetAllOrder)
 }
 
 func TestMaturedUnbondingOps(t *testing.T) {
@@ -214,15 +265,13 @@ func TestMaturedUnbondingOps(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	ids, err := providerKeeper.GetMaturedUnbondingOps(ctx)
-	require.NoError(t, err)
+	ids := providerKeeper.GetMaturedUnbondingOps(ctx)
 	require.Nil(t, ids)
 
 	unbondingOpIds := []uint64{0, 1, 2, 3, 4, 5, 6}
 	providerKeeper.AppendMaturedUnbondingOps(ctx, unbondingOpIds)
 
-	ids, err = providerKeeper.ConsumeMaturedUnbondingOps(ctx)
-	require.NoError(t, err)
+	ids = providerKeeper.ConsumeMaturedUnbondingOps(ctx)
 	require.Equal(t, len(unbondingOpIds), len(ids))
 	for i := 0; i < len(unbondingOpIds); i++ {
 		require.Equal(t, unbondingOpIds[i], ids[i])
@@ -230,44 +279,55 @@ func TestMaturedUnbondingOps(t *testing.T) {
 }
 
 func TestInitTimeoutTimestamp(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	tc := []struct {
-		chainID  string
-		expected uint64
-	}{
-		// ordered alphabetically - descending
-		{expected: 5, chainID: "z-chain"},
-		{expected: 12, chainID: "b-chain"},
-		{expected: 10, chainID: "a-chain"},
+	now := time.Now().UTC()
+	nsNow := uint64(now.UnixNano())
+	timeoutTimestamps := []types.InitTimeoutTimestamp{
+		{
+			ChainId:   "chain-2",
+			Timestamp: nsNow,
+		},
+		{
+			ChainId:   "chain-1",
+			Timestamp: nsNow + 10,
+		},
+		{
+			ChainId:   "chain-4",
+			Timestamp: nsNow - 10,
+		},
+		{
+			ChainId:   "chain-3",
+			Timestamp: nsNow,
+		},
 	}
 
-	_, found := providerKeeper.GetInitTimeoutTimestamp(ctx, tc[0].chainID)
-	require.False(t, found)
-
-	providerKeeper.SetInitTimeoutTimestamp(ctx, tc[0].chainID, tc[0].expected)
-	providerKeeper.SetInitTimeoutTimestamp(ctx, tc[1].chainID, tc[1].expected)
-	providerKeeper.SetInitTimeoutTimestamp(ctx, tc[2].chainID, tc[2].expected)
-
-	i := 2
-	// store is iterated in alphabetical ascending order
-	// not in the order of insertion
-	providerKeeper.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) (stop bool) {
-		require.Equal(t, chainID, tc[i].chainID)
-		require.Equal(t, ts, tc[i].expected)
-		i--
-		return false // do not stop the iteration
+	expectedGetAllOrder := timeoutTimestamps
+	// sorting by ChainId
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].ChainId < expectedGetAllOrder[j].ChainId
 	})
 
-	for _, tc := range tc {
-		ts, found := providerKeeper.GetInitTimeoutTimestamp(ctx, tc.chainID)
-		require.True(t, found)
-		require.Equal(t, tc.expected, ts)
+	_, found := pk.GetInitTimeoutTimestamp(ctx, timeoutTimestamps[0].ChainId)
+	require.False(t, found)
+
+	for _, tt := range timeoutTimestamps {
+		pk.SetInitTimeoutTimestamp(ctx, tt.ChainId, tt.Timestamp)
 	}
 
-	providerKeeper.DeleteInitTimeoutTimestamp(ctx, tc[1].chainID)
-	_, found = providerKeeper.GetInitTimeoutTimestamp(ctx, tc[1].chainID)
+	for _, tt := range timeoutTimestamps {
+		_, found := pk.GetInitTimeoutTimestamp(ctx, tt.ChainId)
+		require.True(t, found)
+	}
+
+	// iterate and check all results are returned in the expected order
+	result := pk.GetAllInitTimeoutTimestamps(ctx)
+	require.Len(t, result, len(timeoutTimestamps))
+	require.Equal(t, result, expectedGetAllOrder)
+
+	pk.DeleteInitTimeoutTimestamp(ctx, timeoutTimestamps[0].ChainId)
+	_, found = pk.GetInitTimeoutTimestamp(ctx, timeoutTimestamps[0].ChainId)
 	require.False(t, found)
 }
 
@@ -276,199 +336,199 @@ func TestVscSendTimestamp(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	now := ctx.BlockTime()
+	now := time.Now().UTC()
 
 	testCases := []struct {
 		chainID string
 		ts      time.Time
 		vscID   uint64
 	}{
-		{chainID: "chain", ts: now.Add(time.Hour), vscID: 1},
 		{chainID: "chain", ts: now.Add(2 * time.Hour), vscID: 2},
+		{chainID: "chain", ts: now.Add(time.Hour), vscID: 1},
+		{chainID: "chain", ts: now.Add(time.Hour), vscID: 3},
+		// this is not possible since the ts is the timestamp of sending,
+		// which means it must be in the same order as vscIDs,
+		// but it still worth testing
+		{chainID: "chain", ts: now.Add(-time.Hour), vscID: 4},
 		{chainID: "chain1", ts: now.Add(time.Hour), vscID: 1},
 		{chainID: "chain2", ts: now.Add(time.Hour), vscID: 1},
 	}
-
-	i := 0
-	chainID := "chain"
-	providerKeeper.IterateVscSendTimestamps(ctx, chainID, func(_ uint64, _ time.Time) (stop bool) {
-		i++
-		return false // do not stop
+	chainID := testCases[0].chainID
+	expectedGetAllOrder := []types.VscSendTimestamp{}
+	for _, tc := range testCases {
+		if tc.chainID == chainID {
+			expectedGetAllOrder = append(expectedGetAllOrder, types.VscSendTimestamp{VscId: tc.vscID, Timestamp: tc.ts})
+		}
+	}
+	// sorting by vscID
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].VscId < expectedGetAllOrder[j].VscId
 	})
-	require.Equal(t, 0, i)
+
+	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, chainID))
 
 	for _, tc := range testCases {
 		providerKeeper.SetVscSendTimestamp(ctx, tc.chainID, tc.vscID, tc.ts)
 	}
 
-	i = 0
-	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(vscID uint64, ts time.Time) (stop bool) {
-		require.Equal(t, vscID, testCases[i].vscID)
-		require.Equal(t, ts, testCases[i].ts)
-		i++
-		return false // do not stop
-	})
-	require.Equal(t, 2, i)
+	// iterate and check all results are returned in the expected order
+	vscSendTimestamps := providerKeeper.GetAllVscSendTimestamps(ctx, chainID)
+	require.Equal(t, expectedGetAllOrder, vscSendTimestamps)
 
-	// delete VSC send timestamps
-	var ids []uint64
-	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(vscID uint64, _ time.Time) (stop bool) {
-		ids = append(ids, vscID)
-		return false // do not stop
-	})
-	for _, vscID := range ids {
-		providerKeeper.DeleteVscSendTimestamp(ctx, testCases[0].chainID, vscID)
+	vscSendTimestamp, found := providerKeeper.GetFirstVscSendTimestamp(ctx, chainID)
+	require.True(t, found)
+	require.Equal(t, vscSendTimestamp, expectedGetAllOrder[0])
+
+	// delete first VSC send timestamp
+	providerKeeper.DeleteVscSendTimestamp(ctx, chainID, vscSendTimestamp.VscId)
+	for _, vst := range providerKeeper.GetAllVscSendTimestamps(ctx, chainID) {
+		require.NotEqual(t, vscSendTimestamp, vst)
 	}
 
-	i = 0
-	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(_ uint64, _ time.Time) (stop bool) {
-		i++
-		return false // do not stop
-	})
-	require.Equal(t, 0, i)
+	// delete all VSC send timestamps
+	providerKeeper.DeleteVscSendTimestampsForConsumer(ctx, chainID)
+	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, chainID))
 }
 
-// TestIterateConsumerChains tests IterateConsumerChains behaviour correctness
-func TestIterateConsumerChains(t *testing.T) {
+// TestGetAllConsumerChains tests GetAllConsumerChains behaviour correctness
+func TestGetAllConsumerChains(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainIDs := []string{"chain-1", "chain-2"}
-	for _, c := range chainIDs {
-		pk.SetConsumerClientId(ctx, c, fmt.Sprintf("client-%s", c))
+	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
+	expectedGetAllOrder := []types.Chain{}
+	for i, chainID := range chainIDs {
+		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
+		pk.SetConsumerClientId(ctx, chainID, clientID)
+		expectedGetAllOrder = append(expectedGetAllOrder, types.Chain{ChainId: chainID, ClientId: clientID})
 	}
+	// sorting by chainID
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].ChainId < expectedGetAllOrder[j].ChainId
+	})
 
-	result := []string{}
-	testIterateAll := func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		result = append(result, chainID)
-		return false // will not stop iteration
-	}
-
-	require.Empty(t, result, "initial result not empty")
-	require.Len(t, chainIDs, 2, "initial chainIDs not len 2")
-
-	// iterate and check all chains are returned
-	pk.IterateConsumerChains(ctx, testIterateAll)
-	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
-	require.Contains(t, result, chainIDs[0], "result does not contain '%s'", chainIDs[0])
-	require.Contains(t, result, chainIDs[1], "result does not contain '%s'", chainIDs[1])
-
-	result = []string{}
-	testGetFirst := func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		result = append(result, chainID)
-		return true // will stop iteration after iterating 1 element
-	}
-	require.Empty(t, result, "initial result not empty")
-	// iterate and check first chain is
-	pk.IterateConsumerChains(ctx, testGetFirst)
-	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
-	require.Contains(t, result, chainIDs[0], "result does not contain '%s'", chainIDs[0])
-	require.NotContains(t, result, chainIDs[1], "result should not contain '%s'", chainIDs[1])
+	result := pk.GetAllConsumerChains(ctx)
+	require.Len(t, result, len(chainIDs))
+	require.Equal(t, expectedGetAllOrder, result)
 }
 
-// TestIterateConsumerChains tests IterateConsumerChains behaviour correctness
-func TestIterateChannelToChain(t *testing.T) {
+// TestGetAllChannelToChains tests GetAllChannelToChains behaviour correctness
+func TestGetAllChannelToChains(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	type chanToChain struct {
-		chainID   string
-		channelID string
+	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
+	expectedGetAllOrder := []types.ChannelToChain{}
+	for i, chainID := range chainIDs {
+		channelID := fmt.Sprintf("client-%d", len(chainIDs)-i)
+		pk.SetChannelToChain(ctx, channelID, chainID)
+		expectedGetAllOrder = append(expectedGetAllOrder, types.ChannelToChain{ChainId: chainID, ChannelId: channelID})
 	}
+	// sorting by channelID
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].ChannelId < expectedGetAllOrder[j].ChannelId
+	})
 
-	cases := []chanToChain{
-		{
-			chainID:   "chain-1",
-			channelID: "channel-1",
-		},
-		{
-			chainID:   "chain-2",
-			channelID: "channel-2",
-		},
-	}
-
-	for _, c := range cases {
-		pk.SetChannelToChain(ctx, c.channelID, c.chainID)
-	}
-
-	result := []chanToChain{}
-	testIterateAll := func(ctx sdk.Context, channelID, chainID string) (stop bool) {
-		result = append(result, chanToChain{
-			chainID:   chainID,
-			channelID: channelID,
-		})
-		return false // will not stop iteration
-	}
-
-	require.Empty(t, result, "initial result not empty")
-
-	// iterate and check all results are returned
-	pk.IterateChannelToChain(ctx, testIterateAll)
-	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
-	require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
-	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
-
-	result = []chanToChain{}
-	testGetFirst := func(ctx sdk.Context, channelID, chainID string) (stop bool) {
-		result = append(result, chanToChain{
-			chainID:   chainID,
-			channelID: channelID,
-		})
-		return true // will stop iteration
-	}
-
-	require.Empty(t, result, "initial result not empty")
-	// iterate and check 1 result is returned
-	pk.IterateChannelToChain(ctx, testGetFirst)
-	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
-	require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
-	require.NotContains(t, result, cases[1], "result should not contain '%s'", cases[1])
+	result := pk.GetAllChannelToChains(ctx)
+	require.Len(t, result, len(chainIDs))
+	require.Equal(t, expectedGetAllOrder, result)
 }
 
-// IterateOverUnbondingOps tests IterateOverUnbondingOps behaviour correctness
-func TestIterateOverUnbondingOps(t *testing.T) {
+// TestGetAllUnbondingOps tests GetAllUnbondingOps behaviour correctness
+func TestGetAllUnbondingOps(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	ops := []ccv.UnbondingOp{
-		{
-			Id:                      1,
-			UnbondingConsumerChains: []string{"test"},
-		},
+	ops := []types.UnbondingOp{
 		{
 			Id:                      2,
-			UnbondingConsumerChains: []string{"test"},
+			UnbondingConsumerChains: []string{"chain-2", "chain-1"},
+		},
+		{
+			Id:                      1,
+			UnbondingConsumerChains: []string{"chain-1", "chain-2"},
+		},
+		{
+			Id:                      4,
+			UnbondingConsumerChains: []string{"chain-2"},
+		},
+		{
+			Id:                      3,
+			UnbondingConsumerChains: []string{"chain-3", "chain-1", "chain-2"},
 		},
 	}
+	expectedGetAllOrder := ops
+	// sorting by Id
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].Id < expectedGetAllOrder[j].Id
+	})
 
 	for _, op := range ops {
 		pk.SetUnbondingOp(ctx, op)
 	}
 
-	result := []ccv.UnbondingOp{}
-	testIterateAll := func(id uint64, ubdOp ccv.UnbondingOp) (stop bool) {
-		result = append(result, ubdOp)
-		return false // will not stop iteration
-	}
-
-	require.Empty(t, result, "initial result not empty")
-
 	// iterate and check all results are returned
-	pk.IterateOverUnbondingOps(ctx, testIterateAll)
-	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
-	require.Contains(t, result, ops[0], "result does not contain '%s'", ops[0])
-	require.Contains(t, result, ops[1], "result does not contain '%s'", ops[1])
+	result := pk.GetAllUnbondingOps(ctx)
+	require.Len(t, result, len(ops))
+	require.Equal(t, expectedGetAllOrder, result)
+}
 
-	result = []ccv.UnbondingOp{}
-	testGetFirst := func(id uint64, ubdOp ccv.UnbondingOp) (stop bool) {
-		result = append(result, ubdOp)
-		return true // will stop iteration
+// TestRemoveConsumerFromUnbondingOp tests RemoveConsumerFromUnbondingOp behaviour correctness
+func TestRemoveConsumerFromUnbondingOp(t *testing.T) {
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	var expectedID uint64 = 1
+	expectedUnbondingOp := types.UnbondingOp{
+		Id:                      expectedID,
+		UnbondingConsumerChains: []string{"chain-3", "chain-1", "chain-2"},
 	}
 
-	require.Empty(t, result, "initial result not empty")
-	// iterate and check 1 result is returned
-	pk.IterateOverUnbondingOps(ctx, testGetFirst)
-	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
-	require.Contains(t, result, ops[0], "result does not contain '%s'", ops[0])
-	require.NotContains(t, result, ops[1], "result should not contain '%s'", ops[1])
+	pk.SetUnbondingOp(ctx, expectedUnbondingOp)
+
+	canComplete := pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "chain-1")
+	require.False(t, canComplete)
+	unbondingOp, found := pk.GetUnbondingOp(ctx, expectedID)
+	require.True(t, found)
+	expectedChainIDs := []string{"chain-3", "chain-2"}
+	require.Equal(t, expectedChainIDs, unbondingOp.UnbondingConsumerChains)
+
+	canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "chain-2")
+	require.False(t, canComplete)
+	unbondingOp, found = pk.GetUnbondingOp(ctx, expectedID)
+	require.True(t, found)
+	expectedChainIDs = []string{"chain-3"}
+	require.Equal(t, expectedChainIDs, unbondingOp.UnbondingConsumerChains)
+
+	// check that it doesn't panic when calling with same chain ID
+	canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "chain-2")
+	require.False(t, canComplete)
+	unbondingOp, found = pk.GetUnbondingOp(ctx, expectedID)
+	require.True(t, found)
+	require.Equal(t, expectedChainIDs, unbondingOp.UnbondingConsumerChains)
+
+	canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "chain-3")
+	require.True(t, canComplete)
+	unbondingOp, found = pk.GetUnbondingOp(ctx, expectedID)
+	require.False(t, found)
+	require.Empty(t, unbondingOp.UnbondingConsumerChains)
+
+	// check that it panics when calling with wrong chain IDs
+	require.Panics(t, func() {
+		canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "some_chain")
+		require.False(t, canComplete)
+	})
+}
+
+// TestSetSlashLog tests slash log getter and setter methods
+func TestSetSlashLog(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	addrWithDoubleSigns := cryptotestutil.NewCryptoIdentityFromIntSeed(1).SDKValConsAddress()
+	addrWithoutDoubleSigns := cryptotestutil.NewCryptoIdentityFromIntSeed(2).SDKValConsAddress()
+
+	providerKeeper.SetSlashLog(ctx, addrWithDoubleSigns)
+	require.True(t, providerKeeper.GetSlashLog(ctx, addrWithDoubleSigns))
+	require.False(t, providerKeeper.GetSlashLog(ctx, addrWithoutDoubleSigns))
 }

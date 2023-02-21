@@ -6,7 +6,6 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // provider message types
@@ -52,6 +51,7 @@ func (msg MsgAssignConsumerKey) Type() string {
 func (msg MsgAssignConsumerKey) GetSigners() []sdk.AccAddress {
 	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
+		// same behavior as in cosmos-sdk
 		panic(err)
 	}
 	return []sdk.AccAddress{valAddr.Bytes()}
@@ -76,8 +76,9 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 	if 128 < len(msg.ChainId) {
 		return ErrBlankConsumerChainID
 	}
-	if msg.ProviderAddr == "" {
-		return stakingtypes.ErrEmptyValidatorAddr
+	_, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
+	if err != nil {
+		return ErrInvalidProviderAddress
 	}
 	if msg.ConsumerKey == nil {
 		return ErrInvalidConsumerConsensusPubKey

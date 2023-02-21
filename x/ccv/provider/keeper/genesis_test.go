@@ -6,7 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -45,8 +45,8 @@ func TestInitAndExportGenesis(t *testing.T) {
 				"channel",
 				initHeight,
 				*consumertypes.DefaultGenesisState(),
-				[]providertypes.UnbondingOpIndex{
-					{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex},
+				[]providertypes.VscUnbondingOps{
+					{VscId: vscID, UnbondingOpIds: ubdIndex},
 				},
 				[]ccv.ValidatorSetChangePacketData{},
 				[]string{"slashedValidatorConsAddress"},
@@ -62,7 +62,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 				nil,
 			),
 		},
-		[]ccv.UnbondingOp{{
+		[]providertypes.UnbondingOp{{
 			Id:                      vscID,
 			UnbondingConsumerChains: []string{cChainIDs[0]},
 		}},
@@ -107,17 +107,30 @@ func TestInitAndExportGenesis(t *testing.T) {
 		mocks.MockScopedKeeper.EXPECT().GetCapability(
 			ctx, host.PortPath(ccv.ProviderPortID),
 		).Return(nil, true).Times(1),
+		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+			ctx).Return(sdk.NewInt(100)).Times(1), // Return total voting power as 100
 	)
 
 	// init provider chain
 	pk.InitGenesis(ctx, provGenesis)
 
+	// Expect slash meter to be initialized to it's allowance value
+	// (replenish fraction * mocked value defined above)
+	slashMeter := pk.GetSlashMeter(ctx)
+	replenishFraction, err := sdk.NewDecFromStr(pk.GetParams(ctx).SlashMeterReplenishFraction)
+	require.NoError(t, err)
+	expectedSlashMeterValue := sdk.NewInt(replenishFraction.MulInt(sdk.NewInt(100)).RoundInt64())
+	require.Equal(t, expectedSlashMeterValue, slashMeter)
+
+	// Expect slash meter replenishment time candidate to be set to the current block time + replenish period
+	expectedCandidate := ctx.BlockTime().Add(pk.GetSlashMeterReplenishPeriod(ctx))
+	require.Equal(t, expectedCandidate, pk.GetSlashMeterReplenishTimeCandidate(ctx))
+
 	// check local provider chain states
 	ubdOps, found := pk.GetUnbondingOp(ctx, vscID)
 	require.True(t, found)
 	require.Equal(t, provGenesis.UnbondingOps[0], ubdOps)
-	matureUbdOps, err := pk.GetMaturedUnbondingOps(ctx)
-	require.NoError(t, err)
+	matureUbdOps := pk.GetMaturedUnbondingOps(ctx)
 	require.Equal(t, ubdIndex, matureUbdOps)
 	chainID, found := pk.GetChannelToChain(ctx, provGenesis.ConsumerStates[0].ChannelId)
 	require.True(t, found)
@@ -129,7 +142,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	addProp, found := pk.GetPendingConsumerAdditionProp(ctx, oneHourFromNow, cChainIDs[0])
 	require.True(t, found)
 	require.Equal(t, provGenesis.ConsumerAdditionProposals[0], addProp)
-	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
+	require.True(t, pk.PendingConsumerRemovalPropExists(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, provGenesis.Params, pk.GetParams(ctx))
 
 	gotConsTmPubKey, found := pk.GetValidatorConsumerPubKey(ctx, cChainIDs[0], provAddr)
@@ -179,9 +192,9 @@ func assertConsumerChainStates(ctx sdk.Context, t *testing.T, pk keeper.Keeper, 
 		}
 
 		for _, ubdOpIdx := range cs.UnbondingOpsIndex {
-			ubdIndex, found := pk.GetUnbondingOpIndex(ctx, chainID, ubdOpIdx.ValsetUpdateId)
+			ubdIndex, found := pk.GetUnbondingOpIndex(ctx, chainID, ubdOpIdx.VscId)
 			require.True(t, found)
-			require.Equal(t, ubdOpIdx.UnbondingOpIndex, ubdIndex)
+			require.Equal(t, ubdOpIdx.UnbondingOpIds, ubdIndex)
 		}
 
 		require.Equal(t, cs.SlashDowntimeAck, pk.GetSlashAcks(ctx, chainID))

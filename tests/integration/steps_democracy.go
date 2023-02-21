@@ -129,9 +129,7 @@ func stepsDemocracy(consumerName string) []Step {
 		},
 		{
 			action: downtimeSlashAction{
-				chain: chainID(consumerName),
-				// TODO: First validator cannot be brought down until this issue is resolved:
-				// https://github.com/cosmos/interchain-security/issues/263
+				chain:     chainID(consumerName),
 				validator: validatorID("bob"),
 			},
 			state: State{
@@ -204,8 +202,7 @@ func stepsDemocracy(consumerName string) []Step {
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						// 1% of bob's stake should be slashed as set in config.go
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
 				},
@@ -228,7 +225,7 @@ func stepsDemocracy(consumerName string) []Step {
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   495,
+						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
 					//Check that slashing on the gov-consumer chain does not result in slashing for the representatives or their delegators

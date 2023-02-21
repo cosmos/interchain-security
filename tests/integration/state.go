@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 )
@@ -16,15 +16,17 @@ import (
 type State map[chainID]ChainState
 
 type ChainState struct {
-	ValBalances          *map[validatorID]uint
-	Proposals            *map[uint]Proposal
-	ValPowers            *map[validatorID]uint
-	RepresentativePowers *map[validatorID]uint
-	Params               *[]Param
-	Rewards              *Rewards
-	ConsumerChains       *map[chainID]bool
-	AssignedKeys         *map[validatorID]string
-	ProviderKeys         *map[validatorID]string // validatorID: validator provider key
+	ValBalances             *map[validatorID]uint
+	Proposals               *map[uint]Proposal
+	ValPowers               *map[validatorID]uint
+	RepresentativePowers    *map[validatorID]uint
+	Params                  *[]Param
+	Rewards                 *Rewards
+	ConsumerChains          *map[chainID]bool
+	AssignedKeys            *map[validatorID]string
+	ProviderKeys            *map[validatorID]string // validatorID: validator provider key
+	ConsumerChainQueueSizes *map[chainID]uint
+	GlobalSlashQueueSize    *uint
 }
 
 type Proposal interface {
@@ -57,6 +59,16 @@ type ConsumerRemovalProposal struct {
 }
 
 func (p ConsumerRemovalProposal) isProposal() {}
+
+type EquivocationProposal struct {
+	Height           uint
+	Power            uint
+	ConsensusAddress string
+	Deposit          uint
+	Status           string
+}
+
+func (p EquivocationProposal) isProposal() {}
 
 type Rewards struct {
 	IsRewarded map[validatorID]bool
@@ -140,6 +152,19 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 	if modelState.ProviderKeys != nil {
 		providerKeys := tr.getProviderAddresses(chain, *modelState.ProviderKeys)
 		chainState.ProviderKeys = &providerKeys
+	}
+
+	if modelState.GlobalSlashQueueSize != nil {
+		globalQueueSize := tr.getGlobalSlashQueueSize()
+		chainState.GlobalSlashQueueSize = &globalQueueSize
+	}
+
+	if modelState.ConsumerChainQueueSizes != nil {
+		consumerChainQueueSizes := map[chainID]uint{}
+		for c := range *modelState.ConsumerChainQueueSizes {
+			consumerChainQueueSizes[c] = tr.getConsumerChainPacketQueueSize(c)
+		}
+		chainState.ConsumerChainQueueSizes = &consumerChainQueueSizes
 	}
 
 	return chainState
@@ -382,6 +407,15 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			StopTime: int(stopTime.Milliseconds()),
 		}
 
+	case "/interchain_security.ccv.provider.v1.EquivocationProposal":
+		return EquivocationProposal{
+			Deposit:          uint(deposit),
+			Status:           status,
+			Height:           uint(gjson.Get(string(bz), `content.equivocations.0.height`).Uint()),
+			Power:            uint(gjson.Get(string(bz), `content.equivocations.0.power`).Uint()),
+			ConsensusAddress: gjson.Get(string(bz), `content.equivocations.0.consensus_address`).String(),
+		}
+
 	case "/cosmos.params.v1beta1.ParameterChangeProposal":
 		return ParamsProposal{
 			Deposit:  uint(deposit),
@@ -576,6 +610,41 @@ func (tr TestRun) getProviderAddressFromConsumer(consumerChain chainID, validato
 
 	addr := gjson.Get(string(bz), "provider_address").String()
 	return addr
+}
+
+func (tr TestRun) getGlobalSlashQueueSize() uint {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chainID("provi")].binaryName,
+
+		"query", "provider", "throttle-state",
+		`--node`, tr.getQueryNode(chainID("provi")),
+		`-o`, `json`,
+	)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	packets := gjson.Get(string(bz), "packets").Array()
+	return uint(len(packets))
+}
+
+func (tr TestRun) getConsumerChainPacketQueueSize(consumerChain chainID) uint {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chainID("provi")].binaryName,
+
+		"query", "provider", "throttled-consumer-packet-data",
+		string(consumerChain),
+		`--node`, tr.getQueryNode(chainID("provi")),
+		`-o`, `json`,
+	)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	size := gjson.Get(string(bz), "size").Uint()
+	return uint(size)
 }
 
 func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {

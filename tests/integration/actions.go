@@ -11,10 +11,12 @@ import (
 	"sync"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/provider/client"
+	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/tidwall/gjson"
 )
 
@@ -124,9 +126,11 @@ func (tr TestRun) startChain(
 		"/testnet-scripts/start-chain.sh", chainConfig.binaryName, string(vals),
 		string(chainConfig.chainId), chainConfig.ipPrefix, genesisChanges,
 		fmt.Sprint(action.skipGentx),
-		`s/timeout_commit = "5s"/timeout_commit = "1s"/;`+
-			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
-		// `s/flush_throttle_timeout = "100ms"/flush_throttle_timeout = "10ms"/`,
+		// override config/config.toml for each node on chain
+		// usually timeout_commit and peer_gossip_sleep_duration are changed to vary the test run duration
+		// lower timeout_commit means the blocks are produced faster making the test run shorter
+		// with short timeout_commit (eg. timeout_commit = 1s) some nodes may miss blocks causing the test run to fail
+		tr.tendermintConfigOverride,
 	)
 
 	cmdReader, err := cmd.StdoutPipe()
@@ -255,6 +259,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
+		`--gas`, `900000`,
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
@@ -397,6 +402,75 @@ func (tr TestRun) submitParamChangeProposal(
 	}
 }
 
+type submitEquivocationProposalAction struct {
+	chain     chainID
+	height    int64
+	time      time.Time
+	power     int64
+	validator validatorID
+	deposit   uint
+	from      validatorID
+}
+
+func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAction, verbose bool) {
+	val := tr.validatorConfigs[action.validator]
+	providerChain := tr.chainConfigs[chainID("provi")]
+
+	prop := client.EquivocationProposalJSON{
+		EquivocationProposal: types.EquivocationProposal{
+			Title:       "Validator equivocation!",
+			Description: fmt.Sprintf("Validator: %s has committed an equivocation infraction on chainID: %s", action.validator, action.chain),
+			Equivocations: []*evidencetypes.Equivocation{
+				{
+					Height:           action.height,
+					Time:             action.time,
+					Power:            action.power,
+					ConsensusAddress: val.valconsAddress,
+				},
+			},
+		},
+		Deposit: fmt.Sprint(action.deposit) + `stake`,
+	}
+
+	bz, err := json.Marshal(prop)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	jsonStr := string(bz)
+	if strings.Contains(jsonStr, "'") {
+		log.Fatal("prop json contains single quote")
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName,
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/equivocation-proposal.json")).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, providerChain.binaryName,
+
+		"tx", "gov", "submit-proposal", "equivocation",
+		"/equivocation-proposal.json",
+
+		`--from`, `validator`+fmt.Sprint(action.from),
+		`--chain-id`, string(providerChain.chainId),
+		`--home`, tr.getValidatorHome(providerChain.chainId, action.from),
+		`--node`, tr.getValidatorNode(providerChain.chainId, action.from),
+		`--gas`, "9000000",
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
 type voteGovProposalAction struct {
 	chain      chainID
 	from       []validatorID
@@ -498,7 +572,7 @@ gas_multiplier = 1.1
 grpc_addr = "%s"
 id = "%s"
 key_name = "%s"
-max_gas = 2000000
+max_gas = 20000000
 rpc_addr = "%s"
 rpc_timeout = "10s"
 store_prefix = "ibc"
@@ -937,7 +1011,7 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 	// Bring validator down
 	tr.setValidatorDowntime(action.chain, action.validator, true, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
-	tr.waitBlocks(action.chain, 15, time.Minute)
+	tr.waitBlocks(action.chain, 12, 2*time.Minute)
 	// Bring validator back up
 	tr.setValidatorDowntime(action.chain, action.validator, false, verbose)
 }
@@ -982,8 +1056,8 @@ type unjailValidatorAction struct {
 // Sends an unjail transaction to the provider chain
 func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 
-	// Wait just past the downtime_jail_duration set in config.go
-	time.Sleep(3 * time.Second)
+	// wait a block to be sure downtime_jail_duration has elapsed
+	tr.waitBlocks(action.provider, 1, time.Minute)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
@@ -995,6 +1069,7 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		`--chain-id`, string(tr.chainConfigs[action.provider].chainId),
 		`--home`, tr.getValidatorHome(action.provider, action.validator),
 		`--node`, tr.getValidatorNode(action.provider, action.validator),
+		`--gas`, "900000",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -1007,6 +1082,10 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for 1 blocks to make sure that tx got included
+	// in a block and packets commited before proceeding
+	tr.waitBlocks(action.provider, 1, time.Minute)
 }
 
 type registerRepresentativeAction struct {
@@ -1196,5 +1275,50 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		valCfg.useConsumerKey = true
 		tr.validatorConfigs[action.validator] = valCfg
 	}
+}
 
+// slashThrottleDequeue polls slash queue sizes until nextQueueSize is achieved
+type slashThrottleDequeue struct {
+	chain            chainID
+	currentQueueSize int
+	nextQueueSize    int
+	// panic if timeout is exceeded
+	timeout time.Duration
+}
+
+func (tr TestRun) waitForSlashThrottleDequeue(
+	action slashThrottleDequeue,
+	verbose bool,
+) {
+
+	timeout := time.Now().Add(action.timeout)
+	initialGlobalQueueSize := int(tr.getGlobalSlashQueueSize())
+
+	if initialGlobalQueueSize != action.currentQueueSize {
+		panic(fmt.Sprintf("wrong initial queue size: %d - expected global queue: %d\n", initialGlobalQueueSize, action.currentQueueSize))
+	}
+	for {
+		globalQueueSize := int(tr.getGlobalSlashQueueSize())
+		chainQueueSize := int(tr.getConsumerChainPacketQueueSize(action.chain))
+		if verbose {
+			fmt.Printf("waiting for packed queue size to reach: %d - current: %d\n", action.nextQueueSize, globalQueueSize)
+		}
+
+		if globalQueueSize == chainQueueSize && globalQueueSize == action.nextQueueSize {
+			break
+		}
+
+		if time.Now().After(timeout) {
+			panic(fmt.Sprintf("\n\n\nwaitForSlashThrottleDequeuemethod has timed out after: %s\n\n", action.timeout))
+		}
+
+		time.Sleep(500 * time.Millisecond)
+	}
+	// wair for 2 blocks to be created
+	// allowing the jailing to be incorporated into voting power
+	tr.waitBlocks(action.chain, 2, time.Minute)
+}
+
+func uintPointer(i uint) *uint {
+	return &i
 }

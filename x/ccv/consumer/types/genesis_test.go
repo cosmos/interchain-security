@@ -7,9 +7,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -98,7 +98,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				valUpdates,
 				nil,
 				nil,
-				types.ConsumerPackets{},
+				ccv.ConsumerPacketDataList{},
 				types.LastTransmissionBlockHeight{},
 				false,
 			},
@@ -117,7 +117,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				valUpdates,
 				nil,
 				nil,
-				types.ConsumerPackets{},
+				ccv.ConsumerPacketDataList{},
 				types.LastTransmissionBlockHeight{},
 				false,
 			},
@@ -136,7 +136,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				valUpdates,
 				nil,
 				nil,
-				types.ConsumerPackets{},
+				ccv.ConsumerPacketDataList{},
 				types.LastTransmissionBlockHeight{},
 				false,
 			},
@@ -155,7 +155,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				valUpdates,
 				nil,
 				nil,
-				types.ConsumerPackets{},
+				ccv.ConsumerPacketDataList{},
 				types.LastTransmissionBlockHeight{Height: 1},
 				false,
 			},
@@ -174,7 +174,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				valUpdates,
 				nil,
 				nil,
-				types.ConsumerPackets{List: []types.ConsumerPacket{{}}},
+				ccv.ConsumerPacketDataList{List: []ccv.ConsumerPacketData{{}}},
 				types.LastTransmissionBlockHeight{},
 				false,
 			},
@@ -250,17 +250,21 @@ func TestValidateRestartGenesisState(t *testing.T) {
 	valHash := valSet.Hash()
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(valSet)
 
-	matConsumerPacket := types.ConsumerPacket{
-		Type: types.VscMaturedPacket,
-		Data: ccv.NewVSCMaturedPacketData(1).GetBytes(),
+	matConsumerPacket := ccv.ConsumerPacketData{
+		Type: ccv.VscMaturedPacket,
+		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
+			VscMaturedPacketData: ccv.NewVSCMaturedPacketData(1),
+		},
 	}
 
-	slashConsumerPacket := types.ConsumerPacket{
-		Type: types.SlashPacket,
-		Data: ccv.NewSlashPacketData(
-			abci.Validator{Address: pubKey.Address(), Power: int64(1)},
-			1,
-			stakingtypes.Downtime).GetBytes(),
+	slashConsumerPacket := ccv.ConsumerPacketData{
+		Type: ccv.SlashPacket,
+		Data: &ccv.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: ccv.NewSlashPacketData(
+				abci.Validator{Address: pubKey.Address(), Power: int64(1)},
+				1,
+				stakingtypes.Downtime),
+		},
 	}
 
 	// create default height to validator set update id mapping
@@ -282,43 +286,44 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		{
 			"valid restart consumer genesis state: empty maturing packets",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, valUpdates, heightToValsetUpdateID,
-				types.ConsumerPackets{List: []types.ConsumerPacket{matConsumerPacket, slashConsumerPacket}}, nil, types.LastTransmissionBlockHeight{Height: 100}, params),
+				ccv.ConsumerPacketDataList{List: []ccv.ConsumerPacketData{matConsumerPacket, slashConsumerPacket}},
+				nil, types.LastTransmissionBlockHeight{Height: 100}, params),
 			false,
 		},
 		{
 			"valid restart consumer genesis state: handshake in progress ",
 			types.NewRestartGenesisState("ccvclient", "", nil, valUpdates, heightToValsetUpdateID,
-				types.ConsumerPackets{List: []types.ConsumerPacket{slashConsumerPacket}}, nil, types.LastTransmissionBlockHeight{}, params),
+				ccv.ConsumerPacketDataList{List: []ccv.ConsumerPacketData{slashConsumerPacket}}, nil, types.LastTransmissionBlockHeight{}, params),
 			false,
 		},
 		{
 			"valid restart consumer genesis state: maturing packets",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
-				{1, uint64(time.Now().UnixNano())},
-				{3, uint64(time.Now().UnixNano())},
-				{5, uint64(time.Now().UnixNano())},
-			}, valUpdates, heightToValsetUpdateID, types.ConsumerPackets{},
+				{1, time.Now().UTC()},
+				{3, time.Now().UTC()},
+				{5, time.Now().UTC()},
+			}, valUpdates, heightToValsetUpdateID, ccv.ConsumerPacketDataList{},
 				[]types.OutstandingDowntime{{ValidatorConsensusAddress: sdk.ConsAddress(validator.Address.Bytes()).String()}},
 				types.LastTransmissionBlockHeight{}, params),
 			false,
 		},
 		{
 			"invalid restart consumer genesis state: provider id is empty",
-			types.NewRestartGenesisState("", "ccvchannel", nil, valUpdates, heightToValsetUpdateID, types.ConsumerPackets{}, nil, types.LastTransmissionBlockHeight{}, params),
+			types.NewRestartGenesisState("", "ccvchannel", nil, valUpdates, heightToValsetUpdateID, ccv.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: maturing packet vscId is invalid",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
-				{0, uint64(time.Now().UnixNano())},
-			}, valUpdates, nil, types.ConsumerPackets{}, nil, types.LastTransmissionBlockHeight{}, params),
+				{0, time.Now().UTC()},
+			}, valUpdates, nil, ccv.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: maturing packet time is invalid",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
-				{1, 0},
-			}, valUpdates, nil, types.ConsumerPackets{}, nil, types.LastTransmissionBlockHeight{}, params),
+				{1, time.Time{}},
+			}, valUpdates, nil, ccv.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{}, params),
 			true,
 		},
 		{
@@ -334,7 +339,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 				valUpdates,
 				nil,
 				nil,
-				types.ConsumerPackets{},
+				ccv.ConsumerPacketDataList{},
 				types.LastTransmissionBlockHeight{},
 				false,
 			},
@@ -353,7 +358,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 				valUpdates,
 				nil,
 				nil,
-				types.ConsumerPackets{},
+				ccv.ConsumerPacketDataList{},
 				types.LastTransmissionBlockHeight{},
 				false,
 			},
@@ -361,42 +366,41 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		},
 		{
 			"invalid restart consumer genesis state: nil initial validator set",
-			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, nil, nil, types.ConsumerPackets{}, nil, types.LastTransmissionBlockHeight{}, params),
+			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, nil, nil, ccv.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: nil height to validator set id mapping",
 			types.NewRestartGenesisState("ccvclient", "",
-				[]types.MaturingVSCPacket{{1, 0}}, valUpdates, nil, types.ConsumerPackets{}, nil, types.LastTransmissionBlockHeight{}, params),
+				[]types.MaturingVSCPacket{{1, time.Time{}}}, valUpdates, nil, ccv.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{}, params),
 			true,
 		}, {
 			"invalid restart consumer genesis state: maturing packet defined when handshake is still in progress",
 			types.NewRestartGenesisState("ccvclient", "",
-				[]types.MaturingVSCPacket{{1, 0}}, valUpdates, heightToValsetUpdateID, types.ConsumerPackets{}, nil, types.LastTransmissionBlockHeight{}, params),
+				[]types.MaturingVSCPacket{{1, time.Time{}}}, valUpdates, heightToValsetUpdateID, ccv.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: outstanding downtime defined when handshake is still in progress",
 			types.NewRestartGenesisState("ccvclient", "",
-				nil, valUpdates, heightToValsetUpdateID, types.ConsumerPackets{}, []types.OutstandingDowntime{{ValidatorConsensusAddress: "cosmosvalconsxxx"}},
+				nil, valUpdates, heightToValsetUpdateID, ccv.ConsumerPacketDataList{}, []types.OutstandingDowntime{{ValidatorConsensusAddress: "cosmosvalconsxxx"}},
 				types.LastTransmissionBlockHeight{}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: last transmission block height defined when handshake is still in progress",
 			types.NewRestartGenesisState("ccvclient", "",
-				nil, valUpdates, heightToValsetUpdateID, types.ConsumerPackets{}, nil, types.LastTransmissionBlockHeight{Height: int64(1)}, params),
+				nil, valUpdates, heightToValsetUpdateID, ccv.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{Height: int64(1)}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: pending maturing packets defined when handshake is still in progress",
 			types.NewRestartGenesisState("ccvclient", "",
-				nil, valUpdates, heightToValsetUpdateID, types.ConsumerPackets{
-					List: []types.ConsumerPacket{
-
+				nil, valUpdates, heightToValsetUpdateID, ccv.ConsumerPacketDataList{
+					List: []ccv.ConsumerPacketData{
 						{
-							Type: types.VscMaturedPacket,
-							Data: ccv.NewVSCMaturedPacketData(1).GetBytes(),
+							Type: ccv.VscMaturedPacket,
+							Data: &ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: ccv.NewVSCMaturedPacketData(1)},
 						},
 					},
 				}, nil, types.LastTransmissionBlockHeight{Height: int64(1)}, params),
@@ -404,7 +408,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		},
 		{
 			"invalid restart consumer genesis state: invalid params",
-			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, valUpdates, nil, types.ConsumerPackets{}, nil, types.LastTransmissionBlockHeight{},
+			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, valUpdates, nil, ccv.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{},
 				types.NewParams(
 					true,
 					types.DefaultBlocksPerDistributionTransmission,

@@ -63,15 +63,16 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/cosmos/ibc-go/v3/modules/apps/transfer"
-	ibctransferkeeper "github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v3/modules/core"
-	ibcconnectiontypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
-	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
-	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
-	ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	"github.com/cosmos/ibc-go/v4/modules/apps/transfer"
+	ibctransferkeeper "github.com/cosmos/ibc-go/v4/modules/apps/transfer/keeper"
+	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v4/modules/core"
+	ibcconnectiontypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
+	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
+	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
+	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -83,34 +84,33 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
-	ccvdistrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
-	ccvdistrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
-	ccvdistrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
+	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/interchain-security/testutil/e2e"
 	ccvdistr "github.com/cosmos/interchain-security/x/ccv/democracy/distribution"
 
-	ccvstakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	ccvstakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ccvstaking "github.com/cosmos/interchain-security/x/ccv/democracy/staking"
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov"
-	ccvgovkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
-	ccvgovtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	ccvgov "github.com/cosmos/interchain-security/x/ccv/democracy/governance"
 
 	// add mint
-	ccvmint "github.com/cosmos/cosmos-sdk/x/mint"
-	ccvmintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
-	ccvminttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	mint "github.com/cosmos/cosmos-sdk/x/mint"
+	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	ibcconsumer "github.com/cosmos/interchain-security/x/ccv/consumer"
-	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	ibcconsumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumer "github.com/cosmos/interchain-security/x/ccv/consumer"
+	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
-	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
 
 const (
@@ -131,11 +131,11 @@ var (
 		bank.AppModuleBasic{},
 		capability.AppModuleBasic{},
 		ccvstaking.AppModuleBasic{},
-		ccvmint.AppModuleBasic{},
+		mint.AppModuleBasic{},
 		ccvdistr.AppModuleBasic{},
 		gov.NewAppModuleBasic(
 			// TODO: eventually remove upgrade proposal handler and cancel proposal handler
-			paramsclient.ProposalHandler, ccvdistrclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
+			paramsclient.ProposalHandler, distrclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
@@ -148,20 +148,20 @@ var (
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		//router.AppModuleBasic{},
-		ibcconsumer.AppModuleBasic{},
+		consumer.AppModuleBasic{},
 	)
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:                    nil,
-		ccvstakingtypes.BondedPoolName:                {authtypes.Burner, authtypes.Staking},
-		ccvstakingtypes.NotBondedPoolName:             {authtypes.Burner, authtypes.Staking},
-		ccvdistrtypes.ModuleName:                      nil,
-		ccvminttypes.ModuleName:                       {authtypes.Minter},
-		ibcconsumertypes.ConsumerRedistributeName:     nil,
-		ibcconsumertypes.ConsumerToSendToProviderName: nil,
-		ibctransfertypes.ModuleName:                   {authtypes.Minter, authtypes.Burner},
-		ccvgovtypes.ModuleName:                        {authtypes.Burner},
+		authtypes.FeeCollectorName:                 nil,
+		stakingtypes.BondedPoolName:                {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:             {authtypes.Burner, authtypes.Staking},
+		distrtypes.ModuleName:                      nil,
+		minttypes.ModuleName:                       {authtypes.Minter},
+		consumertypes.ConsumerRedistributeName:     nil,
+		consumertypes.ConsumerToSendToProviderName: nil,
+		ibctransfertypes.ModuleName:                {authtypes.Minter, authtypes.Burner},
+		govtypes.ModuleName:                        {authtypes.Burner},
 	}
 )
 
@@ -192,11 +192,11 @@ type App struct { // nolint: golint
 	AccountKeeper    authkeeper.AccountKeeper
 	BankKeeper       bankkeeper.Keeper
 	CapabilityKeeper *capabilitykeeper.Keeper
-	StakingKeeper    ccvstakingkeeper.Keeper
+	StakingKeeper    stakingkeeper.Keeper
 	SlashingKeeper   slashingkeeper.Keeper
-	MintKeeper       ccvmintkeeper.Keeper
-	DistrKeeper      ccvdistrkeeper.Keeper
-	GovKeeper        ccvgovkeeper.Keeper
+	MintKeeper       mintkeeper.Keeper
+	DistrKeeper      distrkeeper.Keeper
+	GovKeeper        govkeeper.Keeper
 	CrisisKeeper     crisiskeeper.Keeper
 	UpgradeKeeper    upgradekeeper.Keeper
 	ParamsKeeper     paramskeeper.Keeper
@@ -205,7 +205,7 @@ type App struct { // nolint: golint
 	TransferKeeper   ibctransferkeeper.Keeper
 	FeeGrantKeeper   feegrantkeeper.Keeper
 	AuthzKeeper      authzkeeper.Keeper
-	ConsumerKeeper   ibcconsumerkeeper.Keeper
+	ConsumerKeeper   consumerkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper         capabilitykeeper.ScopedKeeper
@@ -253,12 +253,12 @@ func New(
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 
 	keys := sdk.NewKVStoreKeys(
-		authtypes.StoreKey, banktypes.StoreKey, ccvstakingtypes.StoreKey,
-		ccvminttypes.StoreKey, ccvdistrtypes.StoreKey, slashingtypes.StoreKey,
-		ccvgovtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
+		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
+		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
+		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey, authzkeeper.StoreKey,
-		ibcconsumertypes.StoreKey,
+		consumertypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -295,7 +295,7 @@ func New(
 	)
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
-	scopedIBCConsumerKeeper := app.CapabilityKeeper.ScopeToModule(ibcconsumertypes.ModuleName)
+	scopedIBCConsumerKeeper := app.CapabilityKeeper.ScopeToModule(consumertypes.ModuleName)
 	app.CapabilityKeeper.Seal()
 
 	// add keepers
@@ -312,7 +312,7 @@ func New(
 	// the provider chain
 	bankBlockedAddrs := app.ModuleAccountAddrs()
 	delete(bankBlockedAddrs, authtypes.NewModuleAddress(
-		ibcconsumertypes.ConsumerToSendToProviderName).String())
+		consumertypes.ConsumerToSendToProviderName).String())
 
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec,
@@ -332,16 +332,16 @@ func New(
 		app.AccountKeeper,
 	)
 
-	ccvstakingKeeper := ccvstakingkeeper.NewKeeper(
+	ccvstakingKeeper := stakingkeeper.NewKeeper(
 		appCodec,
-		keys[ccvstakingtypes.StoreKey],
+		keys[stakingtypes.StoreKey],
 		app.AccountKeeper,
 		app.BankKeeper,
-		app.GetSubspace(ccvstakingtypes.ModuleName),
+		app.GetSubspace(stakingtypes.ModuleName),
 	)
 
-	app.MintKeeper = ccvmintkeeper.NewKeeper(
-		appCodec, keys[ccvminttypes.StoreKey], app.GetSubspace(ccvminttypes.ModuleName), &ccvstakingKeeper,
+	app.MintKeeper = mintkeeper.NewKeeper(
+		appCodec, keys[minttypes.StoreKey], app.GetSubspace(minttypes.ModuleName), &ccvstakingKeeper,
 		app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
 	)
 
@@ -351,14 +351,14 @@ func New(
 		&app.ConsumerKeeper,
 		app.GetSubspace(slashingtypes.ModuleName),
 	)
-	app.DistrKeeper = ccvdistrkeeper.NewKeeper(
+	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec,
-		keys[ccvdistrtypes.StoreKey],
-		app.GetSubspace(ccvdistrtypes.ModuleName),
+		keys[distrtypes.StoreKey],
+		app.GetSubspace(distrtypes.ModuleName),
 		app.AccountKeeper,
 		app.BankKeeper,
 		&ccvstakingKeeper,
-		ibcconsumertypes.ConsumerRedistributeName,
+		consumertypes.ConsumerRedistributeName,
 		app.ModuleAccountAddrs(),
 	)
 	app.CrisisKeeper = crisiskeeper.NewKeeper(
@@ -379,23 +379,23 @@ func New(
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
 	// NOTE: slashing hook was removed since it's only relevant for consumerKeeper
 	app.StakingKeeper = *ccvstakingKeeper.SetHooks(
-		ccvstakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks()),
+		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks()),
 	)
 
 	// register the proposal types
-	ccvgovRouter := ccvgovtypes.NewRouter()
-	ccvgovRouter.AddRoute(ccvgovtypes.RouterKey, ccvgovtypes.ProposalHandler).
+	ccvgovRouter := govtypes.NewRouter()
+	ccvgovRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
-		AddRoute(ccvdistrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
+		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		// TODO: remove upgrade handler from gov once admin module or decision for only signaling proposal is made.
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper))
-	govKeeper := ccvgovkeeper.NewKeeper(
-		appCodec, keys[ccvgovtypes.StoreKey], app.GetSubspace(ccvgovtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
+	govKeeper := govkeeper.NewKeeper(
+		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
 		&ccvstakingKeeper, ccvgovRouter,
 	)
 
 	app.GovKeeper = *govKeeper.SetHooks(
-		ccvgovtypes.NewMultiGovHooks(
+		govtypes.NewMultiGovHooks(
 		// register the governance hooks
 		),
 	)
@@ -410,10 +410,10 @@ func New(
 	)
 
 	// Create CCV consumer and modules
-	app.ConsumerKeeper = ibcconsumerkeeper.NewKeeper(
+	app.ConsumerKeeper = consumerkeeper.NewKeeper(
 		appCodec,
-		keys[ibcconsumertypes.StoreKey],
-		app.GetSubspace(ibcconsumertypes.ModuleName),
+		keys[consumertypes.StoreKey],
+		app.GetSubspace(consumertypes.ModuleName),
 		scopedIBCConsumerKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		&app.IBCKeeper.PortKeeper,
@@ -439,7 +439,7 @@ func New(
 
 	// register slashing module StakingHooks to the consumer keeper
 	app.ConsumerKeeper = *app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
-	consumerModule := ibcconsumer.NewAppModule(app.ConsumerKeeper, app.StakingKeeper)
+	consumerModule := consumer.NewAppModule(app.ConsumerKeeper, app.StakingKeeper)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
@@ -458,7 +458,7 @@ func New(
 	// create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcmodule)
-	ibcRouter.AddRoute(ibcconsumertypes.ModuleName, consumerModule)
+	ibcRouter.AddRoute(consumertypes.ModuleName, consumerModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
@@ -483,7 +483,7 @@ func New(
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		ccvgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, IsProposalWhitelisted),
-		ccvmint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
+		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.ConsumerKeeper),
 		ccvdistr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, authtypes.FeeCollectorName),
 		ccvstaking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.ConsumerKeeper),
@@ -505,15 +505,16 @@ func New(
 		// upgrades should be run first
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
-		ccvminttypes.ModuleName,
-		ccvdistrtypes.ModuleName,
+		minttypes.ModuleName,
+		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
-		ibcconsumertypes.ModuleName, // Note: consumer beginblocker before staking module
-		ccvstakingtypes.ModuleName,
+		consumertypes.ModuleName, // Note: consumer beginblocker before staking module
+		stakingtypes.ModuleName,
+		stakingtypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		ccvgovtypes.ModuleName,
+		govtypes.ModuleName,
 		crisistypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
@@ -524,15 +525,15 @@ func New(
 	)
 	app.MM.SetOrderEndBlockers(
 		crisistypes.ModuleName,
-		ccvgovtypes.ModuleName,
-		ibcconsumertypes.ModuleName, // Note: consumer endblocker before staking module
-		ccvstakingtypes.ModuleName,
+		govtypes.ModuleName,
+		consumertypes.ModuleName, // Note: consumer endblocker before staking module
+		stakingtypes.ModuleName,
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		ccvdistrtypes.ModuleName,
+		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
-		ccvminttypes.ModuleName,
+		minttypes.ModuleName,
 		evidencetypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
@@ -553,12 +554,12 @@ func New(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		ibcconsumertypes.ModuleName, // Note: consumer initiation before staking module
-		ccvdistrtypes.ModuleName,
-		ccvstakingtypes.ModuleName,
+		consumertypes.ModuleName, // Note: consumer initiation before staking module
+		distrtypes.ModuleName,
+		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
-		ccvgovtypes.ModuleName,
-		ccvminttypes.ModuleName,
+		govtypes.ModuleName,
+		minttypes.ModuleName,
 		crisistypes.ModuleName,
 		evidencetypes.ModuleName,
 		authz.ModuleName,
@@ -586,7 +587,7 @@ func New(
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		ccvgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, IsProposalWhitelisted),
-		ccvmint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
+		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
 		ccvstaking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.ConsumerKeeper),
 		ccvdistr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, authtypes.FeeCollectorName),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
@@ -648,8 +649,8 @@ func New(
 				return fromVM, fmt.Errorf("failed to unmarshal genesis state: %w", err)
 			}
 
-			var consumerGenesis = ibcconsumertypes.GenesisState{}
-			appCodec.MustUnmarshalJSON(appState[ibcconsumertypes.ModuleName], &consumerGenesis)
+			var consumerGenesis = consumertypes.GenesisState{}
+			appCodec.MustUnmarshalJSON(appState[consumertypes.ModuleName], &consumerGenesis)
 
 			consumerGenesis.PreCCV = true
 			app.ConsumerKeeper.InitGenesis(ctx, &consumerGenesis)
@@ -667,7 +668,7 @@ func New(
 
 	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := store.StoreUpgrades{
-			Added: []string{ibcconsumertypes.ModuleName},
+			Added: []string{consumertypes.ModuleName},
 		}
 
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
@@ -784,7 +785,7 @@ func (app *App) SimulationManager() *module.SimulationManager {
 // DemocConsumerApp interface implementations for e2e tests
 
 // GetConsumerKeeper implements the ConsumerApp interface.
-func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
+func (app *App) GetConsumerKeeper() consumerkeeper.Keeper {
 	return app.ConsumerKeeper
 }
 
@@ -836,7 +837,7 @@ func (app *App) GetBaseApp() *baseapp.BaseApp {
 }
 
 // GetStakingKeeper implements the TestingApp interface.
-func (app *App) GetStakingKeeper() ibcclienttypes.StakingKeeper {
+func (app *App) GetStakingKeeper() ibctestingcore.StakingKeeper {
 	return app.ConsumerKeeper
 }
 
@@ -913,15 +914,15 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 
 	paramsKeeper.Subspace(authtypes.ModuleName)
 	paramsKeeper.Subspace(banktypes.ModuleName)
-	paramsKeeper.Subspace(ccvstakingtypes.ModuleName)
-	paramsKeeper.Subspace(ccvminttypes.ModuleName)
-	paramsKeeper.Subspace(ccvdistrtypes.ModuleName)
+	paramsKeeper.Subspace(stakingtypes.ModuleName)
+	paramsKeeper.Subspace(minttypes.ModuleName)
+	paramsKeeper.Subspace(distrtypes.ModuleName)
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
-	paramsKeeper.Subspace(ccvgovtypes.ModuleName).WithKeyTable(ccvgovtypes.ParamKeyTable())
+	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govtypes.ParamKeyTable())
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
-	paramsKeeper.Subspace(ibcconsumertypes.ModuleName)
+	paramsKeeper.Subspace(consumertypes.ModuleName)
 
 	return paramsKeeper
 }

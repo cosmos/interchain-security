@@ -7,7 +7,7 @@ import {
   NUM_VALIDATORS,
 } from './constants.js';
 import {
-  InvariantSnapshot,
+  PropertiesSystemState,
   Chain,
   CommittedBlock,
   Status,
@@ -93,7 +93,7 @@ class PartialOrder {
     }
     if (bestV === -1) {
       // No greatest predecessor exists.
-      return undefined;
+      return;
     }
     return bestV;
   };
@@ -120,7 +120,7 @@ class PartialOrder {
     }
     if (bestAnswer === -1) {
       // No least successor exists.
-      return undefined;
+      return;
     }
     return bestAnswer;
   };
@@ -135,13 +135,13 @@ class BlockHistory {
   /**
    * Mark state as permanently committed to the blockchain.
    * @param chain
-   * @param invariantSnapshot
+   * @param propertiesSystemState
    */
-  commitBlock = (chain: Chain, invariantSnapshot: InvariantSnapshot) => {
-    const h = invariantSnapshot.h[chain];
+  commitBlock = (chain: Chain, propertiesSystemState: PropertiesSystemState) => {
+    const h = propertiesSystemState.h[chain];
     const b: CommittedBlock = {
       chain,
-      invariantSnapshot,
+      propertiesSystemState: propertiesSystemState,
     };
     this.blocks[chain].set(h, b);
   };
@@ -164,9 +164,9 @@ function stakingWithoutSlashing(hist: BlockHistory): boolean {
   const blocks = Array.from(hist.blocks[P].entries())
     .sort((a, b) => a[0] - b[0])
     .map((e) => e[1])
-    .map((b) => b.invariantSnapshot);
+    .map((b) => b.propertiesSystemState);
 
-  function value(e: InvariantSnapshot) {
+  function value(e: PropertiesSystemState) {
     let x = e.delegatorTokens;
     x += sum(e.tokens);
     x += sum(e.undelegationQ.map((e) => e.balance));
@@ -180,6 +180,84 @@ function stakingWithoutSlashing(hist: BlockHistory): boolean {
     }
   }
   return true;
+}
+
+/**
+ * Checks the validator set replication property as defined
+ * https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties
+ *
+ * @param hist A history of blocks.
+ * @returns Is the property satisfied?
+ */
+function validatorSetReplication(hist: BlockHistory): boolean {
+  const blocks = hist.blocks;
+  let good = true;
+
+  // Each committed block on the consumer chain has a last vscID
+  // received that informs the validator set at the NEXT height.
+  // Thus, on every received VSCPacket with vscID at height H, 
+  // the consumer sets hToVscID[H+1] to vscID. 
+  //
+  // The consumer valset is exactly the valset on the provider
+  // at the NEXT height after the vscID was sent.
+  // Thus, on every sent VSCPacket with vscID at height H,
+  // the provider sets vscIDtoH[vscID] to H+1 
+  //
+  // As a result, for every height hC on the consumer, the active 
+  // valset was last updated by the VSCPacket with ID vscID = hToVscID[hc]. 
+  // This packet was sent by the provider at height hP-1, with hP = vscIDtoH[vscID]. 
+  // This means that the consumer valset at height hC MUST match
+  // the provider valset at height hP.
+  // 
+  // We compare these valsets, which are committed in blocks 
+  // hC-1 and hP-1, respectively (the valset is always used at the NEXT height).
+  for (const [hC, b] of blocks[C]) {
+    if (hC < 1) {
+      // The model starts at consumer height 0, so there is
+      // no committed block at height - 1. This means it does
+      // not make sense to try to check the property for height 0.
+      continue
+    }
+    const snapshotC = b.propertiesSystemState;
+    // Get the vscid of the last update which dictated
+    // the consumer valset valsetC committed at hC-1
+    const vscid = snapshotC.hToVscID[hC];
+    // The VSU packet was sent at height hP-1
+    const hP = snapshotC.vscIDtoH[vscid];
+    // Compare the validator sets at hC-1 and hP-1
+    const valsetC = blocks[C].get(hC - 1)!.propertiesSystemState.consumerPower;
+    // The provider set is implicitly defined by the status and tokens (power)
+    if (hP < 1) {
+      // The model starts at provider height 0, so there is
+      // no committed block at height - 1. This means it does not
+      // make sense to try to check the property for height 0.
+      continue
+    }
+    const snapshotP = blocks[P].get(hP - 1)!.propertiesSystemState;
+    const statusP = snapshotP.status;
+    const tokensP = snapshotP.tokens;
+    assert(valsetC.length === statusP.length, 'this should never happen.');
+    assert(valsetC.length === tokensP.length, 'this should never happen.');
+    valsetC.forEach((power, i) => {
+      if (power !== null) { // null means the validator is not in the set
+        // Check that the consumer power is strictly equal to the provider power
+        good = good && (tokensP[i] === power);
+      }
+    })
+    statusP.forEach((status, i) => {
+      if (status === Status.BONDED) {
+        const power = tokensP[i];
+        // Check that the consumer power is strictly equal to the provider power
+        good = good && (valsetC[i] === power);
+      }
+      else {
+        // Ensure that the consumer validator set does not contain a non-bonded validator
+        good = good && (valsetC[i] === null);
+      }
+    })
+
+  }
+  return good;
 }
 
 /**
@@ -201,11 +279,11 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
   function powerProvider(block: CommittedBlock, hp: number): number[] {
     return _.range(NUM_VALIDATORS).map((i) => {
       let x = 0;
-      if (block.invariantSnapshot.status[i] !== Status.UNBONDED) {
-        x += block.invariantSnapshot.tokens[i];
+      if (block.propertiesSystemState.status[i] !== Status.UNBONDED) {
+        x += block.propertiesSystemState.tokens[i];
       }
       x += sum(
-        block.invariantSnapshot.undelegationQ
+        block.propertiesSystemState.undelegationQ
           .filter((e) => e.val === i)
           .filter((e) => hp <= e.creationHeight)
           .map((e) => e.initialBalance),
@@ -214,13 +292,13 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
     });
   }
   function powerConsumer(block: CommittedBlock) {
-    return block.invariantSnapshot.consumerPower;
+    return block.propertiesSystemState.consumerPower;
   }
   function inner(hc: number): boolean {
     const hp = partialOrder.getGreatestPred(C, hc);
     assert(hp !== undefined, 'this should never happen.');
     function getHC_() {
-      const tsHC = (blocks[C].get(hc) as CommittedBlock).invariantSnapshot
+      const tsHC = (blocks[C].get(hc) as CommittedBlock).propertiesSystemState
         .t[C];
       // Get earliest height on consumer
       // that a VSC received at hc could mature
@@ -229,7 +307,7 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
         const hc_ = heights[i];
         if (
           tsHC + UNBONDING_SECONDS_C <=
-          (blocks[C].get(hc_) as CommittedBlock).invariantSnapshot.t[C]
+          (blocks[C].get(hc_) as CommittedBlock).propertiesSystemState.t[C]
         ) {
           return hc_;
         }
@@ -255,7 +333,7 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
           hp + 1,
         );
         const powerC = powerConsumer(blocks[C].get(hc) as CommittedBlock);
-        if (powerC[i] !== undefined) {
+        if (powerC[i] !== null) {
           if (powerP[i] < (powerC[i] as number)) {
             return false;
           }
@@ -277,4 +355,5 @@ export {
   BlockHistory,
   stakingWithoutSlashing,
   bondBasedConsumerVotingPower,
+  validatorSetReplication,
 };

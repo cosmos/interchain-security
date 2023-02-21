@@ -4,10 +4,9 @@ import (
 	"fmt"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 )
 
@@ -27,16 +26,16 @@ func (k *Keeper) Hooks() Hooks {
 func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 	var consumerChainIDS []string
 
-	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		consumerChainIDS = append(consumerChainIDS, chainID)
-		return false // do not stop the iteration
-	})
+	for _, chain := range h.k.GetAllConsumerChains(ctx) {
+		consumerChainIDS = append(consumerChainIDS, chain.ChainId)
+	}
+
 	if len(consumerChainIDS) == 0 {
 		// Do not put the unbonding op on hold if there are no consumer chains
 		return nil
 	}
 	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
-	unbondingOp := ccv.UnbondingOp{
+	unbondingOp := types.UnbondingOp{
 		Id:                      ID,
 		UnbondingConsumerChains: consumerChainIDS,
 	}
@@ -54,35 +53,43 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 	if err := h.k.stakingKeeper.PutUnbondingOnHold(ctx, ID); err != nil {
 		// If there was an error putting the unbonding on hold, panic to end execution for
 		// the current tx and prevent committal of this invalid state.
+		//
+		// Note: that in the case of a validator unbonding, AfterUnbondingInitiated is called
+		// form staking.EndBlock, thus the following panic would halt the chain.
+		// In this case PutUnbondingOnHold fails if either the unbonding operation was
+		// not found or the UnbondingOnHoldRefCount is negative. In either cases,
+		// the state of the x/staking module of cosmos-sdk is invalid.
 		panic(fmt.Errorf("unbonding could not be put on hold: %w", err))
 	}
 	return nil
 }
 
+// ValidatorConsensusKeyInUse is called when a new validator is created
+// in the x/staking module of cosmos-sdk. In case it panics, the TX aborts
+// and thus, the validator is not created. See AfterValidatorCreated hook.
 func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddress) bool {
 	// Get the validator being added in the staking module.
 	val, found := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if !found {
+		// Abort TX, do NOT allow validator to be created
 		panic("did not find newly created validator in staking module")
 	}
 
 	// Get the consensus address of the validator being added
 	consensusAddr, err := val.GetConsAddr()
 	if err != nil {
+		// Abort TX, do NOT allow validator to be created
 		panic("could not get validator cons addr ")
 	}
 
 	inUse := false
 
-	// Search over all consumer keys which have been assigned in order to
-	// check if the validator being added is, or was, a consumer chain validator
-	k.IterateAllValidatorsByConsumerAddr(ctx, func(_ string, consumerAddr sdk.ConsAddress, _ sdk.ConsAddress) (stop bool) {
-		if consumerAddr.Equals(consensusAddr) {
+	for _, validatorConsumerAddrs := range k.GetAllValidatorsByConsumerAddr(ctx, nil) {
+		if sdk.ConsAddress(validatorConsumerAddrs.ConsumerAddr).Equals(consensusAddr) {
 			inUse = true
-			return true
+			break
 		}
-		return false
-	})
+	}
 
 	return inUse
 }
@@ -95,31 +102,16 @@ func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
 }
 
 func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddress, valAddr sdk.ValAddress) {
-	type StoreKey struct {
-		ChainID      string
-		ProviderAddr sdk.ConsAddress
-		ConsumerKey  tmprotocrypto.PublicKey
-	}
-	toDelete := []StoreKey{}
-	h.k.IterateAllValidatorConsumerPubKeys(ctx, func(
-		chainID string,
-		providerAddr sdk.ConsAddress,
-		consumerKey tmprotocrypto.PublicKey,
-	) (stop bool) {
-		if providerAddr.Equals(valConsAddr) {
-			toDelete = append(toDelete,
-				StoreKey{
-					ChainID:      chainID,
-					ProviderAddr: providerAddr,
-					ConsumerKey:  consumerKey,
-				})
+	for _, validatorConsumerPubKey := range h.k.GetAllValidatorConsumerPubKeys(ctx, nil) {
+		if sdk.ConsAddress(validatorConsumerPubKey.ProviderAddr).Equals(valConsAddr) {
+			consumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(*validatorConsumerPubKey.ConsumerKey)
+			if err != nil {
+				// An error here would indicate something is very wrong
+				panic("cannot get address of consumer key")
+			}
+			h.k.DeleteValidatorByConsumerAddr(ctx, validatorConsumerPubKey.ChainId, consumerAddr)
+			h.k.DeleteValidatorConsumerPubKey(ctx, validatorConsumerPubKey.ChainId, validatorConsumerPubKey.ProviderAddr)
 		}
-		return false // do not stop
-	})
-	for _, key := range toDelete {
-		consumerAddr := utils.TMCryptoPublicKeyToConsAddr(key.ConsumerKey)
-		h.k.DeleteValidatorByConsumerAddr(ctx, key.ChainID, consumerAddr)
-		h.k.DeleteValidatorConsumerPubKey(ctx, key.ChainID, key.ProviderAddr)
 	}
 }
 

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 )
 
 const (
@@ -92,4 +92,14 @@ func ValidateStringFraction(i interface{}) error {
 		return fmt.Errorf("param cannot be greater than 1, got %s", str)
 	}
 	return nil
+}
+
+func CalculateTrustPeriod(unbondingPeriod time.Duration, defaultTrustPeriodFraction string) (time.Duration, error) {
+	trustDec, err := sdktypes.NewDecFromStr(defaultTrustPeriodFraction)
+	if err != nil {
+		return time.Duration(0), err
+	}
+	trustPeriod := time.Duration(trustDec.MulInt64(unbondingPeriod.Nanoseconds()).TruncateInt64())
+
+	return trustPeriod, nil
 }
