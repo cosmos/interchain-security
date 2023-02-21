@@ -147,7 +147,7 @@ func TestOnChanOpenTry(t *testing.T) {
 			mocks.MockClientKeeper.EXPECT().GetClientState(ctx, "clientIDToConsumer").Return(
 				&ibctmtypes.ClientState{ChainId: "consumerChainID"}, true,
 			).AnyTimes(),
-			mocks.MockAccountKeeper.EXPECT().GetModuleAccount(ctx, "").Return(&moduleAcct).AnyTimes(),
+			mocks.MockAccountKeeper.EXPECT().GetModuleAccount(ctx, authtypes.FeeCollectorName).Return(&moduleAcct).AnyTimes(),
 		)
 
 		tc.mutateParams(&params, &providerKeeper)
