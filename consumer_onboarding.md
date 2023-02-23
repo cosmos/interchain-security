@@ -23,13 +23,15 @@ Example of such a repository can be found [here](https://github.com/hyphacoop/ic
 
 ### 3. governance proposal
 
-Before you submit a proposal, please consider allowing at least a day between your proposal passing and the chain spawn time. This will allow the validators, other node operators and the community to prepare for the chain launch.
-If possible, please set your spawn time so people from different parts of the globe can be available in case of emergencies. Ideally, you should set your spawn time to be between 12:00 UTC and 20:00 UTC so most validator operators are available and ready react to any issues.
-
 [ ] determine your chain's spawn time
 [ ] determine consumer chain parameters to be put in the proposal
 [ ] take note to include a link to your onboarding repository
 [ ] describe the purpose and benefits of running your chain
+
+Before you submit a proposal, please consider allowing at least a day between your proposal passing and the chain spawn time. This will allow the validators, other node operators and the community to prepare for the chain launch.
+If possible, please set your spawn time so people from different parts of the globe can be available in case of emergencies. Ideally, you should set your spawn time to be between 12:00 UTC and 20:00 UTC so most validator operators are available and ready to respond to any issues.
+
+Additionally, reach out to the community via the [forum](https://forum.cosmos.network/) to formalize your intention to become an ICS consumer, gather community support and accept feedback from the community, validators and developers.
 
 Example of a consumer chain addition proposal.
 
