@@ -101,6 +101,7 @@ Example of a consumer chain addition proposal.
 [ ] provide a repo with onboarding instructions for validators (it should already be listed in the proposal)
 [ ] genesis.json with ccv data populated (MUST contain the initial validator set)
 [ ] maintenance & emergency contact info (relevant discord, telegram, slack or other communication channels)
+[ ] have a block explorer in place to track chain activity & health
 
 The consumer chain starts after at least 66.67% of all provider's voting power comes online. The consumer chain is considered interchain secured once the appropriate CCV channels are established and the first validator set update is propagated from the provider to the consumer
 
