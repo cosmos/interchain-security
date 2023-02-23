@@ -38,45 +38,45 @@ Example of a consumer chain addition proposal.
 // If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time.
 // It is recommended that spawn time occurs after the proposal end time.
 {
-	// the title of the proposal
+    // Title of the proposal
     "title": "Add consumer chain",
 
-	// the description of the proposal
+    // Description of the proposal
     // format the text as a .md file and include the file in your onboarding repository
     "description": ".md description of your chain and all other relevant information",
-	
-    // the proposed chain-id of the new consumer chain, must be different from all other consumer chain ids of the executing
-	// provider chain.
+
+    // Proposed chain-id of the new consumer chain.
+    // Must be unique from all other consumer chain ids of the executing provider chain.
     "chain_id": "newchain-1",
 
-	// the proposed initial height of new consumer chain.
-	// For a completely new chain, this will be {0,1}. However, it may be different if this is a chain that is converting to a consumer chain.
+    // Initial height of new consumer chain.
+    // For a completely new chain, this will be {0,1}.
     "initial_height" : {
         "revision_height": 0,
         "revision_number": 1,
     },
 
-	// The hash of the consumer chain genesis state without the consumer CCV module genesis params.
-	// It is used for off-chain confirmation of genesis.json validity by validators and other parties.
+    // Hash of the consumer chain genesis state without the consumer CCV module genesis params.
+    // It is used for off-chain confirmation of genesis.json validity by validators and other parties.
     "genesis_hash": "d86d756e10118e66e6805e9cc476949da2e750098fcc7634fd0cc77f57a0b2b0",
 
-    // The hash of the consumer chain binary that should be run by validators on chain initialization.
-	// It is used for off-chain confirmation of binary validity by validators and other parties.
+    // Hash of the consumer chain binary that should be run by validators on chain initialization.
+    // It is used for off-chain confirmation of binary validity by validators and other parties.
     "binary_hash": "376cdbd3a222a3d5c730c9637454cd4dd925e2f9e2e0d0f3702fc922928583f1",
 
-	// spawn time is the time on the provider chain at which the consumer chain genesis is finalized and all validators
-	// will be responsible for starting their consumer chain validator node.
+    // Time on the provider chain at which the consumer chain genesis is finalized and all validators
+    // will be responsible for starting their consumer chain validator node.
     "spawn_time": "2023-02-28T20:40:00.000000Z",
-    
-	// Unbonding period for the consumer chain.
-	// It should should be smaller than that of the provider.
+
+    // Unbonding period for the consumer chain.
+    // It should should be smaller than that of the provider.
     "unbonding_period": 86400000000000,
 
     // Timeout period for CCV related IBC packets.
     // Packets are considered timed-out after this interval elapses.
     "ccv_timeout_period": 259200000000000,
 
-	// IBC transfer packets will timeout after this interval elapses.
+    // IBC transfer packets will timeout after this interval elapses.
     "transfer_timeout_period": 1800000000000,
 
     // The fraction of tokens allocated to the consumer redistribution address during distribution events.
@@ -84,13 +84,13 @@ Example of a consumer chain addition proposal.
     // The reward amount distributed to the provider is calculated as: 1 - consumer_redistribution_fraction.
     "consumer_redistribution_fraction": "0.75",
 
-	// BlocksPerDistributionTransmission is the number of blocks between IBC token transfers from the consumer chain to the provider chain.
+    // BlocksPerDistributionTransmission is the number of blocks between IBC token transfers from the consumer chain to the provider chain.
     // eg. send rewards to the provider every 1000 blocks
     "blocks_per_distribution_transmission": 1000,
 
-	// The number of historical info entries to persist in store.
-	// This param is a part of the cosmos sdk staking module. In the case of
-	// a ccv enabled consumer chain, the ccv module acts as the staking module.
+    // The number of historical info entries to persist in store.
+    // This param is a part of the cosmos sdk staking module. In the case of
+    // a ccv enabled consumer chain, the ccv module acts as the staking module.
     "historical_entries": 10000,
 }
 ```
