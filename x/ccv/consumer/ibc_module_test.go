@@ -160,6 +160,8 @@ func TestOnChanOpenInit(t *testing.T) {
 			require.NoError(t, err)
 		} else {
 			require.Error(t, err)
+			// assert version string is empty
+			require.Empty(t, version)
 		}
 		// Confirm there are no unexpected external keeper calls
 		ctrl.Finish()

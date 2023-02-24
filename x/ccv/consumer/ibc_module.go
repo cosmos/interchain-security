@@ -64,7 +64,11 @@ func (am AppModule) OnChanOpenInit(
 		return "", err
 	}
 
-	return version, am.keeper.VerifyProviderChain(ctx, connectionHops)
+	if err := am.keeper.VerifyProviderChain(ctx, connectionHops); err != nil {
+		return "", err
+	}
+
+	return version, nil
 }
 
 // validateCCVChannelParams validates a ccv channel
