@@ -16,6 +16,14 @@ If you've checked more than one of the first three boxes, consider splitting thi
 - [ ] `Testing`: Adds testing
 - [ ] `Docs`: Adds documentation
 
+## Versioning Implications
+
+- [ ] This PR will affect [semantic versioning as defined for ICS](../CONTRIBUTING.md#branching-model-and-release)
+
+New ICS semantic version: `X.Y.Z`
+
+- [ ] Has the new version been included in a tag?
+
 ## Regression tests
 
 If `Refactor`, describe the new or existing tests that verify no behavior was changed or added where refactors were introduced.

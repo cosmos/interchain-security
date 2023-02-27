@@ -51,6 +51,8 @@ Incrementing a MINOR version number indicates that a PR is only consensus breaki
 
 Incrementing a PATCH version number indicates that a PR is not consensus breaking to the provider or consumers.
 
+Pure documentation, testing, and refactoring PRs do not require a version bump.
+
 ## Testing
 
 Appropriate tests should be written with a new feature, and all existing tests should pass. See [docs/testing.md](./docs/testing.md) for more information.
