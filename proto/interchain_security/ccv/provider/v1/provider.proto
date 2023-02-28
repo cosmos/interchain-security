@@ -211,7 +211,7 @@ message ProviderConsAddress {
   bytes address = 1;
 }
 
-// AddressList contains a list of consumer consensus addresses
+// ConsumerAddressList contains a list of consumer consensus addresses
 message ConsumerAddressList {
   repeated ConsumerConsAddress addresses = 1;
 }
