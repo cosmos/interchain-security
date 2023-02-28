@@ -24,3 +24,17 @@ func (k Keeper) QueryNextFeeDistribution(c context.Context,
 
 	return &types.QueryNextFeeDistributionEstimateResponse{Data: &nextDist}, nil
 }
+
+func (k Keeper) QueryParams(c context.Context,
+	req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+
+	ctx := sdk.UnwrapSDKContext(c)
+
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	p := k.GetParams(ctx)
+
+	return &types.QueryParamsResponse{Params: p}, nil
+}
