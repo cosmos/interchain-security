@@ -4,7 +4,7 @@
   - [Architecture Decision Records (ADR)](#architecture-decision-records-adr)
   - [PR Targeting](#pr-targeting)
   - [Development Procedure](#development-procedure)
-  - [Branching Model and Release](#branching-model-and-release)
+  - [Semantic Versioning](#semantic-versioning)
   - [Testing](#testing)
   - [Protobuf](#protobuf)
 
@@ -28,9 +28,11 @@ Architecture Decision Records (ADRs) may be proposed by any contributors or main
 
 ## PR Targeting
 
-All feature additions and all bug fixes must be targeted against `main`. Exception is for bug fixes which are only related to a released version. In that case, the related bug fix PRs must target against the release branch.
+ICS adheres to the [trunk based development branching model](https://trunkbaseddevelopment.com/).
 
-If needed, we backport a commit from `main` to a release branch (excluding consensus breaking feature, API breaking and similar).
+All feature additions and all bug fixes must be targeted against `main`. Exception is for bug fixes which may only be relevant to a previously released version. In that case, the bug fix PR must target against the release branch.
+
+If needed, we will backport a commit from `main` to a release branch with appropriate consideration of versioning.
 
 ## Development Procedure
 
@@ -38,18 +40,20 @@ If needed, we backport a commit from `main` to a release branch (excluding conse
 - `main` must never fail `make test`
 - Create a branch or fork the repo to start work
 - Once development is completed, or during development as a draft, you may open a pull request. The pull request description should follow the [default template](./.github/PULL_REQUEST_TEMPLATE.md). Note that a PR can be of one or multiple types, including `Feature`, `Fix`, `Refactor`, `Testing`, and `Docs`. Please try to minimize the number of categories that you could classify a single PR as.
-- It's notable that your PR may have versioning implications. See [Branching Model and Release](#branching-model-and-release) for more information
-- Code is squash merged through the PR approval process.
+- It's notable that your PR may have versioning implications. See [Semantic Versioning](#semantic-versioning) for more information
+- Code is squash merged through the PR approval process
 
-## Branching Model and Release
+## Semantic Versioning
 
-ICS adheres to the [trunk based development branching model](https://trunkbaseddevelopment.com/) and a variation of [semantic versioning](https://semver.org/).
+ICS uses a variation of [semantic versioning](https://semver.org/).
 
-ICS is a distributed, IBC based protocol in which multiple blockchains could be affected by a version bump. Therefore incrementing a MAJOR version number indicates that the PR is a breaking change to the way that the provider and consumer(s) communicate with one another over IBC. That is, if a feature is consensus breaking to both the provider and consumer(s), then it requires a MAJOR version bump.
+Note that state breaking changes are a subset of consensus breaking changes. Therefore we'll only refer to the latter when talking about versioning.
 
-Incrementing a MINOR version number indicates that a PR is only consensus breaking to the provider, or only to the consumers. Be careful in this scenario, as state-transition changes to the provider can often lead to differences in how validator set changes are relayed to the consumers.
+ICS is a distributed, IBC based protocol in which multiple blockchains could be affected by a version bump. Therefore incrementing a MAJOR version number indicates that the PR updates, or is a breaking change to the way that the provider and consumer(s) communicate with one another over IBC. If a PR is consensus breaking to both the provider and consumer(s), then it requires a MAJOR version bump.
 
-Incrementing a PATCH version number indicates that a PR is not consensus breaking to the provider or consumers.
+Incrementing a MINOR version number indicates that a PR is only consensus breaking to the provider, or only to the consumers, where IBC communication remains unchanged.
+
+Incrementing a PATCH version number indicates that a PR is not consensus breaking to the provider or consumers. This could include node API changes, liveness bug fixes, or other miscellaneous and often rare changes.
 
 Pure documentation, testing, and refactoring PRs do not require a version bump.
 

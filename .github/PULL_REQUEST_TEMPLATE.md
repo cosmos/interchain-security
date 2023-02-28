@@ -16,14 +16,6 @@ If you've checked more than one of the first three boxes, consider splitting thi
 - [ ] `Testing`: Adds testing
 - [ ] `Docs`: Adds documentation
 
-## Versioning Implications
-
-- [ ] This PR will affect [semantic versioning as defined for ICS](../CONTRIBUTING.md#branching-model-and-release)
-
-New ICS semantic version: `X.Y.Z`
-
-- [ ] Has the new version been included in a tag?
-
 ## Regression tests
 
 If `Refactor`, describe the new or existing tests that verify no behavior was changed or added where refactors were introduced.
@@ -31,3 +23,23 @@ If `Refactor`, describe the new or existing tests that verify no behavior was ch
 ## New behavior tests
 
 If `Feature` or `Fix`, describe the new or existing tests that verify the new behavior is correct and expected.
+
+## Versioning Implications
+
+- [ ] This PR will affect [semantic versioning as defined for ICS](../CONTRIBUTING.md#semantic-versioning)
+
+If the above box is checked, which version should be bumped?
+
+- [ ] `MAJOR`: Consensus breaking changes to both the provider and consumers(s), including updates/breaking changes to IBC communication between provider and consumer(s)
+- [ ] `MINOR`: Consensus breaking changes which only affect the provider, or only affect consumer(s)
+- [ ] `PATCH`: Non consensus breaking changes
+
+TODO: Add automation to aid in tagging based on commit format, PRs being auto generated for release branches (similar to gaia)
+
+## Targeting
+
+Please select one of the following:
+
+- [ ] This PR is only relevant to main
+- [ ] This PR is relevant to main, and should also be back-ported to ____ (ex: v1.0.0 and v1.1.0)
+- [ ] This PR is only relevant to ____ (ex: v1.0.0, v1.1.0, and v1.2.0)
