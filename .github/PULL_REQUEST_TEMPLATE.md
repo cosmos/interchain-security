@@ -34,7 +34,7 @@ If the above box is checked, which version should be bumped?
 - [ ] `MINOR`: Consensus breaking changes which only affect the provider, or only affect consumer(s)
 - [ ] `PATCH`: Non consensus breaking changes
 
-TODO: Add automation to aid in tagging based on commit format. See https://github.com/cosmos/interchain-security/issues/748
+TODO: Add automation to aid in tagging based on commit format. See <https://github.com/cosmos/interchain-security/issues/748>
 
 ## Targeting
 
