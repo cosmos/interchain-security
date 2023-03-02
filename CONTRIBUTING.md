@@ -53,7 +53,7 @@ ICS is a distributed, IBC based protocol in which multiple blockchains could be 
 
 Incrementing a MINOR version number indicates that a PR is only consensus breaking to the provider, or only to the consumers, where IBC communication remains unchanged.
 
-Incrementing a PATCH version number indicates that a PR is not consensus breaking to the provider or consumers. This could include node API changes, liveness bug fixes, or other miscellaneous and often rare changes.
+Incrementing a PATCH version number indicates that a PR is not consensus breaking to the provider or consumers. This could include node API changes, or other miscellaneous and often rare changes.
 
 Pure documentation, testing, and refactoring PRs do not require a version bump.
 
