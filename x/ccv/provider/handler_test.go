@@ -28,8 +28,8 @@ func TestInvalidMsg(t *testing.T) {
 }
 
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
-	testValProvider := testcrypto.NewCryptoIdentityFromIntSeed(0)
-	testValConsumer := testcrypto.NewCryptoIdentityFromIntSeed(1)
+	testValProvider := testcrypto.NewIdentityFromIntSeed(0)
+	testValConsumer := testcrypto.NewIdentityFromIntSeed(1)
 
 	testCases := []struct {
 		name string

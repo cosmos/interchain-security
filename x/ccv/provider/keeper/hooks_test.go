@@ -11,9 +11,9 @@ import (
 )
 
 func TestValidatorConsensusKeyInUse(t *testing.T) {
-	newValidator := cryptotestutil.NewCryptoIdentityFromIntSeed(0)
-	anotherValidator0 := cryptotestutil.NewCryptoIdentityFromIntSeed(1)
-	anotherValidator1 := cryptotestutil.NewCryptoIdentityFromIntSeed(2)
+	newValidator := cryptotestutil.NewIdentityFromIntSeed(0)
+	anotherValidator0 := cryptotestutil.NewIdentityFromIntSeed(1)
+	anotherValidator1 := cryptotestutil.NewIdentityFromIntSeed(2)
 
 	tests := []struct {
 		name   string

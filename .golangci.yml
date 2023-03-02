@@ -33,6 +33,9 @@ linters:
 
 issues:
   exclude-rules:
+    - text: "rand.Seed has been deprecated"
+      linters:
+        - staticcheck
     - text: "SA1019: sdkerrors.Register"
       linters:
         - staticcheck

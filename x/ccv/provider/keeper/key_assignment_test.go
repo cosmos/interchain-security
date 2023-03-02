@@ -24,7 +24,7 @@ import (
 func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
 	chainID := "consumer"
 	providerAddr := sdk.ConsAddress([]byte("providerAddr"))
-	consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
+	consumerKey := cryptotestutil.NewIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -52,8 +52,8 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 	numAssignments := 10
 	testAssignments := []types.ValidatorConsumerPubKey{}
 	for i := 0; i < numAssignments; i++ {
-		consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(i).TMProtoCryptoPublicKey()
-		providerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(numAssignments + i).SDKValConsAddress()
+		consumerKey := cryptotestutil.NewIdentityFromIntSeed(i).TMProtoCryptoPublicKey()
+		providerAddr := cryptotestutil.NewIdentityFromIntSeed(numAssignments + i).SDKValConsAddress()
 		testAssignments = append(testAssignments,
 			types.ValidatorConsumerPubKey{
 				ChainId:      chainIDs[rand.Intn(len(chainIDs))],
@@ -129,8 +129,8 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 	numAssignments := 10
 	testAssignments := []types.ValidatorByConsumerAddr{}
 	for i := 0; i < numAssignments; i++ {
-		consumerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(i).SDKValConsAddress()
-		providerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(numAssignments + i).SDKValConsAddress()
+		consumerAddr := cryptotestutil.NewIdentityFromIntSeed(i).SDKValConsAddress()
+		providerAddr := cryptotestutil.NewIdentityFromIntSeed(numAssignments + i).SDKValConsAddress()
 		testAssignments = append(testAssignments,
 			types.ValidatorByConsumerAddr{
 				ChainId:      chainIDs[rand.Intn(len(chainIDs))],
@@ -178,7 +178,7 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 func TestKeyAssignmentReplacementCRUD(t *testing.T) {
 	chainID := "consumer"
 	providerAddr := sdk.ConsAddress([]byte("providerAddr"))
-	expCPubKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
+	expCPubKey := cryptotestutil.NewIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	var expPower int64 = 100
 
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -206,8 +206,8 @@ func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 	numAssignments := 10
 	testAssignments := []types.KeyAssignmentReplacement{}
 	for i := 0; i < numAssignments; i++ {
-		consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(i).TMProtoCryptoPublicKey()
-		providerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(numAssignments + i).SDKValConsAddress()
+		consumerKey := cryptotestutil.NewIdentityFromIntSeed(i).TMProtoCryptoPublicKey()
+		providerAddr := cryptotestutil.NewIdentityFromIntSeed(numAssignments + i).SDKValConsAddress()
 		testAssignments = append(testAssignments,
 			types.KeyAssignmentReplacement{
 				ProviderAddr: providerAddr,
@@ -267,7 +267,7 @@ func TestGetAllConsumerAddrsToPrune(t *testing.T) {
 		consumerAddresses := types.AddressList{}
 		for j := 0; j < 2*(i+1); j++ {
 			consumerAddresses.Addresses = append(consumerAddresses.Addresses,
-				cryptotestutil.NewCryptoIdentityFromIntSeed(i*j).SDKValConsAddress())
+				cryptotestutil.NewIdentityFromIntSeed(i*j).SDKValConsAddress())
 		}
 		testAssignments = append(testAssignments,
 			types.ConsumerAddrsToPrune{
@@ -357,13 +357,13 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 	chainID := "chainID"
-	providerIdentities := []*cryptotestutil.CryptoIdentity{
-		cryptotestutil.NewCryptoIdentityFromIntSeed(0),
-		cryptotestutil.NewCryptoIdentityFromIntSeed(1),
+	providerIdentities := []*cryptotestutil.Identity{
+		cryptotestutil.NewIdentityFromIntSeed(0),
+		cryptotestutil.NewIdentityFromIntSeed(1),
 	}
-	consumerIdentities := []*cryptotestutil.CryptoIdentity{
-		cryptotestutil.NewCryptoIdentityFromIntSeed(2),
-		cryptotestutil.NewCryptoIdentityFromIntSeed(3),
+	consumerIdentities := []*cryptotestutil.Identity{
+		cryptotestutil.NewIdentityFromIntSeed(2),
+		cryptotestutil.NewIdentityFromIntSeed(3),
 	}
 
 	testCases := []struct {
@@ -601,12 +601,12 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 // Represents the validator set of a chain
 type ValSet struct {
-	identities []*cryptotestutil.CryptoIdentity
+	identities []*cryptotestutil.Identity
 	// indexed by same index as identities
 	power []int64
 }
 
-func CreateValSet(identities []*cryptotestutil.CryptoIdentity) ValSet {
+func CreateValSet(identities []*cryptotestutil.Identity) ValSet {
 	return ValSet{
 		identities: identities,
 		power:      make([]int64, len(identities)),
@@ -655,15 +655,15 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 	NUM_ASSIGNMENTS_PER_BLOCK_MAX := 8
 
 	// Create some identities for the simulated provider validators to use
-	providerIDS := []*cryptotestutil.CryptoIdentity{}
+	providerIDS := []*cryptotestutil.Identity{}
 	// Create some identities which the provider validators can assign to the consumer chain
-	assignableIDS := []*cryptotestutil.CryptoIdentity{}
+	assignableIDS := []*cryptotestutil.Identity{}
 	for i := 0; i < NUM_VALIDATORS; i++ {
-		providerIDS = append(providerIDS, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
+		providerIDS = append(providerIDS, cryptotestutil.NewIdentityFromIntSeed(i))
 	}
 	// Notice that the assignable identities include the provider identities
 	for i := 0; i < NUM_VALIDATORS+NUM_ASSIGNABLE_KEYS; i++ {
-		assignableIDS = append(assignableIDS, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
+		assignableIDS = append(assignableIDS, cryptotestutil.NewIdentityFromIntSeed(i))
 	}
 
 	// Helper: simulates creation of staking module EndBlock updates.

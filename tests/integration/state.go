@@ -361,12 +361,11 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			Description: description,
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal":
-		chainId := gjson.Get(string(bz), `content.chain_id`).String()
+		chainID := gjson.Get(string(bz), `content.chain_id`).String()
 		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time().Sub(tr.containerConfig.now)
 
-		var chain chainID
 		for i, conf := range tr.chainConfigs {
-			if string(conf.chainId) == chainId {
+			if string(conf.chainId) == chainID {
 				chain = i
 				break
 			}

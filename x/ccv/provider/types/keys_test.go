@@ -149,9 +149,9 @@ func TestThrottledPacketDataKeyAndParse(t *testing.T) {
 func TestGlobalSlashEntryKeyAndParse(t *testing.T) {
 	now := time.Now()
 	entries := []providertypes.GlobalSlashEntry{}
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now, "chain-0", 2, cryptoutil.NewCryptoIdentityFromIntSeed(0).SDKValConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour), "chain-7896978", 3, cryptoutil.NewCryptoIdentityFromIntSeed(1).SDKValConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(3*time.Hour), "chain-1", 4723894, cryptoutil.NewCryptoIdentityFromIntSeed(2).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now, "chain-0", 2, cryptoutil.NewIdentityFromIntSeed(0).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour), "chain-7896978", 3, cryptoutil.NewIdentityFromIntSeed(1).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(3*time.Hour), "chain-1", 4723894, cryptoutil.NewIdentityFromIntSeed(2).SDKValConsAddress()))
 
 	for _, entry := range entries {
 		key := providertypes.GlobalSlashEntryKey(entry)

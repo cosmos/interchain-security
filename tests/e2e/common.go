@@ -61,7 +61,7 @@ func (s *CCVTestSuite) getValByIdx(index int) (validator stakingtypes.Validator,
 	return s.getVal(s.providerCtx(), valAddr), valAddr
 }
 
-func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingtypes.Validator {
+func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingtypes.Validator { //nolint:unparam
 	validator, found := s.providerApp.GetE2eStakingKeeper().GetValidator(s.providerCtx(), valAddr)
 	s.Require().True(found)
 	return validator
@@ -90,7 +90,7 @@ func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress
 
 // delegateAndUndelegate delegates bondAmt from delAddr to the first validator
 // and then immediately undelegates 1/shareDiv of that delegation
-func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, shareDiv int64) (initBalance sdk.Int, valsetUpdateId uint64) {
+func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, shareDiv int64) (initBalance sdk.Int, valsetUpdateID uint64) {
 	// delegate
 	initBalance, shares, valAddr := delegate(s, delAddr, bondAmt)
 
@@ -98,12 +98,12 @@ func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
 
 	// undelegate 1/shareDiv
-	valsetUpdateId = undelegate(s, delAddr, valAddr, shares.QuoInt64(shareDiv))
+	valsetUpdateID = undelegate(s, delAddr, valAddr, shares.QuoInt64(shareDiv))
 
 	// check that the tokens have not been returned yet
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
 
-	return initBalance, valsetUpdateId
+	return initBalance, valsetUpdateID
 }
 
 // Delegates "amount" to a source validator, then redelegates that same amount to a dest validator,
@@ -157,7 +157,7 @@ func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, idx
 		delAddr,
 		bondAmt,
 		stakingtypes.Unbonded,
-		stakingtypes.Validator(validator),
+		validator,
 		true,
 	)
 	s.Require().NoError(err)
@@ -167,7 +167,7 @@ func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, idx
 }
 
 // undelegate unbonds an amount of delegator shares from a given validator
-func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (valsetUpdateId uint64) {
+func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) uint64 {
 	_, err := s.providerApp.GetE2eStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, sharesAmount)
 	s.Require().NoError(err)
 
@@ -180,7 +180,7 @@ func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 // Executes a BeginRedelegation (unbonding and redelegation) operation
 // on the provider chain using delegated funds from delAddr
 func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
-	ValDstAddr sdk.ValAddress, sharesAmount sdk.Dec,
+	valDstAddr sdk.ValAddress, sharesAmount sdk.Dec,
 ) {
 	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
 	ctx := s.providerCtx()
@@ -190,7 +190,7 @@ func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddre
 		ctx,
 		delAddr,
 		valSrcAddr,
-		ValDstAddr,
+		valDstAddr,
 		sharesAmount,
 	)
 	s.Require().NoError(err)
@@ -394,14 +394,14 @@ func (s *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.SlashPa
 
 // commitConsumerPacket returns a commit hash for the given consumer packet data
 // Note that it must be called before sending the embedding IBC packet.
-func (suite *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.ConsumerPacketData) []byte {
+func (s *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.ConsumerPacketData) []byte {
 	oldBlockTime := ctx.BlockTime()
 	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID, suite.path.EndpointA.ChannelID,
-		ccv.ProviderPortID, suite.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
+		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
 
-	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)
+	return channeltypes.CommitPacket(s.consumerChain.App.AppCodec(), packet)
 }
 
 // constructSlashPacketFromConsumer constructs an IBC packet embedding
@@ -409,7 +409,7 @@ func (suite *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.
 func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
 	tmVal tmtypes.Validator, infractionType stakingtypes.InfractionType, ibcSeqNum uint64,
 ) channeltypes.Packet {
-	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
+	valsetUpdateID := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
 
 	data := ccv.ConsumerPacketData{
@@ -420,7 +420,7 @@ func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.C
 					Address: tmVal.Address,
 					Power:   tmVal.VotingPower,
 				},
-				ValsetUpdateId: valsetUpdateId,
+				ValsetUpdateId: valsetUpdateID,
 				Infraction:     infractionType,
 			},
 		},
@@ -442,13 +442,13 @@ func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.C
 func (s *CCVTestSuite) constructVSCMaturedPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
 	ibcSeqNum uint64,
 ) channeltypes.Packet {
-	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
+	valsetUpdateID := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
 
 	data := ccv.ConsumerPacketData{
 		Type: ccv.VscMaturedPacket,
 		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
-			VscMaturedPacketData: &ccv.VSCMaturedPacketData{ValsetUpdateId: valsetUpdateId},
+			VscMaturedPacketData: &ccv.VSCMaturedPacketData{ValsetUpdateId: valsetUpdateID},
 		},
 	}
 
@@ -538,11 +538,11 @@ func incrementTimeWithoutUpdate(s *CCVTestSuite, jumpPeriod time.Duration, noUpd
 // using the given unbonding period.
 // It will update the clientID for the endpoint if the message
 // is successfully executed.
-func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) {
+func (s *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) {
 	// ensure counterparty has committed state
 	endpoint.Chain.Coordinator.CommitBlock(endpoint.Counterparty.Chain)
 
-	suite.Require().Equal(exported.Tendermint, endpoint.ClientConfig.GetClientType(), "only Tendermint client supported")
+	s.Require().Equal(exported.Tendermint, endpoint.ClientConfig.GetClientType(), "only Tendermint client supported")
 
 	tmConfig, ok := endpoint.ClientConfig.(*ibctesting.TendermintConfig)
 	require.True(endpoint.Chain.T, ok)
@@ -574,21 +574,21 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 
 // GetConsumerEndpointClientAndConsState returns the client and consensus state
 // for a particular consumer endpoint, as specified by the consumer's bundle.
-func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
+func (s *CCVTestSuite) GetConsumerEndpointClientAndConsState(
 	consumerBundle icstestingutils.ConsumerBundle,
 ) (exported.ClientState, exported.ConsensusState) {
 	ctx := consumerBundle.GetCtx()
 	consumerKeeper := consumerBundle.GetKeeper()
 
 	clientID, found := consumerKeeper.GetProviderClientID(ctx)
-	suite.Require().True(found)
+	s.Require().True(found)
 
 	clientState, found := consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientID)
-	suite.Require().True(found)
+	s.Require().True(found)
 
 	consState, found := consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientConsensusState(
 		ctx, clientID, clientState.GetLatestHeight())
-	suite.Require().True(found)
+	s.Require().True(found)
 
 	return clientState, consState
 }

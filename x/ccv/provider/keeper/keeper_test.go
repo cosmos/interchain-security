@@ -524,8 +524,8 @@ func TestSetSlashLog(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	addrWithDoubleSigns := cryptotestutil.NewCryptoIdentityFromIntSeed(1).SDKValConsAddress()
-	addrWithoutDoubleSigns := cryptotestutil.NewCryptoIdentityFromIntSeed(2).SDKValConsAddress()
+	addrWithDoubleSigns := cryptotestutil.NewIdentityFromIntSeed(1).SDKValConsAddress()
+	addrWithoutDoubleSigns := cryptotestutil.NewIdentityFromIntSeed(2).SDKValConsAddress()
 
 	providerKeeper.SetSlashLog(ctx, addrWithDoubleSigns)
 	require.True(t, providerKeeper.GetSlashLog(ctx, addrWithDoubleSigns))

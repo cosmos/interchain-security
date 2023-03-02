@@ -167,7 +167,7 @@ var (
 	_ simapp.App              = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
 	_ cosmoscmd.CosmosApp     = (*App)(nil)
-	_ ibctesting.TestingApp   = (*App)(nil)
+	_ ibctesting.App          = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.

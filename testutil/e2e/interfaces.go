@@ -23,7 +23,7 @@ import (
 // The interface that any provider app must implement to be compatible with ccv e2e tests.
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ProviderApp interface {
-	ibctesting.TestingApp
+	ibctesting.App
 
 	//
 	// Keeper getters
@@ -43,7 +43,7 @@ type ProviderApp interface {
 // The interface that any consumer app must implement to be compatible with e2e tests
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ConsumerApp interface {
-	ibctesting.TestingApp
+	ibctesting.App
 
 	BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock
 	GetConsumerKeeper() consumerkeeper.Keeper

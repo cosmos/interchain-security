@@ -305,12 +305,12 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 	if err != nil {
 		return err
 	}
-	ccvClientId, found := k.GetConsumerClientId(ctx, tmClient.ChainId)
+	ccvClientID, found := k.GetConsumerClientId(ctx, tmClient.ChainId)
 	if !found {
 		return sdkerrors.Wrapf(ccv.ErrClientNotFound, "cannot find client for consumer chain %s", tmClient.ChainId)
 	}
-	if ccvClientId != clientID {
-		return sdkerrors.Wrapf(ccv.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
+	if ccvClientID != clientID {
+		return sdkerrors.Wrapf(ccv.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientID, clientID)
 	}
 
 	// Verify that there isn't already a CCV channel for the consumer chain

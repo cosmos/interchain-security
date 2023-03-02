@@ -256,7 +256,7 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	require.True(t, providerKeeper.GetSlashLog(ctx, sdk.ConsAddress(packetData.Validator.Address)))
 
 	// slash log should be empty for a random validator address in this testcase
-	randomAddress := cryptotestutil.NewCryptoIdentityFromIntSeed(100).SDKValConsAddress()
+	randomAddress := cryptotestutil.NewIdentityFromIntSeed(100).SDKValConsAddress()
 	require.False(t, providerKeeper.GetSlashLog(ctx, randomAddress))
 }
 
@@ -416,9 +416,9 @@ func TestValidateSlashPacket(t *testing.T) {
 func TestHandleSlashPacket(t *testing.T) {
 	chainId := "consumer-id"
 	validVscID := uint64(234)
-	cid := crypto.NewCryptoIdentityFromIntSeed(78932)
+	cid := crypto.NewIdentityFromIntSeed(78932)
 	providerConsAddr := cid.SDKValConsAddress()
-	cid = crypto.NewCryptoIdentityFromIntSeed(3242334)
+	cid = crypto.NewIdentityFromIntSeed(3242334)
 	consumerConsAddr := cid.SDKValConsAddress()
 
 	testCases := []struct {
