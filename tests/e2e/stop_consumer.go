@@ -85,7 +85,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 
 				// Queue slash and vsc packet data for consumer 0, these queue entries will be removed
 				firstBundle := s.getFirstBundle()
-				globalEntry := types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), firstBundle.Chain.ChainID, 7, []byte{})
+				globalEntry := types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), firstBundle.Chain.ChainID, 7, types.ProviderConsAddress{})
 				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
 				err := providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), firstBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
@@ -96,7 +96,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 
 				// Queue slash and vsc packet data for consumer 1, these queue entries will be not be removed
 				secondBundle := s.getBundleByIdx(1)
-				globalEntry = types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), secondBundle.Chain.ChainID, 7, []byte{})
+				globalEntry = types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), secondBundle.Chain.ChainID, 7, types.ProviderConsAddress{})
 				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
 				err = providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), secondBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})

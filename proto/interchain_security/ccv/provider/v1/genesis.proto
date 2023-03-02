@@ -76,27 +76,3 @@ message ValsetUpdateIdToHeight {
     uint64 valset_update_id = 1;
     uint64 height = 2;
 }
-
-// Used to serialize the ValidatorConsumerPubKey index from key assignment
-// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey tmprotocrypto.PublicKey
-message ValidatorConsumerPubKey {
-    string chain_id = 1;
-    bytes provider_addr = 2;
-    tendermint.crypto.PublicKey consumer_key = 3;
-}
-
-// Used to serialize the ValidatorConsumerAddr index from key assignment
-// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr consAddr
-message ValidatorByConsumerAddr {
-    string chain_id = 1;
-    bytes consumer_addr = 2;
-    bytes provider_addr = 3;
-}
-
-// Used to serialize the ConsumerAddrsToPrune index from key assignment
-// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrs AddressList
-message ConsumerAddrsToPrune {
-    string chain_id = 1;
-    uint64 vsc_id = 2;
-    AddressList consumer_addrs = 3;
-}

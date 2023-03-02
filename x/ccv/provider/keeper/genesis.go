@@ -73,16 +73,16 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 
 	// Import key assignment state
 	for _, item := range genState.ValidatorConsumerPubkeys {
-		k.SetValidatorConsumerPubKey(ctx, item.ChainId, item.ProviderAddr, *item.ConsumerKey)
+		k.SetValidatorConsumerPubKey(ctx, item.ChainId, *item.ProviderAddr, *item.ConsumerKey)
 	}
 
 	for _, item := range genState.ValidatorsByConsumerAddr {
-		k.SetValidatorByConsumerAddr(ctx, item.ChainId, item.ConsumerAddr, item.ProviderAddr)
+		k.SetValidatorByConsumerAddr(ctx, item.ChainId, *item.ConsumerAddr, *item.ProviderAddr)
 	}
 
 	for _, item := range genState.ConsumerAddrsToPrune {
 		for _, addr := range item.ConsumerAddrs.Addresses {
-			k.AppendConsumerAddrsToPrune(ctx, item.ChainId, item.VscId, addr)
+			k.AppendConsumerAddrsToPrune(ctx, item.ChainId, item.VscId, *addr)
 		}
 	}
 
