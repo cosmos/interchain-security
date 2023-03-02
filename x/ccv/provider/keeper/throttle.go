@@ -53,7 +53,6 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 	if len(handledEntries) > 0 {
 		k.Logger(ctx).Info("handled global slash entries", "count", len(handledEntries), "meter", meter.Int64())
 	}
-
 }
 
 // Obtains the effective validator power relevant to a validator consensus address.
@@ -106,7 +105,6 @@ func (k Keeper) InitializeSlashMeter(ctx sdktypes.Context) {
 // CheckForSlashMeterReplenishment checks if the slash meter should be replenished, and if so, replenishes it.
 // Note: initial slash meter replenish time candidate is set in InitGenesis.
 func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
-
 	// Replenish slash meter if current time is equal to or after the current replenish candidate time.
 	if !ctx.BlockTime().UTC().Before(k.GetSlashMeterReplenishTimeCandidate(ctx)) {
 		k.ReplenishSlashMeter(ctx)
@@ -290,7 +288,8 @@ func (k Keeper) IncrementThrottledPacketDataSize(ctx sdktypes.Context, consumerC
 //
 // Note: This queue is shared between pending slash packet data and pending vsc matured packet data.
 func (k Keeper) QueueThrottledSlashPacketData(
-	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData) error {
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData,
+) error {
 	return k.QueueThrottledPacketData(ctx, consumerChainID, ibcSeqNum, data)
 }
 
@@ -298,7 +297,8 @@ func (k Keeper) QueueThrottledSlashPacketData(
 //
 // Note: This queue is shared between pending slash packet data and pending vsc matured packet data.
 func (k Keeper) QueueThrottledVSCMaturedPacketData(
-	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData) error {
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData,
+) error {
 	return k.QueueThrottledPacketData(ctx, consumerChainID, ibcSeqNum, data)
 }
 
@@ -309,8 +309,8 @@ func (k Keeper) QueueThrottledVSCMaturedPacketData(
 // OnRecvSlashPacket and OnRecvVSCMaturedPacket, meaning we can return an ibc err ack to the
 // counter party chain on error, instead of panicking this chain.
 func (k Keeper) QueueThrottledPacketData(
-	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{}) error {
-
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{},
+) error {
 	store := ctx.KVStore(k.storeKey)
 
 	var bz []byte
@@ -551,7 +551,6 @@ func (k Keeper) GetSlashMeter(ctx sdktypes.Context) sdktypes.Int {
 //
 // Note: the value of this int should always be in the range of tendermint's [-MaxTotalVotingPower, MaxTotalVotingPower]
 func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value sdktypes.Int) {
-
 	// TODO: remove these invariant panics once https://github.com/cosmos/interchain-security/issues/534 is solved.
 
 	// The following panics are included since they are invariants for slash meter value.

@@ -247,7 +247,7 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 		}
 		require.Empty(t, res, "consumer addition proposal was not deleted %s %s", tc.ChainId, tc.SpawnTime.String())
 		require.Equal(t, propsToExecute[numDeleted].ChainId, tc.ChainId)
-		numDeleted += 1
+		numDeleted++
 	}
 }
 
@@ -603,7 +603,7 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 		}
 		require.Empty(t, res, "consumer removal prop was not deleted %s %s", tc.ChainId, tc.StopTime.String())
 		require.Equal(t, propsToExecute[numDeleted].ChainId, tc.ChainId)
-		numDeleted += 1
+		numDeleted++
 	}
 }
 
@@ -990,7 +990,6 @@ func TestBeginBlockCCR(t *testing.T) {
 }
 
 func TestHandleEquivocationProposal(t *testing.T) {
-
 	equivocations := []*evidencetypes.Equivocation{
 		{
 			Time:             time.Now(),

@@ -1273,7 +1273,6 @@ func TestSlashMeter(t *testing.T) {
 
 // TestSlashMeterReplenishTimeCandidate tests the getter and setter for the slash meter replenish time candidate
 func TestSlashMeterReplenishTimeCandidate(t *testing.T) {
-
 	testCases := []struct {
 		blockTime       time.Time
 		replenishPeriod time.Duration

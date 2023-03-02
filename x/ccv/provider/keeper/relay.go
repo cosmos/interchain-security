@@ -212,7 +212,7 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 
 // QueueVSCPackets queues latest validator updates for every registered consumer chain
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
-	valUpdateID := k.GetValidatorSetUpdateId(ctx) // curent valset update ID
+	valUpdateID := k.GetValidatorSetUpdateId(ctx) // current valset update ID
 	// Get the validator updates from the staking module.
 	// Note: GetValidatorUpdates panics if the updates provided by the x/staking module
 	// of cosmos-sdk is invalid.
@@ -376,7 +376,6 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 // HandleSlashPacket potentially jails a misbehaving validator for a downtime infraction.
 // This method should NEVER be called with a double-sign infraction.
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
-
 	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
 	// Obtain provider chain consensus address using the consumer chain consensus address
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)

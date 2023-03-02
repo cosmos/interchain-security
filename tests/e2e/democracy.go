@@ -88,7 +88,6 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	distrModuleAccount := distrKeeper.GetDistributionAccount(s.consumerCtx())
 	providerRedistributeAccount := accountKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName)
 
-
 	currentDistrModuleAccountBalance := sdk.NewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
 	currentProviderFeeAccountBalance := sdk.NewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), providerRedistributeAccount.GetAddress(), bondDenom).Amount)
 	currentCommunityPoolBalance := distrKeeper.GetFeePoolCommunityCoins(s.consumerCtx()).AmountOf(bondDenom)
@@ -122,7 +121,6 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 
 	consumerRedistributionFraction := sdk.MustNewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
 
-
 	s.Require().Equal(distrModuleDifference, consumerRedistributeDifference)
 
 	s.Require().Equal(communityPoolDifference.Quo(consumerRedistributeDifference),
@@ -137,7 +135,6 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 		sdk.NewDec(1).Sub(consumerRedistributionFraction).MustFloat64(), float64(0.0001))
 
 	totalRepresentativePower := stakingKeeper.GetValidatorSet().TotalBondedTokens(s.consumerCtx())
-
 
 	for key, representativeTokens := range representativesTokens {
 		powerFraction := sdk.NewDecFromInt(representativeTokens).QuoTruncate(sdk.NewDecFromInt(totalRepresentativePower))
@@ -164,12 +161,10 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.consumerChain.NextBlock()
 	votersOldBalances := getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts)
 
-
 	paramChange := proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{allowedChange, forbiddenChange}}
 	err := submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, depositAmount)
 	s.Assert().NoError(err)
 
-	//once the proposal is added to the chain
 	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(votingParams.VotingPeriod)
 	s.consumerChain.NextBlock()
 
@@ -187,7 +182,6 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 
-
 	paramChange = proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{allowedChange}}
 	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, depositAmount)
 	s.Assert().NoError(err)
@@ -201,7 +195,6 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().NotEqual(oldMintParamValue, currentMintParamValue)
 
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
-
 
 	paramChange = proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{forbiddenChange}}
 	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, depositAmount)

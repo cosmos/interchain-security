@@ -94,8 +94,8 @@ func GetMocksForStopConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomo
 
 func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 	expectedProviderValConsAddr sdk.ConsAddress,
-	valToReturn stakingtypes.Validator, expectJailing bool) []*gomock.Call {
-
+	valToReturn stakingtypes.Validator, expectJailing bool,
+) []*gomock.Call {
 	// These first two calls are always made.
 	calls := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(

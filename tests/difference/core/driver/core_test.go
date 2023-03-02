@@ -65,16 +65,16 @@ func (s *CoreSuite) consumerChain() *ibctesting.TestChain {
 	return s.simibc.Chain(ibctesting.GetChainID(1))
 }
 
-func (b *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).StakingKeeper
+func (s *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
+	return s.providerChain().App.(*appProvider.App).StakingKeeper
 }
 
-func (b *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).SlashingKeeper
+func (s *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {
+	return s.providerChain().App.(*appProvider.App).SlashingKeeper
 }
 
-func (b *CoreSuite) consumerKeeper() consumerkeeper.Keeper {
-	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
+func (s *CoreSuite) consumerKeeper() consumerkeeper.Keeper {
+	return s.consumerChain().App.(*appConsumer.App).ConsumerKeeper
 }
 
 // height returns the height of the current header of chain
@@ -218,7 +218,6 @@ func (s *CoreSuite) endAndBeginBlock(chain string) {
 // compareModelAndSystemState compares the state in the SUT to the state in the
 // the model.
 func (s *CoreSuite) compareModelAndSystemState() {
-
 	// Get a diagnostic for debugging
 	diagnostic := s.traces.Diagnostic()
 	chain := s.traces.Action().Chain

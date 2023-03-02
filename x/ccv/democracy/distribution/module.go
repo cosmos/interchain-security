@@ -108,7 +108,6 @@ func (am AppModule) AllocateTokens(
 
 	// allocate tokens proportionally to representatives voting power
 	vs.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) bool {
-
 		powerFraction := sdk.NewDecFromInt(validator.GetTokens()).QuoTruncate(sdk.NewDecFromInt(totalBondedTokens))
 
 		reward := feesCollected.MulDecTruncate(representativesFraction).MulDecTruncate(powerFraction)

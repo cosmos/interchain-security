@@ -155,7 +155,6 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 
 	// expect to panic in consumer chain's BeginBlock due to the above
 
-
 	// check that the provider's channel is removed
 	// _, found := s.consumerApp.GetConsumerKeeper().GetProviderChannel(s.consumerCtx())
 	// s.Require().False(found)

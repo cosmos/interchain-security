@@ -110,7 +110,8 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		ctx,
 		abci.Validator{
 			Address: addr.Bytes(),
-			Power:   power},
+			Power:   power,
+		},
 		vscID,
 		infraction,
 	)

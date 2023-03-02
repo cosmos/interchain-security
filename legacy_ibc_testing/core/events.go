@@ -38,10 +38,10 @@ func ReconstructPacketFromEvent(event abci.Event) (packet types.Packet, err erro
 	return types.NewPacket(
 		attrMap[string(types.AttributeKeyData)], // data
 		uint64(sequence),
-		string(attrMap[string(types.AttributeKeySrcPort)]),    //sourcePort,
-		string(attrMap[string(types.AttributeKeySrcChannel)]), //sourceChannel,
-		string(attrMap[string(types.AttributeKeyDstPort)]),    //destinationPort,
-		string(attrMap[string(types.AttributeKeyDstChannel)]), //destinationChannel string,
+		string(attrMap[string(types.AttributeKeySrcPort)]),    // sourcePort
+		string(attrMap[string(types.AttributeKeySrcChannel)]), // sourceChannel,
+		string(attrMap[string(types.AttributeKeyDstPort)]),    // destinationPort,
+		string(attrMap[string(types.AttributeKeyDstChannel)]), // destinationChannel string,
 		timeoutHeight,
 		uint64(timeoutTimestamp),
 	), nil

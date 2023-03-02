@@ -28,7 +28,6 @@ import (
 // and double-signing, see TestValidatorDowntime and TestValidatorDoubleSigning for
 // those types of tests.
 func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
-
 	// Setup CCV channel for all instantiated consumers
 	s.SetupAllCCVChannels()
 
@@ -159,7 +158,6 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 // Similar setup to TestRelayAndApplyDowntimePacket, but with a double sign slash packet.
 // Note that double-sign slash packets should not affect the provider validator set.
 func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
-
 	// Setup CCV channel for all instantiated consumers
 	s.SetupAllCCVChannels()
 

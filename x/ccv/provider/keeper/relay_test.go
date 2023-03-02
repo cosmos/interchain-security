@@ -19,7 +19,6 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmtypes "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -264,7 +263,6 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 // TestOnRecvSlashPacket tests the OnRecvSlashPacket method specifically for downtime slash packets,
 // and how the method interacts with the parent and per-chain slash packet queues.
 func TestOnRecvDowntimeSlashPacket(t *testing.T) {
-
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
@@ -433,7 +431,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		{
 			"unfound validator",
 			ccv.SlashPacketData{
-				Validator:      tmtypes.Validator{Address: consumerConsAddr},
+				Validator:      abci.Validator{Address: consumerConsAddr},
 				ValsetUpdateId: validVscID,
 				Infraction:     stakingtypes.Downtime,
 			},
@@ -454,7 +452,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		{
 			"found, but tombstoned validator",
 			ccv.SlashPacketData{
-				Validator:      tmtypes.Validator{Address: consumerConsAddr},
+				Validator:      abci.Validator{Address: consumerConsAddr},
 				ValsetUpdateId: validVscID,
 				Infraction:     stakingtypes.Downtime,
 			},
@@ -476,7 +474,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		{
 			"drop packet when infraction height not found",
 			ccv.SlashPacketData{
-				Validator:      tmtypes.Validator{Address: consumerConsAddr},
+				Validator:      abci.Validator{Address: consumerConsAddr},
 				ValsetUpdateId: 78, // Keeper doesn't have a height mapped to this vscID.
 				Infraction:     stakingtypes.Downtime,
 			},
@@ -499,7 +497,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		{
 			"full downtime packet handling, uses init chain height and non-jailed validator",
 			*ccv.NewSlashPacketData(
-				tmtypes.Validator{Address: consumerConsAddr},
+				abci.Validator{Address: consumerConsAddr},
 				0, // ValsetUpdateId = 0 uses init chain height.
 				stakingtypes.Downtime),
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
@@ -516,7 +514,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		{
 			"full downtime packet handling, uses valid vscID and jailed validator",
 			*ccv.NewSlashPacketData(
-				tmtypes.Validator{Address: consumerConsAddr},
+				abci.Validator{Address: consumerConsAddr},
 				validVscID,
 				stakingtypes.Downtime),
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,

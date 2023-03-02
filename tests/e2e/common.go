@@ -355,13 +355,13 @@ func getStakingUnbondingDelegationEntry(ctx sdk.Context, k e2e.E2eStakingKeeper,
 
 // SendEmptyVSCPacket sends a VSC packet without any changes
 // to ensure that the channel gets established
-func (suite *CCVTestSuite) SendEmptyVSCPacket() {
-	providerKeeper := suite.providerApp.GetProviderKeeper()
+func (s *CCVTestSuite) SendEmptyVSCPacket() {
+	providerKeeper := s.providerApp.GetProviderKeeper()
 
-	oldBlockTime := suite.providerChain.GetContext().BlockTime()
+	oldBlockTime := s.providerChain.GetContext().BlockTime()
 	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 
-	valUpdateID := providerKeeper.GetValidatorSetUpdateId(suite.providerChain.GetContext())
+	valUpdateID := providerKeeper.GetValidatorSetUpdateId(s.providerChain.GetContext())
 
 	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{},
@@ -369,19 +369,19 @@ func (suite *CCVTestSuite) SendEmptyVSCPacket() {
 		nil,
 	)
 
-	seq, ok := suite.providerApp.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
-		suite.providerChain.GetContext(), ccv.ProviderPortID, suite.path.EndpointB.ChannelID)
-	suite.Require().True(ok)
+	seq, ok := s.providerApp.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
+		s.providerChain.GetContext(), ccv.ProviderPortID, s.path.EndpointB.ChannelID)
+	s.Require().True(ok)
 
-	packet := channeltypes.NewPacket(pd.GetBytes(), seq, ccv.ProviderPortID, suite.path.EndpointB.ChannelID,
-		ccv.ConsumerPortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+	packet := channeltypes.NewPacket(pd.GetBytes(), seq, ccv.ProviderPortID, s.path.EndpointB.ChannelID,
+		ccv.ConsumerPortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
-	sendOnProviderRecvOnConsumer(suite, suite.getFirstBundle().Path, packet)
+	sendOnProviderRecvOnConsumer(s, s.getFirstBundle().Path, packet)
 }
 
 // commitSlashPacket returns a commit hash for the given slash packet data
 // Note that it must be called before sending the embedding IBC packet.
-func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.SlashPacketData) []byte {
+func (s *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.SlashPacketData) []byte {
 	consumerPacket := ccv.ConsumerPacketData{
 		Type: ccv.SlashPacket,
 		Data: &ccv.ConsumerPacketData_SlashPacketData{
@@ -389,7 +389,7 @@ func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.Sla
 		},
 	}
 
-	return suite.commitConsumerPacket(ctx, consumerPacket)
+	return s.commitConsumerPacket(ctx, consumerPacket)
 }
 
 // commitConsumerPacket returns a commit hash for the given consumer packet data

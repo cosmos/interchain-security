@@ -1049,7 +1049,6 @@ type unjailValidatorAction struct {
 
 // Sends an unjail transaction to the provider chain
 func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
-
 	// wait a block to be sure downtime_jail_duration has elapsed
 	tr.waitBlocks(action.provider, 1, time.Minute)
 
@@ -1078,7 +1077,7 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 	}
 
 	// wait for 1 blocks to make sure that tx got included
-	// in a block and packets commited before proceeding
+	// in a block and packets committed before proceeding
 	tr.waitBlocks(action.provider, 1, time.Minute)
 }
 

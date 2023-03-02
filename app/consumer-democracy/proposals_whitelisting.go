@@ -35,7 +35,6 @@ type paramChangeKey struct {
 }
 
 var WhitelistedParams = map[paramChangeKey]struct{}{
-
 	{Subspace: banktypes.ModuleName, Key: "SendEnabled"}: {},
 
 	{Subspace: govtypes.ModuleName, Key: "depositparams"}: {}, // min_deposit, max_deposit_period
@@ -62,5 +61,4 @@ var WhitelistedParams = map[paramChangeKey]struct{}{
 
 	{Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled"}:    {},
 	{Subspace: ibctransfertypes.ModuleName, Key: "ReceiveEnabled"}: {},
-
 }

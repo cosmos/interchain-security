@@ -299,7 +299,6 @@ func (chain *TestChain) setSentPacketsFromEvents(events []abci.Event) {
 // returned on block `n` to the validators of block `n+2`.
 // It calls BeginBlock with the new block created before returning.
 func (chain *TestChain) NextBlock() (abci.ResponseEndBlock, abci.ResponseCommit, abci.ResponseBeginBlock) {
-
 	ebRes := chain.App.EndBlock(abci.RequestEndBlock{Height: chain.CurrentHeader.Height})
 	// store packets sent during EndBlock
 	chain.setSentPacketsFromEvents(ebRes.Events)
@@ -511,7 +510,7 @@ func (chain *TestChain) CreateTMClientHeader(chainID string, blockHeight int64, 
 		AppHash:            chain.CurrentHeader.AppHash,
 		LastResultsHash:    tmhash.Sum([]byte("last_results_hash")),
 		EvidenceHash:       tmhash.Sum([]byte("evidence_hash")),
-		ProposerAddress:    tmValSet.Proposer.Address, //nolint:staticcheck
+		ProposerAddress:    tmValSet.Proposer.Address,
 	}
 
 	hhash := tmHeader.Hash()

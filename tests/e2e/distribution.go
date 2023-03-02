@@ -53,8 +53,6 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	providerTokens := consumerBankKeeper.GetAllBalances(s.consumerCtx(), providerRedistributeAddr)
 	s.Require().Equal(providerExpectedRewards.AmountOf(sdk.DefaultBondDenom), providerTokens.AmountOf(sdk.DefaultBondDenom))
 
-	//send the reward to provider chain after 2 blocks
-
 	s.consumerChain.NextBlock()
 	providerTokens = consumerBankKeeper.GetAllBalances(s.consumerCtx(), providerRedistributeAddr)
 	s.Require().Equal(0, len(providerTokens))
@@ -74,7 +72,6 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 
 // TestSendRewardsRetries tests that failed reward transmissions are retried every BlocksPerDistributionTransmission blocks
 func (s *CCVTestSuite) TestSendRewardsRetries() {
-
 	// TODO: this setup can be consolidated with other tests in the file
 
 	// ccv and transmission channels setup
@@ -147,7 +144,6 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 //
 // Note: this method is effectively a unit test for EndBLockRD(), but is written as an e2e test to avoid excessive mocking.
 func (s *CCVTestSuite) TestEndBlockRD() {
-
 	testCases := []struct {
 		name                    string
 		prepareRewardDist       bool
@@ -240,7 +236,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 	}
 }
 
-// getEscrowBalance gets the current balances in the escrow account holding the transfered tokens to the provider
+// getEscrowBalance gets the current balances in the escrow account holding the transferred tokens to the provider
 func (s CCVTestSuite) getEscrowBalance() sdk.Coins {
 	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
 	transChanID := s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(s.consumerCtx())

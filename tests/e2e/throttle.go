@@ -331,7 +331,6 @@ func (s *CCVTestSuite) TestPacketSpam() {
 }
 
 func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
-
 	// Setup ccv channels to all consumers
 	s.SetupAllCCVChannels()
 
