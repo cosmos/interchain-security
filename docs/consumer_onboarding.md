@@ -3,30 +3,30 @@
 ## Checklist
 
 ### 1. testing & integration
-[ ] test integration with gaia
-[ ] test your protocol with supported relayer versions (minimum hermes 1.3)
-[ ] reach out to ICS team if you are facing issues
+- [ ] test integration with gaia
+- [ ] test your protocol with supported relayer versions (minimum hermes 1.3)
+- [ ] reach out to ICS team if you are facing issues
 
 ### 2. onboarding repository
 To help validators and other node runners onboard onto your chain, please prepare a repository with information on how to run your chain.
 
 This should include (at minumum):
-[ ] genesis.json witout CCV data (before the propsal passes)
-[ ] genesis.json with CCV data (after spawn time passes)
-[ ] information about relevant seed/peer nodes you are running
-[ ] relayer information (compatible versions)
-[ ] copy of your governance proposal (as JSON)
-[ ] a script showing how to start your chain and connect to peers (optional)
-[ ] take feedback from other developers, validators and community regarding your onboarding repo and make improvements where applicable
+- [ ] genesis.json witout CCV data (before the propsal passes)
+- [ ] genesis.json with CCV data (after spawn time passes)
+- [ ] information about relevant seed/peer nodes you are running
+- [ ] relayer information (compatible versions)
+- [ ] copy of your governance proposal (as JSON)
+- [ ] a script showing how to start your chain and connect to peers (optional)
+- [ ] take feedback from other developers, validators and community regarding your onboarding repo and make improvements where applicable
 
 Example of such a repository can be found [here](https://github.com/hyphacoop/ics-testnets/tree/main/game-of-chains-2022/sputnik).
 
 ### 3. governance proposal
 
-[ ] determine your chain's spawn time
-[ ] determine consumer chain parameters to be put in the proposal
-[ ] take note to include a link to your onboarding repository
-[ ] describe the purpose and benefits of running your chain
+- [ ] determine your chain's spawn time
+- [ ] determine consumer chain parameters to be put in the proposal
+- [ ] take note to include a link to your onboarding repository
+- [ ] describe the purpose and benefits of running your chain
 
 Before you submit a proposal, please consider allowing at least a day between your proposal passing and the chain spawn time. This will allow the validators, other node operators and the community to prepare for the chain launch.
 If possible, please set your spawn time so people from different parts of the globe can be available in case of emergencies. Ideally, you should set your spawn time to be between 12:00 UTC and 20:00 UTC so most validator operators are available and ready to respond to any issues.
@@ -98,10 +98,10 @@ Example of a consumer chain addition proposal.
 ```
 
 ### 4. launch
-[ ] provide a repo with onboarding instructions for validators (it should already be listed in the proposal)
-[ ] genesis.json with ccv data populated (MUST contain the initial validator set)
-[ ] maintenance & emergency contact info (relevant discord, telegram, slack or other communication channels)
-[ ] have a block explorer in place to track chain activity & health
+- [ ] provide a repo with onboarding instructions for validators (it should already be listed in the proposal)
+- [ ] genesis.json with ccv data populated (MUST contain the initial validator set)
+- [ ] maintenance & emergency contact info (relevant discord, telegram, slack or other communication channels)
+- [ ] have a block explorer in place to track chain activity & health
 
 The consumer chain starts after at least 66.67% of all provider's voting power comes online. The consumer chain is considered interchain secured once the appropriate CCV channels are established and the first validator set update is propagated from the provider to the consumer
 
