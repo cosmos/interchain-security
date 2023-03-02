@@ -38,14 +38,9 @@ func (am AppModule) OnChanOpenInit(
 		version = types.Version
 	}
 
-	// check that provided version is correct
-	if version != types.Version {
-		return "", sdkerrors.Wrapf(types.ErrInvalidVersion, "got %s, expected %s", version, types.Version)
-	}
-
 	// ensure provider channel hasn't already been created
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok {
-		return version, sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
+		return "", sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
 			"provider channel: %s already set", providerChannel)
 	}
 
@@ -53,12 +48,12 @@ func (am AppModule) OnChanOpenInit(
 	if err := validateCCVChannelParams(
 		ctx, am.keeper, order, portID, version,
 	); err != nil {
-		return version, err
+		return "", err
 	}
 
 	// ensure the counterparty port ID matches the expected provider port ID
 	if counterparty.PortId != ccv.ProviderPortID {
-		return version, sdkerrors.Wrapf(porttypes.ErrInvalidPort,
+		return "", sdkerrors.Wrapf(porttypes.ErrInvalidPort,
 			"invalid counterparty port: %s, expected %s", counterparty.PortId, ccv.ProviderPortID)
 	}
 
@@ -66,10 +61,14 @@ func (am AppModule) OnChanOpenInit(
 	if err := am.keeper.ClaimCapability(
 		ctx, chanCap, host.ChannelCapabilityPath(portID, channelID),
 	); err != nil {
-		return version, err
+		return "", err
 	}
 
-	return version, am.keeper.VerifyProviderChain(ctx, connectionHops)
+	if err := am.keeper.VerifyProviderChain(ctx, connectionHops); err != nil {
+		return "", err
+	}
+
+	return version, nil
 }
 
 // validateCCVChannelParams validates a ccv channel

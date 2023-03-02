@@ -60,7 +60,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 			fmt.Sprintf("cannot create client for existent consumer chain: %s", chainID))
 	}
 
-	// Consumers always start out with the default unbonding period
+	// Consumers start out with the unbonding period from the consumer addition prop
 	consumerUnbondingPeriod := prop.UnbondingPeriod
 
 	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
