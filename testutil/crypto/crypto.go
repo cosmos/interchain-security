@@ -30,7 +30,7 @@ type Identity struct {
 func NewIdentityFromBytesSeed(seed []byte) *Identity {
 	//lint:ignore SA1019 We don't care because this is only a test.
 
-	consKey := &sdkcryptoEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}
+	consKey := &sdkcryptoEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)} //nolint:staticcheck // SA1019: crypto/ed25519: NewKeyFromSeed is deprecated: Use NewKeyFromSeed instead. (staticcheck)
 	opKey := sdkcryptoSecp256k1.GenPrivKeyFromSecret(seed)
 
 	return &Identity{

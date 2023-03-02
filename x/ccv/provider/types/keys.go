@@ -438,9 +438,9 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
 		return "", nil, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
 	}
-	chainIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
-	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
-	addr := bz[prefixL+8+int(chainIdL):]
+	chainIDL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIDL)])
+	addr := bz[prefixL+8+int(chainIDL):]
 	return chainID, addr, nil
 }
 

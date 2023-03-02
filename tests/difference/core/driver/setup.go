@@ -483,7 +483,7 @@ func (b *Builder) createProvidersLocalClient() {
 	err := b.providerEndpoint().CreateClient()
 	b.suite.Require().NoError(err)
 	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.providerCtx(), b.consumer().ChainID, b.providerEndpoint().ClientID)
+	b.providerKeeper().SetConsumerClientID(b.providerCtx(), b.consumer().ChainID, b.providerEndpoint().ClientID)
 }
 
 func (b *Builder) createConsumersLocalClientGenesis() *ibctmtypes.ClientState {

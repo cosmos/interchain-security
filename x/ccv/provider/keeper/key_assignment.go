@@ -413,7 +413,7 @@ func (k Keeper) AssignConsumerKey(
 
 	// check whether the consumer chain is already registered,
 	// i.e., a client to the consumer was already created
-	if _, consumerRegistered := k.GetConsumerClientId(ctx, chainID); consumerRegistered {
+	if _, consumerRegistered := k.GetConsumerClientID(ctx, chainID); consumerRegistered {
 		// get the previous key assigned for this validator on this consumer chain
 		oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 		if found {

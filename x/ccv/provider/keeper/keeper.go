@@ -305,7 +305,7 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 	if err != nil {
 		return err
 	}
-	ccvClientID, found := k.GetConsumerClientId(ctx, tmClient.ChainId)
+	ccvClientID, found := k.GetConsumerClientID(ctx, tmClient.ChainId)
 	if !found {
 		return sdkerrors.Wrapf(ccv.ErrClientNotFound, "cannot find client for consumer chain %s", tmClient.ChainId)
 	}
@@ -854,24 +854,24 @@ func (k Keeper) DeletePendingVSCPackets(ctx sdk.Context, chainID string) {
 	store.Delete(types.PendingVSCsKey(chainID))
 }
 
-// SetConsumerClientId sets the client ID for the given chain ID
-func (k Keeper) SetConsumerClientId(ctx sdk.Context, chainID, clientID string) {
+// SetConsumerClientID sets the client ID for the given chain ID
+func (k Keeper) SetConsumerClientID(ctx sdk.Context, chainID, clientID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.ChainToClientKey(chainID), []byte(clientID))
 }
 
-// GetConsumerClientId returns the client ID for the given chain ID.
-func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bool) {
+// GetConsumerClientID returns the client ID for the given chain ID.
+func (k Keeper) GetConsumerClientID(ctx sdk.Context, chainID string) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	clientIdBytes := store.Get(types.ChainToClientKey(chainID))
-	if clientIdBytes == nil {
+	clientIDBytes := store.Get(types.ChainToClientKey(chainID))
+	if clientIDBytes == nil {
 		return "", false
 	}
-	return string(clientIdBytes), true
+	return string(clientIDBytes), true
 }
 
-// DeleteConsumerClientId removes from the store the clientID for the given chainID.
-func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
+// DeleteConsumerClientID removes from the store the clientID for the given chainID.
+func (k Keeper) DeleteConsumerClientID(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ChainToClientKey(chainID))
 }

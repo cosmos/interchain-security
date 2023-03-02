@@ -80,7 +80,7 @@ func (suite *CCVTestSuite) TestInitTimeout() {
 		incrementTime(suite, initTimeout)
 
 		// check whether the chain was removed
-		_, found = providerKeeper.GetConsumerClientId(suite.providerCtx(), chainID)
+		_, found = providerKeeper.GetConsumerClientID(suite.providerCtx(), chainID)
 		suite.Require().Equal(!tc.removed, found, "unexpected outcome; test: %s", tc.name)
 
 		if tc.removed {

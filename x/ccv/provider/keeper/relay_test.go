@@ -12,7 +12,6 @@ import (
 	exported "github.com/cosmos/ibc-go/v4/modules/core/exported"
 	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
 	"github.com/cosmos/interchain-security/testutil/crypto"
-	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -148,9 +147,9 @@ func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
 	// Set channel to chain, and chain to client mappings
 	// (faking multiple established consumer channels)
 	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
-	providerKeeper.SetConsumerClientId(ctx, "chain-1", "client-1")
+	providerKeeper.SetConsumerClientID(ctx, "chain-1", "client-1")
 	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
-	providerKeeper.SetConsumerClientId(ctx, "chain-2", "client-2")
+	providerKeeper.SetConsumerClientID(ctx, "chain-2", "client-2")
 
 	// Queue some leading vsc matured packet data for chain-1
 	err := providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 1, vscData[0])
@@ -256,7 +255,7 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	require.True(t, providerKeeper.GetSlashLog(ctx, sdk.ConsAddress(packetData.Validator.Address)))
 
 	// slash log should be empty for a random validator address in this testcase
-	randomAddress := cryptotestutil.NewIdentityFromIntSeed(100).SDKValConsAddress()
+	randomAddress := crypto.NewIdentityFromIntSeed(100).SDKValConsAddress()
 	require.False(t, providerKeeper.GetSlashLog(ctx, randomAddress))
 }
 
@@ -585,7 +584,7 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	require.Equal(t, uint64(2), pk.GetValidatorSetUpdateId(ctx))
 
 	// Registered first consumer
-	pk.SetConsumerClientId(ctx, "chain-1", "client-1")
+	pk.SetConsumerClientID(ctx, "chain-1", "client-1")
 
 	// Start second unbonding
 	unbondingOpId = 2
@@ -611,7 +610,7 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	require.Equal(t, uint64(3), pk.GetValidatorSetUpdateId(ctx))
 
 	// Registered second consumer
-	pk.SetConsumerClientId(ctx, "chain-2", "client-2")
+	pk.SetConsumerClientID(ctx, "chain-2", "client-2")
 
 	// Start third and fourth unbonding
 	unbondingOpIds := []uint64{3, 4}

@@ -51,7 +51,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	// Set initial state for each consumer chain
 	for _, cs := range genState.ConsumerStates {
 		chainID := cs.ChainId
-		k.SetConsumerClientId(ctx, chainID, cs.ClientId)
+		k.SetConsumerClientID(ctx, chainID, cs.ClientId)
 		if err := k.SetConsumerGenesis(ctx, chainID, cs.ConsumerGenesis); err != nil {
 			// An error here would indicate something is very wrong,
 			// the ConsumerGenesis validated in ConsumerState.Validate().

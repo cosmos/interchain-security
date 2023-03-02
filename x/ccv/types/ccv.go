@@ -51,10 +51,10 @@ func (mat VSCMaturedPacketData) GetBytes() []byte {
 	return bytes
 }
 
-func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, infractionType stakingtypes.InfractionType) *SlashPacketData {
+func NewSlashPacketData(validator abci.Validator, valUpdateID uint64, infractionType stakingtypes.InfractionType) *SlashPacketData {
 	return &SlashPacketData{
 		Validator:      validator,
-		ValsetUpdateId: valUpdateId,
+		ValsetUpdateId: valUpdateID,
 		Infraction:     infractionType,
 	}
 }

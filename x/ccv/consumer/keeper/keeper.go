@@ -18,7 +18,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -271,14 +270,14 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 
 // GetElapsedPacketMaturityTimes returns a slice of already elapsed PacketMaturityTimes, sorted by maturity times,
 // i.e., the slice contains the IDs of the matured VSCPackets.
-func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []consumertypes.MaturingVSCPacket) {
+func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []types.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		var maturingVSCPacket consumertypes.MaturingVSCPacket
+		var maturingVSCPacket types.MaturingVSCPacket
 		if err := maturingVSCPacket.Unmarshal(iterator.Value()); err != nil {
 			// An error here would indicate something is very wrong,
 			// the MaturingVSCPackets are assumed to be correctly serialized in SetPacketMaturityTime.
@@ -303,13 +302,13 @@ func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPacke
 // PacketMaturityTimeBytePrefix | maturityTime.UnixNano() | vscID
 // Thus, the returned array is in ascending order of maturityTimes.
 // If two entries have the same maturityTime, then they are ordered by vscID.
-func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []consumertypes.MaturingVSCPacket) {
+func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []types.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		var maturingVSCPacket consumertypes.MaturingVSCPacket
+		var maturingVSCPacket types.MaturingVSCPacket
 		if err := maturingVSCPacket.Unmarshal(iterator.Value()); err != nil {
 			// An error here would indicate something is very wrong,
 			// the MaturingVSCPackets are assumed to be correctly serialized in SetPacketMaturityTime.
@@ -324,7 +323,7 @@ func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets [
 // SetPacketMaturityTime sets the maturity time for a given received VSC packet id
 func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, vscId uint64, maturityTime time.Time) {
 	store := ctx.KVStore(k.storeKey)
-	maturingVSCPacket := consumertypes.MaturingVSCPacket{
+	maturingVSCPacket := types.MaturingVSCPacket{
 		VscId:        vscId,
 		MaturityTime: maturityTime,
 	}
@@ -450,7 +449,7 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 // Note that the outstanding downtime flags are stored under keys with the following format:
 // OutstandingDowntimeBytePrefix | consAddress
 // Thus, the returned array is in ascending order of consAddresses.
-func (k Keeper) GetAllOutstandingDowntimes(ctx sdk.Context) (downtimes []consumertypes.OutstandingDowntime) {
+func (k Keeper) GetAllOutstandingDowntimes(ctx sdk.Context) (downtimes []types.OutstandingDowntime) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
 
@@ -459,7 +458,7 @@ func (k Keeper) GetAllOutstandingDowntimes(ctx sdk.Context) (downtimes []consume
 		addrBytes := iterator.Key()[1:]
 		addr := sdk.ConsAddress(addrBytes).String()
 
-		downtimes = append(downtimes, consumertypes.OutstandingDowntime{
+		downtimes = append(downtimes, types.OutstandingDowntime{
 			ValidatorConsensusAddress: addr,
 		})
 	}

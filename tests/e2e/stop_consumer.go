@@ -43,23 +43,23 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	// 	- undelegate the shares in four consecutive blocks evenly; create UnbondigOp and UnbondingOpIndex entries for the consumer chain ID
 	// 	- set SlashAck state for the consumer chain ID
 	setupOperations := []struct {
-		fn func(suite *CCVTestSuite) error
+		fn func(s *CCVTestSuite) error
 	}{
 		{
-			func(suite *CCVTestSuite) error {
-				suite.SetupAllCCVChannels()
-				suite.SetupTransferChannel()
+			func(s *CCVTestSuite) error {
+				s.SetupAllCCVChannels()
+				s.SetupTransferChannel()
 				return nil
 			},
 		},
 		{
-			func(suite *CCVTestSuite) error {
-				testShares, err = providerStakingKeeper.Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+			func(s *CCVTestSuite) error {
+				testShares, err = providerStakingKeeper.Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, validator, true)
 				return err
 			},
 		},
 		{
-			func(suite *CCVTestSuite) error {
+			func(s *CCVTestSuite) error {
 				for i := 0; i < ubdOpsNum; i++ {
 					// undelegate one quarter of the shares
 					_, err := providerStakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, testShares.QuoInt64(int64(ubdOpsNum)))
@@ -73,24 +73,24 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 			},
 		},
 		{
-			func(suite *CCVTestSuite) error {
+			func(s *CCVTestSuite) error {
 				providerKeeper.SetSlashAcks(s.providerCtx(), firstBundle.Chain.ChainID, []string{"validator-1", "validator-2", "validator-3"})
 				providerKeeper.AppendPendingVSCPackets(s.providerCtx(), firstBundle.Chain.ChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
 				return nil
 			},
 		},
 		{
-			func(suite *CCVTestSuite) error {
+			func(s *CCVTestSuite) error {
 				// Queue slash and vsc packet data for consumer 0, these queue entries will be removed
 				firstBundle := s.getFirstBundle()
 				globalEntry := types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), firstBundle.Chain.ChainID, 7, []byte{})
 				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
 				err := providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), firstBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
-				suite.Require().NoError(err)
+				s.Require().NoError(err)
 				err = providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
 					firstBundle.Chain.ChainID, 2, ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
-				suite.Require().NoError(err)
+				s.Require().NoError(err)
 
 				// Queue slash and vsc packet data for consumer 1, these queue entries will be not be removed
 				secondBundle := s.getBundleByIdx(1)
@@ -98,10 +98,10 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
 				err = providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), secondBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
-				suite.Require().NoError(err)
+				s.Require().NoError(err)
 				err = providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
 					secondBundle.Chain.ChainID, 2, ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
-				suite.Require().NoError(err)
+				s.Require().NoError(err)
 
 				return nil
 			},
@@ -185,7 +185,7 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 	// verify consumer chain's states are removed
 	_, found := providerKeeper.GetConsumerGenesis(s.providerCtx(), chainID)
 	s.Require().False(found)
-	_, found = providerKeeper.GetConsumerClientId(s.providerCtx(), chainID)
+	_, found = providerKeeper.GetConsumerClientID(s.providerCtx(), chainID)
 	s.Require().False(found)
 
 	_, found = providerKeeper.GetChainToChannel(s.providerCtx(), chainID)
@@ -212,27 +212,27 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 
 // TestProviderChannelClosed checks that a consumer chain panics
 // when the provider channel was established and then closed
-func (suite *CCVTestSuite) TestProviderChannelClosed() {
-	suite.SetupCCVChannel(suite.path)
+func (s *CCVTestSuite) TestProviderChannelClosed() {
+	s.SetupCCVChannel(s.path)
 	// establish provider channel with a first VSC packet
-	suite.SendEmptyVSCPacket()
+	s.SendEmptyVSCPacket()
 
-	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
-	channelID, found := consumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
-	suite.Require().True(found)
+	channelID, found := consumerKeeper.GetProviderChannel(s.consumerChain.GetContext())
+	s.Require().True(found)
 
 	// close provider channel
-	err := consumerKeeper.ChanCloseInit(suite.consumerChain.GetContext(), ccv.ConsumerPortID, channelID)
-	suite.Require().NoError(err)
-	suite.Require().True(consumerKeeper.IsChannelClosed(suite.consumerChain.GetContext(), channelID))
+	err := consumerKeeper.ChanCloseInit(s.consumerChain.GetContext(), ccv.ConsumerPortID, channelID)
+	s.Require().NoError(err)
+	s.Require().True(consumerKeeper.IsChannelClosed(s.consumerChain.GetContext(), channelID))
 
 	// assert begin blocker did panics
 	defer func() {
 		if r := recover(); r != nil {
 			return
 		}
-		suite.Require().Fail("Begin blocker did not panic with a closed channel")
+		s.Require().Fail("Begin blocker did not panic with a closed channel")
 	}()
-	suite.consumerApp.BeginBlocker(suite.consumerChain.GetContext(), abci.RequestBeginBlock{})
+	s.consumerApp.BeginBlocker(s.consumerChain.GetContext(), abci.RequestBeginBlock{})
 }

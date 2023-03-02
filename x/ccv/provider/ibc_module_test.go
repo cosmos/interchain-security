@@ -90,7 +90,7 @@ func TestOnChanOpenTry(t *testing.T) {
 		},
 		{
 			"unexpected client ID mapped to chain ID", func(params *params, keeper *providerkeeper.Keeper) {
-				keeper.SetConsumerClientId(
+				keeper.SetConsumerClientID(
 					params.ctx,
 					"consumerChainID",
 					"invalidClientID",
@@ -117,7 +117,7 @@ func TestOnChanOpenTry(t *testing.T) {
 		providerModule := provider.NewAppModule(&providerKeeper)
 
 		providerKeeper.SetPort(ctx, ccv.ProviderPortID)
-		providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientIDToConsumer")
+		providerKeeper.SetConsumerClientID(ctx, "consumerChainID", "clientIDToConsumer")
 
 		// Instantiate valid params as default. Individual test cases mutate these as needed.
 		params := params{

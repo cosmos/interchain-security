@@ -395,7 +395,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerClientId(ctx, chainID, "")
+				k.SetConsumerClientID(ctx, chainID, "")
 				err := k.AssignConsumerKey(ctx, chainID,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
@@ -425,7 +425,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerClientId(ctx, chainID, "")
+				k.SetConsumerClientID(ctx, chainID, "")
 				err := k.AssignConsumerKey(ctx, chainID,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
@@ -457,7 +457,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerClientId(ctx, chainID, "")
+				k.SetConsumerClientID(ctx, chainID, "")
 				err := k.AssignConsumerKey(ctx, chainID,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
@@ -483,7 +483,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerClientId(ctx, chainID, "")
+				k.SetConsumerClientID(ctx, chainID, "")
 				err := k.AssignConsumerKey(ctx, chainID,
 					providerIdentities[1].SDKStakingValidator(),
 					providerIdentities[0].TMProtoCryptoPublicKey(),
@@ -774,7 +774,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		applyUpdatesAndIncrementVSCID(getStakingUpdates())
 
 		// Register the consumer chain
-		k.SetConsumerClientId(ctx, CHAINID, "")
+		k.SetConsumerClientID(ctx, CHAINID, "")
 
 		// Analogous to the last vscid received from the consumer in a maturity
 		// Used to check the correct pruning property

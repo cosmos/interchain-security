@@ -217,7 +217,7 @@ func stepsStartChains(consumerNames []string, setupTransferChans bool) []Step {
 	return s
 }
 
-func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step {
+func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step { //nolint:unparam
 	return []Step{
 		{
 			action: assignConsumerPubKeyAction{

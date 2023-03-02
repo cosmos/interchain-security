@@ -170,7 +170,7 @@ func assertConsumerChainStates(ctx sdk.Context, t *testing.T, pk keeper.Keeper, 
 		require.True(t, found)
 		require.Equal(t, *consumertypes.DefaultGenesisState(), gen)
 
-		clientID, found := pk.GetConsumerClientId(ctx, chainID)
+		clientID, found := pk.GetConsumerClientID(ctx, chainID)
 		require.True(t, found)
 		require.Equal(t, cs.ClientId, clientID)
 

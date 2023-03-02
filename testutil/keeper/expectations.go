@@ -104,19 +104,19 @@ func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 		).Times(1),
 
 		mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
-			sdk.ConsAddress(expectedProviderValConsAddr)).Return(false).Times(1),
+			expectedProviderValConsAddr).Return(false).Times(1),
 	}
 
 	if expectJailing {
 		calls = append(calls, mocks.MockStakingKeeper.EXPECT().Jail(
 			gomock.Eq(ctx),
-			gomock.Eq(sdk.ConsAddress(expectedProviderValConsAddr)),
+			gomock.Eq(expectedProviderValConsAddr),
 		).Return())
 
 		// JailUntil is set in this code path.
 		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour).Times(1))
 		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().JailUntil(ctx,
-			sdk.ConsAddress(expectedProviderValConsAddr), gomock.Any()).Times(1))
+			expectedProviderValConsAddr, gomock.Any()).Times(1))
 	}
 
 	return calls

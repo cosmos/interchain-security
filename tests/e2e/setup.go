@@ -175,7 +175,7 @@ func initConsumerChain(
 	bundle.Path = ibctesting.NewPath(bundle.Chain, s.providerChain)
 
 	// Set provider endpoint's clientID for each consumer
-	providerEndpointClientID, found := providerKeeper.GetConsumerClientId(
+	providerEndpointClientID, found := providerKeeper.GetConsumerClientID(
 		s.providerCtx(),
 		chainID,
 	)

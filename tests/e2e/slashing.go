@@ -81,7 +81,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	// during the endblocker of N+1. The new validator set will be committed to in block N+2,
 	// and will be in effect for the provider during block N+3.
 
-	valsetUpdateIdN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
+	valsetUpdateIDN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// receive the slash packet on the provider chain. RecvPacket() calls the provider endblocker twice
 	err = s.path.EndpointB.RecvPacket(packet)
@@ -90,16 +90,16 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	// We've now advanced two blocks.
 
 	// VSC packets should have been sent from provider during block N+1 to each consumer
-	expectedSentValsetUpdateId := valsetUpdateIdN + 1
+	expectedSentValsetUpdateID := valsetUpdateIDN + 1
 	for _, bundle := range s.consumerBundles {
 		_, found := providerKeeper.GetVscSendTimestamp(s.providerCtx(),
-			bundle.Chain.ChainID, expectedSentValsetUpdateId)
+			bundle.Chain.ChainID, expectedSentValsetUpdateID)
 		s.Require().True(found)
 	}
 
 	// Confirm the valset update Id was incremented twice on provider,
 	// since two endblockers have passed.
-	s.Require().Equal(valsetUpdateIdN+2,
+	s.Require().Equal(valsetUpdateIDN+2,
 		providerKeeper.GetValidatorSetUpdateId(s.providerCtx()))
 
 	// Call next block so provider is now on block N + 3 mentioned above
@@ -118,7 +118,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 		ctx := bundle.GetCtx()
 		actualValsetUpdateID := consumerKeeper.GetHeightValsetUpdateID(
 			ctx, uint64(ctx.BlockHeight())+1)
-		s.Require().Equal(expectedSentValsetUpdateId, actualValsetUpdateID)
+		s.Require().Equal(expectedSentValsetUpdateID, actualValsetUpdateID)
 
 		// check that jailed validator was removed from each consumer validator set
 		s.Require().Len(bundle.Chain.Vals.Validators, validatorsPerChain-1)
