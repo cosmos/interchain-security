@@ -61,10 +61,6 @@ Pure documentation, testing, and refactoring PRs do not require a version bump.
 
 A MAJOR version of ICS will always be backwards compatible with the previous MAJOR version of ICS. Versions before that are not supported. For example, a provider chain could run ICS at version 3.4.5, and would be compatible with consumers running ICS at 2.0.0, 2.1.2, 3.2.1, but not 1.2.7.
 
-### Emergency Patch Releases
-
-In the case of an emergency patch release, this patch is applied to all maintained MAJOR versions of ICS, and the MINOR version is incremented. The patch may change consumer/provider communication over IBC, and it may be consensus breaking to the provider and/or consumers.
-
 ## Testing
 
 Appropriate tests should be written with a new feature, and all existing tests should pass. See [docs/testing.md](./docs/testing.md) for more information.
