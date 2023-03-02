@@ -3,7 +3,7 @@ package e2e
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -85,19 +85,23 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 				firstBundle := s.getFirstBundle()
 				globalEntry := types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), firstBundle.Chain.ChainID, 7, []byte{})
 				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
-				providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), firstBundle.Chain.ChainID, 1,
+				err := providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), firstBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
-				providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
+				suite.Require().NoError(err)
+				err = providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
 					firstBundle.Chain.ChainID, 2, ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
+				suite.Require().NoError(err)
 
 				// Queue slash and vsc packet data for consumer 1, these queue entries will be not be removed
 				secondBundle := s.getBundleByIdx(1)
 				globalEntry = types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), secondBundle.Chain.ChainID, 7, []byte{})
 				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
-				providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), secondBundle.Chain.ChainID, 1,
+				err = providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), secondBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
-				providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
+				suite.Require().NoError(err)
+				err = providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
 					secondBundle.Chain.ChainID, 2, ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
+				suite.Require().NoError(err)
 
 				return nil
 			},

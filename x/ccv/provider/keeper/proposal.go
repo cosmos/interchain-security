@@ -5,14 +5,14 @@ import (
 	"strconv"
 	"time"
 
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -36,6 +36,12 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 
 	k.SetPendingConsumerAdditionProp(ctx, p)
 
+	k.Logger(ctx).Info("consumer addition proposal enqueued",
+		"chainID", p.ChainId,
+		"title", p.Title,
+		"spawn time", p.SpawnTime.UTC(),
+	)
+
 	return nil
 }
 
@@ -52,7 +58,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 			fmt.Sprintf("cannot create client for existent consumer chain: %s", chainID))
 	}
 
-	// Consumers always start out with the default unbonding period
+	// Consumers start out with the unbonding period from the consumer addition prop
 	consumerUnbondingPeriod := prop.UnbondingPeriod
 
 	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
@@ -93,6 +99,11 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	ts := ctx.BlockTime().Add(k.GetParams(ctx).InitTimeoutPeriod)
 	k.SetInitTimeoutTimestamp(ctx, chainID, uint64(ts.UnixNano()))
 
+	k.Logger(ctx).Info("consumer chain registered (client created)",
+		"chainID", chainID,
+		"clientID", clientID,
+	)
+
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypeConsumerClientCreated,
@@ -123,6 +134,13 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 	}
 
 	k.SetPendingConsumerRemovalProp(ctx, p)
+
+	k.Logger(ctx).Info("consumer removal proposal enqueued",
+		"chainID", p.ChainId,
+		"title", p.Title,
+		"stop time", p.StopTime.UTC(),
+	)
+
 	return nil
 }
 
@@ -143,24 +161,35 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeleteConsumerClientId(ctx, chainID)
 	k.DeleteConsumerGenesis(ctx, chainID)
 	k.DeleteInitTimeoutTimestamp(ctx, chainID)
+	// Note: this call panics if the key assignment state is invalid
 	k.DeleteKeyAssignments(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
 	if channelID, found := k.GetChainToChannel(ctx, chainID); found {
 		if closeChan {
-			k.CloseChannel(ctx, channelID)
+			// Close the channel for the given channel ID on the condition
+			// that the channel exists and isn't already in the CLOSED state
+			channel, found := k.channelKeeper.GetChannel(ctx, ccv.ProviderPortID, channelID)
+			if found && channel.State != channeltypes.CLOSED {
+				err := k.chanCloseInit(ctx, channelID)
+				if err != nil {
+					k.Logger(ctx).Error("channel to consumer chain could not be closed",
+						"chainID", chainID,
+						"channelID", channelID,
+						"error", err.Error(),
+					)
+				}
+			}
 		}
 		k.DeleteChainToChannel(ctx, chainID)
 		k.DeleteChannelToChain(ctx, channelID)
 
 		// delete VSC send timestamps
-		for _, vscSendTimestamp := range k.GetAllVscSendTimestamps(ctx, chainID) {
-			k.DeleteVscSendTimestamp(ctx, chainID, vscSendTimestamp.VscId)
-		}
+		k.DeleteVscSendTimestampsForConsumer(ctx, chainID)
 	}
 
 	k.DeleteInitChainHeight(ctx, chainID)
-	k.ConsumeSlashAcks(ctx, chainID)
+	k.DeleteSlashAcks(ctx, chainID)
 	k.DeletePendingVSCPackets(ctx, chainID)
 
 	// release unbonding operations
@@ -168,21 +197,15 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		// iterate over the unbonding operations for the current VSC ID
 		var maturedIds []uint64
 		for _, id := range unbondingOpsIndex.UnbondingOpIds {
-			unbondingOp, found := k.GetUnbondingOp(ctx, id)
-			if !found {
-				return fmt.Errorf("could not find UnbondingOp according to index - id: %d", id)
-			}
-			// remove consumer chain ID from unbonding op record
-			unbondingOp.UnbondingConsumerChains, _ = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
-
-			// If unbonding op is completely unbonded from all relevant consumer chains
-			if len(unbondingOp.UnbondingConsumerChains) == 0 {
+			// Remove consumer chain ID from unbonding op record.
+			// Note that RemoveConsumerFromUnbondingOp cannot panic here
+			// as it is expected that for all UnbondingOpIds in every
+			// VscUnbondingOps returned by GetAllUnbondingOpIndexes
+			// there is an unbonding op in store that can be retrieved
+			// via via GetUnbondingOp.
+			if k.RemoveConsumerFromUnbondingOp(ctx, id, chainID) {
 				// Store id of matured unbonding op for later completion of unbonding in staking module
-				maturedIds = append(maturedIds, unbondingOp.Id)
-				// Delete unbonding op
-				k.DeleteUnbondingOp(ctx, unbondingOp.Id)
-			} else {
-				k.SetUnbondingOp(ctx, unbondingOp)
+				maturedIds = append(maturedIds, id)
 			}
 		}
 		k.AppendMaturedUnbondingOps(ctx, maturedIds)
@@ -191,6 +214,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 
 	// Remove any existing throttling related entries from the global queue,
 	// only for this consumer.
+	// Note: this call panics if the throttling state is invalid
 	k.DeleteGlobalSlashEntriesForConsumer(ctx, chainID)
 
 	if k.GetThrottledPacketDataSize(ctx, chainID) > 0 {
@@ -203,11 +227,16 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	// since all unbonding operations for this consumer are release above.
 	k.DeleteThrottledPacketDataForConsumer(ctx, chainID)
 
+	k.Logger(ctx).Info("consumer chain removed from provider", "chainID", chainID)
+
 	return nil
 }
 
 // MakeConsumerGenesis constructs the consumer CCV module part of the genesis state.
-func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditionProposal) (gen consumertypes.GenesisState, nextValidatorsHash []byte, err error) {
+func (k Keeper) MakeConsumerGenesis(
+	ctx sdk.Context,
+	prop *types.ConsumerAdditionProposal,
+) (gen consumertypes.GenesisState, nextValidatorsHash []byte, err error) {
 	chainID := prop.ChainId
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
@@ -241,17 +270,17 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 	for _, p := range lastPowers {
 		addr, err := sdk.ValAddressFromBech32(p.Address)
 		if err != nil {
-			panic(err)
+			return gen, nil, err
 		}
 
 		val, found := k.stakingKeeper.GetValidator(ctx, addr)
 		if !found {
-			panic("Validator from LastValidatorPowers not found in staking keeper")
+			return gen, nil, sdkerrors.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers: %s", err)
 		}
 
 		tmProtoPk, err := val.TmConsPublicKey()
 		if err != nil {
-			panic(err)
+			return gen, nil, err
 		}
 
 		initialUpdates = append(initialUpdates, abci.ValidatorUpdate{
@@ -260,16 +289,13 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 		})
 	}
 
-	// apply key assignments to the initial valset
-	initialUpdatesWithConsumerKeys, err := k.ApplyKeyAssignmentToValUpdates(ctx, chainID, initialUpdates)
-	if err != nil {
-		panic("unable to apply key assignments to the initial valset")
-	}
+	// Apply key assignments to the initial valset.
+	initialUpdatesWithConsumerKeys := k.MustApplyKeyAssignmentToValUpdates(ctx, chainID, initialUpdates)
 
 	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)
 	if err != nil {
-		panic("unable to create validator set from updates computed from key assignment in MakeConsumerGenesis")
+		return gen, nil, fmt.Errorf("unable to create validator set from updates computed from key assignment in MakeConsumerGenesis: %s", err)
 	}
 	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
 
@@ -304,6 +330,7 @@ func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, prop *types.Cons
 	store := ctx.KVStore(k.storeKey)
 	bz, err := prop.Marshal()
 	if err != nil {
+		// An error here would indicate something is very wrong
 		panic(fmt.Errorf("failed to marshal consumer addition proposal: %w", err))
 	}
 	store.Set(types.PendingCAPKey(prop.SpawnTime, prop.ChainId), bz)
@@ -323,6 +350,8 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 	}
 	err := prop.Unmarshal(bz)
 	if err != nil {
+		// An error here would indicate something is very wrong,
+		// the ConsumerAdditionProp is assumed to be correctly serialized in SetPendingConsumerAdditionProp.
 		panic(fmt.Errorf("failed to unmarshal consumer addition proposal: %w", err))
 	}
 
@@ -350,6 +379,12 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 		// write cache
 		writeFn()
+
+		k.Logger(ctx).Info("executed consumer addition proposal",
+			"chainID", prop.ChainId,
+			"title", prop.Title,
+			"spawn time", prop.SpawnTime.UTC(),
+		)
 	}
 	// delete the executed proposals
 	k.DeletePendingConsumerAdditionProps(ctx, propsToExecute...)
@@ -369,6 +404,8 @@ func (k Keeper) GetConsumerAdditionPropsToExecute(ctx sdk.Context) (propsToExecu
 		var prop types.ConsumerAdditionProposal
 		err := prop.Unmarshal(iterator.Value())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the ConsumerAdditionProp is assumed to be correctly serialized in SetPendingConsumerAdditionProp.
 			panic(fmt.Errorf("failed to unmarshal consumer addition proposal: %w", err))
 		}
 
@@ -397,6 +434,8 @@ func (k Keeper) GetAllPendingConsumerAdditionProps(ctx sdk.Context) (props []typ
 		var prop types.ConsumerAdditionProposal
 		err := prop.Unmarshal(iterator.Value())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the ConsumerAdditionProp is assumed to be correctly serialized in SetPendingConsumerAdditionProp.
 			panic(fmt.Errorf("failed to unmarshal consumer addition proposal: %w", err))
 		}
 
@@ -425,6 +464,7 @@ func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, prop *types.Consu
 	store := ctx.KVStore(k.storeKey)
 	bz, err := prop.Marshal()
 	if err != nil {
+		// An error here would indicate something is very wrong
 		panic(fmt.Errorf("failed to marshal consumer removal proposal: %w", err))
 	}
 	store.Set(types.PendingCRPKey(prop.StopTime, prop.ChainId), bz)
@@ -473,6 +513,12 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 		// write cache
 		writeFn()
+
+		k.Logger(ctx).Info("executed consumer removal proposal",
+			"chainID", prop.ChainId,
+			"title", prop.Title,
+			"stop time", prop.StopTime.UTC(),
+		)
 	}
 	// delete the executed proposals
 	k.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
@@ -496,6 +542,8 @@ func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.Consum
 		var prop types.ConsumerRemovalProposal
 		err := prop.Unmarshal(iterator.Value())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the ConsumerRemovalProposal is assumed to be correctly serialized in SetPendingConsumerRemovalProp.
 			panic(fmt.Errorf("failed to unmarshal consumer removal proposal: %w", err))
 		}
 
@@ -525,6 +573,8 @@ func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []type
 		var prop types.ConsumerRemovalProposal
 		err := prop.Unmarshal(iterator.Value())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the ConsumerRemovalProposal is assumed to be correctly serialized in SetPendingConsumerRemovalProp.
 			panic(fmt.Errorf("failed to unmarshal consumer removal proposal: %w", err))
 		}
 
@@ -532,18 +582,6 @@ func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []type
 	}
 
 	return props
-}
-
-// CloseChannel closes the channel for the given channel ID on the condition
-// that the channel exists and isn't already in the CLOSED state
-func (k Keeper) CloseChannel(ctx sdk.Context, channelID string) {
-	channel, found := k.channelKeeper.GetChannel(ctx, ccv.ProviderPortID, channelID)
-	if found && channel.State != channeltypes.CLOSED {
-		err := k.chanCloseInit(ctx, channelID)
-		if err != nil {
-			panic(fmt.Errorf("channel (id: %s) could not be closed: %w", channelID, err))
-		}
-	}
 }
 
 // CreateConsumerClientInCachedCtx creates a consumer client
@@ -560,4 +598,16 @@ func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRe
 	cc, writeCache = ctx.CacheContext()
 	err = k.StopConsumerChain(ctx, p.ChainId, true)
 	return
+}
+
+// HandleEquivocationProposal handles an equivocation proposal.
+// Proposal will be accepted if a record in the SlashLog exists for a given validator address.
+func (k Keeper) HandleEquivocationProposal(ctx sdk.Context, p *types.EquivocationProposal) error {
+	for _, ev := range p.Equivocations {
+		if !k.GetSlashLog(ctx, ev.GetConsensusAddress()) {
+			return fmt.Errorf("no equivocation record found for validator %s", ev.GetConsensusAddress().String())
+		}
+		k.evidenceKeeper.HandleEquivocationEvidence(ctx, ev)
+	}
+	return nil
 }

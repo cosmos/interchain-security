@@ -5,10 +5,10 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
+	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
@@ -53,6 +53,25 @@ func TestOnChanOpenInit(t *testing.T) {
 						conntypes.ConnectionEnd{ClientId: "clientIDToProvider"}, true).Times(1),
 				)
 			}, true,
+		},
+		{
+			"should succeed when IBC module version isn't provided", func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+				params.version = ""
+				gomock.InOrder(
+					mocks.MockScopedKeeper.EXPECT().ClaimCapability(
+						params.ctx, params.chanCap, host.ChannelCapabilityPath(
+							params.portID, params.channelID)).Return(nil).Times(1),
+					mocks.MockConnectionKeeper.EXPECT().GetConnection(
+						params.ctx, "connectionIDToProvider").Return(
+						conntypes.ConnectionEnd{ClientId: "clientIDToProvider"}, true).Times(1),
+				)
+			}, true,
+		},
+		{
+			"invalid non-empty IBC module version",
+			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+				params.version = "2"
+			}, false,
 		},
 		{
 			"invalid: channel to provider already established",
@@ -123,7 +142,7 @@ func TestOnChanOpenInit(t *testing.T) {
 
 		tc.setup(&consumerKeeper, &params, mocks)
 
-		err := consumerModule.OnChanOpenInit(
+		version, err := consumerModule.OnChanOpenInit(
 			params.ctx,
 			params.order,
 			params.connectionHops,
@@ -135,9 +154,13 @@ func TestOnChanOpenInit(t *testing.T) {
 		)
 
 		if tc.expPass {
+			// assert correct version
+			require.Equal(t, ccv.Version, version)
 			require.NoError(t, err)
 		} else {
 			require.Error(t, err)
+			// assert version string is empty
+			require.Empty(t, version)
 		}
 		// Confirm there are no unexpected external keeper calls
 		ctrl.Finish()

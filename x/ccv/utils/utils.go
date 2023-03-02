@@ -7,9 +7,9 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
@@ -44,21 +44,14 @@ func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci
 	return out
 }
 
-func GetChangePubKeyAddress(change abci.ValidatorUpdate) (addr []byte) {
-	pk, err := cryptocodec.FromTmProtoPublicKey(change.PubKey)
-	if err != nil {
-		panic(err)
-	}
-
-	return pk.Address()
-}
-
-func TMCryptoPublicKeyToConsAddr(k tmprotocrypto.PublicKey) sdk.ConsAddress {
+// TMCryptoPublicKeyToConsAddr converts a TM public key to an SDK public key
+// and returns the associated consensus address
+func TMCryptoPublicKeyToConsAddr(k tmprotocrypto.PublicKey) (sdk.ConsAddress, error) {
 	sdkK, err := cryptocodec.FromTmProtoPublicKey(k)
 	if err != nil {
-		panic("could not get public key from tm proto public key")
+		return nil, err
 	}
-	return sdk.GetConsAddress(sdkK)
+	return sdk.GetConsAddress(sdkK), nil
 }
 
 // SendIBCPacket sends an IBC packet with packetData

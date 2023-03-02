@@ -3,20 +3,26 @@ package simibc
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/ibc-go/v3/testing"
-	"github.com/cosmos/ibc-go/v3/testing/simapp"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	simapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
+	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	"github.com/stretchr/testify/require"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-// UpdateReceiverClient is used to send a header to the receiving endpoint and update
-// the client of the respective chain.
+// UpdateReceiverClient DELIVERs a header to the receiving endpoint
+// and update the respective client of the receiving chain.
+//
+// The header is a header of the sender chain. The receiver chain
+// must have a client of the sender chain that it can update.
+//
+// NOTE: this function MAY be used independently of the rest of simibc.
 func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, header *ibctmtypes.Header) (err error) {
-	header, err = constructTMHeader(receiver.Chain, header, sender.Chain, receiver.ClientID, clienttypes.ZeroHeight())
+
+	err = augmentHeader(sender.Chain, receiver.Chain, receiver.ClientID, header)
 
 	if err != nil {
 		return err
@@ -54,7 +60,12 @@ func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endp
 	return nil
 }
 
-// Try to receive a packet on receiver. Returns ack.
+// TryRecvPacket will try once to DELIVER a packet from sender to receiver. If successful,
+// it will return the acknowledgement bytes.
+//
+// The packet must be sent from the sender chain to the receiver chain, and the
+// receiver chain must have a client for the sender chain which has been updated
+// to a recent height of the sender chain so that it can verify the packet.
 func TryRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
 	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 	proof, proofHeight := sender.Chain.QueryProof(packetKey)
@@ -91,7 +102,12 @@ func TryRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, p
 	return ack, nil
 }
 
-// Try to receive an ack on receiver.
+// TryRecvAck will try once to DELIVER an ack from sender to receiver.
+//
+// The ack must have been sent from the sender to the receiver, in response
+// to packet which was previously delivered from the receiver to the sender.
+// The receiver chain must have a client for the sender chain which has been
+// updated to a recent height of the sender chain so that it can verify the packet.
 func TryRecvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet, ack []byte) (err error) {
 	p := packet
 	packetKey := host.PacketAcknowledgementKey(p.GetDestPort(), p.GetDestChannel(), p.GetSequence())
@@ -124,13 +140,12 @@ func TryRecvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, pack
 	return nil
 }
 
-// constructTMHeader will augment a valid 07-tendermint Header with data needed to update
-// light client.
-func constructTMHeader(chain *ibctesting.TestChain, header *ibctmtypes.Header, counterparty *ibctesting.TestChain, clientID string, trustedHeight clienttypes.Height) (*ibctmtypes.Header, error) {
-	// Relayer must query for LatestHeight on client to get TrustedHeight if the trusted height is not set
-	if trustedHeight.IsZero() {
-		trustedHeight = chain.GetClientState(clientID).GetLatestHeight().(clienttypes.Height)
-	}
+// augmentHeader is a helper that augments the header with the height and validators that are most recently trusted
+// by the receiver chain. If there is an error, the header will not be modified.
+func augmentHeader(sender *ibctesting.TestChain, receiver *ibctesting.TestChain, clientID string, header *ibctmtypes.Header) error {
+
+	trustedHeight := receiver.GetClientState(clientID).GetLatestHeight().(clienttypes.Height)
+
 	var (
 		tmTrustedVals *tmtypes.ValidatorSet
 		ok            bool
@@ -138,27 +153,26 @@ func constructTMHeader(chain *ibctesting.TestChain, header *ibctmtypes.Header, c
 	// Once we get TrustedHeight from client, we must query the validators from the counterparty chain
 	// If the LatestHeight == LastHeader.Height, then TrustedValidators are current validators
 	// If LatestHeight < LastHeader.Height, we can query the historical validator set from HistoricalInfo
-	if trustedHeight == counterparty.LastHeader.GetHeight() {
-		tmTrustedVals = counterparty.Vals
+	if trustedHeight == sender.LastHeader.GetHeight() {
+		tmTrustedVals = sender.Vals
 	} else {
 		// NOTE: We need to get validators from counterparty at height: trustedHeight+1
 		// since the last trusted validators for a header at height h
 		// is the NextValidators at h+1 committed to in header h by
 		// NextValidatorsHash
-		tmTrustedVals, ok = counterparty.GetValsAtHeight(int64(trustedHeight.RevisionHeight + 1))
+		tmTrustedVals, ok = sender.GetValsAtHeight(int64(trustedHeight.RevisionHeight + 1))
 		if !ok {
-			return nil, sdkerrors.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight)
+			return sdkerrors.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight)
 		}
+	}
+	trustedVals, err := tmTrustedVals.ToProto()
+	if err != nil {
+		return err
 	}
 	// inject trusted fields into last header
 	// for now assume revision number is 0
 	header.TrustedHeight = trustedHeight
-
-	trustedVals, err := tmTrustedVals.ToProto()
-	if err != nil {
-		return nil, err
-	}
 	header.TrustedValidators = trustedVals
 
-	return header, nil
+	return nil
 }

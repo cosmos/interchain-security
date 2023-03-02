@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -181,9 +181,9 @@ func TestInitGenesis(t *testing.T) {
 		expectedSlashMeterValue := sdk.NewInt(replenishFraction.MulInt(sdk.NewInt(100)).RoundInt64())
 		require.Equal(t, expectedSlashMeterValue, slashMeter)
 
-		// Expect last slash meter full time to be current block time
-		lastFullTime := providerKeeper.GetLastSlashMeterFullTime(ctx)
-		require.Equal(t, lastFullTime, ctx.BlockTime().UTC())
+		// Expect slash meter replenishment time candidate to be set to the current block time + replenish period
+		expectedNextReplenishTime := ctx.BlockTime().Add(providerKeeper.GetSlashMeterReplenishPeriod(ctx))
+		require.Equal(t, expectedNextReplenishTime, providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 		ctrl.Finish()
 	}

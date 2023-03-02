@@ -42,16 +42,23 @@ const MODEL_INIT_STATE: ModelInitState = {
   h: { provider: 0, consumer: 0 },
   t: { provider: 0, consumer: 0 },
   ccvC: {
-    hToVscID: { 0: 0, 1: 0 },
+    // We model a consumer chain that has already been established,
+    // but we model starting from height 0. It is necessary to have
+    // a vscid from the previous block, as is always the case in the
+    // real system and algorithm once a consumer has been added.
+    // Therefore we use -1 to represent the phantom vscid from the height
+    // before the first modelled height.
+    hToVscID: { 0: -1, 1: -1 },
     pendingChanges: [],
     maturingVscs: new Map(),
     outstandingDowntime: [false, false, false, false],
-    consumerPower: [5000, 4000, undefined, undefined],
+    consumerPower: [5000, 4000, null, null],
   },
   ccvP: {
     initialHeight: 0,
     vscID: 0,
-    vscIDtoH: {},
+    // See ccvC.hToVscID
+    vscIDtoH: { [-1]: 0 },
     vscIDtoOpIDs: new Map(),
     downtimeSlashAcks: [],
     tombstoned: [false, false, false, false],
@@ -69,7 +76,7 @@ const MODEL_INIT_STATE: ModelInitState = {
     ],
     undelegationQ: [],
     validatorQ: [],
-    jailed: [undefined, undefined, undefined, undefined],
+    jailed: [null, null, null, null],
     delegatorTokens: INITIAL_DELEGATOR_TOKENS,
     opID: 0,
     changes: {},

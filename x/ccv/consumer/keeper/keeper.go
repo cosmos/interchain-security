@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -10,10 +11,10 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -58,7 +59,7 @@ func NewKeeper(
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return Keeper{
+	k := Keeper{
 		storeKey:          key,
 		cdc:               cdc,
 		paramStore:        paramSpace,
@@ -74,6 +75,64 @@ func NewKeeper(
 		ibcCoreKeeper:     ibcCoreKeeper,
 		feeCollectorName:  feeCollectorName,
 	}
+
+	k.mustValidateFields()
+	return k
+}
+
+// Validates that the consumer keeper is initialized with non-zero and
+// non-nil values for all its fields. Otherwise this method will panic.
+func (k Keeper) mustValidateFields() {
+
+	// Ensures no fields are missed in this validation
+	if reflect.ValueOf(k).NumField() != 15 {
+		panic("number of fields in provider keeper is not 15")
+	}
+
+	// Note 14 fields will be validated, hooks are explicitly set after the constructor
+
+	if reflect.ValueOf(k.storeKey).IsZero() { // 1
+		panic("storeKey is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.cdc).IsZero() { // 2
+		panic("cdc is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.paramStore).IsZero() { // 3
+		panic("paramStore is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.scopedKeeper).IsZero() { // 4
+		panic("scopedKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.channelKeeper).IsZero() { // 5
+		panic("channelKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.portKeeper).IsZero() { // 6
+		panic("portKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.connectionKeeper).IsZero() { // 7
+		panic("connectionKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.clientKeeper).IsZero() { // 8
+		panic("clientKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.slashingKeeper).IsZero() { // 9
+		panic("slashingKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.bankKeeper).IsZero() { // 10
+		panic("bankKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.authKeeper).IsZero() { // 11
+		panic("authKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.ibcTransferKeeper).IsZero() { // 12
+		panic("ibcTransferKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.ibcCoreKeeper).IsZero() { // 13
+		panic("ibcCoreKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.feeCollectorName).IsZero() { // 14
+		panic("feeCollectorName is zero-valued or nil")
+	}
 }
 
 // Logger returns a module-specific logger.
@@ -83,6 +142,8 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 func (k *Keeper) SetHooks(sh ccv.ConsumerHooks) *Keeper {
 	if k.hooks != nil {
+		// This should never happen as SetHooks is expected
+		// to be called only once in app.go
 		panic("cannot set validator hooks twice")
 	}
 
@@ -177,14 +238,14 @@ func (k Keeper) DeleteProviderChannel(ctx sdk.Context) {
 }
 
 // SetPendingChanges sets the pending validator set change packet that haven't been flushed to ABCI
-func (k Keeper) SetPendingChanges(ctx sdk.Context, updates ccv.ValidatorSetChangePacketData) error {
+func (k Keeper) SetPendingChanges(ctx sdk.Context, updates ccv.ValidatorSetChangePacketData) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := updates.Marshal()
 	if err != nil {
-		return err
+		// This should never happen
+		panic(fmt.Errorf("failed to marshal PendingChanges: %w", err))
 	}
 	store.Set(types.PendingChangesKey(), bz)
-	return nil
 }
 
 // GetPendingChanges gets the pending changes that haven't been flushed over ABCI
@@ -196,7 +257,9 @@ func (k Keeper) GetPendingChanges(ctx sdk.Context) (*ccv.ValidatorSetChangePacke
 	}
 	var data ccv.ValidatorSetChangePacketData
 	if err := data.Unmarshal(bz); err != nil {
-		panic(fmt.Errorf("pending changes could not be unmarshaled: %w", err))
+		// This should never happen as PendingChanges is expected
+		// to be correctly serialized in SetPendingChanges
+		panic(fmt.Errorf("failed to unmarshal PendingChanges: %w", err))
 	}
 	return &data, true
 }
@@ -218,6 +281,8 @@ func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPacke
 	for ; iterator.Valid(); iterator.Next() {
 		var maturingVSCPacket consumertypes.MaturingVSCPacket
 		if err := maturingVSCPacket.Unmarshal(iterator.Value()); err != nil {
+			// An error here would indicate something is very wrong,
+			// the MaturingVSCPackets are assumed to be correctly serialized in SetPacketMaturityTime.
 			panic(fmt.Errorf("failed to unmarshal MaturingVSCPacket: %w", err))
 		}
 
@@ -247,6 +312,8 @@ func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets [
 	for ; iterator.Valid(); iterator.Next() {
 		var maturingVSCPacket consumertypes.MaturingVSCPacket
 		if err := maturingVSCPacket.Unmarshal(iterator.Value()); err != nil {
+			// An error here would indicate something is very wrong,
+			// the MaturingVSCPackets are assumed to be correctly serialized in SetPacketMaturityTime.
 			panic(fmt.Errorf("failed to unmarshal MaturingVSCPacket: %w", err))
 		}
 
@@ -264,6 +331,8 @@ func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, vscId uint64, maturityTim
 	}
 	bz, err := maturingVSCPacket.Marshal()
 	if err != nil {
+		// An error here would indicate something is very wrong,
+		// maturingVSCPacket is instantiated in this method and should be able to be marshaled.
 		panic(fmt.Errorf("failed to marshal MaturingVSCPacket: %w", err))
 	}
 	store.Set(types.PacketMaturityTimeKey(vscId, maturityTime), bz)
@@ -450,7 +519,8 @@ func (k Keeper) SetPendingPackets(ctx sdk.Context, packets ccv.ConsumerPacketDat
 	store := ctx.KVStore(k.storeKey)
 	bz, err := packets.Marshal()
 	if err != nil {
-		panic(fmt.Errorf("failed to encode packet: %w", err))
+		// This should never happen
+		panic(fmt.Errorf("failed to marshal ConsumerPacketDataList: %w", err))
 	}
 	store.Set([]byte{types.PendingDataPacketsBytePrefix}, bz)
 }
@@ -467,6 +537,8 @@ func (k Keeper) GetPendingPackets(ctx sdk.Context) ccv.ConsumerPacketDataList {
 
 	err := packets.Unmarshal(bz)
 	if err != nil {
+		// An error here would indicate something is very wrong,
+		// the PendingPackets are assumed to be correctly serialized in SetPendingPackets.
 		panic(fmt.Errorf("failed to unmarshal pending data packets: %w", err))
 	}
 

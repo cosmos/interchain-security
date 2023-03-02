@@ -41,7 +41,7 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 
 	// Setup mock calls
 	gomock.InOrder(
-		mockAccountKeeper.EXPECT().GetModuleAccount(ctx, "").
+		mockAccountKeeper.EXPECT().GetModuleAccount(ctx, authTypes.FeeCollectorName).
 			Return(mAcc).
 			Times(1),
 		mockBankKeeper.EXPECT().GetAllBalances(ctx, mAcc.GetAddress()).
@@ -61,8 +61,7 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 		ToConsumer:           sdk.NewDecCoinsFromCoins(consumerTokens...).String(),
 	}
 
-	res, err := consumerKeeper.GetEstimatedNextFeeDistribution(ctx)
-	require.NoError(t, err)
+	res := consumerKeeper.GetEstimatedNextFeeDistribution(ctx)
 	require.NotEmpty(t, res)
 	require.EqualValues(t, expect, res, "fee distribution data does not match")
 }

@@ -102,8 +102,13 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 		return &types.QueryValidatorConsumerAddrResponse{}, nil
 	}
 
+	consumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+	if err != nil {
+		return nil, err
+	}
+
 	return &types.QueryValidatorConsumerAddrResponse{
-		ConsumerAddress: utils.TMCryptoPublicKeyToConsAddr(consumerKey).String(),
+		ConsumerAddress: consumerAddr.String(),
 	}, nil
 }
 
@@ -138,7 +143,7 @@ func (k Keeper) QueryThrottleState(goCtx context.Context, req *types.QueryThrott
 
 	meter := k.GetSlashMeter(ctx)
 	allowance := k.GetSlashMeterAllowance(ctx)
-	lastFullTime := k.GetLastSlashMeterFullTime(ctx) // always UTC
+	candidate := k.GetSlashMeterReplenishTimeCandidate(ctx) // always UTC
 	packets := []*types.ThrottledSlashPacket{}
 
 	// iterate global slash entries from all consumer chains
@@ -160,10 +165,10 @@ func (k Keeper) QueryThrottleState(goCtx context.Context, req *types.QueryThrott
 	}
 
 	return &types.QueryThrottleStateResponse{
-		SlashMeter:          meter.Int64(),
-		SlashMeterAllowance: allowance.Int64(),
-		LastFullTime:        lastFullTime,
-		Packets:             packets,
+		SlashMeter:             meter.Int64(),
+		SlashMeterAllowance:    allowance.Int64(),
+		NextReplenishCandidate: candidate,
+		Packets:                packets,
 	}, nil
 }
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -122,16 +122,15 @@ func TestInitAndExportGenesis(t *testing.T) {
 	expectedSlashMeterValue := sdk.NewInt(replenishFraction.MulInt(sdk.NewInt(100)).RoundInt64())
 	require.Equal(t, expectedSlashMeterValue, slashMeter)
 
-	// Expect last slash meter full time to be current block time
-	lastFullTime := pk.GetLastSlashMeterFullTime(ctx)
-	require.Equal(t, lastFullTime, ctx.BlockTime())
+	// Expect slash meter replenishment time candidate to be set to the current block time + replenish period
+	expectedCandidate := ctx.BlockTime().Add(pk.GetSlashMeterReplenishPeriod(ctx))
+	require.Equal(t, expectedCandidate, pk.GetSlashMeterReplenishTimeCandidate(ctx))
 
 	// check local provider chain states
 	ubdOps, found := pk.GetUnbondingOp(ctx, vscID)
 	require.True(t, found)
 	require.Equal(t, provGenesis.UnbondingOps[0], ubdOps)
-	matureUbdOps, err := pk.GetMaturedUnbondingOps(ctx)
-	require.NoError(t, err)
+	matureUbdOps := pk.GetMaturedUnbondingOps(ctx)
 	require.Equal(t, ubdIndex, matureUbdOps)
 	chainID, found := pk.GetChannelToChain(ctx, provGenesis.ConsumerStates[0].ChannelId)
 	require.True(t, found)

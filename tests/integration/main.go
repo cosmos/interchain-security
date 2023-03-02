@@ -13,12 +13,12 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-var (
-	verbose       = flag.Bool("verbose", false, "turn verbose logging on/off")
-	multiconsumer = flag.Bool("multiconsumer", false, "run happy path and multiconsumer tests in parallel")
-	localSdkPath  = flag.String("local-sdk-path", "",
-		"path of a local sdk version to build and reference in integration tests")
-)
+var verbose = flag.Bool("verbose", false, "turn verbose logging on/off")
+var happyPathOnly = flag.Bool("happy-path-only", false, "run happy path tests only")
+var includeMultiConsumer = flag.Bool("include-multi-consumer", false, "include multiconsumer tests in run")
+var parallel = flag.Bool("parallel", false, "run all tests in parallel")
+var localSdkPath = flag.String("local-sdk-path", "",
+	"path of a local sdk version to build and reference in integration tests")
 
 // runs integration tests
 // all docker containers are built sequentially to avoid race conditions when using local cosmos-sdk
@@ -26,46 +26,59 @@ var (
 func main() {
 	flag.Parse()
 
-	// wg waits for all runners to complete
-	var wg sync.WaitGroup
-
-	start := time.Now()
-	tr := DefaultTestRun()
-	tr.SetLocalSDKPath(*localSdkPath)
-	tr.ValidateStringLiterals()
-	tr.startDocker()
-
-	dmc := DemocracyTestRun()
-	dmc.SetLocalSDKPath(*localSdkPath)
-	dmc.ValidateStringLiterals()
-	dmc.startDocker()
-
-	slash := SlashThrottleTestRun()
-	slash.SetLocalSDKPath(*localSdkPath)
-	slash.ValidateStringLiterals()
-	slash.startDocker()
-
-	if *multiconsumer {
-		mul := MultiConsumerTestRun()
-		mul.SetLocalSDKPath(*localSdkPath)
-		mul.ValidateStringLiterals()
-		mul.startDocker()
-
-		wg.Add(1)
-		go mul.ExecuteSteps(&wg, multipleConsumers)
+	if happyPathOnly != nil && *happyPathOnly {
+		fmt.Println("=============== running happy path only ===============")
+		tr := DefaultTestRun()
+		tr.Run(happyPathSteps, *localSdkPath)
+		return
 	}
 
-	wg.Add(1)
-	go tr.ExecuteSteps(&wg, happyPathSteps)
+	testRuns := []testRunWithSteps{
+		{DefaultTestRun(), happyPathSteps},
+		{DemocracyTestRun(), democracySteps},
+		{SlashThrottleTestRun(), slashThrottleSteps},
+	}
+	if includeMultiConsumer != nil && *includeMultiConsumer {
+		testRuns = append(testRuns, testRunWithSteps{MultiConsumerTestRun(), multipleConsumers})
+	}
 
-	wg.Add(1)
-	go dmc.ExecuteSteps(&wg, democracySteps)
+	start := time.Now()
+	if parallel != nil && *parallel {
+		fmt.Println("=============== running all tests in parallel ===============")
+		var wg sync.WaitGroup
+		for _, run := range testRuns {
+			wg.Add(1)
+			go func(run testRunWithSteps) {
+				defer wg.Done()
+				tr := run.testRun
+				tr.Run(run.steps, *localSdkPath)
+			}(run)
+		}
+		wg.Wait()
+		fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
+		return
+	}
 
-	wg.Add(1)
-	go slash.ExecuteSteps(&wg, slashThrottleSteps)
-
-	wg.Wait()
+	for _, run := range testRuns {
+		tr := run.testRun
+		tr.Run(run.steps, *localSdkPath)
+	}
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
+}
+
+// Run sets up docker container and executes the steps in the test run.
+// Docker containers are torn down after the test run is complete.
+func (tr *TestRun) Run(steps []Step, localSdkPath string) {
+	tr.SetLocalSDKPath(localSdkPath)
+	tr.validateStringLiterals()
+	tr.startDocker()
+	tr.executeSteps(steps)
+	tr.teardownDocker()
+}
+
+type testRunWithSteps struct {
+	testRun TestRun
+	steps   []Step
 }
 
 func (tr *TestRun) runStep(step Step, verbose bool) {
@@ -80,6 +93,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.submitConsumerAdditionProposal(action, verbose)
 	case submitConsumerRemovalProposalAction:
 		tr.submitConsumerRemovalProposal(action, verbose)
+	case submitEquivocationProposalAction:
+		tr.submitEquivocationProposal(action, verbose)
 	case submitParamChangeProposalAction:
 		tr.submitParamChangeProposal(action, verbose)
 	case voteGovProposalAction:
@@ -117,7 +132,7 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 	case slashThrottleDequeue:
 		tr.waitForSlashThrottleDequeue(action, verbose)
 	default:
-		log.Fatalf(fmt.Sprintf(`unknown action in testRun %s: %#v`, tr.name, action))
+		log.Fatalf("unknown action in testRun %s: %#v", tr.name, action)
 	}
 
 	modelState := step.state
@@ -133,9 +148,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 	}
 }
 
-// Starts docker container and sequentially runs steps
-func (tr *TestRun) ExecuteSteps(wg *sync.WaitGroup, steps []Step) {
-	defer wg.Done()
+// executeSteps sequentially runs steps.
+func (tr *TestRun) executeSteps(steps []Step) {
 	fmt.Printf("=============== started %s tests ===============\n", tr.name)
 
 	start := time.Now()
@@ -185,4 +199,17 @@ func (tr *TestRun) startDocker() {
 
 	err = cmd.Wait()
 	log.Fatalf("StartDocker exited with error: %v", err)
+}
+
+// remove docker container to reduce resource usage
+// otherwise the chain will keep running in the background
+func (tr *TestRun) teardownDocker() {
+	fmt.Printf("===============  tearing down %s testRun ===============\n", tr.name)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "kill", tr.containerConfig.instanceName)
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
 }

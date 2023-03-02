@@ -121,7 +121,8 @@ func TestHandlePacketDataForChain(t *testing.T) {
 
 		// Queue throttled packet data, where chainID is arbitrary, and ibc seq number is index of the data instance
 		for i, data := range tc.dataToQueue {
-			providerKeeper.QueueThrottledPacketData(ctx, tc.chainID, uint64(i), data)
+			err := providerKeeper.QueueThrottledPacketData(ctx, tc.chainID, uint64(i), data)
+			require.NoError(t, err)
 		}
 
 		// Define our handler callbacks to simply store the data instances that are handled
@@ -207,7 +208,7 @@ func TestSlashMeterReplenishment(t *testing.T) {
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
-		now := time.Now()
+		now := time.Now().UTC()
 		ctx = ctx.WithBlockTime(now)
 
 		// Set desired params
@@ -229,8 +230,9 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		// Confirm meter value is initialized to expected allowance
 		require.Equal(t, tc.expectedAllowance, providerKeeper.GetSlashMeter(ctx))
 
-		// Confirm last full time is current block time.
-		require.Equal(t, now.UTC(), providerKeeper.GetLastSlashMeterFullTime(ctx))
+		// Confirm replenish time candidate is set to now + replenish period
+		initialReplenishCandidate := providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx)
+		require.Equal(t, now.Add(tc.replenishPeriod), initialReplenishCandidate)
 
 		// Decrement slash meter
 		providerKeeper.SetSlashMeter(ctx, providerKeeper.GetSlashMeter(ctx).Sub(sdktypes.NewInt(3)))
@@ -241,8 +243,8 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		providerKeeper.CheckForSlashMeterReplenishment(ctx)
 		require.Equal(t, meterBefore, providerKeeper.GetSlashMeter(ctx))
 
-		// Confirm last full time is not updated
-		require.Equal(t, now.UTC(), providerKeeper.GetLastSlashMeterFullTime(ctx))
+		// Confirm replenishment time candidate is not updated
+		require.Equal(t, initialReplenishCandidate, providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 		// Note: odd time formats are used as an extra sanity check that UTC format is persisted
 
@@ -254,8 +256,8 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		providerKeeper.CheckForSlashMeterReplenishment(ctx)
 		require.Equal(t, meterBefore, providerKeeper.GetSlashMeter(ctx))
 
-		// Confirm last full time is not updated
-		require.Equal(t, now.UTC(), providerKeeper.GetLastSlashMeterFullTime(ctx))
+		// Confirm replenishment time candidate is not updated
+		require.Equal(t, initialReplenishCandidate, providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 		// Increment block time by more than replenish period
 		ctx = ctx.WithBlockTime(now.Add(tc.replenishPeriod * 2).In(time.FixedZone("UTC-8", -8*60*60)))
@@ -264,8 +266,9 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		providerKeeper.CheckForSlashMeterReplenishment(ctx)
 		require.Equal(t, tc.expectedAllowance, providerKeeper.GetSlashMeter(ctx))
 
-		// Last full time should now be updated
-		require.Equal(t, ctx.BlockTime().UTC(), providerKeeper.GetLastSlashMeterFullTime(ctx))
+		// Replenish time candidate should be updated to block time + replenish period
+		require.NotEqual(t, initialReplenishCandidate, providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
+		require.Equal(t, ctx.BlockTime().Add(tc.replenishPeriod), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 
 		// increment block time by more than replenish period again
 		ctx = ctx.WithBlockTime(ctx.BlockTime().Add(tc.replenishPeriod * 2))
@@ -274,9 +277,84 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		providerKeeper.CheckForSlashMeterReplenishment(ctx)
 		require.Equal(t, tc.expectedAllowance, providerKeeper.GetSlashMeter(ctx))
 
-		// Confirm last full time is updated, even though slash meter was not replenished
-		require.Equal(t, ctx.BlockTime().UTC(), providerKeeper.GetLastSlashMeterFullTime(ctx))
+		// Confirm replenish candidate is updated, even though meter was not replenished
+		require.Equal(t, ctx.BlockTime().Add(tc.replenishPeriod), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 	}
+}
+
+// Tests that the slash meter exhibits desired behavior when multiple replenishments are needed
+// to restore it to a full value.
+func TestConsecutiveReplenishments(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	now := time.Now().UTC()
+	ctx = ctx.WithBlockTime(now)
+
+	// Set desired params
+	params := providertypes.DefaultParams()
+	params.SlashMeterReplenishPeriod = time.Hour
+	params.SlashMeterReplenishFraction = "0.05"
+	providerKeeper.SetParams(ctx, params)
+
+	// Mock total power from staking keeper using test case value
+	// Any ctx is accepted, and the method will be called multiple times during the tests
+	gomock.InOrder(
+		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+			gomock.Any()).Return(sdktypes.NewInt(1000)).AnyTimes(),
+	)
+
+	// Now we can initialize the slash meter (this would happen in InitGenesis)
+	providerKeeper.InitializeSlashMeter(ctx)
+
+	// Confirm meter value is initialized to expected allowance
+	require.Equal(t, int64(50), providerKeeper.GetSlashMeter(ctx).Int64())
+
+	// Confirm replenish candidate is set to now + replenish period
+	require.Equal(t, now.Add(time.Hour), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
+
+	// Decrement slash meter to negative value that would take 4 replenishments to recover from
+	providerKeeper.SetSlashMeter(ctx, sdktypes.NewInt(-150))
+
+	// Confirm no replenishment occurs when no time has passed, replenish candidate is not updated
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(-150), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, now.Add(time.Hour), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
+
+	// Now increment block time past replenishment period and confirm that meter is replenished ONCE,
+	// and replenish candidate is updated to block time + replenish period
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(2 * time.Hour))
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(-100), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, now.Add(3*time.Hour), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx)) // Note 3 hours, not 2
+
+	// Simulate next block and check that no consecutive replenishments occur (replenish period has not passed)
+	// and replenish candidate is not updated
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(5 * time.Second))
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(-100), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, now.Add(3*time.Hour), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
+
+	// Increment block time past replenishment period and confirm that meter is replenished ONCE more
+	// and replenish candidate is updated to block time + replenish period
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour * 1))
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(-50), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, now.Add(4*time.Hour).Add(5*time.Second), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
+
+	// Replenishments should happen if we increment block times past replenishment period
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour * 1))
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(0), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, now.Add(5*time.Hour).Add(5*time.Second), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(0), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, now.Add(5*time.Hour).Add(5*time.Second), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Hour * 1))
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(50), providerKeeper.GetSlashMeter(ctx))
+	require.Equal(t, now.Add(6*time.Hour).Add(5*time.Second), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 }
 
 // TestSlashMeterAllowanceChanges tests the behavior of a full slash meter
@@ -560,11 +638,11 @@ func TestGlobalSlashEntries(t *testing.T) {
 	// Queue 3 entries for chainIDs 0, 1, 2, note their respective ibc seq nums are
 	// ordered differently than the chainIDs would be iterated.
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-		now.Local(), "chain-0", 15, cryptoutil.NewCryptoIdentityFromIntSeed(10).SDKConsAddress()))
+		now.Local(), "chain-0", 15, cryptoutil.NewCryptoIdentityFromIntSeed(10).SDKValConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-		now.Local(), "chain-1", 10, cryptoutil.NewCryptoIdentityFromIntSeed(11).SDKConsAddress()))
+		now.Local(), "chain-1", 10, cryptoutil.NewCryptoIdentityFromIntSeed(11).SDKValConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-		now.Local(), "chain-2", 5, cryptoutil.NewCryptoIdentityFromIntSeed(12).SDKConsAddress()))
+		now.Local(), "chain-2", 5, cryptoutil.NewCryptoIdentityFromIntSeed(12).SDKValConsAddress()))
 
 	globalEntries = providerKeeper.GetAllGlobalSlashEntries(ctx)
 	require.Equal(t, 3, len(globalEntries))
@@ -572,13 +650,13 @@ func TestGlobalSlashEntries(t *testing.T) {
 	// Queue 3 entries for chainIDs 0, 1, 2 an hour later, with incremented ibc seq nums
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		now.Add(time.Hour).Local(), "chain-0", 16, // should appear last for this recv time
-		cryptoutil.NewCryptoIdentityFromIntSeed(20).SDKConsAddress()))
+		cryptoutil.NewCryptoIdentityFromIntSeed(20).SDKValConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		now.Add(time.Hour).Local(), "chain-1", 11, // should appear middle for this recv time
-		cryptoutil.NewCryptoIdentityFromIntSeed(21).SDKConsAddress()))
+		cryptoutil.NewCryptoIdentityFromIntSeed(21).SDKValConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		now.Add(time.Hour).Local(), "chain-2", 6, // should appear first for this recv time
-		cryptoutil.NewCryptoIdentityFromIntSeed(22).SDKConsAddress()))
+		cryptoutil.NewCryptoIdentityFromIntSeed(22).SDKValConsAddress()))
 
 	// Retrieve entries from store
 	globalEntries = providerKeeper.GetAllGlobalSlashEntries(ctx)
@@ -595,13 +673,13 @@ func TestGlobalSlashEntries(t *testing.T) {
 	// Queue 3 entries for chainIDs 5, 6, 7 another hour later
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-5", 50, // should appear middle for this recv time
-			cryptoutil.NewCryptoIdentityFromIntSeed(96).SDKConsAddress()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(96).SDKValConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-6", 60, // should appear last for this recv time
-			cryptoutil.NewCryptoIdentityFromIntSeed(97).SDKConsAddress()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(97).SDKValConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-7", 40, // should appear first for this recv time
-			cryptoutil.NewCryptoIdentityFromIntSeed(98).SDKConsAddress()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(98).SDKValConsAddress()))
 
 	// Retrieve entries from store
 	globalEntries = providerKeeper.GetAllGlobalSlashEntries(ctx)
@@ -649,19 +727,19 @@ func TestDeleteGlobalSlashEntriesForConsumer(t *testing.T) {
 	// Queue 2 global entries for a consumer chain ID
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(time.Hour), "chain-78", 1,
-			cryptoutil.NewCryptoIdentityFromIntSeed(78).SDKConsAddress()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(78).SDKValConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(time.Hour), "chain-78", 2,
-			cryptoutil.NewCryptoIdentityFromIntSeed(79).SDKConsAddress()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(79).SDKValConsAddress()))
 
 	// Queue 1 global entry for two other consumer chain IDs
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(2*time.Hour), "chain-79", 1,
-			cryptoutil.NewCryptoIdentityFromIntSeed(80).SDKConsAddress()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(80).SDKValConsAddress()))
 
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(3*time.Hour), "chain-80", 1,
-			cryptoutil.NewCryptoIdentityFromIntSeed(81).SDKConsAddress()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(81).SDKValConsAddress()))
 
 	// Delete entries for chain-78, confirm those are deleted, and the other two remain
 	providerKeeper.DeleteGlobalSlashEntriesForConsumer(ctx, "chain-78")
@@ -684,13 +762,13 @@ func TestGlobalSlashEntryDeletion(t *testing.T) {
 
 	// Instantiate entries in the expected order we wish to get them back as (ordered by recv time)
 	entries = []providertypes.GlobalSlashEntry{}
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now, "chain-0", 1, cryptoutil.NewCryptoIdentityFromIntSeed(0).SDKConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(time.Hour).UTC(), "chain-1", 178, cryptoutil.NewCryptoIdentityFromIntSeed(1).SDKConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-2", 89, cryptoutil.NewCryptoIdentityFromIntSeed(2).SDKConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(3*time.Hour).In(time.FixedZone("UTC-8", -8*60*60)), "chain-3", 23423, cryptoutil.NewCryptoIdentityFromIntSeed(3).SDKConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(4*time.Hour).Local(), "chain-4", 323, cryptoutil.NewCryptoIdentityFromIntSeed(4).SDKConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(5*time.Hour).UTC(), "chain-5", 18, cryptoutil.NewCryptoIdentityFromIntSeed(5).SDKConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(6*time.Hour).Local(), "chain-6", 2, cryptoutil.NewCryptoIdentityFromIntSeed(6).SDKConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now, "chain-0", 1, cryptoutil.NewCryptoIdentityFromIntSeed(0).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(time.Hour).UTC(), "chain-1", 178, cryptoutil.NewCryptoIdentityFromIntSeed(1).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-2", 89, cryptoutil.NewCryptoIdentityFromIntSeed(2).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(3*time.Hour).In(time.FixedZone("UTC-8", -8*60*60)), "chain-3", 23423, cryptoutil.NewCryptoIdentityFromIntSeed(3).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(4*time.Hour).Local(), "chain-4", 323, cryptoutil.NewCryptoIdentityFromIntSeed(4).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(5*time.Hour).UTC(), "chain-5", 18, cryptoutil.NewCryptoIdentityFromIntSeed(5).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(6*time.Hour).Local(), "chain-6", 2, cryptoutil.NewCryptoIdentityFromIntSeed(6).SDKValConsAddress()))
 
 	// Instantiate shuffled copy of above slice
 	shuffledEntries := append([]providertypes.GlobalSlashEntry{}, entries...)
@@ -798,7 +876,8 @@ func TestThrottledPacketData(t *testing.T) {
 	// Queue all packet data at once
 	for _, chainData := range packetDataForMultipleConsumers {
 		for _, dataInstance := range chainData.instances {
-			providerKeeper.QueueThrottledPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, dataInstance.Data)
+			err := providerKeeper.QueueThrottledPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, dataInstance.Data)
+			require.NoError(t, err)
 		}
 	}
 
@@ -909,12 +988,15 @@ func TestGetLeadingVSCMaturedData(t *testing.T) {
 
 		// Queue a slash and vsc matured packet data for some random chain.
 		// These values should never be returned.
-		providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
-		providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, testkeeper.GetNewVSCMaturedPacketData())
+		err := providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
+		require.NoError(t, err)
+		err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, testkeeper.GetNewVSCMaturedPacketData())
+		require.NoError(t, err)
 
 		// Queue the data to test against
 		for _, dataInstance := range tc.dataToQueue {
-			providerKeeper.QueueThrottledPacketData(ctx, "chain-99", dataInstance.IbcSeqNum, dataInstance.Data)
+			err := providerKeeper.QueueThrottledPacketData(ctx, "chain-99", dataInstance.IbcSeqNum, dataInstance.Data)
+			require.NoError(t, err)
 		}
 
 		// Obtain data from iterator
@@ -1011,12 +1093,15 @@ func TestGetSlashAndTrailingData(t *testing.T) {
 
 		// Queue a slash and vsc matured packet data for some random chain.
 		// These values should never be returned.
-		providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
-		providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, testkeeper.GetNewVSCMaturedPacketData())
+		err := providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
+		require.NoError(t, err)
+		err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, testkeeper.GetNewVSCMaturedPacketData())
+		require.NoError(t, err)
 
 		// Queue the data to test
 		for _, dataInstance := range tc.dataToQueue {
-			providerKeeper.QueueThrottledPacketData(ctx, "chain-49", dataInstance.IbcSeqNum, dataInstance.Data)
+			err := providerKeeper.QueueThrottledPacketData(ctx, "chain-49", dataInstance.IbcSeqNum, dataInstance.Data)
+			require.NoError(t, err)
 		}
 
 		// Retrieve the data, and assert that it is correct
@@ -1035,17 +1120,26 @@ func TestDeleteThrottledPacketDataForConsumer(t *testing.T) {
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// Queue slash and a VSC matured packet data for chain-48
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-48", 0, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-48", 1, testkeeper.GetNewVSCMaturedPacketData())
+	err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-48", 0, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-48", 1, testkeeper.GetNewVSCMaturedPacketData())
+	require.NoError(t, err)
 
 	// Queue 3 slash, and 4 vsc matured packet data instances for chain-49
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 0, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 1, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 2, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 3, testkeeper.GetNewVSCMaturedPacketData())
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 4, testkeeper.GetNewVSCMaturedPacketData())
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 5, testkeeper.GetNewVSCMaturedPacketData())
-	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 6, testkeeper.GetNewVSCMaturedPacketData())
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 0, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 1, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 2, testkeeper.GetNewSlashPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 3, testkeeper.GetNewVSCMaturedPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 4, testkeeper.GetNewVSCMaturedPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 5, testkeeper.GetNewVSCMaturedPacketData())
+	require.NoError(t, err)
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 6, testkeeper.GetNewVSCMaturedPacketData())
+	require.NoError(t, err)
 
 	// Delete all packet data for chain-49, confirm they are deleted
 	providerKeeper.DeleteThrottledPacketDataForConsumer(ctx, "chain-49")
@@ -1089,8 +1183,10 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		rand.Seed(time.Now().UnixNano())
 
 		// Queuing up a couple data instances for another chain shouldn't matter
-		providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 0, testkeeper.GetNewSlashPacketData())
-		providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 1, testkeeper.GetNewVSCMaturedPacketData())
+		err := providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 0, testkeeper.GetNewSlashPacketData())
+		require.NoError(t, err)
+		err = providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 1, testkeeper.GetNewVSCMaturedPacketData())
+		require.NoError(t, err)
 
 		// Queue packet data instances until we reach the max (some slash packets, some VSC matured packets)
 		reachedMax := false
@@ -1105,11 +1201,12 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 			// Panic only if we've reached the max
 			if i == int(tc.max-1) {
 				require.Panics(t, func() {
-					providerKeeper.QueueThrottledPacketData(ctx, "chain-88", uint64(i), data)
+					_ = providerKeeper.QueueThrottledPacketData(ctx, "chain-88", uint64(i), data)
 				})
 				reachedMax = true
 			} else {
-				providerKeeper.QueueThrottledPacketData(ctx, "chain-88", uint64(i), data)
+				err := providerKeeper.QueueThrottledPacketData(ctx, "chain-88", uint64(i), data)
+				require.NoError(t, err)
 			}
 		}
 		require.True(t, reachedMax)
@@ -1174,19 +1271,22 @@ func TestSlashMeter(t *testing.T) {
 	}
 }
 
-// TestLastSlashMeterFullTime tests the getter and setter for the most recent time
-// the slash meter was full.
-func TestLastSlashMeterFullTime(t *testing.T) {
-	testCases := []time.Time{
-		time.Now(),
-		time.Now().Add(1 * time.Hour).UTC(),
-		time.Now().Add(2 * time.Hour).Local(),
-		time.Now().Add(3 * time.Hour).In(time.FixedZone("UTC-8", -8*60*60)),
-		time.Now().Add(4 * time.Hour).Local(),
-		time.Now().Add(-1 * time.Hour).UTC(),
-		time.Now().Add(-2 * time.Hour).Local(),
-		time.Now().Add(-3 * time.Hour).UTC(),
-		time.Now().Add(-4 * time.Hour).Local(),
+// TestSlashMeterReplenishTimeCandidate tests the getter and setter for the slash meter replenish time candidate
+func TestSlashMeterReplenishTimeCandidate(t *testing.T) {
+
+	testCases := []struct {
+		blockTime       time.Time
+		replenishPeriod time.Duration
+	}{
+		{time.Now(), time.Hour},
+		{time.Now().Add(1 * time.Hour).UTC(), time.Hour},
+		{time.Now().Add(2 * time.Hour).Local(), 5 * time.Hour},
+		{time.Now().Add(3 * time.Hour).In(time.FixedZone("UTC-8", -8*60*60)), 10 * time.Hour},
+		{time.Now().Add(4 * time.Hour).Local(), 15 * time.Minute},
+		{time.Now().Add(-1 * time.Hour).UTC(), time.Minute},
+		{time.Now().Add(-2 * time.Hour).Local(), 2 * time.Minute},
+		{time.Now().Add(-3 * time.Hour).UTC(), 3 * time.Minute},
+		{time.Now().Add(-4 * time.Hour).Local(), 4 * time.Minute},
 	}
 
 	for _, tc := range testCases {
@@ -1194,10 +1294,16 @@ func TestLastSlashMeterFullTime(t *testing.T) {
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
-		providerKeeper.SetLastSlashMeterFullTime(ctx, tc)
-		gotTime := providerKeeper.GetLastSlashMeterFullTime(ctx)
+		ctx = ctx.WithBlockTime(tc.blockTime)
+		params := providertypes.DefaultParams()
+		params.SlashMeterReplenishPeriod = tc.replenishPeriod
+		providerKeeper.SetParams(ctx, params)
+
+		providerKeeper.SetSlashMeterReplenishTimeCandidate(ctx)
+		gotTime := providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx)
+
 		// Time should be returned in UTC
-		require.Equal(t, tc.UTC(), gotTime)
+		require.Equal(t, tc.blockTime.Add(tc.replenishPeriod).UTC(), gotTime)
 	}
 }
 

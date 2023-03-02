@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -11,12 +12,12 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -38,6 +39,7 @@ type Keeper struct {
 	clientKeeper     ccv.ClientKeeper
 	stakingKeeper    ccv.StakingKeeper
 	slashingKeeper   ccv.SlashingKeeper
+	evidenceKeeper   ccv.EvidenceKeeper
 	feeCollectorName string
 }
 
@@ -47,14 +49,15 @@ func NewKeeper(
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
-	accountKeeper ccv.AccountKeeper, feeCollectorName string,
+	accountKeeper ccv.AccountKeeper, evidenceKeeper ccv.EvidenceKeeper,
+	feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return Keeper{
+	k := Keeper{
 		cdc:              cdc,
 		storeKey:         key,
 		paramSpace:       paramSpace,
@@ -66,7 +69,61 @@ func NewKeeper(
 		clientKeeper:     clientKeeper,
 		stakingKeeper:    stakingKeeper,
 		slashingKeeper:   slashingKeeper,
+		evidenceKeeper:   evidenceKeeper,
 		feeCollectorName: feeCollectorName,
+	}
+
+	k.mustValidateFields()
+	return k
+}
+
+// Validates that the provider keeper is initialized with non-zero and
+// non-nil values for all its fields. Otherwise this method will panic.
+func (k Keeper) mustValidateFields() {
+
+	// Ensures no fields are missed in this validation
+	if reflect.ValueOf(k).NumField() != 13 {
+		panic("number of fields in provider keeper is not 13")
+	}
+
+	if reflect.ValueOf(k.cdc).IsZero() { // 1
+		panic("cdc is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.storeKey).IsZero() { // 2
+		panic("storeKey is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.paramSpace).IsZero() { // 3
+		panic("paramSpace is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.scopedKeeper).IsZero() { // 4
+		panic("scopedKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.channelKeeper).IsZero() { // 5
+		panic("channelKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.portKeeper).IsZero() { // 6
+		panic("portKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.connectionKeeper).IsZero() { // 7
+		panic("connectionKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.accountKeeper).IsZero() { // 8
+		panic("accountKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.clientKeeper).IsZero() { // 9
+		panic("clientKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.stakingKeeper).IsZero() { // 10
+		panic("stakingKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.slashingKeeper).IsZero() { // 11
+		panic("slashingKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.evidenceKeeper).IsZero() { // 12
+		panic("evidenceKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.feeCollectorName).IsZero() { // 13
+		panic("feeCollectorName is zero-valued or nil")
 	}
 }
 
@@ -226,6 +283,8 @@ func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (consumertyp
 
 	var data consumertypes.GenesisState
 	if err := data.Unmarshal(bz); err != nil {
+		// An error here would indicate something is very wrong,
+		// the ConsumerGenesis is assumed to be correctly serialized in SetConsumerGenesis.
 		panic(fmt.Errorf("consumer genesis could not be unmarshaled: %w", err))
 	}
 	return data, true
@@ -316,6 +375,10 @@ func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp types.UnbondingOp) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := unbondingOp.Marshal()
 	if err != nil {
+		// An error here would indicate something is very wrong,
+		// unbondingOp is either instantiated in AfterUnbondingInitiated,
+		// updated correctly by RemoveConsumerFromUnbondingOp,
+		// or set during InitGenesis.
 		panic(fmt.Errorf("unbonding op could not be marshaled: %w", err))
 	}
 	store.Set(types.UnbondingOpKey(unbondingOp.Id), bz)
@@ -331,6 +394,8 @@ func (k Keeper) GetUnbondingOp(ctx sdk.Context, id uint64) (types.UnbondingOp, b
 
 	var unbondingOp types.UnbondingOp
 	if err := unbondingOp.Unmarshal(bz); err != nil {
+		// An error here would indicate something is very wrong,
+		// the UnbondingOp is assumed to be correctly serialized in SetUnbondingOp.
 		panic(fmt.Errorf("failed to unmarshal UnbondingOp: %w", err))
 	}
 
@@ -359,10 +424,14 @@ func (k Keeper) GetAllUnbondingOps(ctx sdk.Context) (ops []types.UnbondingOp) {
 		id := binary.BigEndian.Uint64(iterator.Key()[1:])
 		bz := iterator.Value()
 		if bz == nil {
+			// An error here would indicate something is very wrong,
+			// the UnbondingOp is assumed to be correctly set in SetUnbondingOp.
 			panic(fmt.Errorf("unbonding operation is nil for id %d", id))
 		}
 		var unbondingOp types.UnbondingOp
 		if err := unbondingOp.Unmarshal(bz); err != nil {
+			// An error here would indicate something is very wrong,
+			// the UnbondingOp is assumed to be correctly serialized in SetUnbondingOp.
 			panic(fmt.Errorf("failed to unmarshal UnbondingOp: %w", err))
 		}
 
@@ -370,6 +439,45 @@ func (k Keeper) GetAllUnbondingOps(ctx sdk.Context) (ops []types.UnbondingOp) {
 	}
 
 	return ops
+}
+
+// RemoveConsumerFromUnbondingOp removes a consumer chain ID that the unbonding op with 'id' is waiting on.
+// The method returns true if the unbonding op can complete. In this case the record is removed from store.
+// The method panics if the unbonding op with 'id' is not found.
+func (k Keeper) RemoveConsumerFromUnbondingOp(ctx sdk.Context, id uint64, chainID string) (canComplete bool) {
+	// Get the unbonding op from store
+	unbondingOp, found := k.GetUnbondingOp(ctx, id)
+	if !found {
+		panic(fmt.Errorf("internal state corrupted; could not find UnbondingOp with ID %d", id))
+	}
+
+	// Remove consumer chain ID from unbonding op
+	var numRemoved int
+	unbondingOp.UnbondingConsumerChains, numRemoved = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
+	if numRemoved > 0 {
+		k.Logger(ctx).Debug("unbonding operation matured on consumer", "chainID", chainID, "opID", id)
+
+		if len(unbondingOp.UnbondingConsumerChains) == 0 {
+			// Delete unbonding op
+			k.DeleteUnbondingOp(ctx, id)
+			// No more consumer chains; the unbonding op can complete
+			canComplete = true
+		} else {
+			// Update unbonding op in store
+			k.SetUnbondingOp(ctx, unbondingOp)
+		}
+	}
+	return
+}
+
+func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
+	for _, y := range slice {
+		if x != y {
+			newSlice = append(newSlice, y)
+		}
+	}
+
+	return newSlice, len(slice) - len(newSlice)
 }
 
 // SetUnbondingOpIndex sets the IDs of unbonding operations that are waiting for
@@ -383,6 +491,8 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint6
 	}
 	bz, err := vscUnbondingOps.Marshal()
 	if err != nil {
+		// An error here would indicate something is very wrong,
+		// vscUnbondingOps is instantiated in this method and should be able to be marshaled.
 		panic(fmt.Errorf("failed to marshal VscUnbondingOps: %w", err))
 	}
 
@@ -404,6 +514,8 @@ func (k Keeper) GetAllUnbondingOpIndexes(ctx sdk.Context, chainID string) (index
 	for ; iterator.Valid(); iterator.Next() {
 		var vscUnbondingOps types.VscUnbondingOps
 		if err := vscUnbondingOps.Unmarshal(iterator.Value()); err != nil {
+			// An error here would indicate something is very wrong,
+			// the VscUnbondingOps are assumed to be correctly serialized in SetUnbondingOpIndex.
 			panic(fmt.Errorf("failed to unmarshal VscUnbondingOps: %w", err))
 		}
 
@@ -428,6 +540,8 @@ func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint6
 
 	var vscUnbondingOps types.VscUnbondingOps
 	if err := vscUnbondingOps.Unmarshal(bz); err != nil {
+		// An error here would indicate something is very wrong,
+		// the VscUnbondingOps are assumed to be correctly serialized in SetUnbondingOpIndex.
 		panic(fmt.Errorf("failed to unmarshal VscUnbondingOps: %w", err))
 	}
 
@@ -442,35 +556,44 @@ func (k Keeper) DeleteUnbondingOpIndex(ctx sdk.Context, chainID string, vscID ui
 }
 
 // GetUnbondingOpsFromIndex gets the unbonding ops waiting for a given chainID and vscID
-func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) (entries []types.UnbondingOp, found bool) {
+func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) (entries []types.UnbondingOp) {
 	ids, found := k.GetUnbondingOpIndex(ctx, chainID, valsetUpdateID)
 	if !found {
-		return entries, false
+		return entries
 	}
 	for _, id := range ids {
 		entry, found := k.GetUnbondingOp(ctx, id)
 		if !found {
+			// An error here would indicate something is very wrong.
+			// Every UnbondingOpIndex is assumed to have the corresponding UnbondingOps set in store.
+			// This is done in AfterUnbondingInitiated and InitGenesis.
 			panic("did not find UnbondingOp according to index- index was probably not correctly updated")
 		}
 		entries = append(entries, entry)
 	}
 
-	return entries, true
+	return entries
 }
 
 // GetMaturedUnbondingOps returns the list of matured unbonding operation ids
-func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64, err error) {
+func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.MaturedUnbondingOpsKey())
 	if bz == nil {
-		return nil, nil
+		// Note that every call to ConsumeMaturedUnbondingOps
+		// deletes the MaturedUnbondingOpsKey, which means that
+		// the first call to GetMaturedUnbondingOps after that
+		// will enter this branch.
+		return nil
 	}
 
 	var ops ccv.MaturedUnbondingOps
 	if err := ops.Unmarshal(bz); err != nil {
-		return nil, err
+		// An error here would indicate something is very wrong,
+		// the MaturedUnbondingOps are assumed to be correctly serialized in AppendMaturedUnbondingOps.
+		panic(fmt.Errorf("failed to unmarshal MaturedUnbondingOps: %w", err))
 	}
-	return ops.GetIds(), nil
+	return ops.GetIds()
 }
 
 // AppendMaturedUnbondingOps adds a list of ids to the list of matured unbonding operation ids
@@ -478,11 +601,7 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) {
 	if len(ids) == 0 {
 		return
 	}
-	existingIds, err := k.GetMaturedUnbondingOps(ctx)
-	if err != nil {
-		panic(fmt.Sprintf("failed to get matured unbonding operations: %s", err))
-	}
-
+	existingIds := k.GetMaturedUnbondingOps(ctx)
 	maturedOps := ccv.MaturedUnbondingOps{
 		Ids: append(existingIds, ids...),
 	}
@@ -490,20 +609,19 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := maturedOps.Marshal()
 	if err != nil {
+		// An error here would indicate something is very wrong,
+		// maturedOps is instantiated in this method and should be able to be marshaled.
 		panic(fmt.Sprintf("failed to marshal matured unbonding operations: %s", err))
 	}
 	store.Set(types.MaturedUnbondingOpsKey(), bz)
 }
 
 // ConsumeMaturedUnbondingOps empties and returns list of matured unbonding operation ids (if it exists)
-func (k Keeper) ConsumeMaturedUnbondingOps(ctx sdk.Context) ([]uint64, error) {
-	ids, err := k.GetMaturedUnbondingOps(ctx)
-	if err != nil {
-		return nil, err
-	}
+func (k Keeper) ConsumeMaturedUnbondingOps(ctx sdk.Context) []uint64 {
+	ids := k.GetMaturedUnbondingOps(ctx)
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.MaturedUnbondingOpsKey())
-	return ids, nil
+	return ids
 }
 
 // Retrieves the underlying client state corresponding to a connection ID.
@@ -624,7 +742,9 @@ func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 	}
 	bz, err := sa.Marshal()
 	if err != nil {
-		panic("failed to marshal SlashAcks")
+		// An error here would indicate something is very wrong,
+		// sa is instantiated in this method and should be able to be marshaled.
+		panic(fmt.Errorf("failed to marshal SlashAcks: %w", err))
 	}
 	store.Set(types.SlashAcksKey(chainID), bz)
 }
@@ -638,7 +758,9 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	}
 	var acks types.SlashAcks
 	if err := acks.Unmarshal(bz); err != nil {
-		panic(fmt.Errorf("failed to decode json: %w", err))
+		// An error here would indicate something is very wrong,
+		// the SlashAcks are assumed to be correctly serialized in SetSlashAcks.
+		panic(fmt.Errorf("failed to unmarshal SlashAcks: %w", err))
 	}
 
 	return acks.GetAddresses()
@@ -653,6 +775,12 @@ func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []string
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.SlashAcksKey(chainID))
 	return
+}
+
+// DeleteSlashAcks deletes the slash acks for a given chain ID
+func (k Keeper) DeleteSlashAcks(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.SlashAcksKey(chainID))
 }
 
 // AppendSlashAck appends the given slash ack to the given chain ID slash acks in store
@@ -698,6 +826,8 @@ func (k Keeper) GetPendingVSCPackets(ctx sdk.Context, chainID string) []ccv.Vali
 		return []ccv.ValidatorSetChangePacketData{}
 	}
 	if err := packets.Unmarshal(bz); err != nil {
+		// An error here would indicate something is very wrong,
+		// the PendingVSCPackets are assumed to be correctly serialized in AppendPendingVSCPackets.
 		panic(fmt.Errorf("cannot unmarshal pending validator set changes: %w", err))
 	}
 	return packets.GetList()
@@ -712,6 +842,8 @@ func (k Keeper) AppendPendingVSCPackets(ctx sdk.Context, chainID string, newPack
 	packets := ccv.ValidatorSetChangePackets{List: pds}
 	buf, err := packets.Marshal()
 	if err != nil {
+		// An error here would indicate something is very wrong,
+		// packets is instantiated in this method and should be able to be marshaled.
 		panic(fmt.Errorf("cannot marshal pending validator set changes: %w", err))
 	}
 	store.Set(types.PendingVSCsKey(chainID), buf)
@@ -847,10 +979,14 @@ func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSen
 	for ; iterator.Valid(); iterator.Next() {
 		_, vscID, err := types.ParseVscSendingTimestampKey(iterator.Key())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the store key is assumed to be correctly serialized in SetVscSendTimestamp.
 			panic(fmt.Errorf("failed to parse VscSendTimestampKey: %w", err))
 		}
 		ts, err := sdk.ParseTimeBytes(iterator.Value())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the timestamp is assumed to be correctly serialized in SetVscSendTimestamp.
 			panic(fmt.Errorf("failed to parse timestamp value: %w", err))
 		}
 
@@ -863,6 +999,23 @@ func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSen
 	return vscSendTimestamps
 }
 
+// DeleteVscSendTimestampsForConsumer deletes all VSC send timestamps for a given consumer chain
+func (k Keeper) DeleteVscSendTimestampsForConsumer(ctx sdk.Context, consumerChainID string) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, consumerChainID))
+	defer iterator.Close()
+
+	keysToDel := [][]byte{}
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+
+	// Delete data for this consumer
+	for _, key := range keysToDel {
+		store.Delete(key)
+	}
+}
+
 // GetFirstVscSendTimestamp gets the vsc send timestamp with the lowest vscID for the given chainID.
 func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSendTimestamp types.VscSendTimestamp, found bool) {
 	store := ctx.KVStore(k.storeKey)
@@ -872,10 +1025,14 @@ func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSe
 	if iterator.Valid() {
 		_, vscID, err := types.ParseVscSendingTimestampKey(iterator.Key())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the store key is assumed to be correctly serialized in SetVscSendTimestamp.
 			panic(fmt.Errorf("failed to parse VscSendTimestampKey: %w", err))
 		}
 		ts, err := sdk.ParseTimeBytes(iterator.Value())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the timestamp is assumed to be correctly serialized in SetVscSendTimestamp.
 			panic(fmt.Errorf("failed to parse timestamp value: %w", err))
 		}
 
@@ -886,4 +1043,26 @@ func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSe
 	}
 
 	return types.VscSendTimestamp{}, false
+}
+
+// SetSlashLog updates validator's slash log for a consumer chain
+// If an entry exists for a given validator address, at least one
+// double signing slash packet was received by the provider from at least one consumer chain
+func (k Keeper) SetSlashLog(
+	ctx sdk.Context,
+	providerAddr sdk.ConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.SlashLogKey(providerAddr), []byte{})
+}
+
+// GetSlashLog returns a validator's slash log status
+// True will be returned if an entry exists for a given validator address
+func (k Keeper) GetSlashLog(
+	ctx sdk.Context,
+	providerAddr sdk.ConsAddress,
+) (found bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.SlashLogKey(providerAddr))
+	return bz != nil
 }

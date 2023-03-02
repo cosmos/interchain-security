@@ -2,10 +2,12 @@ package core
 
 import (
 	"bytes"
+	cryptoEd25519 "crypto/ed25519"
 	"encoding/json"
 	"time"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -16,21 +18,16 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/ibc-go/v3/testing/mock"
-
-	ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	cryptoEd25519 "crypto/ed25519"
-
-	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	"github.com/cosmos/ibc-go/v4/testing/mock"
 
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -43,67 +40,55 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 
-	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 type Builder struct {
-	suite          *suite.Suite
-	link           simibc.OrderedLink
-	path           *ibctesting.Path
-	coordinator    *ibctesting.Coordinator
-	clientHeaders  map[string][]*ibctmtypes.Header
-	mustBeginBlock map[string]bool
-	valAddresses   []sdk.ValAddress
-	initState      InitState
+	suite        *suite.Suite
+	path         *ibctesting.Path
+	coordinator  *ibctesting.Coordinator
+	valAddresses []sdk.ValAddress
+	initState    InitState
 }
 
-func (b *Builder) ctx(chain string) sdk.Context {
-	return b.chain(chain).GetContext()
-}
-
-func (b *Builder) chainID(chain string) string {
-	return map[string]string{P: ibctesting.GetChainID(0), C: ibctesting.GetChainID(1)}[chain]
-}
-
-func (b *Builder) otherID(chainID string) string {
-	return map[string]string{ibctesting.GetChainID(0): ibctesting.GetChainID(1), ibctesting.GetChainID(1): ibctesting.GetChainID(0)}[chainID]
-}
-
-func (b *Builder) chain(chain string) *ibctesting.TestChain {
-	return map[string]*ibctesting.TestChain{P: b.providerChain(), C: b.consumerChain()}[chain]
-}
-
-func (b *Builder) providerChain() *ibctesting.TestChain {
+func (b *Builder) provider() *ibctesting.TestChain {
 	return b.coordinator.GetChain(ibctesting.GetChainID(0))
 }
 
-func (b *Builder) consumerChain() *ibctesting.TestChain {
+func (b *Builder) consumer() *ibctesting.TestChain {
 	return b.coordinator.GetChain(ibctesting.GetChainID(1))
 }
 
+func (b *Builder) providerCtx() sdk.Context {
+	return b.provider().GetContext()
+}
+
+func (b *Builder) consumerCtx() sdk.Context {
+	return b.consumer().GetContext()
+}
+
 func (b *Builder) providerStakingKeeper() stakingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).StakingKeeper
+	return b.provider().App.(*appProvider.App).StakingKeeper
 }
 
 func (b *Builder) providerSlashingKeeper() slashingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).SlashingKeeper
+	return b.provider().App.(*appProvider.App).SlashingKeeper
 }
 
 func (b *Builder) providerKeeper() providerkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).ProviderKeeper
+	return b.provider().App.(*appProvider.App).ProviderKeeper
 }
 
 func (b *Builder) consumerKeeper() consumerkeeper.Keeper {
-	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
+	return b.consumer().App.(*appConsumer.App).ConsumerKeeper
 }
 
-func (b *Builder) endpointFromID(chainID string) *ibctesting.Endpoint {
-	return map[string]*ibctesting.Endpoint{ibctesting.GetChainID(0): b.path.EndpointB, ibctesting.GetChainID(1): b.path.EndpointA}[chainID]
+func (b *Builder) providerEndpoint() *ibctesting.Endpoint {
+	return b.path.EndpointB
 }
 
-func (b *Builder) endpoint(chain string) *ibctesting.Endpoint {
-	return map[string]*ibctesting.Endpoint{P: b.path.EndpointB, C: b.path.EndpointA}[chain]
+func (b *Builder) consumerEndpoint() *ibctesting.Endpoint {
+	return b.path.EndpointA
 }
 
 func (b *Builder) validator(i int64) sdk.ValAddress {
@@ -117,19 +102,22 @@ func (b *Builder) consAddr(i int64) sdk.ConsAddress {
 // getValidatorPK returns the validator private key using the given seed index
 func (b *Builder) getValidatorPK(seedIx int) mock.PV {
 	seed := []byte(b.initState.PKSeeds[seedIx])
-	//lint:ignore SA1019 We don't care because this is only a test.
-	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}} //nolint:staticcheck // we want to use these ed25519 keys here
+	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 }
 
-func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingApp, genesis map[string]json.RawMessage,
+func (b *Builder) getAppBytesAndSenders(
+	chainID string,
+	app ibctesting.TestingApp,
+	genesis map[string]json.RawMessage,
 	validators *tmtypes.ValidatorSet,
 ) ([]byte, []ibctesting.SenderAccount) {
+
 	accounts := []authtypes.GenesisAccount{}
 	balances := []banktypes.Balance{}
 	senderAccounts := []ibctesting.SenderAccount{}
 
 	// Create genesis accounts.
-	for i := 0; i < 2; i++ {
+	for i := 0; i < b.initState.MaxValidators; i++ {
 		pk := secp256k1.GenPrivKey()
 		acc := authtypes.NewBaseAccount(pk.PubKey().Address().Bytes(), pk.PubKey(), uint64(i), 0)
 
@@ -248,9 +236,14 @@ func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingAp
 	return stateBytes, senderAccounts
 }
 
-func (b *Builder) newChain(coord *ibctesting.Coordinator, appInit ibctesting.AppIniter, chainID string,
-	validators *tmtypes.ValidatorSet, signers map[string]tmtypes.PrivValidator,
+func (b *Builder) newChain(
+	coord *ibctesting.Coordinator,
+	appInit ibctesting.AppIniter,
+	chainID string,
+	validators *tmtypes.ValidatorSet,
+	signers map[string]tmtypes.PrivValidator,
 ) *ibctesting.TestChain {
+
 	app, genesis := appInit()
 
 	stateBytes, senderAccounts := b.getAppBytesAndSenders(chainID, app, genesis, validators)
@@ -259,7 +252,7 @@ func (b *Builder) newChain(coord *ibctesting.Coordinator, appInit ibctesting.App
 		abci.RequestInitChain{
 			ChainId:         chainID,
 			Validators:      []abci.ValidatorUpdate{},
-			ConsensusParams: initState.ConsensusParams,
+			ConsensusParams: b.initState.ConsensusParams,
 			AppStateBytes:   stateBytes,
 		},
 	)
@@ -333,7 +326,8 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 	return tmtypes.NewValidatorSet(validators), signers, addresses
 }
 
-func (b *Builder) createChains() {
+func (b *Builder) createProviderAndConsumer() {
+
 	coordinator := ibctesting.NewCoordinator(b.suite.T(), 0)
 
 	// Create validators
@@ -347,37 +341,18 @@ func (b *Builder) createChains() {
 	b.valAddresses = addresses
 }
 
-// createValidator creates an additional validator with zero commission
-// and zero tokens (zero voting power).
-func (b *Builder) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.ValAddress) {
-	privVal := b.getValidatorPK(seedIx)
-	pubKey, err := privVal.GetPubKey()
-	b.suite.Require().NoError(err)
-	val := tmtypes.NewValidator(pubKey, 0)
-	addr, err := sdk.ValAddressFromHex(val.Address.String())
-	b.suite.Require().NoError(err)
-	PK := privVal.PrivKey.PubKey()
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
-	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{},
-		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
-	b.suite.Require().NoError(err)
-	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
-	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.ctx(P)), msg)
-	return privVal, addr
-}
-
 // setSigningInfos sets the validator signing info in the provider Slashing module
 func (b *Builder) setSigningInfos() {
-	for i := 0; i < 4; i++ { // TODO: unhardcode
+	for i := 0; i < b.initState.NumValidators; i++ {
 		info := slashingtypes.NewValidatorSigningInfo(
 			b.consAddr(int64(i)),
-			b.chain(P).CurrentHeader.GetHeight(),
+			b.provider().CurrentHeader.GetHeight(),
 			0,
 			time.Unix(0, 0),
 			false,
 			0,
 		)
-		b.providerSlashingKeeper().SetValidatorSigningInfo(b.ctx(P), b.consAddr(int64(i)), info)
+		b.providerSlashingKeeper().SetValidatorSigningInfo(b.providerCtx(), b.consAddr(int64(i)), info)
 	}
 }
 
@@ -385,8 +360,8 @@ func (b *Builder) setSigningInfos() {
 // the staking module match the ordering of validators in the model.
 func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
 	check := func(lesser sdk.ValAddress, greater sdk.ValAddress) {
-		lesserV, _ := b.providerStakingKeeper().GetValidator(b.ctx(P), lesser)
-		greaterV, _ := b.providerStakingKeeper().GetValidator(b.ctx(P), greater)
+		lesserV, _ := b.providerStakingKeeper().GetValidator(b.providerCtx(), lesser)
+		greaterV, _ := b.providerStakingKeeper().GetValidator(b.providerCtx(), greater)
 		lesserKey := stakingtypes.GetValidatorsByPowerIndexKey(lesserV, sdk.DefaultPowerReduction)
 		greaterKey := stakingtypes.GetValidatorsByPowerIndexKey(greaterV, sdk.DefaultPowerReduction)
 		// The result will be 0 if a==b, -1 if a < b, and +1 if a > b.
@@ -412,23 +387,56 @@ func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
 // delegate is used to delegate tokens to newly created
 // validators in the setup process.
 func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
-	d := b.providerChain().SenderAccounts[del].SenderAccount.GetAddress()
+	d := b.provider().SenderAccounts[del].SenderAccount.GetAddress()
 	coins := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	msg := stakingtypes.NewMsgDelegate(d, val, coins)
 	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
-	_, err := pskServer.Delegate(sdk.WrapSDKContext(b.ctx(P)), msg)
+	_, err := pskServer.Delegate(sdk.WrapSDKContext(b.providerCtx()), msg)
 	b.suite.Require().NoError(err)
 }
 
-func (b *Builder) addExtraValidators() {
+// addValidatorToStakingModule creates an additional validator with zero commission
+// and zero tokens (zero voting power).
+func (b *Builder) addValidatorToStakingModule(privVal mock.PV) {
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
+
+	pubKey, err := privVal.GetPubKey()
+	require.NoError(b.suite.T(), err)
+
+	// Compute address
+	addr, err := sdk.ValAddressFromHex(pubKey.Address().String())
+	require.NoError(b.suite.T(), err)
+
+	sdkPK, err := cryptocodec.FromTmPubKeyInterface(pubKey)
+	require.NoError(b.suite.T(), err)
+
+	msg, err := stakingtypes.NewMsgCreateValidator(
+		addr,
+		sdkPK,
+		coin,
+		stakingtypes.Description{},
+		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
+		sdk.ZeroInt())
+	b.suite.Require().NoError(err)
+	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
+	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.providerCtx()), msg)
+}
+
+func (b *Builder) addExtraProviderValidators() {
+
 	for i, status := range b.initState.ValStates.Status {
 		if status == stakingtypes.Unbonded {
-			val, addr := b.createValidator(i)
-			pubKey, err := val.GetPubKey()
-			b.suite.Require().Nil(err)
+			privVal := b.getValidatorPK(i)
+			b.addValidatorToStakingModule(privVal)
+			pubKey, err := privVal.GetPubKey()
+			require.NoError(b.suite.T(), err)
+
+			addr, err := sdk.ValAddressFromHex(pubKey.Address().String())
+			require.NoError(b.suite.T(), err)
+
 			b.valAddresses = append(b.valAddresses, addr)
-			b.providerChain().Signers[pubKey.Address().String()] = val
-			b.consumerChain().Signers[pubKey.Address().String()] = val
+			b.provider().Signers[pubKey.Address().String()] = privVal
+			b.consumer().Signers[pubKey.Address().String()] = privVal
 		}
 	}
 
@@ -446,25 +454,59 @@ func (b *Builder) addExtraValidators() {
 	}
 }
 
-func (b *Builder) setSlashParams() {
+func (b *Builder) setProviderParams() {
 	// Set the slash factors on the provider to match the model
-	sparams := b.providerSlashingKeeper().GetParams(b.ctx(P))
-	sparams.SlashFractionDoubleSign = b.initState.SlashDoublesign
-	sparams.SlashFractionDowntime = b.initState.SlashDowntime
-	b.providerSlashingKeeper().SetParams(b.ctx(P), sparams)
+	slash := b.providerSlashingKeeper().GetParams(b.providerCtx())
+	slash.SlashFractionDoubleSign = b.initState.SlashDoublesign
+	slash.SlashFractionDowntime = b.initState.SlashDowntime
+	b.providerSlashingKeeper().SetParams(b.providerCtx(), slash)
+
+	// Set the throttle factors
+	throttle := b.providerKeeper().GetParams(b.providerCtx())
+	throttle.SlashMeterReplenishFraction = "1.0"
+	throttle.SlashMeterReplenishPeriod = time.Second * 1
+	b.providerKeeper().SetParams(b.providerCtx(), throttle)
 }
 
-func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *consumertypes.GenesisState {
-	// Create Provider client
-	providerClient := ibctmtypes.NewClientState(
-		b.providerChain().ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
-		b.providerChain().LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
-		[]string{"upgrade", "upgradedIBCState"}, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
-	)
-	providerConsState := b.providerChain().LastHeader.ConsensusState()
+func (b *Builder) configurePath() {
+	b.path = ibctesting.NewPath(b.consumer(), b.provider())
+	b.consumerEndpoint().ChannelConfig.PortID = ccv.ConsumerPortID
+	b.providerEndpoint().ChannelConfig.PortID = ccv.ProviderPortID
+	b.consumerEndpoint().ChannelConfig.Version = ccv.Version
+	b.providerEndpoint().ChannelConfig.Version = ccv.Version
+	b.consumerEndpoint().ChannelConfig.Order = channeltypes.ORDERED
+	b.providerEndpoint().ChannelConfig.Order = channeltypes.ORDERED
+}
 
-	// Create Consumer genesis
-	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.providerChain().Vals)
+func (b *Builder) createProvidersLocalClient() {
+	// Configure and create the consumer Client
+	tmCfg := b.providerEndpoint().ClientConfig.(*ibctesting.TendermintConfig)
+	tmCfg.UnbondingPeriod = b.initState.UnbondingC
+	tmCfg.TrustingPeriod = b.initState.Trusting
+	tmCfg.MaxClockDrift = b.initState.MaxClockDrift
+	err := b.providerEndpoint().CreateClient()
+	b.suite.Require().NoError(err)
+	// Create the Consumer chain ID mapping in the provider state
+	b.providerKeeper().SetConsumerClientId(b.providerCtx(), b.consumer().ChainID, b.providerEndpoint().ClientID)
+}
+
+func (b *Builder) createConsumersLocalClientGenesis() *ibctmtypes.ClientState {
+	tmCfg := b.consumerEndpoint().ClientConfig.(*ibctesting.TendermintConfig)
+	tmCfg.UnbondingPeriod = b.initState.UnbondingP
+	tmCfg.TrustingPeriod = b.initState.Trusting
+	tmCfg.MaxClockDrift = b.initState.MaxClockDrift
+
+	return ibctmtypes.NewClientState(
+		b.provider().ChainID, tmCfg.TrustLevel, tmCfg.TrustingPeriod, tmCfg.UnbondingPeriod, tmCfg.MaxClockDrift,
+		b.provider().LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
+		[]string{"upgrade", "upgradedIBCState"}, tmCfg.AllowUpdateAfterExpiry, tmCfg.AllowUpdateAfterMisbehaviour,
+	)
+}
+
+func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consumertypes.GenesisState {
+	providerConsState := b.provider().LastHeader.ConsensusState()
+
+	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.provider().Vals)
 	params := consumertypes.NewParams(
 		true,
 		1000, // ignore distribution
@@ -474,295 +516,87 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		consumertypes.DefaultTransferTimeoutPeriod,
 		consumertypes.DefaultConsumerRedistributeFrac,
 		consumertypes.DefaultHistoricalEntries,
-		consumertypes.DefaultConsumerUnbondingPeriod,
+		b.initState.UnbondingC,
 	)
-	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, params)
-}
-
-func (b *Builder) createLink() {
-	b.link = simibc.MakeOrderedLink()
-	// init utility data structures
-	b.mustBeginBlock = map[string]bool{P: true, C: true}
-	b.clientHeaders = map[string][]*ibctmtypes.Header{}
-	for chainID := range b.coordinator.Chains {
-		b.clientHeaders[chainID] = []*ibctmtypes.Header{}
-	}
-}
-
-func (b *Builder) doIBCHandshake() {
-	// Configure the ibc path
-	b.path = ibctesting.NewPath(b.consumerChain(), b.providerChain())
-	b.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
-	b.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
-	b.path.EndpointA.ChannelConfig.Version = ccv.Version
-	b.path.EndpointB.ChannelConfig.Version = ccv.Version
-	b.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
-	b.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-
-	providerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
-	if !ok {
-		panic("must already have provider client on consumer chain")
-	}
-	b.path.EndpointA.ClientID = providerClientID
-
-	// Configure and create the consumer Client
-	tmConfig := b.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
-	tmConfig.UnbondingPeriod = b.initState.UnbondingC
-	tmConfig.TrustingPeriod = b.initState.Trusting
-	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
-	err := b.path.EndpointB.CreateClient()
-	b.suite.Require().NoError(err)
-
-	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.path.EndpointB.ClientID)
-
-	// Handshake
-	b.coordinator.CreateConnections(b.path)
-	b.coordinator.CreateChannels(b.path)
-}
-
-// Manually construct and send an empty VSC packet from the provider
-// to the consumer. This is necessary to complete the handshake, and thus
-// match the model init state, without any additional validator power changes.
-func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
-	vscID := b.providerKeeper().GetValidatorSetUpdateId(b.providerChain().GetContext())
-
-	timeout := uint64(b.chain(P).CurrentHeader.Time.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
-
-	pd := ccv.NewValidatorSetChangePacketData(
-		[]abci.ValidatorUpdate{},
-		vscID,
-		nil,
-	)
-
-	seq, ok := b.providerChain().App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
-		b.ctx(P), ccv.ProviderPortID, b.path.EndpointB.ChannelID)
-
-	b.suite.Require().True(ok)
-
-	packet := channeltypes.NewPacket(pd.GetBytes(), seq, ccv.ProviderPortID, b.endpoint(P).ChannelID,
-		ccv.ConsumerPortID, b.endpoint(C).ChannelID, clienttypes.Height{}, timeout)
-
-	channelCap := b.endpoint(P).Chain.GetChannelCapability(packet.GetSourcePort(), packet.GetSourceChannel())
-
-	err := b.endpoint(P).Chain.App.GetIBCKeeper().ChannelKeeper.SendPacket(b.ctx(P), channelCap, packet)
-
-	b.suite.Require().NoError(err)
-
-	// Double commit the packet
-	b.endBlock(b.chainID(P))
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
-	b.beginBlock(b.chainID(P))
-	b.endBlock(b.chainID(P))
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
-	b.mustBeginBlock[P] = true
-
-	b.updateClient(b.chainID(C))
-
-	ack, err := simibc.TryRecvPacket(b.endpoint(P), b.endpoint(C), packet)
-
-	b.link.AddAck(b.chainID(C), ack, packet)
-
-	b.suite.Require().NoError(err)
-}
-
-// idempotentBeginBlock begins a new block on chain
-// if it is necessary to do so.
-func (b *Builder) idempotentBeginBlock(chain string) {
-	if b.mustBeginBlock[chain] {
-		b.mustBeginBlock[chain] = false
-		b.beginBlock(b.chainID(chain))
-		b.updateClient(b.chainID(chain))
-	}
-}
-
-func (b *Builder) beginBlock(chainID string) {
-	c := b.coordinator.GetChain(chainID)
-	c.CurrentHeader = tmproto.Header{
-		ChainID:            c.ChainID,
-		Height:             c.App.LastBlockHeight() + 1,
-		AppHash:            c.App.LastCommitID().Hash,
-		Time:               b.coordinator.CurrentTime,
-		ValidatorsHash:     c.Vals.Hash(),
-		NextValidatorsHash: c.NextVals.Hash(),
-	}
-	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
-}
-
-func (b *Builder) updateClient(chainID string) {
-	for _, header := range b.clientHeaders[b.otherID(chainID)] {
-		err := simibc.UpdateReceiverClient(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), header)
-		if err != nil {
-			b.coordinator.Fatal("updateClient")
-		}
-	}
-	b.clientHeaders[b.otherID(chainID)] = []*ibctmtypes.Header{}
-}
-
-func (b *Builder) deliver(chainID string) {
-	packets := b.link.ConsumePackets(b.otherID(chainID), 1)
-	for _, p := range packets {
-		receiver := b.endpointFromID(chainID)
-		sender := receiver.Counterparty
-		ack, err := simibc.TryRecvPacket(sender, receiver, p.Packet)
-		if err != nil {
-			b.coordinator.Fatal("deliver")
-		}
-		b.link.AddAck(chainID, ack, p.Packet)
-	}
-}
-
-func (b *Builder) deliverAcks(chainID string) {
-	for _, ack := range b.link.ConsumeAcks(b.otherID(chainID), 999999) {
-		err := simibc.TryRecvAck(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), ack.Packet, ack.Ack)
-		if err != nil {
-			b.coordinator.Fatal("deliverAcks")
-		}
-	}
-}
-
-func (b *Builder) endBlock(chainID string) {
-	c := b.coordinator.GetChain(chainID)
-
-	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
-
-	c.App.Commit()
-
-	c.Vals = c.NextVals
-
-	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
-
-	c.LastHeader = c.CurrentTMClientHeader()
-	// Store header to be used in UpdateClient
-	b.clientHeaders[chainID] = append(b.clientHeaders[chainID], c.LastHeader)
-
-	for _, e := range ebRes.Events {
-		if e.Type == channeltypes.EventTypeSendPacket {
-			packet, _ := channelkeeper.ReconstructPacketFromEvent(e)
-			// Collect packets
-			b.link.AddPacket(chainID, packet)
-		}
-	}
-
-	// Commit packets emitted up to this point
-	b.link.Commit(chainID)
-
-	newT := b.coordinator.CurrentTime.Add(b.initState.BlockSeconds).UTC()
-
-	// increment the current header
-	c.CurrentHeader = tmproto.Header{
-		ChainID:            c.ChainID,
-		Height:             c.App.LastBlockHeight() + 1,
-		AppHash:            c.App.LastCommitID().Hash,
-		Time:               newT,
-		ValidatorsHash:     c.Vals.Hash(),
-		NextValidatorsHash: c.NextVals.Hash(),
-	}
-
-	c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
-}
-
-func (b *Builder) build() {
-	b.createChains()
-
-	b.addExtraValidators()
-
-	// Commit the additional validators
-	b.coordinator.CommitBlock(b.providerChain())
-
-	b.setSlashParams()
-
-	// TODO: tidy up before merging into main
-	prams := b.providerKeeper().GetParams(b.ctx(P))
-	prams.SlashMeterReplenishFraction = "1.0"
-	prams.SlashMeterReplenishPeriod = time.Second * 1
-	b.providerKeeper().SetParams(b.ctx(P), prams)
-	b.providerKeeper().InitializeSlashMeter(b.ctx(P))
-
-	// Set light client params to match model
-	tmConfig := ibctesting.NewTendermintConfig()
-	tmConfig.UnbondingPeriod = b.initState.UnbondingP
-	tmConfig.TrustingPeriod = b.initState.Trusting
-	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
-
-	// Init consumer
-	b.consumerKeeper().InitGenesis(b.ctx(C), b.createConsumerGenesis(tmConfig))
-
-	// Create a simulated network link link
-	b.createLink()
-
-	// Set the unbonding time on the consumer to the model value
-	b.consumerKeeper().SetUnbondingPeriod(b.ctx(C), b.initState.UnbondingC)
-
-	// Establish connection, channel
-	b.doIBCHandshake()
-
-	// Send an empty VSC packet from the provider to the consumer to finish
-	// the handshake. This is necessary because the model starts from a
-	// completely initialized state, with a completed handshake.
-	b.sendEmptyVSCPacketToFinishHandshake()
-
-	// Catch up consumer to have the same height and timestamp as provider
-	b.endBlock(b.chainID(C))
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
-	b.beginBlock(b.chainID(C))
-	b.endBlock(b.chainID(C))
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
-	b.beginBlock(b.chainID(C))
-	b.endBlock(b.chainID(C))
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
-	b.mustBeginBlock[C] = true
-
-	// Progress chains in unison, allowing first VSC to mature.
-	for i := 0; i < 11; i++ {
-		b.idempotentBeginBlock(P)
-		b.endBlock(b.chainID(P))
-		b.idempotentBeginBlock(C)
-		b.endBlock(b.chainID(C))
-		b.mustBeginBlock = map[string]bool{P: true, C: true}
-		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockSeconds).UTC()
-	}
-
-	b.idempotentBeginBlock(P)
-	// Deliver outstanding ack
-	b.deliverAcks(b.chainID(P))
-	// Deliver the maturity from the first VSC (needed to complete handshake)
-	b.deliver(b.chainID(P))
-
-	for i := 0; i < 2; i++ {
-		b.idempotentBeginBlock(P)
-		b.endBlock(b.chainID(P))
-		b.idempotentBeginBlock(C)
-		b.deliverAcks(b.chainID(C))
-		b.endBlock(b.chainID(C))
-		b.mustBeginBlock = map[string]bool{P: true, C: true}
-		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockSeconds).UTC()
-	}
-
-	b.idempotentBeginBlock(P)
-	b.idempotentBeginBlock(C)
-
-	b.endBlock(b.chainID(P))
-	b.endBlock(b.chainID(C))
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockSeconds).UTC()
-	b.beginBlock(b.chainID(P))
-	b.beginBlock(b.chainID(C))
-	b.updateClient(b.chainID(P))
-	b.updateClient(b.chainID(C))
+	return consumertypes.NewInitialGenesisState(client, providerConsState, valUpdates, params)
 }
 
 // The state of the data returned is equivalent to the state of two chains
 // after a full handshake, but the precise order of steps used to reach the
 // state does not necessarily mimic the order of steps that happen in a
 // live scenario.
-func GetZeroState(suite *suite.Suite, initState InitState) (
-	*ibctesting.Path, []sdk.ValAddress, int64, int64,
-) {
+func GetZeroState(
+	suite *suite.Suite,
+	initState InitState,
+) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted int64, timeLastCommitted int64) {
 	b := Builder{initState: initState, suite: suite}
-	b.build()
-	// Height of the last committed block (current header is not committed)
-	heightLastCommitted := b.chain(P).CurrentHeader.Height - 1
-	// Time of the last committed block (current header is not committed)
-	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(-b.initState.BlockSeconds).Unix()
+
+	b.createProviderAndConsumer()
+
+	b.setProviderParams()
+
+	// This is the simplest way to initialize the slash meter
+	// after a change to the param value.
+	b.providerKeeper().InitializeSlashMeter(b.providerCtx())
+
+	b.addExtraProviderValidators()
+
+	// Commit the additional validators
+	b.coordinator.CommitBlock(b.provider())
+
+	b.configurePath()
+
+	// Create a client for the provider chain to use, using ibc go testing.
+	b.createProvidersLocalClient()
+
+	// Manually create a client for the consumer chain to and bootstrap
+	// via genesis.
+	clientState := b.createConsumersLocalClientGenesis()
+
+	consumerGenesis := b.createConsumerGenesis(clientState)
+
+	b.consumerKeeper().InitGenesis(b.consumerCtx(), consumerGenesis)
+
+	// Client ID is set in InitGenesis and we treat it as a block box. So
+	// must query it to use it with the endpoint.
+	clientID, _ := b.consumerKeeper().GetProviderClientID(b.consumerCtx())
+	b.consumerEndpoint().ClientID = clientID
+
+	// Handshake
+	b.coordinator.CreateConnections(b.path)
+	b.coordinator.CreateChannels(b.path)
+
+	// Usually the consumer sets the channel ID when it receives a first VSC packet
+	// to the provider. For testing purposes, we can set it here. This is because
+	// we model a blank slate: a provider and consumer that have fully established
+	// their channel, and are ready for anything to happen.
+	b.consumerKeeper().SetProviderChannel(b.consumerCtx(), b.consumerEndpoint().ChannelID)
+
+	// Catch up consumer height to provider height. The provider was one ahead
+	// from committing additional validators.
+	simibc.EndBlock(b.consumer(), func() {})
+
+	simibc.BeginBlock(b.consumer(), initState.BlockInterval)
+	simibc.BeginBlock(b.provider(), initState.BlockInterval)
+
+	// Commit a block on both chains, giving us two committed headers from
+	// the same time and height. This is the starting point for all our
+	// data driven testing.
+	lastProviderHeader, _ := simibc.EndBlock(b.provider(), func() {})
+	lastConsumerHeader, _ := simibc.EndBlock(b.consumer(), func() {})
+
+	// Want the height and time of last COMMITTED block
+	heightLastCommitted = b.provider().CurrentHeader.Height
+	timeLastCommitted = b.provider().CurrentHeader.Time.Unix()
+
+	// Get ready to update clients.
+	simibc.BeginBlock(b.provider(), initState.BlockInterval)
+	simibc.BeginBlock(b.consumer(), initState.BlockInterval)
+
+	// Update clients to the latest header. Now everything is ready to go!
+	// Ignore errors for brevity. Everything is checked in Assuptions test.
+	_ = simibc.UpdateReceiverClient(b.consumerEndpoint(), b.providerEndpoint(), lastConsumerHeader)
+	_ = simibc.UpdateReceiverClient(b.providerEndpoint(), b.consumerEndpoint(), lastProviderHeader)
+
 	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
 }

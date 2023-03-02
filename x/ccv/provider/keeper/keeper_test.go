@@ -8,8 +8,9 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
-	ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
+	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
 
+	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -117,6 +118,9 @@ func TestSlashAcks(t *testing.T) {
 
 	for _, c := range chains {
 		require.Equal(t, p, providerKeeper.GetSlashAcks(ctx, c))
+		providerKeeper.DeleteSlashAcks(ctx, c)
+		acks = providerKeeper.GetSlashAcks(ctx, c)
+		require.Len(t, acks, 0)
 	}
 }
 
@@ -260,15 +264,13 @@ func TestMaturedUnbondingOps(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	ids, err := providerKeeper.GetMaturedUnbondingOps(ctx)
-	require.NoError(t, err)
+	ids := providerKeeper.GetMaturedUnbondingOps(ctx)
 	require.Nil(t, ids)
 
 	unbondingOpIds := []uint64{0, 1, 2, 3, 4, 5, 6}
 	providerKeeper.AppendMaturedUnbondingOps(ctx, unbondingOpIds)
 
-	ids, err = providerKeeper.ConsumeMaturedUnbondingOps(ctx)
-	require.NoError(t, err)
+	ids = providerKeeper.ConsumeMaturedUnbondingOps(ctx)
 	require.Equal(t, len(unbondingOpIds), len(ids))
 	for i := 0; i < len(unbondingOpIds); i++ {
 		require.Equal(t, unbondingOpIds[i], ids[i])
@@ -376,11 +378,14 @@ func TestVscSendTimestamp(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, vscSendTimestamp, expectedGetAllOrder[0])
 
-	// delete VSC send timestamps
-	for _, vscSendTimestamp := range providerKeeper.GetAllVscSendTimestamps(ctx, chainID) {
-		providerKeeper.DeleteVscSendTimestamp(ctx, chainID, vscSendTimestamp.VscId)
+	// delete first VSC send timestamp
+	providerKeeper.DeleteVscSendTimestamp(ctx, chainID, vscSendTimestamp.VscId)
+	for _, vst := range providerKeeper.GetAllVscSendTimestamps(ctx, chainID) {
+		require.NotEqual(t, vscSendTimestamp, vst)
 	}
 
+	// delete all VSC send timestamps
+	providerKeeper.DeleteVscSendTimestampsForConsumer(ctx, chainID)
 	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, chainID))
 }
 
@@ -465,4 +470,64 @@ func TestGetAllUnbondingOps(t *testing.T) {
 	result := pk.GetAllUnbondingOps(ctx)
 	require.Len(t, result, len(ops))
 	require.Equal(t, expectedGetAllOrder, result)
+}
+
+// TestRemoveConsumerFromUnbondingOp tests RemoveConsumerFromUnbondingOp behaviour correctness
+func TestRemoveConsumerFromUnbondingOp(t *testing.T) {
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	var expectedID uint64 = 1
+	expectedUnbondingOp := types.UnbondingOp{
+		Id:                      expectedID,
+		UnbondingConsumerChains: []string{"chain-3", "chain-1", "chain-2"},
+	}
+
+	pk.SetUnbondingOp(ctx, expectedUnbondingOp)
+
+	canComplete := pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "chain-1")
+	require.False(t, canComplete)
+	unbondingOp, found := pk.GetUnbondingOp(ctx, expectedID)
+	require.True(t, found)
+	expectedChainIDs := []string{"chain-3", "chain-2"}
+	require.Equal(t, expectedChainIDs, unbondingOp.UnbondingConsumerChains)
+
+	canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "chain-2")
+	require.False(t, canComplete)
+	unbondingOp, found = pk.GetUnbondingOp(ctx, expectedID)
+	require.True(t, found)
+	expectedChainIDs = []string{"chain-3"}
+	require.Equal(t, expectedChainIDs, unbondingOp.UnbondingConsumerChains)
+
+	// check that it doesn't panic when calling with same chain ID
+	canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "chain-2")
+	require.False(t, canComplete)
+	unbondingOp, found = pk.GetUnbondingOp(ctx, expectedID)
+	require.True(t, found)
+	require.Equal(t, expectedChainIDs, unbondingOp.UnbondingConsumerChains)
+
+	canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "chain-3")
+	require.True(t, canComplete)
+	unbondingOp, found = pk.GetUnbondingOp(ctx, expectedID)
+	require.False(t, found)
+	require.Empty(t, unbondingOp.UnbondingConsumerChains)
+
+	// check that it panics when calling with wrong chain IDs
+	require.Panics(t, func() {
+		canComplete = pk.RemoveConsumerFromUnbondingOp(ctx, expectedID, "some_chain")
+		require.False(t, canComplete)
+	})
+}
+
+// TestSetSlashLog tests slash log getter and setter methods
+func TestSetSlashLog(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	addrWithDoubleSigns := cryptotestutil.NewCryptoIdentityFromIntSeed(1).SDKValConsAddress()
+	addrWithoutDoubleSigns := cryptotestutil.NewCryptoIdentityFromIntSeed(2).SDKValConsAddress()
+
+	providerKeeper.SetSlashLog(ctx, addrWithDoubleSigns)
+	require.True(t, providerKeeper.GetSlashLog(ctx, addrWithDoubleSigns))
+	require.False(t, providerKeeper.GetSlashLog(ctx, addrWithoutDoubleSigns))
 }

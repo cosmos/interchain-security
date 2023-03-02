@@ -4,35 +4,42 @@ import (
 	"testing"
 	"time"
 
-	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/ibc-go/v3/testing"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 )
 
-// RelayedPath augments ibctesting.Path, giving fine-grained control
-// over delivery of client updates, packet and ack delivery, and
-// chain time and height progression.
+// RelayedPath is a wrapper around ibctesting.Path gives fine-grained
+// control over delivery packets and acks, and client updates. Specifically,
+// the path represents a bidirectional ORDERED channel between two chains.
+// It is possible to control the precise order that packets and acks are
+// delivered, and the precise independent and relative order and timing of
+// new blocks on each chain.
 type RelayedPath struct {
-	t             *testing.T
-	path          *ibctesting.Path
+	t    *testing.T
+	path *ibctesting.Path
+	// clientHeaders is a map from chainID to an ordered list of headers that
+	// have been committed to that chain. The headers are used to update the
+	// client of the counterparty chain.
 	clientHeaders map[string][]*ibctmtypes.Header
-	Link          OrderedLink
+	// TODO: Make this private and expose methods to add packets and acks.
+	//       Currently, packets and acks are added directly to the outboxes,
+	//       but we should hide this implementation detail.
+	Outboxes OrderedOutbox
 }
 
-// MakeRelayedPath returns an initialized RelayedPath
+// MakeRelayedPath returns an initialized RelayedPath without any
+// packets, acks or headers. Requires a fully initialised path where
+// the connection and any channel handshakes have been COMPLETED.
 func MakeRelayedPath(t *testing.T, path *ibctesting.Path) RelayedPath {
 	return RelayedPath{
 		t:             t,
 		clientHeaders: map[string][]*ibctmtypes.Header{},
 		path:          path,
-		Link:          MakeOrderedLink(),
+		Outboxes:      MakeOrderedOutbox(),
 	}
 }
 
-// Chain returns the chain with ChainID <chainID>
+// Chain returns the chain with chainID
 func (f *RelayedPath) Chain(chainID string) *ibctesting.TestChain {
 	if f.path.EndpointA.Chain.ChainID == chainID {
 		return f.path.EndpointA.Chain
@@ -40,108 +47,99 @@ func (f *RelayedPath) Chain(chainID string) *ibctesting.TestChain {
 	if f.path.EndpointB.Chain.ChainID == chainID {
 		return f.path.EndpointB.Chain
 	}
-	f.t.Fatal("chain")
+	f.t.Fatal("no chain found in relayed path with chainID: ", chainID)
 	return nil
 }
 
-// UpdateClient will update the chain light client with
-// each header added to the counterparty chain since the last
-// call.
+// UpdateClient updates the chain with the latest sequence
+// of available headers committed by the counterparty chain since
+// the last call to UpdateClient (or all for the first call).
 func (f *RelayedPath) UpdateClient(chainID string) {
-	for _, header := range f.clientHeaders[f.other(chainID)] {
-		err := UpdateReceiverClient(f.endpoint(f.other(chainID)), f.endpoint(chainID), header)
+	for _, header := range f.clientHeaders[f.counterparty(chainID)] {
+		err := UpdateReceiverClient(f.endpoint(f.counterparty(chainID)), f.endpoint(chainID), header)
 		if err != nil {
-			f.t.Fatal("UpdateClient")
+			f.t.Fatal("in relayed path could not update client of chain: ", chainID, " with header: ", header, " err: ", err)
 		}
 	}
-	f.clientHeaders[f.other(chainID)] = []*ibctmtypes.Header{}
+	f.clientHeaders[f.counterparty(chainID)] = []*ibctmtypes.Header{}
 }
 
-// DeliverPackets delivers <num> packets to chain
-// A real relayer will relay packets from one chain to another chain
-// in two steps. First it will observe sufficiently committed outbound
-// packets on the sender chain. Second, it will submit transactions
-// containing those packets to the receiver chain.
-// This method simulates the second step: sufficiently committed
-// packets that have been already added to the OrderedLink will be
-// delivered. It is necessary to add outbound packets to the link
-// separately.
+// DeliverPackets delivers UP TO <num> packets to the chain which have been
+// sent to it by the counterparty chain and are ready to be delivered.
+//
+// A packet is ready to be delivered if the sender chain has progressed
+// a sufficient number of blocks since the packet was sent. This is because
+// all sent packets must be committed to block state before they can be queried.
+// Additionally, in practice, light clients require a header (h+1) to deliver a
+// packet sent in header h.
+//
+// In order to deliver packets, the chain must have an up-to-date client
+// of the counterparty chain. Ie. UpdateClient should be called before this.
 func (f *RelayedPath) DeliverPackets(chainID string, num int) {
-	for _, p := range f.Link.ConsumePackets(f.other(chainID), num) {
-		ack, err := TryRecvPacket(f.endpoint(f.other(chainID)), f.endpoint(chainID), p.Packet)
+	for _, p := range f.Outboxes.ConsumePackets(f.counterparty(chainID), num) {
+		ack, err := TryRecvPacket(f.endpoint(f.counterparty(chainID)), f.endpoint(chainID), p.Packet)
 		if err != nil {
 			f.t.Fatal("deliver")
 		}
-		f.Link.AddAck(chainID, ack, p.Packet)
+		f.Outboxes.AddAck(chainID, ack, p.Packet)
 	}
 }
 
-// DeliverAcks delivers <num> acks to chain
+// DeliverPackets delivers UP TO <num> acks to the chain which have been
+// sent to it by the counterparty chain and are ready to be delivered.
+//
+// An ack is ready to be delivered if the sender chain has progressed
+// a sufficient number of blocks since the ack was sent. This is because
+// all sent acks must be committed to block state before they can be queried.
+// Additionally, in practice, light clients require a header (h+1) to deliver
+// an ack sent in header h.
+//
+// In order to deliver acks, the chain must have an up-to-date client
+// of the counterparty chain. Ie. UpdateClient should be called before this.
 func (f *RelayedPath) DeliverAcks(chainID string, num int) {
-	for _, ack := range f.Link.ConsumeAcks(f.other(chainID), num) {
-		err := TryRecvAck(f.endpoint(f.other(chainID)), f.endpoint(chainID), ack.Packet, ack.Ack)
+	for _, ack := range f.Outboxes.ConsumeAcks(f.counterparty(chainID), num) {
+		err := TryRecvAck(f.endpoint(f.counterparty(chainID)), f.endpoint(chainID), ack.Packet, ack.Ack)
 		if err != nil {
 			f.t.Fatal("deliverAcks")
 		}
 	}
 }
 
-// EndAndBeginBlock calls EndBlock and commits block state, and then increments time and calls
-// BeginBlock, for the chain. preCommitCallback is called after EndBlock and before Commit,
-// allowing access to the sdk.Context after EndBlock.
+// EndAndBeginBlock calls EndBlock and commits block state, storing the header which can later
+// be used to update the client on the counterparty chain. After committing, the chain local
+// time progresses by dt, and BeginBlock is called with a header timestamped for the new time.
+//
+// preCommitCallback is called after EndBlock and before Commit, allowing arbitrary access to
+// the sdk.Context after EndBlock. The callback is useful for testing purposes to execute
+// arbitrary code before the chain sdk context is cleared in .Commit().
+// For example, app.EndBlock may lead to a new state, which you would like to query
+// to check that it is correct. However, the sdk context is cleared after .Commit(),
+// so you can query the state inside the callback.
 func (f *RelayedPath) EndAndBeginBlock(chainID string, dt time.Duration, preCommitCallback func()) {
 	c := f.Chain(chainID)
 
-	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
-
-	preCommitCallback()
-
-	c.App.Commit()
-
-	c.Vals = c.NextVals
-
-	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
-
-	c.LastHeader = c.CurrentTMClientHeader()
-
-	// Store header to be used in UpdateClient
-	f.clientHeaders[chainID] = append(f.clientHeaders[chainID], c.LastHeader)
-
-	for _, e := range ebRes.Events {
-		if e.Type == channeltypes.EventTypeSendPacket {
-			packet, _ := channelkeeper.ReconstructPacketFromEvent(e)
-			// Collect packets
-			f.Link.AddPacket(chainID, packet)
-		}
+	header, packets := EndBlock(c, preCommitCallback)
+	f.clientHeaders[chainID] = append(f.clientHeaders[chainID], header)
+	for _, p := range packets {
+		f.Outboxes.AddPacket(chainID, p)
 	}
-
-	// Commit packets emitted up to this point
-	f.Link.Commit(chainID)
-
-	// increment the current header
-	c.CurrentHeader = tmproto.Header{
-		ChainID:            c.ChainID,
-		Height:             c.App.LastBlockHeight() + 1,
-		AppHash:            c.App.LastCommitID().Hash,
-		Time:               c.CurrentHeader.Time.Add(dt),
-		ValidatorsHash:     c.Vals.Hash(),
-		NextValidatorsHash: c.NextVals.Hash(),
-	}
-
-	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
+	f.Outboxes.Commit(chainID)
+	BeginBlock(c, dt)
 }
 
-func (f *RelayedPath) other(chainID string) string {
+// counterparty is a helper returning the counterparty chainID
+func (f *RelayedPath) counterparty(chainID string) string {
 	if f.path.EndpointA.Chain.ChainID == chainID {
 		return f.path.EndpointB.Chain.ChainID
 	}
 	if f.path.EndpointB.Chain.ChainID == chainID {
 		return f.path.EndpointA.Chain.ChainID
 	}
-	f.t.Fatal("other")
+	f.t.Fatal("no chain found in relayed path with chainID: ", chainID)
 	return ""
 }
 
+// endpoint is a helper returning the endpoint for the chain
 func (f *RelayedPath) endpoint(chainID string) *ibctesting.Endpoint {
 	if chainID == f.path.EndpointA.Chain.ChainID {
 		return f.path.EndpointA
@@ -149,6 +147,6 @@ func (f *RelayedPath) endpoint(chainID string) *ibctesting.Endpoint {
 	if chainID == f.path.EndpointB.Chain.ChainID {
 		return f.path.EndpointB
 	}
-	f.t.Fatal("endpoint")
+	f.t.Fatal("no chain found in relayed path with chainID: ", chainID)
 	return nil
 }

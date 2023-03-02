@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -25,7 +27,9 @@ func (k Keeper) GetValidatorConsumerPubKey(
 	}
 	err := consumerKey.Unmarshal(bz)
 	if err != nil {
-		panic(err)
+		// An error here would indicate something is very wrong,
+		// the consumer key is assumed to be correctly serialized in SetValidatorConsumerPubKey.
+		panic(fmt.Sprintf("failed to unmarshal consumer key: %v", err))
 	}
 	return consumerKey, true
 }
@@ -40,7 +44,9 @@ func (k Keeper) SetValidatorConsumerPubKey(
 	store := ctx.KVStore(k.storeKey)
 	bz, err := consumerKey.Marshal()
 	if err != nil {
-		panic(err)
+		// An error here would indicate something is very wrong,
+		// the consumer key is obtained from GetValidatorConsumerPubKey, called from
+		panic(fmt.Sprintf("failed to marshal consumer key: %v", err))
 	}
 	store.Set(types.ConsumerValidatorsKey(chainID, providerAddr), bz)
 }
@@ -68,12 +74,16 @@ func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID *string)
 	for ; iterator.Valid(); iterator.Next() {
 		chainID, providerAddr, err := types.ParseChainIdAndConsAddrKey(types.ConsumerValidatorsBytePrefix, iterator.Key())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the store key is assumed to be correctly serialized in SetValidatorConsumerPubKey.
 			panic(err)
 		}
 		var consumerKey tmprotocrypto.PublicKey
 		err = consumerKey.Unmarshal(iterator.Value())
 		if err != nil {
-			panic(err)
+			// An error here would indicate something is very wrong,
+			// the consumer key is assumed to be correctly serialized in SetValidatorConsumerPubKey.
+			panic(fmt.Sprintf("failed to unmarshal consumer key: %v", err))
 		}
 
 		validatorConsumerPubKeys = append(validatorConsumerPubKeys, types.ValidatorConsumerPubKey{
@@ -106,7 +116,9 @@ func (k Keeper) GetValidatorByConsumerAddr(
 	}
 	err := providerAddr.Unmarshal(bz)
 	if err != nil {
-		panic(err)
+		// An error here would indicate something is very wrong,
+		// the provider address is assumed to be correctly serialized in SetValidatorByConsumerAddr.
+		panic(fmt.Sprintf("failed to unmarshal provider address: %v", err))
 	}
 	return providerAddr, true
 }
@@ -120,10 +132,8 @@ func (k Keeper) SetValidatorByConsumerAddr(
 	providerAddr sdk.ConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := providerAddr.Marshal()
-	if err != nil {
-		panic(err)
-	}
+	// Cons address is a type alias for a byte string, no marshaling needed
+	bz := providerAddr
 	store.Set(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr), bz)
 }
 
@@ -151,12 +161,16 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string)
 	for ; iterator.Valid(); iterator.Next() {
 		chainID, consumerAddr, err := types.ParseChainIdAndConsAddrKey(types.ValidatorsByConsumerAddrBytePrefix, iterator.Key())
 		if err != nil {
-			panic(err)
+			// An error here would indicate something is very wrong,
+			// store keys are assumed to be correctly serialized in SetValidatorByConsumerAddr.
+			panic(fmt.Sprintf("failed to parse chainID and consumer address: %v", err))
 		}
 		var providerAddr sdk.ConsAddress
 		err = providerAddr.Unmarshal(iterator.Value())
 		if err != nil {
-			panic(err)
+			// An error here would indicate something is very wrong,
+			// the provider address is assumed to be correctly serialized in SetValidatorByConsumerAddr.
+			panic(fmt.Sprintf("failed to unmarshal provider address: %v", err))
 		}
 
 		validatorConsumerAddrs = append(validatorConsumerAddrs, types.ValidatorByConsumerAddr{
@@ -193,7 +207,9 @@ func (k Keeper) GetKeyAssignmentReplacement(
 
 	err := pubKeyAndPower.Unmarshal(bz)
 	if err != nil {
-		panic(err)
+		// An error here would indicate something is very wrong,
+		// the public key and power are assumed to be correctly serialized in SetKeyAssignmentReplacement.
+		panic(fmt.Sprintf("failed to unmarshal public key and power: %v", err))
 	}
 	return pubKeyAndPower.PubKey, pubKeyAndPower.Power, true
 }
@@ -212,7 +228,11 @@ func (k Keeper) SetKeyAssignmentReplacement(
 	pubKeyAndPower := abci.ValidatorUpdate{PubKey: prevCKey, Power: power}
 	bz, err := pubKeyAndPower.Marshal()
 	if err != nil {
-		panic(err)
+		// An error here would indicate something is very wrong,
+		// prevCKey is obtained from GetValidatorConsumerPubKey (called from AssignConsumerKey),
+		// and power is obtained from GetLastValidatorPower (called from AssignConsumerKey).
+		// Both of which are assumed to return valid values.
+		panic(fmt.Sprintf("failed to marshal public key and power: %v", err))
 	}
 	store.Set(types.KeyAssignmentReplacementsKey(chainID, providerAddr), bz)
 }
@@ -231,12 +251,16 @@ func (k Keeper) GetAllKeyAssignmentReplacements(ctx sdk.Context, chainID string)
 	for ; iterator.Valid(); iterator.Next() {
 		_, providerAddr, err := types.ParseChainIdAndConsAddrKey(types.KeyAssignmentReplacementsBytePrefix, iterator.Key())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// store keys are assumed to be correctly serialized in SetKeyAssignmentReplacement.
 			panic(err)
 		}
 		var pubKeyAndPower abci.ValidatorUpdate
 		err = pubKeyAndPower.Unmarshal(iterator.Value())
 		if err != nil {
-			panic(err)
+			// An error here would indicate something is very wrong,
+			// the public key and power are assumed to be correctly serialized in SetKeyAssignmentReplacement.
+			panic(fmt.Sprintf("failed to unmarshal public key and power: %v", err))
 		}
 
 		replacements = append(replacements, types.KeyAssignmentReplacement{
@@ -272,12 +296,16 @@ func (k Keeper) AppendConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscI
 	if bz != nil {
 		err := consumerAddrsToPrune.Unmarshal(bz)
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the data bytes are assumed to be correctly serialized by previous calls to this method.
 			panic(err)
 		}
 	}
 	consumerAddrsToPrune.Addresses = append(consumerAddrsToPrune.Addresses, consumerAddr)
 	bz, err := consumerAddrsToPrune.Marshal()
 	if err != nil {
+		// An error here would indicate something is very wrong,
+		// consumerAddrsToPrune is instantiated in this method and should be able to be marshaled.
 		panic(err)
 	}
 	store.Set(types.ConsumerAddrsToPruneKey(chainID, vscID), bz)
@@ -297,7 +325,9 @@ func (k Keeper) GetConsumerAddrsToPrune(
 	}
 	err := consumerAddrsToPrune.Unmarshal(bz)
 	if err != nil {
-		panic(err)
+		// An error here would indicate something is very wrong,
+		// the list of consumer addresses is assumed to be correctly serialized in AppendConsumerAddrsToPrune.
+		panic(fmt.Sprintf("failed to unmarshal consumer addresses to prune: %v", err))
 	}
 	return
 }
@@ -315,11 +345,15 @@ func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, chainID string) (con
 	for ; iterator.Valid(); iterator.Next() {
 		_, vscID, err := types.ParseChainIdAndUintIdKey(types.ConsumerAddrsToPruneBytePrefix, iterator.Key())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// store keys are assumed to be correctly serialized in AppendConsumerAddrsToPrune.
 			panic(err)
 		}
 		var addrs types.AddressList
 		err = addrs.Unmarshal(iterator.Value())
 		if err != nil {
+			// An error here would indicate something is very wrong,
+			// the list of consumer addresses is assumed to be correctly serialized in AppendConsumerAddrsToPrune.
 			panic(err)
 		}
 
@@ -347,7 +381,11 @@ func (k Keeper) AssignConsumerKey(
 	validator stakingtypes.Validator,
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
-	consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+
+	consumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+	if err != nil {
+		return err
+	}
 
 	providerAddr, err := validator.GetConsAddr()
 	if err != nil {
@@ -383,11 +421,15 @@ func (k Keeper) AssignConsumerKey(
 			// mark this old consumer key as prunable once the VSCMaturedPacket
 			// for the current VSC ID is received;
 			// note: this state is removed on receiving the VSCMaturedPacket
+			oldConsumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
+			if err != nil {
+				return err
+			}
 			k.AppendConsumerAddrsToPrune(
 				ctx,
 				chainID,
 				k.GetValidatorSetUpdateId(ctx),
-				utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey),
+				oldConsumerAddr,
 			)
 		} else {
 			// the validator had no key assigned on this consumer chain
@@ -421,11 +463,11 @@ func (k Keeper) AssignConsumerKey(
 		// from the old consumer address to the provider address (if any)
 		// get the previous key assigned for this validator on this consumer chain
 		if oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
-			k.DeleteValidatorByConsumerAddr(
-				ctx,
-				chainID,
-				utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey),
-			)
+			oldConsumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
+			if err != nil {
+				return err
+			}
+			k.DeleteValidatorByConsumerAddr(ctx, chainID, oldConsumerAddr)
 		}
 	}
 
@@ -442,15 +484,19 @@ func (k Keeper) AssignConsumerKey(
 	return nil
 }
 
-// ApplyKeyAssignmentToValUpdates applies the key assignment to the validator updates
-// received from the staking module
-func (k Keeper) ApplyKeyAssignmentToValUpdates(
+// MustApplyKeyAssignmentToValUpdates applies the key assignment to the validator updates
+// received from the staking module.
+// The method panics if the key-assignment state is corrupted.
+func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 	ctx sdk.Context,
 	chainID string,
 	valUpdates []abci.ValidatorUpdate,
-) (newUpdates []abci.ValidatorUpdate, err error) {
+) (newUpdates []abci.ValidatorUpdate) {
 	for _, valUpdate := range valUpdates {
-		providerAddr := utils.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
+		providerAddr, err := utils.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
+		if err != nil {
+			panic(fmt.Errorf("cannot get provider address from pub key: %s", err.Error()))
+		}
 
 		// If a key assignment replacement is found, we remove the valupdate with the old consumer key,
 		// create two new valupdates,
@@ -465,7 +511,9 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 
 			newConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 			if !found {
-				return newUpdates, sdkerrors.Wrapf(types.ErrConsumerKeyNotFound, "consumer key not found for %s", providerAddr)
+				// This should never happen as for every KeyAssignmentReplacement there should
+				// be a ValidatorConsumerPubKey that was stored when AssignConsumerKey() was called.
+				panic(fmt.Errorf("consumer key not found for provider addr %s stored in KeyAssignmentReplacement", providerAddr))
 			}
 			newUpdates = append(newUpdates, abci.ValidatorUpdate{
 				PubKey: newConsumerKey,
@@ -503,7 +551,9 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 
 		newConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, replacement.ProviderAddr)
 		if !found {
-			return newUpdates, sdkerrors.Wrapf(types.ErrConsumerKeyNotFound, "consumer key not found for %s", replacement.ProviderAddr)
+			// This should never happen as for every KeyAssignmentReplacement there should
+			// be a ValidatorConsumerPubKey that was stored when AssignConsumerKey() was called.
+			panic(fmt.Errorf("consumer key not found for provider addr %s stored in KeyAssignmentReplacement", replacement.ProviderAddr))
 		}
 		newUpdates = append(newUpdates, abci.ValidatorUpdate{
 			PubKey: newConsumerKey,
@@ -511,7 +561,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 		})
 	}
 
-	return newUpdates, nil
+	return newUpdates
 }
 
 // GetProviderAddrFromConsumerAddr returns the consensus address of a validator with
@@ -534,7 +584,12 @@ func (k Keeper) PruneKeyAssignments(ctx sdk.Context, chainID string, vscID uint6
 	consumerAddrs := k.GetConsumerAddrsToPrune(ctx, chainID, vscID)
 	for _, addr := range consumerAddrs.Addresses {
 		k.DeleteValidatorByConsumerAddr(ctx, chainID, addr)
+		k.Logger(ctx).Info("consumer address was pruned",
+			"consumer chainID", chainID,
+			"consumer consensus addr", sdk.ConsAddress(addr).String(),
+		)
 	}
+
 	k.DeleteConsumerAddrsToPrune(ctx, chainID, vscID)
 }
 

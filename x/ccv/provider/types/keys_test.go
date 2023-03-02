@@ -41,7 +41,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = providertypes.MaturedUnbondingOpsKey(), i+1
 	keys[i], i = providertypes.ValidatorSetUpdateIdKey(), i+1
 	keys[i], i = providertypes.SlashMeterKey(), i+1
-	keys[i], i = providertypes.LastSlashMeterFullTimeKey(), i+1
+	keys[i], i = providertypes.SlashMeterReplenishTimeCandidateKey(), i+1
 	keys[i], i = []byte{providertypes.ChainToChannelBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChannelToChainBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChainToClientBytePrefix}, i+1
@@ -149,16 +149,16 @@ func TestThrottledPacketDataKeyAndParse(t *testing.T) {
 func TestGlobalSlashEntryKeyAndParse(t *testing.T) {
 	now := time.Now()
 	entries := []providertypes.GlobalSlashEntry{}
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now, "chain-0", 2, cryptoutil.NewCryptoIdentityFromIntSeed(0).SDKConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour), "chain-7896978", 3, cryptoutil.NewCryptoIdentityFromIntSeed(1).SDKConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(3*time.Hour), "chain-1", 4723894, cryptoutil.NewCryptoIdentityFromIntSeed(2).SDKConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now, "chain-0", 2, cryptoutil.NewCryptoIdentityFromIntSeed(0).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour), "chain-7896978", 3, cryptoutil.NewCryptoIdentityFromIntSeed(1).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(3*time.Hour), "chain-1", 4723894, cryptoutil.NewCryptoIdentityFromIntSeed(2).SDKValConsAddress()))
 
 	for _, entry := range entries {
 		key := providertypes.GlobalSlashEntryKey(entry)
 		require.NotEmpty(t, key)
 		// This key should be of set length: prefix + 8 + 8 + chainID
 		require.Equal(t, 1+8+8+len(entry.ConsumerChainID), len(key))
-		parsedRecvTime, parsedChainID, parsedIBCSeqNum := providertypes.ParseGlobalSlashEntryKey(key)
+		parsedRecvTime, parsedChainID, parsedIBCSeqNum := providertypes.MustParseGlobalSlashEntryKey(key)
 		require.Equal(t, entry.RecvTime, parsedRecvTime)
 		require.Equal(t, entry.ConsumerChainID, parsedChainID)
 		require.Equal(t, entry.IbcSeqNum, parsedIBCSeqNum)

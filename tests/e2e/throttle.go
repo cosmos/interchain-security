@@ -3,9 +3,10 @@ package e2e
 import (
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
@@ -43,9 +44,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		params.SlashMeterReplenishFraction = tc.replenishFraction
 		s.providerApp.GetProviderKeeper().SetParams(s.providerCtx(), params)
 
-		// Elapse a replenish period and check for replenishment, so new param is fully in effect.
-		customCtx := s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
-		s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
+		s.providerApp.GetProviderKeeper().InitializeSlashMeter(s.providerCtx())
 
 		slashMeter := s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
 		s.Require().Equal(tc.expectedMeterBeforeFirstSlash, slashMeter.Int64())
@@ -89,39 +88,58 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
 		s.Require().Equal(tc.expectedMeterAfterFirstSlash, slashMeter.Int64())
 
+		// For the remainder of this test we use a cached context in which we can mutate block time
+		cacheCtx := s.providerCtx()
+
 		// Replenish slash meter until it is positive
 		for i := 0; i < tc.expectedReplenishesTillPositive; i++ {
 
-			// Mutate context with a block time where replenish period has passed.
-			customCtx = s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
+			// Mutate cached context to have a block time after the current replenish candidate time.
+			cacheCtx = s.getCtxAfterReplenishCandidate(cacheCtx)
+			candidate := s.providerApp.GetProviderKeeper().GetSlashMeterReplenishTimeCandidate(cacheCtx)
+			s.Require().True(cacheCtx.BlockTime().After(candidate))
 
 			// CheckForSlashMeterReplenishment should replenish meter here.
-			slashMeterBefore := s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
-			s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
-			slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+			slashMeterBefore := s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx)
+			s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(cacheCtx)
+			slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx)
 			s.Require().True(slashMeter.GT(slashMeterBefore))
 
-			// Check that slash meter is still negative or 0,
-			// unless we are on the last iteration.
+			// Replenish candidate time should have been updated to be block time + replenish period.
+			expected := cacheCtx.BlockTime().Add(params.SlashMeterReplenishPeriod)
+			actual := s.providerApp.GetProviderKeeper().GetSlashMeterReplenishTimeCandidate(cacheCtx)
+			s.Require().Equal(expected, actual)
+
+			// CheckForSlashMeterReplenishment should not replenish meter here again (w/o another period elapsed).
+			// Replenish candidate should be in the future, and will not change.
+			candidate = s.providerApp.GetProviderKeeper().GetSlashMeterReplenishTimeCandidate(cacheCtx)
+			s.Require().True(cacheCtx.BlockTime().Before(candidate))
+			slashMeterBefore = s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx)
+			s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(cacheCtx)
+			s.Require().Equal(slashMeterBefore, s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx))
+			s.Require().Equal(candidate, s.providerApp.GetProviderKeeper().GetSlashMeterReplenishTimeCandidate(cacheCtx))
+
+			// Check that slash meter is still negative or 0, unless we are on the last iteration.
+			slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx)
 			if i != tc.expectedReplenishesTillPositive-1 {
 				s.Require().False(slashMeter.IsPositive())
 			}
 		}
 
 		// Meter is positive at this point, and ready to handle the second slash packet.
-		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx)
 		s.Require().True(slashMeter.IsPositive())
 
 		// Assert validator 2 is jailed once pending slash packets are handled in ccv endblocker.
 		s.providerChain.NextBlock()
-		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
+		vals = providerStakingKeeper.GetAllValidators(cacheCtx)
 		slashedVal = vals[2]
 		s.Require().True(slashedVal.IsJailed())
 
 		// Assert validator 2 has no power, this should be apparent next block,
 		// since the staking endblocker runs before the ccv endblocker.
 		s.providerChain.NextBlock()
-		lastValPower = providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), slashedVal.GetOperator())
+		lastValPower = providerStakingKeeper.GetLastValidatorPower(cacheCtx, slashedVal.GetOperator())
 		s.Require().Equal(int64(0), lastValPower)
 	}
 }
@@ -167,26 +185,16 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	valsToSlash := []tmtypes.Validator{}
 	for _, bundle := range senderBundles {
 
-		// Alternate between downtime and double sign infractions
-		downtime := idx%2 == 0
-		var infractionType stakingtypes.InfractionType
-		if downtime {
-			infractionType = stakingtypes.Downtime
-		} else {
-			infractionType = stakingtypes.DoubleSign
-		}
-
 		// Setup signing info for validator to be jailed
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[idx])
 
-		// Send slash packet from consumer to provider
-
+		// Send downtime slash packet from consumer to provider
 		tmVal := s.providerChain.Vals.Validators[idx]
 		valsToSlash = append(valsToSlash, *tmVal)
 		packet := s.constructSlashPacketFromConsumer(
 			*bundle,
 			*tmVal,
-			infractionType,
+			stakingtypes.Downtime,
 			3, // use sequence 3, 1 and 2 are used above.
 		)
 		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
@@ -322,6 +330,87 @@ func (s *CCVTestSuite) TestPacketSpam() {
 	s.Require().Empty(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()))
 }
 
+func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
+
+	// Setup ccv channels to all consumers
+	s.SetupAllCCVChannels()
+
+	// Setup validator powers to be 25%, 25%, 25%, 25%
+	s.setupValidatorPowers()
+
+	// Explicitly set params, initialize slash meter
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	params := providerKeeper.GetParams(s.providerCtx())
+	params.SlashMeterReplenishFraction = "0.1"
+	providerKeeper.SetParams(s.providerCtx(), params)
+	providerKeeper.InitializeSlashMeter(s.providerCtx())
+
+	// The packets to be recv in a single block, ordered as they will be recv.
+	packets := []channeltypes.Packet{}
+
+	firstBundle := s.getFirstBundle()
+
+	// Slash first 3 but not 4th validator
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[1])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
+
+	// Track and increment ibc seq num for each packet, since these need to be unique.
+	ibcSeqNum := uint64(0)
+	// Construct 500 double-sign slash packets
+	for ibcSeqNum < 500 {
+		// Increment ibc seq num for each packet (starting at 1)
+		ibcSeqNum++
+		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
+		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, stakingtypes.DoubleSign, ibcSeqNum))
+	}
+
+	// Recv 500 packets from consumer to provider in same block
+	for _, packet := range packets {
+		consumerPacketData := ccvtypes.ConsumerPacketData{}
+		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketData)
+		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
+	}
+
+	// Execute block to handle packets in endblock
+	s.providerChain.NextBlock()
+
+	// Confirm all packets are dropped (queues empty)
+	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(
+		s.providerCtx(), firstBundle.Chain.ChainID))
+	slashData, vscMData, _, _ := providerKeeper.GetAllThrottledPacketData(
+		s.providerCtx(), firstBundle.Chain.ChainID)
+	s.Require().Empty(slashData)
+	s.Require().Empty(vscMData)
+	s.Require().Empty(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()))
+
+	// Confirm that slash meter is not affected
+	s.Require().Equal(providerKeeper.GetSlashMeterAllowance(s.providerCtx()),
+		providerKeeper.GetSlashMeter(s.providerCtx()))
+
+	// Advance two blocks and confirm no validator is jailed
+	s.providerChain.NextBlock()
+	s.providerChain.NextBlock()
+
+	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	for _, val := range s.providerChain.Vals.Validators {
+		power := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
+		s.Require().Equal(int64(1000), power)
+		stakingVal, found := stakingKeeper.GetValidatorByConsAddr(s.providerCtx(), sdktypes.ConsAddress(val.Address))
+		if !found {
+			s.Require().Fail("validator not found")
+		}
+		s.Require().False(stakingVal.Jailed)
+
+		// 4th validator should have no slash log, all the others do
+		if val != s.providerChain.Vals.Validators[3] {
+			s.Require().True(providerKeeper.GetSlashLog(s.providerCtx(), sdk.ConsAddress(val.Address)))
+		} else {
+			s.Require().False(providerKeeper.GetSlashLog(s.providerCtx(), sdk.ConsAddress(val.Address)))
+		}
+	}
+}
+
 // TestQueueOrdering validates that the ordering of slash packet entries
 // in the global queue (relevant to a single chain) matches the ordering of slash packet
 // data in the chain specific queues, even in the presence of packet spam.
@@ -366,15 +455,8 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 		}
 		// Else instantiate a slash packet
 
-		// Set infraction type based on even/odd index.
-		var infractionType stakingtypes.InfractionType
-		if ibcSeqNum%2 == 0 {
-			infractionType = stakingtypes.Downtime
-		} else {
-			infractionType = stakingtypes.DoubleSign
-		}
 		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
-		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum))
+		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, stakingtypes.Downtime, ibcSeqNum))
 	}
 
 	// Recv 500 packets from consumer to provider in same block
@@ -489,9 +571,8 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	delegateByIdx(s, delAddr, sdktypes.NewInt(9999999), 3)
 	s.providerChain.NextBlock()
 
-	// Replenish slash meter with default params and new total voting power.
-	customCtx := s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
-	s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
+	// Initialize slash meter
+	s.providerApp.GetProviderKeeper().InitializeSlashMeter(s.providerCtx())
 
 	// Assert that we start out with no jailings
 	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
@@ -509,7 +590,7 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	tmval1 := s.providerChain.Vals.Validators[1]
 	tmval2 := s.providerChain.Vals.Validators[2]
 	tmval3 := s.providerChain.Vals.Validators[3]
-	packet1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 1)
+	packet1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Downtime, 1)
 	packet2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2)
 	packet3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3)
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet1)
@@ -587,9 +668,9 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Downtime, 1),
 		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2),
 		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 4),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.DoubleSign, 5),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.DoubleSign, 6),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Downtime, 4),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 5),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 6),
 	}
 
 	// Recv and queue all slash packets.
@@ -644,17 +725,10 @@ func (s CCVTestSuite) TestSlashAllValidators() {
 	}
 
 	// add 5 more slash packets for each validator, that will be handled in the same block.
-	for idx, val := range s.providerChain.Vals.Validators {
-		// Set infraction type based on even/odd index.
-		var infractionType stakingtypes.InfractionType
-		if idx%2 == 0 {
-			infractionType = stakingtypes.Downtime
-		} else {
-			infractionType = stakingtypes.DoubleSign
-		}
+	for _, val := range s.providerChain.Vals.Validators {
 		for i := 0; i < 5; i++ {
 			packets = append(packets, s.constructSlashPacketFromConsumer(
-				s.getFirstBundle(), *val, infractionType, ibcSeqNum))
+				s.getFirstBundle(), *val, stakingtypes.Downtime, ibcSeqNum))
 			ibcSeqNum++
 		}
 	}
@@ -739,8 +813,8 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 	// Set slash meter to negative value to not allow any slash packets to be handled.
 	providerKeeper.SetSlashMeter(s.providerCtx(), sdktypes.NewInt(-1))
 
-	// Set last full time to block time, so no slash meter replenishment happens on end block.
-	providerKeeper.SetLastSlashMeterFullTime(s.providerCtx(), s.providerCtx().BlockTime())
+	// Set replenish time candidate so that no replenishment happens next block.
+	providerKeeper.SetSlashMeterReplenishTimeCandidate(s.providerCtx())
 
 	// Execute end blocker to dequeue only the leading vsc matured packets.
 	s.providerChain.NextBlock()
@@ -789,10 +863,8 @@ func (s *CCVTestSuite) replenishSlashMeterTillPositive() {
 	}
 }
 
-func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sdktypes.Context {
+func (s *CCVTestSuite) getCtxAfterReplenishCandidate(ctx sdktypes.Context) sdktypes.Context {
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	lastFullTime := providerKeeper.GetLastSlashMeterFullTime(ctx)
-	replenishPeriod := providerKeeper.GetSlashMeterReplenishPeriod(ctx)
-
-	return ctx.WithBlockTime(lastFullTime.Add(replenishPeriod).Add(time.Minute))
+	candidate := providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx)
+	return ctx.WithBlockTime(candidate.Add(time.Minute))
 }

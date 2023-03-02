@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -32,7 +33,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 )
 
 // Parameters needed to instantiate an in-memory keeper
@@ -86,6 +87,7 @@ type MockedKeepers struct {
 	*MockBankKeeper
 	*MockIBCTransferKeeper
 	*MockIBCCoreKeeper
+	*MockEvidenceKeeper
 }
 
 // NewMockedKeepers instantiates a struct with pointers to properly instantiated mocked keepers.
@@ -102,6 +104,7 @@ func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 		MockBankKeeper:        NewMockBankKeeper(ctrl),
 		MockIBCTransferKeeper: NewMockIBCTransferKeeper(ctrl),
 		MockIBCCoreKeeper:     NewMockIBCCoreKeeper(ctrl),
+		MockEvidenceKeeper:    NewMockEvidenceKeeper(ctrl),
 	}
 }
 
@@ -119,7 +122,8 @@ func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) provi
 		mocks.MockStakingKeeper,
 		mocks.MockSlashingKeeper,
 		mocks.MockAccountKeeper,
-		"",
+		mocks.MockEvidenceKeeper,
+		authtypes.FeeCollectorName,
 	)
 }
 
@@ -139,7 +143,7 @@ func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consu
 		mocks.MockAccountKeeper,
 		mocks.MockIBCTransferKeeper,
 		mocks.MockIBCCoreKeeper,
-		"",
+		authtypes.FeeCollectorName,
 	)
 }
 

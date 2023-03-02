@@ -85,6 +85,7 @@ func (am AppModule) AllocateTokens(
 	// transfer collected fees to the distribution module account
 	err := am.bankKeeper.SendCoinsFromModuleToModule(ctx, consumertypes.ConsumerRedistributeName, distrtypes.ModuleName, feesCollectedInt)
 	if err != nil {
+		// same behavior as in the original x/distribution module of cosmos-sdk
 		panic(err)
 	}
 

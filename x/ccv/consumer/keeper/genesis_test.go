@@ -6,9 +6,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -189,9 +189,8 @@ func TestInitGenesis(t *testing.T) {
 
 				require.Equal(t, gs.OutstandingDowntimeSlashing, ck.GetAllOutstandingDowntimes(ctx))
 
-				ltbh, err := ck.GetLastTransmissionBlockHeight(ctx)
-				require.NoError(t, err)
-				require.Equal(t, gs.LastTransmissionBlockHeight, *ltbh)
+				ltbh := ck.GetLastTransmissionBlockHeight(ctx)
+				require.Equal(t, gs.LastTransmissionBlockHeight, ltbh)
 
 				assertHeightValsetUpdateIDs(t, ctx, &ck, updatedHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
@@ -328,8 +327,7 @@ func TestExportGenesis(t *testing.T) {
 				// populate the required states for an established CCV channel
 				ck.SetPacketMaturityTime(ctx, matPackets[0].VscId, matPackets[0].MaturityTime)
 				ck.SetOutstandingDowntime(ctx, sdk.ConsAddress(validator.Address.Bytes()))
-				err = ck.SetLastTransmissionBlockHeight(ctx, ltbh)
-				require.NoError(t, err)
+				ck.SetLastTransmissionBlockHeight(ctx, ltbh)
 			},
 			consumertypes.NewRestartGenesisState(
 				provClientID,

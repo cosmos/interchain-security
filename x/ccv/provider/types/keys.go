@@ -47,9 +47,8 @@ const (
 	// SlashMeterByteKey is the byte key for storing the slash meter
 	SlashMeterByteKey
 
-	// LastSlashMeterFullTimeByteKey is the byte key for storing
-	// the last time the slash meter was full.
-	LastSlashMeterFullTimeByteKey
+	// SlashMeterReplenishTimeCandidateByteKey is the byte key for storing the slash meter replenish time candidate
+	SlashMeterReplenishTimeCandidateByteKey
 
 	// ChainToChannelBytePrefix is the byte prefix for storing mapping
 	// from chainID to the channel ID that is used to send over validator set changes.
@@ -124,6 +123,10 @@ const (
 	// ConsumerAddrsToPruneBytePrefix is the byte prefix that will store the mapping from VSC ids
 	// to consumer validators addresses needed for pruning
 	ConsumerAddrsToPruneBytePrefix
+
+	// SlashLogBytePrefix is the byte prefix that will store the mapping from provider address to boolean
+	// denoting whether the provider address has commited any double signign infractions
+	SlashLogBytePrefix
 )
 
 // PortKey returns the key to the port ID in the store
@@ -146,9 +149,9 @@ func SlashMeterKey() []byte {
 	return []byte{SlashMeterByteKey}
 }
 
-// LastSlashMeterFullTimeKey returns the key storing the last time the slash meter was full
-func LastSlashMeterFullTimeKey() []byte {
-	return []byte{LastSlashMeterFullTimeByteKey}
+// SlashMeterReplenishTimeCandidateKey returns the key storing the slash meter replenish time candidate
+func SlashMeterReplenishTimeCandidateKey() []byte {
+	return []byte{SlashMeterReplenishTimeCandidateByteKey}
 }
 
 // ChainToChannelKey returns the key under which the CCV channel ID will be stored for the given consumer chain.
@@ -295,14 +298,18 @@ func ThrottledPacketDataKey(consumerChainID string, ibcSeqNum uint64) []byte {
 	return ChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, consumerChainID, ibcSeqNum)
 }
 
-// MustParseThrottledPacketDataKey parses a throttled packet data key
-// or panics upon failure
+// MustParseThrottledPacketDataKey parses a throttled packet data key or panics upon failure
 func MustParseThrottledPacketDataKey(key []byte) (string, uint64) {
-	str, i, err := ParseChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, key)
+	chainId, ibcSeqNum, err := ParseThrottledPacketDataKey(key)
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse throttled packet data key: %s", err.Error()))
 	}
-	return str, i
+	return chainId, ibcSeqNum
+}
+
+// ParseThrottledPacketDataKey parses a throttled packet data key
+func ParseThrottledPacketDataKey(key []byte) (chainId string, ibcSeqNum uint64, err error) {
+	return ParseChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, key)
 }
 
 // GlobalSlashEntryKey returns the key for storing a global slash queue entry.
@@ -320,10 +327,11 @@ func GlobalSlashEntryKey(entry GlobalSlashEntry) []byte {
 	)
 }
 
-// ParseGlobalSlashEntry returns the received time and chainID for a global slash queue entry key.
-func ParseGlobalSlashEntryKey(bz []byte) (
-	recvTime time.Time, consumerChainID string, ibcSeqNum uint64,
-) {
+// MustParseGlobalSlashEntryKey returns the received time and chainID for a global slash queue entry key,
+// or panics if the key is invalid.
+func MustParseGlobalSlashEntryKey(bz []byte) (
+	recvTime time.Time, consumerChainID string, ibcSeqNum uint64) {
+
 	// Prefix is in first byte
 	expectedPrefix := []byte{GlobalSlashEntryBytePrefix}
 	if prefix := bz[:1]; !bytes.Equal(prefix, expectedPrefix) {
@@ -434,4 +442,9 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
 	addr := bz[prefixL+8+int(chainIdL):]
 	return chainID, addr, nil
+}
+
+// SlashLogKey returns the key to a validator's slash log
+func SlashLogKey(providerAddr sdk.ConsAddress) []byte {
+	return append([]byte{SlashAcksBytePrefix}, providerAddr.Bytes()...)
 }
