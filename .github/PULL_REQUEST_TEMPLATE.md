@@ -31,7 +31,7 @@ If `Feature` or `Fix`, describe the new or existing tests that verify the new be
 If the above box is checked, which version should be bumped?
 
 - [ ] `MAJOR`: Consensus breaking changes to both the provider and consumers(s), including updates/breaking changes to IBC communication between provider and consumer(s)
-- [ ] `MINOR`: Any consensus breaking changes which only affect the provider, or only affect consumer(s)
+- [ ] `MINOR`: Consensus breaking changes which affect either only the provider or only the consumer(s)
 - [ ] `PATCH`: Non consensus breaking changes
 
 ## Targeting
