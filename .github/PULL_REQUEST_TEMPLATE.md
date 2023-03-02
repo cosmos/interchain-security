@@ -41,5 +41,3 @@ Please select one of the following:
 - [ ] This PR is only relevant to main
 - [ ] This PR is relevant to main, and should also be back-ported to ____ (ex: v1.0.0 and v1.1.0)
 - [ ] This PR is only relevant to ____ (ex: v1.0.0, v1.1.0, and v1.2.0)
-
-Relevant backport PR(s):
