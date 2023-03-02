@@ -407,9 +407,11 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 
 		// 4th validator should have no slash log, all the others do
 		if val != s.providerChain.Vals.Validators[3] {
-			s.Require().True(providerKeeper.GetSlashLog(s.providerCtx(), sdk.ConsAddress(val.Address)))
+			s.Require().True(providerKeeper.GetSlashLog(s.providerCtx(),
+				providertypes.NewProviderConsAddress([]byte(val.Address))))
 		} else {
-			s.Require().False(providerKeeper.GetSlashLog(s.providerCtx(), sdk.ConsAddress(val.Address)))
+			s.Require().False(providerKeeper.GetSlashLog(s.providerCtx(),
+				providertypes.NewProviderConsAddress([]byte(val.Address))))
 		}
 	}
 }
