@@ -122,8 +122,8 @@ func (b *Builder) getValidatorPK(seedIx int) mock.PV {
 }
 
 func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingApp, genesis map[string]json.RawMessage,
-	validators *tmtypes.ValidatorSet) ([]byte, []ibctesting.SenderAccount) {
-
+	validators *tmtypes.ValidatorSet,
+) ([]byte, []ibctesting.SenderAccount) {
 	accounts := []authtypes.GenesisAccount{}
 	balances := []banktypes.Balance{}
 	senderAccounts := []ibctesting.SenderAccount{}
@@ -246,12 +246,11 @@ func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingAp
 	require.NoError(b.suite.T(), err)
 
 	return stateBytes, senderAccounts
-
 }
 
 func (b *Builder) newChain(coord *ibctesting.Coordinator, appInit ibctesting.AppIniter, chainID string,
-	validators *tmtypes.ValidatorSet, signers map[string]tmtypes.PrivValidator) *ibctesting.TestChain {
-
+	validators *tmtypes.ValidatorSet, signers map[string]tmtypes.PrivValidator,
+) *ibctesting.TestChain {
 	app, genesis := appInit()
 
 	stateBytes, senderAccounts := b.getAppBytesAndSenders(chainID, app, genesis, validators)
@@ -335,7 +334,6 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 }
 
 func (b *Builder) createChains() {
-
 	coordinator := ibctesting.NewCoordinator(b.suite.T(), 0)
 
 	// Create validators
@@ -347,7 +345,6 @@ func (b *Builder) createChains() {
 
 	b.coordinator = coordinator
 	b.valAddresses = addresses
-
 }
 
 // createValidator creates an additional validator with zero commission
@@ -387,7 +384,6 @@ func (b *Builder) setSigningInfos() {
 // Checks that the lexicographic ordering of validator addresses as computed in
 // the staking module match the ordering of validators in the model.
 func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
-
 	check := func(lesser sdk.ValAddress, greater sdk.ValAddress) {
 		lesserV, _ := b.providerStakingKeeper().GetValidator(b.ctx(P), lesser)
 		greaterV, _ := b.providerStakingKeeper().GetValidator(b.ctx(P), greater)
@@ -425,7 +421,6 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 }
 
 func (b *Builder) addExtraValidators() {
-
 	for i, status := range b.initState.ValStates.Status {
 		if status == stakingtypes.Unbonded {
 			val, addr := b.createValidator(i)
@@ -649,7 +644,7 @@ func (b *Builder) endBlock(chainID string) {
 		}
 	}
 
-	// Commit packets emmitted up to this point
+	// Commit packets emitted up to this point
 	b.link.Commit(chainID)
 
 	newT := b.coordinator.CurrentTime.Add(b.initState.BlockSeconds).UTC()
@@ -668,7 +663,6 @@ func (b *Builder) endBlock(chainID string) {
 }
 
 func (b *Builder) build() {
-
 	b.createChains()
 
 	b.addExtraValidators()
@@ -762,7 +756,8 @@ func (b *Builder) build() {
 // state does not necessarily mimic the order of steps that happen in a
 // live scenario.
 func GetZeroState(suite *suite.Suite, initState InitState) (
-	*ibctesting.Path, []sdk.ValAddress, int64, int64) {
+	*ibctesting.Path, []sdk.ValAddress, int64, int64,
+) {
 	b := Builder{initState: initState, suite: suite}
 	b.build()
 	// Height of the last committed block (current header is not committed)

@@ -28,7 +28,7 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 			ctx:  sdk.Context{},
 			msgs: []sdk.Msg{
 				newParamChangeProposalMsg([]proposal.ParamChange{
-					//only subspace and key are relevant for testing
+
 					{Subspace: banktypes.ModuleName, Key: "SendEnabled", Value: ""},
 				}),
 			},

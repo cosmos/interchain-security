@@ -26,8 +26,8 @@ import (
 
 // GetMocksForCreateConsumerClient returns mock expectations needed to call CreateConsumerClient().
 func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
-	expectedChainID string, expectedLatestHeight clienttypes.Height) []*gomock.Call {
-
+	expectedChainID string, expectedLatestHeight clienttypes.Height,
+) []*gomock.Call {
 	// append MakeConsumerGenesis and CreateClient expectations
 	expectations := GetMocksForMakeConsumerGenesis(ctx, mocks, time.Hour)
 	createClientExp := mocks.MockClientKeeper.EXPECT().CreateClient(
@@ -47,8 +47,8 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 
 // GetMocksForMakeConsumerGenesis returns mock expectations needed to call MakeConsumerGenesis().
 func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
-	unbondingTimeToInject time.Duration) []*gomock.Call {
-
+	unbondingTimeToInject time.Duration,
+) []*gomock.Call {
 	return []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject).Times(1),
 
@@ -61,7 +61,8 @@ func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
 
 // GetMocksForSetConsumerChain returns mock expectations needed to call SetConsumerChain().
 func GetMocksForSetConsumerChain(ctx sdk.Context, mocks *MockedKeepers,
-	chainIDToInject string) []*gomock.Call {
+	chainIDToInject string,
+) []*gomock.Call {
 	return []*gomock.Call{
 		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, gomock.Any()).Return(
 			channeltypes.Channel{
@@ -92,14 +93,13 @@ func GetMocksForStopConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomo
 }
 
 func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
-	expectedPacketData ccv.SlashPacketData, valToReturn stakingtypes.Validator) []*gomock.Call {
-
+	expectedPacketData ccv.SlashPacketData, valToReturn stakingtypes.Validator,
+) []*gomock.Call {
 	// An arbitrary slash fraction returned and later used by mock calls.
 	arbitrarySlashFraction := sdk.NewDec(1)
 
 	// These first two calls are always made.
 	calls := []*gomock.Call{
-
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 			ctx, sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(
 			valToReturn, true,
@@ -115,7 +115,6 @@ func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 			mocks.MockSlashingKeeper.EXPECT().SlashFractionDowntime(ctx).Return(arbitrarySlashFraction).Times(1),
 			mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour).Times(1),
 		)
-
 	} else if expectedPacketData.Infraction == stakingtypes.DoubleSign {
 		calls = append(calls,
 			mocks.MockSlashingKeeper.EXPECT().SlashFractionDoubleSign(ctx).Return(arbitrarySlashFraction).Times(1),

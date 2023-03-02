@@ -162,7 +162,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 
 	// check the exported genesis
 	require.Equal(t, provGenesis, pk.ExportGenesis(ctx))
-
 }
 
 func assertConsumerChainStates(ctx sdk.Context, t *testing.T, pk keeper.Keeper, consumerStates ...providertypes.ConsumerState) {

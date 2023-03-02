@@ -24,7 +24,6 @@ import (
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coinit1
 // Spec Tag: [CCV-PCF-COINIT.1]
 func TestOnChanOpenInit(t *testing.T) {
-
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
 		t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -49,7 +48,6 @@ func TestOnChanOpenInit(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-cotry1
 // Spec tag: [CCV-PCF-COTRY.1]
 func TestOnChanOpenTry(t *testing.T) {
-
 	// Params for the ChanOpenTry method
 	type params struct {
 		ctx                 sdk.Context
@@ -207,7 +205,6 @@ func TestOnChanOpenAck(t *testing.T) {
 // TODO: Validate spec requirement that duplicate channels attempting to become canonical CCV channel are closed.
 // See: https://github.com/cosmos/interchain-security/issues/327
 func TestOnChanOpenConfirm(t *testing.T) {
-
 	testCases := []struct {
 		name                string
 		mockExpectations    func(sdk.Context, testkeeper.MockedKeepers) []*gomock.Call

@@ -92,7 +92,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 			state: State{},
 		},
 		{
-			// op should fail - key allready assigned by another validator
+			// op should fail - key already assigned by another validator
 			action: assignConsumerPubKeyAction{
 				chain:     chainID(consumerName),
 				validator: validatorID("bob"),

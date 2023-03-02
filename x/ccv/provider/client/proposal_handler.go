@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
-	"time"
-
 	"path/filepath"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"

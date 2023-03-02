@@ -34,7 +34,6 @@ func TestQueueVSCPackets(t *testing.T) {
 		expectedQueueSize        int
 	}{
 		{
-
 			name:                     "no updates to send",
 			packets:                  []ccv.ValidatorSetChangePacketData{},
 			expectNextValsetUpdateId: 1,
@@ -96,7 +95,6 @@ func TestQueueVSCPackets(t *testing.T) {
 //
 // Note: Handling logic itself is not testing in here, just queueing behavior.
 func TestOnRecvVSCMaturedPacket(t *testing.T) {
-
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
@@ -139,7 +137,6 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 }
 
 func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
-
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
@@ -220,7 +217,6 @@ func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
 // TestOnRecvSlashPacket tests the OnRecvSlashPacket method, and how it interacts with the
 // parent and per-chain slash packet queues.
 func TestOnRecvSlashPacket(t *testing.T) {
-
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
@@ -269,8 +265,8 @@ func TestOnRecvSlashPacket(t *testing.T) {
 }
 
 func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
-	channelID string, ibcSeqNum uint64) exported.Acknowledgement {
-
+	channelID string, ibcSeqNum uint64,
+) exported.Acknowledgement {
 	// Instantiate vsc matured packet data and bytes
 	data := testkeeper.GetNewVSCMaturedPacketData()
 	dataBz, err := data.Marshal()
@@ -284,8 +280,8 @@ func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, 
 }
 
 func executeOnRecvSlashPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
-	channelID string, ibcSeqNum uint64, packetData ccv.SlashPacketData) exported.Acknowledgement {
-
+	channelID string, ibcSeqNum uint64, packetData ccv.SlashPacketData,
+) exported.Acknowledgement {
 	// Instantiate slash packet data and bytes
 	dataBz, err := packetData.Marshal()
 	require.NoError(t, err)
@@ -299,7 +295,6 @@ func executeOnRecvSlashPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx s
 
 // TestValidateSlashPacket tests ValidateSlashPacket.
 func TestValidateSlashPacket(t *testing.T) {
-
 	validVscID := uint64(98)
 
 	testCases := []struct {
@@ -307,27 +302,41 @@ func TestValidateSlashPacket(t *testing.T) {
 		packetData ccv.SlashPacketData
 		expectErr  bool
 	}{
-		{"no block height found for given vscID",
+		{
+			"no block height found for given vscID",
 			ccv.SlashPacketData{ValsetUpdateId: 61},
-			true},
-		{"non-set infraction type",
+			true,
+		},
+		{
+			"non-set infraction type",
 			ccv.SlashPacketData{ValsetUpdateId: validVscID},
-			true},
-		{"invalid infraction type",
+			true,
+		},
+		{
+			"invalid infraction type",
 			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.MaxMonikerLength},
-			true},
-		{"valid double sign packet with non-zero vscID",
+			true,
+		},
+		{
+			"valid double sign packet with non-zero vscID",
 			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.DoubleSign},
-			false},
-		{"valid downtime packet with non-zero vscID",
+			false,
+		},
+		{
+			"valid downtime packet with non-zero vscID",
 			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.Downtime},
-			false},
-		{"valid double sign packet with zero vscID",
+			false,
+		},
+		{
+			"valid double sign packet with zero vscID",
 			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.DoubleSign},
-			false},
-		{"valid downtime packet with zero vscID",
+			false,
+		},
+		{
+			"valid downtime packet with zero vscID",
 			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.Downtime},
-			false},
+			false,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -358,7 +367,6 @@ func TestValidateSlashPacket(t *testing.T) {
 
 // TestHandleSlashPacket tests the handling of slash packets.
 func TestHandleSlashPacket(t *testing.T) {
-
 	chainId := "consumer-id"
 	validVscID := uint64(234)
 
@@ -408,7 +416,6 @@ func TestHandleSlashPacket(t *testing.T) {
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
 				return []*gomock.Call{
-
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(
 						stakingtypes.Validator{}, true,

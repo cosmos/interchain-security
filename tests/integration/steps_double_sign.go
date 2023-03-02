@@ -5,7 +5,7 @@ package main
 // Note: These steps would be affected by slash packet throttling, since the
 // consumer-initiated slash steps are executed after consumer-initiated downtime
 // slashes have already occurred. However slash packet throttling is
-// psuedo-disabled in this test by setting the slash meter replenish
+// pseudo-disabled in this test by setting the slash meter replenish
 // fraction to 1.0 in the config file.
 //
 // TODO: test throttling logic directly, https://github.com/cosmos/interchain-security/issues/509

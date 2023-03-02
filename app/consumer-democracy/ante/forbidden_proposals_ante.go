@@ -20,7 +20,7 @@ func (decorator ForbiddenProposalsDecorator) AnteHandle(ctx sdk.Context, tx sdk.
 
 	for _, msg := range tx.GetMsgs() {
 		submitProposalMgs, ok := msg.(*govtypes.MsgSubmitProposal)
-		//if the message is MsgSubmitProposal, check if proposal is whitelisted
+
 		if ok {
 			if !decorator.IsProposalWhitelisted(submitProposalMgs.GetContent()) {
 				return ctx, fmt.Errorf("tx contains unsupported proposal message types at height %d", currHeight)

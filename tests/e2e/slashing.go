@@ -33,7 +33,6 @@ const (
 // and double-signing, see TestValidatorDowntime and TestValidatorDoubleSigning for
 // those types of tests.
 func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
-
 	testCases := []int{
 		downtimeTestCase,
 		doubleSignTestCase,
@@ -162,7 +161,6 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		var slashFraction sdk.Dec
 		if tc == downtimeTestCase {
 			slashFraction = providerSlashingKeeper.SlashFractionDowntime(s.providerCtx())
-
 		} else if tc == doubleSignTestCase {
 			slashFraction = providerSlashingKeeper.SlashFractionDoubleSign(s.providerCtx())
 		}
@@ -258,7 +256,6 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 
 // TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an e2e testing setting
 func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
-
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
 	firstBundle := suite.getFirstBundle()
@@ -321,8 +318,10 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	// construct slashing packet with non existing validator
 	slashingPkt := ccv.NewSlashPacketData(
-		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
-			Power: int64(0)}, uint64(0), stakingtypes.Downtime,
+		abci.Validator{
+			Address: ed25519.GenPrivKey().PubKey().Address(),
+			Power:   int64(0),
+		}, uint64(0), stakingtypes.Downtime,
 	)
 
 	// Set initial block height for consumer chain
@@ -620,7 +619,7 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	// construct slash packet data and get the expcted commit hash
 	packetData := ccv.NewSlashPacketData(
 		abci.Validator{Address: consAddr.Bytes(), Power: power},
-		// get VSC ID mapping to the infraction height with the TM delay substracted
+		// get VSC ID mapping to the infraction height with the TM delay subtracted
 		suite.consumerApp.GetConsumerKeeper().GetHeightValsetUpdateID(ctx, uint64(infractionHeight-sdk.ValidatorUpdateDelay)),
 		stakingtypes.DoubleSign,
 	)
@@ -676,7 +675,8 @@ func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 		for i := 0; i < 4; i++ {
 			addr := ed25519.GenPrivKey().PubKey().Address()
 			val := abci.Validator{
-				Address: addr}
+				Address: addr,
+			}
 			consumerKeeper.QueueSlashPacket(ctx, val, 0, infraction)
 			slashedVals = append(slashedVals, slashedVal{validator: val, infraction: infraction})
 		}

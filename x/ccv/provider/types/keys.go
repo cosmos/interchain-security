@@ -322,8 +322,8 @@ func GlobalSlashEntryKey(entry GlobalSlashEntry) []byte {
 
 // ParseGlobalSlashEntry returns the received time and chainID for a global slash queue entry key.
 func ParseGlobalSlashEntryKey(bz []byte) (
-	recvTime time.Time, consumerChainID string, ibcSeqNum uint64) {
-
+	recvTime time.Time, consumerChainID string, ibcSeqNum uint64,
+) {
 	// Prefix is in first byte
 	expectedPrefix := []byte{GlobalSlashEntryBytePrefix}
 	if prefix := bz[:1]; !bytes.Equal(prefix, expectedPrefix) {

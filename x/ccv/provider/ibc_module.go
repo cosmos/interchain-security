@@ -46,7 +46,6 @@ func (am AppModule) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (metadata string, err error) {
-
 	// Validate parameters
 	if err := validateCCVChannelParams(
 		ctx, am.keeper, order, portID,
@@ -257,7 +256,6 @@ func (am AppModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {
-
 	if err := am.keeper.OnTimeoutPacket(ctx, packet); err != nil {
 		return err
 	}

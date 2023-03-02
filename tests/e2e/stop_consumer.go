@@ -11,7 +11,6 @@ import (
 
 // Tests the functionality of stopping a consumer chain at a higher level than unit tests
 func (s *CCVTestSuite) TestStopConsumerChain() {
-
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
@@ -82,7 +81,6 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 		},
 		{
 			func(suite *CCVTestSuite) error {
-
 				// Queue slash and vsc packet data for consumer 0, these queue entries will be removed
 				firstBundle := s.getFirstBundle()
 				globalEntry := types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), firstBundle.Chain.ChainID, 7, []byte{})
@@ -152,7 +150,7 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 	// s.Require().NoError(err)
 
 	// expect to panic in consumer chain's BeginBlock due to the above
-	//s.consumerChain.NextBlock()
+
 
 	// check that the provider's channel is removed
 	// _, found := s.consumerApp.GetConsumerKeeper().GetProviderChannel(s.consumerCtx())
@@ -212,7 +210,6 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 // TestProviderChannelClosed checks that a consumer chain panics
 // when the provider channel was established and then closed
 func (suite *CCVTestSuite) TestProviderChannelClosed() {
-
 	suite.SetupCCVChannel(suite.path)
 	// establish provider channel with a first VSC packet
 	suite.SendEmptyVSCPacket()

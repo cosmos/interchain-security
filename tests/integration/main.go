@@ -13,10 +13,12 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-var verbose = flag.Bool("verbose", false, "turn verbose logging on/off")
-var multiconsumer = flag.Bool("multiconsumer", false, "run happy path and multiconsumer tests in parallel")
-var localSdkPath = flag.String("local-sdk-path", "",
-	"path of a local sdk version to build and reference in integration tests")
+var (
+	verbose       = flag.Bool("verbose", false, "turn verbose logging on/off")
+	multiconsumer = flag.Bool("multiconsumer", false, "run happy path and multiconsumer tests in parallel")
+	localSdkPath  = flag.String("local-sdk-path", "",
+		"path of a local sdk version to build and reference in integration tests")
+)
 
 // runs integration tests
 // all docker containers are built sequentially to avoid race conditions when using local cosmos-sdk

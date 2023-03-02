@@ -22,7 +22,8 @@ var (
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
 // Delegator address and validator address are the same.
 func NewMsgAssignConsumerKey(chainID string, providerValidatorAddress sdk.ValAddress,
-	consumerConsensusPubKey cryptotypes.PubKey) (*MsgAssignConsumerKey, error) {
+	consumerConsensusPubKey cryptotypes.PubKey,
+) (*MsgAssignConsumerKey, error) {
 	var keyAsAny *codectypes.Any
 	if consumerConsensusPubKey != nil {
 		var err error

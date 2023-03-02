@@ -20,7 +20,6 @@ import (
 
 // Executes the standard group of ccv tests against a consumer and provider app.go implementation.
 func TestCCVTestSuite(t *testing.T) {
-
 	// Pass in concrete app types that implement the interfaces defined in /testutil/e2e/interfaces.go
 	ccvSuite := e2e.NewCCVTestSuite[*appProvider.App, *appConsumer.App](
 		// Pass in ibctesting.AppIniters for provider and consumer.
@@ -46,7 +45,6 @@ func TestConsumerDemocracyCCVTestSuite(t *testing.T) {
 // Executes a specialized group of tests specific to a democracy consumer,
 // against a democracy consumer app.go implementation.
 func TestConsumerDemocracyTestSuite(t *testing.T) {
-
 	// Pass in concrete app type that implement the interface defined in /testutil/e2e/interfaces.go
 	democSuite := e2e.NewConsumerDemocracyTestSuite[*appConsumerDemocracy.App](
 		// Pass in ibctesting.AppIniter for democracy consumer.
@@ -58,7 +56,6 @@ func TestConsumerDemocracyTestSuite(t *testing.T) {
 
 // Executes the standard group of ccv tests against a generic consumer app.go implementation and Gaia as the provider.
 func TestCCVTestSuiteGaia(t *testing.T) {
-
 	// Pass in concrete app types that implement the interfaces defined in /testutil/e2e/interfaces.go
 	ccvSuite := e2e.NewCCVTestSuite[*gaiaApp.GaiaApp, *appConsumer.App](
 		// Pass in ibctesting.AppIniters for gaia (provider) and consumer.

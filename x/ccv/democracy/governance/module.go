@@ -42,9 +42,8 @@ func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak govtypes.AccountKeep
 }
 
 func (am AppModule) EndBlock(ctx sdk.Context, request abci.RequestEndBlock) []abci.ValidatorUpdate {
-
 	am.keeper.IterateActiveProposalsQueue(ctx, ctx.BlockHeader().Time, func(proposal govtypes.Proposal) bool {
-		//if there are forbidden proposals in active proposals queue, refund deposit, delete votes for that proposal
+
 		//and delete proposal from all storages
 		deleteForbiddenProposal(ctx, am, proposal)
 		return false
@@ -58,7 +57,7 @@ func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govtypes.Pr
 		return
 	}
 
-	//delete the votes related to the proposal calling Tally
+
 	//Tally's return result won't be used in decision if the tokens will be burned or refunded (they are always refunded), but
 	//this function needs to be called to delete the votes related to the given proposal, since the deleteVote function is
 	// private and cannot be called directly from the overridden app module

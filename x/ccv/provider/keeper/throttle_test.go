@@ -21,7 +21,6 @@ import (
 // TestHandlePacketDataForChain tests the HandlePacketDataForChain function. Note: Only one consumer is tested here,
 // but multiple consumers are tested in TestPendingPacketData.
 func TestHandlePacketDataForChain(t *testing.T) {
-
 	testCases := []struct {
 		name    string
 		chainID string
@@ -283,7 +282,6 @@ func TestSlashMeterReplenishment(t *testing.T) {
 // TestSlashMeterAllowanceChanges tests the behavior of a full slash meter
 // when total voting power becomes higher and lower.
 func TestTotalVotingPowerChanges(t *testing.T) {
-
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -374,7 +372,6 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 // and also the fact that the replenishment allowance becomes lower as total
 // voting power becomes lower from slashing.
 func TestNegativeSlashMeter(t *testing.T) {
-
 	testCases := []struct {
 		slashedPower           sdktypes.Int
 		totalPower             sdktypes.Int
@@ -551,7 +548,6 @@ func TestGetSlashMeterAllowance(t *testing.T) {
 // TestGlobalSlashEntries tests the queue and iteration functions for global slash entries,
 // with assertion of FIFO ordering
 func TestGlobalSlashEntries(t *testing.T) {
-
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -646,7 +642,6 @@ func TestGlobalSlashEntries(t *testing.T) {
 
 // Tests DeleteGlobalSlashEntriesForConsumer.
 func TestDeleteGlobalSlashEntriesForConsumer(t *testing.T) {
-
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
 		t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -679,7 +674,6 @@ func TestDeleteGlobalSlashEntriesForConsumer(t *testing.T) {
 // TestGlobalSlashEntryDeletion tests the deletion function for
 // global slash entries with assertion of FIFO ordering.
 func TestGlobalSlashEntryDeletion(t *testing.T) {
-
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -741,7 +735,6 @@ func TestGlobalSlashEntryDeletion(t *testing.T) {
 // TestThrottledPacketData tests chain-specific throttled packet data queuing,
 // iteration and deletion functionality.
 func TestThrottledPacketData(t *testing.T) {
-
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
@@ -830,7 +823,6 @@ func TestThrottledPacketData(t *testing.T) {
 }
 
 func TestGetLeadingVSCMaturedData(t *testing.T) {
-
 	// Instantiate some sample data
 	slashData := getTenSampleSlashPacketData()
 	vscMaturedData := getTenSampleVSCMaturedPacketData()
@@ -935,7 +927,6 @@ func TestGetLeadingVSCMaturedData(t *testing.T) {
 }
 
 func TestGetSlashAndTrailingData(t *testing.T) {
-
 	// Instantiate some data to test against
 	someSlashData := getTenSampleSlashPacketData()
 	someVSCMaturedData := getTenSampleVSCMaturedPacketData()
@@ -1039,7 +1030,6 @@ func TestGetSlashAndTrailingData(t *testing.T) {
 
 // TestDeleteThrottledPacketDataForConsumer tests the DeleteThrottledPacketDataForConsumer method.
 func TestDeleteThrottledPacketDataForConsumer(t *testing.T) {
-
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
@@ -1075,7 +1065,6 @@ func TestDeleteThrottledPacketDataForConsumer(t *testing.T) {
 // TestPanicIfTooMuchThrottledPacketData tests that the provider panics
 // when the number of throttled (queued) packets exceeds the max allowed by params.
 func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
-
 	testCases := []struct {
 		max int64
 	}{
@@ -1129,7 +1118,6 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 
 // TestThrottledPacketDataSize tests the getter, setter and incrementer for throttled packet data size.
 func TestThrottledPacketDataSize(t *testing.T) {
-
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -1151,7 +1139,6 @@ func TestThrottledPacketDataSize(t *testing.T) {
 
 // TestSlashMeter tests the getter and setter for the slash gas meter
 func TestSlashMeter(t *testing.T) {
-
 	testCases := []struct {
 		meterValue  sdktypes.Int
 		shouldPanic bool
@@ -1190,7 +1177,6 @@ func TestSlashMeter(t *testing.T) {
 // TestLastSlashMeterFullTime tests the getter and setter for the most recent time
 // the slash meter was full.
 func TestLastSlashMeterFullTime(t *testing.T) {
-
 	testCases := []time.Time{
 		time.Now(),
 		time.Now().Add(1 * time.Hour).UTC(),
@@ -1224,7 +1210,6 @@ type throttledPacketDataInstance struct {
 // getAllThrottledPacketDataInstances returns all throttled packet data instances in order
 // from the chain-specific packet data queue.
 func getAllThrottledPacketDataInstances(ctx sdktypes.Context, k *keeper.Keeper, consumerChainId string) (instances []throttledPacketDataInstance) {
-
 	_, _, allData, ibcSeqNums := k.GetAllThrottledPacketData(ctx, consumerChainId)
 	instances = []throttledPacketDataInstance{}
 	for idx, data := range allData {
@@ -1247,7 +1232,8 @@ func getOrderedInstances(instances []throttledPacketDataInstance, orderbyIdx []i
 
 // Asserts that the throttled packet data retrieved for this consumer chain matches what's expected
 func assertPendingPacketDataOrdering(t *testing.T, k *keeper.Keeper, ctx sdktypes.Context,
-	consumerChainId string, expectedInstances []throttledPacketDataInstance) {
+	consumerChainId string, expectedInstances []throttledPacketDataInstance,
+) {
 	// Get all packet data for this chain
 	obtainedInstances := getAllThrottledPacketDataInstances(ctx, k, consumerChainId)
 	// No extra data should be present

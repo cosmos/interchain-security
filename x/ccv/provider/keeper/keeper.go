@@ -508,8 +508,8 @@ func (k Keeper) ConsumeMaturedUnbondingOps(ctx sdk.Context) ([]uint64, error) {
 
 // Retrieves the underlying client state corresponding to a connection ID.
 func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (
-	clientID string, tmClient *ibctmtypes.ClientState, err error) {
-
+	clientID string, tmClient *ibctmtypes.ClientState, err error,
+) {
 	conn, ok := k.connectionKeeper.GetConnection(ctx, connectionID)
 	if !ok {
 		return "", nil, sdkerrors.Wrapf(conntypes.ErrConnectionNotFound,

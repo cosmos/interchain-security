@@ -347,11 +347,9 @@ func (k Keeper) AssignConsumerKey(
 	validator stakingtypes.Validator,
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
-
 	consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
 
 	providerAddr, err := validator.GetConsAddr()
-
 	if err != nil {
 		return err
 	}

@@ -217,7 +217,6 @@ func (s *CoreSuite) endAndBeginBlock(chain string) {
 // matchState compares the state in the SUT to the state in the
 // the model.
 func (s *CoreSuite) matchState() {
-
 	// Get a diagnostic for debugging
 	diagnostic := s.traces.Diagnostic()
 	chain := s.traces.Action().Chain
@@ -261,7 +260,6 @@ func (s *CoreSuite) matchState() {
 }
 
 func (s *CoreSuite) executeTrace() {
-
 	for i := range s.traces.Actions() {
 		s.traces.CurrentActionIx = i
 
@@ -302,7 +300,6 @@ func (s *CoreSuite) executeTrace() {
 // driver hold. This test therefore does not test the system, but only that
 // the driver is correctly setup.
 func (s *CoreSuite) TestAssumptions() {
-
 	const FAIL_MSG = "Assumptions for core diff test failed: there is a problem with the driver or how the test is setup."
 
 	// Staking module maxValidators param is correct
@@ -460,7 +457,6 @@ func (s *CoreSuite) TestTraces() {
 		}
 	}
 	fmt.Println("Shortest [traceIx, actionIx]:", shortest, shortestLen)
-
 }
 
 func TestCoreSuite(t *testing.T) {

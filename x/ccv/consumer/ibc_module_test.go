@@ -24,7 +24,6 @@ import (
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-ccf-coinit1
 // Spec tag: [CCV-CCF-COINIT.1]
 func TestOnChanOpenInit(t *testing.T) {
-
 	// Params for the OnChanOpenInit method
 	type params struct {
 		ctx            sdk.Context
@@ -150,7 +149,6 @@ func TestOnChanOpenInit(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-ccf-cotry1
 // Spec tag: [CCV-CCF-COTRY.1]
 func TestOnChanOpenTry(t *testing.T) {
-
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	// No external keeper methods should be called
 	defer ctrl.Finish()
@@ -175,7 +173,6 @@ func TestOnChanOpenTry(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-ccf-coack1
 // Spec tag: [CCV-CCF-COACK.1]
 func TestOnChanOpenAck(t *testing.T) {
-
 	// Params for the OnChanOpenAck method
 	type params struct {
 		ctx                   sdk.Context
@@ -309,7 +306,6 @@ func TestOnChanOpenConfirm(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-ccf-ccinit1
 // Spec tag: [CCV-CCF-CCINIT.1]
 func TestOnChanCloseInit(t *testing.T) {
-
 	testCases := []struct {
 		name                      string
 		channelToClose            string
@@ -360,7 +356,6 @@ func TestOnChanCloseInit(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-ccconfirm1// Spec tag: [CCV-CCF-CCINIT.1]
 // Spec tag: [CCV-PCF-CCCONFIRM.1]
 func TestOnChanCloseConfirm(t *testing.T) {
-
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 	// No external keeper methods should be called

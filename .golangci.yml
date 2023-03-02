@@ -1,105 +1,92 @@
 run:
-  timeout: 10m
-  disable-all: true
   tests: true
+  # timeout for analysis, e.g. 30s, 5m, default is 1m
+  timeout: 5m
+
+linters:
+  disable-all: true
   enable:
-    - asasalint
-    - asciicheck
-    - bidichk
-    - bodyclose
-    - containedctx
-    - contextcheck
-    - cyclop
-    - deadcode
-    - decorder
     - depguard
     - dogsled
-    - dupl
-    - durationcheck
     - errcheck
-    - errchkjson
-    - errname
-    - errorlint
-    - execinquery
-    - exhaustive
-    - exhaustivestruct
-    - exhaustruct
     - exportloopref
-    - forbidigo
-    - forcetypeassert
-    - funlen
-    - gci
-    - gochecknoglobals
-    - gochecknoinits
-    - gocognit
     - goconst
     - gocritic
-    - gocyclo
-    - godot
-    - godox
-    - goerr113
     - gofumpt
-    - goheader
-    - golint
-    - gomnd
-    - gomoddirectives
-    - gomodguard
-    - goprintffuncname
     - gosec
     - gosimple
     - govet
-    - grouper
-    - ifshort
-    - importas
     - ineffassign
-    - interfacebloat
-    - interfacer
-    - ireturn
-    - lll
-    - loggercheck
-    - maintidx
-    - makezero
-    - maligned
     - misspell
     - nakedret
-    - nestif
-    - nilerr
-    - nilnil
-    - nlreturn
-    - noctx
     - nolintlint
-    - nonamedreturns
-    - nosnakecase
-    - nosprintfhostport
-    - paralleltest
-    - prealloc
-    - predeclared
-    - promlinter
-    - reassign
     - revive
-    - rowserrcheck
-    - scopelint
-    - sqlclosecheck
     - staticcheck
-    - structcheck
     - stylecheck
-    - tagliatelle
-    - tenv
-    - testableexamples
-    - testpackage
-    - thelper
-    - tparallel
     - typecheck
     - unconvert
     - unparam
     - unused
-    - usestdlibvars
-    - varcheck
-    - varnamelen
-    - wastedassign
-    - whitespace
-    - wrapcheck
-    - wsl
+
+# TODO: fix the sdkerrors.Wrap deprecation warning and re-enable staticcheck
+# TODO: fix the use of deprecated gov style
 
 issues:
-  max-same-issues: 0
+  exclude-rules:
+    - text: "SA1019: sdkerrors.Register"
+      linters:
+        - staticcheck
+    - text: "sdkerrors.ABCIInfo is deprecated"
+      linters:
+        - staticcheck
+    - text: "sdkerrors.IsOf is deprecated"
+      linters:
+        - staticcheck
+    - text: "Use WeightedProposalMsg instead"
+      linters:
+        - staticcheck
+    - text: "Use MsgSimulatorFn instead"
+      linters:
+        - staticcheck
+    - text: "Error return value of `flagSet.Set` is not checked"
+      linters:
+        - errcheck
+    - text: "SA1019: sdkerrors.Wrapf is deprecated: functionality of this package has been moved to it's own module"
+      linters:
+        - staticcheck
+    - text: "sdkerrors.Error is deprecated: the type has been moved to cosmossdk.io/errors module"
+      linters:
+        - staticcheck
+    - text: "sdkerrors.Wrap is deprecated"
+      linters:
+        - staticcheck
+    - text: "Use of weak random number generator"
+      linters:
+        - gosec
+    - text: "ST1003:"
+      linters:
+        - stylecheck
+    # FIXME: Disabled until golangci-lint updates stylecheck with this fix:
+    # https://github.com/dominikh/go-tools/issues/389
+    - text: "ST1016:"
+      linters:
+        - stylecheck
+    - path: "migrations"
+      text: "SA1019:"
+      linters:
+        - staticcheck
+
+  max-issues-per-linter: 10000
+  max-same-issues: 10000
+
+linters-settings:
+  dogsled:
+    max-blank-identifiers: 3
+  maligned:
+    # print struct with more effective memory layout or not, false by default
+    suggest-new: true
+  nolintlint:
+    allow-unused: false
+    allow-leading-space: true
+    require-explanation: false
+    require-specific: false

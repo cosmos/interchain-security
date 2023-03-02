@@ -62,10 +62,10 @@ func (p ConsumerRemovalProposal) isProposal() {}
 
 type Rewards struct {
 	IsRewarded map[validatorID]bool
-	//if true it will calculate if the validator/delegator is rewarded between 2 successive blocks,
+
 	//otherwise it will calculate if it received any rewards since the 1st block
 	IsIncrementalReward bool
-	//if true checks rewards for "stake" token, otherwise checks rewards from
+
 	//other chains (e.g. false is used to check if provider received rewards from a consumer chain)
 	IsNativeDenom bool
 }
@@ -170,7 +170,6 @@ func (tr TestRun) getBlockHeight(chain chainID) uint {
 
 		`--node`, tr.getQueryNode(chain),
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -263,7 +262,6 @@ func (tr TestRun) getRewards(chain chainID, modelState Rewards) Rewards {
 }
 
 func (tr TestRun) getReward(chain chainID, validator validatorID, blockHeight uint, isNativeDenom bool) float64 {
-
 	delAddresss := tr.validatorConfigs[validator].delAddress
 	if chain != chainID("provi") && tr.validatorConfigs[validator].useConsumerKey {
 		delAddresss = tr.validatorConfigs[validator].consumerDelAddress
@@ -278,7 +276,6 @@ func (tr TestRun) getReward(chain chainID, validator validatorID, blockHeight ui
 		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -307,7 +304,6 @@ func (tr TestRun) getBalance(chain chainID, validator validatorID) uint {
 		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -433,7 +429,6 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 
 		`--node`, tr.getQueryNode(chain),
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
@@ -482,7 +477,6 @@ func (tr TestRun) getRepresentativePower(chain chainID, validator validatorID) u
 		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -503,7 +497,6 @@ func (tr TestRun) getParam(chain chainID, param Param) string {
 		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}

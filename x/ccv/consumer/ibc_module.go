@@ -277,7 +277,6 @@ func (am AppModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {
-
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypeTimeout,

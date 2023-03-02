@@ -1,15 +1,15 @@
 package provider_test
 
 import (
+	"testing"
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-
-	"testing"
-	"time"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
@@ -20,7 +20,6 @@ import (
 // TestConsumerChainProposalHandler tests the highest level handler for proposals concerning both
 // creating and stopping consumer chains.
 func TestConsumerChainProposalHandler(t *testing.T) {
-
 	// Snapshot times asserted in tests
 	now := time.Now().UTC()
 	hourFromNow := now.Add(time.Hour).UTC()

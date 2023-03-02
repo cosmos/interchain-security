@@ -17,7 +17,6 @@ import (
 // Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
 func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
-
 	ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
 	if err != nil {
 		return err
@@ -108,8 +107,8 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 }
 
 func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) (
-	*types.LastTransmissionBlockHeight, error) {
-
+	*types.LastTransmissionBlockHeight, error,
+) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.LastDistributionTransmissionKey())
 	ltbh := &types.LastTransmissionBlockHeight{}
@@ -123,8 +122,8 @@ func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) (
 }
 
 func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context,
-	ltbh types.LastTransmissionBlockHeight) error {
-
+	ltbh types.LastTransmissionBlockHeight,
+) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := ltbh.Marshal()
 	if err != nil {
@@ -135,7 +134,8 @@ func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context,
 }
 
 func (k Keeper) ChannelOpenInit(ctx sdk.Context, msg *channeltypes.MsgChannelOpenInit) (
-	*channeltypes.MsgChannelOpenInitResponse, error) {
+	*channeltypes.MsgChannelOpenInitResponse, error,
+) {
 	return k.ibcCoreKeeper.ChannelOpenInit(sdk.WrapSDKContext(ctx), msg)
 }
 

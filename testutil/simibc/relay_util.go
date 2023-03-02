@@ -16,7 +16,6 @@ import (
 // UpdateReceiverClient is used to send a header to the receiving endpoint and update
 // the client of the respective chain.
 func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, header *ibctmtypes.Header) (err error) {
-
 	header, err = constructTMHeader(receiver.Chain, header, sender.Chain, receiver.ClientID, clienttypes.ZeroHeight())
 
 	if err != nil {
@@ -73,7 +72,6 @@ func TryRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, p
 		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
 		true, true, receiver.Chain.SenderPrivKey,
 	)
-
 	if err != nil {
 		return nil, err
 	}

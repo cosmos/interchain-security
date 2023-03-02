@@ -1,9 +1,8 @@
 package simibc
 
 import (
-	"time"
-
 	"testing"
+	"time"
 
 	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -116,7 +115,7 @@ func (f *RelayedPath) EndAndBeginBlock(chainID string, dt time.Duration, preComm
 		}
 	}
 
-	// Commit packets emmitted up to this point
+	// Commit packets emitted up to this point
 	f.Link.Commit(chainID)
 
 	// increment the current header

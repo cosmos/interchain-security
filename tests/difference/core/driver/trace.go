@@ -67,10 +67,8 @@ type TraceData struct {
 }
 
 func LoadTraces(fn string) []TraceData {
-
 	/* #nosec */
 	fd, err := os.Open(fn)
-
 	if err != nil {
 		panic(err)
 	}
@@ -111,6 +109,7 @@ func (t *Traces) Diagnostic() string {
 func (t *Traces) Trace() TraceData {
 	return t.Data[t.CurrentTraceIx]
 }
+
 func (t *Traces) Actions() []ActionAndConsequence {
 	return t.Trace().Actions
 }

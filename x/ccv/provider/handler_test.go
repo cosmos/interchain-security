@@ -28,7 +28,6 @@ func TestInvalidMsg(t *testing.T) {
 }
 
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
-
 	testValProvider := testcrypto.NewCryptoIdentityFromIntSeed(0)
 	testValConsumer := testcrypto.NewCryptoIdentityFromIntSeed(1)
 
@@ -42,8 +41,8 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 		{
 			name: "success",
 			setup: func(ctx sdk.Context,
-				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
-
+				k keeper.Keeper, mocks testkeeper.MockedKeepers,
+			) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, testValProvider.SDKValAddress(),
@@ -60,8 +59,8 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 		{
 			name: "fail: missing validator",
 			setup: func(ctx sdk.Context,
-				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
-
+				k keeper.Keeper, mocks testkeeper.MockedKeepers,
+			) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, testValProvider.SDKValAddress(),
@@ -75,8 +74,8 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 		{
 			name: "fail: consumer key in use",
 			setup: func(ctx sdk.Context,
-				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
-
+				k keeper.Keeper, mocks testkeeper.MockedKeepers,
+			) {
 				// Use the consumer key already
 				k.SetValidatorByConsumerAddr(ctx, "chainid", testValConsumer.SDKConsAddress(), testValProvider.SDKConsAddress())
 
@@ -97,7 +96,6 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 			tc.setup(ctx, k, mocks)

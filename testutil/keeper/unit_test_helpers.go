@@ -107,7 +107,6 @@ func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 
 // NewInMemProviderKeeper instantiates an in-mem provider keeper from params and mocked keepers
 func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) providerkeeper.Keeper {
-
 	return providerkeeper.NewKeeper(
 		params.Cdc,
 		params.StoreKey,
@@ -126,7 +125,6 @@ func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) provi
 
 // NewInMemConsumerKeeper instantiates an in-mem consumer keeper from params and mocked keepers
 func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consumerkeeper.Keeper {
-
 	return consumerkeeper.NewKeeper(
 		params.Cdc,
 		params.StoreKey,
@@ -150,8 +148,8 @@ func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consu
 // Note: Calling ctrl.Finish() at the end of a test function ensures that
 // no unexpected calls to external keepers are made.
 func GetProviderKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
-	providerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers) {
-
+	providerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers,
+) {
 	ctrl := gomock.NewController(t)
 	mocks := NewMockedKeepers(ctrl)
 	return NewInMemProviderKeeper(params, mocks), params.Ctx, ctrl, mocks
@@ -162,8 +160,8 @@ func GetProviderKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 // Note: Calling ctrl.Finish() at the end of a test function ensures that
 // no unexpected calls to external keepers are made.
 func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
-	consumerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers) {
-
+	consumerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers,
+) {
 	ctrl := gomock.NewController(t)
 	mocks := NewMockedKeepers(ctrl)
 	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
@@ -219,8 +217,8 @@ func GetNewVSCMaturedPacketData() ccvtypes.VSCMaturedPacketData {
 // SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
 // which asserts that a consumer chain was properly stopped from StopConsumerChain().
 func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
-	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers) {
-
+	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers,
+) {
 	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
 		"chainID", clienttypes.NewHeight(4, 5))
 	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)

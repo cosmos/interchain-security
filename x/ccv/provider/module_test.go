@@ -22,7 +22,6 @@ import (
 //
 // Note: Genesis validation for the provider is tested in TestValidateGenesisState
 func TestInitGenesis(t *testing.T) {
-
 	type testCase struct {
 		name string
 		// Whether port capability is already bound to the CCV provider module
