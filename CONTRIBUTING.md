@@ -8,7 +8,7 @@
   - [Testing](#testing)
   - [Protobuf](#protobuf)
 
-Thank you for considering making contributions to ICS!
+Thank you for considering making contributions to Interchain Security (ICS)!
 
 To contribute, you could start by browsing [new issues](https://github.com/cosmos/interchain-security/issues).
 
