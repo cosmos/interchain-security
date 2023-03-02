@@ -381,7 +381,7 @@ func (k Keeper) SetOutstandingDowntime(ctx sdk.Context, address sdk.ConsAddress)
 func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 	consAddr, err := sdk.ConsAddressFromBech32(consAddress)
 	if err != nil {
-		return
+		return // TODO: this should panic with appropriate tests to validate the panic wont happen in normal cases.
 	}
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.OutstandingDowntimeKey(consAddr))

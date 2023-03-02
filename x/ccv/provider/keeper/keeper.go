@@ -680,6 +680,9 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId ui
 }
 
 // SetSlashAcks sets the slash acks under the given chain ID
+//
+// TODO: SlashAcks should be persisted as a list of ConsumerConsAddr types, not strings.
+// See https://github.com/cosmos/interchain-security/issues/728
 func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -696,6 +699,9 @@ func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 }
 
 // GetSlashAcks returns the slash acks stored under the given chain ID
+//
+// TODO: SlashAcks should be persisted as a list of ConsumerConsAddr types, not strings.
+// See https://github.com/cosmos/interchain-security/issues/728
 func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SlashAcksKey(chainID))
@@ -730,7 +736,9 @@ func (k Keeper) DeleteSlashAcks(ctx sdk.Context, chainID string) {
 }
 
 // AppendSlashAck appends the given slash ack to the given chain ID slash acks in store
-func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID, ack string) {
+func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID,
+	ack string, // TODO: consumer cons addr should be accepted here, see https://github.com/cosmos/interchain-security/issues/728
+) {
 	acks := k.GetSlashAcks(ctx, chainID)
 	acks = append(acks, ack)
 	k.SetSlashAcks(ctx, chainID, acks)
@@ -996,7 +1004,7 @@ func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSe
 // double signing slash packet was received by the provider from at least one consumer chain
 func (k Keeper) SetSlashLog(
 	ctx sdk.Context,
-	providerAddr sdk.ConsAddress,
+	providerAddr types.ProviderConsAddress,
 ) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.SlashLogKey(providerAddr), []byte{})
@@ -1006,7 +1014,7 @@ func (k Keeper) SetSlashLog(
 // True will be returned if an entry exists for a given validator address
 func (k Keeper) GetSlashLog(
 	ctx sdk.Context,
-	providerAddr sdk.ConsAddress,
+	providerAddr types.ProviderConsAddress,
 ) (found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SlashLogKey(providerAddr))

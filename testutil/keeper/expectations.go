@@ -10,6 +10,7 @@ import (
 	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
 
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
@@ -92,31 +93,31 @@ func GetMocksForStopConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomo
 }
 
 func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
-	expectedProviderValConsAddr sdk.ConsAddress,
+	expectedProviderValConsAddr providertypes.ProviderConsAddress,
 	valToReturn stakingtypes.Validator, expectJailing bool) []*gomock.Call {
 
 	// These first two calls are always made.
 	calls := []*gomock.Call{
 
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-			ctx, expectedProviderValConsAddr).Return(
+			ctx, expectedProviderValConsAddr.ToSdkConsAddr()).Return(
 			valToReturn, true,
 		).Times(1),
 
 		mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
-			sdk.ConsAddress(expectedProviderValConsAddr)).Return(false).Times(1),
+			expectedProviderValConsAddr.ToSdkConsAddr()).Return(false).Times(1),
 	}
 
 	if expectJailing {
 		calls = append(calls, mocks.MockStakingKeeper.EXPECT().Jail(
 			gomock.Eq(ctx),
-			gomock.Eq(sdk.ConsAddress(expectedProviderValConsAddr)),
+			gomock.Eq(expectedProviderValConsAddr.ToSdkConsAddr()),
 		).Return())
 
 		// JailUntil is set in this code path.
 		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour).Times(1))
 		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().JailUntil(ctx,
-			sdk.ConsAddress(expectedProviderValConsAddr), gomock.Any()).Times(1))
+			expectedProviderValConsAddr.ToSdkConsAddr(), gomock.Any()).Times(1))
 	}
 
 	return calls

@@ -104,7 +104,7 @@ message GlobalSlashEntry {
   // This field is used to obtain validator power in HandleThrottleQueues.
   // 
   // This field is not used in the store key, but is persisted in value bytes, see QueueGlobalSlashEntry.
-  bytes provider_val_cons_addr = 4;
+  ProviderConsAddress provider_val_cons_addr = 4;
 }
  
 // Params defines the parameters for CCV Provider module
@@ -143,7 +143,7 @@ message HandshakeMetadata {
   string version = 2;
 }
 
-// SlashAcks contains addesses of consumer chain validators
+// SlashAcks contains cons addresses of consumer chain validators
 // successfully slashed on the provider chain
 message SlashAcks {
   repeated string addresses = 1;
@@ -159,11 +159,6 @@ message ConsumerAdditionProposals {
 message ConsumerRemovalProposals {
   // proposals waiting for stop_time to pass
   repeated ConsumerRemovalProposal pending = 1;
-}
-
-// AddressList contains a list of consensus addresses
-message AddressList {
-  repeated bytes addresses = 1;
 }
 
 message ChannelToChain {
@@ -196,9 +191,57 @@ message VscSendTimestamp {
   google.protobuf.Timestamp timestamp = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }
 
+//
+// Key assignment section
+//
+
+// A validator's assigned consensus address for a consumer chain. 
+// Note this type is for type safety within provider code, consumer code uses normal sdk.ConsAddress, 
+// since there's no notion of provider vs consumer address.
+message ConsumerConsAddress {
+  // Do not generate stringer for this type, we'll use sdk.ConsAddress.String() instead
+  option (gogoproto.goproto_stringer) = false;
+  bytes address = 1;
+}
+
+// A validator's consensus address on the provider chain
+message ProviderConsAddress {
+  // Do not generate stringer for this type, we'll use sdk.ConsAddress.String() instead
+  option (gogoproto.goproto_stringer) = false;
+  bytes address = 1;
+}
+
+// ConsumerAddressList contains a list of consumer consensus addresses
+message ConsumerAddressList {
+  repeated ConsumerConsAddress addresses = 1;
+}
+  
 message KeyAssignmentReplacement {
-  bytes provider_addr = 1;
+  ProviderConsAddress provider_addr = 1;
   tendermint.crypto.PublicKey prev_c_key = 2;
   int64 power = 3;
 }
 
+// Used to serialize the ValidatorConsumerPubKey index from key assignment
+// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey tmprotocrypto.PublicKey
+message ValidatorConsumerPubKey {
+  string chain_id = 1;
+  ProviderConsAddress provider_addr = 2;
+  tendermint.crypto.PublicKey consumer_key = 3;
+}
+
+// Used to serialize the ValidatorConsumerAddr index from key assignment
+// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr consAddr
+message ValidatorByConsumerAddr {
+  string chain_id = 1;
+  ConsumerConsAddress consumer_addr = 2;
+  ProviderConsAddress provider_addr = 3;
+}
+
+// Used to serialize the ConsumerAddrsToPrune index from key assignment
+// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrs AddressList
+message ConsumerAddrsToPrune {
+  string chain_id = 1;
+  uint64 vsc_id = 2;
+  ConsumerAddressList consumer_addrs = 3;
+}

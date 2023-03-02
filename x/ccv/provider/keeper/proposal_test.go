@@ -534,7 +534,7 @@ func TestStopConsumerChain(t *testing.T) {
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
 
 				providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-					ctx.BlockTime(), "chainID", 1, cryptoutil.NewCryptoIdentityFromIntSeed(90).SDKValConsAddress()))
+					ctx.BlockTime(), "chainID", 1, cryptoutil.NewCryptoIdentityFromIntSeed(90).ProviderConsAddress()))
 
 				err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chainID", 1, testkeeper.GetNewSlashPacketData())
 				if err != nil {
@@ -1080,10 +1080,10 @@ func TestHandleEquivocationProposal(t *testing.T) {
 			// Set slash logs according to cons addrs in equivocations
 			consAddr := equivocations[0].GetConsensusAddress()
 			require.NotNil(t, consAddr, "consensus address could not be parsed")
-			keeper.SetSlashLog(ctx, consAddr)
+			keeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(consAddr))
 			consAddr = equivocations[1].GetConsensusAddress()
 			require.NotNil(t, consAddr, "consensus address could not be parsed")
-			keeper.SetSlashLog(ctx, consAddr)
+			keeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(consAddr))
 		}
 
 		if tc.expectEquivsHandled {
