@@ -61,10 +61,10 @@ type DemocSetupCallback func(t *testing.T) (
 )
 
 // SetupTest sets up in-mem state before every test relevant to ccv with a democracy consumer
-func (suite *ConsumerDemocracyTestSuite) SetupTest() {
+func (s *ConsumerDemocracyTestSuite) SetupTest() {
 	// Instantiate new test utils using callback
-	suite.coordinator, suite.consumerChain,
-		suite.consumerApp = suite.setupCallback(suite.T())
+	s.coordinator, s.consumerChain,
+		s.consumerApp = s.setupCallback(s.T())
 }
 
 func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
@@ -212,7 +212,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 }
 
 func submitProposalWithDepositAndVote(govKeeper e2eutil.E2eGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
-	accounts []ibctesting.SenderAccount, depositAmount sdk.Coins,
+	accounts []ibctesting.SenderAccount, depositAmount sdk.Coins, //nolint:unparam
 ) error {
 	proposal, err := govKeeper.SubmitProposal(ctx, &paramChange)
 	if err != nil {

@@ -236,7 +236,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 }
 
 // generateNewConsumerKey generate new consumer key for the validator with valIndex
-func generateNewConsumerKey(s *CCVTestSuite, valIndex int) (stakingtypes.Validator, tmprotocrypto.PublicKey) {
+func generateNewConsumerKey(s *CCVTestSuite, valIndex int) (stakingtypes.Validator, tmprotocrypto.PublicKey) { //nolint:unparam
 	// get validator
 	s.Require().Less(valIndex, len(s.providerChain.Vals.Validators))
 	_, valAddr := s.getValByIdx(valIndex)
