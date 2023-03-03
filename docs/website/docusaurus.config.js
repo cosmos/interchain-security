@@ -40,7 +40,7 @@ const config = {
           versions: {
             current: {
               path: "/",
-              banner: "unreleased",
+              // banner: "current",
             },
           },
         },
