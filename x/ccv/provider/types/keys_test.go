@@ -106,12 +106,12 @@ func TestChainIdAndUintIdAndParse(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		key := providertypes.ChainIdAndUintIdKey(test.prefix, test.chainID, test.uintID)
+		key := providertypes.ChainIDAndUintIDKey(test.prefix, test.chainID, test.uintID)
 		require.NotEmpty(t, key)
 		// Expected bytes = prefix + chainID length + chainID + vscId bytes
 		expectedLen := 1 + 8 + len(test.chainID) + 8
 		require.Equal(t, expectedLen, len(key))
-		parsedChainID, parsedUintID, err := providertypes.ParseChainIdAndUintIdKey(test.prefix, key)
+		parsedChainID, parsedUintID, err := providertypes.ParseChainIDAndUintIDKey(test.prefix, key)
 		require.Equal(t, test.chainID, parsedChainID)
 		require.Equal(t, test.uintID, parsedUintID)
 		require.NoError(t, err)

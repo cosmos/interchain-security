@@ -656,12 +656,12 @@ func (k Keeper) chanCloseInit(ctx sdk.Context, channelID string) error {
 	return k.channelKeeper.ChanCloseInit(ctx, ccv.ProviderPortID, channelID, chanCap)
 }
 
-func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
-	validatorSetUpdateId := k.GetValidatorSetUpdateId(ctx)
-	k.SetValidatorSetUpdateId(ctx, validatorSetUpdateId+1)
+func (k Keeper) IncrementValidatorSetUpdateID(ctx sdk.Context) {
+	validatorSetUpdateId := k.GetValidatorSetUpdateID(ctx)
+	k.SetValidatorSetUpdateID(ctx, validatorSetUpdateId+1)
 }
 
-func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, valUpdateID uint64) {
+func (k Keeper) SetValidatorSetUpdateID(ctx sdk.Context, valUpdateID uint64) {
 	store := ctx.KVStore(k.storeKey)
 
 	// Convert back into bytes for storage
@@ -671,7 +671,7 @@ func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, valUpdateID uint64) {
 	store.Set(types.ValidatorSetUpdateIdKey(), bz)
 }
 
-func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId uint64) {
+func (k Keeper) GetValidatorSetUpdateID(ctx sdk.Context) (validatorSetUpdateId uint64) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ValidatorSetUpdateIdKey())
 

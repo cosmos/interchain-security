@@ -49,7 +49,7 @@ type TraceData struct {
 		JailSeconds             int     `json:"JAIL_SECONDS"`
 		MaxNumPacketsForDeliver int     `json:"MAX_NUM_PACKETS_FOR_DELIVER"`
 		MaxValidators           int     `json:"MAX_VALIDATORS"`
-		NumValidators           int     `json:"NUM_VALIDATORS"`
+		NumValidators           int     `json:"NumValidators"`
 		P                       string  `json:"P"`
 		SlashDoublesign         int     `json:"SLASH_DOUBLESIGN"`
 		SlashDowntime           int     `json:"SLASH_DOWNTIME"`

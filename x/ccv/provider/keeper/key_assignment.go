@@ -343,7 +343,7 @@ func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, chainID string) (con
 	iterator := sdk.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		_, vscID, err := types.ParseChainIdAndUintIdKey(types.ConsumerAddrsToPruneBytePrefix, iterator.Key())
+		_, vscID, err := types.ParseChainIDAndUintIDKey(types.ConsumerAddrsToPruneBytePrefix, iterator.Key())
 		if err != nil {
 			// An error here would indicate something is very wrong,
 			// store keys are assumed to be correctly serialized in AppendConsumerAddrsToPrune.
@@ -427,7 +427,7 @@ func (k Keeper) AssignConsumerKey(
 			k.AppendConsumerAddrsToPrune(
 				ctx,
 				chainID,
-				k.GetValidatorSetUpdateId(ctx),
+				k.GetValidatorSetUpdateID(ctx),
 				oldConsumerAddr,
 			)
 		} else {

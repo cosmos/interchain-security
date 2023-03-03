@@ -135,7 +135,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	chainID, found := pk.GetChannelToChain(ctx, provGenesis.ConsumerStates[0].ChannelId)
 	require.True(t, found)
 	require.Equal(t, cChainIDs[0], chainID)
-	require.Equal(t, vscID, pk.GetValidatorSetUpdateId(ctx))
+	require.Equal(t, vscID, pk.GetValidatorSetUpdateID(ctx))
 	height, found := pk.GetValsetUpdateBlockHeight(ctx, vscID)
 	require.True(t, found)
 	require.Equal(t, initHeight, height)

@@ -24,7 +24,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 	}
 
-	k.SetValidatorSetUpdateId(ctx, genState.ValsetUpdateId)
+	k.SetValidatorSetUpdateID(ctx, genState.ValsetUpdateId)
 	for _, v2h := range genState.ValsetUpdateIdToHeight {
 		k.SetValsetUpdateBlockHeight(ctx, v2h.ValsetUpdateId, v2h.Height)
 	}
@@ -136,7 +136,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	params := k.GetParams(ctx)
 
 	return types.NewGenesisState(
-		k.GetValidatorSetUpdateId(ctx),
+		k.GetValidatorSetUpdateID(ctx),
 		k.GetAllValsetUpdateBlockHeights(ctx),
 		consumerStates,
 		k.GetAllUnbondingOps(ctx),

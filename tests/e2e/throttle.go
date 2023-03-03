@@ -6,7 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -501,21 +501,21 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 	}
 
 	// Confirm expected chain specific queue ordering.
-	expectedVscId := uint64(2000)
+	expectedVscID := uint64(2000)
 	for _, slashPacket := range slashPacketData {
 		// entries should be ordered by valset update id starting at 2000
-		s.Require().Equal(expectedVscId, slashPacket.ValsetUpdateId)
-		expectedVscId++
-		if (expectedVscId+5)%10 == 0 {
+		s.Require().Equal(expectedVscID, slashPacket.ValsetUpdateId)
+		expectedVscID++
+		if (expectedVscID+5)%10 == 0 {
 			// Skip over vsc matured packets
-			expectedVscId++
+			expectedVscID++
 		}
 	}
 	for idx, vscMaturedPacket := range vscMaturedPacketData {
 		// entries should be ordered by valset update id starting at 1005
 		// and show up every 10 packets
-		expectedVscId = uint64(1005) + 10*uint64(idx)
-		s.Require().Equal(expectedVscId, vscMaturedPacket.ValsetUpdateId)
+		expectedVscID = uint64(1005) + 10*uint64(idx)
+		s.Require().Equal(expectedVscID, vscMaturedPacket.ValsetUpdateId)
 	}
 
 	// Execute endblock to handle packets in throttled manner

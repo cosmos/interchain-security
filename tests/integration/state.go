@@ -365,7 +365,7 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time().Sub(tr.containerConfig.now)
 
 		for i, conf := range tr.chainConfigs {
-			if string(conf.chainId) == chainID {
+			if string(conf.chainID) == chainID {
 				chain = i
 				break
 			}
@@ -382,12 +382,11 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			},
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
-		chainId := gjson.Get(string(bz), `content.chain_id`).String()
+		chainID := gjson.Get(string(bz), `content.chain_id`).String()
 		stopTime := gjson.Get(string(bz), `content.stop_time`).Time().Sub(tr.containerConfig.now)
 
-		var chain chainID
 		for i, conf := range tr.chainConfigs {
-			if string(conf.chainId) == chainId {
+			if string(conf.chainID) == chainID {
 				chain = i
 				break
 			}
@@ -646,7 +645,7 @@ func (tr TestRun) getValidatorIP(chain chainID, validator validatorID) string {
 }
 
 func (tr TestRun) getValidatorHome(chain chainID, validator validatorID) string {
-	return `/` + string(tr.chainConfigs[chain].chainId) + `/validator` + fmt.Sprint(validator)
+	return `/` + string(tr.chainConfigs[chain].chainID) + `/validator` + fmt.Sprint(validator)
 }
 
 // getQueryNode returns query node tcp address on chain.

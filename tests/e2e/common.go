@@ -15,7 +15,7 @@ import (
 	ibctm "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	"github.com/cosmos/interchain-security/testutil/e2e"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
@@ -172,7 +172,7 @@ func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 	s.Require().NoError(err)
 
 	// save the current valset update ID
-	valsetUpdateID := s.providerApp.GetProviderKeeper().GetValidatorSetUpdateId(s.providerCtx())
+	valsetUpdateID := s.providerApp.GetProviderKeeper().GetValidatorSetUpdateID(s.providerCtx())
 
 	return valsetUpdateID
 }
@@ -361,7 +361,7 @@ func (s *CCVTestSuite) SendEmptyVSCPacket() {
 	oldBlockTime := s.providerChain.GetContext().BlockTime()
 	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 
-	valUpdateID := providerKeeper.GetValidatorSetUpdateId(s.providerChain.GetContext())
+	valUpdateID := providerKeeper.GetValidatorSetUpdateID(s.providerChain.GetContext())
 
 	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{},

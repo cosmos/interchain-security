@@ -84,7 +84,7 @@ func TestQueueVSCPackets(t *testing.T) {
 
 		// next valset update ID -> default value in tests is 0
 		// each call to QueueValidatorUpdates will increment the ValidatorUpdateID
-		valUpdateID := pk.GetValidatorSetUpdateId(ctx)
+		valUpdateID := pk.GetValidatorSetUpdateID(ctx)
 		require.Equal(t, tc.expectNextValsetUpdateId, valUpdateID, "valUpdateID (%v != %v) mismatch in case: '%s'", tc.expectNextValsetUpdateId, valUpdateID, tc.name)
 	}
 }
@@ -569,7 +569,7 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	defer ctrl.Finish()
 
 	// Init vscID
-	pk.SetValidatorSetUpdateId(ctx, 1)
+	pk.SetValidatorSetUpdateID(ctx, 1)
 
 	// Start first unbonding without any consumers registered
 	var unbondingOpId uint64 = 1
@@ -580,8 +580,8 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	require.False(t, found)
 
 	// Increment vscID
-	pk.IncrementValidatorSetUpdateId(ctx)
-	require.Equal(t, uint64(2), pk.GetValidatorSetUpdateId(ctx))
+	pk.IncrementValidatorSetUpdateID(ctx)
+	require.Equal(t, uint64(2), pk.GetValidatorSetUpdateID(ctx))
 
 	// Registered first consumer
 	pk.SetConsumerClientID(ctx, "chain-1", "client-1")
@@ -601,13 +601,13 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	require.Equal(t, expectedChains, unbondingOp.UnbondingConsumerChains)
 	// Check that the unbonding op index was stored
 	expectedUnbondingOpIds := []uint64{unbondingOpId}
-	ids, found := pk.GetUnbondingOpIndex(ctx, "chain-1", pk.GetValidatorSetUpdateId(ctx))
+	ids, found := pk.GetUnbondingOpIndex(ctx, "chain-1", pk.GetValidatorSetUpdateID(ctx))
 	require.True(t, found)
 	require.Equal(t, expectedUnbondingOpIds, ids)
 
 	// Increment vscID
-	pk.IncrementValidatorSetUpdateId(ctx)
-	require.Equal(t, uint64(3), pk.GetValidatorSetUpdateId(ctx))
+	pk.IncrementValidatorSetUpdateID(ctx)
+	require.Equal(t, uint64(3), pk.GetValidatorSetUpdateID(ctx))
 
 	// Registered second consumer
 	pk.SetConsumerClientID(ctx, "chain-2", "client-2")
@@ -631,7 +631,7 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	}
 	// Check that the unbonding op index was stored
 	for _, chainID := range expectedChains {
-		ids, found := pk.GetUnbondingOpIndex(ctx, chainID, pk.GetValidatorSetUpdateId(ctx))
+		ids, found := pk.GetUnbondingOpIndex(ctx, chainID, pk.GetValidatorSetUpdateID(ctx))
 		require.True(t, found)
 		require.Equal(t, unbondingOpIds, ids)
 	}

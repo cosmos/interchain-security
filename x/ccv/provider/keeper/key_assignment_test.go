@@ -638,31 +638,31 @@ type Assignment struct {
 // of simulated scenarios where random key assignments and validator
 // set updates are generated.
 func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
-	CHAINID := "chainID"
+	ChainID := "chainID"
 	// The number of full test executions to run
-	NUM_EXECUTIONS := 100
+	NumExecutions := 100
 	// Each test execution mimics the adding of a consumer chain and the
 	// assignments and power updates of several blocks
-	NUM_BLOCKS_PER_EXECUTION := 40
+	NumBlocksPerExecution := 40
 	// The number of validators to be simulated
-	NUM_VALIDATORS := 4
+	NumValidators := 4
 	// The number of keys that can be used. Keeping this number small is
 	// good because it increases the chance that different assignments will
 	// use the same keys, which is something we want to test.
-	NUM_ASSIGNABLE_KEYS := 12
+	NumAssignableKeys := 12
 	// The maximum number of key assignment actions to simulate in each
 	// simulated block, and before the consumer chain is registered.
-	NUM_ASSIGNMENTS_PER_BLOCK_MAX := 8
+	NumAssignmentsPerBlockMax := 8
 
 	// Create some identities for the simulated provider validators to use
 	providerIDS := []*cryptotestutil.Identity{}
 	// Create some identities which the provider validators can assign to the consumer chain
 	assignableIDS := []*cryptotestutil.Identity{}
-	for i := 0; i < NUM_VALIDATORS; i++ {
+	for i := 0; i < NumValidators; i++ {
 		providerIDS = append(providerIDS, cryptotestutil.NewIdentityFromIntSeed(i))
 	}
 	// Notice that the assignable identities include the provider identities
-	for i := 0; i < NUM_VALIDATORS+NUM_ASSIGNABLE_KEYS; i++ {
+	for i := 0; i < NumValidators+NumAssignableKeys; i++ {
 		assignableIDS = append(assignableIDS, cryptotestutil.NewIdentityFromIntSeed(i))
 	}
 
@@ -684,7 +684,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 	// Helper: simulates creation of assignment tx's to be done.
 	getAssignments := func() (ret []Assignment) {
-		for i, numAssignments := 0, rand.Intn(NUM_ASSIGNMENTS_PER_BLOCK_MAX); i < numAssignments; i++ {
+		for i, numAssignments := 0, rand.Intn(NumAssignmentsPerBlockMax); i < numAssignments; i++ {
 			randomIxP := rand.Intn(len(providerIDS))
 			randomIxC := rand.Intn(len(assignableIDS))
 			ret = append(ret, Assignment{
@@ -715,7 +715,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		historicSlashQueries := map[string]map[uint64]string{}
 
 		// Sanity check that the validator set update is initialised to 0, for clarity.
-		require.Equal(t, k.GetValidatorSetUpdateId(ctx), uint64(0))
+		require.Equal(t, k.GetValidatorSetUpdateID(ctx), uint64(0))
 
 		// Mock calls to GetLastValidatorPower to return directly from the providerValset
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
@@ -752,17 +752,17 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		// and increment the provider vscid.
 		applyUpdatesAndIncrementVSCID := func(updates []abci.ValidatorUpdate) {
 			providerValset.apply(updates)
-			updates = k.MustApplyKeyAssignmentToValUpdates(ctx, CHAINID, updates)
+			updates = k.MustApplyKeyAssignmentToValUpdates(ctx, ChainID, updates)
 			consumerValset.apply(updates)
 			// Simulate the VSCID update in EndBlock
-			k.IncrementValidatorSetUpdateId(ctx)
+			k.IncrementValidatorSetUpdateID(ctx)
 		}
 
 		// Helper: apply some key assignment transactions to the system
 		applyAssignments := func(assignments []Assignment) {
 			for _, a := range assignments {
 				// ignore err return, it can be possible for an error to occur
-				_ = k.AssignConsumerKey(ctx, CHAINID, a.val, a.ck)
+				_ = k.AssignConsumerKey(ctx, ChainID, a.val, a.ck)
 			}
 		}
 
@@ -774,7 +774,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		applyUpdatesAndIncrementVSCID(getStakingUpdates())
 
 		// Register the consumer chain
-		k.SetConsumerClientID(ctx, CHAINID, "")
+		k.SetConsumerClientID(ctx, ChainID, "")
 
 		// Analogous to the last vscid received from the consumer in a maturity
 		// Used to check the correct pruning property
@@ -783,7 +783,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		// Simulate a number of 'blocks'
 		// Each block consists of a number of random key assignment tx's
 		// and a random set of validator power updates
-		for block := 0; block < NUM_BLOCKS_PER_EXECUTION; block++ {
+		for block := 0; block < NumBlocksPerExecution; block++ {
 
 			// Generate and apply assignments and power updates
 			applyAssignments(getAssignments())
@@ -793,8 +793,8 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			// delivery of maturity packets from the consumer chain.
 			prunedVscid := greatestPrunedVSCID +
 				// +1 and -1 because id was incremented (-1), (+1) to make upper bound inclusive
-				rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1-1-greatestPrunedVSCID)
-			k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
+				rand.Intn(int(k.GetValidatorSetUpdateID(ctx))+1-1-greatestPrunedVSCID)
+			k.PruneKeyAssignments(ctx, ChainID, uint64(prunedVscid))
 			greatestPrunedVSCID = prunedVscid
 
 			/*
@@ -814,7 +814,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				// For each active validator on the provider chain
 				if 0 < providerValset.power[i] {
 					// Get the assigned key
-					ck, found := k.GetValidatorConsumerPubKey(ctx, CHAINID, idP.SDKValConsAddress())
+					ck, found := k.GetValidatorConsumerPubKey(ctx, ChainID, idP.SDKValConsAddress())
 					if !found {
 						// Use default if unassigned
 						ck = idP.TMProtoCryptoPublicKey()
@@ -836,7 +836,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				consC := consumerValset.identities[i].SDKValConsAddress()
 				if 0 < consumerValset.power[i] {
 					// Get the provider who assigned the key
-					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
+					consP := k.GetProviderAddrFromConsumerAddr(ctx, ChainID, consC)
 					// Find the corresponding provider validator (must always be found)
 					for j, idP := range providerValset.identities {
 						if idP.SDKValConsAddress().Equals(consP) {
@@ -852,7 +852,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				Check that all keys have been or will eventually be pruned.
 			*/
 
-			require.True(t, checkCorrectPruningProperty(ctx, k, CHAINID))
+			require.True(t, checkCorrectPruningProperty(ctx, k, ChainID))
 
 			/*
 				Property: Correct Consumer Initiated Slash Lookup
@@ -870,13 +870,13 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				consC := consumerValset.identities[i].SDKValConsAddress()
 				if 0 < consumerValset.power[i] {
 					// Get the provider who assigned the key
-					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
+					consP := k.GetProviderAddrFromConsumerAddr(ctx, ChainID, consC)
 
 					if _, found := historicSlashQueries[string(consC)]; !found {
 						historicSlashQueries[string(consC)] = map[uint64]string{}
 					}
 
-					vscid := k.GetValidatorSetUpdateId(ctx) - 1 // -1 since it was incremented before
+					vscid := k.GetValidatorSetUpdateID(ctx) - 1 // -1 since it was incremented before
 					// Record the slash query result obtained at this block
 					historicSlashQueries[string(consC)][vscid] = string(consP)
 				}
@@ -901,7 +901,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		ctrl.Finish()
 	}
 
-	for i := 0; i < NUM_EXECUTIONS; i++ {
+	for i := 0; i < NumExecutions; i++ {
 		runRandomExecution()
 	}
 }
