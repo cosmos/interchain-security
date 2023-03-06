@@ -312,7 +312,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 	// The slash packet validator address may be known only on the consumer chain,
 	// in this case, it must be mapped back to the consensus address on the provider chain
-	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
+	consumerConsAddr := providertypes.NewConsumerConsAddress(data.Validator.Address)
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
 	if data.Infraction == stakingtypes.DoubleSign {
@@ -322,7 +322,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		k.SetSlashLog(ctx, providerConsAddr)
 		k.Logger(ctx).Info("SlashPacket received for double-signing",
 			"chainID", chainID,
-			"consumer cons addr", sdk.ConsAddress(data.Validator.Address).String(),
+			"consumer cons addr", consumerConsAddr.String(),
 			"provider cons addr", providerConsAddr.String(),
 			"vscID", data.ValsetUpdateId,
 			"infractionHeight", infractionHeight,
@@ -381,7 +381,7 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 // This method should NEVER be called with a double-sign infraction.
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
 
-	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
+	consumerConsAddr := providertypes.NewConsumerConsAddress(data.Validator.Address)
 	// Obtain provider chain consensus address using the consumer chain consensus address
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
@@ -394,7 +394,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	)
 
 	// Obtain validator from staking keeper
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr)
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr.ToSdkConsAddr())
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
@@ -403,12 +403,12 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		// Note that it is impossible for the validator to be not found or unbonded if both the provider
 		// and the consumer are following the protocol. Thus if this branch is taken then one or both
 		// chains is incorrect, but it is impossible to tell which.
-		k.Logger(ctx).Error("validator not found or is unbonded", "validator", data.Validator.Address)
+		k.Logger(ctx).Error("validator not found or is unbonded", "validator", providerConsAddr.String())
 		return
 	}
 
 	// tombstoned validators should not be slashed multiple times.
-	if k.slashingKeeper.IsTombstoned(ctx, providerConsAddr) {
+	if k.slashingKeeper.IsTombstoned(ctx, providerConsAddr.ToSdkConsAddr()) {
 		// Log and drop packet if validator is tombstoned.
 		k.Logger(ctx).Info(
 			"slash packet dropped because validator is already tombstoned",
@@ -428,14 +428,15 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// for double-signing infractions are already dropped when received
 
 	// append the validator address to the slash ack for its chain id
+	// TODO: consumer cons address should be accepted here
 	k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
 
 	// jail validator
 	if !validator.IsJailed() {
-		k.stakingKeeper.Jail(ctx, providerConsAddr)
+		k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
 		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.String())
 		jailTime := ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
-		k.slashingKeeper.JailUntil(ctx, providerConsAddr, jailTime)
+		k.slashingKeeper.JailUntil(ctx, providerConsAddr.ToSdkConsAddr(), jailTime)
 	}
 
 	ctx.EventManager().EmitEvent(

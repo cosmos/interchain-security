@@ -30,7 +30,7 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 	for _, globalEntry := range allEntries {
 		// Subtract voting power that will be jailed/tombstoned from the slash meter
-		meter = meter.Sub(k.GetEffectiveValPower(ctx, globalEntry.ProviderValConsAddr))
+		meter = meter.Sub(k.GetEffectiveValPower(ctx, *globalEntry.ProviderValConsAddr))
 
 		// Handle one slash and any trailing vsc matured packet data instances by passing in
 		// chainID and appropriate callbacks, relevant packet data is deleted in this method.
@@ -59,11 +59,11 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 // Obtains the effective validator power relevant to a validator consensus address.
 func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
-	valConsAddr sdktypes.ConsAddress, // Provider's validator consensus address
+	valConsAddr providertypes.ProviderConsAddress,
 ) sdktypes.Int {
 	// Obtain staking module val object from the provider's consensus address.
 	// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
-	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr)
+	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr.ToSdkConsAddr())
 
 	if !found || val.IsJailed() {
 		// If validator is not found, or found but jailed, it's power is 0. This path is explicitly defined since the
@@ -195,7 +195,12 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context, entry providertypes.GlobalSlashEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.GlobalSlashEntryKey(entry)
-	store.Set(key, entry.ProviderValConsAddr)
+	bz, err := entry.ProviderValConsAddr.Marshal()
+	if err != nil {
+		// This should never happen, since the provider val cons addr should be a valid sdk address
+		panic(fmt.Sprintf("failed to marshal validator consensus address: %s", err.Error()))
+	}
+	store.Set(key, bz)
 }
 
 // DeleteGlobalSlashEntriesForConsumer deletes all pending slash packet entries in the global queue,
@@ -230,7 +235,12 @@ func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.G
 		// MustParseGlobalSlashEntryKey should not panic, since we should be iterating over keys that're
 		// assumed to be correctly serialized in QueueGlobalSlashEntry.
 		recvTime, chainID, ibcSeqNum := providertypes.MustParseGlobalSlashEntryKey(iterator.Key())
-		valAddr := iterator.Value()
+		valAddr := providertypes.ProviderConsAddress{}
+		err := valAddr.Unmarshal(iterator.Value())
+		if err != nil {
+			// This should never happen, provider cons address is assumed to be correctly serialized in QueueGlobalSlashEntry
+			panic(fmt.Sprintf("failed to unmarshal validator consensus address: %s", err.Error()))
+		}
 		entry := providertypes.NewGlobalSlashEntry(recvTime, chainID, ibcSeqNum, valAddr)
 		entries = append(entries, entry)
 	}
