@@ -7,6 +7,8 @@ import (
 	"log"
 	"os/exec"
 	"reflect"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -177,6 +179,13 @@ func (tr *TestRun) startDocker() {
 	if tr.useGaia {
 		useGaia = "true"
 		if tr.gaiaTag != "" {
+			majVersion, err := strconv.Atoi(tr.gaiaTag[1:strings.Index(tr.gaiaTag, ".")])
+			if err != nil {
+				panic(fmt.Sprintf("invalid gaia version %s", tr.gaiaTag))
+			}
+			if majVersion < 9 {
+				panic(fmt.Sprintf("gaia version %s is not supported - supporting only v9.x.x and newer", tr.gaiaTag))
+			}
 			gaiaTag = tr.gaiaTag
 		}
 	}
