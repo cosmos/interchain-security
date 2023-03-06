@@ -7,6 +7,8 @@ set -eux
 CONTAINER_NAME=$1
 INSTANCE_NAME=$2
 LOCAL_SDK_PATH=${3:-"default"} # Sets this var to default if null or unset
+USE_GAIA_PROVIDER=${4:-"false"} # if true, use gaia as provider; if false, use ICS app
+USE_GAIA_TAG=${5:-""} # gaia tag to use if using gaia as provider; by default the latest tag is used
 
 # Remove existing container instance
 set +e
@@ -28,7 +30,15 @@ else
 fi
 
 # Build the Docker container
-docker build -t "$CONTAINER_NAME" .
+if [[ "$USE_GAIA_PROVIDER" = "true" ]]
+then
+    printf "\n\nUsing gaia as provider\n\n"
+    printf "\n\nUsing gaia tag %s\n\n" "$USE_GAIA_TAG"
+    docker build  -f Dockerfile.gaia -t "$CONTAINER_NAME" --build-arg USE_GAIA_TAG="$USE_GAIA_TAG" .
+else
+    printf "\n\nUsing ICS provider app as provider\n\n\n"
+    docker build -f Dockerfile -t "$CONTAINER_NAME"  .
+fi
 
 # Remove copied sdk directory
 rm -rf ./cosmos-sdk/
