@@ -3,9 +3,11 @@ sidebar_position: 2
 ---
 
 # Overview
-
-Replicated security (aka interchain security V1) is an open sourced IBC application which allows cosmos blockchains to lease their proof-of-stake security to one another. Replicated security allows anyone to launch a "consumer" blockchain using the same validator set as the "provider" blockchain by creating a governance proposal. If the proposal is accepted, provider chain validators start validating the consumer chain as well. Consumer chains will therefore inherit the full security and decentralization of the provider.
-
+:::info
+Replicated security (aka interchain security V1) is an open sourced IBC application which allows cosmos blockchains to lease their proof-of-stake security to one another.
+<br></br>
+Replicated security allows anyone to launch a "consumer" blockchain using the same validator set as the "provider" blockchain by creating a governance proposal. If the proposal is accepted, provider chain validators start validating the consumer chain as well. Consumer chains will therefore inherit the full security and decentralization of the provider.
+:::
 ## Why Replicated Security?
 
 - Full provider security. At launch, consumer chains are secured by the full validator set and market cap of the provider chain.

@@ -10,7 +10,7 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  --ifm-color-primary: #5064fb;
+  --ifm-color-primary: #1a45f0;
   --ifm-color-primary-dark: theme(colors.gray.1000);
   --ifm-color-primary-darker: theme(colors.gray.1000);
   --ifm-color-primary-darkest: theme(colors.gray.1000);
@@ -82,7 +82,7 @@ html {
 
   /* MAINNAV */
   .navbar {
-    @apply py-2 h-auto border-b border-b-docusaurusColorBorder shadow-none bg-docusaurusBgColor;
+    @apply py-5 h-auto border-b border-b-docusaurusColorBorder shadow-none bg-docusaurusBgColor;
     &__toggle {
       @apply bg-card rounded-s h-8 w-8 flex justify-center items-center;
       @media (min-width: 997px) {
@@ -244,7 +244,7 @@ html {
       @apply m-0;
     }
   }
-
+  
   &[data-theme="dark"] .theme-doc-sidebar-menu .menu__list::before {
     @apply bg-inactiveLight;
   }
@@ -332,6 +332,7 @@ html {
     @apply flex;
     &::after {
       background-size: 16px;
+      background-color: blue;
       background-repeat: no-repeat;
       @apply order-first ml-0 mr-4;
     }
@@ -339,10 +340,6 @@ html {
   .menu__list-item--collapsed .menu__link--sublist:after,
   .menu__list-item--collapsed .menu__caret:before {
     transform: rotateZ(0);
-  }
-  .menu__caret,
-  li li .menu__link--sublist-caret::after {
-    @apply hidden;
   }
 
   /* TOC */
@@ -359,13 +356,12 @@ html {
 
   /* RELATED ARTICLES */
   &[data-theme="dark"] .pagination-nav > a {
-    @apply bg-fg;
+    @apply bg-fg border-stone-800;
   }
   .pagination-nav {
     @apply pb-7 mt-9;
     & > a {
-      box-shadow: 0px 0px 80px rgba(0, 0, 0, 0.07);
-      @apply border-transparent rounded pb-8.5 col-span-2 pt-6 px-6 hover:shadow-none;
+      @apply border-stone-200 hover:border-stone-300 hover:shadow-md rounded-sm p-6 col-span-2;
 
       @media (min-width: 997px) {
         @apply col-span-1;
@@ -380,7 +376,7 @@ html {
         }
       }
       &__sublabel {
-        @apply mb-3.5 text-gray-1000 dark:text-docusaurusColorBase text-3;
+        @apply mb-3.5 text-slate-500 dark:text-docusaurusColorBase text-3;
       }
       &__label {
         @apply text-4 font-semibold;
@@ -429,6 +425,8 @@ html {
     @apply font-jetbrain mt-3;
   }
 
+
+
   .markdown {
     --ifm-heading-vertical-rhythm-bottom: 1;
     --ifm-h1-vertical-rhythm-bottom: 1;
@@ -440,7 +438,7 @@ html {
       @apply text-7 font-bold leading-10 tracking-tight;
     }
     h2 {
-      @apply text-6 font-bold leading-9 tracking-tight;
+      @apply text-5 font-bold leading-9 tracking-tight;
     }
     h3 {
       @apply text-4 font-semibold leading-8 tracking-tight;
@@ -467,8 +465,8 @@ html {
       @apply my-7;
     }
     a {
-      @apply no-underline hover:underline;
-      color: var(--ifm-color-primary);
+      @apply underline;
+      /* color: var(--ifm-color-primary ); */
     }
     ol,
     ul {
@@ -509,6 +507,12 @@ html {
       & > ol {
         @apply my-5;
       }
+    }
+  }
+
+  .card-section {
+    a {
+      @apply no-underline;
     }
   }
 }

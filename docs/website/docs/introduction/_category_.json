@@ -1,8 +1,8 @@
 {
-  "label": "ICS Introduction",
+  "label": "Introduction",
   "position": 2,
   "link": {
     "type": "generated-index",
-    "description": "A high level introduction to interchain security / replicated security" 
+    "description": "A high level introduction to interchain security module" 
   }
 }

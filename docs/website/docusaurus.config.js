@@ -9,7 +9,7 @@ const config = {
   title: "Interchain Security",
   tagline:
     "Interchain Security is a project to build a security layer for the Cosmos ecosystem.",
-  url: "https://docs.cosmos.network",
+  url: "http://localhost:3000",
   baseUrl: "/",
   onBrokenLinks: "warn",
   onBrokenMarkdownLinks: "warn",
@@ -64,12 +64,12 @@ const config = {
       navbar: {
         title: "Interchain Security",
         hideOnScroll: false,
-        logo: {
-          alt: "Interchain Security Logo",
-          src: "img/logo-sdk.svg",
-          href: "https://docs.cosmos.network",
-          target: "_self",
-        },
+        // logo: {
+        //   alt: "Interchain Security Logo",
+        //   src: "img/logo-sdk.svg",
+        //   href: "/",
+        //   target: "_self",
+        // },
         items: [
           {
             href: "https://github.com/cosmos/interchain-security",
@@ -162,12 +162,12 @@ const config = {
         darkTheme: darkCodeTheme,
         additionalLanguages: ["protobuf", "go-module"], // https://prismjs.com/#supported-languages
       },
-      algolia: {
-        appId: "QLS2QSP47E",
-        apiKey: "4d9feeb481e3cfef8f91bbc63e090042",
-        indexName: "cosmos_network",
-        contextualSearch: false,
-      },
+      // algolia: {
+      //   appId: "QLS2QSP47E",
+      //   apiKey: "4d9feeb481e3cfef8f91bbc63e090042",
+      //   indexName: "cosmos_network",
+      //   contextualSearch: false,
+      // },
     }),
   themes: ["@you54f/theme-github-codeblock"],
   plugins: [

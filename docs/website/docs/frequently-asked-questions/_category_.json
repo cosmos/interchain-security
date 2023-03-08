@@ -1,8 +1,0 @@
-{
-  "label": "Frequently Asked",
-  "position": 3,
-  "link": {
-    "type": "generated-index",
-    "description": "Find answers to frequently asked questions about interchain security"
-  }
-}
