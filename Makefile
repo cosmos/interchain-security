@@ -32,6 +32,33 @@ test-integration:
 test-integration-parallel:
 	go run ./tests/integration/... --include-multi-consumer --parallel
 
+# run full integration tests in sequence (including multiconsumer) using latest tagged gaia
+test-gaia-integration:
+	go run ./tests/integration/... --include-multi-consumer --use-gaia
+
+# run only happy path integration tests using latest tagged gaia
+test-gaia-integration-short:
+	go run ./tests/integration/... --happy-path-only --use-gaia
+
+# run full integration tests in parallel (including multiconsumer) using latest tagged gaia
+test-gaia-integration-parallel:
+	go run ./tests/integration/... --include-multi-consumer --parallel --use-gaia
+
+# run full integration tests in sequence (including multiconsumer) using specific tagged version of gaia
+# usage: GAIA_TAG=v9.0.0 make test-gaia-integration-tagged
+test-gaia-integration-tagged:
+	go run ./tests/integration/... --include-multi-consumer --use-gaia --gaia-tag $(GAIA_TAG)
+
+# run only happy path integration tests using latest tagged gaia
+# usage: GAIA_TAG=v9.0.0 make test-gaia-integration-short-tagged
+test-gaia-integration-short-tagged:
+	go run ./tests/integration/... --happy-path-only --use-gaia --gaia-tag $(GAIA_TAG)
+
+# run full integration tests in parallel (including multiconsumer) using specific tagged version of gaia
+# usage: GAIA_TAG=v9.0.0 make test-gaia-integration-parallel-tagged
+test-gaia-integration-parallel-tagged:
+	go run ./tests/integration/... --include-multi-consumer --parallel --use-gaia --gaia-tag $(GAIA_TAG)
+
 # run all tests with caching disabled
 test-no-cache:
 	go test ./... -count=1 && go run ./tests/integration/...
