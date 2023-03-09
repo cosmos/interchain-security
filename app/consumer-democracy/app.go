@@ -511,7 +511,6 @@ func New(
 		evidencetypes.ModuleName,
 		consumertypes.ModuleName, // Note: consumer beginblocker before staking module
 		stakingtypes.ModuleName,
-		stakingtypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		govtypes.ModuleName,
