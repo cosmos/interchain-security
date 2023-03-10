@@ -332,7 +332,7 @@ func New(
 		app.AccountKeeper,
 	)
 
-	ccvstakingKeeper := stakingkeeper.NewKeeper(
+	stakingKeeper := stakingkeeper.NewKeeper(
 		appCodec,
 		keys[stakingtypes.StoreKey],
 		app.AccountKeeper,
@@ -341,7 +341,7 @@ func New(
 	)
 
 	app.MintKeeper = mintkeeper.NewKeeper(
-		appCodec, keys[minttypes.StoreKey], app.GetSubspace(minttypes.ModuleName), &ccvstakingKeeper,
+		appCodec, keys[minttypes.StoreKey], app.GetSubspace(minttypes.ModuleName), &stakingKeeper,
 		app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
 	)
 
@@ -357,7 +357,7 @@ func New(
 		app.GetSubspace(distrtypes.ModuleName),
 		app.AccountKeeper,
 		app.BankKeeper,
-		&ccvstakingKeeper,
+		&stakingKeeper,
 		consumertypes.ConsumerRedistributeName,
 		app.ModuleAccountAddrs(),
 	)
@@ -378,7 +378,7 @@ func New(
 	// register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
 	// NOTE: slashing hook was removed since it's only relevant for consumerKeeper
-	app.StakingKeeper = *ccvstakingKeeper.SetHooks(
+	app.StakingKeeper = *stakingKeeper.SetHooks(
 		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks()),
 	)
 
@@ -391,7 +391,7 @@ func New(
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper))
 	govKeeper := govkeeper.NewKeeper(
 		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
-		&ccvstakingKeeper, ccvgovRouter,
+		&stakingKeeper, ccvgovRouter,
 	)
 
 	app.GovKeeper = *govKeeper.SetHooks(
