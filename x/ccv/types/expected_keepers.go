@@ -77,6 +77,8 @@ type ClientKeeper interface {
 	GetClientState(ctx sdk.Context, clientID string) (ibcexported.ClientState, bool)
 	GetLatestClientConsensusState(ctx sdk.Context, clientID string) (ibcexported.ConsensusState, bool)
 	GetSelfConsensusState(ctx sdk.Context, height ibcexported.Height) (ibcexported.ConsensusState, error)
+	ClientStore(ctx sdk.Context, clientID string) sdk.KVStore
+	SetClientState(ctx sdk.Context, clientID string, clientState ibcexported.ClientState)
 }
 
 // TODO: Expected interfaces for distribution on provider and consumer chains

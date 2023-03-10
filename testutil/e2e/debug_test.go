@@ -239,3 +239,11 @@ func TestPacketRoundtrip(t *testing.T) {
 func TestQueueAndSendVSCMaturedPackets(t *testing.T) {
 	runCCVTestByName(t, "TestQueueAndSendVSCMaturedPackets")
 }
+
+//
+// Misbehaviour test
+//
+
+func TestCheckConsumerMisbehaviour(t *testing.T) {
+	runCCVTestByName(t, "TestCheckConsumerMisbehaviour")
+}
