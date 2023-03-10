@@ -256,3 +256,11 @@ func TestQueueAndSendVSCMaturedPackets(t *testing.T) {
 func TestRecycleTransferChannel(t *testing.T) {
 	runCCVTestByName(t, "TestRecycleTransferChannel")
 }
+
+//
+// Misbehaviour test
+//
+
+func TestCheckConsumerMisbehaviour(t *testing.T) {
+	runCCVTestByName(t, "TestCheckConsumerMisbehaviour")
+}
