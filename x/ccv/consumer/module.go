@@ -186,6 +186,8 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		// populate cross chain validators states with initial valset
 		am.keeper.ApplyCCValidatorChanges(ctx, initialValSet)
 
+		// Add validator updates to initialValSet, such that the "old" validators returned from GetLastValidators
+		// are given zero power, and the "new" validators are given their full power.
 		initialSetFlag := make(map[string]bool)
 		for _, val := range initialValSet {
 			initialSetFlag[val.PubKey.String()] = true
