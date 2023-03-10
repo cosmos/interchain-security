@@ -3,24 +3,37 @@ package keeper
 import (
 	"fmt"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 )
 
 // Wrapper struct
 type Hooks struct {
-	k *Keeper
+	k         *Keeper
+	govKeeper ccv.GovKeeper
 }
 
-var _ stakingtypes.StakingHooks = Hooks{}
+var (
+	_ stakingtypes.StakingHooks = Hooks{}
+	_ govtypes.GovHooks         = Hooks{}
+)
 
 // Returns new provider hooks
-func (k *Keeper) Hooks() Hooks {
-	return Hooks{k}
+func (k *Keeper) Hooks(govKeeper ccv.GovKeeper) Hooks {
+	return Hooks{
+		k:         k,
+		govKeeper: govKeeper,
+	}
 }
+
+//-----------------------------------------
+// Staking Hooks
 
 // This stores a record of each unbonding op from staking, allowing us to track which consumer chains have unbonded
 func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
@@ -131,4 +144,103 @@ func (h Hooks) AfterValidatorBonded(_ sdk.Context, _ sdk.ConsAddress, _ sdk.ValA
 func (h Hooks) AfterValidatorBeginUnbonding(_ sdk.Context, _ sdk.ConsAddress, _ sdk.ValAddress) {
 }
 func (h Hooks) BeforeDelegationRemoved(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) {
+}
+
+//-----------------------------------------
+// Gov Hooks
+
+func (h Hooks) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) {}
+
+func (h Hooks) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, _ sdk.AccAddress) {
+	if h.k.HasEquivocationProposal(ctx, proposalID) {
+		// already handled, skip
+		return
+	}
+	prop, found := h.govKeeper.GetProposal(ctx, proposalID)
+	if !found {
+		panic(fmt.Sprintf("cannot find proposal %d", proposalID))
+	}
+	if prop.Status != govtypes.StatusVotingPeriod {
+		// skip if proposal is not in voting period
+		return
+	}
+	eqProp, ok := prop.GetContent().(*types.EquivocationProposal)
+	if !ok {
+		// skip if not an equivocation proposal
+		return
+	}
+	// Mark proposal has handled
+	h.k.SetEquivocationProposal(ctx, proposalID)
+	for _, eq := range eqProp.Equivocations {
+		ids, err := h.getUnbondingOpsIDsForValidator(ctx, eq.ConsensusAddress)
+		if err != nil {
+			panic(fmt.Errorf("can get unbondings of validator '%s': %w", eq.ConsensusAddress, err))
+		}
+		for _, id := range ids {
+			err := h.k.stakingKeeper.PutUnbondingOnHold(ctx, id)
+			if err != nil {
+				panic(fmt.Errorf("cannot PutUnbondingOnHold for id %d: %w", id, err))
+			}
+		}
+	}
+}
+
+func (h Hooks) AfterProposalVote(_ sdk.Context, _ uint64, _ sdk.AccAddress) {}
+func (h Hooks) AfterProposalFailedMinDeposit(_ sdk.Context, _ uint64)       {}
+
+func (h Hooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID uint64) {
+	prop, found := h.govKeeper.GetProposal(ctx, proposalID)
+	if !found {
+		panic(fmt.Sprintf("cannot find proposal %d", proposalID))
+	}
+	eqProp, ok := prop.GetContent().(*types.EquivocationProposal)
+	if !ok {
+		// skip if not an equivocation proposal
+		return
+	}
+	for _, eq := range eqProp.Equivocations {
+		ids, err := h.getUnbondingOpsIDsForValidator(ctx, eq.ConsensusAddress)
+		if err != nil {
+			panic(fmt.Errorf("can get unbondings of validator '%s': %w", eq.ConsensusAddress, err))
+		}
+		for _, id := range ids {
+			err := h.k.stakingKeeper.UnbondingCanComplete(ctx, id)
+			if err != nil {
+				panic(fmt.Errorf("cannot UnbondingCanComplete for id %d: %w", id, err))
+			}
+		}
+	}
+	// Remove equivocation proposal flag
+	h.k.DeleteEquivocationProposal(ctx, proposalID)
+}
+
+// getUnbondingOpsIDsForValidator returns all pending unbonding operations for
+// validator consensus address consAddrStr.
+func (h Hooks) getUnbondingOpsIDsForValidator(ctx sdk.Context, consAddrStr string) ([]uint64, error) {
+	consAddr, err := sdk.ConsAddressFromBech32(consAddrStr)
+	if err != nil {
+		return nil, fmt.Errorf("cannot convert '%s' to consensus address", consAddrStr)
+	}
+	val, found := h.k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+	if !found {
+		return nil, fmt.Errorf("cannot find validator for consensus address '%s'", consAddr)
+	}
+	var ids []uint64
+	// pause all unbonding delegation
+	ubds := h.k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, val.GetOperator())
+	for _, ubd := range ubds {
+		for _, entry := range ubd.Entries {
+			ids = append(ids, entry.UnbondingId)
+		}
+	}
+	// pause all redelegations
+	reds := h.k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, val.GetOperator())
+	for _, red := range reds {
+		for _, entry := range red.Entries {
+			ids = append(ids, entry.UnbondingId)
+		}
+	}
+	// pause all unbonding validator
+	ids = append(ids, val.UnbondingIds...)
+	return ids, nil
 }

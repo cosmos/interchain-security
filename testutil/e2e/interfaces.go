@@ -38,6 +38,8 @@ type ProviderApp interface {
 	GetE2eSlashingKeeper() E2eSlashingKeeper
 	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
 	GetE2eDistributionKeeper() E2eDistributionKeeper
+	// Returns a gov keeper interface with more capabilities than the expected_keepers interface
+	GetE2eGovKeeper() E2eGovKeeper
 }
 
 // The interface that any consumer app must implement to be compatible with e2e tests
@@ -140,6 +142,7 @@ type E2eMintKeeper interface {
 
 type E2eGovKeeper interface {
 	GetDepositParams(ctx sdk.Context) govtypes.DepositParams
+	SetDepositParams(sdk.Context, govtypes.DepositParams)
 	GetVotingParams(ctx sdk.Context) govtypes.VotingParams
 	SetVotingParams(ctx sdk.Context, votingParams govtypes.VotingParams)
 	SubmitProposal(ctx sdk.Context, content govtypes.Content) (govtypes.Proposal, error)

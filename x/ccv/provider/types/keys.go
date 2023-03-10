@@ -127,6 +127,10 @@ const (
 	// SlashLogBytePrefix is the byte prefix that will store the mapping from provider address to boolean
 	// denoting whether the provider address has commited any double signign infractions
 	SlashLogBytePrefix
+
+	// EquivocationProposalBytePrefix is the byte prefix that will store the
+	// equivocation proposal id.
+	EquivocationProposalBytePrefix
 )
 
 // PortKey returns the key to the port ID in the store
@@ -447,4 +451,13 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 // SlashLogKey returns the key to a validator's slash log
 func SlashLogKey(providerAddr ProviderConsAddress) []byte {
 	return append([]byte{SlashLogBytePrefix}, providerAddr.ToSdkConsAddr().Bytes()...)
+}
+
+// EquivocationProposalKey returns the key with the following format:
+// bytePrefix | uint64(proposalID)
+func EquivocationProposalKey(proposalID uint64) []byte {
+	return ccvutils.AppendMany(
+		[]byte{EquivocationProposalBytePrefix},
+		sdk.Uint64ToBigEndian(proposalID),
+	)
 }

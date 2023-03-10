@@ -8,6 +8,7 @@ import (
 	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
@@ -23,6 +24,8 @@ import (
 // so we do not need a registry module between the staking module and CCV.
 type StakingKeeper interface {
 	GetValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
+	GetUnbondingDelegationsFromValidator(sdk.Context, sdk.ValAddress) []stakingtypes.UnbondingDelegation
+	GetRedelegationsFromSrcValidator(sdk.Context, sdk.ValAddress) []stakingtypes.Redelegation
 	UnbondingCanComplete(ctx sdk.Context, id uint64) error
 	UnbondingTime(ctx sdk.Context) time.Duration
 	GetValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) (validator stakingtypes.Validator, found bool)
@@ -35,6 +38,10 @@ type StakingKeeper interface {
 	PowerReduction(ctx sdk.Context) sdk.Int
 	PutUnbondingOnHold(ctx sdk.Context, id uint64) error
 	GetLastTotalPower(ctx sdk.Context) sdk.Int
+}
+
+type GovKeeper interface {
+	GetProposal(ctx sdk.Context, proposalID uint64) (govtypes.Proposal, bool)
 }
 
 type EvidenceKeeper interface {

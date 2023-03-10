@@ -13,14 +13,15 @@ import (
 	types0 "github.com/cosmos/cosmos-sdk/x/auth/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/capability/types"
 	types2 "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	types3 "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	types4 "github.com/cosmos/cosmos-sdk/x/staking/types"
-	types5 "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	types6 "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	types7 "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	types3 "github.com/cosmos/cosmos-sdk/x/gov/types"
+	types4 "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	types5 "github.com/cosmos/cosmos-sdk/x/staking/types"
+	types6 "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	types7 "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
+	types8 "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v4/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
-	types8 "github.com/tendermint/tendermint/abci/types"
+	types9 "github.com/tendermint/tendermint/abci/types"
 )
 
 // MockStakingKeeper is a mock of StakingKeeper interface.
@@ -74,11 +75,39 @@ func (mr *MockStakingKeeperMockRecorder) GetLastValidatorPower(ctx, operator int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidatorPower", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidatorPower), ctx, operator)
 }
 
+// GetRedelegationsFromSrcValidator mocks base method.
+func (m *MockStakingKeeper) GetRedelegationsFromSrcValidator(arg0 types.Context, arg1 types.ValAddress) []types5.Redelegation {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRedelegationsFromSrcValidator", arg0, arg1)
+	ret0, _ := ret[0].([]types5.Redelegation)
+	return ret0
+}
+
+// GetRedelegationsFromSrcValidator indicates an expected call of GetRedelegationsFromSrcValidator.
+func (mr *MockStakingKeeperMockRecorder) GetRedelegationsFromSrcValidator(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRedelegationsFromSrcValidator", reflect.TypeOf((*MockStakingKeeper)(nil).GetRedelegationsFromSrcValidator), arg0, arg1)
+}
+
+// GetUnbondingDelegationsFromValidator mocks base method.
+func (m *MockStakingKeeper) GetUnbondingDelegationsFromValidator(arg0 types.Context, arg1 types.ValAddress) []types5.UnbondingDelegation {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUnbondingDelegationsFromValidator", arg0, arg1)
+	ret0, _ := ret[0].([]types5.UnbondingDelegation)
+	return ret0
+}
+
+// GetUnbondingDelegationsFromValidator indicates an expected call of GetUnbondingDelegationsFromValidator.
+func (mr *MockStakingKeeperMockRecorder) GetUnbondingDelegationsFromValidator(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUnbondingDelegationsFromValidator", reflect.TypeOf((*MockStakingKeeper)(nil).GetUnbondingDelegationsFromValidator), arg0, arg1)
+}
+
 // GetValidator mocks base method.
-func (m *MockStakingKeeper) GetValidator(ctx types.Context, addr types.ValAddress) (types4.Validator, bool) {
+func (m *MockStakingKeeper) GetValidator(ctx types.Context, addr types.ValAddress) (types5.Validator, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidator", ctx, addr)
-	ret0, _ := ret[0].(types4.Validator)
+	ret0, _ := ret[0].(types5.Validator)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -90,10 +119,10 @@ func (mr *MockStakingKeeperMockRecorder) GetValidator(ctx, addr interface{}) *go
 }
 
 // GetValidatorByConsAddr mocks base method.
-func (m *MockStakingKeeper) GetValidatorByConsAddr(ctx types.Context, consAddr types.ConsAddress) (types4.Validator, bool) {
+func (m *MockStakingKeeper) GetValidatorByConsAddr(ctx types.Context, consAddr types.ConsAddress) (types5.Validator, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorByConsAddr", ctx, consAddr)
-	ret0, _ := ret[0].(types4.Validator)
+	ret0, _ := ret[0].(types5.Validator)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -105,10 +134,10 @@ func (mr *MockStakingKeeperMockRecorder) GetValidatorByConsAddr(ctx, consAddr in
 }
 
 // GetValidatorUpdates mocks base method.
-func (m *MockStakingKeeper) GetValidatorUpdates(ctx types.Context) []types8.ValidatorUpdate {
+func (m *MockStakingKeeper) GetValidatorUpdates(ctx types.Context) []types9.ValidatorUpdate {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorUpdates", ctx)
-	ret0, _ := ret[0].([]types8.ValidatorUpdate)
+	ret0, _ := ret[0].([]types9.ValidatorUpdate)
 	return ret0
 }
 
@@ -171,7 +200,7 @@ func (mr *MockStakingKeeperMockRecorder) PutUnbondingOnHold(ctx, id interface{})
 }
 
 // Slash mocks base method.
-func (m *MockStakingKeeper) Slash(arg0 types.Context, arg1 types.ConsAddress, arg2, arg3 int64, arg4 types.Dec, arg5 types4.InfractionType) {
+func (m *MockStakingKeeper) Slash(arg0 types.Context, arg1 types.ConsAddress, arg2, arg3 int64, arg4 types.Dec, arg5 types5.InfractionType) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Slash", arg0, arg1, arg2, arg3, arg4, arg5)
 }
@@ -208,6 +237,44 @@ func (m *MockStakingKeeper) UnbondingTime(ctx types.Context) time.Duration {
 func (mr *MockStakingKeeperMockRecorder) UnbondingTime(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnbondingTime", reflect.TypeOf((*MockStakingKeeper)(nil).UnbondingTime), ctx)
+}
+
+// MockGovKeeper is a mock of GovKeeper interface.
+type MockGovKeeper struct {
+	ctrl     *gomock.Controller
+	recorder *MockGovKeeperMockRecorder
+}
+
+// MockGovKeeperMockRecorder is the mock recorder for MockGovKeeper.
+type MockGovKeeperMockRecorder struct {
+	mock *MockGovKeeper
+}
+
+// NewMockGovKeeper creates a new mock instance.
+func NewMockGovKeeper(ctrl *gomock.Controller) *MockGovKeeper {
+	mock := &MockGovKeeper{ctrl: ctrl}
+	mock.recorder = &MockGovKeeperMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockGovKeeper) EXPECT() *MockGovKeeperMockRecorder {
+	return m.recorder
+}
+
+// GetProposal mocks base method.
+func (m *MockGovKeeper) GetProposal(ctx types.Context, proposalID uint64) (types3.Proposal, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProposal", ctx, proposalID)
+	ret0, _ := ret[0].(types3.Proposal)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetProposal indicates an expected call of GetProposal.
+func (mr *MockGovKeeperMockRecorder) GetProposal(ctx, proposalID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProposal", reflect.TypeOf((*MockGovKeeper)(nil).GetProposal), ctx, proposalID)
 }
 
 // MockEvidenceKeeper is a mock of EvidenceKeeper interface.
@@ -283,10 +350,10 @@ func (mr *MockSlashingKeeperMockRecorder) DowntimeJailDuration(arg0 interface{})
 }
 
 // GetValidatorSigningInfo mocks base method.
-func (m *MockSlashingKeeper) GetValidatorSigningInfo(ctx types.Context, address types.ConsAddress) (types3.ValidatorSigningInfo, bool) {
+func (m *MockSlashingKeeper) GetValidatorSigningInfo(ctx types.Context, address types.ConsAddress) (types4.ValidatorSigningInfo, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSigningInfo", ctx, address)
-	ret0, _ := ret[0].(types3.ValidatorSigningInfo)
+	ret0, _ := ret[0].(types4.ValidatorSigningInfo)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -401,10 +468,10 @@ func (mr *MockChannelKeeperMockRecorder) ChanCloseInit(ctx, portID, channelID, c
 }
 
 // GetChannel mocks base method.
-func (m *MockChannelKeeper) GetChannel(ctx types.Context, srcPort, srcChan string) (types7.Channel, bool) {
+func (m *MockChannelKeeper) GetChannel(ctx types.Context, srcPort, srcChan string) (types8.Channel, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetChannel", ctx, srcPort, srcChan)
-	ret0, _ := ret[0].(types7.Channel)
+	ret0, _ := ret[0].(types8.Channel)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -519,10 +586,10 @@ func (m *MockConnectionKeeper) EXPECT() *MockConnectionKeeperMockRecorder {
 }
 
 // GetConnection mocks base method.
-func (m *MockConnectionKeeper) GetConnection(ctx types.Context, connectionID string) (types6.ConnectionEnd, bool) {
+func (m *MockConnectionKeeper) GetConnection(ctx types.Context, connectionID string) (types7.ConnectionEnd, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConnection", ctx, connectionID)
-	ret0, _ := ret[0].(types6.ConnectionEnd)
+	ret0, _ := ret[0].(types7.ConnectionEnd)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -777,7 +844,7 @@ func (m *MockIBCTransferKeeper) EXPECT() *MockIBCTransferKeeperMockRecorder {
 }
 
 // SendTransfer mocks base method.
-func (m *MockIBCTransferKeeper) SendTransfer(ctx types.Context, sourcePort, sourceChannel string, token types.Coin, sender types.AccAddress, receiver string, timeoutHeight types5.Height, timeoutTimestamp uint64) error {
+func (m *MockIBCTransferKeeper) SendTransfer(ctx types.Context, sourcePort, sourceChannel string, token types.Coin, sender types.AccAddress, receiver string, timeoutHeight types6.Height, timeoutTimestamp uint64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendTransfer", ctx, sourcePort, sourceChannel, token, sender, receiver, timeoutHeight, timeoutTimestamp)
 	ret0, _ := ret[0].(error)
@@ -814,10 +881,10 @@ func (m *MockIBCCoreKeeper) EXPECT() *MockIBCCoreKeeperMockRecorder {
 }
 
 // ChannelOpenInit mocks base method.
-func (m *MockIBCCoreKeeper) ChannelOpenInit(goCtx context.Context, msg *types7.MsgChannelOpenInit) (*types7.MsgChannelOpenInitResponse, error) {
+func (m *MockIBCCoreKeeper) ChannelOpenInit(goCtx context.Context, msg *types8.MsgChannelOpenInit) (*types8.MsgChannelOpenInitResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ChannelOpenInit", goCtx, msg)
-	ret0, _ := ret[0].(*types7.MsgChannelOpenInitResponse)
+	ret0, _ := ret[0].(*types8.MsgChannelOpenInitResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

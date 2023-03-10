@@ -299,6 +299,56 @@ func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, onHold boo
 	}
 }
 
+// unbondingsOnHold is a handy struct to hold the different kinds of unbonding
+// refcount.
+type unbondingsOnHold struct {
+	unbondingDelegationRefCount int64
+	validatorUnbondingRefCount  int64
+	redelegationRefCount        int64
+}
+
+// checkStakingUnbondingOnHoldRefCount checks that valAddr's unbonding refcounts
+// match expected.
+func checkStakingUnbondingOnHoldRefCount(s *CCVTestSuite, valAddr sdk.ValAddress, expected unbondingsOnHold) {
+
+	// check unbondingDelegation
+	ubds := s.providerApp.GetE2eStakingKeeper().GetUnbondingDelegationsFromValidator(s.providerCtx(), valAddr)
+	if expected.unbondingDelegationRefCount == 0 {
+		s.Assert().Empty(ubds, "expected no unbonding delegation")
+	} else {
+		s.Assert().NotEmpty(ubds, "no unbonding delegation found")
+		for _, ubd := range ubds {
+			s.Assert().NotEmpty(ubd.Entries, "no unbonding delegation entries found")
+			for _, entry := range ubd.Entries {
+				s.Assert().Equal(expected.unbondingDelegationRefCount, entry.UnbondingOnHoldRefCount,
+					"wrong unbonding delegation ref count")
+			}
+		}
+	}
+
+	// check redelegation
+	reds := s.providerApp.GetE2eStakingKeeper().GetRedelegationsFromSrcValidator(s.providerCtx(), valAddr)
+	if expected.redelegationRefCount == 0 {
+		s.Assert().Empty(reds, "expected no redelegation")
+	} else {
+		s.Assert().NotEmpty(reds, "no redelegation found")
+		for _, ubd := range reds {
+			s.Assert().NotEmpty(ubd.Entries, "no redelegation entries found")
+			for _, entry := range ubd.Entries {
+				s.Assert().Equal(expected.redelegationRefCount, entry.UnbondingOnHoldRefCount,
+					"wrong redelegation ref count")
+			}
+		}
+	}
+
+	// check validator unbonding
+	val, found := s.providerApp.GetE2eStakingKeeper().GetValidator(s.providerCtx(), valAddr)
+	if s.Assert().True(found, "validator not found") {
+		s.Assert().Equal(expected.validatorUnbondingRefCount, val.UnbondingOnHoldRefCount,
+			"wrong validator unbonding ref count")
+	}
+}
+
 func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID string, valUpdateID uint64, found bool, msgAndArgs ...interface{}) {
 	entries := s.providerApp.GetProviderKeeper().GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
 	if found {

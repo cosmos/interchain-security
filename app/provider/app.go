@@ -376,7 +376,7 @@ func New(
 		stakingtypes.NewMultiStakingHooks(
 			app.DistrKeeper.Hooks(),
 			app.SlashingKeeper.Hooks(),
-			app.ProviderKeeper.Hooks(),
+			app.ProviderKeeper.Hooks(app.GovKeeper),
 		),
 	)
 
@@ -426,7 +426,7 @@ func New(
 		AddRoute(providertypes.RouterKey, ibcprovider.NewProviderProposalHandler(app.ProviderKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 
-	app.GovKeeper = govkeeper.NewKeeper(
+	govKeeper := govkeeper.NewKeeper(
 		appCodec,
 		keys[govtypes.StoreKey],
 		app.GetSubspace(govtypes.ModuleName),
@@ -434,6 +434,11 @@ func New(
 		app.BankKeeper,
 		&stakingKeeper,
 		govRouter,
+	)
+	app.GovKeeper = *govKeeper.SetHooks(
+		govtypes.NewMultiGovHooks(
+			app.ProviderKeeper.Hooks(govKeeper),
+		),
 	)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
@@ -761,6 +766,11 @@ func (app *App) GetProviderKeeper() ibcproviderkeeper.Keeper {
 // GetE2eStakingKeeper implements the ProviderApp interface.
 func (app *App) GetE2eStakingKeeper() e2e.E2eStakingKeeper {
 	return app.StakingKeeper
+}
+
+// GetE2eGovKeeper implements the ProviderApp interface.
+func (app *App) GetE2eGovKeeper() e2e.E2eGovKeeper {
+	return app.GovKeeper
 }
 
 // GetE2eBankKeeper implements the ProviderApp interface.

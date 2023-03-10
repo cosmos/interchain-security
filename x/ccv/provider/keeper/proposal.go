@@ -613,3 +613,21 @@ func (k Keeper) HandleEquivocationProposal(ctx sdk.Context, p *types.Equivocatio
 	}
 	return nil
 }
+
+// SetEquivocationProposal sets the equivocation proposal flag for proposalID.
+func (k Keeper) SetEquivocationProposal(ctx sdk.Context, proposalID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.EquivocationProposalKey(proposalID), []byte{})
+}
+
+// HasEquivocationProposal returns the equivocation proposal flag for proposalID.
+func (k Keeper) HasEquivocationProposal(ctx sdk.Context, proposalID uint64) bool {
+	store := ctx.KVStore(k.storeKey)
+	return store.Get(types.EquivocationProposalKey(proposalID)) != nil
+}
+
+// DeleteEquivocationProposal deletes the equivocation proposal flag for proposalID.
+func (k Keeper) DeleteEquivocationProposal(ctx sdk.Context, proposalID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.EquivocationProposalKey(proposalID))
+}

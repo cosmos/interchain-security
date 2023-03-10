@@ -1061,3 +1061,19 @@ func TestHandleEquivocationProposal(t *testing.T) {
 		ctrl.Finish()
 	}
 }
+
+func TestEquivocationProposal(t *testing.T) {
+	var (
+		require      = require.New(t)
+		k, ctx, _, _ = testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		proposalID   = uint64(1)
+	)
+
+	require.False(k.HasEquivocationProposal(ctx, proposalID), "proposalID shouldn't exist")
+
+	k.SetEquivocationProposal(ctx, proposalID)
+	require.True(k.HasEquivocationProposal(ctx, proposalID), "proposalID should exist")
+
+	k.DeleteEquivocationProposal(ctx, proposalID)
+	require.False(k.HasEquivocationProposal(ctx, proposalID), "proposalID shouldn't exist")
+}
