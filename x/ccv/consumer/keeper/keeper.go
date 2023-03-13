@@ -89,11 +89,11 @@ func NewKeeper(
 func (k Keeper) mustValidateFields() {
 
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 15 {
-		panic("number of fields in provider keeper is not 15")
+	if reflect.ValueOf(k).NumField() != 16 {
+		panic("number of fields in consumer keeper is not 16")
 	}
 
-	// Note 14 fields will be validated, hooks are explicitly set after the constructor
+	// Note 15 fields will be validated, hooks are explicitly set after the constructor
 
 	if reflect.ValueOf(k.storeKey).IsZero() { // 1
 		panic("storeKey is zero-valued or nil")
@@ -119,22 +119,25 @@ func (k Keeper) mustValidateFields() {
 	if reflect.ValueOf(k.clientKeeper).IsZero() { // 8
 		panic("clientKeeper is zero-valued or nil")
 	}
-	if reflect.ValueOf(k.slashingKeeper).IsZero() { // 9
+	if reflect.ValueOf(k.stakingKeeper).IsZero() { // 9
+		panic("stakingKeeper is zero-valued or nil")
+	}
+	if reflect.ValueOf(k.slashingKeeper).IsZero() { // 10
 		panic("slashingKeeper is zero-valued or nil")
 	}
-	if reflect.ValueOf(k.bankKeeper).IsZero() { // 10
+	if reflect.ValueOf(k.bankKeeper).IsZero() { // 11
 		panic("bankKeeper is zero-valued or nil")
 	}
-	if reflect.ValueOf(k.authKeeper).IsZero() { // 11
+	if reflect.ValueOf(k.authKeeper).IsZero() { // 12
 		panic("authKeeper is zero-valued or nil")
 	}
-	if reflect.ValueOf(k.ibcTransferKeeper).IsZero() { // 12
+	if reflect.ValueOf(k.ibcTransferKeeper).IsZero() { // 13
 		panic("ibcTransferKeeper is zero-valued or nil")
 	}
-	if reflect.ValueOf(k.ibcCoreKeeper).IsZero() { // 13
+	if reflect.ValueOf(k.ibcCoreKeeper).IsZero() { // 14
 		panic("ibcCoreKeeper is zero-valued or nil")
 	}
-	if reflect.ValueOf(k.feeCollectorName).IsZero() { // 14
+	if reflect.ValueOf(k.feeCollectorName).IsZero() { // 15
 		panic("feeCollectorName is zero-valued or nil")
 	}
 }
