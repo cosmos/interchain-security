@@ -10,11 +10,10 @@ const (
 	EventTypeAssignConsumerKey           = "assign_consumer_key"
 	EventTypeRegisterConsumerRewardDenom = "register_consumer_reward_denom"
 	EventTypeSubmitConsumerMisbehaviour  = "submit_consumer_misbehaviour"
-
-	EventTypeExecuteConsumerChainSlash = "execute_consumer_chain_slash"
-	EventTypeFeeDistribution           = "fee_distribution"
-	EventTypeConsumerSlashRequest      = "consumer_slash_request"
-	EventTypeVSCMatured                = "vsc_matured"
+	EventTypeExecuteConsumerChainSlash   = "execute_consumer_chain_slash"
+	EventTypeFeeDistribution             = "fee_distribution"
+	EventTypeConsumerSlashRequest        = "consumer_slash_request"
+	EventTypeVSCMatured                  = "vsc_matured"
 
 	AttributeKeyAckSuccess = "success"
 	AttributeKeyAck        = "acknowledgement"

@@ -13,6 +13,7 @@ import "ibc/lightclients/tendermint/v1/tendermint.proto";
 service Msg {
   rpc AssignConsumerKey(MsgAssignConsumerKey) returns (MsgAssignConsumerKeyResponse);
   rpc RegisterConsumerRewardDenom(MsgRegisterConsumerRewardDenom) returns (MsgRegisterConsumerRewardDenomResponse);
+  rpc SubmitConsumerMisbehaviour(MsgSubmitConsumerMisbehaviour) returns (MsgSubmitConsumerMisbehaviourResponse);
 }
 
 message MsgAssignConsumerKey {
@@ -45,6 +46,9 @@ message MsgRegisterConsumerRewardDenom {
 // MsgRegisterConsumerRewardDenomResponse defines the Msg/RegisterConsumerRewardDenom response type.
 message MsgRegisterConsumerRewardDenomResponse {}
 // MsgSubmitConsumerMisbehaviour reports a consumer chain Misbehaviour
+
+// MsgSubmitConsumerMisbehaviour defines a message that reports a misbehaviour
+// observed on a consumer chain
 message MsgSubmitConsumerMisbehaviour {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;

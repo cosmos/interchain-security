@@ -126,3 +126,20 @@ func (k msgServer) RegisterConsumerRewardDenom(goCtx context.Context, msg *types
 
 	return &types.MsgRegisterConsumerRewardDenomResponse{}, nil
 }
+
+func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.MsgSubmitConsumerMisbehaviour) (*types.MsgSubmitConsumerMisbehaviourResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	if err := k.Keeper.CheckConsumerMisbehaviour(ctx, *msg.Misbehaviour); err != nil {
+		return &types.MsgSubmitConsumerMisbehaviourResponse{}, err
+	}
+
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			ccvtypes.EventTypeSubmitConsumerMisbehaviour,
+			sdk.NewAttribute(ccvtypes.AttributeConsumerMisbehaviour, msg.Misbehaviour.String()),
+			sdk.NewAttribute(ccvtypes.AttributeSubmitterAddress, msg.Submitter),
+		),
+	})
+
+	return &types.MsgSubmitConsumerMisbehaviourResponse{}, nil
+}
