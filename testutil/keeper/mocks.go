@@ -21,6 +21,7 @@ import (
 	exported "github.com/cosmos/ibc-go/v4/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
 	types8 "github.com/tendermint/tendermint/abci/types"
+stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // MockStakingKeeper is a mock of StakingKeeper interface.
@@ -208,6 +209,93 @@ func (m *MockStakingKeeper) UnbondingTime(ctx types.Context) time.Duration {
 func (mr *MockStakingKeeperMockRecorder) UnbondingTime(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnbondingTime", reflect.TypeOf((*MockStakingKeeper)(nil).UnbondingTime), ctx)
+}
+
+// Unjail mocks base method.
+func (m *MockStakingKeeper) Unjail(ctx types.Context, addr types.ConsAddress) {
+	m.ctrl.T.Helper()
+	_ = m.ctrl.Call(m, "Unjail", ctx, addr)
+}
+	
+// Unjail indicates an expected call of Unjail.
+func (mr *MockStakingKeeperMockRecorder) Unjail(ctx, addr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unjail", reflect.TypeOf((*MockStakingKeeper)(nil).Unjail), ctx, addr)
+}
+
+func (m *MockStakingKeeper) IterateValidators(ctx types.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool)) {
+	m.ctrl.T.Helper()
+	_ = m.ctrl.Call(m, "IterateValidators", ctx, f)
+}
+
+func (mr *MockStakingKeeperMockRecorder) IterateValidators(ctx, f interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IterateValidators", reflect.TypeOf((*MockStakingKeeper)(nil).IterateValidators), ctx, f)
+}
+
+func (m *MockStakingKeeper) Validator(ctx types.Context, valAddr types.ValAddress) stakingtypes.ValidatorI {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Validator", ctx, valAddr)
+	ret0, _ := ret[0].(stakingtypes.ValidatorI)
+	return ret0
+}
+
+func (mr *MockStakingKeeperMockRecorder) Validator(ctx, valAddr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validator", reflect.TypeOf((*MockStakingKeeper)(nil).Validator), ctx, valAddr)
+}
+
+// IsValidatorJailed mocks base method.
+func (m *MockStakingKeeper) IsValidatorJailed(ctx types.Context, addr types.ConsAddress) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsValidatorJailed", ctx, addr)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsValidatorJailed indicates an expected call of IsValidatorJailed.
+func (mr *MockStakingKeeperMockRecorder) IsValidatorJailed(ctx, addr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsValidatorJailed", reflect.TypeOf((*MockStakingKeeper)(nil).IsValidatorJailed), ctx, addr)
+}
+
+
+func (m *MockStakingKeeper) ValidatorByConsAddr(ctx types.Context, consAddr types.ConsAddress) stakingtypes.ValidatorI {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidatorByConsAddr", ctx, consAddr)
+	ret0, _ := ret[0].(stakingtypes.ValidatorI)
+	return ret0
+}
+
+func (mr *MockStakingKeeperMockRecorder) ValidatorByConsAddr(ctx, consAddr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidatorByConsAddr", reflect.TypeOf((*MockStakingKeeper)(nil).ValidatorByConsAddr), ctx, consAddr)
+}
+
+// Delegation mocks base method.
+func (m *MockStakingKeeper) Delegation(ctx types.Context, addr types.AccAddress, valAddr types.ValAddress) stakingtypes.DelegationI {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delegation", ctx, addr, valAddr)
+	ret0, _ := ret[0].(stakingtypes.DelegationI)
+	return ret0
+}
+
+// Delegation indicates an expected call of Delegation.
+func (mr *MockStakingKeeperMockRecorder) Delegation(ctx, addr, valAddr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delegation", reflect.TypeOf((*MockStakingKeeper)(nil).Delegation), ctx, addr, valAddr)
+}
+
+func (m *MockStakingKeeper) MaxValidators(ctx types.Context) uint32 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MaxValidators", ctx)
+	ret0, _ := ret[0].(uint32)
+	return ret0
+}
+
+func (mr *MockStakingKeeperMockRecorder) MaxValidators(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MaxValidators", reflect.TypeOf((*MockStakingKeeper)(nil).MaxValidators), ctx)
 }
 
 // MockEvidenceKeeper is a mock of EvidenceKeeper interface.
