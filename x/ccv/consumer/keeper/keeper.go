@@ -42,6 +42,7 @@ type Keeper struct {
 	ibcTransferKeeper ccv.IBCTransferKeeper
 	ibcCoreKeeper     ccv.IBCCoreKeeper
 	feeCollectorName  string
+	isDemocConsumer   bool
 }
 
 // NewKeeper creates a new Consumer Keeper instance
@@ -52,7 +53,6 @@ func NewKeeper(
 	scopedKeeper ccv.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
-	stakingKeeper ccv.StakingKeeper,
 	slashingKeeper ccv.SlashingKeeper, bankKeeper ccv.BankKeeper, accountKeeper ccv.AccountKeeper,
 	ibcTransferKeeper ccv.IBCTransferKeeper, ibcCoreKeeper ccv.IBCCoreKeeper,
 	feeCollectorName string,
@@ -71,17 +71,24 @@ func NewKeeper(
 		portKeeper:        portKeeper,
 		connectionKeeper:  connectionKeeper,
 		clientKeeper:      clientKeeper,
-		stakingKeeper:     stakingKeeper,
 		slashingKeeper:    slashingKeeper,
 		bankKeeper:        bankKeeper,
 		authKeeper:        accountKeeper,
 		ibcTransferKeeper: ibcTransferKeeper,
 		ibcCoreKeeper:     ibcCoreKeeper,
 		feeCollectorName:  feeCollectorName,
+		// Unless specified in registerAsDemocConsumer, keeper is for MVP consumer
+		stakingKeeper:   nil,
+		isDemocConsumer: false,
 	}
 
 	k.mustValidateFields()
 	return k
+}
+
+func (k *Keeper) RegisterAsDemocConsumer(stakingKeeper ccv.StakingKeeper) {
+	k.stakingKeeper = stakingKeeper
+	k.isDemocConsumer = true
 }
 
 // Validates that the consumer keeper is initialized with non-zero and
@@ -89,11 +96,14 @@ func NewKeeper(
 func (k Keeper) mustValidateFields() {
 
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 16 {
-		panic("number of fields in consumer keeper is not 16")
+	if reflect.ValueOf(k).NumField() != 17 {
+		panic("number of fields in consumer keeper is not 17")
 	}
 
-	// Note 15 fields will be validated, hooks are explicitly set after the constructor
+	// Note 14 / 17 fields will be validated,
+	// hooks are explicitly set after the constructor,
+	// stakingKeeper is optionally set after the constructor,
+	// isDemocConsumer is optionally set after the constructor
 
 	if reflect.ValueOf(k.storeKey).IsZero() { // 1
 		panic("storeKey is zero-valued or nil")
@@ -119,25 +129,22 @@ func (k Keeper) mustValidateFields() {
 	if reflect.ValueOf(k.clientKeeper).IsZero() { // 8
 		panic("clientKeeper is zero-valued or nil")
 	}
-	if reflect.ValueOf(k.stakingKeeper).IsZero() { // 9
-		panic("stakingKeeper is zero-valued or nil")
-	}
-	if reflect.ValueOf(k.slashingKeeper).IsZero() { // 10
+	if reflect.ValueOf(k.slashingKeeper).IsZero() { // 9
 		panic("slashingKeeper is zero-valued or nil")
 	}
-	if reflect.ValueOf(k.bankKeeper).IsZero() { // 11
+	if reflect.ValueOf(k.bankKeeper).IsZero() { // 10
 		panic("bankKeeper is zero-valued or nil")
 	}
-	if reflect.ValueOf(k.authKeeper).IsZero() { // 12
+	if reflect.ValueOf(k.authKeeper).IsZero() { // 11
 		panic("authKeeper is zero-valued or nil")
 	}
-	if reflect.ValueOf(k.ibcTransferKeeper).IsZero() { // 13
+	if reflect.ValueOf(k.ibcTransferKeeper).IsZero() { // 12
 		panic("ibcTransferKeeper is zero-valued or nil")
 	}
-	if reflect.ValueOf(k.ibcCoreKeeper).IsZero() { // 14
+	if reflect.ValueOf(k.ibcCoreKeeper).IsZero() { // 13
 		panic("ibcCoreKeeper is zero-valued or nil")
 	}
-	if reflect.ValueOf(k.feeCollectorName).IsZero() { // 15
+	if reflect.ValueOf(k.feeCollectorName).IsZero() { // 14
 		panic("feeCollectorName is zero-valued or nil")
 	}
 }

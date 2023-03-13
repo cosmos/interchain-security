@@ -419,7 +419,6 @@ func New(
 		&app.IBCKeeper.PortKeeper,
 		app.IBCKeeper.ConnectionKeeper,
 		app.IBCKeeper.ClientKeeper,
-		app.StakingKeeper,
 		app.SlashingKeeper,
 		app.BankKeeper,
 		app.AccountKeeper,
@@ -427,6 +426,8 @@ func New(
 		app.IBCKeeper,
 		authtypes.FeeCollectorName,
 	)
+
+	app.ConsumerKeeper.RegisterAsDemocConsumer(app.StakingKeeper)
 
 	// consumer keeper satisfies the staking keeper interface
 	// of the slashing module

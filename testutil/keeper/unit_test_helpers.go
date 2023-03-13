@@ -138,7 +138,6 @@ func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consu
 		mocks.MockPortKeeper,
 		mocks.MockConnectionKeeper,
 		mocks.MockClientKeeper,
-		mocks.MockStakingKeeper,
 		mocks.MockSlashingKeeper,
 		mocks.MockBankKeeper,
 		mocks.MockAccountKeeper,
@@ -146,6 +145,28 @@ func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consu
 		mocks.MockIBCCoreKeeper,
 		authtypes.FeeCollectorName,
 	)
+}
+
+// NewInMemDemocConsumerKeeper instantiates an in-mem democracy consumer keeper from params and mocked keepers
+func NewInMemDemocConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consumerkeeper.Keeper {
+	k := consumerkeeper.NewKeeper(
+		params.Cdc,
+		params.StoreKey,
+		*params.ParamsSubspace,
+		mocks.MockScopedKeeper,
+		mocks.MockChannelKeeper,
+		mocks.MockPortKeeper,
+		mocks.MockConnectionKeeper,
+		mocks.MockClientKeeper,
+		mocks.MockSlashingKeeper,
+		mocks.MockBankKeeper,
+		mocks.MockAccountKeeper,
+		mocks.MockIBCTransferKeeper,
+		mocks.MockIBCCoreKeeper,
+		authtypes.FeeCollectorName,
+	)
+	k.RegisterAsDemocConsumer(mocks.MockStakingKeeper)
+	return k
 }
 
 // Returns an in-memory provider keeper, context, controller, and mocks, given a test instance and parameters.
@@ -170,6 +191,18 @@ func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 	ctrl := gomock.NewController(t)
 	mocks := NewMockedKeepers(ctrl)
 	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
+}
+
+// Return an in-memory democracy consumer keeper, context, controller, and mocks, given a test instance and parameters.
+//
+// Note: Calling ctrl.Finish() at the end of a test function ensures that
+// no unexpected calls to external keepers are made.
+func GetDemocConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
+	consumerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers,
+) {
+	ctrl := gomock.NewController(t)
+	mocks := NewMockedKeepers(ctrl)
+	return NewInMemDemocConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
 }
 
 // Registers proto interfaces for params.Cdc

@@ -334,7 +334,6 @@ func New(
 		&app.IBCKeeper.PortKeeper,
 		app.IBCKeeper.ConnectionKeeper,
 		app.IBCKeeper.ClientKeeper,
-		nil,
 		app.SlashingKeeper,
 		app.BankKeeper,
 		app.AccountKeeper,
