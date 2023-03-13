@@ -23,6 +23,7 @@ func (s *CCVTestSuite) TestCheckConsumerMisbehaviour() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
 	s.SendEmptyVSCPacket()
+	tmtypes.LightClientAttackEvidence
 
 	consumerConsState, _ := s.providerChain.GetConsensusState(s.path.EndpointA.ClientID, s.consumerChain.LastHeader.TrustedHeight)
 

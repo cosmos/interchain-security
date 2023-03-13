@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, msg types.MsgSubmitConsumerMisbehaviour) error {
@@ -33,6 +34,48 @@ func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, msg types.MsgSubmitCo
 
 	k.clientKeeper.SetClientState(ctx, clientID, clientState)
 	k.Logger(ctx).Info("client frozen due to misbehaviour", "client-id", clientID)
+
+	// get byzantine validators
+	sh, err := tmtypes.SignedHeaderFromProto(msg.Misbehaviour.Header1.SignedHeader)
+	if err != nil {
+		return err
+	}
+
+	vs, err := tmtypes.ValidatorSetFromProto(msg.Misbehaviour.Header1.ValidatorSet)
+	if err != nil {
+		return err
+	}
+	ev := tmtypes.LightClientAttackEvidence{
+		ConflictingBlock: &tmtypes.LightBlock{SignedHeader: sh, ValidatorSet: vs},
+	}
+
+	h2, err := tmtypes.HeaderFromProto(msg.Misbehaviour.Header2.Header)
+	if err != nil {
+		return err
+	}
+
+	// WIP: return byzantine validators according to the light client commited
+
+	// if this is an equivocation or amnesia attack, i.e. the validator sets are the same, then we
+	// return the height of the conflicting block else if it is a lunatic attack and the validator sets
+	// are not the same then we send the height of the common header.
+	if ev.ConflictingHeaderIsInvalid(&h2) {
+		ev.CommonHeight = msg.Misbehaviour.Header2.Header.Height
+		ev.Timestamp = msg.Misbehaviour.Header2.Header.Time
+		ev.TotalVotingPower = msg.Misbehaviour.Header2.ValidatorSet.TotalVotingPower
+	} else {
+		ev.CommonHeight = msg.Misbehaviour.Header1.Header.Height
+		ev.Timestamp = msg.Misbehaviour.Header1.Header.Time
+		ev.TotalVotingPower = msg.Misbehaviour.Header1.ValidatorSet.TotalVotingPower
+	}
+	ev.ByzantineValidators = ev.GetByzantineValidators(vs, sh)
+
+	logger := ctx.Logger()
+
+	logger.Info(
+		"confirmed equivocation",
+		"byzantine validators", ev.ByzantineValidators,
+	)
 
 	// TBD
 	// defer func() {
