@@ -5,29 +5,29 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, msg types.MsgSubmitConsumerMisbehaviour) error {
+func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, misbeaviour ibctmtypes.Misbehaviour) error {
 
-	clientID := msg.Misbehaviour.GetClientID()
+	clientID := misbeaviour.GetClientID()
 	clientState, found := k.clientKeeper.GetClientState(ctx, clientID)
 	if !found {
 		return fmt.Errorf("types.ErrClientNotFound cannot check misbehaviour for client with ID %s", clientID)
 	}
 
-	clientStore := k.clientKeeper.ClientStore(ctx, msg.Misbehaviour.GetClientID())
+	clientStore := k.clientKeeper.ClientStore(ctx, misbeaviour.GetClientID())
 
 	if status := clientState.Status(ctx, clientStore, k.cdc); status != exported.Active {
 		return fmt.Errorf("types.ErrClientNotActive cannot process misbehaviour for client (%s) with status %s", clientID, status)
 	}
 
-	if err := msg.Misbehaviour.ValidateBasic(); err != nil {
+	if err := misbeaviour.ValidateBasic(); err != nil {
 		return err
 	}
 
-	clientState, err := clientState.CheckMisbehaviourAndUpdateState(ctx, k.cdc, clientStore, msg.Misbehaviour)
+	clientState, err := clientState.CheckMisbehaviourAndUpdateState(ctx, k.cdc, clientStore, &misbeaviour)
 	if err != nil {
 		return err
 	}
@@ -36,12 +36,12 @@ func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, msg types.MsgSubmitCo
 	k.Logger(ctx).Info("client frozen due to misbehaviour", "client-id", clientID)
 
 	// get byzantine validators
-	sh, err := tmtypes.SignedHeaderFromProto(msg.Misbehaviour.Header1.SignedHeader)
+	sh, err := tmtypes.SignedHeaderFromProto(misbeaviour.Header1.SignedHeader)
 	if err != nil {
 		return err
 	}
 
-	vs, err := tmtypes.ValidatorSetFromProto(msg.Misbehaviour.Header1.ValidatorSet)
+	vs, err := tmtypes.ValidatorSetFromProto(misbeaviour.Header1.ValidatorSet)
 	if err != nil {
 		return err
 	}
@@ -49,7 +49,7 @@ func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, msg types.MsgSubmitCo
 		ConflictingBlock: &tmtypes.LightBlock{SignedHeader: sh, ValidatorSet: vs},
 	}
 
-	h2, err := tmtypes.HeaderFromProto(msg.Misbehaviour.Header2.Header)
+	h2, err := tmtypes.HeaderFromProto(misbeaviour.Header2.Header)
 	if err != nil {
 		return err
 	}
@@ -60,13 +60,13 @@ func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, msg types.MsgSubmitCo
 	// return the height of the conflicting block else if it is a lunatic attack and the validator sets
 	// are not the same then we send the height of the common header.
 	if ev.ConflictingHeaderIsInvalid(&h2) {
-		ev.CommonHeight = msg.Misbehaviour.Header2.Header.Height
-		ev.Timestamp = msg.Misbehaviour.Header2.Header.Time
-		ev.TotalVotingPower = msg.Misbehaviour.Header2.ValidatorSet.TotalVotingPower
+		ev.CommonHeight = misbeaviour.Header2.Header.Height
+		ev.Timestamp = misbeaviour.Header2.Header.Time
+		ev.TotalVotingPower = misbeaviour.Header2.ValidatorSet.TotalVotingPower
 	} else {
-		ev.CommonHeight = msg.Misbehaviour.Header1.Header.Height
-		ev.Timestamp = msg.Misbehaviour.Header1.Header.Time
-		ev.TotalVotingPower = msg.Misbehaviour.Header1.ValidatorSet.TotalVotingPower
+		ev.CommonHeight = misbeaviour.Header1.Header.Height
+		ev.Timestamp = misbeaviour.Header1.Header.Time
+		ev.TotalVotingPower = misbeaviour.Header1.ValidatorSet.TotalVotingPower
 	}
 	ev.ByzantineValidators = ev.GetByzantineValidators(vs, sh)
 

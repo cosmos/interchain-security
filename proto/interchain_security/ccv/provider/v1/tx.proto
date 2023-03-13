@@ -48,7 +48,10 @@ message MsgRegisterConsumerRewardDenomResponse {}
 message MsgSubmitConsumerMisbehaviour {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
+  string submitter = 1;
   // The Misbehaviour of the consumer chain wrapping 
   // two conflicting IBC headers 
-  ibc.lightclients.tendermint.v1.Misbehaviour misbehaviour = 1;
+  ibc.lightclients.tendermint.v1.Misbehaviour misbehaviour = 2;
 }
+
+message MsgSubmitConsumerMisbehaviourResponse {}

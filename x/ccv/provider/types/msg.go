@@ -5,15 +5,22 @@ import (
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 )
 
 // provider message types
 const (
 	TypeMsgAssignConsumerKey           = "assign_consumer_key"
 	TypeMsgRegisterConsumerRewardDenom = "register_consumer_reward_denom"
+	TypeMsgSubmitConsumerMisbehaviour  = "submit_consumer_misbehaviour"
 )
 
-var _ sdk.Msg = &MsgAssignConsumerKey{}
+var (
+	_ sdk.Msg = &MsgAssignConsumerKey{}
+	_ sdk.Msg = &MsgSubmitConsumerMisbehaviour{}
+)
 
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
 // Delegator address and validator address are the same.
@@ -138,4 +145,43 @@ func (msg MsgRegisterConsumerRewardDenom) ValidateBasic() error {
 	}
 
 	return nil
+}
+
+func NewMsgSubmitConsumerMisbehaviour(submitter sdk.AccAddress, m *ibctmtypes.Misbehaviour) (*MsgSubmitConsumerMisbehaviour, error) {
+	return &MsgSubmitConsumerMisbehaviour{Submitter: submitter.String(), Misbehaviour: m}, nil
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerMisbehaviour) Route() string { return RouterKey }
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerMisbehaviour) Type() string {
+	return TypeMsgSubmitConsumerMisbehaviour
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
+	if msg.Submitter == "" {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
+	}
+	if err := msg.Misbehaviour.ValidateBasic(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerMisbehaviour) GetSignBytes() []byte {
+	bz := ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerMisbehaviour) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.Submitter)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{addr}
 }

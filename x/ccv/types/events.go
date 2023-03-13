@@ -9,6 +9,7 @@ const (
 	EventTypeConsumerClientCreated       = "consumer_client_created"
 	EventTypeAssignConsumerKey           = "assign_consumer_key"
 	EventTypeRegisterConsumerRewardDenom = "register_consumer_reward_denom"
+	EventTypeSubmitConsumerMisbehaviour  = "submit_consumer_misbehaviour"
 
 	EventTypeExecuteConsumerChainSlash = "execute_consumer_chain_slash"
 	EventTypeFeeDistribution           = "fee_distribution"
@@ -33,6 +34,8 @@ const (
 	AttributeUnbondingPeriod          = "unbonding_period"
 	AttributeProviderValidatorAddress = "provider_validator_address"
 	AttributeConsumerConsensusPubKey  = "consumer_consensus_pub_key"
+	AttributeSubmitterAddress         = "provider_validator_address"
+	AttributeConsumerMisbehaviour     = "consumer_consensus_pub_key"
 
 	AttributeDistributionCurrentHeight = "current_distribution_height"
 	AttributeDistributionNextHeight    = "next_distribution_height"

@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 import (
 	"time"
@@ -7,7 +7,6 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	ibctestingmock "github.com/cosmos/ibc-go/v4/testing/mock"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -23,7 +22,6 @@ func (s *CCVTestSuite) TestCheckConsumerMisbehaviour() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
 	s.SendEmptyVSCPacket()
-	tmtypes.LightClientAttackEvidence
 
 	consumerConsState, _ := s.providerChain.GetConsensusState(s.path.EndpointA.ClientID, s.consumerChain.LastHeader.TrustedHeight)
 
@@ -376,9 +374,7 @@ func (s *CCVTestSuite) TestCheckConsumerMisbehaviour() {
 
 			err = s.providerApp.GetProviderKeeper().CheckConsumerMisbehaviour(
 				cCtx,
-				providertypes.MsgSubmitConsumerMisbehaviour{
-					Misbehaviour: tc.misbehaviour(),
-				},
+				*tc.misbehaviour(),
 			)
 
 			// Misbehaviour passed
