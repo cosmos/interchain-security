@@ -11,6 +11,7 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
@@ -25,6 +26,7 @@ func GetTxCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(NewAssignConsumerKeyCmd())
+	cmd.AddCommand(NewSubmitConsumerMisbehaviourCmd())
 
 	return cmd
 }
@@ -50,6 +52,45 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 			}
 
 			msg, err := types.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), consumerPubKey)
+			if err != nil {
+				return err
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	_ = cmd.MarkFlagRequired(flags.FlagFrom)
+
+	return cmd
+}
+
+func NewSubmitConsumerMisbehaviourCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "submit-consumer-misbehaviour [misbeaviour]",
+		Short: "submit a light client misbehaviour for a consumer chain",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).
+				WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+
+			submitter := clientCtx.GetFromAddress()
+			var misbehavior ibctmtypes.Misbehaviour
+			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[1]), &misbehavior); err != nil {
+				return err
+			}
+
+			msg, err := types.NewMsgSubmitConsumerMisbehaviour(submitter, &misbehavior)
 			if err != nil {
 				return err
 			}
