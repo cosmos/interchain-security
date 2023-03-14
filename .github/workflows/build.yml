@@ -7,6 +7,8 @@ on:
     types: [opened, synchronize, reopened]
 jobs:
   sonarcloud:
+    # skip this on forks or dependabot PRs
+    if: env.SONAR_TOKEN != null
     name: SonarCloud
     runs-on: ubuntu-latest
     steps:
