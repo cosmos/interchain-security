@@ -22,6 +22,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/ccv/utils"
 
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -86,45 +87,19 @@ func (k Keeper) mustValidateFields() {
 		panic("number of fields in provider keeper is not 13")
 	}
 
-	if reflect.ValueOf(k.cdc).IsZero() { // 1
-		panic("cdc is zero-valued or nil")
-	}
-	if reflect.ValueOf(k.storeKey).IsZero() { // 2
-		panic("storeKey is zero-valued or nil")
-	}
-	if reflect.ValueOf(k.paramSpace).IsZero() { // 3
-		panic("paramSpace is zero-valued or nil")
-	}
-	if reflect.ValueOf(k.scopedKeeper).IsZero() { // 4
-		panic("scopedKeeper is zero-valued or nil")
-	}
-	if reflect.ValueOf(k.channelKeeper).IsZero() { // 5
-		panic("channelKeeper is zero-valued or nil")
-	}
-	if reflect.ValueOf(k.portKeeper).IsZero() { // 6
-		panic("portKeeper is zero-valued or nil")
-	}
-	if reflect.ValueOf(k.connectionKeeper).IsZero() { // 7
-		panic("connectionKeeper is zero-valued or nil")
-	}
-	if reflect.ValueOf(k.accountKeeper).IsZero() { // 8
-		panic("accountKeeper is zero-valued or nil")
-	}
-	if reflect.ValueOf(k.clientKeeper).IsZero() { // 9
-		panic("clientKeeper is zero-valued or nil")
-	}
-	if reflect.ValueOf(k.stakingKeeper).IsZero() { // 10
-		panic("stakingKeeper is zero-valued or nil")
-	}
-	if reflect.ValueOf(k.slashingKeeper).IsZero() { // 11
-		panic("slashingKeeper is zero-valued or nil")
-	}
-	if reflect.ValueOf(k.evidenceKeeper).IsZero() { // 12
-		panic("evidenceKeeper is zero-valued or nil")
-	}
-	if reflect.ValueOf(k.feeCollectorName).IsZero() { // 13
-		panic("feeCollectorName is zero-valued or nil")
-	}
+	utils.PanicIfZeroOrNil(k.cdc, "cdc")                           // 1
+	utils.PanicIfZeroOrNil(k.storeKey, "storeKey")                 // 2
+	utils.PanicIfZeroOrNil(k.paramSpace, "paramSpace")             // 3
+	utils.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")         // 4
+	utils.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")       // 5
+	utils.PanicIfZeroOrNil(k.portKeeper, "portKeeper")             // 6
+	utils.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper") // 7
+	utils.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")       // 8
+	utils.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")         // 9
+	utils.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")       // 10
+	utils.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")     // 11
+	utils.PanicIfZeroOrNil(k.evidenceKeeper, "evidenceKeeper")     // 12
+	utils.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName") // 13
 }
 
 // Logger returns a module-specific logger.
