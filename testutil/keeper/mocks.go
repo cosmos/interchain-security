@@ -61,6 +61,20 @@ func (mr *MockStakingKeeperMockRecorder) GetLastTotalPower(ctx interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastTotalPower", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastTotalPower), ctx)
 }
 
+// GetLastValidators mocks base method.
+func (m *MockStakingKeeper) GetLastValidators(ctx types.Context) []stakingtypes.Validator {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastValidators", ctx)
+	ret0, _ := ret[0].([]stakingtypes.Validator)
+	return ret0
+}
+
+// GetLastValidators indicates an expected call of GetLastValidators.
+func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidators", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidators), ctx)
+}
+
 // GetLastValidatorPower mocks base method.
 func (m *MockStakingKeeper) GetLastValidatorPower(ctx types.Context, operator types.ValAddress) int64 {
 	m.ctrl.T.Helper()

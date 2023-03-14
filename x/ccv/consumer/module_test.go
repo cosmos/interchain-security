@@ -102,7 +102,7 @@ func TestEndBlock(t *testing.T) {
 
 		dApp.ConsumerKeeper.SetPreCCVTrue(ctx)
 		dApp.ConsumerKeeper.SetInitialValSet(ctx, tc.providerValidators)
-		consumerModule := consumer.NewAppModule(dApp.ConsumerKeeper, dApp.StakingKeeper)
+		consumerModule := consumer.NewAppModule(dApp.ConsumerKeeper)
 
 		valUpdate := consumerModule.EndBlock(
 			ctx,

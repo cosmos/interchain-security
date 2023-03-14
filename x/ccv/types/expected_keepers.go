@@ -21,6 +21,8 @@ import (
 // StakingKeeper defines the contract expected by provider-chain ccv module from a Staking Module that will keep track
 // of the provider validator set. This version of the interchain-security protocol will mirror the provider chain's changes
 // so we do not need a registry module between the staking module and CCV.
+//
+// TODO: Do we want to split this into multiple interfaces for the contract needed by the a consumer vs democ consumer?
 type StakingKeeper interface {
 	GetValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 	UnbondingCanComplete(ctx sdk.Context, id uint64) error
