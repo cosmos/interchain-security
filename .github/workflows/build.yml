@@ -8,7 +8,6 @@ on:
 jobs:
   sonarcloud:
     # skip this on forks or dependabot PRs
-    if: env.SONAR_TOKEN != null
     name: SonarCloud
     runs-on: ubuntu-latest
     steps:
@@ -29,3 +28,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        if: env.SONAR_TOKEN != null
