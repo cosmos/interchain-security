@@ -427,7 +427,8 @@ func New(
 		authtypes.FeeCollectorName,
 	)
 
-	app.ConsumerKeeper.RegisterAsDemocConsumer(app.StakingKeeper)
+	// Setting the staking keeper is only needed for sovereign to consumer migrated chains
+	app.ConsumerKeeper.SetStakingKeeper(app.StakingKeeper)
 
 	// consumer keeper satisfies the staking keeper interface
 	// of the slashing module

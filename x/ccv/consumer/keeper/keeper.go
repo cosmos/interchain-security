@@ -28,14 +28,15 @@ import (
 
 // Keeper defines the Cross-Chain Validation Consumer Keeper
 type Keeper struct {
-	storeKey          sdk.StoreKey
-	cdc               codec.BinaryCodec
-	paramStore        paramtypes.Subspace
-	scopedKeeper      ccv.ScopedKeeper
-	channelKeeper     ccv.ChannelKeeper
-	portKeeper        ccv.PortKeeper
-	connectionKeeper  ccv.ConnectionKeeper
-	clientKeeper      ccv.ClientKeeper
+	storeKey         sdk.StoreKey
+	cdc              codec.BinaryCodec
+	paramStore       paramtypes.Subspace
+	scopedKeeper     ccv.ScopedKeeper
+	channelKeeper    ccv.ChannelKeeper
+	portKeeper       ccv.PortKeeper
+	connectionKeeper ccv.ConnectionKeeper
+	clientKeeper     ccv.ClientKeeper
+	// stakingKeeper is only needed for sovereign to consumer migration, and therefore is set after constructor
 	stakingKeeper     ccv.StakingKeeper
 	slashingKeeper    ccv.SlashingKeeper
 	hooks             ccv.ConsumerHooks
@@ -44,7 +45,6 @@ type Keeper struct {
 	ibcTransferKeeper ccv.IBCTransferKeeper
 	ibcCoreKeeper     ccv.IBCCoreKeeper
 	feeCollectorName  string
-	isDemocConsumer   bool
 }
 
 // NewKeeper creates a new Consumer Keeper instance
@@ -79,18 +79,15 @@ func NewKeeper(
 		ibcTransferKeeper: ibcTransferKeeper,
 		ibcCoreKeeper:     ibcCoreKeeper,
 		feeCollectorName:  feeCollectorName,
-		// Unless specified in registerAsDemocConsumer, keeper is for MVP consumer
-		stakingKeeper:   nil,
-		isDemocConsumer: false,
+		stakingKeeper:     nil,
 	}
 
 	k.mustValidateFields()
 	return k
 }
 
-func (k *Keeper) RegisterAsDemocConsumer(stakingKeeper ccv.StakingKeeper) {
+func (k *Keeper) SetStakingKeeper(stakingKeeper ccv.StakingKeeper) {
 	k.stakingKeeper = stakingKeeper
-	k.isDemocConsumer = true
 }
 
 // Validates that the consumer keeper is initialized with non-zero and
@@ -98,14 +95,13 @@ func (k *Keeper) RegisterAsDemocConsumer(stakingKeeper ccv.StakingKeeper) {
 func (k Keeper) mustValidateFields() {
 
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 17 {
-		panic("number of fields in consumer keeper is not 17")
+	if reflect.ValueOf(k).NumField() != 16 {
+		panic("number of fields in consumer keeper is not 16")
 	}
 
-	// Note 14 / 17 fields will be validated,
+	// Note 14 / 16 fields will be validated,
 	// hooks are explicitly set after the constructor,
 	// stakingKeeper is optionally set after the constructor,
-	// isDemocConsumer is optionally set after the constructor
 
 	utils.PanicIfZeroOrNil(k.storeKey, "storeKey")                   // 1
 	utils.PanicIfZeroOrNil(k.cdc, "cdc")                             // 2
