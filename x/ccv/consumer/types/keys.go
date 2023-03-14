@@ -135,12 +135,6 @@ func PacketMaturityTimeKey(vscID uint64, maturityTime time.Time) []byte {
 	)
 }
 
-// IdFromPacketMaturityTimeKey returns the packet id corresponding to a maturity time full key (including prefix)
-func IdFromPacketMaturityTimeKey(key []byte) uint64 {
-	// Bytes after single byte prefix are converted to uin64
-	return binary.BigEndian.Uint64(key[1:])
-}
-
 // HeightValsetUpdateIDKey returns the key to a valset update ID for a given block height
 func HeightValsetUpdateIDKey(height uint64) []byte {
 	hBytes := make([]byte, 8)
