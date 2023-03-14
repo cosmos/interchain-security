@@ -11,6 +11,10 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
+//
+// TODO: make unit tests for BOTH MVP consumer democ consumer, and pre-ccv consumer for previously unimplemented methods
+//
+
 // ApplyCCValidatorChanges applies the given changes to the cross-chain validators states
 // and returns updates to forward to tendermint.
 func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) []abci.ValidatorUpdate {
@@ -63,6 +67,13 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 
 // IterateValidators iterate democracy staking validators when the block height is before the last sovereign height
 func (k Keeper) IterateValidators(ctx sdk.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool)) {
+
+	// MVP consumer performs a no-op
+	if !k.IsPreCCV(ctx) {
+		return
+	}
+
+	// TODO: figure out proper logic
 	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			panic("empty staking keeper")
@@ -74,6 +85,13 @@ func (k Keeper) IterateValidators(ctx sdk.Context, f func(index int64, validator
 
 // Validator returns democracy staking validator when the block height is before the last sovereign height
 func (k Keeper) Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.ValidatorI {
+
+	// MVP consumer performs a no-op
+	if !k.IsPreCCV(ctx) {
+		return nil
+	}
+
+	// TODO: figure out proper logic
 	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			panic("empty staking keeper")
@@ -86,11 +104,12 @@ func (k Keeper) Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.Val
 
 // IsJailed returns the outstanding slashing flag for the given validator adddress
 func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
-	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
+
+	// TODO: figure out proper logic
+	if k.IsPreCCV(ctx) {
 		if k.stakingKeeper == nil {
 			panic("empty staking keeper")
 		}
-
 		return k.stakingKeeper.IsValidatorJailed(ctx, addr)
 	}
 	return k.OutstandingDowntime(ctx, addr)
@@ -108,7 +127,8 @@ func (k Keeper) ValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) s
 		Also, the slashing module will cal lthis function when it observes downtime. In that case
 		the only requirement on the returned value is that it isn't null.
 	*/
-	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
+	// TODO: figure out proper logic
+	if k.IsPreCCV(ctx) {
 		if k.stakingKeeper == nil {
 			return stakingtypes.Validator{}
 		}
@@ -125,7 +145,8 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		return
 	}
 
-	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
+	// TODO: figure out proper logic
+	if k.IsPreCCV(ctx) {
 		if k.stakingKeeper == nil {
 			return
 		}
@@ -154,6 +175,12 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 
 // Jail performs jail operation on democracy staking validator if block height after last sovereign height
 func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {
+
+	// MVP consumer performs a no-op
+	if !k.IsPreCCV(ctx) {
+		return
+	}
+
 	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			return
@@ -166,6 +193,12 @@ func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {
 
 // Unjail performs unjail operation on democracy staking validator if block height after last sovereign height
 func (k Keeper) Unjail(ctx sdk.Context, addr sdk.ConsAddress) {
+
+	// MVP consumer performs a no-op
+	if !k.IsPreCCV(ctx) {
+		return
+	}
+
 	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			return
@@ -177,6 +210,12 @@ func (k Keeper) Unjail(ctx sdk.Context, addr sdk.ConsAddress) {
 
 // Delegation returns delegation from an address to a democracy staking validator if block height after last sovereign height
 func (k Keeper) Delegation(ctx sdk.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) stakingtypes.DelegationI {
+
+	// MVP consumer performs a no-op
+	if !k.IsPreCCV(ctx) {
+		return nil
+	}
+
 	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			panic("empty staking keeper")
@@ -189,6 +228,12 @@ func (k Keeper) Delegation(ctx sdk.Context, addr sdk.AccAddress, valAddr sdk.Val
 
 // MaxValidators returns max number of validators on democracy staking if block height after last sovereign height
 func (k Keeper) MaxValidators(ctx sdk.Context) uint32 {
+
+	// MVP consumer performs a no-op
+	if !k.IsPreCCV(ctx) {
+		return 0
+	}
+
 	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			panic("empty staking keeper")
