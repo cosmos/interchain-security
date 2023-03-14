@@ -74,6 +74,8 @@ const (
 	// PreCCVByteKey is the byte to store the consumer is running on democracy staking module without consumer
 	PreCCVByteKey
 
+	InitialValSetByteKey
+
 	// LastSovereignHeightByteKey is the byte that will store last sovereign height
 	LastSovereignHeightByteKey
 )
@@ -110,6 +112,10 @@ func PendingChangesKey() []byte {
 
 func PreCCVKey() []byte {
 	return []byte{PreCCVByteKey}
+}
+
+func InitialValSetKey() []byte {
+	return []byte{InitialValSetByteKey}
 }
 
 func LastSovereignHeightKey() []byte {

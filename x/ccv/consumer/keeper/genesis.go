@@ -20,7 +20,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 	// PreCCV is true when consumer chain used to be running on non-consumer chain, and when it is in the progress of upgrading
 	// to consumer chain, where consumer chain upgrade is done.
 	if state.PreCCV {
-		k.SetPreCCV(ctx, state)
+		k.SetPreCCVTrue(ctx)
+		k.SetInitialValSet(ctx, state.InitialValSet)
 	}
 
 	k.SetParams(ctx, state.Params)

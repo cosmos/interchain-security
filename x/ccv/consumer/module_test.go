@@ -11,7 +11,6 @@ import (
 	ccvstakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	democracyapp "github.com/cosmos/interchain-security/app/consumer-democracy"
 	"github.com/cosmos/interchain-security/x/ccv/consumer"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/spm/cosmoscmd"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -21,6 +20,7 @@ import (
 	dbm "github.com/tendermint/tm-db"
 )
 
+// TODO: Determine if refactors are necessary for this test
 func TestEndBlock(t *testing.T) {
 	PKs := simapp.CreateTestPubKeys(500)
 	validator1 := teststaking.NewValidator(t, sdk.ValAddress(PKs[0].Address().Bytes()), PKs[0])
@@ -100,10 +100,8 @@ func TestEndBlock(t *testing.T) {
 			dApp.StakingKeeper.SetLastValidatorPower(ctx, val.GetOperator(), 1)
 		}
 
-		dApp.ConsumerKeeper.SetPreCCV(ctx, &types.GenesisState{
-			InitialValSet: tc.providerValidators,
-			PreCCV:        tc.preCCV,
-		})
+		dApp.ConsumerKeeper.SetPreCCVTrue(ctx)
+		dApp.ConsumerKeeper.SetInitialValSet(ctx, tc.providerValidators)
 		consumerModule := consumer.NewAppModule(dApp.ConsumerKeeper, dApp.StakingKeeper)
 
 		valUpdate := consumerModule.EndBlock(

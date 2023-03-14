@@ -276,18 +276,12 @@ func (k Keeper) SetLastSovereignHeight(ctx sdk.Context, height int64) {
 func (k Keeper) IsPreCCV(ctx sdk.Context) bool {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PreCCVKey())
-	if bz != nil {
-		return true
-	}
-	return false
+	return bz != nil
 }
 
-func (k Keeper) SetPreCCV(ctx sdk.Context, state *types.GenesisState) {
-	initialValSet := types.GenesisState{
-		InitialValSet: state.InitialValSet,
-	}
-	bz := k.cdc.MustMarshal(&initialValSet)
+func (k Keeper) SetPreCCVTrue(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
+	bz := sdk.Uint64ToBigEndian(uint64(1))
 	store.Set(types.PreCCVKey(), bz)
 }
 
@@ -296,15 +290,23 @@ func (k Keeper) DeletePreCCV(ctx sdk.Context) {
 	store.Delete(types.PreCCVKey())
 }
 
+func (k Keeper) SetInitialValSet(ctx sdk.Context, initialValSet []tmtypes.ValidatorUpdate) {
+	store := ctx.KVStore(k.storeKey)
+	initialValSetState := types.GenesisState{
+		InitialValSet: initialValSet,
+	}
+	bz := k.cdc.MustMarshal(&initialValSetState)
+	store.Set(types.InitialValSetKey(), bz)
+}
+
 func (k Keeper) GetInitialValSet(ctx sdk.Context) []tmtypes.ValidatorUpdate {
 	store := ctx.KVStore(k.storeKey)
 	initialValSet := types.GenesisState{}
-	bz := store.Get(types.PreCCVKey())
+	bz := store.Get(types.InitialValSetKey())
 	if bz != nil {
 		k.cdc.MustUnmarshal(bz, &initialValSet)
 		return initialValSet.InitialValSet
 	}
-
 	return []tmtypes.ValidatorUpdate{}
 }
 
