@@ -10,6 +10,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
@@ -273,6 +274,7 @@ func (k Keeper) SetLastSovereignHeight(ctx sdk.Context, height int64) {
 	store.Set(types.LastSovereignHeightKey(), bz)
 }
 
+// TODO: unit tests on these new CRUD methods
 func (k Keeper) IsPreCCV(ctx sdk.Context) bool {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PreCCVKey())
@@ -299,7 +301,7 @@ func (k Keeper) SetInitialValSet(ctx sdk.Context, initialValSet []tmtypes.Valida
 	store.Set(types.InitialValSetKey(), bz)
 }
 
-func (k Keeper) GetInitialValSet(ctx sdk.Context) []tmtypes.ValidatorUpdate {
+func (k Keeper) GetInitialValUpdates(ctx sdk.Context) []tmtypes.ValidatorUpdate {
 	store := ctx.KVStore(k.storeKey)
 	initialValSet := types.GenesisState{}
 	bz := store.Get(types.InitialValSetKey())
@@ -308,6 +310,13 @@ func (k Keeper) GetInitialValSet(ctx sdk.Context) []tmtypes.ValidatorUpdate {
 		return initialValSet.InitialValSet
 	}
 	return []tmtypes.ValidatorUpdate{}
+}
+
+func (k Keeper) GetLastSovereignValidators(ctx sdk.Context) []stakingtypes.Validator {
+	if !k.IsPreCCV(ctx) || k.stakingKeeper == nil {
+		panic("cannot get last sovereign validators if not in pre-ccv state")
+	}
+	return k.stakingKeeper.GetLastValidators(ctx)
 }
 
 // GetElapsedPacketMaturityTimes returns a slice of already elapsed PacketMaturityTimes, sorted by maturity times,

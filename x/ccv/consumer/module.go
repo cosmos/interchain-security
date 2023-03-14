@@ -23,7 +23,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 var (
@@ -93,14 +92,12 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 type AppModule struct {
 	AppModuleBasic
 	keeper keeper.Keeper
-	sk     ccvtypes.DemocracyStakingKeeper
 }
 
 // NewAppModule creates a new consumer module
-func NewAppModule(k keeper.Keeper, sk ccvtypes.DemocracyStakingKeeper) AppModule {
+func NewAppModule(k keeper.Keeper) AppModule {
 	return AppModule{
 		keeper: k,
-		sk:     sk,
 	}
 }
 
@@ -177,29 +174,29 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 // Flush PendingChanges to ABCI, send pending packets, write acknowledgements for packets that have finished unbonding.
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
 	if am.keeper.IsPreCCV(ctx) {
-		initialValSet := am.keeper.GetInitialValSet(ctx)
+		initialValUpdates := am.keeper.GetInitialValUpdates(ctx)
 		// Note: validator set update is only done on consumer chain from first endblocker
 		// on soft fork from existing chain
 		am.keeper.DeletePreCCV(ctx)
 		// set last sovereign height
 		am.keeper.SetLastSovereignHeight(ctx, ctx.BlockHeight())
 		// populate cross chain validators states with initial valset
-		am.keeper.ApplyCCValidatorChanges(ctx, initialValSet)
+		am.keeper.ApplyCCValidatorChanges(ctx, initialValUpdates)
 
-		// Add validator updates to initialValSet, such that the "old" validators returned from GetLastValidators
+		// Add validator updates to initialValUpdates, such that the "old" validators returned from sovereign staking module
 		// are given zero power, and the "new" validators are given their full power.
-		initialSetFlag := make(map[string]bool)
-		for _, val := range initialValSet {
-			initialSetFlag[val.PubKey.String()] = true
+		initialUpdatesFlag := make(map[string]bool)
+		for _, val := range initialValUpdates {
+			initialUpdatesFlag[val.PubKey.String()] = true
 		}
-		for _, val := range am.sk.GetLastValidators(ctx) {
-			update := val.ABCIValidatorUpdateZero()
-			if !initialSetFlag[update.PubKey.String()] {
-				initialValSet = append(initialValSet, update)
+		for _, val := range am.keeper.GetLastSovereignValidators(ctx) {
+			zeroPowerUpdate := val.ABCIValidatorUpdateZero()
+			if !initialUpdatesFlag[zeroPowerUpdate.PubKey.String()] {
+				initialValUpdates = append(initialValUpdates, zeroPowerUpdate)
 			}
 		}
 
-		return initialValSet
+		return initialValUpdates
 	}
 
 	// Execute EndBlock logic for the Reward Distribution sub-protocol

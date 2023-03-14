@@ -344,7 +344,7 @@ func New(
 
 	// register slashing module Slashing hooks to the consumer keeper
 	app.ConsumerKeeper = *app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
-	consumerModule := ibcconsumer.NewAppModule(app.ConsumerKeeper, nil)
+	consumerModule := ibcconsumer.NewAppModule(app.ConsumerKeeper)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,

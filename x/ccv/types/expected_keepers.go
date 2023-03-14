@@ -18,11 +18,6 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// DemocracyStakingKeeper defines the interface expected by consumer module
-type DemocracyStakingKeeper interface {
-	GetLastValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
-}
-
 // StakingKeeper defines the contract expected by provider-chain ccv module from a Staking Module that will keep track
 // of the provider validator set. This version of the interchain-security protocol will mirror the provider chain's changes
 // so we do not need a registry module between the staking module and CCV.
@@ -47,6 +42,7 @@ type StakingKeeper interface {
 	Delegation(ctx sdk.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) stakingtypes.DelegationI
 	MaxValidators(ctx sdk.Context) uint32
 	GetLastTotalPower(ctx sdk.Context) sdk.Int
+	GetLastValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
 }
 
 type EvidenceKeeper interface {
