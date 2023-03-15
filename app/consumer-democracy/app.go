@@ -668,6 +668,8 @@ func New(
 	}
 
 	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		// CCV consumer module store is not available for sovereign chain,
+		// therefore it needs to be marked as an added KV store
 		storeUpgrades := store.StoreUpgrades{
 			Added: []string{consumertypes.ModuleName},
 		}
