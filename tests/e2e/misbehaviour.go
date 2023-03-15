@@ -147,6 +147,35 @@ func (s *CCVTestSuite) TestCheckConsumerMisbehaviour() {
 			func() {},
 			false,
 		}, {
+			"different trusted height shouldn't pass",
+			func() *ibctmtypes.Misbehaviour {
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight+1),
+						clientHeight,
+						altTime,
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+					Header2: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight+1),
+						heightPlus3,
+						s.providerCtx().BlockTime(),
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+				}
+			},
+			func() {},
+			false,
+		}, {
 			"trusting period misbehavior should pass",
 			func() *ibctmtypes.Misbehaviour {
 				return &ibctmtypes.Misbehaviour{
@@ -224,7 +253,7 @@ func (s *CCVTestSuite) TestCheckConsumerMisbehaviour() {
 					Header2: s.consumerChain.CreateTMClientHeader(
 						s.consumerChain.ChainID,
 						int64(heightPlus5.RevisionHeight+1),
-						heightPlus3,
+						clientHeight,
 						altTime,
 						clientTMValset,
 						clientTMValset,
