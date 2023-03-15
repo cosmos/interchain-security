@@ -707,6 +707,21 @@ func (mr *MockClientKeeperMockRecorder) CreateClient(ctx, clientState, consensus
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateClient", reflect.TypeOf((*MockClientKeeper)(nil).CreateClient), ctx, clientState, consensusState)
 }
 
+// GetClientConsensusState mocks base method.
+func (m *MockClientKeeper) GetClientConsensusState(ctx types.Context, clientID string, height exported.Height) (exported.ConsensusState, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClientConsensusState", ctx, clientID, height)
+	ret0, _ := ret[0].(exported.ConsensusState)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetClientConsensusState indicates an expected call of GetClientConsensusState.
+func (mr *MockClientKeeperMockRecorder) GetClientConsensusState(ctx, clientID, height interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientConsensusState", reflect.TypeOf((*MockClientKeeper)(nil).GetClientConsensusState), ctx, clientID, height)
+}
+
 // GetClientState mocks base method.
 func (m *MockClientKeeper) GetClientState(ctx types.Context, clientID string) (exported.ClientState, bool) {
 	m.ctrl.T.Helper()
