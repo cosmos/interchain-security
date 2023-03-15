@@ -74,7 +74,7 @@ func (k Keeper) IterateValidators(ctx sdk.Context, f func(index int64, validator
 	}
 
 	// TODO: figure out proper logic
-	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.GetLastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			panic("empty staking keeper")
 		}
@@ -92,7 +92,7 @@ func (k Keeper) Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.Val
 	}
 
 	// TODO: figure out proper logic
-	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.GetLastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			panic("empty staking keeper")
 		}
@@ -181,7 +181,7 @@ func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {
 		return
 	}
 
-	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.GetLastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			return
 		}
@@ -199,7 +199,7 @@ func (k Keeper) Unjail(ctx sdk.Context, addr sdk.ConsAddress) {
 		return
 	}
 
-	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.GetLastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			return
 		}
@@ -216,7 +216,7 @@ func (k Keeper) Delegation(ctx sdk.Context, addr sdk.AccAddress, valAddr sdk.Val
 		return nil
 	}
 
-	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.GetLastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			panic("empty staking keeper")
 		}
@@ -234,7 +234,7 @@ func (k Keeper) MaxValidators(ctx sdk.Context) uint32 {
 		return 0
 	}
 
-	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.LastSovereignHeight(ctx) {
+	if k.IsPreCCV(ctx) || ctx.BlockHeight() <= k.GetLastSovereignHeight(ctx) {
 		if k.stakingKeeper == nil {
 			panic("empty staking keeper")
 		}

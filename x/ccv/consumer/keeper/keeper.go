@@ -254,7 +254,7 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store.Delete(types.PendingChangesKey())
 }
 
-func (k Keeper) LastSovereignHeight(ctx sdk.Context) int64 {
+func (k Keeper) GetLastSovereignHeight(ctx sdk.Context) int64 {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.LastSovereignHeightKey())
 	if bz == nil {
@@ -270,7 +270,6 @@ func (k Keeper) SetLastSovereignHeight(ctx sdk.Context, height int64) {
 	store.Set(types.LastSovereignHeightKey(), bz)
 }
 
-// TODO: unit tests on these new CRUD methods
 func (k Keeper) IsPreCCV(ctx sdk.Context) bool {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PreCCVKey())
@@ -297,7 +296,7 @@ func (k Keeper) SetInitialValSet(ctx sdk.Context, initialValSet []tmtypes.Valida
 	store.Set(types.InitialValSetKey(), bz)
 }
 
-func (k Keeper) GetInitialValUpdates(ctx sdk.Context) []tmtypes.ValidatorUpdate {
+func (k Keeper) GetInitialValSet(ctx sdk.Context) []tmtypes.ValidatorUpdate {
 	store := ctx.KVStore(k.storeKey)
 	initialValSet := types.GenesisState{}
 	bz := store.Get(types.InitialValSetKey())

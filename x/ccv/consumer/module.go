@@ -174,7 +174,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 // Flush PendingChanges to ABCI, send pending packets, write acknowledgements for packets that have finished unbonding.
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
 	if am.keeper.IsPreCCV(ctx) {
-		initialValUpdates := am.keeper.GetInitialValUpdates(ctx)
+		initialValUpdates := am.keeper.GetInitialValSet(ctx)
 		// Note: validator set update is only done on consumer chain from first endblocker
 		// on soft fork from existing chain
 		am.keeper.DeletePreCCV(ctx)
