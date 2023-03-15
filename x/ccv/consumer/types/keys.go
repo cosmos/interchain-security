@@ -74,6 +74,7 @@ const (
 	// PreCCVByteKey is the byte to store the consumer is running on democracy staking module without consumer
 	PreCCVByteKey
 
+	// InitialValSetByteKey is the byte to store the initial validator set for a consumer
 	InitialValSetByteKey
 
 	// LastSovereignHeightByteKey is the byte that will store last sovereign height
