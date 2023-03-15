@@ -14,11 +14,6 @@ Consumer chain is blockchain operated by the same the same validator operators a
 Consumer chains are run on infrastructure (virtual or phyisical machines) distinct from the provider, have their own configurations and operating requirements.
 
 ## What happens to consumer if provider is down?
-:::tip
-
-Some **content** with _Markdown_ `syntax`. Check [this `api`](#).
-
-:::
 In case the provider chain halts or experiences difficulties the consumer chain will keep operating - the provider chain and consumer chains represent different networks, which only share the validator set.
 
 The consumer chain will not halt if the provider halts because they represent distinct networks and distinct infrastructures. Provider chain liveness does not impact consumer chain liveness.
@@ -49,18 +44,16 @@ The only thing that separates consumer chains from sovereign chains is that they
 ## What's in it for the stakers?
 The consumer chains sends a portion of its fees and inflation as reward to the provider chain as defined by `consumer_redistribution_fraction`. The rewards are distributed (sent to the provider) every `blocks_per_distribution_transmission`.
 
-<details>
-  <summary>Chain Params</summary>
-  <div><strong>consumer_redistribution_fraction</strong> and <strong>blocks_per_distribution_transmission</strong> are parameters defined in the ConsumerAdditionProposal used to create the consumer chain. These parameters can be changed via consumer chain governance.</div>
-</details>
+:::tip
+  `consumer_redistribution_fraction` and `blocks_per_distribution_transmission` are parameters defined in the `ConsumerAdditionProposal` used to create the consumer chain. These parameters can be changed via consumer chain governance.
+:::
 
 ## What's in it for the validators?
 The consumer chains sends a portion of its fees and inflation as reward to the provider chain as defined by `consumer_redistribution_fraction`. The rewards are distributed (sent to the provider) every `blocks_per_distribution_transmission`.
 
-<details>
-  <summary>Chain Params</summary>
-  <div><strong>consumer_redistribution_fraction</strong> and <strong>blocks_per_distribution_transmission</strong> are parameters defined in the ConsumerAdditionProposal used to create the consumer chain. These parameters can be changed via consumer chain governance.</div>
-</details>
+:::tip
+  `consumer_redistribution_fraction` and `blocks_per_distribution_transmission` are parameters defined in the `ConsumerAdditionProposal` used to create the consumer chain. These parameters can be changed via consumer chain governance.
+:::
 
 
 ## Can the consumer chain have its own governance?

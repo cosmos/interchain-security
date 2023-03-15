@@ -1,3 +1,7 @@
+---
+sidebar_position: 1
+---
+
 # Key Assignment
 Key Assignment (aka. as key delegation) allows validator operators to use different consensus keys for each consumer chain validator node that they operate.
 There are various reasons to use different consensus keys on different chains, but the main benefit is that validator's provider chain consensus key cannot be compromised if their consumer chain node (or other infrastructure) gets compromised.
@@ -23,9 +27,7 @@ consumerd tendermint show-validator # {"@type":"/cosmos.crypto.ed25519.PubKey","
 Then, make an `assign-consensus-key` transaction on the provider chain in order to inform the provider chain about the consensus key you will be using for a specific consumer chain.
 
 ```
-gaiad tx provider assign-consensus-key <consumer-chain-id> '<pubkey>' \
- --from <tx-signer> \
- --home <home_dir> --gas 900000 -b block -y -o json
+gaiad tx provider assign-consensus-key <consumer-chain-id> '<pubkey>' --from <tx-signer> --home <home_dir> --gas 900000 -b block -y -o json
 ```
 
 - `consumer-chain-id` is the string identifier of the consumer chain, as assigned on the provider chain

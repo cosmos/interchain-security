@@ -332,7 +332,6 @@ html {
     @apply flex;
     &::after {
       background-size: 16px;
-      background-color: blue;
       background-repeat: no-repeat;
       @apply order-first ml-0 mr-4;
     }
