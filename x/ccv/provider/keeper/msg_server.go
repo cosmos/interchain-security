@@ -90,7 +90,7 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 
 func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.MsgSubmitConsumerMisbehaviour) (*types.MsgSubmitConsumerMisbehaviourResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	if err := k.Keeper.CheckConsumerMisbehaviour(ctx, *msg.Misbehaviour); err != nil {
+	if err := k.Keeper.HandleConsumerMisbehaviour(ctx, *msg.Misbehaviour); err != nil {
 		return &types.MsgSubmitConsumerMisbehaviourResponse{}, err
 	}
 
