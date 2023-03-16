@@ -6,9 +6,9 @@ const pxToRem = (dest) => 1 / (16 / dest);
 // Config
 module.exports = {
   darkMode: ['class', '[data-theme="dark"]'],
-  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  content: ["./src/**/*.{js,jsx,ts,tsx,css}"],
   corePlugins: {
-    // preflight: false, // avoid reset all docusaurus css
+    preflight: false, // avoid reset all docusaurus css
   },
   theme: {
 

@@ -184,6 +184,6 @@ proto-update-deps:
 ###############################################################################
 
 build-docs:
-	@cd docs/website && ./build.sh
+	@cd docs && ./build.sh
 
 .PHONY: build-docs

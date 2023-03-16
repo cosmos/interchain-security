@@ -9,7 +9,7 @@ on:
       - main
       # - "release/**"
     paths:
-      - "docs/website/**"
+      - "docs/**"
       # - "x/**/*.md"
       - .github/workflows/deploy-docs.yml
 

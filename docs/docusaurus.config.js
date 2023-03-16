@@ -9,8 +9,8 @@ const config = {
   title: "Interchain Security",
   tagline:
     "Interchain Security is a project to build a security layer for the Cosmos ecosystem.",
-  url: "http://localhost:3000",
-  baseUrl: "/",
+  url: "https://cosmos.github.io",
+  baseUrl: "/interchain-security/",
   onBrokenLinks: "warn",
   onBrokenMarkdownLinks: "warn",
   favicon: "img/favicon.svg",
