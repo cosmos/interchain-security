@@ -2,7 +2,7 @@
 sidebar_position: 4
 title: Onboarding Checklist
 ---
-# Consumer Onboarding
+# Consumer Onboarding Checklist
 
 The following checklists will aid in onboarding a new consumer chain to replicated security.
 

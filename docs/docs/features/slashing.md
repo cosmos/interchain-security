@@ -1,4 +1,9 @@
+---
+sidebar_position: 4
+---
+
 # Consumer Initiated Slashing
+
 Implications: 
 - double signing
 - downtime (+ params)

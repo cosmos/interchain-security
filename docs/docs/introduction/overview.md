@@ -34,11 +34,3 @@ Evidence of equivocation must be submitted to provider governance and be voted o
 
 Consumer chains are free to create their own native token which can be used for fees, and can be created on the consumer chain in the form of inflationary rewards. These rewards can be used to incentivize user behavior, for example, LPing or staking. A portion of these fees and rewards will be sent to provider chain stakers, but that proportion is completely customizable by the developers, and subject to governance.
 
-## Providers
-
-The Cosmos Hub currently has the largest market cap out of any cosmos based chain, lending itself to be the best fit as a replicated security provider. Other cosmos chains are welcome and encouraged to be security providers as well, such as Osmosis, Juno, etc.
-
-## Consumers
-
-Here is a current list of consumer chains that are secured by the Cosmos Hub:
-TODO
