@@ -127,6 +127,8 @@ const (
 	// SlashLogBytePrefix is the byte prefix that will store the mapping from provider address to boolean
 	// denoting whether the provider address has commited any double signign infractions
 	SlashLogBytePrefix
+
+	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
 // PortKey returns the key to the port ID in the store
@@ -448,3 +450,5 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 func SlashLogKey(providerAddr ProviderConsAddress) []byte {
 	return append([]byte{SlashAcksBytePrefix}, providerAddr.ToSdkConsAddr().Bytes()...)
 }
+
+// NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go
