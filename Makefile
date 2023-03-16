@@ -63,6 +63,10 @@ test-gaia-integration-parallel-tagged:
 test-no-cache:
 	go test ./... -count=1 && go run ./tests/integration/...
 
+mockgen_cmd=go run github.com/golang/mock/mockgen
+mocks:
+	$(mockgen_cmd) -package=keeper -destination=testutil/keeper/mocks.go -source=x/ccv/types/expected_keepers.go
+
 BUILD_TARGETS := build
 
 build: BUILD_ARGS=-o $(BUILDDIR)/
@@ -177,5 +181,5 @@ proto-update-deps:
 ## Issue link: https://github.com/confio/ics23/issues/32
 	@perl -i -l -p -e 'print "option go_package = \"github.com/confio/ics23/go\";" if $$. == 4' $(CONFIO_TYPES)/proofs.proto
 
-.PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
+.PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps mocks
 
