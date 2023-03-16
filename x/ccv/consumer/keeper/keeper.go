@@ -309,7 +309,7 @@ func (k Keeper) GetInitialValSet(ctx sdk.Context) []tmtypes.ValidatorUpdate {
 
 func (k Keeper) GetLastSovereignValidators(ctx sdk.Context) []stakingtypes.Validator {
 	if !k.IsPreCCV(ctx) || k.stakingKeeper == nil {
-		panic("cannot get last sovereign validators if not in pre-ccv state")
+		panic("cannot get last sovereign validators if not in pre-ccv state, or if staking keeper is nil")
 	}
 	return k.stakingKeeper.GetLastValidators(ctx)
 }
