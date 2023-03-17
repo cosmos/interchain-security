@@ -12,6 +12,9 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
+// Note: for a democracy consumer, this "democracy staking" keeper is only for governance capabilities,
+// where the ccv consumer module is responsible for proof of stake capabilities, validator set updates, etc.
+
 var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
