@@ -20,7 +20,7 @@ func (k Keeper) ChangeoverToConsumer(ctx sdk.Context) (initialValUpdates []abci.
 	k.ApplyCCValidatorChanges(ctx, initialValUpdates)
 
 	// Add validator updates to initialValUpdates, such that the "old" validators returned from sovereign staking module
-	// are given zero power, and the "new" validators are given their full power.
+	// are given zero power, and the provider validators are given their full power.
 	initialUpdatesFlag := make(map[string]bool)
 	for _, val := range initialValUpdates {
 		initialUpdatesFlag[val.PubKey.String()] = true
