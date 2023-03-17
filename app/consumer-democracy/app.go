@@ -115,7 +115,7 @@ import (
 
 const (
 	AppName              = "interchain-security-cd"
-	upgradeName          = "v07-Theta"
+	upgradeName          = "v07-Theta" // arbitrary name, define your own appropriately named upgrade
 	AccountAddressPrefix = "cosmos"
 )
 
@@ -639,6 +639,10 @@ func New(
 				fromVM[moduleName] = eachModule.ConsensusVersion()
 			}
 
+			// For a new consumer chain, this code (together with the entire SetUpgradeHandler) is not needed at all,
+			// upgrade handler code is application specific. However, as an example, sovereign to consumer
+			// changeover chains should utilize customized upgrade handler code similar to below.
+
 			// TODO: should have a way to read from current node home
 			userHomeDir, err := os.UserHomeDir()
 			if err != nil {
@@ -670,8 +674,9 @@ func New(
 	}
 
 	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
-		// CCV consumer module store is not available for sovereign chain,
-		// therefore it needs to be marked as an added KV store for the sovereign -> consumer changeover
+		// Chains may need to add a KV store to their application. The following code
+		// is needed for sovereign chains that're changing over to a consumer chain, with a consumer ccv module.
+		// When a chain starts from height 0 (like for testing purposes in this repo), the following code is not needed.
 		storeUpgrades := store.StoreUpgrades{
 			Added: []string{consumertypes.ModuleName},
 		}
