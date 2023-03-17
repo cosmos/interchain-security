@@ -5,6 +5,12 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
+// ChangeoverToConsumer includes the logic that needs to execute during the process of a
+// sovereign to consumer changeover, where the previously sovereign chain has
+// just been upgraded to include the consumer ccv module, but the provider valset is not
+// yet responsible for POS/block production. This method constructs validator updates
+// that will be given to tendermint, which allows the consumer chain to
+// start using the provider valset, while the sovereign valset is given zero voting power where appropriate.
 func (k Keeper) ChangeoverToConsumer(ctx sdk.Context) (initialValUpdates []abci.ValidatorUpdate) {
 
 	initialValUpdates = k.GetInitialValSet(ctx)
