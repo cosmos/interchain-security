@@ -74,6 +74,10 @@ const (
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
+//
+// Fully defined key func section
+//
+
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {
 	return []byte{PortByteKey}
@@ -149,3 +153,7 @@ func CrossChainValidatorKey(addr []byte) []byte {
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go
+
+//
+// End of fully defined key func section
+//
