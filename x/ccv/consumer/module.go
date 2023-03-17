@@ -177,7 +177,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
 
 	// If PreCCV state is active, consumer is a previously sovereign chain
-	// that was just upgraded, execute changeover logic.
+	// that was just upgraded to include the consumer ccv module, execute changeover logic.
 	if am.keeper.IsPreCCV(ctx) {
 		initialValUpdates := am.keeper.ChangeoverToConsumer(ctx)
 		return initialValUpdates

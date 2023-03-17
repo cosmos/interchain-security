@@ -36,7 +36,7 @@ type Keeper struct {
 	portKeeper       ccv.PortKeeper
 	connectionKeeper ccv.ConnectionKeeper
 	clientKeeper     ccv.ClientKeeper
-	// stakingKeeper is only needed for sovereign to consumer migration, and therefore is set after constructor
+	// stakingKeeper is only needed for sovereign to consumer changeovers, and therefore is set after constructor
 	stakingKeeper     ccv.StakingKeeper
 	slashingKeeper    ccv.SlashingKeeper
 	hooks             ccv.ConsumerHooks
