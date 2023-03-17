@@ -32,8 +32,8 @@ func (k Keeper) ChangeoverToConsumer(ctx sdk.Context) (initialValUpdates []abci.
 		}
 	}
 
-	// Note: validator set update is only done on consumer chain from first endblocker
-	// on soft fork from existing chain
+	// Note: this method should only be executed once as a part of the changeover process.
+	// Therefore we set the PreCCV state to false so the endblocker caller doesn't call this method again.
 	k.DeletePreCCV(ctx)
 
 	return initialValUpdates
