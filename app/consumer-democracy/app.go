@@ -658,12 +658,14 @@ func New(
 			appCodec.MustUnmarshalJSON(appState[consumertypes.ModuleName], &consumerGenesis)
 
 			consumerGenesis.PreCCV = true
-			// TODO: confirm InitiGenesis is not automatically called when a module is added during upgrade.
-			// We should only call InitGenesis once.
 			app.ConsumerKeeper.InitGenesis(ctx, &consumerGenesis)
 
 			ctx.Logger().Info("start to run module migrations...")
 
+			// Note: consumer ccv module is added to app.MM.Modules constructor above,
+			// meaning the consumer ccv module will have an entry in fromVM.
+			// Since a consumer ccv module entry exists in fromVM, the RunMigrations method
+			// will not call the consumer ccv module's InitGenesis method a second time.
 			return app.MM.RunMigrations(ctx, app.configurator, fromVM)
 		},
 	)
