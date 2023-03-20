@@ -6,20 +6,20 @@ import (
 )
 
 // ChangeoverToConsumer includes the logic that needs to execute during the process of a
-// sovereign to consumer changeover, where the previously sovereign chain has
+// standalone to consumer changeover, where the previously standalone chain has
 // just been upgraded to include the consumer ccv module, but the provider valset is not
 // yet responsible for POS/block production. This method constructs validator updates
 // that will be given to tendermint, which allows the consumer chain to
-// start using the provider valset, while the sovereign valset is given zero voting power where appropriate.
+// start using the provider valset, while the standalone valset is given zero voting power where appropriate.
 func (k Keeper) ChangeoverToConsumer(ctx sdk.Context) (initialValUpdates []abci.ValidatorUpdate) {
 
 	initialValUpdates = k.GetInitialValSet(ctx)
-	// set last sovereign height
-	k.SetLastSovereignHeight(ctx, ctx.BlockHeight())
+	// set last standalone height
+	k.SetLastStandaloneHeight(ctx, ctx.BlockHeight())
 	// populate cross chain validators states with initial valset
 	k.ApplyCCValidatorChanges(ctx, initialValUpdates)
 
-	// Add validator updates to initialValUpdates, such that the "old" validators returned from sovereign staking module
+	// Add validator updates to initialValUpdates, such that the "old" validators returned from standalone staking module
 	// are given zero power, and the provider validators are given their full power.
 	initialUpdatesFlag := make(map[string]bool)
 	for _, val := range initialValUpdates {
