@@ -5,6 +5,12 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
+func (k Keeper) ChangeoverIsComplete(ctx sdk.Context) bool {
+	// TODO: confirm correctness here.
+	// Also consider the idea of using "first consumer height" instead of "last standalone height"
+	return ctx.BlockHeight() > k.GetLastStandaloneHeight(ctx)+2
+}
+
 // ChangeoverToConsumer includes the logic that needs to execute during the process of a
 // standalone to consumer changeover, where the previously standalone chain has
 // just been upgraded to include the consumer ccv module, but the provider valset is not
