@@ -427,7 +427,7 @@ func New(
 		authtypes.FeeCollectorName,
 	)
 
-	// Setting the staking keeper is only needed for sovereign to consumer changeover chains
+	// Setting the staking keeper is only needed for standalone to consumer changeover chains
 	app.ConsumerKeeper.SetStakingKeeper(app.StakingKeeper)
 
 	// consumer keeper satisfies the staking keeper interface
@@ -640,7 +640,7 @@ func New(
 			}
 
 			// For a new consumer chain, this code (together with the entire SetUpgradeHandler) is not needed at all,
-			// upgrade handler code is application specific. However, as an example, sovereign to consumer
+			// upgrade handler code is application specific. However, as an example, standalone to consumer
 			// changeover chains should utilize customized upgrade handler code similar to below.
 
 			// TODO: should have a way to read from current node home
@@ -675,7 +675,7 @@ func New(
 
 	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		// Chains may need to add a KV store to their application. The following code
-		// is needed for sovereign chains that're changing over to a consumer chain, with a consumer ccv module.
+		// is needed for standalone chains that're changing over to a consumer chain, with a consumer ccv module.
 		// When a chain starts from height 0 (like for testing purposes in this repo), the following code is not needed.
 		storeUpgrades := store.StoreUpgrades{
 			Added: []string{consumertypes.ModuleName},

@@ -77,8 +77,8 @@ const (
 	// InitialValSetByteKey is the byte to store the initial validator set for a consumer
 	InitialValSetByteKey
 
-	// LastSovereignHeightByteKey is the byte that will store last sovereign height
-	LastSovereignHeightByteKey
+	// LastStandaloneHeightByteKey is the byte that will store last standalone height
+	LastStandaloneHeightByteKey
 )
 
 // PortKey returns the key to the port ID in the store
@@ -119,8 +119,8 @@ func InitialValSetKey() []byte {
 	return []byte{InitialValSetByteKey}
 }
 
-func LastSovereignHeightKey() []byte {
-	return []byte{LastSovereignHeightByteKey}
+func LastStandaloneHeightKey() []byte {
+	return []byte{LastStandaloneHeightByteKey}
 }
 
 // PacketMaturityTimeKey returns the key for storing the maturity time for a given received VSC packet id

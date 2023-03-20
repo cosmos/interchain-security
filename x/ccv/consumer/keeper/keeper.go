@@ -36,7 +36,7 @@ type Keeper struct {
 	portKeeper       ccv.PortKeeper
 	connectionKeeper ccv.ConnectionKeeper
 	clientKeeper     ccv.ClientKeeper
-	// stakingKeeper is only needed for sovereign to consumer changeovers, and therefore is set after constructor
+	// stakingKeeper is only needed for standalone to consumer changeovers, and therefore is set after constructor
 	stakingKeeper     ccv.StakingKeeper
 	slashingKeeper    ccv.SlashingKeeper
 	hooks             ccv.ConsumerHooks
@@ -254,9 +254,9 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store.Delete(types.PendingChangesKey())
 }
 
-func (k Keeper) GetLastSovereignHeight(ctx sdk.Context) int64 {
+func (k Keeper) GetLastStandaloneHeight(ctx sdk.Context) int64 {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.LastSovereignHeightKey())
+	bz := store.Get(types.LastStandaloneHeightKey())
 	if bz == nil {
 		return 0
 	}
@@ -264,10 +264,10 @@ func (k Keeper) GetLastSovereignHeight(ctx sdk.Context) int64 {
 	return int64(height)
 }
 
-func (k Keeper) SetLastSovereignHeight(ctx sdk.Context, height int64) {
+func (k Keeper) SetLastStandaloneHeight(ctx sdk.Context, height int64) {
 	bz := sdk.Uint64ToBigEndian(uint64(height))
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.LastSovereignHeightKey(), bz)
+	store.Set(types.LastStandaloneHeightKey(), bz)
 }
 
 func (k Keeper) IsPreCCV(ctx sdk.Context) bool {
@@ -307,9 +307,9 @@ func (k Keeper) GetInitialValSet(ctx sdk.Context) []tmtypes.ValidatorUpdate {
 	return []tmtypes.ValidatorUpdate{}
 }
 
-func (k Keeper) GetLastSovereignValidators(ctx sdk.Context) []stakingtypes.Validator {
+func (k Keeper) GetLastStandaloneValidators(ctx sdk.Context) []stakingtypes.Validator {
 	if !k.IsPreCCV(ctx) || k.stakingKeeper == nil {
-		panic("cannot get last sovereign validators if not in pre-ccv state, or if staking keeper is nil")
+		panic("cannot get last standalone validators if not in pre-ccv state, or if staking keeper is nil")
 	}
 	return k.stakingKeeper.GetLastValidators(ctx)
 }

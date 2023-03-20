@@ -173,10 +173,10 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 // EndBlock implements the AppModule interface
 // Flush PendingChanges to ABCI, send pending packets, write acknowledgements for packets that have finished unbonding.
 //
-// TODO: e2e tests confirming behavior with and without sovereign -> consumer changeover
+// TODO: e2e tests confirming behavior with and without standalone -> consumer changeover
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
 
-	// If PreCCV state is active, consumer is a previously sovereign chain
+	// If PreCCV state is active, consumer is a previously standalone chain
 	// that was just upgraded to include the consumer ccv module, execute changeover logic.
 	if am.keeper.IsPreCCV(ctx) {
 		initialValUpdates := am.keeper.ChangeoverToConsumer(ctx)

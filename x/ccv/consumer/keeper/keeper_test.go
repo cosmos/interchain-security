@@ -84,21 +84,21 @@ func TestPendingChanges(t *testing.T) {
 	require.Nil(t, gotPd, "got non-nil pending changes after Delete")
 }
 
-// TestLastSovereignHeight tests the getter and setter for the last sovereign height
+// TestLastSovereignHeight tests the getter and setter for the last standalone height
 func TestLastSovereignHeight(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Default value should be 0 without any setter
-	require.Equal(t, int64(0), consumerKeeper.GetLastSovereignHeight(ctx))
+	require.Equal(t, int64(0), consumerKeeper.GetLastStandaloneHeight(ctx))
 
-	// Set/get the last sovereign height being 10
-	consumerKeeper.SetLastSovereignHeight(ctx, 10)
-	require.Equal(t, int64(10), consumerKeeper.GetLastSovereignHeight(ctx))
+	// Set/get the last standalone height being 10
+	consumerKeeper.SetLastStandaloneHeight(ctx, 10)
+	require.Equal(t, int64(10), consumerKeeper.GetLastStandaloneHeight(ctx))
 
-	// Set/get the last sovereign height being 43234426
-	consumerKeeper.SetLastSovereignHeight(ctx, 43234426)
-	require.Equal(t, int64(43234426), consumerKeeper.GetLastSovereignHeight(ctx))
+	// Set/get the last standalone height being 43234426
+	consumerKeeper.SetLastStandaloneHeight(ctx, 43234426)
+	require.Equal(t, int64(43234426), consumerKeeper.GetLastStandaloneHeight(ctx))
 }
 
 // TestPreCCV tests the getter, setter and deletion methods for the pre-CCV state flag
@@ -164,7 +164,7 @@ func TestInitialValSet(t *testing.T) {
 }
 
 // TestGetLastSovereignValidators tests the getter method for getting the last valset
-// from the sovereign staking keeper
+// from the standalone staking keeper
 func TestGetLastSovereignValidators(t *testing.T) {
 	ck, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -179,7 +179,7 @@ func TestGetLastSovereignValidators(t *testing.T) {
 	require.False(t, ck.IsPreCCV(ctx))
 	require.Panics(t, func() { ck.GetLastSovereignValidators(ctx) })
 
-	// Set the pre-CCV state to true and get the last sovereign validators from mock
+	// Set the pre-CCV state to true and get the last standalone validators from mock
 	ck.SetPreCCVTrue(ctx)
 	require.True(t, ck.IsPreCCV(ctx))
 	cId1 := crypto.NewCryptoIdentityFromIntSeed(11)

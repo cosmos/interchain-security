@@ -14,7 +14,7 @@ import (
 //
 // TODO: Address https://github.com/cosmos/interchain-security/issues/781 in this file.
 // Particularly, we need to better define which keepers are responsible for slashing capabilities
-// during/after a sovereign to consumer changeover.
+// during/after a standalone to consumer changeover.
 //
 // TODO: make unit tests for all of: MVP consumer, democ consumer, and pre-ccv consumer
 // for previously unimplemented methods, if they're implemented to solve the above issue.

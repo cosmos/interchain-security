@@ -39,7 +39,7 @@ func TestChangeoverToConsumer(t *testing.T) {
 
 	testCases := []struct {
 		name string
-		// Last sovereign validators that will be mock returned from stakingKeeper.GetLastValidators()
+		// Last standalone validators that will be mock returned from stakingKeeper.GetLastValidators()
 		lastSovVals []stakingtypes.Validator
 		// Val updates corresponding to initial valset set for ccv set initGenesis
 		initialValUpdates []abci.ValidatorUpdate
@@ -104,8 +104,8 @@ func TestChangeoverToConsumer(t *testing.T) {
 		// PreCCV should now be toggled false
 		require.False(t, consumerKeeper.IsPreCCV(ctx))
 
-		// Last sovereign height should be set to current block height
-		require.Equal(t, ctx.BlockHeight(), consumerKeeper.GetLastSovereignHeight(ctx))
+		// Last standalone height should be set to current block height
+		require.Equal(t, ctx.BlockHeight(), consumerKeeper.GetLastStandaloneHeight(ctx))
 
 		// Cross chain validator states should be populated with initial valset
 		ccVals := consumerKeeper.GetAllCCValidator(ctx)
@@ -129,7 +129,7 @@ func TestChangeoverToConsumer(t *testing.T) {
 		}
 
 		// Assert that initial val updates returned from ChangeoverToConsumer are formulated s.t.
-		// the "old" validators returned from sovereign staking module
+		// the "old" validators returned from standalone chain's staking module
 		// are given zero power, and the "new" validators are given their full power.
 		for _, returnedValUpdate := range returnedInitialValUpdates {
 			found := false
@@ -140,7 +140,7 @@ func TestChangeoverToConsumer(t *testing.T) {
 					found = true
 				}
 			}
-			// Check all sovereign validators for a pubkey match
+			// Check all standalone validators for a pubkey match
 			for _, val := range tc.lastSovVals {
 				ccvValPubKey, err := val.ConsPubKey()
 				require.NoError(t, err)
