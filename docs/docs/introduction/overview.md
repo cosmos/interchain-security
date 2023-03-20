@@ -14,7 +14,7 @@ Replicated security allows anyone to launch a "consumer" blockchain using the sa
 - Independent block-space. Transactions on consumer chains do not compete with any other applications. This means that there will be no unexpected congestion, and performance will generally be much better than on a shared smart contract platform such as Ethereum.
 - Projects keep majority of gas fees. Depending on configuration, these fees either go to the project’s community DAO, or can be used in the protocol in other ways.
 - No validator search. Consumer chains do not have their own validator sets, and so do not need to find validators one by one. A governance vote will take place for a chain to get adopted by the provider validators which will encourage participation and signal strong buy-in into the project's long-term success.
-- Instant sovereignty. At any time in the future, a consumer chain can elect to become completely independent, with its own validator set.
+- Instant sovereignty. Consumers can run arbitrary app logic similar to standalone chains. At any time in the future, a consumer chain can elect to become a completely standalone chain, with its own validator set.
 
 ## Core protocol
 

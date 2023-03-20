@@ -39,7 +39,7 @@ The consumer chain operates as any other cosmos-sdk chain. The ICS protocol does
 
 ## Are there any restrictions the consumer chains need to abide by?
 No. Consumer chains are free to choose how they wish to operate, which modules to include, use CosmWASM in a permissioned or a permissionless way.
-The only thing that separates consumer chains from sovereign chains is that they share their validator set with the provider chain.
+The only thing that separates consumer chains from standalone chains is that they share their validator set with the provider chain.
 
 ## What's in it for the stakers?
 The consumer chains sends a portion of its fees and inflation as reward to the provider chain as defined by `consumer_redistribution_fraction`. The rewards are distributed (sent to the provider) every `blocks_per_distribution_transmission`.
@@ -80,7 +80,7 @@ If the double-signing proposal passes, the offending validator will be slashed o
 An equivocation proposal cannot be submitted for a validator that did not double sign on any of the consumer chains.
 :::
 ## Can Consumer Chains Perform Software Upgrades?
-Consumer chains are essentially sovereign chains, in the sense that they can run arbitrary logic and use any modules they want (ie CosmWASM).
+Consumer chains are sovereign, in the sense that they can run arbitrary logic and use any modules they want (ie CosmWASM).
 
 Consumer chain upgrades are unlikely to impact the provider chain, as long as there are no changes to the ICS module.
 
