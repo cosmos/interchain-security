@@ -171,13 +171,13 @@ func TestGetLastSovereignValidators(t *testing.T) {
 
 	// Should panic if pre-CCV is true but staking keeper is not set
 	ck.SetPreCCVTrue(ctx)
-	require.Panics(t, func() { ck.GetLastSovereignValidators(ctx) })
+	require.Panics(t, func() { ck.GetLastStandaloneValidators(ctx) })
 
 	// Should panic if staking keeper is set but pre-CCV is false
 	ck.SetStakingKeeper(mocks.MockStakingKeeper)
 	ck.DeletePreCCV(ctx)
 	require.False(t, ck.IsPreCCV(ctx))
-	require.Panics(t, func() { ck.GetLastSovereignValidators(ctx) })
+	require.Panics(t, func() { ck.GetLastStandaloneValidators(ctx) })
 
 	// Set the pre-CCV state to true and get the last standalone validators from mock
 	ck.SetPreCCVTrue(ctx)
@@ -190,7 +190,7 @@ func TestGetLastSovereignValidators(t *testing.T) {
 			val,
 		}),
 	)
-	lastSovVals := ck.GetLastSovereignValidators(ctx)
+	lastSovVals := ck.GetLastStandaloneValidators(ctx)
 	require.Equal(t, []stakingtypes.Validator{val}, lastSovVals)
 	require.Equal(t, "sanity check this is the correctly serialized val",
 		lastSovVals[0].Description.Moniker)

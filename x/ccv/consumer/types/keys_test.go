@@ -43,7 +43,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = PendingChangesKey(), i+1
 	keys[i], i = PreCCVKey(), i+1
 	keys[i], i = InitialValSetKey(), i+1
-	keys[i], i = LastSovereignHeightKey(), i+1
+	keys[i], i = LastStandaloneHeightKey(), i+1
 	keys[i], i = []byte{HistoricalInfoBytePrefix}, i+1
 	keys[i], i = []byte{PacketMaturityTimeBytePrefix}, i+1
 	keys[i], i = []byte{HeightValsetUpdateIDBytePrefix}, i+1
