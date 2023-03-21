@@ -18,7 +18,7 @@ Consumer chains cannot start and be secured by the validator set of the provider
 Each proposal contains defines a `spawn_time` - the timestamp when the consumer chain genesis is finalized and the consumer chain clients get initialized on the provider.
 
 :::tip
-Validators should run consumer chain binaries only after `spawn_time` has passed.
+Validators are required to run consumer chain binaries only after `spawn_time` has passed.
 :::
 
 The image below illustrates the startup sequence
@@ -49,7 +49,7 @@ Upon reaching the `spawn_time` the initial validator set state will become avail
 The new `genesis.json` containing the initial validator set will be distributed to validators. Each validator should use the provided `genesis.json` to start their consumer chain node.
 
 :::tip
-Please pay attention to any onboarding repositories provided by the consumer chain team.
+Please pay attention to any onboarding repositories provided by the consumer chain teams.
 Recommendations are available in [Consumer Onboarding Checklist](../consumer-development/onboarding.md)
 :::
 
@@ -66,7 +66,7 @@ hermes start
 At present, the consumer chain can report evidence about downtime infracations to the provider chain. The `min_signed_per_window` and `signed_blocks_window` can be different on each consumer chain and are subject to changes via consumer chain governance.
 
 :::info
-Causing a downtime infraction on any consumer chain will not incurr a slash penalty. Instead, the offending validator will be jailed on the provider chain and all consumer chains.
+Causing a downtime infraction on any consumer chain will not incur a slash penalty. Instead, the offending validator will be jailed on the provider chain and consequently on all consumer chains.
 
 To unjail, the validator must wait for the jailing period to elapse on the provider chain and [submit an unjail transaction](https://hub.cosmos.network/main/validators/validator-setup.html#unjail-validator) on the provider chain. After unjailing on the provider, the validator will be unjailed on all consumer chains.
 
