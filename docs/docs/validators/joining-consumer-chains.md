@@ -3,6 +3,10 @@ sidebar_position: 1
 ---
 
 # How to join consumer chains
+:::tip
+We advise that you join the [Replicated Security testnet](https://github.com/cosmos/testnets/tree/master/replicated-security) to gain hands-on experience with running consumer chains.
+:::
+
 At present, replicated security requires all validators of the provider chain (ie. Cosmos Hub) to run validator nodes for all governance-approved consumer chains.
 
 Once a `ConsumerAdditionProposal` passes, validators need to prepare to run the consumer chain binaries (these will be linked in their proposals) and set up validator nodes on governance-approved consumer chains.
@@ -10,7 +14,7 @@ Once a `ConsumerAdditionProposal` passes, validators need to prepare to run the 
 Provider chain and consumer chains represent standalone chains that only share the validator set ie. the same validator operators are tasked with running all chains.
 
 :::info
-To validate a consumer chain and be eligible for rewards validators are required to be in the active set of the provider chain (first 175 validators for Cosmos Hub) 
+To validate a consumer chain and be eligible for rewards validators are required to be in the active set of the provider chain (first 175 validators for Cosmos Hub).
 :::
 
 # Startup sequence overview
@@ -20,6 +24,8 @@ Each proposal contains defines a `spawn_time` - the timestamp when the consumer 
 :::tip
 Validators are required to run consumer chain binaries only after `spawn_time` has passed.
 :::
+
+Please note that any additional instructions pertaining to specific consumer chain launches will be available before spawn time. The chain start will be stewarded by the Cosmos Hub team and the teams developing their respective consumer chains.
 
 The image below illustrates the startup sequence
 ![startup](../../figures/hypha-consumer-start-process.svg)
@@ -42,19 +48,30 @@ The state can be queried on the provider chain (in this case the Cosmos Hub):
  gaiad query provider consumer-genesis <consumer chain ID> -o json > ccvconsumer_genesis.json
 ```
 
+This is used by the launch coordinator to create the final `genesis.json` that will be distributed to validators in step 5.
+
 ## 5. Updating the genesis file
-Upon reaching the `spawn_time` the initial validator set state will become available on the provider chain. The initial validator set must be included in the **pre-ccv genesis.json** of the consumer chain.
+Upon reaching the `spawn_time` the initial validator set state will become available on the provider chain. The initial validator set is included in the **final genesis.json** of the consumer chain.
 
 ## 6. Chain start
-The new `genesis.json` containing the initial validator set will be distributed to validators. Each validator should use the provided `genesis.json` to start their consumer chain node.
+:::info
+The consumer chain will start producing blocks as soon as 66.67% of the provider chain's voting power comes online (on the consumer chain). The relayer should be started after block production commences.
+:::
+
+The new `genesis.json` containing the initial validator set will be distributed to validators by the consumer chain team (launch coordinator). Each validator should use the provided `genesis.json` to start their consumer chain node.
 
 :::tip
 Please pay attention to any onboarding repositories provided by the consumer chain teams.
-Recommendations are available in [Consumer Onboarding Checklist](../consumer-development/onboarding.md)
+Recommendations are available in [Consumer Onboarding Checklist](../consumer-development/onboarding.md).
+Another comprehensive guide is available in the [Replicated Security testnet repo](https://github.com/cosmos/testnets/blob/master/replicated-security/CONSUMER_LAUNCH_GUIDE.md).
 :::
 
 ## 7. Creating IBC connections
-Finally, to fully establish replicated security an IBC relayer should be used to establish connections and create the required channels.
+Finally, to fully establish replicated security an IBC relayer is used to establish connections and create the required channels.
+
+:::warning
+The relayer can establish the connection only after the consumer chain starts producing blocks.
+:::
 
 ```bash
 hermes create connection --a-chain <consumer chain ID> --a-client 07-tendermint-0 --b-client <client assigned by provider chain> 
