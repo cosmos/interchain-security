@@ -256,14 +256,14 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store.Delete(types.PendingChangesKey())
 }
 
-func (k Keeper) GetLastStandaloneHeight(ctx sdk.Context) int64 {
+func (k Keeper) GetLastStandaloneHeight(ctx sdk.Context) (height int64, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.LastStandaloneHeightKey())
 	if bz == nil {
-		return 0
+		return 0, false
 	}
-	height := sdk.BigEndianToUint64(bz)
-	return int64(height)
+	height = int64(sdk.BigEndianToUint64(bz))
+	return height, true
 }
 
 func (k Keeper) SetLastStandaloneHeight(ctx sdk.Context, height int64) {

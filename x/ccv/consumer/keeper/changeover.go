@@ -7,12 +7,18 @@ import (
 
 func (k Keeper) ChangeoverIsComplete(ctx sdk.Context) bool {
 	// TODO: confirm correctness here.
-	return ctx.BlockHeight() > k.FirstConsumerHeight(ctx)
+	return ctx.BlockHeight() >= k.FirstConsumerHeight(ctx)
 }
 
-// TODO: store this height directly in a better way
+// TODO: store this height directly in a better way when prov valset is used
 func (k Keeper) FirstConsumerHeight(ctx sdk.Context) int64 {
-	return k.GetLastStandaloneHeight(ctx) + 2
+	lastStandaloneHeight, found := k.GetLastStandaloneHeight(ctx)
+	// If last standalone height not found, chain has always been consumer
+	if !found {
+		return 0
+	}
+	// Else first consumer height is 2 blocks after last standalone height
+	return lastStandaloneHeight + 2
 }
 
 // ChangeoverToConsumer includes the logic that needs to execute during the process of a
