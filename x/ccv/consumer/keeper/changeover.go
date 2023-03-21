@@ -7,8 +7,12 @@ import (
 
 func (k Keeper) ChangeoverIsComplete(ctx sdk.Context) bool {
 	// TODO: confirm correctness here.
-	// Also consider the idea of using "first consumer height" instead of "last standalone height"
-	return ctx.BlockHeight() > k.GetLastStandaloneHeight(ctx)+2
+	return ctx.BlockHeight() > k.FirstConsumerHeight(ctx)
+}
+
+// TODO: store this height directly in a better way
+func (k Keeper) FirstConsumerHeight(ctx sdk.Context) int64 {
+	return k.GetLastStandaloneHeight(ctx) + 2
 }
 
 // ChangeoverToConsumer includes the logic that needs to execute during the process of a

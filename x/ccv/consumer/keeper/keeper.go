@@ -36,15 +36,17 @@ type Keeper struct {
 	portKeeper       ccv.PortKeeper
 	connectionKeeper ccv.ConnectionKeeper
 	clientKeeper     ccv.ClientKeeper
-	// stakingKeeper is only needed for standalone to consumer changeovers, and therefore is set after constructor
-	stakingKeeper     ccv.StakingKeeper
-	slashingKeeper    ccv.SlashingKeeper
-	hooks             ccv.ConsumerHooks
-	bankKeeper        ccv.BankKeeper
-	authKeeper        ccv.AccountKeeper
-	ibcTransferKeeper ccv.IBCTransferKeeper
-	ibcCoreKeeper     ccv.IBCCoreKeeper
-	feeCollectorName  string
+	// standaloneStakingKeeper is the staking keeper that managed proof of stake for a previously standalone chain,
+	// before the chain went through a standalone to consumer changeover.
+	// This keeper is not used for consumers that launched with ICS, and is therefore set after the constructor.
+	standaloneStakingKeeper ccv.StakingKeeper
+	slashingKeeper          ccv.SlashingKeeper
+	hooks                   ccv.ConsumerHooks
+	bankKeeper              ccv.BankKeeper
+	authKeeper              ccv.AccountKeeper
+	ibcTransferKeeper       ccv.IBCTransferKeeper
+	ibcCoreKeeper           ccv.IBCCoreKeeper
+	feeCollectorName        string
 }
 
 // NewKeeper creates a new Consumer Keeper instance
@@ -65,29 +67,29 @@ func NewKeeper(
 	}
 
 	k := Keeper{
-		storeKey:          key,
-		cdc:               cdc,
-		paramStore:        paramSpace,
-		scopedKeeper:      scopedKeeper,
-		channelKeeper:     channelKeeper,
-		portKeeper:        portKeeper,
-		connectionKeeper:  connectionKeeper,
-		clientKeeper:      clientKeeper,
-		slashingKeeper:    slashingKeeper,
-		bankKeeper:        bankKeeper,
-		authKeeper:        accountKeeper,
-		ibcTransferKeeper: ibcTransferKeeper,
-		ibcCoreKeeper:     ibcCoreKeeper,
-		feeCollectorName:  feeCollectorName,
-		stakingKeeper:     nil,
+		storeKey:                key,
+		cdc:                     cdc,
+		paramStore:              paramSpace,
+		scopedKeeper:            scopedKeeper,
+		channelKeeper:           channelKeeper,
+		portKeeper:              portKeeper,
+		connectionKeeper:        connectionKeeper,
+		clientKeeper:            clientKeeper,
+		slashingKeeper:          slashingKeeper,
+		bankKeeper:              bankKeeper,
+		authKeeper:              accountKeeper,
+		ibcTransferKeeper:       ibcTransferKeeper,
+		ibcCoreKeeper:           ibcCoreKeeper,
+		feeCollectorName:        feeCollectorName,
+		standaloneStakingKeeper: nil,
 	}
 
 	k.mustValidateFields()
 	return k
 }
 
-func (k *Keeper) SetStakingKeeper(stakingKeeper ccv.StakingKeeper) {
-	k.stakingKeeper = stakingKeeper
+func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
+	k.standaloneStakingKeeper = sk
 }
 
 // Validates that the consumer keeper is initialized with non-zero and
@@ -308,10 +310,10 @@ func (k Keeper) GetInitialValSet(ctx sdk.Context) []tmtypes.ValidatorUpdate {
 }
 
 func (k Keeper) GetLastStandaloneValidators(ctx sdk.Context) []stakingtypes.Validator {
-	if !k.IsPreCCV(ctx) || k.stakingKeeper == nil {
-		panic("cannot get last standalone validators if not in pre-ccv state, or if staking keeper is nil")
+	if !k.IsPreCCV(ctx) || k.standaloneStakingKeeper == nil {
+		panic("cannot get last standalone validators if not in pre-ccv state, or if standalone staking keeper is nil")
 	}
-	return k.stakingKeeper.GetLastValidators(ctx)
+	return k.standaloneStakingKeeper.GetLastValidators(ctx)
 }
 
 // GetElapsedPacketMaturityTimes returns a slice of already elapsed PacketMaturityTimes, sorted by maturity times,
