@@ -96,8 +96,8 @@ func TestChangeoverToConsumer(t *testing.T) {
 			mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return(tc.lastSovVals),
 		)
 
-		// Add ref to staking keeper
-		consumerKeeper.SetStakingKeeper(mocks.MockStakingKeeper)
+		// Add ref to standalone staking keeper
+		consumerKeeper.SetStandaloneStakingKeeper(mocks.MockStakingKeeper)
 
 		returnedInitialValUpdates := consumerKeeper.ChangeoverToConsumer(ctx)
 

@@ -174,7 +174,7 @@ func TestGetLastSovereignValidators(t *testing.T) {
 	require.Panics(t, func() { ck.GetLastStandaloneValidators(ctx) })
 
 	// Should panic if staking keeper is set but pre-CCV is false
-	ck.SetStakingKeeper(mocks.MockStakingKeeper)
+	ck.SetStandaloneStakingKeeper(mocks.MockStakingKeeper)
 	ck.DeletePreCCV(ctx)
 	require.False(t, ck.IsPreCCV(ctx))
 	require.Panics(t, func() { ck.GetLastStandaloneValidators(ctx) })

@@ -428,7 +428,7 @@ func New(
 	)
 
 	// Setting the staking keeper is only needed for standalone to consumer changeover chains
-	app.ConsumerKeeper.SetStakingKeeper(app.StakingKeeper)
+	app.ConsumerKeeper.SetStandaloneStakingKeeper(app.StakingKeeper)
 
 	// consumer keeper satisfies the staking keeper interface
 	// of the slashing module
