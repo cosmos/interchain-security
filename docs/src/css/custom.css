@@ -434,7 +434,7 @@ html {
     @apply mt-7 pb-8 border-b border-b-border;
 
     h1 {
-      @apply text-7 font-bold leading-10 tracking-tight;
+      @apply text-7 font-bold leading-10 tracking-tight pt-5;
     }
     h2 {
       @apply text-5 font-bold leading-9 tracking-tight;
@@ -484,7 +484,7 @@ html {
       list-style-type: none;
       counter-reset: item;
       & > li {
-        @apply relative pl-8 mb-5.5;
+        @apply relative pl-8 mb-4;
         &::before {
           counter-increment: item;
           content: counters(item, ".", decimal-leading-zero) ".";
