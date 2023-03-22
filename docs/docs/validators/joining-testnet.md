@@ -147,7 +147,7 @@ To reuse the key on the provider and consumer chains, simply initialize your con
 When you start the chain, the consensus key will be the same on the provider and the consumer chain.
 
 ## Assigning consensus keys
-Whenever you initialize a new node, it will be configured with a random consensus key you can use (at least in the testnets).
+Whenever you initialize a new node, it will be configured with a consensus key you can use.
 
 ```bash
 # machine running consumer chain
@@ -164,8 +164,8 @@ gaiad tx provider assign-consensus-key <consumer-chain-id> '<pubkey>' --from <ke
 After this step, you are ready to copy the consumer genesis into your nodes's `/config` folder, start your consumer chain node and catch up to the network.
 
 ## Baryon
-https://github.com/hyphacoop/testnets/blob/master/replicated-security/baryon-1/README.md
+You can find the onboarding repo instructions for the Baryon chain [here](https://github.com/hyphacoop/testnets/blob/master/replicated-security/baryon-1/README.md)
 
 
 ## Noble
-https://github.com/hyphacoop/testnets/blob/master/replicated-security/noble-1/README.md
+You can find the onboarding repo instructions for the Noble chain [here](https://github.com/hyphacoop/testnets/blob/master/replicated-security/noble-1/README.md)
