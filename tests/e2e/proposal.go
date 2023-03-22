@@ -162,13 +162,6 @@ func (s *CCVTestSuite) TestPauseUnbondingOnEquivocationProposal() {
 		)
 		s.Require().NoError(err)
 	}
-	waitFor := func(s *CCVTestSuite, period time.Duration) {
-		s.providerChain.CurrentHeader.Time = s.providerChain.CurrentHeader.Time.Add(period)
-		// Need to advance 2 blocks because the time set at the line above is only
-		// applied for the second block
-		s.providerChain.NextBlock()
-		s.providerChain.NextBlock()
-	}
 	for i, tt := range tests {
 		s.Run(tt.name, func() {
 			if i+1 < len(tests) {
@@ -220,7 +213,7 @@ func (s *CCVTestSuite) TestPauseUnbondingOnEquivocationProposal() {
 			addDepositProp(s, proposalID, dustAmt)
 			checkStakingUnbondingOnHoldRefCount(s, valAddr, tt.expectedDuringProp)
 			// ends the voting period
-			waitFor(s, votingParams.VotingPeriod)
+			incrementTime(s, votingParams.VotingPeriod)
 			checkStakingUnbondingOnHoldRefCount(s, valAddr, tt.expectedWithoutProp)
 			s.Assert().False(
 				s.providerApp.GetProviderKeeper().HasEquivocationProposal(s.providerCtx(), proposalID),
@@ -232,7 +225,7 @@ func (s *CCVTestSuite) TestPauseUnbondingOnEquivocationProposal() {
 
 			proposalID = submitProp(s, govContent)
 			checkStakingUnbondingOnHoldRefCount(s, valAddr, tt.expectedWithoutProp)
-			waitFor(s, depositParams.MaxDepositPeriod)
+			incrementTime(s, depositParams.MaxDepositPeriod)
 			checkStakingUnbondingOnHoldRefCount(s, valAddr, tt.expectedWithoutProp)
 			s.Assert().False(
 				s.providerApp.GetProviderKeeper().HasEquivocationProposal(s.providerCtx(), proposalID),
