@@ -132,13 +132,15 @@ Check out this [guide](../features/key-assignment.md) to learn more about key as
 
 To join consumer chains, simply replicate the steps above for each consumer using the correct consumer chain binaries.
 
-:::warning
+:::info
 When running the provider chain and consumers on the same machine please update the `PORT` numbers for each of them and make sure they do not overlap (otherwise the binaries will not start).
 
-Important ports to configure:
-api
-rpc
-p2p
+Important ports to re-configure:
+- `--rpc.laddr`
+- `--p2p.laddr`
+- `--api.address`
+- `--grpc.address`
+- `--grpc-web.address`
 :::
 
 ## Re-using consensus key
@@ -151,14 +153,17 @@ Whenever you initialize a new node, it will be configured with a consensus key y
 
 ```bash
 # machine running consumer chain
-<consumer_binary> init <node_moniker> --home <home_path>
-<consumer_binary> tendermint show-validator # output: {"@type":"/cosmos.crypto.ed25519.PubKey","key":"<key>"} === <pubkey>
+consumerd init <node_moniker> --home <home_path> --chain-id consumer-1
+
+# use the output of this command to get the consumer chain consensus key
+consumerd tendermint show-validator
+# output: {"@type":"/cosmos.crypto.ed25519.PubKey","key":"<key>"}
 ```
 
 Then, let the provider know which key you will be using for the consumer chain:
 ```bash
 # machine running the provider chain
-gaiad tx provider assign-consensus-key <consumer-chain-id> '<pubkey>' --from <key_moniker> --home $NODE_HOME --gas 900000 -b block -y -o json
+gaiad tx provider assign-consensus-key consumer-1 '<consumer_pubkey>' --from <key_moniker> --home $NODE_HOME --gas 900000 -b block -y -o json
 ```
 
 After this step, you are ready to copy the consumer genesis into your nodes's `/config` folder, start your consumer chain node and catch up to the network.

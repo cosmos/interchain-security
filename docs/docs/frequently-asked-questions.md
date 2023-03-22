@@ -44,14 +44,14 @@ The only thing that separates consumer chains from standalone chains is that the
 ## What's in it for the stakers?
 The consumer chains sends a portion of its fees and inflation as reward to the provider chain as defined by `consumer_redistribution_fraction`. The rewards are distributed (sent to the provider) every `blocks_per_distribution_transmission`.
 
-:::tip
+:::note
   `consumer_redistribution_fraction` and `blocks_per_distribution_transmission` are parameters defined in the `ConsumerAdditionProposal` used to create the consumer chain. These parameters can be changed via consumer chain governance.
 :::
 
 ## What's in it for the validators?
 The consumer chains sends a portion of its fees and inflation as reward to the provider chain as defined by `consumer_redistribution_fraction`. The rewards are distributed (sent to the provider) every `blocks_per_distribution_transmission`.
 
-:::tip
+:::note
   `consumer_redistribution_fraction` and `blocks_per_distribution_transmission` are parameters defined in the `ConsumerAdditionProposal` used to create the consumer chain. These parameters can be changed via consumer chain governance.
 :::
 
@@ -59,49 +59,42 @@ The consumer chains sends a portion of its fees and inflation as reward to the p
 ## Can the consumer chain have its own governance?
 **Yes.**
 
-In that case the validators are not necessarily part of the governance structure. Instead, their place in governance is replaced by "representatives" (governors). The representatives do not need to run validators, they simply represent the interests of a particular interest group.
+In that case the validators are not necessarily part of the governance structure. Instead, their place in governance is replaced by "representatives" (governors). The representatives do not need to run validators, they simply represent the interests of a particular interest group on the consumer chain.
 
 Validators can also be representatives but representatives are not required to run validator nodes.
 
 This feature discerns between validator operators (infrastructure) and governance representatives which further democratizes the ecosystem. This also reduces the pressure on validators to be involved in on-chain governance.
 
 
-## Validator Opt-out?
-:::tip
-There are multiple opt-out mechanisms being considered such as soft opt-in -> allows bottom 20% of the validator to not run all consumer chains thereby reducing their operating costs.
-:::
+## Can validators opt-out of replicated security?
+At present, the validators cannot opt-out of validating consumer chains.
+
+There are multiple opt-out mechanisms under active research.
+
 ## How Equivocation Governance Slashing works?
-:::tip
 To avoid potential attacks directed at provider chain validators, a new mechanism was introduced:
 
 When a validator double-signs on the provider chain a special type of slash packet is relayed to the provider chain. The provider will store information about the double signing validator and allow a governance proposal to be submitted.
 If the double-signing proposal passes, the offending validator will be slashed on the provider chain and tombstoned. Tombstoning will permanently exclude the validator from the active set of the provider.
 
+:::caution
 An equivocation proposal cannot be submitted for a validator that did not double sign on any of the consumer chains.
 :::
+
 ## Can Consumer Chains Perform Software Upgrades?
-Consumer chains are sovereign, in the sense that they can run arbitrary logic and use any modules they want (ie CosmWASM).
+Consumer chains are standalone chains, in the sense that they can run arbitrary logic and use any modules they want (ie CosmWASM).
 
 Consumer chain upgrades are unlikely to impact the provider chain, as long as there are no changes to the ICS module.
 
 ## How can I connect to the testnets?
-Multiple testnets are active
-- list discord
-- GoC notes
+Check out the [Joining Replicated Security testnet](../validators/joining-testnet.md) section.
 
 ## How to start using ICS?
-To become a consumer chain use this checklist
+To become a consumer chain use this [checklist](../consumer-development/onboarding.md) and check the [App integration section](../consumer-development/app-integration.md)
 
 ## Supported relayers?
 Currently supported versions:
 - Hermes 1.3
 
 ## How key delegation works in ICS?
-New feature that allows validators to use different private keys depending on network.
-
-Txs to submit
-Queries to check the key
-
-Adds an additional security layer.
-
-The provider chain tracks all keys and knows how to map between them for double signing/downtime slashing
+You can check the [Key Assignment Guide](../features/key-assignment.md) for specific instructions.
