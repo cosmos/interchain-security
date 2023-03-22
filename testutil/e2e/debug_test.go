@@ -247,3 +247,7 @@ func TestQueueAndSendVSCMaturedPackets(t *testing.T) {
 func TestCheckConsumerMisbehaviour(t *testing.T) {
 	runCCVTestByName(t, "TestCheckConsumerMisbehaviour")
 }
+
+func TestGetByzantineValidators(t *testing.T) {
+	runCCVTestByName(t, "TestGetByzantineValidators")
+}
