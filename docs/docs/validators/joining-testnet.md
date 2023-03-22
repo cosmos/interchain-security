@@ -4,7 +4,7 @@ title: Joining Replicated Security testnet
 ---
 
 # Introduction
-This short guide will teach you how to join the [Replicated Security testnet](https://github.com/hyphacoop/testnets/tree/master/replicated-security).
+This short guide will teach you how to join the [Replicated Security testnet](https://github.com/cosmos/testnets/tree/master/replicated-security).
 
 The experience gained in the testnet will prepare you for validating interchain secured chains.
 
@@ -19,7 +19,7 @@ For general information about running cosmos-sdk based chains check out the [val
 At present, all validators of the provider chain must also validate all governance approved consumer chains. The consumer chains cannot have a validator set different than the provider, which means they cannot introduce validators that are not also validating the provider chain.
 :::
 
-A comprehensive guide is available [here](https://github.com/hyphacoop/testnets/tree/master/replicated-security/provider).
+A comprehensive guide is available [here](https://github.com/cosmos/testnets/tree/master/replicated-security/provider).
 
 
 ## Initialization
@@ -120,7 +120,7 @@ $: genesis.json $NODE_HOME/config/genesis.json
 $: gaiad start --x-crisis-skip-assert-invariants --home $NODE_HOME --p2p.seeds="08ec17e86dac67b9da70deb20177655495a55407@provider-seed-01.rs-testnet.polypore.xyz:26656,4ea6e56300a2f37b90e58de5ee27d1c9065cf871@provider-seed-02.rs-testnet.polypore.xyz:26656"
 ```
 
-Additional scripts to setup your nodes are available [here](https://github.com/hyphacoop/testnets/blob/master/replicated-security/provider/join-rs-provider.sh) and [here](https://github.com/hyphacoop/testnets/blob/master/replicated-security/provider/join-rs-provider-cv.sh). The scripts will configure your node and create the required services - the scripts only work in linux environments.
+Additional scripts to setup your nodes are available [here](https://github.com/cosmos/testnets/blob/master/replicated-security/provider/join-rs-provider.sh) and [here](https://github.com/cosmos/testnets/blob/master/replicated-security/provider/join-rs-provider-cv.sh). The scripts will configure your node and create the required services - the scripts only work in linux environments.
 
 # Joining consumer chains
 :::tip
@@ -169,8 +169,8 @@ gaiad tx provider assign-consensus-key consumer-1 '<consumer_pubkey>' --from <ke
 After this step, you are ready to copy the consumer genesis into your nodes's `/config` folder, start your consumer chain node and catch up to the network.
 
 ## Baryon
-You can find the onboarding repo instructions for the Baryon chain [here](https://github.com/hyphacoop/testnets/blob/master/replicated-security/baryon-1/README.md)
+You can find the onboarding repo instructions for the Baryon chain [here](https://github.com/cosmos/testnets/blob/master/replicated-security/baryon-1/README.md)
 
 
 ## Noble
-You can find the onboarding repo instructions for the Noble chain [here](https://github.com/hyphacoop/testnets/blob/master/replicated-security/noble-1/README.md)
+You can find the onboarding repo instructions for the Noble chain [here](https://github.com/cosmos/testnets/blob/master/replicated-security/noble-1/README.md)
