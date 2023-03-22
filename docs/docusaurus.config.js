@@ -103,6 +103,10 @@ const config = {
                 href: "https://hub.cosmos.network",
               },
               {
+                label: "Cosmos SDK",
+                href: "https://docs.cosmos.network",
+              },
+              {
                 label: "Tendermint Core",
                 href: "https://docs.tendermint.com",
               },
@@ -155,7 +159,7 @@ const config = {
             ],
           },
         ],
-        copyright: `<p>The development of the Cosmos SDK is led primarily by <a href="https://interchain.io/ecosystem">Interchain Core Teams</a>. Funding for this development comes primarily from the Interchain Foundation, a Swiss non-profit.</p>`,
+        copyright: "",
       },
       prism: {
         theme: lightCodeTheme,
@@ -183,13 +187,13 @@ const config = {
         },
       };
     },
-    [
-      "@docusaurus/plugin-google-analytics",
-      {
-        trackingID: "UA-51029217-2",
-        anonymizeIP: true,
-      },
-    ],
+    // [
+    //   "@docusaurus/plugin-google-analytics",
+    //   {
+    //     trackingID: "UA-51029217-2",
+    //     anonymizeIP: true,
+    //   },
+    // ],
     [
       "@docusaurus/plugin-client-redirects",
       {
