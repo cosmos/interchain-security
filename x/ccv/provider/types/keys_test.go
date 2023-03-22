@@ -44,7 +44,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = providertypes.MaturedUnbondingOpsKey(), i+1
 	keys[i], i = providertypes.ValidatorSetUpdateIdKey(), i+1
 	keys[i], i = providertypes.SlashMeterKey(), i+1
-	keys[i], i = providertypes.LastSlashMeterFullTimeKey(), i+1
+	keys[i], i = providertypes.SlashMeterReplenishTimeCandidateKey(), i+1
 	keys[i], i = []byte{providertypes.ChainToChannelBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChannelToChainBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChainToClientBytePrefix}, i+1
@@ -66,6 +66,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{providertypes.ThrottledPacketDataSizeBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ThrottledPacketDataBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.GlobalSlashEntryBytePrefix}, i+1
+	keys[i], i = []byte{providertypes.SlashLogBytePrefix}, i+1
 
 	return keys[:i]
 }
@@ -151,10 +152,17 @@ func TestThrottledPacketDataKeyAndParse(t *testing.T) {
 // Tests the construction and parsing of keys for global slash entries
 func TestGlobalSlashEntryKeyAndParse(t *testing.T) {
 	now := time.Now()
+
+	providerConsAddrs := []providertypes.ProviderConsAddress{
+		cryptoutil.NewCryptoIdentityFromIntSeed(0).ProviderConsAddress(),
+		cryptoutil.NewCryptoIdentityFromIntSeed(1).ProviderConsAddress(),
+		cryptoutil.NewCryptoIdentityFromIntSeed(2).ProviderConsAddress(),
+	}
+
 	entries := []providertypes.GlobalSlashEntry{}
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now, "chain-0", 2, cryptoutil.NewCryptoIdentityFromIntSeed(0).SDKValConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour), "chain-7896978", 3, cryptoutil.NewCryptoIdentityFromIntSeed(1).SDKValConsAddress()))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(3*time.Hour), "chain-1", 4723894, cryptoutil.NewCryptoIdentityFromIntSeed(2).SDKValConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now, "chain-0", 2, providerConsAddrs[0]))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour), "chain-7896978", 3, providerConsAddrs[1]))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(3*time.Hour), "chain-1", 4723894, providerConsAddrs[2]))
 
 	for _, entry := range entries {
 		key := providertypes.GlobalSlashEntryKey(entry)

@@ -68,6 +68,21 @@ go test -fuzz=<regex-to-match-test-name>
 go run ./tests/e2e/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/" --verbose
 ```
 
+### Tesing with Gaia as the provider
+
+Integration tests can be run with Gaia as the provider.
+By default, the latest tagged release of Gaia is used - this includes release candidates and stabile releases.
+
+```bash
+# use gaia as the provider
+go run ./tests/integration/... --use-gaia
+
+# use gaia as the provider - use specific tagged release
+go run ./tests/integration/... --use-gaia --gaia-tag v9.0.0
+```
+
+NOTE: versions < v9.0.0 are not compatible with ICS.
+
 ## Linters and Static Analysis
 
 Several analyzers are used on the code including [CodeQL](https://codeql.github.com/), [SonarCloud](https://sonarcloud.io/), [golangci-lint](https://golangci-lint.run/) and [gosec](https://github.com/securego/gosec). Some of these are run on github when committing to PRs ect, but some tools are also applicable locally, and are built into golang.

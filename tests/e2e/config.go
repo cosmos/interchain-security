@@ -61,7 +61,14 @@ type TestRun struct {
 	containerConfig  ContainerConfig
 	validatorConfigs map[validatorID]ValidatorConfig
 	chainConfigs     map[chainID]ChainConfig
-	localSdkPath     string
+	// override config.toml parameters
+	// usually used to override timeout_commit
+	// having shorter timeout_commit reduces the test runtime because blocks are produced faster
+	// lengthening the timeout_commit increases the test runtime because blocks are produced slower but the test is more reliable
+	tendermintConfigOverride string
+	localSdkPath             string
+	useGaia                  bool
+	gaiaTag                  string
 
 	name string
 }
@@ -166,6 +173,8 @@ func SlashThrottleTestRun() TestRun {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
+		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
 }
 
@@ -207,6 +216,8 @@ func DefaultTestRun() TestRun {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
+		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
 }
 
@@ -248,6 +259,8 @@ func DemocracyTestRun() TestRun {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
+		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
 }
 
@@ -299,14 +312,22 @@ func MultiConsumerTestRun() TestRun {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
+		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "3s"/;` +
+			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "100ms"/;`,
 	}
 }
 
-func (s *TestRun) SetLocalSDKPath(path string) {
-	if path != "" {
-		fmt.Println("USING LOCAL SDK", path)
+func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string) {
+	if localSdkPath != "" {
+		fmt.Println("USING LOCAL SDK", localSdkPath)
 	}
-	s.localSdkPath = path
+	if useGaia {
+		fmt.Println("USING GAIA INSTEAD OF ICS provider app", gaiaTag)
+	}
+
+	s.useGaia = useGaia
+	s.gaiaTag = gaiaTag
+	s.localSdkPath = localSdkPath
 }
 
 // validateStringLiterals enforces that configs follow the constraints

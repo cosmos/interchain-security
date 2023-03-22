@@ -20,14 +20,17 @@ var happyPathSteps = concatSteps(
 	stepsUnbond("consu"),
 	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
-	stepsStopChain("consu"),
+	stepsRejectEquivocationProposal("consu", 2),   // prop to tombstone bob is rejected
+	stepsDoubleSignOnProviderAndConsumer("consu"), // carol double signs on provider, bob double signs on consumer
+	stepsSubmitEquivocationProposal("consu", 2),   // now prop to tombstone bob is submitted and accepted
+	stepsStopChain("consu", 3),
 )
 
 var slashThrottleSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
 	stepsThrottledDowntime("consu"),
-	stepsStopChain("consu"),
+	stepsStopChain("consu", 2),
 )
 
 var democracySteps = concatSteps(
@@ -38,7 +41,6 @@ var democracySteps = concatSteps(
 	stepsDemocracy("democ"),
 )
 
-//nolint
 var multipleConsumers = concatSteps(
 	stepsStartChains([]string{"consu", "densu"}, false),
 	stepsMultiConsumerDelegate("consu", "densu"),
@@ -46,5 +48,5 @@ var multipleConsumers = concatSteps(
 	stepsMultiConsumerRedelegate("consu", "densu"),
 	stepsMultiConsumerDowntimeFromConsumer("consu", "densu"),
 	stepsMultiConsumerDowntimeFromProvider("consu", "densu"),
-	stepsDoubleSign("consu", "densu"), // double sign on one of the chains
+	stepsMultiConsumerDoubleSign("consu", "densu"), // double sign on one of the chains
 )

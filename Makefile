@@ -8,13 +8,17 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cd
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cdd
 
-# run all tests: unit, integration, diff, and E2E
+# run all tests: unit, e2e, diff, and E2E
 test: 
 	go test ./... && go run ./tests/e2e/... 
 
-# run integration and unit tests
+# run e2e and unit tests
 test-short:
-	go test ./tests/integration/... ./x/... ./app/...
+	go test ./tests/e2e/... ./x/... ./app/...
+
+# run integration tests
+test-integration:
+	go test ./tests/integration/...
 
 # run difference tests
 test-diff:
@@ -32,9 +36,40 @@ test-e2e:
 test-e2e-parallel:
 	go run ./tests/e2e/... --include-multi-consumer --parallel
 
+# run full E2E tests in sequence (including multiconsumer) using latest tagged gaia
+test-gaia-e2e:
+	go run ./tests/e2e/... --include-multi-consumer --use-gaia
+
+# run only happy path E2E tests using latest tagged gaia
+test-gaia-e2e-short:
+	go run ./tests/e2e/... --happy-path-only --use-gaia
+
+# run full E2E tests in parallel (including multiconsumer) using latest tagged gaia
+test-gaia-e2e-parallel:
+	go run ./tests/e2e/... --include-multi-consumer --parallel --use-gaia
+
+# run full E2E tests in sequence (including multiconsumer) using specific tagged version of gaia
+# usage: GAIA_TAG=v9.0.0 make test-gaia-e2e-tagged
+test-gaia-e2e-tagged:
+	go run ./tests/e2e/... --include-multi-consumer --use-gaia --gaia-tag $(GAIA_TAG)
+
+# run only happy path E2E tests using latest tagged gaia
+# usage: GAIA_TAG=v9.0.0 make test-gaia-e2e-short-tagged
+test-gaia-e2e-short-tagged:
+	go run ./tests/e2e/... --happy-path-only --use-gaia --gaia-tag $(GAIA_TAG)
+
+# run full E2E tests in parallel (including multiconsumer) using specific tagged version of gaia
+# usage: GAIA_TAG=v9.0.0 make test-gaia-e2e-parallel-tagged
+test-gaia-e2e-parallel-tagged:
+	go run ./tests/e2e/... --include-multi-consumer --parallel --use-gaia --gaia-tag $(GAIA_TAG)
+
 # run all tests with caching disabled
 test-no-cache:
 	go test ./... -count=1 && go run ./tests/e2e/...
+
+mockgen_cmd=go run github.com/golang/mock/mockgen
+mocks:
+	$(mockgen_cmd) -package=keeper -destination=testutil/keeper/mocks.go -source=x/ccv/types/expected_keepers.go
 
 BUILD_TARGETS := build
 
@@ -96,6 +131,7 @@ SDK_QUERY 			= third_party/proto/cosmos/base/query/v1beta1
 SDK_BASE 			= third_party/proto/cosmos/base/v1beta1
 SDK_UPGRADE			= third_party/proto/cosmos/upgrade/v1beta1
 SDK_STAKING			= third_party/proto/cosmos/staking/v1beta1
+SDK_EVIDENCE		= third_party/proto/cosmos/evidence/v1beta1
 
 GOGO_PROTO_TYPES    = third_party/proto/gogoproto
 CONFIO_TYPES        = third_party/proto/confio
@@ -116,6 +152,9 @@ proto-update-deps:
 
 	@mkdir -p $(SDK_STAKING)
 	@curl -sSL $(SDK_PROTO_URL)/staking/v1beta1/staking.proto > $(SDK_STAKING)/staking.proto
+
+	@mkdir -p $(SDK_EVIDENCE)
+	@curl -sSL $(SDK_PROTO_URL)/evidence/v1beta1/evidence.proto > $(SDK_EVIDENCE)/evidence.proto
 
 ## Importing of tendermint protobuf definitions currently requires the
 ## use of `sed` in order to build properly with cosmos-sdk's proto file layout
@@ -146,5 +185,5 @@ proto-update-deps:
 ## Issue link: https://github.com/confio/ics23/issues/32
 	@perl -i -l -p -e 'print "option go_package = \"github.com/confio/ics23/go\";" if $$. == 4' $(CONFIO_TYPES)/proofs.proto
 
-.PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
+.PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps mocks
 

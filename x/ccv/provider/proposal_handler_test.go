@@ -1,15 +1,16 @@
 package provider_test
 
 import (
+	"testing"
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-
-	"testing"
-	"time"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
@@ -17,13 +18,13 @@ import (
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
-// TestConsumerChainProposalHandler tests the highest level handler for proposals concerning both
-// creating and stopping consumer chains.
-func TestConsumerChainProposalHandler(t *testing.T) {
-
+// TestProviderProposalHandler tests the highest level handler for proposals
+// concerning creating, stopping consumer chains and submitting equivocations.
+func TestProviderProposalHandler(t *testing.T) {
 	// Snapshot times asserted in tests
 	now := time.Now().UTC()
 	hourFromNow := now.Add(time.Hour).UTC()
+	equivocation := &evidencetypes.Equivocation{Height: 42}
 
 	testCases := []struct {
 		name                     string
@@ -31,6 +32,7 @@ func TestConsumerChainProposalHandler(t *testing.T) {
 		blockTime                time.Time
 		expValidConsumerAddition bool
 		expValidConsumerRemoval  bool
+		expValidEquivocation     bool
 	}{
 		{
 			name: "valid consumer addition proposal",
@@ -55,6 +57,21 @@ func TestConsumerChainProposalHandler(t *testing.T) {
 			expValidConsumerRemoval: true,
 		},
 		{
+			// no slash log for equivocation
+			name: "invalid equivocation posal",
+			content: providertypes.NewEquivocationProposal(
+				"title", "description", []*evidencetypes.Equivocation{equivocation}),
+			blockTime:            hourFromNow,
+			expValidEquivocation: false,
+		},
+		{
+			name: "valid equivocation posal",
+			content: providertypes.NewEquivocationProposal(
+				"title", "description", []*evidencetypes.Equivocation{equivocation}),
+			blockTime:            hourFromNow,
+			expValidEquivocation: true,
+		},
+		{
 			name:      "nil proposal",
 			content:   nil,
 			blockTime: hourFromNow,
@@ -71,27 +88,34 @@ func TestConsumerChainProposalHandler(t *testing.T) {
 
 		// Setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		// Mock expectations depending on expected outcome
-		if tc.expValidConsumerAddition {
-			gomock.InOrder(testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chainID", clienttypes.NewHeight(2, 3))...)
-		}
-		if tc.expValidConsumerRemoval {
+		switch {
+		case tc.expValidConsumerAddition:
+			gomock.InOrder(testkeeper.GetMocksForCreateConsumerClient(
+				ctx, &mocks, "chainID", clienttypes.NewHeight(2, 3),
+			)...)
+
+		case tc.expValidConsumerRemoval:
 			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+
+		case tc.expValidEquivocation:
+			providerKeeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(equivocation.GetConsensusAddress()))
+			mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocation)
 		}
 
 		// Execution
-		proposalHandler := provider.NewConsumerChainProposalHandler(providerKeeper)
+		proposalHandler := provider.NewProviderProposalHandler(providerKeeper)
 		err := proposalHandler(ctx, tc.content)
 
-		if tc.expValidConsumerAddition || tc.expValidConsumerRemoval {
+		if tc.expValidConsumerAddition || tc.expValidConsumerRemoval ||
+			tc.expValidEquivocation {
 			require.NoError(t, err)
 		} else {
 			require.Error(t, err)
 		}
-		ctrl.Finish()
 	}
 }

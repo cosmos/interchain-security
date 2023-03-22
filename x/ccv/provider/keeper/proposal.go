@@ -60,7 +60,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 			fmt.Sprintf("cannot create client for existent consumer chain: %s", chainID))
 	}
 
-	// Consumers always start out with the default unbonding period
+	// Consumers start out with the unbonding period from the consumer addition prop
 	consumerUnbondingPeriod := prop.UnbondingPeriod
 
 	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
@@ -600,4 +600,16 @@ func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRe
 	cc, writeCache = ctx.CacheContext()
 	err = k.StopConsumerChain(ctx, p.ChainId, true)
 	return
+}
+
+// HandleEquivocationProposal handles an equivocation proposal.
+// Proposal will be accepted if a record in the SlashLog exists for a given validator address.
+func (k Keeper) HandleEquivocationProposal(ctx sdk.Context, p *types.EquivocationProposal) error {
+	for _, ev := range p.Equivocations {
+		if !k.GetSlashLog(ctx, types.NewProviderConsAddress(ev.GetConsensusAddress())) {
+			return fmt.Errorf("no equivocation record found for validator %s", ev.GetConsensusAddress().String())
+		}
+		k.evidenceKeeper.HandleEquivocationEvidence(ctx, ev)
+	}
+	return nil
 }

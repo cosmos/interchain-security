@@ -1,6 +1,7 @@
 package ibc_testing
 
 import (
+	"fmt"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -52,7 +53,12 @@ func AddProvider[T intgutil.ProviderApp](coordinator *ibctesting.Coordinator, t 
 	provider := ibctesting.NewTestChain(t, coordinator, appIniter, provChainID)
 	coordinator.Chains[provChainID] = provider
 
-	return provider, provider.App.(T)
+	providerToReturn, ok := provider.App.(T)
+	if !ok {
+		panic(fmt.Sprintf("provider app type returned from app initer does not match app type passed in as type param: %T, %T",
+			provider.App, *new(T)))
+	}
+	return provider, providerToReturn
 }
 
 // AddDemocracyConsumer adds a new democ consumer chain to the coordinator and returns the test chain and app type
@@ -62,7 +68,12 @@ func AddDemocracyConsumer[T intgutil.DemocConsumerApp](coordinator *ibctesting.C
 	democConsumer := ibctesting.NewTestChain(t, coordinator, appIniter, democConsumerChainID)
 	coordinator.Chains[democConsumerChainID] = democConsumer
 
-	return democConsumer, democConsumer.App.(T)
+	democConsumerToReturn, ok := democConsumer.App.(T)
+	if !ok {
+		panic(fmt.Sprintf("democ consumer app type returned from app initer does not match app type passed in as type param: %T, %T",
+			democConsumer.App, *new(T)))
+	}
+	return democConsumer, democConsumerToReturn
 }
 
 // AddConsumer adds a new consumer chain with "testchain<index+2>" as chainID to the coordinator
@@ -125,8 +136,14 @@ func AddConsumer[Tp intgutil.ProviderApp, Tc intgutil.ConsumerApp](
 		appIniter, chainID, tmtypes.NewValidatorSet(valz), providerChain.Signers)
 	coordinator.Chains[chainID] = testChain
 
+	consumerToReturn, ok := testChain.App.(Tc)
+	if !ok {
+		panic(fmt.Sprintf("consumer app type returned from app initer does not match app type passed in as type param: %T, %T",
+			testChain.App, *new(Tc)))
+	}
+
 	return &ConsumerBundle{
 		Chain: testChain,
-		App:   testChain.App.(Tc),
+		App:   consumerToReturn,
 	}
 }

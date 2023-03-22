@@ -10,6 +10,7 @@ import (
 	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
 
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
@@ -92,61 +93,32 @@ func GetMocksForStopConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomo
 }
 
 func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
-	expectedPacketData ccv.SlashPacketData, valToReturn stakingtypes.Validator) []*gomock.Call {
-
-	// An arbitrary slash fraction returned and later used by mock calls.
-	arbitrarySlashFraction := sdk.NewDec(1)
+	expectedProviderValConsAddr providertypes.ProviderConsAddress,
+	valToReturn stakingtypes.Validator, expectJailing bool) []*gomock.Call {
 
 	// These first two calls are always made.
 	calls := []*gomock.Call{
 
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-			ctx, sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(
+			ctx, expectedProviderValConsAddr.ToSdkConsAddr()).Return(
 			valToReturn, true,
 		).Times(1),
 
 		mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
-			sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(false).Times(1),
+			expectedProviderValConsAddr.ToSdkConsAddr()).Return(false).Times(1),
 	}
 
-	// Different calls are made depending on the type infraction.
-	if expectedPacketData.Infraction == stakingtypes.Downtime {
-		calls = append(calls,
-			mocks.MockSlashingKeeper.EXPECT().SlashFractionDowntime(ctx).Return(arbitrarySlashFraction).Times(1),
-			mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour).Times(1),
-		)
-
-	} else if expectedPacketData.Infraction == stakingtypes.DoubleSign {
-		calls = append(calls,
-			mocks.MockSlashingKeeper.EXPECT().SlashFractionDoubleSign(ctx).Return(arbitrarySlashFraction).Times(1),
-			mocks.MockSlashingKeeper.EXPECT().Tombstone(ctx,
-				sdk.ConsAddress(expectedPacketData.Validator.Address)).Times(1),
-		)
-	}
-
-	// Slash is always called.
-	calls = append(calls, mocks.MockStakingKeeper.EXPECT().Slash(
-		ctx,
-		sdk.ConsAddress(expectedPacketData.Validator.Address),
-		gomock.Any(), // infraction height
-		int64(0),     // power
-		arbitrarySlashFraction,
-		expectedPacketData.Infraction).Return().Times(1),
-	)
-
-	// Jail() is only called if the validator is not already jailed.
-	if !valToReturn.IsJailed() {
+	if expectJailing {
 		calls = append(calls, mocks.MockStakingKeeper.EXPECT().Jail(
 			gomock.Eq(ctx),
-			gomock.Eq(sdk.ConsAddress(expectedPacketData.Validator.Address)),
+			gomock.Eq(expectedProviderValConsAddr.ToSdkConsAddr()),
 		).Return())
-	}
 
-	// JailUntil() time is always updated.
-	calls = append(calls,
-		mocks.MockSlashingKeeper.EXPECT().JailUntil(ctx, sdk.ConsAddress(expectedPacketData.Validator.Address),
-			gomock.Any()).Times(1),
-	)
+		// JailUntil is set in this code path.
+		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour).Times(1))
+		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().JailUntil(ctx,
+			expectedProviderValConsAddr.ToSdkConsAddr(), gomock.Any()).Times(1))
+	}
 
 	return calls
 }

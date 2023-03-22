@@ -92,10 +92,11 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	providerAddr, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
+	providerAddrTmp, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
 	if err != nil {
 		return nil, err
 	}
+	providerAddr := types.NewProviderConsAddress(providerAddrTmp)
 
 	consumerKey, found := k.GetValidatorConsumerPubKey(ctx, req.ChainId, providerAddr)
 	if !found {
@@ -119,10 +120,11 @@ func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.Que
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	consumerAddr, err := sdk.ConsAddressFromBech32(req.ConsumerAddress)
+	consumerAddrTmp, err := sdk.ConsAddressFromBech32(req.ConsumerAddress)
 	if err != nil {
 		return nil, err
 	}
+	consumerAddr := types.NewConsumerConsAddress(consumerAddrTmp)
 
 	providerAddr, found := k.GetValidatorByConsumerAddr(ctx, req.ChainId, consumerAddr)
 	if !found {
@@ -143,7 +145,7 @@ func (k Keeper) QueryThrottleState(goCtx context.Context, req *types.QueryThrott
 
 	meter := k.GetSlashMeter(ctx)
 	allowance := k.GetSlashMeterAllowance(ctx)
-	lastFullTime := k.GetLastSlashMeterFullTime(ctx) // always UTC
+	candidate := k.GetSlashMeterReplenishTimeCandidate(ctx) // always UTC
 	packets := []*types.ThrottledSlashPacket{}
 
 	// iterate global slash entries from all consumer chains
@@ -165,10 +167,10 @@ func (k Keeper) QueryThrottleState(goCtx context.Context, req *types.QueryThrott
 	}
 
 	return &types.QueryThrottleStateResponse{
-		SlashMeter:          meter.Int64(),
-		SlashMeterAllowance: allowance.Int64(),
-		LastFullTime:        lastFullTime,
-		Packets:             packets,
+		SlashMeter:             meter.Int64(),
+		SlashMeterAllowance:    allowance.Int64(),
+		NextReplenishCandidate: candidate,
+		Packets:                packets,
 	}, nil
 }
 

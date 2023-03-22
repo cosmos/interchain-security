@@ -3,11 +3,9 @@ package keeper
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
@@ -263,7 +261,7 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// Note: CheckForSlashMeterReplenishment contains panics for the following scenarios, any of which should never occur
 	// if the protocol is correct and external data is properly validated:
 	//
-	// - Either SlashMeter or LastSlashMeterFullTime have not been set (both of which should be set in InitGenesis, see InitializeSlashMeter).
+	// - Either SlashMeter or SlashMeterReplenishTimeCandidate have not been set (both of which should be set in InitGenesis, see InitializeSlashMeter).
 	// - Params not being set (all of which should be set in InitGenesis).
 	// - Marshaling and/or store corruption errors.
 	// - Setting invalid slash meter values (see SetSlashMeter).
@@ -305,7 +303,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		k.Logger(ctx).Error("invalid slash packet",
 			"error", err.Error(),
 			"chainID", chainID,
-			"consumer cons addr", sdk.ConsAddress(data.Validator.Address),
+			"consumer cons addr", sdk.ConsAddress(data.Validator.Address).String(),
 			"vscID", data.ValsetUpdateId,
 			"infractionType", data.Infraction,
 		)
@@ -314,12 +312,26 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 	// The slash packet validator address may be known only on the consumer chain,
 	// in this case, it must be mapped back to the consensus address on the provider chain
-	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
+	consumerConsAddr := providertypes.NewConsumerConsAddress(data.Validator.Address)
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
-	// Replace data.Validator.Address with the proper provider chain consensus address,
-	// for later use in HandleSlashPacket
-	data.Validator.Address = providerConsAddr.Bytes()
+	if data.Infraction == stakingtypes.DoubleSign {
+		// getMappedInfractionHeight is already checked in ValidateSlashPacket
+		infractionHeight, _ := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
+
+		k.SetSlashLog(ctx, providerConsAddr)
+		k.Logger(ctx).Info("SlashPacket received for double-signing",
+			"chainID", chainID,
+			"consumer cons addr", consumerConsAddr.String(),
+			"provider cons addr", providerConsAddr.String(),
+			"vscID", data.ValsetUpdateId,
+			"infractionHeight", infractionHeight,
+		)
+
+		// return successful ack, as an error would result
+		// in the consumer closing the CCV channel
+		return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	}
 
 	// Queue a slash entry to the global queue, which will be seen by the throttling logic
 	k.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
@@ -365,23 +377,24 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 	return nil
 }
 
-// HandleSlashPacket potentially slashes, jails and/or tombstones
-// a misbehaving validator according to infraction type.
+// HandleSlashPacket potentially jails a misbehaving validator for a downtime infraction.
+// This method should NEVER be called with a double-sign infraction.
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
+
+	consumerConsAddr := providertypes.NewConsumerConsAddress(data.Validator.Address)
+	// Obtain provider chain consensus address using the consumer chain consensus address
+	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
 	k.Logger(ctx).Debug("handling slash packet",
 		"chainID", chainID,
-		"provider cons addr", sdk.ConsAddress(data.Validator.Address).String(),
+		"consumer cons addr", consumerConsAddr.String(),
+		"provider cons addr", providerConsAddr.String(),
 		"vscID", data.ValsetUpdateId,
 		"infractionType", data.Infraction,
 	)
 
-	// Obtain provider chain consensus address from packet data
-	// (overwritten with proper provider chain cons address in OnRecvSlashPacket)
-	providerConsAddr := sdk.ConsAddress(data.Validator.Address)
-
 	// Obtain validator from staking keeper
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, data.Validator.Address)
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr.ToSdkConsAddr())
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
@@ -390,12 +403,12 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		// Note that it is impossible for the validator to be not found or unbonded if both the provider
 		// and the consumer are following the protocol. Thus if this branch is taken then one or both
 		// chains is incorrect, but it is impossible to tell which.
-		k.Logger(ctx).Error("validator not found or is unbonded", "validator", data.Validator.Address)
+		k.Logger(ctx).Error("validator not found or is unbonded", "validator", providerConsAddr.String())
 		return
 	}
 
 	// tombstoned validators should not be slashed multiple times.
-	if k.slashingKeeper.IsTombstoned(ctx, providerConsAddr) {
+	if k.slashingKeeper.IsTombstoned(ctx, providerConsAddr.ToSdkConsAddr()) {
 		// Log and drop packet if validator is tombstoned.
 		k.Logger(ctx).Info(
 			"slash packet dropped because validator is already tombstoned",
@@ -404,13 +417,6 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		return
 	}
 
-	// slash and jail validator according to their infraction type
-	// and using the provider chain parameters
-	var (
-		jailTime      time.Time
-		slashFraction sdk.Dec
-	)
-
 	infractionHeight, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	if !found {
 		k.Logger(ctx).Error("infraction height not found. But was found during slash packet validation")
@@ -418,45 +424,20 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		return
 	}
 
-	switch data.Infraction {
-	case stakingtypes.Downtime:
-		// set the downtime slash fraction and duration
-		// then append the validator address to the slash ack for its chain id
-		slashFraction = k.slashingKeeper.SlashFractionDowntime(ctx)
-		jailTime = ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
-		k.AppendSlashAck(ctx, chainID, providerConsAddr.String())
-	case stakingtypes.DoubleSign:
-		// set double-signing slash fraction and infinite jail duration
-		// then tombstone the validator
-		slashFraction = k.slashingKeeper.SlashFractionDoubleSign(ctx)
-		jailTime = evidencetypes.DoubleSignJailEndTime
-		k.slashingKeeper.Tombstone(ctx, providerConsAddr)
-	}
+	// Note: the SlashPacket is for downtime infraction, as SlashPackets
+	// for double-signing infractions are already dropped when received
 
-	// slash validator
-	k.stakingKeeper.Slash(
-		ctx,
-		providerConsAddr,
-		int64(infractionHeight),
-		data.Validator.Power,
-		slashFraction,
-		data.Infraction,
-	)
+	// append the validator address to the slash ack for its chain id
+	// TODO: consumer cons address should be accepted here
+	k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
 
 	// jail validator
 	if !validator.IsJailed() {
-		k.stakingKeeper.Jail(ctx, providerConsAddr)
+		k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
 		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.String())
+		jailTime := ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
+		k.slashingKeeper.JailUntil(ctx, providerConsAddr.ToSdkConsAddr(), jailTime)
 	}
-
-	k.slashingKeeper.JailUntil(ctx, providerConsAddr, jailTime)
-
-	k.Logger(ctx).Info("validator slashed and jail time updated",
-		"provider cons addr", providerConsAddr.String(),
-		"infractionHeight", infractionHeight,
-		"infractionType", data.Infraction,
-		"jail until", jailTime.UTC(),
-	)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(

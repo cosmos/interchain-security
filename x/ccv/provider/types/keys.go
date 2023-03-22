@@ -47,9 +47,8 @@ const (
 	// SlashMeterByteKey is the byte key for storing the slash meter
 	SlashMeterByteKey
 
-	// LastSlashMeterFullTimeByteKey is the byte key for storing
-	// the last time the slash meter was full.
-	LastSlashMeterFullTimeByteKey
+	// SlashMeterReplenishTimeCandidateByteKey is the byte key for storing the slash meter replenish time candidate
+	SlashMeterReplenishTimeCandidateByteKey
 
 	// ChainToChannelBytePrefix is the byte prefix for storing mapping
 	// from chainID to the channel ID that is used to send over validator set changes.
@@ -124,6 +123,10 @@ const (
 	// ConsumerAddrsToPruneBytePrefix is the byte prefix that will store the mapping from VSC ids
 	// to consumer validators addresses needed for pruning
 	ConsumerAddrsToPruneBytePrefix
+
+	// SlashLogBytePrefix is the byte prefix that will store the mapping from provider address to boolean
+	// denoting whether the provider address has commited any double signign infractions
+	SlashLogBytePrefix
 )
 
 // PortKey returns the key to the port ID in the store
@@ -146,9 +149,9 @@ func SlashMeterKey() []byte {
 	return []byte{SlashMeterByteKey}
 }
 
-// LastSlashMeterFullTimeKey returns the key storing the last time the slash meter was full
-func LastSlashMeterFullTimeKey() []byte {
-	return []byte{LastSlashMeterFullTimeByteKey}
+// SlashMeterReplenishTimeCandidateKey returns the key storing the slash meter replenish time candidate
+func SlashMeterReplenishTimeCandidateKey() []byte {
+	return []byte{SlashMeterReplenishTimeCandidateByteKey}
 }
 
 // ChainToChannelKey returns the key under which the CCV channel ID will be stored for the given consumer chain.
@@ -263,20 +266,20 @@ func ParseVscSendingTimestampKey(bz []byte) (string, uint64, error) {
 
 // ConsumerValidatorsKey returns the key under which the
 // validator assigned keys for every consumer chain are stored
-func ConsumerValidatorsKey(chainID string, addr sdk.ConsAddress) []byte {
-	return ChainIdAndConsAddrKey(ConsumerValidatorsBytePrefix, chainID, addr)
+func ConsumerValidatorsKey(chainID string, addr ProviderConsAddress) []byte {
+	return ChainIdAndConsAddrKey(ConsumerValidatorsBytePrefix, chainID, addr.ToSdkConsAddr())
 }
 
 // ValidatorsByConsumerAddrKey returns the key under which the mapping from validator addresses
 // on consumer chains to validator addresses on the provider chain is stored
-func ValidatorsByConsumerAddrKey(chainID string, addr sdk.ConsAddress) []byte {
-	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr)
+func ValidatorsByConsumerAddrKey(chainID string, addr ConsumerConsAddress) []byte {
+	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr.ToSdkConsAddr())
 }
 
 // KeyAssignmentReplacementsKey returns the key under which the
 // key assignments that need to be replaced in the current block are stored
-func KeyAssignmentReplacementsKey(chainID string, addr sdk.ConsAddress) []byte {
-	return ChainIdAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr)
+func KeyAssignmentReplacementsKey(chainID string, addr ProviderConsAddress) []byte {
+	return ChainIdAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr.ToSdkConsAddr())
 }
 
 // ConsumerAddrsToPruneKey returns the key under which the
@@ -439,4 +442,9 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
 	addr := bz[prefixL+8+int(chainIdL):]
 	return chainID, addr, nil
+}
+
+// SlashLogKey returns the key to a validator's slash log
+func SlashLogKey(providerAddr ProviderConsAddress) []byte {
+	return append([]byte{SlashLogBytePrefix}, providerAddr.ToSdkConsAddr().Bytes()...)
 }

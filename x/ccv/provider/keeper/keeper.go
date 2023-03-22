@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -21,6 +22,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/ccv/utils"
 
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -38,6 +40,7 @@ type Keeper struct {
 	clientKeeper     ccv.ClientKeeper
 	stakingKeeper    ccv.StakingKeeper
 	slashingKeeper   ccv.SlashingKeeper
+	evidenceKeeper   ccv.EvidenceKeeper
 	feeCollectorName string
 }
 
@@ -47,14 +50,15 @@ func NewKeeper(
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
-	accountKeeper ccv.AccountKeeper, feeCollectorName string,
+	accountKeeper ccv.AccountKeeper, evidenceKeeper ccv.EvidenceKeeper,
+	feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return Keeper{
+	k := Keeper{
 		cdc:              cdc,
 		storeKey:         key,
 		paramSpace:       paramSpace,
@@ -66,8 +70,36 @@ func NewKeeper(
 		clientKeeper:     clientKeeper,
 		stakingKeeper:    stakingKeeper,
 		slashingKeeper:   slashingKeeper,
+		evidenceKeeper:   evidenceKeeper,
 		feeCollectorName: feeCollectorName,
 	}
+
+	k.mustValidateFields()
+	return k
+}
+
+// Validates that the provider keeper is initialized with non-zero and
+// non-nil values for all its fields. Otherwise this method will panic.
+func (k Keeper) mustValidateFields() {
+
+	// Ensures no fields are missed in this validation
+	if reflect.ValueOf(k).NumField() != 13 {
+		panic("number of fields in provider keeper is not 13")
+	}
+
+	utils.PanicIfZeroOrNil(k.cdc, "cdc")                           // 1
+	utils.PanicIfZeroOrNil(k.storeKey, "storeKey")                 // 2
+	utils.PanicIfZeroOrNil(k.paramSpace, "paramSpace")             // 3
+	utils.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")         // 4
+	utils.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")       // 5
+	utils.PanicIfZeroOrNil(k.portKeeper, "portKeeper")             // 6
+	utils.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper") // 7
+	utils.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")       // 8
+	utils.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")         // 9
+	utils.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")       // 10
+	utils.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")     // 11
+	utils.PanicIfZeroOrNil(k.evidenceKeeper, "evidenceKeeper")     // 12
+	utils.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName") // 13
 }
 
 // Logger returns a module-specific logger.
@@ -569,8 +601,8 @@ func (k Keeper) ConsumeMaturedUnbondingOps(ctx sdk.Context) []uint64 {
 
 // Retrieves the underlying client state corresponding to a connection ID.
 func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (
-	clientID string, tmClient *ibctmtypes.ClientState, err error) {
-
+	clientID string, tmClient *ibctmtypes.ClientState, err error,
+) {
 	conn, ok := k.connectionKeeper.GetConnection(ctx, connectionID)
 	if !ok {
 		return "", nil, sdkerrors.Wrapf(conntypes.ErrConnectionNotFound,
@@ -677,6 +709,9 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId ui
 }
 
 // SetSlashAcks sets the slash acks under the given chain ID
+//
+// TODO: SlashAcks should be persisted as a list of ConsumerConsAddr types, not strings.
+// See https://github.com/cosmos/interchain-security/issues/728
 func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -693,6 +728,9 @@ func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 }
 
 // GetSlashAcks returns the slash acks stored under the given chain ID
+//
+// TODO: SlashAcks should be persisted as a list of ConsumerConsAddr types, not strings.
+// See https://github.com/cosmos/interchain-security/issues/728
 func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SlashAcksKey(chainID))
@@ -727,7 +765,9 @@ func (k Keeper) DeleteSlashAcks(ctx sdk.Context, chainID string) {
 }
 
 // AppendSlashAck appends the given slash ack to the given chain ID slash acks in store
-func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID, ack string) {
+func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID,
+	ack string, // TODO: consumer cons addr should be accepted here, see https://github.com/cosmos/interchain-security/issues/728
+) {
 	acks := k.GetSlashAcks(ctx, chainID)
 	acks = append(acks, ack)
 	k.SetSlashAcks(ctx, chainID, acks)
@@ -986,4 +1026,26 @@ func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSe
 	}
 
 	return types.VscSendTimestamp{}, false
+}
+
+// SetSlashLog updates validator's slash log for a consumer chain
+// If an entry exists for a given validator address, at least one
+// double signing slash packet was received by the provider from at least one consumer chain
+func (k Keeper) SetSlashLog(
+	ctx sdk.Context,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.SlashLogKey(providerAddr), []byte{})
+}
+
+// GetSlashLog returns a validator's slash log status
+// True will be returned if an entry exists for a given validator address
+func (k Keeper) GetSlashLog(
+	ctx sdk.Context,
+	providerAddr types.ProviderConsAddress,
+) (found bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.SlashLogKey(providerAddr))
+	return bz != nil
 }

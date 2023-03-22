@@ -108,24 +108,24 @@ func TestHistoricalInfo(t *testing.T) {
 // Slashing tests
 //
 
-func TestRelayAndApplySlashPacket(t *testing.T) {
-	runCCVTestByName(t, "TestRelayAndApplySlashPacket")
+func TestRelayAndApplyDowntimePacket(t *testing.T) {
+	runCCVTestByName(t, "TestRelayAndApplyDowntimePacket")
+}
+
+func TestRelayAndApplyDoubleSignPacket(t *testing.T) {
+	runCCVTestByName(t, "TestRelayAndApplyDoubleSignPacket")
 }
 
 func TestSlashPacketAcknowledgement(t *testing.T) {
 	runCCVTestByName(t, "TestSlashPacketAcknowledgement")
 }
 
-func TestHandleSlashPacketDoubleSigning(t *testing.T) {
-	runCCVTestByName(t, "TestHandleSlashPacketDoubleSigning")
+func TestHandleSlashPacketDowntime(t *testing.T) {
+	runCCVTestByName(t, "TestHandleSlashPacketDowntime")
 }
 
 func TestOnRecvSlashPacketErrors(t *testing.T) {
 	runCCVTestByName(t, "TestOnRecvSlashPacketErrors")
-}
-
-func TestSlashUndelegation(t *testing.T) {
-	runCCVTestByName(t, "TestSlashUndelegation")
 }
 
 func TestValidatorDowntime(t *testing.T) {
@@ -170,6 +170,10 @@ func TestMultiConsumerSlashPacketThrottling(t *testing.T) {
 
 func TestPacketSpam(t *testing.T) {
 	runCCVTestByName(t, "TestPacketSpam")
+}
+
+func TestDoubleSignDoesNotAffectThrottling(t *testing.T) {
+	runCCVTestByName(t, "TestDoubleSignDoesNotAffectThrottling")
 }
 
 func TestQueueOrdering(t *testing.T) {

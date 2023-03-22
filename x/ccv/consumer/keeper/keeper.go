@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -19,6 +20,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -58,7 +60,7 @@ func NewKeeper(
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return Keeper{
+	k := Keeper{
 		storeKey:          key,
 		cdc:               cdc,
 		paramStore:        paramSpace,
@@ -74,6 +76,36 @@ func NewKeeper(
 		ibcCoreKeeper:     ibcCoreKeeper,
 		feeCollectorName:  feeCollectorName,
 	}
+
+	k.mustValidateFields()
+	return k
+}
+
+// Validates that the consumer keeper is initialized with non-zero and
+// non-nil values for all its fields. Otherwise this method will panic.
+func (k Keeper) mustValidateFields() {
+
+	// Ensures no fields are missed in this validation
+	if reflect.ValueOf(k).NumField() != 15 {
+		panic("number of fields in provider keeper is not 15")
+	}
+
+	// Note 14 fields will be validated, hooks are explicitly set after the constructor
+
+	utils.PanicIfZeroOrNil(k.storeKey, "storeKey")                   // 1
+	utils.PanicIfZeroOrNil(k.cdc, "cdc")                             // 2
+	utils.PanicIfZeroOrNil(k.paramStore, "paramStore")               // 3
+	utils.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")           // 4
+	utils.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")         // 5
+	utils.PanicIfZeroOrNil(k.portKeeper, "portKeeper")               // 6
+	utils.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")   // 7
+	utils.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")           // 8
+	utils.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")       // 9
+	utils.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")               // 10
+	utils.PanicIfZeroOrNil(k.authKeeper, "authKeeper")               // 11
+	utils.PanicIfZeroOrNil(k.ibcTransferKeeper, "ibcTransferKeeper") // 12
+	utils.PanicIfZeroOrNil(k.ibcCoreKeeper, "ibcCoreKeeper")         // 13
+	utils.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")   // 14
 }
 
 // Logger returns a module-specific logger.
@@ -381,7 +413,7 @@ func (k Keeper) SetOutstandingDowntime(ctx sdk.Context, address sdk.ConsAddress)
 func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 	consAddr, err := sdk.ConsAddressFromBech32(consAddress)
 	if err != nil {
-		return
+		return // TODO: this should panic with appropriate tests to validate the panic wont happen in normal cases.
 	}
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.OutstandingDowntimeKey(consAddr))
