@@ -1,8 +1,10 @@
 package integration
 
 import (
+	"fmt"
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	ibcclientypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
@@ -419,4 +421,44 @@ func (s *CCVTestSuite) TestCheckConsumerMisbehaviour() {
 			}
 		})
 	}
+}
+
+func (s *CCVTestSuite) TestGetByzantineValidators() {
+
+	s.SetupCCVChannel(s.path)
+	// required to have the consumer client revision height greater than 0
+	s.SendEmptyVSCPacket()
+	s.consumerCtx().BlockHeight()
+	// get consumer client state
+	// consumerClientState := s.providerChain.GetClientState(s.path.EndpointA.ClientID)
+
+	// create two conflicting headers and forge them
+	// commit new block on consumer
+
+	s.coordinator.CommitBlock(s.consumerChain)
+
+	// get trusted height from client state
+	trustedHeight := s.providerChain.GetClientState(s.path.EndpointA.ClientID).GetLatestHeight().(clienttypes.Height)
+	tmTrustedVals := s.consumerChain.Vals
+	// get last consumer header
+	header := s.consumerChain.LastHeader
+
+	header.TrustedHeight = trustedHeight
+	trustedVals, err := tmTrustedVals.ToProto()
+	s.NoError(err)
+	header.TrustedValidators = trustedVals
+
+	msg, err := clienttypes.NewMsgUpdateClient(
+		s.path.EndpointB.ClientID, header,
+		s.path.EndpointB.Chain.SenderAccount.GetAddress().String(),
+	)
+	s.NoError(err)
+
+	header2 := *header
+	header2.SignedHeader.Commit.BlockID.Hash = []byte("forge_hash")
+
+	_, err = s.providerChain.SendMsgs(msg)
+	s.NoError(err)
+
+	fmt.Printf("%+v\n", msg.Header)
 }
