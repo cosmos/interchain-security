@@ -28,7 +28,7 @@ This should include (at minumum):
 - [ ] a script showing how to start your chain and connect to peers (optional)
 - [ ] take feedback from other developers, validators and community regarding your onboarding repo and make improvements where applicable
 
-Example of such a repository can be found [here](https://github.com/cosmos/ics-testnets/tree/main/game-of-chains-2022/sputnik).
+Example of such a repository can be found [here](https://github.com/hyphacoop/ics-testnets/tree/main/game-of-chains-2022/sputnik).
 
 ## 3. Submit a Governance Proposal
 
