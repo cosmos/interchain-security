@@ -9,9 +9,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/simapp"
 
+	appparams "github.com/cosmos/interchain-security/app/consumer/params"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
-	"github.com/tendermint/spm/cosmoscmd"
 	"github.com/tendermint/tendermint/libs/log"
 	tmdb "github.com/tendermint/tm-db"
 
@@ -22,24 +22,24 @@ import (
 
 // ProviderAppIniter implements ibctesting.AppIniter for a provider app
 func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)
+	encoding := appparams.MakeEncodingConfig()
 	testApp := appProvider.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
-	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
+	return testApp, appProvider.NewDefaultGenesisState(encoding.Codec)
 }
 
 // ConsumerAppIniter implements ibctesting.AppIniter for a consumer app
 func ConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	encoding := cosmoscmd.MakeEncodingConfig(appConsumer.ModuleBasics)
+	encoding := appparams.MakeEncodingConfig()
 	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
-	return testApp, appConsumer.NewDefaultGenesisState(encoding.Marshaler)
+	return testApp, appConsumer.NewDefaultGenesisState(encoding.Codec)
 }
 
 // DemocracyConsumerAppIniter implements ibctesting.AppIniter for a democracy consumer app
 func DemocracyConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	encoding := cosmoscmd.MakeEncodingConfig(appConsumerDemocracy.ModuleBasics)
+	encoding := appparams.MakeEncodingConfig()
 	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
-	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Marshaler)
+	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Codec)
 }
