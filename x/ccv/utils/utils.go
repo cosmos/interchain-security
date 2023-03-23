@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"reflect"
 	"sort"
 	"time"
 
@@ -98,4 +99,10 @@ func AppendMany(byteses ...[]byte) (out []byte) {
 		out = append(out, bytes...)
 	}
 	return out
+}
+
+func PanicIfZeroOrNil(x interface{}, nameForPanicMsg string) {
+	if x == nil || reflect.ValueOf(x).IsZero() {
+		panic("zero or nil value for " + nameForPanicMsg)
+	}
 }

@@ -32,9 +32,40 @@ test-integration:
 test-integration-parallel:
 	go run ./tests/integration/... --include-multi-consumer --parallel
 
+# run full integration tests in sequence (including multiconsumer) using latest tagged gaia
+test-gaia-integration:
+	go run ./tests/integration/... --include-multi-consumer --use-gaia
+
+# run only happy path integration tests using latest tagged gaia
+test-gaia-integration-short:
+	go run ./tests/integration/... --happy-path-only --use-gaia
+
+# run full integration tests in parallel (including multiconsumer) using latest tagged gaia
+test-gaia-integration-parallel:
+	go run ./tests/integration/... --include-multi-consumer --parallel --use-gaia
+
+# run full integration tests in sequence (including multiconsumer) using specific tagged version of gaia
+# usage: GAIA_TAG=v9.0.0 make test-gaia-integration-tagged
+test-gaia-integration-tagged:
+	go run ./tests/integration/... --include-multi-consumer --use-gaia --gaia-tag $(GAIA_TAG)
+
+# run only happy path integration tests using latest tagged gaia
+# usage: GAIA_TAG=v9.0.0 make test-gaia-integration-short-tagged
+test-gaia-integration-short-tagged:
+	go run ./tests/integration/... --happy-path-only --use-gaia --gaia-tag $(GAIA_TAG)
+
+# run full integration tests in parallel (including multiconsumer) using specific tagged version of gaia
+# usage: GAIA_TAG=v9.0.0 make test-gaia-integration-parallel-tagged
+test-gaia-integration-parallel-tagged:
+	go run ./tests/integration/... --include-multi-consumer --parallel --use-gaia --gaia-tag $(GAIA_TAG)
+
 # run all tests with caching disabled
 test-no-cache:
 	go test ./... -count=1 && go run ./tests/integration/...
+
+mockgen_cmd=go run github.com/golang/mock/mockgen
+mocks:
+	$(mockgen_cmd) -package=keeper -destination=testutil/keeper/mocks.go -source=x/ccv/types/expected_keepers.go
 
 BUILD_TARGETS := build
 
@@ -150,5 +181,5 @@ proto-update-deps:
 ## Issue link: https://github.com/confio/ics23/issues/32
 	@perl -i -l -p -e 'print "option go_package = \"github.com/confio/ics23/go\";" if $$. == 4' $(CONFIO_TYPES)/proofs.proto
 
-.PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
+.PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps mocks
 

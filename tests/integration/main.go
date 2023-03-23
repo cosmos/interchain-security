@@ -7,20 +7,22 @@ import (
 	"log"
 	"os/exec"
 	"reflect"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/kylelemons/godebug/pretty"
 )
 
-var (
-	verbose              = flag.Bool("verbose", false, "turn verbose logging on/off")
-	happyPathOnly        = flag.Bool("happy-path-only", false, "run happy path tests only")
-	includeMultiConsumer = flag.Bool("include-multi-consumer", false, "include multiconsumer tests in run")
-	parallel             = flag.Bool("parallel", false, "run all tests in parallel")
-	localSdkPath         = flag.String("local-sdk-path", "",
-		"path of a local sdk version to build and reference in integration tests")
-)
+var verbose = flag.Bool("verbose", false, "turn verbose logging on/off")
+var happyPathOnly = flag.Bool("happy-path-only", false, "run happy path tests only")
+var includeMultiConsumer = flag.Bool("include-multi-consumer", false, "include multiconsumer tests in run")
+var parallel = flag.Bool("parallel", false, "run all tests in parallel")
+var localSdkPath = flag.String("local-sdk-path", "",
+	"path of a local sdk version to build and reference in integration tests")
+var useGaia = flag.Bool("use-gaia", false, "use gaia instead of ICS provider app")
+var gaiaTag = flag.String("gaia-tag", "", "gaia tag to use - default is latest")
 
 // runs integration tests
 // all docker containers are built sequentially to avoid race conditions when using local cosmos-sdk
@@ -31,7 +33,7 @@ func main() {
 	if happyPathOnly != nil && *happyPathOnly {
 		fmt.Println("=============== running happy path only ===============")
 		tr := DefaultTestRun()
-		tr.Run(happyPathSteps, *localSdkPath)
+		tr.Run(happyPathSteps, *localSdkPath, *useGaia, *gaiaTag)
 		return
 	}
 
@@ -53,7 +55,7 @@ func main() {
 			go func(run testRunWithSteps) {
 				defer wg.Done()
 				tr := run.testRun
-				tr.Run(run.steps, *localSdkPath)
+				tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag)
 			}(run)
 		}
 		wg.Wait()
@@ -63,15 +65,16 @@ func main() {
 
 	for _, run := range testRuns {
 		tr := run.testRun
-		tr.Run(run.steps, *localSdkPath)
+		tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag)
 	}
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
 }
 
 // Run sets up docker container and executes the steps in the test run.
 // Docker containers are torn down after the test run is complete.
-func (tr *TestRun) Run(steps []Step, localSdkPath string) {
-	tr.SetLocalSDKPath(localSdkPath)
+func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag string) {
+	tr.SetDockerConfig(localSdkPath, useGaia, gaiaTag)
+
 	tr.validateStringLiterals()
 	tr.startDocker()
 	tr.executeSteps(steps)
@@ -167,10 +170,34 @@ func (tr *TestRun) executeSteps(steps []Step) {
 
 func (tr *TestRun) startDocker() {
 	fmt.Printf("=============== building %s testRun ===============\n", tr.name)
-	scriptStr := "tests/integration/testnet-scripts/start-docker.sh " +
-		tr.containerConfig.containerName + " " +
-		tr.containerConfig.instanceName + " " +
-		tr.localSdkPath
+	localSdk := tr.localSdkPath
+	if localSdk == "" {
+		localSdk = "default"
+	}
+	useGaia := "false"
+	gaiaTag := ""
+	if tr.useGaia {
+		useGaia = "true"
+		if tr.gaiaTag != "" {
+			majVersion, err := strconv.Atoi(tr.gaiaTag[1:strings.Index(tr.gaiaTag, ".")])
+			if err != nil {
+				panic(fmt.Sprintf("invalid gaia version %s", tr.gaiaTag))
+			}
+			if majVersion < 9 {
+				panic(fmt.Sprintf("gaia version %s is not supported - supporting only v9.x.x and newer", tr.gaiaTag))
+			}
+			gaiaTag = tr.gaiaTag
+		}
+	}
+	scriptStr := fmt.Sprintf(
+		"tests/integration/testnet-scripts/start-docker.sh %s %s %s %s %s",
+		tr.containerConfig.containerName,
+		tr.containerConfig.instanceName,
+		localSdk,
+		useGaia,
+		gaiaTag,
+	)
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("/bin/bash", "-c", scriptStr)
 

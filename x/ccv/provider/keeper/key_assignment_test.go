@@ -23,8 +23,8 @@ import (
 
 func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
 	chainID := "consumer"
-	providerAddr := sdk.ConsAddress([]byte("providerAddr"))
-	consumerKey := cryptotestutil.NewIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
+	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
+	consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -52,12 +52,12 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 	numAssignments := 10
 	testAssignments := []types.ValidatorConsumerPubKey{}
 	for i := 0; i < numAssignments; i++ {
-		consumerKey := cryptotestutil.NewIdentityFromIntSeed(i).TMProtoCryptoPublicKey()
-		providerAddr := cryptotestutil.NewIdentityFromIntSeed(numAssignments + i).SDKValConsAddress()
+		consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(i).TMProtoCryptoPublicKey()
+		providerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(numAssignments + i).ProviderConsAddress()
 		testAssignments = append(testAssignments,
 			types.ValidatorConsumerPubKey{
 				ChainId:      chainIDs[rand.Intn(len(chainIDs))],
-				ProviderAddr: providerAddr,
+				ProviderAddr: &providerAddr,
 				ConsumerKey:  &consumerKey,
 			},
 		)
@@ -84,11 +84,11 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 	}
 	// sorting by ValidatorConsumerPubKey.ProviderAddr
 	sort.Slice(expectedGetAllOneConsumerOrder, func(i, j int) bool {
-		return bytes.Compare(expectedGetAllOneConsumerOrder[i].ProviderAddr, expectedGetAllOneConsumerOrder[j].ProviderAddr) == -1
+		return bytes.Compare(expectedGetAllOneConsumerOrder[i].ProviderAddr.ToSdkConsAddr(), expectedGetAllOneConsumerOrder[j].ProviderAddr.ToSdkConsAddr()) == -1
 	})
 
 	for _, assignment := range testAssignments {
-		pk.SetValidatorConsumerPubKey(ctx, assignment.ChainId, assignment.ProviderAddr, *assignment.ConsumerKey)
+		pk.SetValidatorConsumerPubKey(ctx, assignment.ChainId, *assignment.ProviderAddr, *assignment.ConsumerKey)
 	}
 
 	result := pk.GetAllValidatorConsumerPubKeys(ctx, &chainID)
@@ -100,8 +100,8 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 
 func TestValidatorByConsumerAddrCRUD(t *testing.T) {
 	chainID := "consumer"
-	providerAddr := sdk.ConsAddress([]byte("providerAddr"))
-	consumerAddr := sdk.ConsAddress([]byte("consumerAddr"))
+	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
+	consumerAddr := types.NewConsumerConsAddress([]byte("consumerAddr"))
 
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -129,13 +129,13 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 	numAssignments := 10
 	testAssignments := []types.ValidatorByConsumerAddr{}
 	for i := 0; i < numAssignments; i++ {
-		consumerAddr := cryptotestutil.NewIdentityFromIntSeed(i).SDKValConsAddress()
-		providerAddr := cryptotestutil.NewIdentityFromIntSeed(numAssignments + i).SDKValConsAddress()
+		consumerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(i).ConsumerConsAddress()
+		providerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(numAssignments + i).ProviderConsAddress()
 		testAssignments = append(testAssignments,
 			types.ValidatorByConsumerAddr{
 				ChainId:      chainIDs[rand.Intn(len(chainIDs))],
-				ConsumerAddr: consumerAddr,
-				ProviderAddr: providerAddr,
+				ConsumerAddr: &consumerAddr,
+				ProviderAddr: &providerAddr,
 			},
 		)
 	}
@@ -161,11 +161,11 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 	}
 	// sorting by ValidatorByConsumerAddr.ConsumerAddr
 	sort.Slice(expectedGetAllOneConsumerOrder, func(i, j int) bool {
-		return bytes.Compare(expectedGetAllOneConsumerOrder[i].ConsumerAddr, expectedGetAllOneConsumerOrder[j].ConsumerAddr) == -1
+		return bytes.Compare(expectedGetAllOneConsumerOrder[i].ConsumerAddr.ToSdkConsAddr(), expectedGetAllOneConsumerOrder[j].ConsumerAddr.ToSdkConsAddr()) == -1
 	})
 
 	for _, assignment := range testAssignments {
-		pk.SetValidatorByConsumerAddr(ctx, assignment.ChainId, assignment.ConsumerAddr, assignment.ProviderAddr)
+		pk.SetValidatorByConsumerAddr(ctx, assignment.ChainId, *assignment.ConsumerAddr, *assignment.ProviderAddr)
 	}
 
 	result := pk.GetAllValidatorsByConsumerAddr(ctx, &chainID)
@@ -177,8 +177,8 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 
 func TestKeyAssignmentReplacementCRUD(t *testing.T) {
 	chainID := "consumer"
-	providerAddr := sdk.ConsAddress([]byte("providerAddr"))
-	expCPubKey := cryptotestutil.NewIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
+	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
+	expCPubKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	var expPower int64 = 100
 
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -206,11 +206,11 @@ func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 	numAssignments := 10
 	testAssignments := []types.KeyAssignmentReplacement{}
 	for i := 0; i < numAssignments; i++ {
-		consumerKey := cryptotestutil.NewIdentityFromIntSeed(i).TMProtoCryptoPublicKey()
-		providerAddr := cryptotestutil.NewIdentityFromIntSeed(numAssignments + i).SDKValConsAddress()
+		consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(i).TMProtoCryptoPublicKey()
+		providerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(numAssignments + i).ProviderConsAddress()
 		testAssignments = append(testAssignments,
 			types.KeyAssignmentReplacement{
-				ProviderAddr: providerAddr,
+				ProviderAddr: &providerAddr,
 				PrevCKey:     &consumerKey,
 				Power:        rand.Int63(),
 			},
@@ -219,12 +219,12 @@ func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 	expectedGetAllOrder := testAssignments
 	// sorting by KeyAssignmentReplacement.ProviderAddr
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
-		return bytes.Compare(expectedGetAllOrder[i].ProviderAddr, expectedGetAllOrder[j].ProviderAddr) == -1
+		return bytes.Compare(expectedGetAllOrder[i].ProviderAddr.ToSdkConsAddr(), expectedGetAllOrder[j].ProviderAddr.ToSdkConsAddr()) == -1
 	})
 
-	pk.SetKeyAssignmentReplacement(ctx, "consumer-2", testAssignments[0].ProviderAddr, *testAssignments[0].PrevCKey, testAssignments[0].Power)
+	pk.SetKeyAssignmentReplacement(ctx, "consumer-2", *testAssignments[0].ProviderAddr, *testAssignments[0].PrevCKey, testAssignments[0].Power)
 	for _, assignment := range testAssignments {
-		pk.SetKeyAssignmentReplacement(ctx, chainID, assignment.ProviderAddr, *assignment.PrevCKey, assignment.Power)
+		pk.SetKeyAssignmentReplacement(ctx, chainID, *assignment.ProviderAddr, *assignment.PrevCKey, assignment.Power)
 	}
 
 	result := pk.GetAllKeyAssignmentReplacements(ctx, chainID)
@@ -234,7 +234,7 @@ func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 
 func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 	chainID := "consumer"
-	consumerAddr := sdk.ConsAddress([]byte("consumerAddr1"))
+	consumerAddr := types.NewConsumerConsAddress([]byte("consumerAddr1"))
 	vscID := uint64(1)
 
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -248,7 +248,7 @@ func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 	addrsToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
 	require.NotEmpty(t, addrsToPrune, "addresses to prune is empty")
 	require.Len(t, addrsToPrune, 1, "addresses to prune is not len 1")
-	require.Equal(t, sdk.ConsAddress(addrsToPrune[0]), consumerAddr)
+	require.Equal(t, *addrsToPrune[0], consumerAddr)
 
 	keeper.DeleteConsumerAddrsToPrune(ctx, chainID, vscID)
 	addrsToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
@@ -264,10 +264,10 @@ func TestGetAllConsumerAddrsToPrune(t *testing.T) {
 	numAssignments := 10
 	testAssignments := []types.ConsumerAddrsToPrune{}
 	for i := 0; i < numAssignments; i++ {
-		consumerAddresses := types.AddressList{}
+		consumerAddresses := types.ConsumerAddressList{}
 		for j := 0; j < 2*(i+1); j++ {
-			consumerAddresses.Addresses = append(consumerAddresses.Addresses,
-				cryptotestutil.NewIdentityFromIntSeed(i*j).SDKValConsAddress())
+			addr := cryptotestutil.NewCryptoIdentityFromIntSeed(i * j).ConsumerConsAddress()
+			consumerAddresses.Addresses = append(consumerAddresses.Addresses, &addr)
 		}
 		testAssignments = append(testAssignments,
 			types.ConsumerAddrsToPrune{
@@ -304,7 +304,7 @@ func TestGetAllConsumerAddrsToPrune(t *testing.T) {
 
 	for _, assignment := range testAssignments {
 		for _, addr := range assignment.ConsumerAddrs.Addresses {
-			pk.AppendConsumerAddrsToPrune(ctx, assignment.ChainId, assignment.VscId, addr)
+			pk.AppendConsumerAddrsToPrune(ctx, assignment.ChainId, assignment.VscId, *addr)
 		}
 	}
 
@@ -324,14 +324,13 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 	willBePruned := map[string]bool{}
 	for _, consAddrToPrune := range k.GetAllConsumerAddrsToPrune(ctx, chainID) {
 		for _, cAddr := range consAddrToPrune.ConsumerAddrs.Addresses {
-			addr := sdk.ConsAddress(cAddr)
-			willBePruned[addr.String()] = true
+			willBePruned[cAddr.String()] = true
 		}
 	}
 
 	good := true
 	for _, valByConsAddr := range k.GetAllValidatorsByConsumerAddr(ctx, nil) {
-		if _, ok := willBePruned[sdk.ConsAddress(valByConsAddr.ConsumerAddr).String()]; ok {
+		if _, ok := willBePruned[valByConsAddr.ConsumerAddr.String()]; ok {
 			// Address will be pruned, everything is fine.
 			continue
 		}
@@ -339,7 +338,7 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 		isCurrentlyAssigned := false
 		for _, valconsPubKey := range k.GetAllValidatorConsumerPubKeys(ctx, &valByConsAddr.ChainId) {
 			consumerAddr, _ := utils.TMCryptoPublicKeyToConsAddr(*valconsPubKey.ConsumerKey)
-			if consumerAddr.Equals(sdk.ConsAddress(valByConsAddr.ConsumerAddr)) {
+			if consumerAddr.Equals(valByConsAddr.ConsumerAddr.ToSdkConsAddr()) {
 				isCurrentlyAssigned = true
 				break
 			}
@@ -401,9 +400,10 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
 				)
 				require.NoError(t, err)
-				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[0].SDKValConsAddress())
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+					consumerIdentities[0].ConsumerConsAddress())
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].SDKValConsAddress(), providerAddr)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
 			},
 		},
 		{
@@ -436,9 +436,10 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 					consumerIdentities[1].TMProtoCryptoPublicKey(),
 				)
 				require.NoError(t, err)
-				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[1].SDKValConsAddress())
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+					consumerIdentities[1].ConsumerConsAddress())
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].SDKValConsAddress(), providerAddr)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
 			},
 		},
 		{
@@ -468,9 +469,10 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
 				)
 				require.Error(t, err)
-				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[0].SDKValConsAddress())
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+					consumerIdentities[0].ConsumerConsAddress())
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].SDKValConsAddress(), providerAddr)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
 			},
 		},
 		{
@@ -506,9 +508,10 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
 				)
 				require.NoError(t, err)
-				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[0].SDKValConsAddress())
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+					consumerIdentities[0].ConsumerConsAddress())
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].SDKValConsAddress(), providerAddr)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
 			},
 		},
 		{
@@ -534,9 +537,10 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 					consumerIdentities[1].TMProtoCryptoPublicKey(),
 				)
 				require.NoError(t, err)
-				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[1].SDKValConsAddress())
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+					consumerIdentities[1].ConsumerConsAddress())
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].SDKValConsAddress(), providerAddr)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
 			},
 		},
 		{
@@ -562,9 +566,10 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
 				)
 				require.Error(t, err)
-				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[0].SDKValConsAddress())
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
+					consumerIdentities[0].ConsumerConsAddress())
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].SDKValConsAddress(), providerAddr)
+				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
 			},
 		},
 		{
@@ -814,7 +819,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				// For each active validator on the provider chain
 				if 0 < providerValset.power[i] {
 					// Get the assigned key
-					ck, found := k.GetValidatorConsumerPubKey(ctx, ChainID, idP.SDKValConsAddress())
+					ck, found := k.GetValidatorConsumerPubKey(ctx, CHAINID, idP.ProviderConsAddress())
 					if !found {
 						// Use default if unassigned
 						ck = idP.TMProtoCryptoPublicKey()
@@ -833,13 +838,13 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			// Check validator set replication backward direction
 			for i := range consumerValset.identities {
 				// For each active validator on the consumer chain
-				consC := consumerValset.identities[i].SDKValConsAddress()
+				consC := consumerValset.identities[i].ConsumerConsAddress()
 				if 0 < consumerValset.power[i] {
 					// Get the provider who assigned the key
 					consP := k.GetProviderAddrFromConsumerAddr(ctx, ChainID, consC)
 					// Find the corresponding provider validator (must always be found)
 					for j, idP := range providerValset.identities {
-						if idP.SDKValConsAddress().Equals(consP) {
+						if idP.SDKValConsAddress().Equals(consP.ToSdkConsAddr()) {
 							// Ensure powers are the same
 							require.Equal(t, providerValset.power[j], consumerValset.power[i])
 						}
@@ -867,18 +872,18 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			// Build up the historicSlashQueries data structure
 			for i := range consumerValset.identities {
 				// For each active validator on the consumer chain
-				consC := consumerValset.identities[i].SDKValConsAddress()
+				consC := consumerValset.identities[i].ConsumerConsAddress()
 				if 0 < consumerValset.power[i] {
 					// Get the provider who assigned the key
 					consP := k.GetProviderAddrFromConsumerAddr(ctx, ChainID, consC)
 
-					if _, found := historicSlashQueries[string(consC)]; !found {
-						historicSlashQueries[string(consC)] = map[uint64]string{}
+					if _, found := historicSlashQueries[consC.String()]; !found {
+						historicSlashQueries[consC.String()] = map[uint64]string{}
 					}
 
 					vscid := k.GetValidatorSetUpdateID(ctx) - 1 // -1 since it was incremented before
 					// Record the slash query result obtained at this block
-					historicSlashQueries[string(consC)][vscid] = string(consP)
+					historicSlashQueries[consC.String()][vscid] = consP.String()
 				}
 			}
 
