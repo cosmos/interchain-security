@@ -9,7 +9,6 @@ import (
 // Tests that all singular keys, or prefixes to fully resolves keys are a single byte long,
 // preventing injection attacks into restricted parts of a full store.
 func TestSameLength(t *testing.T) {
-
 	keys := getSingleByteKeys()
 
 	for _, keyByteArray := range keys {
@@ -19,7 +18,6 @@ func TestSameLength(t *testing.T) {
 
 // Tests that all singular keys, or prefixes to fully resolves keys are non duplicate byte values.
 func TestNoDuplicates(t *testing.T) {
-
 	keys := getSingleByteKeys()
 
 	for i, keyByteArray := range keys {
@@ -31,7 +29,6 @@ func TestNoDuplicates(t *testing.T) {
 // Returns all singular keys, or prefixes to fully resolved keys,
 // any of which should be a single, unique byte.
 func getSingleByteKeys() [][]byte {
-
 	keys := make([][]byte, 32)
 	i := 0
 

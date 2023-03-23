@@ -1,5 +1,14 @@
-linters-settings:
-  staticcheck:
-    checks:
-      - all
-      - "-SA1019" # cosmosEd25519 allowed in tests
+run: 
+  tests: true
+  timeout: 5m
+
+
+linters:
+  disable-all: true
+  enable:
+   - gofumpt
+   - staticcheck
+   
+
+
+

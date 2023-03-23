@@ -16,7 +16,6 @@ import (
 // handles all or some portion of throttled (slash and/or VSC matured) packet data received from
 // consumer chains. The slash meter is decremented appropriately in this method.
 func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
-
 	meter := k.GetSlashMeter(ctx)
 	// Return if meter is negative in value
 	if meter.IsNegative() {
@@ -54,7 +53,6 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 	if len(handledEntries) > 0 {
 		k.Logger(ctx).Info("handled global slash entries", "count", len(handledEntries), "meter", meter.Int64())
 	}
-
 }
 
 // Obtains the effective validator power relevant to a validator consensus address.
@@ -107,7 +105,6 @@ func (k Keeper) InitializeSlashMeter(ctx sdktypes.Context) {
 // CheckForSlashMeterReplenishment checks if the slash meter should be replenished, and if so, replenishes it.
 // Note: initial slash meter replenish time candidate is set in InitGenesis.
 func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
-
 	// Replenish slash meter if current time is equal to or after the current replenish candidate time.
 	if !ctx.BlockTime().UTC().Before(k.GetSlashMeterReplenishTimeCandidate(ctx)) {
 		k.ReplenishSlashMeter(ctx)
@@ -133,7 +130,6 @@ func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 }
 
 func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
-
 	meter := k.GetSlashMeter(ctx)
 	oldMeter := meter
 	allowance := k.GetSlashMeterAllowance(ctx)
@@ -163,7 +159,6 @@ func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 // The slash meter must be less than or equal to the allowance for this block, before any slash
 // packet handling logic can be executed.
 func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
-
 	strFrac := k.GetSlashMeterReplenishFraction(ctx)
 	// MustNewDecFromStr should not panic, since the (string representation) of the slash meter replenish fraction
 	// is validated in ValidateGenesis and anytime the param is mutated.
@@ -206,7 +201,6 @@ func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context, entry providertypes.
 // DeleteGlobalSlashEntriesForConsumer deletes all pending slash packet entries in the global queue,
 // only relevant to a single consumer.
 func (k Keeper) DeleteGlobalSlashEntriesForConsumer(ctx sdktypes.Context, consumerChainID string) {
-
 	allEntries := k.GetAllGlobalSlashEntries(ctx)
 	entriesToDel := []providertypes.GlobalSlashEntry{}
 
@@ -224,7 +218,6 @@ func (k Keeper) DeleteGlobalSlashEntriesForConsumer(ctx sdktypes.Context, consum
 // GlobalSlashEntryBytePrefix | uint64 recv time | ibc seq num | consumer chain id
 // Thus, the returned array is ordered by recv time, then ibc seq num.
 func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.GlobalSlashEntry {
-
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdktypes.KVStorePrefixIterator(store, []byte{providertypes.GlobalSlashEntryBytePrefix})
 	defer iterator.Close()
@@ -277,7 +270,6 @@ func (k Keeper) GetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID
 
 // SetThrottledPacketDataSize sets the size of the throttled packet data queue for the given consumer chain
 func (k Keeper) SetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID string, size uint64) {
-
 	// Sanity check to ensure that the chain-specific throttled packet data queue does not grow too
 	// large for a single consumer chain. This check ensures that binaries would panic deterministically
 	// if the queue does grow too large. MaxThrottledPackets should be set accordingly (quite large).
@@ -306,7 +298,8 @@ func (k Keeper) IncrementThrottledPacketDataSize(ctx sdktypes.Context, consumerC
 //
 // Note: This queue is shared between pending slash packet data and pending vsc matured packet data.
 func (k Keeper) QueueThrottledSlashPacketData(
-	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData) error {
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData,
+) error {
 	return k.QueueThrottledPacketData(ctx, consumerChainID, ibcSeqNum, data)
 }
 
@@ -314,7 +307,8 @@ func (k Keeper) QueueThrottledSlashPacketData(
 //
 // Note: This queue is shared between pending slash packet data and pending vsc matured packet data.
 func (k Keeper) QueueThrottledVSCMaturedPacketData(
-	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData) error {
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData,
+) error {
 	return k.QueueThrottledPacketData(ctx, consumerChainID, ibcSeqNum, data)
 }
 
@@ -325,8 +319,8 @@ func (k Keeper) QueueThrottledVSCMaturedPacketData(
 // OnRecvSlashPacket and OnRecvVSCMaturedPacket, meaning we can return an ibc err ack to the
 // counter party chain on error, instead of panicking this chain.
 func (k Keeper) QueueThrottledPacketData(
-	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{}) error {
-
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{},
+) error {
 	store := ctx.KVStore(k.storeKey)
 
 	var bz []byte
@@ -359,8 +353,8 @@ func (k Keeper) QueueThrottledPacketData(
 // for a chain-specific throttled packet data queue. Ie the vsc matured packet data instances
 // that do not have any slash packet data instances preceding them in the queue for consumerChainID.
 func (k Keeper) GetLeadingVSCMaturedData(ctx sdktypes.Context, consumerChainID string) (
-	vscMaturedData []ccvtypes.VSCMaturedPacketData, ibcSeqNums []uint64) {
-
+	vscMaturedData []ccvtypes.VSCMaturedPacketData, ibcSeqNums []uint64,
+) {
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
 	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
@@ -463,8 +457,8 @@ func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID st
 // Since this method executes on query, no panics are explicitly included.
 func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID string) (
 	slashData []ccvtypes.SlashPacketData, vscMaturedData []ccvtypes.VSCMaturedPacketData,
-	rawOrderedData []interface{}, ibcSeqNums []uint64) {
-
+	rawOrderedData []interface{}, ibcSeqNums []uint64,
+) {
 	slashData = []ccvtypes.SlashPacketData{}
 	vscMaturedData = []ccvtypes.VSCMaturedPacketData{}
 	rawOrderedData = []interface{}{}
@@ -511,7 +505,6 @@ func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID 
 
 // DeleteAllPacketDataForConsumer deletes all queued packet data for the given consumer chain.
 func (k Keeper) DeleteThrottledPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
-
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
 	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
@@ -568,7 +561,6 @@ func (k Keeper) GetSlashMeter(ctx sdktypes.Context) sdktypes.Int {
 //
 // Note: the value of this int should always be in the range of tendermint's [-MaxTotalVotingPower, MaxTotalVotingPower]
 func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value sdktypes.Int) {
-
 	// TODO: remove these invariant panics once https://github.com/cosmos/interchain-security/issues/534 is solved.
 
 	// The following panics are included since they are invariants for slash meter value.

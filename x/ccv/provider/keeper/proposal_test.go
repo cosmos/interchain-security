@@ -33,7 +33,6 @@ import (
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcaprop1
 // Spec tag: [CCV-PCF-HCAPROP.1]
 func TestHandleConsumerAdditionProposal(t *testing.T) {
-
 	type testCase struct {
 		description string
 		malleate    func(ctx sdk.Context, k providerkeeper.Keeper, chainID string)
@@ -136,7 +135,6 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
 // Spec tag: [CCV-PCF-CRCLIENT.1]
 func TestCreateConsumerClient(t *testing.T) {
-
 	type testCase struct {
 		description string
 		// Any state-mutating setup on keeper and expected mock calls, specific to this test case
@@ -148,7 +146,6 @@ func TestCreateConsumerClient(t *testing.T) {
 		{
 			description: "No state mutation, new client should be created",
 			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
-
 				// Valid client creation is asserted with mock expectations here
 				gomock.InOrder(
 					testkeeper.GetMocksForCreateConsumerClient(ctx, mocks, "chainID", clienttypes.NewHeight(4, 5))...,
@@ -159,7 +156,6 @@ func TestCreateConsumerClient(t *testing.T) {
 		{
 			description: "client for this chain already exists, new one is not created",
 			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
-
 				providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
 
 				// Expect none of the client creation related calls to happen
@@ -167,7 +163,6 @@ func TestCreateConsumerClient(t *testing.T) {
 				mocks.MockClientKeeper.EXPECT().CreateClient(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 				mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(), gomock.Any()).Times(0)
 				mocks.MockStakingKeeper.EXPECT().IterateLastValidatorPowers(gomock.Any(), gomock.Any()).Times(0)
-
 			},
 			expClientCreated: false,
 		},
@@ -201,8 +196,8 @@ func TestCreateConsumerClient(t *testing.T) {
 //
 // Note: Separated from TestCreateConsumerClient to also be called from TestCreateConsumerChainProposal.
 func testCreatedConsumerClient(t *testing.T,
-	ctx sdk.Context, providerKeeper providerkeeper.Keeper, expectedChainID string, expectedClientID string) {
-
+	ctx sdk.Context, providerKeeper providerkeeper.Keeper, expectedChainID string, expectedClientID string,
+) {
 	// ClientID should be stored.
 	clientId, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
 	require.True(t, found, "consumer client not found")
@@ -217,7 +212,6 @@ func testCreatedConsumerClient(t *testing.T,
 // TestPendingConsumerAdditionPropDeletion tests the getting/setting
 // and deletion keeper methods for pending consumer addition props
 func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
-
 	testCases := []struct {
 		providertypes.ConsumerAdditionProposal
 		ExpDeleted bool
@@ -260,7 +254,6 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 // TestGetConsumerAdditionPropsToExecute tests that pending consumer addition proposals
 // that are ready to execute are accessed in order by timestamp via the iterator
 func TestGetConsumerAdditionPropsToExecute(t *testing.T) {
-
 	now := time.Now().UTC()
 	sampleProp1 := providertypes.ConsumerAdditionProposal{ChainId: "chain-2", SpawnTime: now}
 	sampleProp2 := providertypes.ConsumerAdditionProposal{ChainId: "chain-1", SpawnTime: now.Add(time.Hour)}
@@ -380,7 +373,6 @@ func TestGetAllConsumerAdditionProps(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcrprop1
 // Spec tag: [CCV-PCF-HCRPROP.1]
 func TestHandleConsumerRemovalProposal(t *testing.T) {
-
 	type testCase struct {
 		description string
 		malleate    func(ctx sdk.Context, k providerkeeper.Keeper, chainID string)
@@ -490,7 +482,6 @@ func TestStopConsumerChain(t *testing.T) {
 		{
 			description: "valid stop of consumer chain, throttle related queues are cleaned",
 			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
 
 				providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
@@ -542,8 +533,8 @@ func TestStopConsumerChain(t *testing.T) {
 
 // testProviderStateIsCleaned executes test assertions for the proposer's state being cleaned after a stopped consumer chain.
 func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
-	expectedChainID string, expectedChannelID string) {
-
+	expectedChainID string, expectedChannelID string,
+) {
 	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
 	require.False(t, found)
 	_, found = providerKeeper.GetChainToChannel(ctx, expectedChainID)
@@ -578,7 +569,6 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 // TestPendingConsumerRemovalPropDeletion tests the getting/setting
 // and deletion methods for pending consumer removal props
 func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
-
 	testCases := []struct {
 		providertypes.ConsumerRemovalProposal
 		ExpDeleted bool
@@ -731,7 +721,6 @@ func TestGetAllConsumerRemovalProps(t *testing.T) {
 // An expected genesis state is hardcoded in json, unmarshaled, and compared
 // against an actual consumer genesis state constructed by a provider keeper.
 func TestMakeConsumerGenesis(t *testing.T) {
-
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	moduleParams := providertypes.Params{
@@ -834,7 +823,6 @@ func TestMakeConsumerGenesis(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-bblock-init1
 // Spec tag:[CCV-PCF-BBLOCK-INIT.1]
 func TestBeginBlockInit(t *testing.T) {
-
 	now := time.Now().UTC()
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
@@ -1002,7 +990,6 @@ func TestBeginBlockCCR(t *testing.T) {
 }
 
 func TestHandleEquivocationProposal(t *testing.T) {
-
 	equivocations := []*evidencetypes.Equivocation{
 		{
 			Time:             time.Now(),

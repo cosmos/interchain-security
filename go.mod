@@ -27,7 +27,7 @@ require (
 
 require (
 	github.com/confio/ics23/go v0.9.0
-	github.com/cosmos/ibc-go/v4 v4.2.0
+	github.com/cosmos/ibc-go/v4 v4.3.0
 	github.com/golang/mock v1.6.0
 	github.com/oxyno-zeta/gomock-extra-matcher v1.1.0
 	github.com/regen-network/cosmos-proto v0.3.1
