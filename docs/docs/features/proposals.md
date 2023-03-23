@@ -11,7 +11,7 @@ The proposals are used to propose upcoming interchain security events through go
 
 ## `ConsumerAdditionProposal`
 :::info
-If you are preparing a `ConsumerAdditionProposal` you can find more information in the [consumer onboarding checklist](../consumer-development/onboarding.md)
+If you are preparing a `ConsumerAdditionProposal` you can find more information in the [consumer onboarding checklist](../consumer-development/onboarding.md).
 :::
 
 Proposal type used to suggest adding a new consumer chain.
@@ -56,7 +56,7 @@ After the consumer chain removal, the chain in question will no longer be secure
 :::info
 The chain in question my continue to produce blocks, but the validator set can no longer be slashed for any infractions commited on that chain.
 Additional steps are required to completely offboard a consumer chain, such as re-introducing the staking module and removing the provider's validators from the active set.
-More information will be made available in the [Consumer Offboarding Checklist](../consumer-development/offboarding.md)
+More information will be made available in the [Consumer Offboarding Checklist](../consumer-development/offboarding.md).
 :::
 
 Minimal example:
