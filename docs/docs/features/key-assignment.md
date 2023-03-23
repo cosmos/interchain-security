@@ -67,4 +67,4 @@ To change your key, simply repeat all of the steps listed above. Take note that 
 
 
 ## Removing a key
-To remove a key, simply switch it back to the consensus key you have assigned on the provider chain by following steps in the `Adding a key` section and using you provider consensus key.
+To remove a key, simply switch it back to the consensus key you have assigned on the provider chain by following steps in the `Adding a key` section and using your provider consensus key.
