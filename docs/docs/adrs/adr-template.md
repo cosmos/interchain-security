@@ -1,3 +1,7 @@
+---
+sidebar_position: 4
+title: ADR Template
+---
 # ADR {ADR-NUMBER}: {TITLE}
 
 ## Changelog
