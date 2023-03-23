@@ -176,7 +176,7 @@ func (tr TestRun) submitTextProposal(
 	action submitTextProposalAction,
 	_ bool,
 ) {
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName, //nolint:gosec // Bypass linter warning for spawning subprocess with cmd arguments.
 
 		"tx", "gov", "submit-proposal",
 		`--title`, action.title,
@@ -485,8 +485,7 @@ func (tr TestRun) voteGovProposal(
 		vote := action.vote[i]
 		go func(val validatorID, vote string) {
 			defer wg.Done()
-			bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-
+			bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName, //nolint:gosec // Bypass linter warning for spawning subprocess with cmd arguments.
 				"tx", "gov", "vote",
 				fmt.Sprint(action.propNumber), vote,
 
@@ -603,7 +602,7 @@ func (tr TestRun) addChainToRelayer(
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, "/root/.hermes/config.toml")
 
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c", //nolint:gosec // G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 		bashCommand,
 	).CombinedOutput()
 	if err != nil {
@@ -613,7 +612,7 @@ func (tr TestRun) addChainToRelayer(
 	// Save mnemonic to file within container
 	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, tr.validatorConfigs[action.validator].mnemonic, "/root/.hermes/mnemonic.txt")
 
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c", //nolint:gosec // G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 		saveMnemonicCommand,
 	).CombinedOutput()
 	if err != nil {
@@ -964,7 +963,7 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 	if action.chain != chainID("provi") && dstCfg.useConsumerKey {
 		redelegateDst = dstCfg.consumerValoperAddress
 	}
-	cmd := exec.Command("docker", "exec",
+	cmd := exec.Command("docker", "exec", //nolint:gosec // Bypass linter warning for spawning subprocess with cmd arguments.
 		tr.containerConfig.instanceName,
 		tr.chainConfigs[action.chain].binaryName,
 

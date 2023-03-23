@@ -9,6 +9,7 @@ linters:
    - gofumpt
    - staticcheck
    - revive
+   - gosec
 
 issues:
   max-issues-per-linter: 10000
