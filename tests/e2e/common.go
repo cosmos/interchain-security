@@ -61,7 +61,7 @@ func (s *CCVTestSuite) getValByIdx(index int) (validator stakingtypes.Validator,
 	return s.getVal(s.providerCtx(), valAddr), valAddr
 }
 
-func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingtypes.Validator {
+func (s *CCVTestSuite) getVal(_ sdk.Context, valAddr sdk.ValAddress) stakingtypes.Validator {
 	validator, found := s.providerApp.GetE2eStakingKeeper().GetValidator(s.providerCtx(), valAddr)
 	s.Require().True(found)
 	return validator
@@ -112,7 +112,7 @@ func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.
 // Note: This function advances blocks in-between operations, where validator powers are
 // not checked, since they are checked in integration tests.
 func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
-	srcValAddr sdk.ValAddress, dstValAddr sdk.ValAddress, amount sdk.Int,
+	srcValAddr, dstValAddr sdk.ValAddress, amount sdk.Int,
 ) {
 	// Delegate to src validator
 	srcValTokensBefore := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
@@ -284,7 +284,7 @@ func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	incrementTime(s, jumpPeriod)
 }
 
-func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, onHold bool, msgAndArgs ...interface{}) {
+func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found, onHold bool, msgAndArgs ...interface{}) {
 	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerApp.GetE2eStakingKeeper(), id)
 	s.Require().Equal(
 		found,

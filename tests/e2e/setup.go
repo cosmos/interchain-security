@@ -17,7 +17,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
-	"github.com/stretchr/testify/suite"
+	testifysuite "github.com/stretchr/testify/suite"
 )
 
 // Callback for instantiating a new coordinator with a provider test chains
@@ -30,7 +30,7 @@ type SetupProviderCallback func(t *testing.T) (
 
 // Callback for instantiating a new consumer test chain
 // and consumer app before every test defined on the suite.
-type SetupConsumerCallback func(s *suite.Suite, coord *ibctesting.Coordinator, index int) (
+type SetupConsumerCallback func(s *testifysuite.Suite, coord *ibctesting.Coordinator, index int) (
 	consumerBundle *icstestingutils.ConsumerBundle,
 )
 
@@ -38,7 +38,7 @@ type SetupConsumerCallback func(s *suite.Suite, coord *ibctesting.Coordinator, i
 // the e2e functionality of ccv enabled chains.
 // Any method implemented for this struct will be ran when suite.Run() is called.
 type CCVTestSuite struct {
-	suite.Suite
+	testifysuite.Suite
 	coordinator           *ibctesting.Coordinator
 	setupProviderCallback SetupProviderCallback
 	setupConsumerCallback SetupConsumerCallback
@@ -63,7 +63,7 @@ type CCVTestSuite struct {
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
 func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
-	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string,
+	providerAppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string,
 ) *CCVTestSuite {
 	ccvSuite := new(CCVTestSuite)
 
@@ -85,7 +85,7 @@ func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 	}
 
 	ccvSuite.setupConsumerCallback = func(
-		s *suite.Suite,
+		s *testifysuite.Suite,
 		coordinator *ibctesting.Coordinator,
 		index int,
 	) *icstestingutils.ConsumerBundle {
@@ -99,7 +99,7 @@ func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 	return ccvSuite
 }
 
-func (suite *CCVTestSuite) BeforeTest(suiteName, testName string) {
+func (suite *CCVTestSuite) BeforeTest(_, testName string) {
 	if suite.skippedTests[testName] {
 		suite.T().Skip()
 	}

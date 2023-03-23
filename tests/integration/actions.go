@@ -174,9 +174,8 @@ type submitTextProposalAction struct {
 
 func (tr TestRun) submitTextProposal(
 	action submitTextProposalAction,
-	verbose bool,
+	_ bool,
 ) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
 		"tx", "gov", "submit-proposal",
@@ -209,7 +208,7 @@ type submitConsumerAdditionProposalAction struct {
 
 func (tr TestRun) submitConsumerAdditionProposal(
 	action submitConsumerAdditionProposalAction,
-	verbose bool,
+	_ bool,
 ) {
 	spawnTime := tr.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
 	params := consumertypes.DefaultParams()
@@ -279,7 +278,7 @@ type submitConsumerRemovalProposalAction struct {
 
 func (tr TestRun) submitConsumerRemovalProposal(
 	action submitConsumerRemovalProposalAction,
-	verbose bool,
+	_ bool,
 ) {
 	stopTime := tr.containerConfig.now.Add(action.stopTimeOffset)
 	prop := client.ConsumerRemovalProposalJSON{
@@ -352,7 +351,7 @@ type paramChangeJSON struct {
 
 func (tr TestRun) submitParamChangeProposal(
 	action submitParamChangeProposalAction,
-	verbose bool,
+	_ bool,
 ) {
 	prop := paramChangeProposalJSON{
 		Title:       "Param change",
@@ -410,7 +409,7 @@ type submitEquivocationProposalAction struct {
 	from      validatorID
 }
 
-func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAction, verbose bool) {
+func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAction, _ bool) {
 	val := tr.validatorConfigs[action.validator]
 	providerChain := tr.chainConfigs[chainID("provi")]
 
@@ -478,7 +477,7 @@ type voteGovProposalAction struct {
 
 func (tr TestRun) voteGovProposal(
 	action voteGovProposalAction,
-	verbose bool,
+	_ bool,
 ) {
 	var wg sync.WaitGroup
 	for i, val := range action.from {
@@ -486,7 +485,6 @@ func (tr TestRun) voteGovProposal(
 		vote := action.vote[i]
 		go func(val validatorID, vote string) {
 			defer wg.Done()
-			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 			bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
 				"tx", "gov", "vote",
@@ -586,7 +584,7 @@ websocket_addr = "%s"
 
 func (tr TestRun) addChainToRelayer(
 	action addChainToRelayerAction,
-	verbose bool,
+	_ bool,
 ) {
 	queryNodeIP := tr.getQueryNodeIP(action.chain)
 	chainId := tr.chainConfigs[action.chain].chainId
@@ -605,7 +603,6 @@ func (tr TestRun) addChainToRelayer(
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, "/root/.hermes/config.toml")
 
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
 		bashCommand,
 	).CombinedOutput()
@@ -615,7 +612,7 @@ func (tr TestRun) addChainToRelayer(
 
 	// Save mnemonic to file within container
 	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, tr.validatorConfigs[action.validator].mnemonic, "/root/.hermes/mnemonic.txt")
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
 		saveMnemonicCommand,
 	).CombinedOutput()
@@ -747,7 +744,7 @@ type transferChannelCompleteAction struct {
 
 func (tr TestRun) transferChannelComplete(
 	action transferChannelCompleteAction,
-	verbose bool,
+	_ bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenTryCmd arguments.
 	chanOpenTryCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
@@ -1011,7 +1008,7 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 }
 
 // Sets validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
-func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, down bool, verbose bool) {
+func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, down, verbose bool) {
 	var lastArg string
 	if down {
 		lastArg = "down"
@@ -1088,7 +1085,7 @@ type registerRepresentativeAction struct {
 
 func (tr TestRun) registerRepresentative(
 	action registerRepresentativeAction,
-	verbose bool,
+	_ bool,
 ) {
 	var wg sync.WaitGroup
 	for i, val := range action.representatives {
@@ -1153,7 +1150,7 @@ type doublesignSlashAction struct {
 
 func (tr TestRun) invokeDoublesignSlash(
 	action doublesignSlashAction,
-	verbose bool,
+	_ bool,
 ) {
 	chainConfig := tr.chainConfigs[action.chain]
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.

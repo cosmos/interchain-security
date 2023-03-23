@@ -16,6 +16,13 @@ issues:
 
 
 linters-settings:
+  gofumpt:
+    # Module path which contains the source code being formatted.
+    # Default: ""
+    module-path: github.com/cosmos/interchain-security
+    # Choose whether to use the extra rules.
+    # Default: false
+    extra-rules: true
   revive:
     ignore-generated-header: true
     severity: error
@@ -44,6 +51,8 @@ linters-settings:
       - name: add-constant
         disabled: true
       - name: flag-parameter
+        disabled: true
+      - name: comment-spacings
         disabled: true
 
 
