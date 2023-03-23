@@ -18,40 +18,40 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-// Identity is a test helper for generating keys and addresses of
+// CryptoIdentity is a test helper for generating keys and addresses of
 // various interfaces and types used by the SDK and Tendermint from a single
 // 'root' seed.
-type Identity struct {
+type CryptoIdentity struct {
 	// private key for validators to run consensus
 	consensus sdkcryptotypes.PrivKey
 	// key for validator operator account
 	operator sdkcryptotypes.PrivKey
 }
 
-func NewIdentityFromBytesSeed(seed []byte) *Identity {
+func NewCryptoIdentityFromBytesSeed(seed []byte) *CryptoIdentity {
 	//lint:ignore SA1019 We don't care because this is only a test.
 
-	consKey := &sdkcryptoEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)} //nolint:staticcheck // SA1019: crypto/ed25519: NewKeyFromSeed is deprecated: Use NewKeyFromSeed instead. (staticcheck)
+	consKey := &sdkcryptoEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}
 	opKey := sdkcryptoSecp256k1.GenPrivKeyFromSecret(seed)
 
-	return &Identity{
+	return &CryptoIdentity{
 		consensus: consKey,
 		operator:  opKey,
 	}
 }
 
-func NewIdentityFromIntSeed(i int) *Identity {
+func NewCryptoIdentityFromIntSeed(i int) *CryptoIdentity {
 	iUint64 := uint64(i)
 	seed := []byte("AAAAAAAAabcdefghijklmnopqrstuvwx") // 8+24 bytes
 	binary.LittleEndian.PutUint64(seed[:8], iUint64)
-	return NewIdentityFromBytesSeed(seed)
+	return NewCryptoIdentityFromBytesSeed(seed)
 }
 
-func (v *Identity) TMValidator(power int64) *tmtypes.Validator {
+func (v *CryptoIdentity) TMValidator(power int64) *tmtypes.Validator {
 	return tmtypes.NewValidator(v.TMCryptoPubKey(), power)
 }
 
-func (v *Identity) TMProtoCryptoPublicKey() tmprotocrypto.PublicKey {
+func (v *CryptoIdentity) TMProtoCryptoPublicKey() tmprotocrypto.PublicKey {
 	ret, err := sdkcryptocodec.ToTmProtoPublicKey(v.ConsensusSDKPubKey())
 	if err != nil {
 		panic(err)
@@ -59,7 +59,7 @@ func (v *Identity) TMProtoCryptoPublicKey() tmprotocrypto.PublicKey {
 	return ret
 }
 
-func (v *Identity) TMCryptoPubKey() tmcrypto.PubKey {
+func (v *CryptoIdentity) TMCryptoPubKey() tmcrypto.PubKey {
 	ret, err := sdkcryptocodec.ToTmPubKeyInterface(v.ConsensusSDKPubKey())
 	if err != nil {
 		panic(err)
@@ -67,7 +67,7 @@ func (v *Identity) TMCryptoPubKey() tmcrypto.PubKey {
 	return ret
 }
 
-func (v *Identity) SDKStakingValidator() sdkstakingtypes.Validator {
+func (v *CryptoIdentity) SDKStakingValidator() sdkstakingtypes.Validator {
 	ret, err := sdkstakingtypes.NewValidator(v.SDKValOpAddress(), v.ConsensusSDKPubKey(), sdkstakingtypes.Description{})
 	if err != nil {
 		panic(err)
@@ -75,19 +75,19 @@ func (v *Identity) SDKStakingValidator() sdkstakingtypes.Validator {
 	return ret
 }
 
-func (v *Identity) ConsensusSDKPubKey() sdkcryptotypes.PubKey {
+func (v *CryptoIdentity) ConsensusSDKPubKey() sdkcryptotypes.PubKey {
 	return v.consensus.PubKey()
 }
 
-func (v *Identity) OperatorSDKPubKey() sdkcryptotypes.PubKey {
+func (v *CryptoIdentity) OperatorSDKPubKey() sdkcryptotypes.PubKey {
 	return v.operator.PubKey()
 }
 
-func (v *Identity) SDKValOpAddress() sdktypes.ValAddress {
+func (v *CryptoIdentity) SDKValOpAddress() sdktypes.ValAddress {
 	return sdktypes.ValAddress(v.OperatorSDKPubKey().Address())
 }
 
-func (v *Identity) SDKValConsAddress() sdktypes.ConsAddress {
+func (v *CryptoIdentity) SDKValConsAddress() sdktypes.ConsAddress {
 	return sdktypes.ConsAddress(v.ConsensusSDKPubKey().Address())
 }
 

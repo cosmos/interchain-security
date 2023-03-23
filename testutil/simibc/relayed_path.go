@@ -1,8 +1,9 @@
 package simibc
 
 import (
-	"testing"
 	"time"
+
+	"testing"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"

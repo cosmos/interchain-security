@@ -10,12 +10,13 @@ import (
 	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/tests/e2e"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 )
 
 // runCCVTestByName runs a single CCV e2e test by name, using a CCVTestSuite
 // initialized with the dummy provider and consumer defined in this repo.
 func runCCVTestByName(t *testing.T, methodName string) {
+
 	suite := e2e.NewCCVTestSuite[*appProvider.App, *appConsumer.App](
 		icstestingutils.ProviderAppIniter, icstestingutils.ConsumerAppIniter, []string{})
 	suite.SetT(t)
@@ -28,6 +29,7 @@ func runCCVTestByName(t *testing.T, methodName string) {
 // using a ConsumerDemocracyTestSuite initialized with the dummy
 // democracy consumer defined in this repo.
 func runConsumerDemocracyTestByName(t *testing.T, methodName string) {
+
 	suite := e2e.NewConsumerDemocracyTestSuite[*appConsumerDemocracy.App](
 		icstestingutils.DemocracyConsumerAppIniter)
 	suite.SetT(t)

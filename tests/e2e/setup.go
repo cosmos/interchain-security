@@ -9,7 +9,7 @@ import (
 	e2eutil "github.com/cosmos/interchain-security/testutil/e2e"
 	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
 
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 

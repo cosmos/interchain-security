@@ -27,8 +27,8 @@ import (
 
 // GetMocksForCreateConsumerClient returns mock expectations needed to call CreateConsumerClient().
 func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
-	expectedChainID string, expectedLatestHeight clienttypes.Height,
-) []*gomock.Call {
+	expectedChainID string, expectedLatestHeight clienttypes.Height) []*gomock.Call {
+
 	// append MakeConsumerGenesis and CreateClient expectations
 	expectations := GetMocksForMakeConsumerGenesis(ctx, mocks, time.Hour)
 	createClientExp := mocks.MockClientKeeper.EXPECT().CreateClient(
@@ -48,8 +48,8 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 
 // GetMocksForMakeConsumerGenesis returns mock expectations needed to call MakeConsumerGenesis().
 func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
-	unbondingTimeToInject time.Duration,
-) []*gomock.Call {
+	unbondingTimeToInject time.Duration) []*gomock.Call {
+
 	return []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject).Times(1),
 
@@ -62,8 +62,7 @@ func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
 
 // GetMocksForSetConsumerChain returns mock expectations needed to call SetConsumerChain().
 func GetMocksForSetConsumerChain(ctx sdk.Context, mocks *MockedKeepers,
-	chainIDToInject string,
-) []*gomock.Call {
+	chainIDToInject string) []*gomock.Call {
 	return []*gomock.Call{
 		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, gomock.Any()).Return(
 			channeltypes.Channel{
@@ -99,6 +98,7 @@ func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 
 	// These first two calls are always made.
 	calls := []*gomock.Call{
+
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 			ctx, expectedProviderValConsAddr.ToSdkConsAddr()).Return(
 			valToReturn, true,
