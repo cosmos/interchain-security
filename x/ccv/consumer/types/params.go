@@ -144,7 +144,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	}
 }
 
-func validateDistributionTransmissionChannel(i interface{}) error {
+func validateDistributionTransmissionChannel(i any) error {
 	// Accept empty string as valid, since this will be the default value on genesis
 	if i == "" {
 		return nil
@@ -153,7 +153,7 @@ func validateDistributionTransmissionChannel(i interface{}) error {
 	return ccvtypes.ValidateChannelIdentifier(i)
 }
 
-func validateProviderFeePoolAddrStr(i interface{}) error {
+func validateProviderFeePoolAddrStr(i any) error {
 	// Accept empty string as valid, since this will be the default value on genesis
 	if i == "" {
 		return nil

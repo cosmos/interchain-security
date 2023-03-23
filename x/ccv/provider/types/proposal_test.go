@@ -193,7 +193,6 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		err := tc.proposal.ValidateBasic()
 		if tc.expPass {
 			require.NoError(t, err, "valid case: %s should not return error. got %w", tc.name, err)

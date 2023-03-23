@@ -597,11 +597,11 @@ func (chain *TestChain) CreatePortCapability(scopedKeeper capabilitykeeper.Scope
 	_, ok := chain.App.GetScopedIBCKeeper().GetCapability(chain.GetContext(), host.PortPath(portID))
 	if !ok {
 		// create capability using the IBC capability keeper
-		cap, err := chain.App.GetScopedIBCKeeper().NewCapability(chain.GetContext(), host.PortPath(portID))
+		portCap, err := chain.App.GetScopedIBCKeeper().NewCapability(chain.GetContext(), host.PortPath(portID))
 		require.NoError(chain.T, err)
 
 		// claim capability using the scopedKeeper
-		err = scopedKeeper.ClaimCapability(chain.GetContext(), cap, host.PortPath(portID))
+		err = scopedKeeper.ClaimCapability(chain.GetContext(), portCap, host.PortPath(portID))
 		require.NoError(chain.T, err)
 	}
 
@@ -625,9 +625,9 @@ func (chain *TestChain) CreateChannelCapability(scopedKeeper capabilitykeeper.Sc
 	// check if the portId is already binded, if not bind it
 	_, ok := chain.App.GetScopedIBCKeeper().GetCapability(chain.GetContext(), capName)
 	if !ok {
-		cap, err := chain.App.GetScopedIBCKeeper().NewCapability(chain.GetContext(), capName)
+		chanCap, err := chain.App.GetScopedIBCKeeper().NewCapability(chain.GetContext(), capName)
 		require.NoError(chain.T, err)
-		err = scopedKeeper.ClaimCapability(chain.GetContext(), cap, capName)
+		err = scopedKeeper.ClaimCapability(chain.GetContext(), chanCap, capName)
 		require.NoError(chain.T, err)
 	}
 
@@ -637,10 +637,10 @@ func (chain *TestChain) CreateChannelCapability(scopedKeeper capabilitykeeper.Sc
 // GetChannelCapability returns the channel capability for the given portID and channelID.
 // The capability must exist, otherwise testing will fail.
 func (chain *TestChain) GetChannelCapability(portID, channelID string) *capabilitytypes.Capability {
-	cap, ok := chain.App.GetScopedIBCKeeper().GetCapability(chain.GetContext(), host.ChannelCapabilityPath(portID, channelID))
+	chanCap, ok := chain.App.GetScopedIBCKeeper().GetCapability(chain.GetContext(), host.ChannelCapabilityPath(portID, channelID))
 	require.True(chain.T, ok)
 
-	return cap
+	return chanCap
 }
 
 // GetTimeoutHeight is a convenience function which returns a IBC packet timeout height

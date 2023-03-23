@@ -39,7 +39,7 @@ type TextProposal struct {
 	Status      string
 }
 
-func (p TextProposal) isProposal() {}
+func (TextProposal) isProposal() {}
 
 type ConsumerAdditionProposal struct {
 	Deposit       uint
@@ -49,7 +49,7 @@ type ConsumerAdditionProposal struct {
 	Status        string
 }
 
-func (p ConsumerAdditionProposal) isProposal() {}
+func (ConsumerAdditionProposal) isProposal() {}
 
 type ConsumerRemovalProposal struct {
 	Deposit  uint
@@ -58,7 +58,7 @@ type ConsumerRemovalProposal struct {
 	Status   string
 }
 
-func (p ConsumerRemovalProposal) isProposal() {}
+func (ConsumerRemovalProposal) isProposal() {}
 
 type EquivocationProposal struct {
 	Height           uint
@@ -68,7 +68,7 @@ type EquivocationProposal struct {
 	Status           string
 }
 
-func (p EquivocationProposal) isProposal() {}
+func (EquivocationProposal) isProposal() {}
 
 type Rewards struct {
 	IsRewarded map[validatorID]bool
@@ -88,7 +88,7 @@ type ParamsProposal struct {
 	Value    string
 }
 
-func (p ParamsProposal) isProposal() {}
+func (ParamsProposal) isProposal() {}
 
 type Param struct {
 	Subspace string

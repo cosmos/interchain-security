@@ -247,7 +247,7 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 		}
 		require.Empty(t, res, "consumer addition proposal was not deleted %s %s", tc.ChainId, tc.SpawnTime.String())
 		require.Equal(t, propsToExecute[numDeleted].ChainId, tc.ChainId)
-		numDeleted += 1
+		numDeleted++
 	}
 }
 
@@ -419,8 +419,8 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		},
 	}
 
+	// Run test cases
 	for _, tc := range tests {
-
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
@@ -507,8 +507,8 @@ func TestStopConsumerChain(t *testing.T) {
 		},
 	}
 
+	// Run test cases
 	for _, tc := range tests {
-
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
@@ -1018,8 +1018,8 @@ func TestHandleEquivocationProposal(t *testing.T) {
 		{name: "slash logs not set", setSlashLogs: false, expectEquivsHandled: false, expectErr: true},
 		{name: "slash logs set", setSlashLogs: true, expectEquivsHandled: true, expectErr: false},
 	}
+	// Run test cases
 	for _, tc := range testCases {
-
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		keeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 

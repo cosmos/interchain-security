@@ -131,7 +131,7 @@ Where proposal.json contains:
 			}
 
 			content := types.NewConsumerRemovalProposal(
-				proposal.Title, proposal.Description, proposal.ChainId, proposal.StopTime)
+				proposal.Title, proposal.Description, proposal.ChainID, proposal.StopTime)
 
 			from := clientCtx.GetFromAddress()
 
@@ -267,7 +267,7 @@ func ParseConsumerAdditionProposalJSON(proposalFile string) (ConsumerAdditionPro
 type ConsumerRemovalProposalJSON struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
-	ChainId     string    `json:"chain_id"`
+	ChainID     string    `json:"chain_id"`
 	StopTime    time.Time `json:"stop_time"`
 	Deposit     string    `json:"deposit"`
 }
@@ -278,7 +278,7 @@ type ConsumerRemovalProposalReq struct {
 
 	Title       string `json:"title"`
 	Description string `json:"description"`
-	ChainId     string `json:"chainId"`
+	ChainID     string `json:"chainId"`
 
 	StopTime time.Time `json:"stopTime"`
 	Deposit  sdk.Coins `json:"deposit"`
@@ -399,7 +399,7 @@ func postConsumerRemovalProposalHandlerFn(clientCtx client.Context) http.Handler
 		}
 
 		content := types.NewConsumerRemovalProposal(
-			req.Title, req.Description, req.ChainId, req.StopTime,
+			req.Title, req.Description, req.ChainID, req.StopTime,
 		)
 
 		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)

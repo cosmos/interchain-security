@@ -107,7 +107,7 @@ func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 }
 
 // Route implements the AppModule interface
-func (am AppModule) Route() sdk.Route {
+func (AppModule) Route() sdk.Route {
 	return sdk.Route{}
 }
 
@@ -117,7 +117,7 @@ func (AppModule) QuerierRoute() string {
 }
 
 // LegacyQuerierHandler implements the AppModule interface
-func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
+func (AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 	return nil
 }
 
@@ -215,10 +215,10 @@ func (AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
 
 // RegisterStoreDecoder registers a decoder for consumer module's types
 // TODO
-func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
+func (AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
 }
 
 // WeightedOperations returns the all the consumer module operations with their respective weights.
-func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {
+func (AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {
 	return nil
 }

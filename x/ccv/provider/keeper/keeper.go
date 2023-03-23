@@ -102,7 +102,7 @@ func (k Keeper) mustValidateFields() {
 }
 
 // Logger returns a module-specific logger.
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+func (Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+host.ModuleName+"-"+types.ModuleName)
 }
 
@@ -115,8 +115,8 @@ func (k Keeper) IsBound(ctx sdk.Context, portID string) bool {
 // BindPort defines a wrapper function for the port Keeper's function in
 // order to expose it to module's InitGenesis function
 func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
-	cap := k.portKeeper.BindPort(ctx, portID)
-	return k.ClaimCapability(ctx, cap, host.PortPath(portID))
+	portCap := k.portKeeper.BindPort(ctx, portID)
+	return k.ClaimCapability(ctx, portCap, host.PortPath(portID))
 }
 
 // GetPort returns the portID for the CCV module. Used in ExportGenesis

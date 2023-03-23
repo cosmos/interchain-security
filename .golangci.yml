@@ -11,8 +11,6 @@ linters:
    - revive
 
 issues:
-
-
   max-issues-per-linter: 10000
   max-same-issues: 10000
 
@@ -47,6 +45,7 @@ linters-settings:
         disabled: true
       - name: flag-parameter
         disabled: true
+
 
 
 

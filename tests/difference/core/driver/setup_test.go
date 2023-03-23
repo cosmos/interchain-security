@@ -59,18 +59,18 @@ func (s *CoreSuite) TestAssumptionsSetup() {
 
 	// Provider validator tokens are correct
 	for i := 0; i < len(s.initState.ValStates.Tokens); i++ {
-		E := int64(s.initState.ValStates.Tokens[i])
-		A := s.providerTokens(int64(i))
-		if E != A {
+		e := int64(s.initState.ValStates.Tokens[i])
+		a := s.providerTokens(int64(i))
+		if e != a {
 			s.T().Fatal(FAIL_MSG)
 		}
 	}
 
 	// Provider validator status is correct
 	for i := 0; i < len(s.initState.ValStates.Status); i++ {
-		E := s.initState.ValStates.Status[i]
-		A := s.validatorStatus(int64(i))
-		if E != A {
+		e := s.initState.ValStates.Status[i]
+		a := s.validatorStatus(int64(i))
+		if e != a {
 			s.T().Fatal(FAIL_MSG)
 		}
 	}
@@ -123,8 +123,8 @@ func (s *CoreSuite) TestAssumptionsSetup() {
 	// The offset time is the last committed time, but the SUT is +1 block ahead
 	// because the currentHeader time is ahead of the last committed. Therefore sub
 	// the difference (duration of 1 block).
-	s.Require().Equal(int64(s.offsetTimeUnix), s.time(P).Add(-s.initState.BlockInterval).Unix())
-	s.Require().Equal(int64(s.offsetTimeUnix), s.time(C).Add(-s.initState.BlockInterval).Unix())
+	s.Require().Equal(int64(s.offsetTimeUnix), s.timechain(P).Add(-s.initState.BlockInterval).Unix())
+	s.Require().Equal(int64(s.offsetTimeUnix), s.timechain(C).Add(-s.initState.BlockInterval).Unix())
 
 	// The offset height is the last committed height, but the SUT is +1 because
 	// the currentHeader is +1 ahead of the last committed. Therefore sub 1.

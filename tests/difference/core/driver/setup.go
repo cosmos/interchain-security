@@ -106,7 +106,7 @@ func (b *Builder) getValidatorPK(seedIx int) mock.PV {
 }
 
 func (b *Builder) getAppBytesAndSenders(
-	chainID string,
+	_ string,
 	app ibctesting.TestingApp,
 	genesis map[string]json.RawMessage,
 	validators *tmtypes.ValidatorSet,

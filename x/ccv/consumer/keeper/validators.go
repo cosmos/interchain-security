@@ -77,7 +77,7 @@ func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
 }
 
 // ValidatorByConsAddr returns an empty validator
-func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.ValidatorI {
+func (_ Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.ValidatorI {
 	/*
 		NOTE:
 
@@ -118,18 +118,18 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 }
 
 // Jail - unimplemented on CCV keeper
-func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {}
+func (_ Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {}
 
 // Unjail - unimplemented on CCV keeper
-func (k Keeper) Unjail(sdk.Context, sdk.ConsAddress) {}
+func (_ Keeper) Unjail(sdk.Context, sdk.ConsAddress) {}
 
 // Delegation - unimplemented on CCV keeper
-func (k Keeper) Delegation(sdk.Context, sdk.AccAddress, sdk.ValAddress) stakingtypes.DelegationI {
+func (_ Keeper) Delegation(sdk.Context, sdk.AccAddress, sdk.ValAddress) stakingtypes.DelegationI {
 	panic("unimplemented on CCV keeper")
 }
 
 // MaxValidators - unimplemented on CCV keeper
-func (k Keeper) MaxValidators(sdk.Context) uint32 {
+func (_ Keeper) MaxValidators(sdk.Context) uint32 {
 	panic("unimplemented on CCV keeper")
 }
 

@@ -97,15 +97,15 @@ func validateCCVChannelParams(
 }
 
 // OnChanOpenTry implements the IBCModule interface
-func (am AppModule) OnChanOpenTry(
-	ctx sdk.Context,
-	order channeltypes.Order,
-	connectionHops []string,
-	portID,
-	channelID string,
-	chanCap *capabilitytypes.Capability,
-	counterparty channeltypes.Counterparty,
-	counterpartyVersion string,
+func (AppModule) OnChanOpenTry(
+	_ sdk.Context,
+	_ channeltypes.Order,
+	_ []string,
+	_ string,
+	_ string,
+	_ *capabilitytypes.Capability,
+	_ channeltypes.Counterparty,
+	_ string,
 ) (string, error) {
 	return "", sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
 }
@@ -179,10 +179,10 @@ func (am AppModule) OnChanOpenAck(
 }
 
 // OnChanOpenConfirm implements the IBCModule interface
-func (am AppModule) OnChanOpenConfirm(
-	ctx sdk.Context,
-	portID,
-	channelID string,
+func (AppModule) OnChanOpenConfirm(
+	_ sdk.Context,
+	_ string,
+	_ string,
 ) error {
 	return sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
 }
@@ -190,7 +190,7 @@ func (am AppModule) OnChanOpenConfirm(
 // OnChanCloseInit implements the IBCModule interface
 func (am AppModule) OnChanCloseInit(
 	ctx sdk.Context,
-	portID,
+	portID string,
 	channelID string,
 ) error {
 	// allow relayers to close duplicate OPEN channels, if the provider channel has already been established
@@ -201,10 +201,10 @@ func (am AppModule) OnChanCloseInit(
 }
 
 // OnChanCloseConfirm implements the IBCModule interface
-func (am AppModule) OnChanCloseConfirm(
-	ctx sdk.Context,
-	portID,
-	channelID string,
+func (AppModule) OnChanCloseConfirm(
+	_ sdk.Context,
+	_ string,
+	_ string,
 ) error {
 	return nil
 }
@@ -284,9 +284,9 @@ func (am AppModule) OnAcknowledgementPacket(
 // OnTimeoutPacket implements the IBCModule interface
 // the CCV channel state is changed to CLOSED
 // by the IBC module as the channel is ORDERED
-func (am AppModule) OnTimeoutPacket(
+func (AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
-	packet channeltypes.Packet,
+	_ channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {
 	ctx.EventManager().EmitEvent(

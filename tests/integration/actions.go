@@ -285,7 +285,7 @@ func (tr TestRun) submitConsumerRemovalProposal(
 	prop := client.ConsumerRemovalProposalJSON{
 		Title:       fmt.Sprintf("Stop the %v chain", action.consumerChain),
 		Description: "It was a great chain",
-		ChainId:     string(tr.chainConfigs[action.consumerChain].chainId),
+		ChainID:     string(tr.chainConfigs[action.consumerChain].chainId),
 		StopTime:    stopTime,
 		Deposit:     fmt.Sprint(action.deposit) + `stake`,
 	}
@@ -967,7 +967,6 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 	if action.chain != chainID("provi") && dstCfg.useConsumerKey {
 		redelegateDst = dstCfg.consumerValoperAddress
 	}
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
 		tr.containerConfig.instanceName,
 		tr.chainConfigs[action.chain].binaryName,
