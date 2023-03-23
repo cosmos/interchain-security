@@ -9,7 +9,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/simapp"
 
-	appparams "github.com/cosmos/interchain-security/app/consumer/params"
+	cdappparams "github.com/cosmos/interchain-security/app/consumer-democracy/params"
+	consumerappparams "github.com/cosmos/interchain-security/app/consumer/params"
+	providerappparams "github.com/cosmos/interchain-security/app/provider/params"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
 	"github.com/tendermint/tendermint/libs/log"
@@ -22,24 +24,24 @@ import (
 
 // ProviderAppIniter implements ibctesting.AppIniter for a provider app
 func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	encoding := appparams.MakeEncodingConfig()
+	encoding := providerappparams.MakeEncodingConfig()
 	testApp := appProvider.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
+		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Codec)
 }
 
 // ConsumerAppIniter implements ibctesting.AppIniter for a consumer app
 func ConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	encoding := appparams.MakeEncodingConfig()
+	encoding := consumerappparams.MakeEncodingConfig()
 	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
+		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
 	return testApp, appConsumer.NewDefaultGenesisState(encoding.Codec)
 }
 
 // DemocracyConsumerAppIniter implements ibctesting.AppIniter for a democracy consumer app
 func DemocracyConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	encoding := appparams.MakeEncodingConfig()
+	encoding := cdappparams.MakeEncodingConfig()
 	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
+		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
 	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Codec)
 }
