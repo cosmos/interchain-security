@@ -12,7 +12,7 @@ Shared security is a family of technologies that include optimistic rollups, zk-
 
 ## Interchain Security
 
-Interchain Security is the Cosmos-specific category of Shared Security that uses IBC (Inter-Blockchain Communication). Ie. any shared security protocol built with IBC.
+Interchain Security is the Cosmos-specific category of Shared Security that uses IBC (Inter-Blockchain Communication), i.e. any shared security protocol built with IBC.
 
 ## Replicated Security
 
