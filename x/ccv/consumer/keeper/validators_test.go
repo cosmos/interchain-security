@@ -26,7 +26,7 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 	// utility functions
 	getCCVals := func() (vals []types.CrossChainValidator) {
 		vals = consumerKeeper.GetAllCCValidator(ctx)
-		return
+		return vals
 	}
 
 	clearCCVals := func() {
@@ -40,7 +40,7 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 		for _, v := range vals {
 			power += v.Power
 		}
-		return
+		return power
 	}
 
 	// prepare the testing setup by clearing the current cross-chain validators in states

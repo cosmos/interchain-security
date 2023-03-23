@@ -441,7 +441,7 @@ func (k Keeper) RemoveConsumerFromUnbondingOp(ctx sdk.Context, id uint64, chainI
 			k.SetUnbondingOp(ctx, unbondingOp)
 		}
 	}
-	return
+	return canComplete
 }
 
 func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
@@ -750,11 +750,11 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []string) {
 	acks = k.GetSlashAcks(ctx, chainID)
 	if len(acks) < 1 {
-		return
+		return nil
 	}
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.SlashAcksKey(chainID))
-	return
+	return acks
 }
 
 // DeleteSlashAcks deletes the slash acks for a given chain ID

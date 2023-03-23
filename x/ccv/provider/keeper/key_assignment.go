@@ -331,7 +331,8 @@ func (k Keeper) GetConsumerAddrsToPrune(
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerAddrsToPruneKey(chainID, vscID))
 	if bz == nil {
-		return
+		var empty types.ConsumerAddressList
+		return empty
 	}
 	err := consumerAddrsToPrune.Unmarshal(bz)
 	if err != nil {
@@ -339,7 +340,7 @@ func (k Keeper) GetConsumerAddrsToPrune(
 		// the list of consumer addresses is assumed to be correctly serialized in AppendConsumerAddrsToPrune.
 		panic(fmt.Sprintf("failed to unmarshal consumer addresses to prune: %v", err))
 	}
-	return
+	return consumerAddrsToPrune
 }
 
 // GetAllConsumerAddrsToPrune gets all consumer addresses that can be pruned for a given chainID.

@@ -684,7 +684,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				Power:  int64(power),
 			})
 		}
-		return
+		return ret
 	}
 
 	// Helper: simulates creation of assignment tx's to be done.
@@ -697,7 +697,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				ck:  assignableIDS[randomIxC].TMProtoCryptoPublicKey(),
 			})
 		}
-		return
+		return ret
 	}
 
 	// Run a randomly simulated execution and test that desired properties hold

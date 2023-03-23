@@ -109,8 +109,8 @@ func TestOnChanOpenTry(t *testing.T) {
 		},
 	}
 
+	// Run test cases
 	for _, tc := range testCases {
-
 		// Setup
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))

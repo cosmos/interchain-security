@@ -31,8 +31,8 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		{"0.01", 40, -960, 30, 33}, // 960/30 = 32, so 33 replenishes to reach positive
 	}
 
+	// Run test cases
 	for _, tc := range testCases {
-
 		s.SetupTest()
 		s.SetupAllCCVChannels()
 		s.setupValidatorPowers()

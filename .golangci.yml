@@ -8,6 +8,48 @@ linters:
   enable:
    - gofumpt
    - staticcheck
+   - revive
+
+issues:
+
+
+  max-issues-per-linter: 10000
+  max-same-issues: 10000
+
+
+linters-settings:
+  revive:
+    ignore-generated-header: true
+    severity: error
+    enable-all-rules: true
+    rules:
+      - name: function-result-limit
+        disabled: true
+      - name: argument-limit
+        disabled: true
+      - name: function-length
+        disabled: true
+      - name: cyclomatic
+        disabled: true
+      - name: file-header
+        disabled: true
+      - name: max-public-structs
+        disabled: true
+      - name: cognitive-complexity
+        disabled: true
+      - name: line-length-limit
+        disabled: true
+      - name: banned-characters
+        disabled: true
+      - name: unhandled-error
+        arguments : ["fmt.Printf", "fmt.Println"]
+      - name: add-constant
+        disabled: true
+      - name: flag-parameter
+        disabled: true
+
+
+
    
 
 

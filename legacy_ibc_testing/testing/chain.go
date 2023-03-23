@@ -276,7 +276,7 @@ func GetSentPacketKey(sequence uint64, channelID string) string {
 func (chain *TestChain) GetSentPacket(sequence uint64, channelID string) (packet channeltypes.Packet, found bool) {
 	sentPacketKey := GetSentPacketKey(sequence, channelID)
 	packet, found = chain.SentPackets[sentPacketKey]
-	return
+	return packet, found
 }
 
 // setSentPacketsFromEvents stores the sent packet reconstructed
@@ -510,7 +510,7 @@ func (chain *TestChain) CreateTMClientHeader(chainID string, blockHeight int64, 
 		AppHash:            chain.CurrentHeader.AppHash,
 		LastResultsHash:    tmhash.Sum([]byte("last_results_hash")),
 		EvidenceHash:       tmhash.Sum([]byte("evidence_hash")),
-		ProposerAddress:    tmValSet.Proposer.Address, //nolint:staticcheck
+		ProposerAddress:    tmValSet.Proposer.Address, // nolint:staticcheck
 	}
 
 	hhash := tmHeader.Hash()

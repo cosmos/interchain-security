@@ -693,7 +693,7 @@ func (app *App) LoadHeight(height int64) error {
 }
 
 // ModuleAccountAddrs returns all the app's module account addresses.
-func (app *App) ModuleAccountAddrs() map[string]bool {
+func (*App) ModuleAccountAddrs() map[string]bool {
 	modAccAddrs := make(map[string]bool)
 	for acc := range maccPerms {
 		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
@@ -827,13 +827,13 @@ func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 }
 
 // GetTxConfig implements the TestingApp interface.
-func (app *App) GetTxConfig() client.TxConfig {
+func (*App) GetTxConfig() client.TxConfig {
 	return cosmoscmd.MakeEncodingConfig(ModuleBasics).TxConfig
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided
 // API server.
-func (app *App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
+func (*App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
 	rpc.RegisterRoutes(clientCtx, apiSvr.Router)
 	// Register legacy tx routes.

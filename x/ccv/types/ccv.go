@@ -96,7 +96,7 @@ func (cp ConsumerPacketData) ValidateBasic() (err error) {
 		err = fmt.Errorf("invalid consumer packet type: %q", cp.Type)
 	}
 
-	return
+	return err
 }
 
 func (cp ConsumerPacketData) GetBytes() []byte {

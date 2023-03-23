@@ -87,8 +87,8 @@ func TestAddr(addr string, bech string) (sdk.AccAddress, error) {
 //
 // CONTRACT: BeginBlock must be called before this function.
 func SignAndDeliver(
-	t *testing.T, txCfg client.TxConfig, app *bam.BaseApp, header tmproto.Header, msgs []sdk.Msg,
-	chainID string, accNums, accSeqs []uint64, expSimPass, expPass bool, priv ...cryptotypes.PrivKey,
+	t *testing.T, txCfg client.TxConfig, app *bam.BaseApp, _ tmproto.Header, msgs []sdk.Msg,
+	chainID string, accNums, accSeqs []uint64, _, expPass bool, priv ...cryptotypes.PrivKey,
 ) (sdk.GasInfo, *sdk.Result, error) {
 	tx, err := helpers.GenTx(
 		txCfg,
@@ -124,8 +124,16 @@ func CreateTestPubKeys(numPubKeys int) []cryptotypes.PubKey {
 	// start at 10 to avoid changing 1 to 01, 2 to 02, etc
 	for i := 100; i < (numPubKeys + 100); i++ {
 		numString := strconv.Itoa(i)
-		buffer.WriteString("0B485CFC0EECC619440448436F8FC9DF40566F2369E72400281454CB552AF") // base pubkey string
-		buffer.WriteString(numString)                                                       // adding on final two digits to make pubkeys unique
+		_, err := buffer.WriteString("0B485CFC0EECC619440448436F8FC9DF40566F2369E72400281454CB552AF") // base pubkey string
+		if err != nil {
+			panic(err)
+		}
+		_, err = buffer.WriteString(numString)
+		if err != nil {
+			panic(err)
+		}
+
+		// adding on final two digits to make pubkeys unique
 		publicKeys = append(publicKeys, NewPubKeyFromHex(buffer.String()))
 		buffer.Reset()
 	}
@@ -149,6 +157,6 @@ func NewPubKeyFromHex(pk string) (res cryptotypes.PubKey) {
 type EmptyAppOptions struct{}
 
 // Get implements AppOptions
-func (ao EmptyAppOptions) Get(o string) interface{} {
+func (EmptyAppOptions) Get(_ string) any {
 	return nil
 }

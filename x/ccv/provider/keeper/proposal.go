@@ -589,7 +589,7 @@ func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []type
 func (k Keeper) CreateConsumerClientInCachedCtx(ctx sdk.Context, p types.ConsumerAdditionProposal) (cc sdk.Context, writeCache func(), err error) {
 	cc, writeCache = ctx.CacheContext()
 	err = k.CreateConsumerClient(cc, &p)
-	return
+	return cc, writeCache, err
 }
 
 // StopConsumerChainInCachedCtx stop a consumer chain
@@ -597,7 +597,7 @@ func (k Keeper) CreateConsumerClientInCachedCtx(ctx sdk.Context, p types.Consume
 func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRemovalProposal) (cc sdk.Context, writeCache func(), err error) {
 	cc, writeCache = ctx.CacheContext()
 	err = k.StopConsumerChain(ctx, p.ChainId, true)
-	return
+	return cc, writeCache, err
 }
 
 // HandleEquivocationProposal handles an equivocation proposal.
