@@ -6,10 +6,24 @@ run:
 linters:
   disable-all: true
   enable:
-   - gofumpt
-   - staticcheck
-   - revive
-   - gosec
+    - depguard
+    - exportloopref
+    - goconst
+    - gocritic
+    - gofumpt
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - nolintlint
+    - staticcheck
+    - revive
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unused
 
 issues:
   max-issues-per-linter: 10000

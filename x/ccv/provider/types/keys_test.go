@@ -82,12 +82,12 @@ func TestChainIdAndTsKeyAndParse(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		key := providertypes.ChainIDAndTsKey(test.prefix, test.chainID, test.timestamp)
+		key := providertypes.ChainIDAndTSKey(test.prefix, test.chainID, test.timestamp)
 		require.NotEmpty(t, key)
 		// Expected bytes = prefix + chainID length + chainID + time bytes
 		expectedLen := 1 + 8 + len(test.chainID) + len(sdk.FormatTimeBytes(time.Time{}))
 		require.Equal(t, expectedLen, len(key))
-		parsedID, parsedTime, err := providertypes.ParseChainIDAndTsKey(test.prefix, key)
+		parsedID, parsedTime, err := providertypes.ParseChainIDAndTSKey(test.prefix, key)
 		require.Equal(t, test.chainID, parsedID)
 		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
 		require.NoError(t, err)

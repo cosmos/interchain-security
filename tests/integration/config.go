@@ -319,7 +319,7 @@ func MultiConsumerTestRun() TestRun {
 	}
 }
 
-func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string) {
+func (tr *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string) {
 	if localSdkPath != "" {
 		fmt.Println("USING LOCAL SDK", localSdkPath)
 	}
@@ -327,9 +327,9 @@ func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag str
 		fmt.Println("USING GAIA INSTEAD OF ICS provider app", gaiaTag)
 	}
 
-	s.useGaia = useGaia
-	s.gaiaTag = gaiaTag
-	s.localSdkPath = localSdkPath
+	tr.useGaia = useGaia
+	tr.gaiaTag = gaiaTag
+	tr.localSdkPath = localSdkPath
 }
 
 // validateStringLiterals enforces that configs follow the constraints
@@ -339,9 +339,9 @@ func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag str
 // within the container will be named as "$CHAIN_ID-$VAL_ID-out" etc.
 // where this name is constrained to 15 bytes or less. Therefore each string literal
 // used as a validatorID or chainID needs to be 5 char or less.
-func (s *TestRun) validateStringLiterals() {
+func (tr *TestRun) validateStringLiterals() {
 	// range through validators to check for duplicate ip suffixes
-	for valID, valConfig := range s.validatorConfigs {
+	for valID, valConfig := range tr.validatorConfigs {
 		if len(valID) > 5 {
 			panic("validator id string literal must be 5 char or less")
 		}
@@ -364,7 +364,7 @@ func (s *TestRun) validateStringLiterals() {
 		}
 	}
 
-	for chainID, chainConfig := range s.chainConfigs {
+	for chainID, chainConfig := range tr.chainConfigs {
 		if len(chainID) > 5 {
 			panic("chain id string literal must be 5 char or less")
 		}

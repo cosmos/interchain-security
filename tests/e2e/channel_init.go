@@ -1,7 +1,7 @@
 package e2e
 
 // TestInitTimeout tests the init timeout
-func (suite *CCVTestSuite) TestInitTimeout() {
+func (s *CCVTestSuite) TestInitTimeout() {
 	testCases := []struct {
 		name      string
 		handshake func()
@@ -13,84 +13,84 @@ func (suite *CCVTestSuite) TestInitTimeout() {
 		{
 			"init times out before TRY", func() {
 				// send ChanOpenInit
-				err := suite.path.EndpointA.ChanOpenInit()
-				suite.Require().NoError(err)
+				err := s.path.EndpointA.ChanOpenInit()
+				s.Require().NoError(err)
 			}, true,
 		},
 		{
 			"init times out before ACK", func() {
 				// send ChanOpenInit
-				err := suite.path.EndpointA.ChanOpenInit()
-				suite.Require().NoError(err)
+				err := s.path.EndpointA.ChanOpenInit()
+				s.Require().NoError(err)
 				// send ChanOpenTry
-				err = suite.path.EndpointB.ChanOpenTry()
-				suite.Require().NoError(err)
+				err = s.path.EndpointB.ChanOpenTry()
+				s.Require().NoError(err)
 			}, true,
 		},
 		{
 			"init times out before CONFIRM", func() {
 				// send ChanOpenInit
-				err := suite.path.EndpointA.ChanOpenInit()
-				suite.Require().NoError(err)
+				err := s.path.EndpointA.ChanOpenInit()
+				s.Require().NoError(err)
 				// send ChanOpenTry
-				err = suite.path.EndpointB.ChanOpenTry()
-				suite.Require().NoError(err)
+				err = s.path.EndpointB.ChanOpenTry()
+				s.Require().NoError(err)
 				// send ChanOpenAck
-				err = suite.path.EndpointA.ChanOpenAck()
-				suite.Require().NoError(err)
+				err = s.path.EndpointA.ChanOpenAck()
+				s.Require().NoError(err)
 			}, true,
 		},
 		{
 			"init completes before timeout", func() {
 				// send ChanOpenInit
-				err := suite.path.EndpointA.ChanOpenInit()
-				suite.Require().NoError(err)
+				err := s.path.EndpointA.ChanOpenInit()
+				s.Require().NoError(err)
 				// send ChanOpenTry
-				err = suite.path.EndpointB.ChanOpenTry()
-				suite.Require().NoError(err)
+				err = s.path.EndpointB.ChanOpenTry()
+				s.Require().NoError(err)
 				// send ChanOpenAck
-				err = suite.path.EndpointA.ChanOpenAck()
-				suite.Require().NoError(err)
+				err = s.path.EndpointA.ChanOpenAck()
+				s.Require().NoError(err)
 				// send ChanOpenConfirm
-				err = suite.path.EndpointB.ChanOpenConfirm()
-				suite.Require().NoError(err)
+				err = s.path.EndpointB.ChanOpenConfirm()
+				s.Require().NoError(err)
 			}, false,
 		},
 	}
 
 	for i, tc := range testCases {
-		providerKeeper := suite.providerApp.GetProviderKeeper()
-		initTimeout := providerKeeper.GetParams(suite.providerCtx()).InitTimeoutPeriod
-		chainID := suite.consumerChain.ChainID
+		providerKeeper := s.providerApp.GetProviderKeeper()
+		initTimeout := providerKeeper.GetParams(s.providerCtx()).InitTimeoutPeriod
+		chainID := s.consumerChain.ChainID
 
 		// check that the init timeout timestamp is set
-		_, found := providerKeeper.GetInitTimeoutTimestamp(suite.providerCtx(), chainID)
-		suite.Require().True(found, "cannot find init timeout timestamp; test: %s", tc.name)
+		_, found := providerKeeper.GetInitTimeoutTimestamp(s.providerCtx(), chainID)
+		s.Require().True(found, "cannot find init timeout timestamp; test: %s", tc.name)
 
 		// create connection
-		suite.coordinator.CreateConnections(suite.path)
+		s.coordinator.CreateConnections(s.path)
 
 		// channel opening handshake
 		tc.handshake()
 
 		// call NextBlock
-		suite.providerChain.NextBlock()
+		s.providerChain.NextBlock()
 
 		// increment time
-		incrementTime(suite, initTimeout)
+		incrementTime(s, initTimeout)
 
 		// check whether the chain was removed
-		_, found = providerKeeper.GetConsumerClientID(suite.providerCtx(), chainID)
-		suite.Require().Equal(!tc.removed, found, "unexpected outcome; test: %s", tc.name)
+		_, found = providerKeeper.GetConsumerClientID(s.providerCtx(), chainID)
+		s.Require().Equal(!tc.removed, found, "unexpected outcome; test: %s", tc.name)
 
 		if tc.removed {
 			// check if the chain was properly removed
-			suite.checkConsumerChainIsRemoved(chainID, false)
+			s.checkConsumerChainIsRemoved(chainID, false)
 		}
 
 		if i+1 < len(testCases) {
 			// reset suite to reset provider client
-			suite.SetupTest()
+			s.SetupTest()
 		}
 	}
 }

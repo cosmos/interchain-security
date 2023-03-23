@@ -157,7 +157,7 @@ func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, idx
 		delAddr,
 		bondAmt,
 		stakingtypes.Unbonded,
-		stakingtypes.Validator(validator),
+		validator,
 		true,
 	)
 	s.Require().NoError(err)

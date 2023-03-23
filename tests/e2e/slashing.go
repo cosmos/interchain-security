@@ -562,7 +562,7 @@ func (s *CCVTestSuite) TestValidatorDoubleSigning() {
 	// construct slash packet data and get the expcted commit hash
 	packetData := ccv.NewSlashPacketData(
 		abci.Validator{Address: consAddr.Bytes(), Power: power},
-		// get VSC ID mapping to the infraction height with the TM delay substracted
+		// get VSC ID mapping to the infraction height with the TM delay subtracted
 		s.consumerApp.GetConsumerKeeper().GetHeightValsetUpdateID(ctx, uint64(infractionHeight-sdk.ValidatorUpdateDelay)),
 		stakingtypes.DoubleSign,
 	)

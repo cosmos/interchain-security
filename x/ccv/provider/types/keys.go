@@ -125,7 +125,7 @@ const (
 	ConsumerAddrsToPruneBytePrefix
 
 	// SlashLogBytePrefix is the byte prefix that will store the mapping from provider address to boolean
-	// denoting whether the provider address has commited any double signign infractions
+	// denoting whether the provider address has committed any double signign infractions
 	SlashLogBytePrefix
 )
 
@@ -353,7 +353,7 @@ func MustParseGlobalSlashEntryKey(bz []byte) (
 
 // ChainIdAndTsKey returns the key with the following format:
 // bytePrefix | len(chainID) | chainID | timestamp
-func ChainIDAndTsKey(prefix byte, chainID string, timestamp time.Time) []byte {
+func ChainIDAndTSKey(prefix byte, chainID string, timestamp time.Time) []byte {
 	partialKey := ChainIDWithLenKey(prefix, chainID)
 	timeBz := sdk.FormatTimeBytes(timestamp)
 	return ccvutils.AppendMany(
@@ -378,8 +378,8 @@ func ChainIDWithLenKey(prefix byte, chainID string) []byte {
 	)
 }
 
-// ParseChainIdAndTsKey returns the chain ID and time for a ChainIdAndTs key
-func ParseChainIDAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
+// ParseChainIDAndTSKey returns the chain ID and time for a ChainIDAndTS key
+func ParseChainIDAndTSKey(prefix byte, bz []byte) (string, time.Time, error) {
 	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
 	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {

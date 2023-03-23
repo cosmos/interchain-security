@@ -81,7 +81,7 @@ func NewParams(
 
 // DefaultParams is the default params for the provider module
 func DefaultParams() Params {
-	// create default client state with chainID, trusting period, unbonding period, and inital height zeroed out.
+	// create default client state with chainID, trusting period, unbonding period, and initial height zeroed out.
 	// these fields will be populated during proposal handler.
 	return NewParams(
 		ibctmtypes.NewClientState(

@@ -14,7 +14,7 @@ import (
 )
 
 func GetPV(seed []byte) mock.PV {
-	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}} //nolint:staticcheck // SA1019: crypto/ed25519: NewKeyFromSeed is deprecated
+	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}} //nolint:staticcheck // SA1019: cryptoEd25519.NewKeyFromSeed is deprecated: Use NewKeyFromSeed instead
 }
 
 // getStakingKeyBytes takes seed bytes which can be be used to create

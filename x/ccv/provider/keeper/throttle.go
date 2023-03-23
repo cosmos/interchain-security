@@ -418,7 +418,7 @@ func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID st
 	for ; iterator.Valid(); iterator.Next() {
 		// The key is the IBC sequence number, and the value is the packet data.
 		bz := iterator.Value()
-		if bz[0] == slashPacketData {
+		if bz[0] == slashPacketData { //nolint:gocritic // this if-else chain isn't worth a refactor to switch statement
 			if slashFound {
 				// Break for-loop, we've already found first slash packet data instance.
 				break
