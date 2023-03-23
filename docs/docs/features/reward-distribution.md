@@ -33,7 +33,7 @@ With `consumer_redistribution_fraction` set to `0.75` the consumer chain would s
 The number of blocks between IBC token transfers from the consumer chain to the provider chain.
 
 ### `transfer_timeout_period`
-Timeout period for cosumer chain reward distribution IBC packets.
+Timeout period for consumer chain reward distribution IBC packets.
 
 ### `distribution_transmission_channel`
 Provider chain IBC channel used for receiving consumer chain reward distribution token transfers. This is automatically set during the consumer-provider handshake procedure.
