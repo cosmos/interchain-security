@@ -9,9 +9,11 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/simapp"
 
+	cdappparams "github.com/cosmos/interchain-security/app/consumer-democracy/params"
+	consumerappparams "github.com/cosmos/interchain-security/app/consumer/params"
+	providerappparams "github.com/cosmos/interchain-security/app/provider/params"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
-	"github.com/tendermint/spm/cosmoscmd"
 	"github.com/tendermint/tendermint/libs/log"
 	tmdb "github.com/tendermint/tm-db"
 
@@ -22,24 +24,24 @@ import (
 
 // ProviderAppIniter implements ibctesting.AppIniter for a provider app
 func ProviderAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
-	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)
+	encoding := providerappparams.MakeEncodingConfig()
 	testApp := appProvider.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.AppTest)
-	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
+		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
+	return testApp, appProvider.NewDefaultGenesisState(encoding.Codec)
 }
 
 // ConsumerAppIniter implements ibctesting.AppIniter for a consumer app
 func ConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
-	encoding := cosmoscmd.MakeEncodingConfig(appConsumer.ModuleBasics)
+	encoding := consumerappparams.MakeEncodingConfig()
 	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.AppTest)
-	return testApp, appConsumer.NewDefaultGenesisState(encoding.Marshaler)
+		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
+	return testApp, appConsumer.NewDefaultGenesisState(encoding.Codec)
 }
 
 // DemocracyConsumerAppIniter implements ibctesting.AppIniter for a democracy consumer app
 func DemocracyConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
-	encoding := cosmoscmd.MakeEncodingConfig(appConsumerDemocracy.ModuleBasics)
+	encoding := cdappparams.MakeEncodingConfig()
 	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.AppTest)
-	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Marshaler)
+		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
+	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Codec)
 }
