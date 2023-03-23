@@ -160,7 +160,7 @@ func TestInitGenesis(t *testing.T) {
 
 		numStatesCounted := 0
 		for _, state := range tc.consumerStates {
-			numStatesCounted += 1
+			numStatesCounted++
 			channelID, found := providerKeeper.GetChainToChannel(ctx, state.ChainId)
 			require.True(t, found)
 			require.Equal(t, state.ChannelId, channelID)

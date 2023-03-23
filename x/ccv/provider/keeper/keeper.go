@@ -271,7 +271,7 @@ func (k Keeper) DeleteConsumerGenesis(ctx sdk.Context, chainID string) {
 
 // VerifyConsumerChain verifies that the chain trying to connect on the channel handshake
 // is the expected consumer chain.
-func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectionHops []string) error {
+func (k Keeper) VerifyConsumerChain(ctx sdk.Context, _ string, connectionHops []string) error {
 	if len(connectionHops) != 1 {
 		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
 	}

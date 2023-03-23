@@ -357,7 +357,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 // handled or persisted in store. An error is returned if the packet is invalid,
 // and an error ack should be relayed to the sender.
 func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
-	packet channeltypes.Packet, data ccv.SlashPacketData,
+	_ channeltypes.Packet, data ccv.SlashPacketData,
 ) error {
 	_, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	// return error if we cannot find infraction height matching the validator update id

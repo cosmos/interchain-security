@@ -215,7 +215,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	prop := client.ConsumerAdditionProposalJSON{
 		Title:                             "Propose the addition of a new chain",
 		Description:                       "Gonna be a great chain",
-		ChainId:                           string(tr.chainConfigs[action.consumerChain].chainId),
+		ChainID:                           string(tr.chainConfigs[action.consumerChain].chainId),
 		InitialHeight:                     action.initialHeight,
 		GenesisHash:                       []byte("gen_hash"),
 		BinaryHash:                        []byte("bin_hash"),
@@ -1210,8 +1210,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	}
 
 	if action.expectError {
-		if code.Int() == 0 {
-		} else if verbose {
+		if verbose {
 			fmt.Printf("got expected error during key assignment | code: %v | log: %s\n", code, rawLog)
 		}
 	}

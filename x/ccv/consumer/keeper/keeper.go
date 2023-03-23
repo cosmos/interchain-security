@@ -312,16 +312,16 @@ func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, vscId uint64, maturityTim
 // PacketMaturityExists checks whether the packet maturity time for a given vscId and maturityTime exists.
 //
 // Note: this method is only used in testing.
-func (k Keeper) PacketMaturityTimeExists(ctx sdk.Context, vscId uint64, maturityTime time.Time) bool {
+func (k Keeper) PacketMaturityTimeExists(ctx sdk.Context, vscID uint64, maturityTime time.Time) bool {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PacketMaturityTimeKey(vscId, maturityTime))
+	bz := store.Get(types.PacketMaturityTimeKey(vscID, maturityTime))
 	return bz != nil
 }
 
 // DeletePacketMaturityTimes deletes the packet maturity time for a given vscId and maturityTime
-func (k Keeper) DeletePacketMaturityTimes(ctx sdk.Context, vscId uint64, maturityTime time.Time) {
+func (k Keeper) DeletePacketMaturityTimes(ctx sdk.Context, vscID uint64, maturityTime time.Time) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.PacketMaturityTimeKey(vscId, maturityTime))
+	store.Delete(types.PacketMaturityTimeKey(vscID, maturityTime))
 }
 
 // VerifyProviderChain verifies that the chain trying to connect on the channel handshake
@@ -336,22 +336,22 @@ func (k Keeper) VerifyProviderChain(ctx sdk.Context, connectionHops []string) er
 		return sdkerrors.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
 	}
 	// Verify that client id is expected clientID
-	expectedClientId, ok := k.GetProviderClientID(ctx)
+	expectedClientID, ok := k.GetProviderClientID(ctx)
 	if !ok {
 		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "could not find provider client id")
 	}
-	if expectedClientId != conn.ClientId {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "invalid client: %s, channel must be built on top of client: %s", conn.ClientId, expectedClientId)
+	if expectedClientID != conn.ClientId {
+		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "invalid client: %s, channel must be built on top of client: %s", conn.ClientId, expectedClientID)
 	}
 
 	return nil
 }
 
 // SetHeightValsetUpdateID sets the valset update id for a given block height
-func (k Keeper) SetHeightValsetUpdateID(ctx sdk.Context, height, valsetUpdateId uint64) {
+func (k Keeper) SetHeightValsetUpdateID(ctx sdk.Context, height, valsetUpdateID uint64) {
 	store := ctx.KVStore(k.storeKey)
 	valBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(valBytes, valsetUpdateId)
+	binary.BigEndian.PutUint64(valBytes, valsetUpdateID)
 	store.Set(types.HeightValsetUpdateIDKey(height), valBytes)
 }
 

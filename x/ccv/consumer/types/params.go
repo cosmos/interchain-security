@@ -115,10 +115,8 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidatePositiveInt64(p.HistoricalEntries); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateDuration(p.UnbondingPeriod); err != nil {
-		return err
-	}
-	return nil
+	err := ccvtypes.ValidateDuration(p.UnbondingPeriod)
+	return err
 }
 
 // ParamSetPairs implements params.ParamSet

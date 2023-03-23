@@ -25,7 +25,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 		name    string
 		chainID string
 		// Pending packet data that will be queued in the order specified by the slice
-		dataToQueue []interface{}
+		dataToQueue []any
 		// Indexes of packet data from dataToQueue that are expected to be handled and deleted from store
 		expectedHandledIndexes []int
 	}{
@@ -1094,8 +1094,8 @@ func TestGetSlashAndTrailingData(t *testing.T) {
 		},
 	}
 
+	// Run test cases
 	for _, tc := range testCases {
-
 		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
@@ -1179,8 +1179,8 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		{max: 100},
 	}
 
+	// Test that the provider panics when the number of throttled packets exceeds the max allowed by params
 	for _, tc := range testCases {
-
 		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
@@ -1323,8 +1323,8 @@ type throttledPacketDataInstance struct {
 
 // getAllThrottledPacketDataInstances returns all throttled packet data instances in order
 // from the chain-specific packet data queue.
-func getAllThrottledPacketDataInstances(ctx sdktypes.Context, k *keeper.Keeper, consumerChainId string) (instances []throttledPacketDataInstance) {
-	_, _, allData, ibcSeqNums := k.GetAllThrottledPacketData(ctx, consumerChainId)
+func getAllThrottledPacketDataInstances(ctx sdktypes.Context, k *keeper.Keeper, consumerChainID string) (instances []throttledPacketDataInstance) {
+	_, _, allData, ibcSeqNums := k.GetAllThrottledPacketData(ctx, consumerChainID)
 	instances = []throttledPacketDataInstance{}
 	for idx, data := range allData {
 		instances = append(instances, throttledPacketDataInstance{

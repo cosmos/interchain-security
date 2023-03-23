@@ -226,7 +226,7 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
 		"chainID", clienttypes.NewHeight(4, 5))
 	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
-	expectations = append(expectations, GetMocksForStopConsumerChain(ctx, &mocks)...)
+	expectations = append(expectations, GetMocksForStopConsumerChain(&mocks)...)
 
 	gomock.InOrder(expectations...)
 

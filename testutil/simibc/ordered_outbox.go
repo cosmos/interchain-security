@@ -106,9 +106,9 @@ func (n OrderedOutbox) ConsumeAcks(sender string, num int) []Ack {
 //     needs to have block h + 1 to be able to verify the packet in block h.
 func (n OrderedOutbox) Commit(sender string) {
 	for i := range n.OutboxPackets[sender] {
-		n.OutboxPackets[sender][i].Commits += 1
+		n.OutboxPackets[sender][i].Commits++
 	}
 	for i := range n.OutboxAcks[sender] {
-		n.OutboxAcks[sender][i].Commits += 1
+		n.OutboxAcks[sender][i].Commits++
 	}
 }

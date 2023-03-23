@@ -413,9 +413,9 @@ func ParseChainIdAndUintIdKey(prefix byte, bz []byte) (string, uint64, error) {
 	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
 		return "", 0, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
 	}
-	chainIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
-	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
-	uintID := sdk.BigEndianToUint64(bz[prefixL+8+int(chainIdL):])
+	chainIDL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIDL)])
+	uintID := sdk.BigEndianToUint64(bz[prefixL+8+int(chainIDL):])
 	return chainID, uintID, nil
 }
 

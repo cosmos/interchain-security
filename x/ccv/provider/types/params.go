@@ -173,8 +173,6 @@ func validateTemplateClient(i interface{}) error {
 	copiedClient.UnbondingPeriod = consumertypes.DefaultConsumerUnbondingPeriod
 	copiedClient.LatestHeight = clienttypes.NewHeight(0, 1)
 
-	if err := copiedClient.Validate(); err != nil {
-		return err
-	}
-	return nil
+	err = copiedClient.Validate()
+	return err
 }

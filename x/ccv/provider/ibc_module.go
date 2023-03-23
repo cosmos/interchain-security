@@ -119,11 +119,11 @@ func validateCCVChannelParams(
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coack1
 // Spec tag: [CCV-PCF-COACK.1]
 func (AppModule) OnChanOpenAck(
-	ctx sdk.Context,
-	portID,
-	channelID string,
-	counterpartyChannelID string,
-	counterpartyVersion string,
+	_ sdk.Context,
+	_ string,
+	_ string,
+	_ string,
+	_ string,
 ) error {
 	return sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
 }
@@ -134,7 +134,7 @@ func (AppModule) OnChanOpenAck(
 // Spec tag: [CCV-PCF-COCONFIRM.1]
 func (am AppModule) OnChanOpenConfirm(
 	ctx sdk.Context,
-	portID,
+	_ string,
 	channelID string,
 ) error {
 	err := am.keeper.SetConsumerChain(ctx, channelID)

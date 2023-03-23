@@ -295,7 +295,6 @@ func TestOnChanOpenConfirm(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 
@@ -310,7 +309,6 @@ func TestOnChanOpenConfirm(t *testing.T) {
 		err := providerModule.OnChanOpenConfirm(ctx, "providerPortID", "channelID")
 
 		if tc.expPass {
-
 			require.NoError(t, err)
 			// Validate channel mappings
 			channelID, found := providerKeeper.GetChainToChannel(ctx, "consumerChainID")

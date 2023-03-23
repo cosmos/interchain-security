@@ -57,13 +57,13 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		},
 	}
 
-	pd := types.NewValidatorSetChangePacketData(
+	pd := ccv.NewValidatorSetChangePacketData(
 		changes1,
 		1,
 		nil,
 	)
 
-	pd2 := types.NewValidatorSetChangePacketData(
+	pd2 := ccv.NewValidatorSetChangePacketData(
 		changes2,
 		2,
 		nil,
@@ -72,8 +72,8 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	testCases := []struct {
 		name                   string
 		packet                 channeltypes.Packet
-		newChanges             types.ValidatorSetChangePacketData
-		expectedPendingChanges types.ValidatorSetChangePacketData
+		newChanges             ccv.ValidatorSetChangePacketData
+		expectedPendingChanges ccv.ValidatorSetChangePacketData
 	}{
 		{
 			"success on first packet",
@@ -177,7 +177,7 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	// Set an established provider channel for later in test
 	consumerKeeper.SetProviderChannel(ctx, channelIDToProvider)
 
-	packetData := types.NewSlashPacketData(
+	packetData := ccv.NewSlashPacketData(
 		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Downtime,
 	)
 

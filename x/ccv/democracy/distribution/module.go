@@ -61,7 +61,7 @@ func NewAppModule(
 
 // BeginBlocker mirror functionality of cosmos-sdk/distribution BeginBlocker
 // however it allocates no proposer reward
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 	defer telemetry.ModuleMeasureSince(distrtypes.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 
 	// TODO this is Tendermint-dependent

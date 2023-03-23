@@ -356,11 +356,11 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 	chainID := "chainID"
-	providerIdentities := []*cryptotestutil.CryptoIdentity{
+	providerIdentities := []*cryptotestutil.Identity{
 		cryptotestutil.NewCryptoIdentityFromIntSeed(0),
 		cryptotestutil.NewCryptoIdentityFromIntSeed(1),
 	}
-	consumerIdentities := []*cryptotestutil.CryptoIdentity{
+	consumerIdentities := []*cryptotestutil.Identity{
 		cryptotestutil.NewCryptoIdentityFromIntSeed(2),
 		cryptotestutil.NewCryptoIdentityFromIntSeed(3),
 	}
@@ -606,12 +606,12 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 // Represents the validator set of a chain
 type ValSet struct {
-	identities []*cryptotestutil.CryptoIdentity
+	identities []*cryptotestutil.Identity
 	// indexed by same index as identities
 	power []int64
 }
 
-func CreateValSet(identities []*cryptotestutil.CryptoIdentity) ValSet {
+func CreateValSet(identities []*cryptotestutil.Identity) ValSet {
 	return ValSet{
 		identities: identities,
 		power:      make([]int64, len(identities)),
@@ -660,9 +660,9 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 	numAssignmentsPerBlock := 8
 
 	// Create some identities for the simulated provider validators to use
-	providerIDS := []*cryptotestutil.CryptoIdentity{}
+	providerIDS := []*cryptotestutil.Identity{}
 	// Create some identities which the provider validators can assign to the consumer chain
-	assignableIDS := []*cryptotestutil.CryptoIdentity{}
+	assignableIDS := []*cryptotestutil.Identity{}
 	for i := 0; i < numValidators; i++ {
 		providerIDS = append(providerIDS, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
 	}

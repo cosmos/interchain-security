@@ -603,7 +603,7 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 		}
 		require.Empty(t, res, "consumer removal prop was not deleted %s %s", tc.ChainId, tc.StopTime.String())
 		require.Equal(t, propsToExecute[numDeleted].ChainId, tc.ChainId)
-		numDeleted += 1
+		numDeleted++
 	}
 }
 
@@ -941,8 +941,8 @@ func TestBeginBlockCCR(t *testing.T) {
 		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, prop.ChainId)...)
 	}
 	// Only first two consumer chains should be stopped
-	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
-	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
+	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(&mocks)...)
+	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(&mocks)...)
 
 	gomock.InOrder(expectations...)
 

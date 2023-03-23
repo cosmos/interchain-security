@@ -67,7 +67,7 @@ func (_ Keeper) IterateValidators(sdk.Context, func(index int64, validator staki
 }
 
 // Validator - unimplemented on CCV keeper
-func (_ Keeper) Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.ValidatorI {
+func (_ Keeper) Validator(_ sdk.Context, _ sdk.ValAddress) stakingtypes.ValidatorI {
 	panic("unimplemented on CCV keeper")
 }
 
@@ -118,10 +118,10 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 }
 
 // Jail - unimplemented on CCV keeper
-func (_ Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {}
+func (_ Keeper) Jail(_ sdk.Context, _ sdk.ConsAddress) {}
 
 // Unjail - unimplemented on CCV keeper
-func (_ Keeper) Unjail(sdk.Context, sdk.ConsAddress) {}
+func (_ Keeper) Unjail(_ sdk.Context, _ sdk.ConsAddress) {}
 
 // Delegation - unimplemented on CCV keeper
 func (_ Keeper) Delegation(sdk.Context, sdk.AccAddress, sdk.ValAddress) stakingtypes.DelegationI {

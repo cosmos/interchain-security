@@ -63,11 +63,9 @@ func (path *Path) RelayPacket(packet channeltypes.Packet) error {
 			return err
 		}
 
-		if err := path.EndpointA.AcknowledgePacket(packet, ack); err != nil {
-			return err
-		}
+		err = path.EndpointA.AcknowledgePacket(packet, ack)
 
-		return nil
+		return err
 	}
 
 	pc = path.EndpointB.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(path.EndpointB.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
@@ -88,10 +86,8 @@ func (path *Path) RelayPacket(packet channeltypes.Packet) error {
 			return err
 		}
 
-		if err := path.EndpointB.AcknowledgePacket(packet, ack); err != nil {
-			return err
-		}
-		return nil
+		err = path.EndpointB.AcknowledgePacket(packet, ack)
+		return err
 	}
 
 	return fmt.Errorf("packet commitment does not exist on either endpoint for provided packet")

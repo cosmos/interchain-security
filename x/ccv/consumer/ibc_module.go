@@ -15,7 +15,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -34,7 +33,7 @@ func (am AppModule) OnChanOpenInit(
 	// set to the default version if the provided version is empty according to the ICS26 spec
 	// https://github.com/cosmos/ibc/blob/main/spec/core/ics-026-routing-module/README.md#technical-specification
 	if strings.TrimSpace(version) == "" {
-		version = types.Version
+		version = ccv.Version
 	}
 
 	// ensure provider channel hasn't already been created
@@ -73,7 +72,7 @@ func (am AppModule) OnChanOpenInit(
 // validateCCVChannelParams validates a ccv channel
 func validateCCVChannelParams(
 	ctx sdk.Context,
-	keeper keeper.Keeper,
+	ccvkeeper keeper.Keeper,
 	order channeltypes.Order,
 	portID string,
 	version string,
@@ -84,7 +83,7 @@ func validateCCVChannelParams(
 	}
 
 	// the port ID must match the port ID the CCV module is bounded to
-	boundPort := keeper.GetPort(ctx)
+	boundPort := ccvkeeper.GetPort(ctx)
 	if boundPort != portID {
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
 	}
@@ -190,7 +189,7 @@ func (AppModule) OnChanOpenConfirm(
 // OnChanCloseInit implements the IBCModule interface
 func (am AppModule) OnChanCloseInit(
 	ctx sdk.Context,
-	portID string,
+	_ string,
 	channelID string,
 ) error {
 	// allow relayers to close duplicate OPEN channels, if the provider channel has already been established

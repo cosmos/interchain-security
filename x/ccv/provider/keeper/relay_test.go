@@ -18,7 +18,6 @@ import (
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
-	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/stretchr/testify/require"
@@ -45,7 +44,7 @@ func TestQueueVSCPackets(t *testing.T) {
 			name: "have updates to send",
 			packets: []ccv.ValidatorSetChangePacketData{
 				{
-					ValidatorUpdates: []abci.ValidatorUpdate{
+					ValidatorUpdates: []tmtypes.ValidatorUpdate{
 						{PubKey: tmPubKey, Power: 1},
 					},
 					ValsetUpdateId: 1,
@@ -67,7 +66,7 @@ func TestQueueVSCPackets(t *testing.T) {
 		mocks := testkeeper.NewMockedKeepers(ctrl)
 		mockStakingKeeper := mocks.MockStakingKeeper
 
-		mockUpdates := []abci.ValidatorUpdate{}
+		mockUpdates := []tmtypes.ValidatorUpdate{}
 		if len(tc.packets) != 0 {
 			mockUpdates = tc.packets[0].ValidatorUpdates
 		}

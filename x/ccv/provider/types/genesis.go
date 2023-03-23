@@ -85,14 +85,12 @@ func (gs GenesisState) Validate() error {
 		return err
 	}
 
-	if err := KeyAssignmentValidateBasic(gs.ValidatorConsumerPubkeys,
+	err := KeyAssignmentValidateBasic(gs.ValidatorConsumerPubkeys,
 		gs.ValidatorsByConsumerAddr,
 		gs.ConsumerAddrsToPrune,
-	); err != nil {
-		return err
-	}
+	)
 
-	return nil
+	return err
 }
 
 func (gs GenesisState) ValidateUnbondingOp(ubdOp UnbondingOp) error {
