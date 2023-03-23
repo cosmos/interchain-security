@@ -50,9 +50,9 @@ func (s *CoreSuite) TestAssumptionsSetup() {
 
 	// Provider delegations are correct
 	for i := 0; i < len(s.initState.ValStates.Delegation); i++ {
-		E := int64(s.initState.ValStates.Delegation[i])
-		A := s.delegation(int64(i))
-		if E != A {
+		e := int64(s.initState.ValStates.Delegation[i])
+		a := s.delegation(int64(i))
+		if e != a {
 			s.T().Fatal(FAIL_MSG)
 		}
 	}

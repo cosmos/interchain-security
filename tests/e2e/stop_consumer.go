@@ -213,27 +213,27 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 
 // TestProviderChannelClosed checks that a consumer chain panics
 // when the provider channel was established and then closed
-func (suite *CCVTestSuite) TestProviderChannelClosed() {
-	suite.SetupCCVChannel(suite.path)
+func (s *CCVTestSuite) TestProviderChannelClosed() {
+	s.SetupCCVChannel(s.path)
 	// establish provider channel with a first VSC packet
-	suite.SendEmptyVSCPacket()
+	s.SendEmptyVSCPacket()
 
-	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
-	channelID, found := consumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
-	suite.Require().True(found)
+	channelID, found := consumerKeeper.GetProviderChannel(s.consumerChain.GetContext())
+	s.Require().True(found)
 
 	// close provider channel
-	err := consumerKeeper.ChanCloseInit(suite.consumerChain.GetContext(), ccv.ConsumerPortID, channelID)
-	suite.Require().NoError(err)
-	suite.Require().True(consumerKeeper.IsChannelClosed(suite.consumerChain.GetContext(), channelID))
+	err := consumerKeeper.ChanCloseInit(s.consumerChain.GetContext(), ccv.ConsumerPortID, channelID)
+	s.Require().NoError(err)
+	s.Require().True(consumerKeeper.IsChannelClosed(s.consumerChain.GetContext(), channelID))
 
 	// assert begin blocker did panics
 	defer func() {
 		if r := recover(); r != nil {
 			return
 		}
-		suite.Require().Fail("Begin blocker did not panic with a closed channel")
+		s.Require().Fail("Begin blocker did not panic with a closed channel")
 	}()
-	suite.consumerApp.BeginBlocker(suite.consumerChain.GetContext(), abci.RequestBeginBlock{})
+	s.consumerApp.BeginBlocker(s.consumerChain.GetContext(), abci.RequestBeginBlock{})
 }

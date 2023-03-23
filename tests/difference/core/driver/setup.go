@@ -107,7 +107,7 @@ func (b *Builder) getValidatorPK(seedIx int) mock.PV {
 
 func (b *Builder) getAppBytesAndSenders(
 	_ string,
-	app ibctesting.TestingApp,
+	app ibctesting.AppTest,
 	genesis map[string]json.RawMessage,
 	validators *tmtypes.ValidatorSet,
 ) ([]byte, []ibctesting.SenderAccount) {

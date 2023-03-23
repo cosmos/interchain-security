@@ -36,21 +36,21 @@ func (s *CCVTestSuite) TestPacketRoundtrip() {
 
 // TestQueueAndSendVSCMaturedPackets tests the behavior of EndBlock QueueVSCMaturedPackets call
 // and its integration with SendPackets call.
-func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
-	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
+func (s *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
 	// setup CCV channel
-	suite.SetupCCVChannel(suite.path)
+	s.SetupCCVChannel(s.path)
 
 	// send 3 packets to consumer chain at different times
-	pk, err := cryptocodec.FromTmPubKeyInterface(suite.providerChain.Vals.Validators[0].PubKey)
-	suite.Require().NoError(err)
+	pk, err := cryptocodec.FromTmPubKeyInterface(s.providerChain.Vals.Validators[0].PubKey)
+	s.Require().NoError(err)
 	pk1, err := cryptocodec.ToTmProtoPublicKey(pk)
-	suite.Require().NoError(err)
-	pk, err = cryptocodec.FromTmPubKeyInterface(suite.providerChain.Vals.Validators[1].PubKey)
-	suite.Require().NoError(err)
+	s.Require().NoError(err)
+	pk, err = cryptocodec.FromTmPubKeyInterface(s.providerChain.Vals.Validators[1].PubKey)
+	s.Require().NoError(err)
 	pk2, err := cryptocodec.ToTmProtoPublicKey(pk)
-	suite.Require().NoError(err)
+	s.Require().NoError(err)
 
 	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{
@@ -68,65 +68,65 @@ func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
 	)
 
 	// send first packet
-	packet := channeltypes.NewPacket(pd.GetBytes(), 1, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, ccv.ConsumerPortID, suite.path.EndpointA.ChannelID,
+	packet := channeltypes.NewPacket(pd.GetBytes(), 1, ccv.ProviderPortID, s.path.EndpointB.ChannelID, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
-	ack := consumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
-	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
-	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
+	ack := consumerKeeper.OnRecvVSCPacket(s.consumerChain.GetContext(), packet, pd)
+	s.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
+	s.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
 	// increase time
-	incrementTime(suite, time.Hour)
+	incrementTime(s, time.Hour)
 
 	// update time and send second packet
 	pd.ValidatorUpdates[0].Power = 15
 	pd.ValsetUpdateId = 2
 	packet.Data = pd.GetBytes()
 	packet.Sequence = 2
-	ack = consumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
-	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
-	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
+	ack = consumerKeeper.OnRecvVSCPacket(s.consumerChain.GetContext(), packet, pd)
+	s.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
+	s.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
 	// increase time
-	incrementTime(suite, 24*time.Hour)
+	incrementTime(s, 24*time.Hour)
 
 	// update time and send third packet
 	pd.ValidatorUpdates[1].Power = 40
 	pd.ValsetUpdateId = 3
 	packet.Data = pd.GetBytes()
 	packet.Sequence = 3
-	ack = consumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
-	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
-	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
+	ack = consumerKeeper.OnRecvVSCPacket(s.consumerChain.GetContext(), packet, pd)
+	s.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
+	s.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
-	packetMaturities := consumerKeeper.GetAllPacketMaturityTimes(suite.consumerChain.GetContext())
+	packetMaturities := consumerKeeper.GetAllPacketMaturityTimes(s.consumerChain.GetContext())
 
 	// increase time such that first two packets are unbonded but third is not.
-	unbondingPeriod := consumerKeeper.GetUnbondingPeriod(suite.consumerChain.GetContext())
+	unbondingPeriod := consumerKeeper.GetUnbondingPeriod(s.consumerChain.GetContext())
 	// increase time
-	incrementTime(suite, unbondingPeriod-time.Hour)
+	incrementTime(s, unbondingPeriod-time.Hour)
 
 	// ensure first two packets are unbonded and VSCMatured packets are queued
 	// unbonded time is deleted
-	suite.Require().False(
+	s.Require().False(
 		consumerKeeper.PacketMaturityTimeExists(
-			suite.consumerChain.GetContext(),
+			s.consumerChain.GetContext(),
 			packetMaturities[0].VscId,
 			packetMaturities[0].MaturityTime,
 		),
 		"maturity time not deleted for mature packet 1",
 	)
-	suite.Require().False(
+	s.Require().False(
 		consumerKeeper.PacketMaturityTimeExists(
-			suite.consumerChain.GetContext(),
+			s.consumerChain.GetContext(),
 			packetMaturities[1].VscId,
 			packetMaturities[1].MaturityTime,
 		),
 		"maturity time not deleted for mature packet 2",
 	)
 	// ensure that third packet did not get unbonded and is still in store
-	suite.Require().True(
+	s.Require().True(
 		consumerKeeper.PacketMaturityTimeExists(
-			suite.consumerChain.GetContext(),
+			s.consumerChain.GetContext(),
 			packetMaturities[2].VscId,
 			packetMaturities[2].MaturityTime,
 		),
@@ -134,12 +134,12 @@ func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
 	)
 
 	// check that the packets are committed in state
-	commitments := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
-		suite.consumerChain.GetContext(),
+	commitments := s.consumerApp.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
+		s.consumerChain.GetContext(),
 		ccv.ConsumerPortID,
-		suite.path.EndpointA.ChannelID,
+		s.path.EndpointA.ChannelID,
 	)
-	suite.Require().Equal(2, len(commitments), "did not find packet commitments")
-	suite.Require().Equal(uint64(1), commitments[0].Sequence, "did not send VSCMatured packet for VSC packet 1")
-	suite.Require().Equal(uint64(2), commitments[1].Sequence, "did not send VSCMatured packet for VSC packet 2")
+	s.Require().Equal(2, len(commitments), "did not find packet commitments")
+	s.Require().Equal(uint64(1), commitments[0].Sequence, "did not send VSCMatured packet for VSC packet 1")
+	s.Require().Equal(uint64(2), commitments[1].Sequence, "did not send VSCMatured packet for VSC packet 2")
 }

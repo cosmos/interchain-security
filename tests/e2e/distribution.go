@@ -180,8 +180,8 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		},
 	}
 
+	// Run test cases
 	for _, tc := range testCases {
-
 		s.SetupTest()
 
 		// ccv and transmission channels setup

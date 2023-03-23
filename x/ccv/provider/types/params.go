@@ -152,7 +152,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	}
 }
 
-func validateTemplateClient(i interface{}) error {
+func validateTemplateClient(i any) error {
 	cs, ok := i.(ibctmtypes.ClientState)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T, expected: %T", i, ibctmtypes.ClientState{})

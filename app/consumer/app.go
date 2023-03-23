@@ -131,7 +131,7 @@ var (
 	_ simapp.App              = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
 	_ cosmoscmd.CosmosApp     = (*App)(nil)
-	_ ibctesting.TestingApp   = (*App)(nil)
+	_ ibctesting.AppTest      = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -653,22 +653,22 @@ func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
 }
 
 // GetE2eBankKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
+func (app *App) GetE2eBankKeeper() e2e.BankKeeper {
 	return app.BankKeeper
 }
 
 // GetE2eAccountKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eAccountKeeper() e2e.E2eAccountKeeper {
+func (app *App) GetE2eAccountKeeper() e2e.AccountKeeper {
 	return app.AccountKeeper
 }
 
 // GetE2eSlashingKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
+func (app *App) GetE2eSlashingKeeper() e2e.SlashingKeeper {
 	return app.SlashingKeeper
 }
 
 // GetE2eEvidenceKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
+func (app *App) GetE2eEvidenceKeeper() e2e.EvidenceKeeper {
 	return app.EvidenceKeeper
 }
 

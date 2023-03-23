@@ -67,8 +67,8 @@ func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the ibc-provider module.
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	err := providertypes.RegisterQueryHandlerClient(context.Background(), mux, providertypes.NewQueryClient(clientCtx))
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, gatewayMux *runtime.ServeMux) {
+	err := providertypes.RegisterQueryHandlerClient(context.Background(), gatewayMux, providertypes.NewQueryClient(clientCtx))
 	if err != nil {
 		// same behavior as in cosmos-sdk
 		panic(err)

@@ -168,7 +168,7 @@ var (
 	_ simapp.App              = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
 	_ cosmoscmd.CosmosApp     = (*App)(nil)
-	_ ibctesting.TestingApp   = (*App)(nil)
+	_ ibctesting.AppTest      = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -758,22 +758,22 @@ func (app *App) GetProviderKeeper() ibcproviderkeeper.Keeper {
 }
 
 // GetE2eStakingKeeper implements the ProviderApp interface.
-func (app *App) GetE2eStakingKeeper() e2e.E2eStakingKeeper {
+func (app *App) GetE2eStakingKeeper() e2e.StakingKeeper {
 	return app.StakingKeeper
 }
 
 // GetE2eBankKeeper implements the ProviderApp interface.
-func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
+func (app *App) GetE2eBankKeeper() e2e.BankKeeper {
 	return app.BankKeeper
 }
 
 // GetE2eSlashingKeeper implements the ProviderApp interface.
-func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
+func (app *App) GetE2eSlashingKeeper() e2e.SlashingKeeper {
 	return app.SlashingKeeper
 }
 
 // GetE2eDistributionKeeper implements the ProviderApp interface.
-func (app *App) GetE2eDistributionKeeper() e2e.E2eDistributionKeeper {
+func (app *App) GetE2eDistributionKeeper() e2e.DistributionKeeper {
 	return app.DistrKeeper
 }
 

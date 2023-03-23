@@ -23,7 +23,7 @@ import (
 // The interface that any provider app must implement to be compatible with ccv e2e tests.
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ProviderApp interface {
-	ibctesting.TestingApp
+	ibctesting.AppTest
 
 	//
 	// Keeper getters
@@ -31,19 +31,19 @@ type ProviderApp interface {
 
 	GetProviderKeeper() providerkeeper.Keeper
 	// Returns a staking keeper interface with more capabilities than the expected_keepers interface
-	GetE2eStakingKeeper() E2eStakingKeeper
+	GetE2eStakingKeeper() StakingKeeper
 	// Returns a bank keeper interface with more capabilities than the expected_keepers interface
-	GetE2eBankKeeper() E2eBankKeeper
+	GetE2eBankKeeper() BankKeeper
 	// Returns a slashing keeper interface with more capabilities than the expected_keepers interface
-	GetE2eSlashingKeeper() E2eSlashingKeeper
+	GetE2eSlashingKeeper() SlashingKeeper
 	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
-	GetE2eDistributionKeeper() E2eDistributionKeeper
+	GetE2eDistributionKeeper() DistributionKeeper
 }
 
 // The interface that any consumer app must implement to be compatible with e2e tests
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ConsumerApp interface {
-	ibctesting.TestingApp
+	ibctesting.AppTest
 
 	BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock
 	GetConsumerKeeper() consumerkeeper.Keeper
@@ -54,25 +54,25 @@ type ConsumerApp interface {
 	//
 
 	// Returns a bank keeper interface with more capabilities than the expected_keepers interface
-	GetE2eBankKeeper() E2eBankKeeper
+	GetE2eBankKeeper() BankKeeper
 	// Returns an account keeper interface with more capabilities than the expected_keepers interface
-	GetE2eAccountKeeper() E2eAccountKeeper
+	GetE2eAccountKeeper() AccountKeeper
 	// Returns a slashing keeper interface with more capabilities than the expected_keepers interface
-	GetE2eSlashingKeeper() E2eSlashingKeeper
+	GetE2eSlashingKeeper() SlashingKeeper
 	// Returns an evidence keeper interface with more capabilities than the expected_keepers interface
-	GetE2eEvidenceKeeper() E2eEvidenceKeeper
+	GetE2eEvidenceKeeper() EvidenceKeeper
 }
 
 type DemocConsumerApp interface {
 	ConsumerApp
 	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
-	GetE2eDistributionKeeper() E2eDistributionKeeper
+	GetE2eDistributionKeeper() DistributionKeeper
 	// Returns a staking keeper interface with more capabilities than the expected_keepers interface
-	GetE2eStakingKeeper() E2eStakingKeeper
+	GetE2eStakingKeeper() StakingKeeper
 	// Returns a mint keeper interface with more capabilities than the expected_keepers interface
-	GetE2eMintKeeper() E2eMintKeeper
+	GetE2eMintKeeper() MintKeeper
 	// Returns a gov keeper interface with more capabilities than the expected_keepers interface
-	GetE2eGovKeeper() E2eGovKeeper
+	GetE2eGovKeeper() GovKeeper
 }
 
 //
@@ -80,7 +80,7 @@ type DemocConsumerApp interface {
 // since e2e tests require extra functionality from external keepers.
 //
 
-type E2eStakingKeeper interface {
+type StakingKeeper interface {
 	ccvtypes.StakingKeeper
 	Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.Int, tokenSrc types.BondStatus,
 		validator types.Validator, subtractAccount bool) (newShares sdk.Dec, err error)
@@ -100,18 +100,18 @@ type E2eStakingKeeper interface {
 	GetValidatorSet() types.ValidatorSet
 }
 
-type E2eBankKeeper interface {
+type BankKeeper interface {
 	ccvtypes.BankKeeper
 	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress,
 		recipientModule string, amt sdk.Coins) error
 }
 
-type E2eAccountKeeper interface {
+type AccountKeeper interface {
 	ccvtypes.AccountKeeper
 	GetParams(sdk.Context) authtypes.Params
 }
 
-type E2eSlashingKeeper interface {
+type SlashingKeeper interface {
 	ccvtypes.SlashingKeeper
 	SetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress,
 		info slashingtypes.ValidatorSigningInfo)
@@ -122,11 +122,11 @@ type E2eSlashingKeeper interface {
 		address sdk.ConsAddress, handler func(index int64, missed bool) (stop bool))
 }
 
-type E2eEvidenceKeeper interface {
+type EvidenceKeeper interface {
 	HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
 }
 
-type E2eDistributionKeeper interface {
+type DistributionKeeper interface {
 	GetFeePoolCommunityCoins(ctx sdk.Context) sdk.DecCoins
 	GetDistributionAccount(ctx sdk.Context) authtypes.ModuleAccountI
 	GetValidatorOutstandingRewards(ctx sdk.Context,
@@ -134,11 +134,11 @@ type E2eDistributionKeeper interface {
 	GetCommunityTax(ctx sdk.Context) (percent sdk.Dec)
 }
 
-type E2eMintKeeper interface {
+type MintKeeper interface {
 	GetParams(ctx sdk.Context) (params minttypes.Params)
 }
 
-type E2eGovKeeper interface {
+type GovKeeper interface {
 	GetDepositParams(ctx sdk.Context) govtypes.DepositParams
 	GetVotingParams(ctx sdk.Context) govtypes.VotingParams
 	SetVotingParams(ctx sdk.Context, votingParams govtypes.VotingParams)

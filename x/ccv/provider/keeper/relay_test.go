@@ -530,8 +530,8 @@ func TestHandleSlashPacket(t *testing.T) {
 		// Note: double-sign slash packet handling should not occur, see OnRecvSlashPacket.
 	}
 
+	// Run test cases: each test case is a different packet data.
 	for _, tc := range testCases {
-
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 
@@ -572,11 +572,11 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	pk.SetValidatorSetUpdateId(ctx, 1)
 
 	// Start first unbonding without any consumers registered
-	var unbondingOpId uint64 = 1
-	err := pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
+	var unbondingOpID uint64 = 1
+	err := pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpID)
 	require.NoError(t, err)
 	// Check that no unbonding op was stored
-	_, found := pk.GetUnbondingOp(ctx, unbondingOpId)
+	_, found := pk.GetUnbondingOp(ctx, unbondingOpID)
 	require.False(t, found)
 
 	// Increment vscID
@@ -587,20 +587,20 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	pk.SetConsumerClientId(ctx, "chain-1", "client-1")
 
 	// Start second unbonding
-	unbondingOpId = 2
+	unbondingOpID = 2
 	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, unbondingOpId).Return(nil),
+		mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, unbondingOpID).Return(nil),
 	)
-	err = pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
+	err = pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpID)
 	require.NoError(t, err)
 	// Check that an unbonding op was stored
 	expectedChains := []string{"chain-1"}
-	unbondingOp, found := pk.GetUnbondingOp(ctx, unbondingOpId)
+	unbondingOp, found := pk.GetUnbondingOp(ctx, unbondingOpID)
 	require.True(t, found)
-	require.Equal(t, unbondingOpId, unbondingOp.Id)
+	require.Equal(t, unbondingOpID, unbondingOp.Id)
 	require.Equal(t, expectedChains, unbondingOp.UnbondingConsumerChains)
 	// Check that the unbonding op index was stored
-	expectedUnbondingOpIds := []uint64{unbondingOpId}
+	expectedUnbondingOpIds := []uint64{unbondingOpID}
 	ids, found := pk.GetUnbondingOpIndex(ctx, "chain-1", pk.GetValidatorSetUpdateId(ctx))
 	require.True(t, found)
 	require.Equal(t, expectedUnbondingOpIds, ids)

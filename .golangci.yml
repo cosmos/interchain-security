@@ -56,6 +56,8 @@ linters-settings:
         disabled: true
       - name: deep-exit
         disabled: true
+      - name: defer
+        disabled: true
 
 
 

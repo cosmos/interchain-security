@@ -167,7 +167,7 @@ var (
 	_ simapp.App              = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
 	_ cosmoscmd.CosmosApp     = (*App)(nil)
-	_ ibctesting.TestingApp   = (*App)(nil)
+	_ ibctesting.AppTest      = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -765,42 +765,42 @@ func (app *App) GetConsumerKeeper() consumerkeeper.Keeper {
 }
 
 // GetE2eBankKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
+func (app *App) GetE2eBankKeeper() e2e.BankKeeper {
 	return app.BankKeeper
 }
 
 // GetE2eAccountKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eAccountKeeper() e2e.E2eAccountKeeper {
+func (app *App) GetE2eAccountKeeper() e2e.AccountKeeper {
 	return app.AccountKeeper
 }
 
 // GetE2eSlashingKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
+func (app *App) GetE2eSlashingKeeper() e2e.SlashingKeeper {
 	return app.SlashingKeeper
 }
 
 // GetE2eEvidenceKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
+func (app *App) GetE2eEvidenceKeeper() e2e.EvidenceKeeper {
 	return app.EvidenceKeeper
 }
 
 // GetE2eStakingKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eStakingKeeper() e2e.E2eStakingKeeper {
+func (app *App) GetE2eStakingKeeper() e2e.StakingKeeper {
 	return app.StakingKeeper
 }
 
 // GetE2eDistributionKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eDistributionKeeper() e2e.E2eDistributionKeeper {
+func (app *App) GetE2eDistributionKeeper() e2e.DistributionKeeper {
 	return app.DistrKeeper
 }
 
 // GetE2eMintKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eMintKeeper() e2e.E2eMintKeeper {
+func (app *App) GetE2eMintKeeper() e2e.MintKeeper {
 	return app.MintKeeper
 }
 
 // GetE2eGovKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eGovKeeper() e2e.E2eGovKeeper {
+func (app *App) GetE2eGovKeeper() e2e.GovKeeper {
 	return app.GovKeeper
 }
 

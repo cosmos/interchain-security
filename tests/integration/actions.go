@@ -333,7 +333,7 @@ type submitParamChangeProposalAction struct {
 	deposit  uint
 	subspace string
 	key      string
-	value    interface{}
+	value    any
 }
 
 type paramChangeProposalJSON struct {
@@ -344,9 +344,9 @@ type paramChangeProposalJSON struct {
 }
 
 type paramChangeJSON struct {
-	Subspace string      `json:"subspace"`
-	Key      string      `json:"key"`
-	Value    interface{} `json:"value"`
+	Subspace string `json:"subspace"`
+	Key      string `json:"key"`
+	Value    any    `json:"value"`
 }
 
 func (tr TestRun) submitParamChangeProposal(
@@ -587,7 +587,7 @@ func (tr TestRun) addChainToRelayer(
 	_ bool,
 ) {
 	queryNodeIP := tr.getQueryNodeIP(action.chain)
-	chainId := tr.chainConfigs[action.chain].chainId
+	chainID := tr.chainConfigs[action.chain].chainId
 	keyName := "query"
 	rpcAddr := "http://" + queryNodeIP + ":26658"
 	grpcAddr := "tcp://" + queryNodeIP + ":9091"
@@ -595,7 +595,7 @@ func (tr TestRun) addChainToRelayer(
 
 	chainConfig := fmt.Sprintf(hermesChainConfigTemplate,
 		grpcAddr,
-		chainId,
+		chainID,
 		keyName,
 		rpcAddr,
 		wsAddr,

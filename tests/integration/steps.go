@@ -1,7 +1,7 @@
 package main
 
 type Step struct {
-	action interface{}
+	action any
 	state  State
 }
 

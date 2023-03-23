@@ -726,7 +726,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
 			gomock.Any(),
 			gomock.Any(),
-		).DoAndReturn(func(_ interface{}, valAddr sdk.ValAddress) int64 {
+		).DoAndReturn(func(_ any, valAddr sdk.ValAddress) int64 {
 			// When the mocked method is called, locate the appropriate validator
 			// in the provider valset and return its power.
 			for i, id := range providerIDS {
@@ -744,7 +744,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 			gomock.Any(),
 			gomock.Any(),
-		).DoAndReturn(func(_ interface{}, consP sdk.ConsAddress) (stakingtypes.Validator, bool) {
+		).DoAndReturn(func(_ any, consP sdk.ConsAddress) (stakingtypes.Validator, bool) {
 			for _, id := range providerIDS {
 				if id.SDKValConsAddress().Equals(consP) {
 					return id.SDKStakingValidator(), true

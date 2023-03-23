@@ -198,10 +198,10 @@ func NewEquivocationProposal(title, description string, equivocations []*evidenc
 }
 
 // ProposalRoute returns the routing key of an equivocation  proposal.
-func (_ *EquivocationProposal) ProposalRoute() string { return RouterKey }
+func (*EquivocationProposal) ProposalRoute() string { return RouterKey }
 
 // ProposalType returns the type of a equivocation proposal.
-func (_ *EquivocationProposal) ProposalType() string {
+func (*EquivocationProposal) ProposalType() string {
 	return ProposalTypeEquivocation
 }
 

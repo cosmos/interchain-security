@@ -319,7 +319,7 @@ func (k Keeper) QueueThrottledVSCMaturedPacketData(
 // OnRecvSlashPacket and OnRecvVSCMaturedPacket, meaning we can return an ibc err ack to the
 // counter party chain on error, instead of panicking this chain.
 func (k Keeper) QueueThrottledPacketData(
-	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{},
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData any,
 ) error {
 	store := ctx.KVStore(k.storeKey)
 
@@ -457,11 +457,11 @@ func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID st
 // Since this method executes on query, no panics are explicitly included.
 func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID string) (
 	slashData []ccvtypes.SlashPacketData, vscMaturedData []ccvtypes.VSCMaturedPacketData,
-	rawOrderedData []interface{}, ibcSeqNums []uint64,
+	rawOrderedData []any, ibcSeqNums []uint64,
 ) {
 	slashData = []ccvtypes.SlashPacketData{}
 	vscMaturedData = []ccvtypes.VSCMaturedPacketData{}
-	rawOrderedData = []interface{}{}
+	rawOrderedData = []any{}
 	ibcSeqNums = []uint64{}
 
 	store := ctx.KVStore(k.storeKey)

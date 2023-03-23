@@ -98,7 +98,7 @@ func (am AppModule) OnChanOpenTry(
 // validateCCVChannelParams validates a ccv channel
 func validateCCVChannelParams(
 	ctx sdk.Context,
-	keeper *keeper.Keeper,
+	providerkeeper *keeper.Keeper,
 	order channeltypes.Order,
 	portID string,
 ) error {
@@ -107,7 +107,7 @@ func validateCCVChannelParams(
 	}
 
 	// the port ID must match the port ID the CCV module is bounded to
-	boundPort := keeper.GetPort(ctx)
+	boundPort := providerkeeper.GetPort(ctx)
 	if boundPort != portID {
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
 	}

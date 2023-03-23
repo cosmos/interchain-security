@@ -92,7 +92,6 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 
 		// Replenish slash meter until it is positive
 		for i := 0; i < tc.expectedReplenishesTillPositive; i++ {
-
 			// Mutate cached context to have a block time after the current replenish candidate time.
 			cacheCtx = s.getCtxAfterReplenishCandidate(cacheCtx)
 			candidate := s.providerApp.GetProviderKeeper().GetSlashMeterReplenishTimeCandidate(cacheCtx)

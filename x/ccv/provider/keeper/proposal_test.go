@@ -438,6 +438,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 		err := providerKeeper.HandleConsumerRemovalProposal(ctx, tc.prop)
 
+		// Assert expected result
 		if tc.expAppendProp {
 			require.NoError(t, err)
 
@@ -452,7 +453,6 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ChainId, tc.prop.StopTime)
 			require.False(t, found)
 		}
-
 		// Assert mock calls from setup function
 		ctrl.Finish()
 	}
