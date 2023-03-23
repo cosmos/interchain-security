@@ -9,7 +9,7 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/app/consumer/ante"
-	appparams "github.com/cosmos/interchain-security/app/consumer/params"
+	appparams "github.com/cosmos/interchain-security/app/params"
 	"github.com/stretchr/testify/require"
 )
 

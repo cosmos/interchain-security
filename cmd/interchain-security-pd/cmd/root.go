@@ -18,8 +18,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/interchain-security/app/params"
 	app "github.com/cosmos/interchain-security/app/provider"
-	"github.com/cosmos/interchain-security/app/provider/params"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
