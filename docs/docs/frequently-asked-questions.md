@@ -64,7 +64,7 @@ At present, the validators cannot opt-out of validating consumer chains.
 
 There are multiple opt-out mechanisms under active research.
 
-## How Equivocation Governance Slashing works?
+## How does Equivocation Governance Slashing work?
 To avoid potential attacks directed at provider chain validators, a new mechanism was introduced:
 
 When a validator double-signs on the provider chain a special type of slash packet is relayed to the provider chain. The provider will store information about the double signing validator and allow a governance proposal to be submitted.
@@ -74,7 +74,7 @@ If the double-signing proposal passes, the offending validator will be slashed o
 An equivocation proposal cannot be submitted for a validator that did not double sign on any of the consumer chains.
 :::
 
-## Can Consumer Chains Perform Software Upgrades?
+## Can Consumer Chains perform Software Upgrades?
 Consumer chains are standalone chains, in the sense that they can run arbitrary logic and use any modules they want (ie CosmWASM).
 
 Consumer chain upgrades are unlikely to impact the provider chain, as long as there are no changes to the ICS module.
@@ -82,12 +82,12 @@ Consumer chain upgrades are unlikely to impact the provider chain, as long as th
 ## How can I connect to the testnets?
 Check out the [Joining Replicated Security testnet](../validators/joining-testnet.md) section.
 
-## How to start using ICS?
+## How do I start using ICS?
 To become a consumer chain use this [checklist](../consumer-development/onboarding.md) and check the [App integration section](../consumer-development/app-integration.md)
 
-## Supported relayers?
+## Which relayers are supported?
 Currently supported versions:
 - Hermes 1.3
 
-## How key delegation works in ICS?
+## How does key delegation work in ICS?
 You can check the [Key Assignment Guide](../features/key-assignment.md) for specific instructions.
