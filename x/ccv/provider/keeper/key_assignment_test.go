@@ -394,7 +394,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerClientId(ctx, chainID, "")
+				k.SetConsumerClientID(ctx, chainID, "")
 				err := k.AssignConsumerKey(ctx, chainID,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
@@ -425,7 +425,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerClientId(ctx, chainID, "")
+				k.SetConsumerClientID(ctx, chainID, "")
 				err := k.AssignConsumerKey(ctx, chainID,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
@@ -458,7 +458,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerClientId(ctx, chainID, "")
+				k.SetConsumerClientID(ctx, chainID, "")
 				err := k.AssignConsumerKey(ctx, chainID,
 					providerIdentities[0].SDKStakingValidator(),
 					consumerIdentities[0].TMProtoCryptoPublicKey(),
@@ -485,7 +485,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerClientId(ctx, chainID, "")
+				k.SetConsumerClientID(ctx, chainID, "")
 				err := k.AssignConsumerKey(ctx, chainID,
 					providerIdentities[1].SDKStakingValidator(),
 					providerIdentities[0].TMProtoCryptoPublicKey(),
@@ -720,7 +720,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		historicSlashQueries := map[string]map[uint64]string{}
 
 		// Sanity check that the validator set update is initialised to 0, for clarity.
-		require.Equal(t, k.GetValidatorSetUpdateId(ctx), uint64(0))
+		require.Equal(t, k.GetValidatorSetUpdateID(ctx), uint64(0))
 
 		// Mock calls to GetLastValidatorPower to return directly from the providerValset
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
@@ -760,7 +760,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			updates = k.MustApplyKeyAssignmentToValUpdates(ctx, chainID, updates)
 			consumerValset.apply(updates)
 			// Simulate the VSCID update in EndBlock
-			k.IncrementValidatorSetUpdateId(ctx)
+			k.IncrementValidatorSetUpdateID(ctx)
 		}
 
 		// Helper: apply some key assignment transactions to the system
@@ -779,7 +779,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		applyUpdatesAndIncrementVSCID(getStakingUpdates())
 
 		// Register the consumer chain
-		k.SetConsumerClientId(ctx, chainID, "")
+		k.SetConsumerClientID(ctx, chainID, "")
 
 		// Analogous to the last vscid received from the consumer in a maturity
 		// Used to check the correct pruning property
@@ -789,7 +789,6 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		// Each block consists of a number of random key assignment tx's
 		// and a random set of validator power updates
 		for block := 0; block < blocksPerExecution; block++ {
-
 			// Generate and apply assignments and power updates
 			applyAssignments(getAssignments())
 			applyUpdatesAndIncrementVSCID(getStakingUpdates())
@@ -798,7 +797,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			// delivery of maturity packets from the consumer chain.
 			prunedVscid := greatestPrunedVSCID +
 				// +1 and -1 because id was incremented (-1), (+1) to make upper bound inclusive
-				rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1-1-greatestPrunedVSCID)
+				rand.Intn(int(k.GetValidatorSetUpdateID(ctx))+1-1-greatestPrunedVSCID)
 			k.PruneKeyAssignments(ctx, chainID, uint64(prunedVscid))
 			greatestPrunedVSCID = prunedVscid
 
@@ -881,7 +880,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 						historicSlashQueries[consC.String()] = map[uint64]string{}
 					}
 
-					vscid := k.GetValidatorSetUpdateId(ctx) - 1 // -1 since it was incremented before
+					vscid := k.GetValidatorSetUpdateID(ctx) - 1 // -1 since it was incremented before
 					// Record the slash query result obtained at this block
 					historicSlashQueries[consC.String()][vscid] = consP.String()
 				}
@@ -901,11 +900,11 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				// No conflicts.
 				require.True(t, len(seen) < 2)
 			}
-
 		}
 		ctrl.Finish()
 	}
 
+	// Run the random execution a number of times
 	for i := 0; i < numExecutions; i++ {
 		runRandomExecution()
 	}

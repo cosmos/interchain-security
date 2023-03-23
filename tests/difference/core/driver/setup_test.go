@@ -11,14 +11,14 @@ import (
 // driver hold. This test therefore does not test the system, but only that
 // the driver is correctly setup.
 func (s *CoreSuite) TestAssumptionsSetup() {
-	const FAIL_MSG = "Assumptions for core diff test failed: there is a problem with the driver or how the test is setup."
+	const failMsg = "Assumptions for core diff test failed: there is a problem with the driver or how the test is setup."
 
 	// Staking module maxValidators param is correct
 	maxValsE := uint32(s.initState.MaxValidators)
 	maxVals := s.providerStakingKeeper().GetParams(s.ctx(P)).MaxValidators
 
 	if maxValsE != maxVals {
-		s.T().Fatal(FAIL_MSG)
+		s.T().Fatal(failMsg)
 	}
 
 	// TODO: Write a check to make sure that the slash throttle params are set correctly.
@@ -44,7 +44,7 @@ func (s *CoreSuite) TestAssumptionsSetup() {
 	for i := 0; i < len(s.initState.ValStates.Tokens); i++ {
 		_, found := s.providerSlashingKeeper().GetValidatorSigningInfo(s.ctx(P), s.consAddr(int64(i)))
 		if !found {
-			s.Require().FailNow(FAIL_MSG)
+			s.Require().FailNow(failMsg)
 		}
 	}
 
@@ -53,7 +53,7 @@ func (s *CoreSuite) TestAssumptionsSetup() {
 		e := int64(s.initState.ValStates.Delegation[i])
 		a := s.delegation(int64(i))
 		if e != a {
-			s.T().Fatal(FAIL_MSG)
+			s.T().Fatal(failMsg)
 		}
 	}
 
@@ -62,7 +62,7 @@ func (s *CoreSuite) TestAssumptionsSetup() {
 		e := int64(s.initState.ValStates.Tokens[i])
 		a := s.providerTokens(int64(i))
 		if e != a {
-			s.T().Fatal(FAIL_MSG)
+			s.T().Fatal(failMsg)
 		}
 	}
 
@@ -71,21 +71,21 @@ func (s *CoreSuite) TestAssumptionsSetup() {
 		e := s.initState.ValStates.Status[i]
 		a := s.validatorStatus(int64(i))
 		if e != a {
-			s.T().Fatal(FAIL_MSG)
+			s.T().Fatal(failMsg)
 		}
 	}
 
 	// Staking module does not contain undelegations
 	s.providerStakingKeeper().IterateUnbondingDelegations(s.ctx(P),
 		func(index int64, ubd stakingtypes.UnbondingDelegation) bool {
-			s.T().Fatal(FAIL_MSG)
+			s.T().Fatal(failMsg)
 			return false // Don't stop
 		})
 
 	// Staking module does contain redelegations
 	s.providerStakingKeeper().IterateRedelegations(s.ctx(P),
 		func(index int64, ubd stakingtypes.Redelegation) bool {
-			s.T().Fatal(FAIL_MSG)
+			s.T().Fatal(failMsg)
 			return false // Don't stop
 		})
 
@@ -95,7 +95,7 @@ func (s *CoreSuite) TestAssumptionsSetup() {
 	unbondingValIterator := s.providerStakingKeeper().ValidatorQueueIterator(s.ctx(P), endTime, endHeight)
 	defer unbondingValIterator.Close()
 	for ; unbondingValIterator.Valid(); unbondingValIterator.Next() {
-		s.T().Fatal(FAIL_MSG)
+		s.T().Fatal(failMsg)
 	}
 
 	// Consumer has no pending data packets
@@ -103,7 +103,7 @@ func (s *CoreSuite) TestAssumptionsSetup() {
 
 	// Consumer has no maturities
 	for range s.consumerKeeper().GetAllPacketMaturityTimes(s.ctx(C)) {
-		s.T().Fatal(FAIL_MSG)
+		s.T().Fatal(failMsg)
 	}
 
 	// Consumer power
@@ -115,7 +115,7 @@ func (s *CoreSuite) TestAssumptionsSetup() {
 		s.Require().Equal(expectFound, found)
 		if expectFound {
 			if int64(expectPower) != val.Power {
-				s.T().Fatal(FAIL_MSG)
+				s.T().Fatal(failMsg)
 			}
 		}
 	}

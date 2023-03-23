@@ -68,9 +68,10 @@ func (path *Path) RelayPacket(packet channeltypes.Packet) error {
 		return err
 	}
 
+	// check if packet commitment exists on B
 	pc = path.EndpointB.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(path.EndpointB.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
+	// packet found, relay from B to A
 	if bytes.Equal(pc, channeltypes.CommitPacket(path.EndpointB.Chain.App.AppCodec(), packet)) {
-
 		// packet found, relay B to A
 		if err := path.EndpointA.UpdateClient(); err != nil {
 			return err

@@ -163,7 +163,7 @@ func (s *CCVTestSuite) TestUndelegationVscTimeout() {
 
 	// check whether the chain was removed
 	chainID := s.consumerChain.ChainID
-	_, found := providerKeeper.GetConsumerClientId(s.providerCtx(), chainID)
+	_, found := providerKeeper.GetConsumerClientID(s.providerCtx(), chainID)
 	s.Require().Equal(false, found, "consumer chain was not removed")
 
 	// check if the chain was properly removed
@@ -418,7 +418,7 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 	)
 
 	// Save the current valset update ID
-	valsetUpdateID := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
+	valsetUpdateID := providerKeeper.GetValidatorSetUpdateID(s.providerCtx())
 
 	// Check that CCV unbonding op was created from AfterUnbondingInitiated hook
 	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true)

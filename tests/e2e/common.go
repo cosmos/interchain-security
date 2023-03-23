@@ -15,7 +15,7 @@ import (
 	ibctm "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	"github.com/cosmos/interchain-security/testutil/e2e"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
@@ -167,12 +167,12 @@ func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, idx
 }
 
 // undelegate unbonds an amount of delegator shares from a given validator
-func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (valsetUpdateId uint64) {
+func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (valsetUpdate uint64) {
 	_, err := s.providerApp.GetE2eStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, sharesAmount)
 	s.Require().NoError(err)
 
 	// save the current valset update ID
-	valsetUpdateID := s.providerApp.GetProviderKeeper().GetValidatorSetUpdateId(s.providerCtx())
+	valsetUpdateID := s.providerApp.GetProviderKeeper().GetValidatorSetUpdateID(s.providerCtx())
 
 	return valsetUpdateID
 }
@@ -361,7 +361,7 @@ func (s *CCVTestSuite) SendEmptyVSCPacket() {
 	oldBlockTime := s.providerChain.GetContext().BlockTime()
 	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 
-	valUpdateID := providerKeeper.GetValidatorSetUpdateId(s.providerChain.GetContext())
+	valUpdateID := providerKeeper.GetValidatorSetUpdateID(s.providerChain.GetContext())
 
 	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{},
@@ -565,7 +565,7 @@ func (s *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondi
 	)
 	require.NoError(endpoint.Chain.T, err)
 
-	res, err := endpoint.Chain.SendMsgs(msg)
+	res, err := endpoint.Chain.SendMessages(msg)
 	require.NoError(endpoint.Chain.T, err)
 
 	endpoint.ClientID, err = ibctesting.ParseClientIDFromEvents(res.GetEvents())

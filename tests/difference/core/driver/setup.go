@@ -34,7 +34,7 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
 	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -483,7 +483,7 @@ func (b *Builder) createProvidersLocalClient() {
 	err := b.providerEndpoint().CreateClient()
 	b.suite.Require().NoError(err)
 	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.providerCtx(), b.consumer().ChainID, b.providerEndpoint().ClientID)
+	b.providerKeeper().SetConsumerClientID(b.providerCtx(), b.consumer().ChainID, b.providerEndpoint().ClientID)
 }
 
 func (b *Builder) createConsumersLocalClientGenesis() *ibctmtypes.ClientState {
@@ -522,10 +522,10 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 // state does not necessarily mimic the order of steps that happen in a
 // live scenario.
 func GetZeroState(
-	suite *suite.Suite,
+	s *suite.Suite,
 	initState InitState,
 ) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted, timeLastCommitted int64) {
-	b := Builder{initState: initState, suite: suite}
+	b := Builder{initState: initState, suite: s}
 
 	b.createProviderAndConsumer()
 

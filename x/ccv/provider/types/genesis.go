@@ -11,7 +11,7 @@ import (
 
 func NewGenesisState(
 	vscID uint64,
-	vscIdToHeights []ValsetUpdateIdToHeight,
+	vscIDToHeights []ValsetUpdateIdToHeight,
 	consumerStates []ConsumerState,
 	unbondingOps []UnbondingOp,
 	matureUbdOps *ccv.MaturedUnbondingOps,
@@ -24,7 +24,7 @@ func NewGenesisState(
 ) *GenesisState {
 	return &GenesisState{
 		ValsetUpdateId:            vscID,
-		ValsetUpdateIdToHeight:    vscIdToHeights,
+		ValsetUpdateIdToHeight:    vscIDToHeights,
 		ConsumerStates:            consumerStates,
 		UnbondingOps:              unbondingOps,
 		MatureUnbondingOps:        matureUbdOps,

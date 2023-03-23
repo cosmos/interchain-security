@@ -9,7 +9,7 @@ import (
 	e2eutil "github.com/cosmos/interchain-security/testutil/e2e"
 	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
 
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
@@ -175,7 +175,7 @@ func initConsumerChain(
 	bundle.Path = ibctesting.NewPath(bundle.Chain, s.providerChain)
 
 	// Set provider endpoint's clientID for each consumer
-	providerEndpointClientID, found := providerKeeper.GetConsumerClientId(
+	providerEndpointClientID, found := providerKeeper.GetConsumerClientID(
 		s.providerCtx(),
 		chainID,
 	)

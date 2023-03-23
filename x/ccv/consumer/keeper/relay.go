@@ -184,8 +184,8 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 	}
 
 	pending := k.GetPendingPackets(ctx)
+	// send packets in FIFO order
 	for _, p := range pending.GetList() {
-
 		// send packet over IBC
 		err := utils.SendIBCPacket(
 			ctx,
@@ -207,7 +207,6 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
 	}
-
 	// clear pending data packets
 	k.DeletePendingDataPackets(ctx)
 }

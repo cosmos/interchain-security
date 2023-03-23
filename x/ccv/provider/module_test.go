@@ -96,7 +96,7 @@ func TestInitGenesis(t *testing.T) {
 
 		appModule := provider.NewAppModule(&providerKeeper)
 		genState := types.NewGenesisState(
-			providerKeeper.GetValidatorSetUpdateId(ctx),
+			providerKeeper.GetValidatorSetUpdateID(ctx),
 			nil,
 			tc.consumerStates,
 			nil,

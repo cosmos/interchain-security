@@ -340,8 +340,8 @@ func TestVerifyProviderChain(t *testing.T) {
 		},
 	}
 
+	// Run test cases
 	for _, tc := range testCases {
-
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 

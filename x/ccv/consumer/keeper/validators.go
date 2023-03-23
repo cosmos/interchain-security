@@ -44,17 +44,14 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 				// received from the provider are invalid.
 				panic(err)
 			}
-
 			k.SetCCValidator(ctx, ccVal)
 			k.AfterValidatorBonded(ctx, consAddr, nil)
-
 		} else {
 			// edge case: we received an update for 0 power
 			// but the validator is already deleted. Do not forward
 			// to tendermint.
 			continue
 		}
-
 		ret = append(ret, change)
 	}
 	return ret

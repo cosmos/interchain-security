@@ -126,7 +126,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			// stop consumer chain and release unbonding
 			return k.StopConsumerChain(ctx, chainID, false)
 		}
-		return sdkerrors.Wrapf(providertypes.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
+		return sdkerrors.Wrapf(providertypes.ErrUnknownConsumerChannelID, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
 	}
 	return nil
 }
@@ -212,7 +212,7 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 
 // QueueVSCPackets queues latest validator updates for every registered consumer chain
 func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
-	valUpdateID := k.GetValidatorSetUpdateId(ctx) // curent valset update ID
+	valUpdateID := k.GetValidatorSetUpdateID(ctx) // curent valset update ID
 	// Get the validator updates from the staking module.
 	// Note: GetValidatorUpdates panics if the updates provided by the x/staking module
 	// of cosmos-sdk is invalid.
@@ -239,7 +239,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 		}
 	}
 
-	k.IncrementValidatorSetUpdateId(ctx)
+	k.IncrementValidatorSetUpdateID(ctx)
 }
 
 // EndBlockCIS contains the EndBlock logic needed for
@@ -247,7 +247,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// set the ValsetUpdateBlockHeight
 	blockHeight := uint64(ctx.BlockHeight()) + 1
-	valUpdateID := k.GetValidatorSetUpdateId(ctx)
+	valUpdateID := k.GetValidatorSetUpdateID(ctx)
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, blockHeight)
 	k.Logger(ctx).Debug("vscID was mapped to block height", "vscID", valUpdateID, "height", blockHeight)
 
@@ -506,7 +506,6 @@ func (k Keeper) getMappedInfractionHeight(ctx sdk.Context,
 ) (height uint64, found bool) {
 	if valsetUpdateID == 0 {
 		return k.GetInitChainHeight(ctx, chainID)
-	} else {
-		return k.GetValsetUpdateBlockHeight(ctx, valsetUpdateID)
 	}
+	return k.GetValsetUpdateBlockHeight(ctx, valsetUpdateID)
 }

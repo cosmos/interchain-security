@@ -53,7 +53,7 @@ if _, found := GetValidatorByConsumerAddr(ChainID, consumerAddr); found {
 
 // check whether the consumer chain is already registered
 // i.e., a client to the consumer was already created
-if _, consumerRegistered := GetConsumerClientId(chainID); consumerRegistered {
+if _, consumerRegistered := GetConsumerClientID(chainID); consumerRegistered {
     // get the previous key assigned for this validator on this consumer chain
     oldConsumerKey, found := GetValidatorConsumerPubKey(chainID, providerConsAddr)
     if found {

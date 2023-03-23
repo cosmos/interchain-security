@@ -72,7 +72,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 		{
 			description: "expect to not append invalid proposal using an already existing chain id",
 			malleate: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
-				k.SetConsumerClientId(ctx, chainID, "anyClientId")
+				k.SetConsumerClientID(ctx, chainID, "anyClientId")
 			},
 
 			prop: providertypes.NewConsumerAdditionProposal(
@@ -156,7 +156,7 @@ func TestCreateConsumerClient(t *testing.T) {
 		{
 			description: "client for this chain already exists, new one is not created",
 			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
-				providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
+				providerKeeper.SetConsumerClientID(ctx, "chainID", "clientID")
 
 				// Expect none of the client creation related calls to happen
 				mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Times(0)
@@ -199,9 +199,9 @@ func testCreatedConsumerClient(t *testing.T,
 	ctx sdk.Context, providerKeeper providerkeeper.Keeper, expectedChainID, expectedClientID string,
 ) {
 	// ClientID should be stored.
-	clientId, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
+	clientID, found := providerKeeper.GetConsumerClientID(ctx, expectedChainID)
 	require.True(t, found, "consumer client not found")
-	require.Equal(t, expectedClientID, clientId)
+	require.Equal(t, expectedClientID, clientID)
 
 	// Only assert that consumer genesis was set,
 	// more granular tests on consumer genesis should be defined in TestMakeConsumerGenesis
@@ -394,7 +394,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		{
 			description: "valid proposal",
 			malleate: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
-				k.SetConsumerClientId(ctx, chainID, "ClientID")
+				k.SetConsumerClientID(ctx, chainID, "ClientID")
 			},
 			prop: providertypes.NewConsumerRemovalProposal(
 				"title",
@@ -445,7 +445,6 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			// Proposal should be stored as pending
 			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ChainId, tc.prop.StopTime)
 			require.True(t, found)
-
 		} else {
 			require.Error(t, err)
 
@@ -535,7 +534,7 @@ func TestStopConsumerChain(t *testing.T) {
 func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
 	expectedChainID, expectedChannelID string,
 ) {
-	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
+	_, found := providerKeeper.GetConsumerClientID(ctx, expectedChainID)
 	require.False(t, found)
 	_, found = providerKeeper.GetChainToChannel(ctx, expectedChainID)
 	require.False(t, found)

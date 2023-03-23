@@ -25,9 +25,9 @@ func getStakingKeyBytes(bz []byte) []byte {
 	pubKey, _ := pv.GetPubKey()
 	val := tmtypes.NewValidator(pubKey, 0)
 	addr, _ := sdk.ValAddressFromHex(val.Address.String())
-	PK := pv.PrivKey.PubKey()
+	pk := pv.PrivKey.PubKey()
 	valAddr, _ := sdk.ValAddressFromBech32(addr.String())
-	validator, _ := stakingtypes.NewValidator(valAddr, PK, stakingtypes.Description{})
+	validator, _ := stakingtypes.NewValidator(valAddr, pk, stakingtypes.Description{})
 	key := stakingtypes.GetValidatorsByPowerIndexKey(validator, sdk.DefaultPowerReduction)
 	return key
 }

@@ -108,7 +108,7 @@ func (endpoint *Endpoint) CreateClient() (err error) {
 	)
 	require.NoError(endpoint.Chain.T, err)
 
-	res, err := endpoint.Chain.SendMsgs(msg)
+	res, err := endpoint.Chain.SendMessages(msg)
 	if err != nil {
 		return err
 	}
@@ -155,7 +155,7 @@ func (endpoint *Endpoint) ConnOpenInit() error {
 		endpoint.Counterparty.Chain.GetPrefix(), DefaultOpenInitVersion, endpoint.ConnectionConfig.DelayPeriod,
 		endpoint.Chain.SenderAccount.GetAddress().String(),
 	)
-	res, err := endpoint.Chain.SendMsgs(msg)
+	res, err := endpoint.Chain.SendMessages(msg)
 	if err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func (endpoint *Endpoint) ConnOpenTry() error {
 		proofHeight, consensusHeight,
 		endpoint.Chain.SenderAccount.GetAddress().String(),
 	)
-	res, err := endpoint.Chain.SendMsgs(msg)
+	res, err := endpoint.Chain.SendMessages(msg)
 	if err != nil {
 		return err
 	}
@@ -268,7 +268,7 @@ func (endpoint *Endpoint) ChanOpenInit() error {
 		endpoint.Counterparty.ChannelConfig.PortID,
 		endpoint.Chain.SenderAccount.GetAddress().String(),
 	)
-	res, err := endpoint.Chain.SendMsgs(msg)
+	res, err := endpoint.Chain.SendMessages(msg)
 	if err != nil {
 		return err
 	}
@@ -298,7 +298,7 @@ func (endpoint *Endpoint) ChanOpenTry() error {
 		proof, height,
 		endpoint.Chain.SenderAccount.GetAddress().String(),
 	)
-	res, err := endpoint.Chain.SendMsgs(msg)
+	res, err := endpoint.Chain.SendMessages(msg)
 	if err != nil {
 		return err
 	}
@@ -397,7 +397,7 @@ func (endpoint *Endpoint) RecvPacketWithResult(packet channeltypes.Packet) (*sdk
 	recvMsg := channeltypes.NewMsgRecvPacket(packet, proof, proofHeight, endpoint.Chain.SenderAccount.GetAddress().String())
 
 	// receive on counterparty and update source client
-	res, err := endpoint.Chain.SendMsgs(recvMsg)
+	res, err := endpoint.Chain.SendMessages(recvMsg)
 	if err != nil {
 		return nil, err
 	}

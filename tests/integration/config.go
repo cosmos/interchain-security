@@ -39,7 +39,7 @@ type ValidatorConfig struct {
 // Attributes that are unique to a chain. Allows us to map (part of)
 // the set of strings defined above to a set of viable chains
 type ChainConfig struct {
-	chainId chainID
+	chainID chainID
 	// Must be unique per chain
 	ipPrefix       string
 	votingWaitTime uint
@@ -149,7 +149,7 @@ func SlashThrottleTestRun() TestRun {
 		validatorConfigs: getDefaultValidators(),
 		chainConfigs: map[chainID]ChainConfig{
 			chainID("provi"): {
-				chainId:        chainID("provi"),
+				chainID:        chainID("provi"),
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
@@ -164,7 +164,7 @@ func SlashThrottleTestRun() TestRun {
 					".app_state.provider.params.slash_meter_replenish_period = \"20s\"",
 			},
 			chainID("consu"): {
-				chainId:        chainID("consu"),
+				chainID:        chainID("consu"),
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
@@ -192,7 +192,7 @@ func DefaultTestRun() TestRun {
 		validatorConfigs: getDefaultValidators(),
 		chainConfigs: map[chainID]ChainConfig{
 			chainID("provi"): {
-				chainId:        chainID("provi"),
+				chainID:        chainID("provi"),
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
@@ -207,7 +207,7 @@ func DefaultTestRun() TestRun {
 					".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
 			},
 			chainID("consu"): {
-				chainId:        chainID("consu"),
+				chainID:        chainID("consu"),
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
@@ -235,7 +235,7 @@ func DemocracyTestRun() TestRun {
 		validatorConfigs: getDefaultValidators(),
 		chainConfigs: map[chainID]ChainConfig{
 			chainID("provi"): {
-				chainId:        chainID("provi"),
+				chainID:        chainID("provi"),
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
@@ -249,7 +249,7 @@ func DemocracyTestRun() TestRun {
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\"", // This disables slash packet throttling
 			},
 			chainID("democ"): {
-				chainId:        chainID("democ"),
+				chainID:        chainID("democ"),
 				binaryName:     "interchain-security-cdd",
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 20,
@@ -278,7 +278,7 @@ func MultiConsumerTestRun() TestRun {
 		validatorConfigs: getDefaultValidators(),
 		chainConfigs: map[chainID]ChainConfig{
 			chainID("provi"): {
-				chainId:        chainID("provi"),
+				chainID:        chainID("provi"),
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
@@ -292,7 +292,7 @@ func MultiConsumerTestRun() TestRun {
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\"", // This disables slash packet throttling
 			},
 			chainID("consu"): {
-				chainId:        chainID("consu"),
+				chainID:        chainID("consu"),
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
@@ -303,7 +303,7 @@ func MultiConsumerTestRun() TestRun {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 			chainID("densu"): {
-				chainId:        chainID("densu"),
+				chainID:        chainID("densu"),
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 20,
@@ -340,8 +340,8 @@ func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag str
 // where this name is constrained to 15 bytes or less. Therefore each string literal
 // used as a validatorID or chainID needs to be 5 char or less.
 func (s *TestRun) validateStringLiterals() {
+	// range through validators to check for duplicate ip suffixes
 	for valID, valConfig := range s.validatorConfigs {
-
 		if len(valID) > 5 {
 			panic("validator id string literal must be 5 char or less")
 		}
@@ -369,7 +369,7 @@ func (s *TestRun) validateStringLiterals() {
 			panic("chain id string literal must be 5 char or less")
 		}
 
-		if chainID != chainConfig.chainId {
+		if chainID != chainConfig.chainID {
 			panic("chain config is mapped to a chain id that is different than what's stored in the config")
 		}
 	}

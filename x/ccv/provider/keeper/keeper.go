@@ -280,12 +280,12 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, _ string, connectionHops []
 	if err != nil {
 		return err
 	}
-	ccvClientId, found := k.GetConsumerClientId(ctx, tmClient.ChainId)
+	ccvClientID, found := k.GetConsumerClientID(ctx, tmClient.ChainId)
 	if !found {
 		return sdkerrors.Wrapf(ccv.ErrClientNotFound, "cannot find client for consumer chain %s", tmClient.ChainId)
 	}
-	if ccvClientId != clientID {
-		return sdkerrors.Wrapf(ccv.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
+	if ccvClientID != clientID {
+		return sdkerrors.Wrapf(ccv.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientID, clientID)
 	}
 
 	// Verify that there isn't already a CCV channel for the consumer chain
@@ -456,12 +456,12 @@ func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemo
 
 // SetUnbondingOpIndex sets the IDs of unbonding operations that are waiting for
 // a VSCMaturedPacket with vscID from a consumer with chainID
-func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint64, IDs []uint64) {
+func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint64, ids []uint64) {
 	store := ctx.KVStore(k.storeKey)
 
 	vscUnbondingOps := types.VscUnbondingOps{
 		VscId:          vscID,
-		UnbondingOpIds: IDs,
+		UnbondingOpIds: ids,
 	}
 	bz, err := vscUnbondingOps.Marshal()
 	if err != nil {
@@ -482,7 +482,7 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint6
 // Thus, the returned array is in ascending order of vscIDs.
 func (k Keeper) GetAllUnbondingOpIndexes(ctx sdk.Context, chainID string) (indexes []types.VscUnbondingOps) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.UnbondingOpIndexBytePrefix, chainID))
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIDWithLenKey(types.UnbondingOpIndexBytePrefix, chainID))
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -631,47 +631,47 @@ func (k Keeper) chanCloseInit(ctx sdk.Context, channelID string) error {
 	return k.channelKeeper.ChanCloseInit(ctx, ccv.ProviderPortID, channelID, chanCap)
 }
 
-func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
-	validatorSetUpdateId := k.GetValidatorSetUpdateId(ctx)
-	k.SetValidatorSetUpdateId(ctx, validatorSetUpdateId+1)
+func (k Keeper) IncrementValidatorSetUpdateID(ctx sdk.Context) {
+	validatorSetUpdateID := k.GetValidatorSetUpdateID(ctx)
+	k.SetValidatorSetUpdateID(ctx, validatorSetUpdateID+1)
 }
 
-func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, valUpdateID uint64) {
+func (k Keeper) SetValidatorSetUpdateID(ctx sdk.Context, valUpdateID uint64) {
 	store := ctx.KVStore(k.storeKey)
 
 	// Convert back into bytes for storage
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, valUpdateID)
 
-	store.Set(types.ValidatorSetUpdateIdKey(), bz)
+	store.Set(types.ValidatorSetUpdateIDKey(), bz)
 }
 
-func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId uint64) {
+func (k Keeper) GetValidatorSetUpdateID(ctx sdk.Context) (validatorSetUpdateID uint64) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ValidatorSetUpdateIdKey())
+	bz := store.Get(types.ValidatorSetUpdateIDKey())
 
 	if bz == nil {
-		validatorSetUpdateId = 0
+		validatorSetUpdateID = 0
 	} else {
 		// Unmarshal
-		validatorSetUpdateId = binary.BigEndian.Uint64(bz)
+		validatorSetUpdateID = binary.BigEndian.Uint64(bz)
 	}
 
-	return validatorSetUpdateId
+	return validatorSetUpdateID
 }
 
 // SetValsetUpdateBlockHeight sets the block height for a given valset update id
-func (k Keeper) SetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId, blockHeight uint64) {
+func (k Keeper) SetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateID, blockHeight uint64) {
 	store := ctx.KVStore(k.storeKey)
 	heightBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(heightBytes, blockHeight)
-	store.Set(types.ValsetUpdateBlockHeightKey(valsetUpdateId), heightBytes)
+	store.Set(types.ValsetUpdateBlockHeightKey(valsetUpdateID), heightBytes)
 }
 
 // GetValsetUpdateBlockHeight gets the block height for a given valset update id
-func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) (uint64, bool) {
+func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateID uint64) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
+	bz := store.Get(types.ValsetUpdateBlockHeightKey(valsetUpdateID))
 	if bz == nil {
 		return 0, false
 	}
@@ -689,11 +689,11 @@ func (k Keeper) GetAllValsetUpdateBlockHeights(ctx sdk.Context) (valsetUpdateBlo
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		valsetUpdateId := binary.BigEndian.Uint64(iterator.Key()[1:])
+		valsetUpdateID := binary.BigEndian.Uint64(iterator.Key()[1:])
 		height := binary.BigEndian.Uint64(iterator.Value())
 
 		valsetUpdateBlockHeights = append(valsetUpdateBlockHeights, types.ValsetUpdateIdToHeight{
-			ValsetUpdateId: valsetUpdateId,
+			ValsetUpdateId: valsetUpdateID,
 			Height:         height,
 		})
 	}
@@ -702,9 +702,9 @@ func (k Keeper) GetAllValsetUpdateBlockHeights(ctx sdk.Context) (valsetUpdateBlo
 }
 
 // DeleteValsetUpdateBlockHeight deletes the block height value for a given vaset update id
-func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) {
+func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateID uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
+	store.Delete(types.ValsetUpdateBlockHeightKey(valsetUpdateID))
 }
 
 // SetSlashAcks sets the slash acks under the given chain ID
@@ -837,24 +837,24 @@ func (k Keeper) DeletePendingVSCPackets(ctx sdk.Context, chainID string) {
 	store.Delete(types.PendingVSCsKey(chainID))
 }
 
-// SetConsumerClientId sets the client ID for the given chain ID
-func (k Keeper) SetConsumerClientId(ctx sdk.Context, chainID, clientID string) {
+// SetConsumerClientID sets the client ID for the given chain ID
+func (k Keeper) SetConsumerClientID(ctx sdk.Context, chainID, clientID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.ChainToClientKey(chainID), []byte(clientID))
 }
 
-// GetConsumerClientId returns the client ID for the given chain ID.
-func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bool) {
+// GetConsumerClientID returns the client ID for the given chain ID.
+func (k Keeper) GetConsumerClientID(ctx sdk.Context, chainID string) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	clientIdBytes := store.Get(types.ChainToClientKey(chainID))
-	if clientIdBytes == nil {
+	clientIDBytes := store.Get(types.ChainToClientKey(chainID))
+	if clientIDBytes == nil {
 		return "", false
 	}
-	return string(clientIdBytes), true
+	return string(clientIDBytes), true
 }
 
 // DeleteConsumerClientId removes from the store the clientID for the given chainID.
-func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
+func (k Keeper) DeleteConsumerClientID(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ChainToClientKey(chainID))
 }
@@ -955,7 +955,7 @@ func (k Keeper) DeleteVscSendTimestamp(ctx sdk.Context, chainID string, vscID ui
 // Thus, the iteration is in ascending order of vscIDs, and as a result in send timestamp order.
 func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSendTimestamps []types.VscSendTimestamp) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIDWithLenKey(types.VscSendTimestampBytePrefix, chainID))
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -984,7 +984,7 @@ func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSen
 // DeleteVscSendTimestampsForConsumer deletes all VSC send timestamps for a given consumer chain
 func (k Keeper) DeleteVscSendTimestampsForConsumer(ctx sdk.Context, consumerChainID string) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, consumerChainID))
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIDWithLenKey(types.VscSendTimestampBytePrefix, consumerChainID))
 	defer iterator.Close()
 
 	keysToDel := [][]byte{}
@@ -1001,7 +1001,7 @@ func (k Keeper) DeleteVscSendTimestampsForConsumer(ctx sdk.Context, consumerChai
 // GetFirstVscSendTimestamp gets the vsc send timestamp with the lowest vscID for the given chainID.
 func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSendTimestamp types.VscSendTimestamp, found bool) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIDWithLenKey(types.VscSendTimestampBytePrefix, chainID))
 	defer iterator.Close()
 
 	if iterator.Valid() {

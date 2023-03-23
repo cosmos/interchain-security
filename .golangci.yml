@@ -58,6 +58,10 @@ linters-settings:
         disabled: true
       - name: defer
         disabled: true
+      - name: nested-structs
+        disabled: true
+      - name: early-return
+        disabled: true
 
 
 

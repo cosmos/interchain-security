@@ -96,8 +96,8 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 		},
 	}
 
+	// run test cases
 	for _, tc := range testCases {
-
 		consumerKeeper.ApplyCCValidatorChanges(ctx, tc.changes)
 		gotVals := getCCVals()
 

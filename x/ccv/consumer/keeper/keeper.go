@@ -143,8 +143,8 @@ func (k Keeper) IsBound(ctx sdk.Context, portID string) bool {
 // BindPort defines a wrapper function for the ort Keeper's function in
 // order to expose it to module's InitGenesis function
 func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
-	cap := k.portKeeper.BindPort(ctx, portID)
-	return k.ClaimCapability(ctx, cap, host.PortPath(portID))
+	portCap := k.portKeeper.BindPort(ctx, portID)
+	return k.ClaimCapability(ctx, portCap, host.PortPath(portID))
 }
 
 // GetPort returns the portID for the transfer module. Used in ExportGenesis
@@ -179,11 +179,11 @@ func (k Keeper) SetProviderClientID(ctx sdk.Context, clientID string) {
 // GetProviderClientID gets the clientID for the client to the provider.
 func (k Keeper) GetProviderClientID(ctx sdk.Context) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	clientIdBytes := store.Get(types.ProviderClientIDKey())
-	if clientIdBytes == nil {
+	clientIDBytes := store.Get(types.ProviderClientIDKey())
+	if clientIDBytes == nil {
 		return "", false
 	}
-	return string(clientIdBytes), true
+	return string(clientIDBytes), true
 }
 
 // SetProviderChannel sets the channelID for the channel to the provider.
@@ -195,11 +195,11 @@ func (k Keeper) SetProviderChannel(ctx sdk.Context, channelID string) {
 // GetProviderChannel gets the channelID for the channel to the provider.
 func (k Keeper) GetProviderChannel(ctx sdk.Context) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	channelIdBytes := store.Get(types.ProviderChannelKey())
-	if len(channelIdBytes) == 0 {
+	channelIDBytes := store.Get(types.ProviderChannelKey())
+	if len(channelIDBytes) == 0 {
 		return "", false
 	}
-	return string(channelIdBytes), true
+	return string(channelIDBytes), true
 }
 
 // DeleteProviderChannel deletes the channelID for the channel to the provider.
@@ -294,10 +294,10 @@ func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets [
 }
 
 // SetPacketMaturityTime sets the maturity time for a given received VSC packet id
-func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, vscId uint64, maturityTime time.Time) {
+func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, vscID uint64, maturityTime time.Time) {
 	store := ctx.KVStore(k.storeKey)
 	maturingVSCPacket := types.MaturingVSCPacket{
-		VscId:        vscId,
+		VscId:        vscID,
 		MaturityTime: maturityTime,
 	}
 	bz, err := maturingVSCPacket.Marshal()
@@ -306,7 +306,7 @@ func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, vscId uint64, maturityTim
 		// maturingVSCPacket is instantiated in this method and should be able to be marshaled.
 		panic(fmt.Errorf("failed to marshal MaturingVSCPacket: %w", err))
 	}
-	store.Set(types.PacketMaturityTimeKey(vscId, maturityTime), bz)
+	store.Set(types.PacketMaturityTimeKey(vscID, maturityTime), bz)
 }
 
 // PacketMaturityExists checks whether the packet maturity time for a given vscId and maturityTime exists.

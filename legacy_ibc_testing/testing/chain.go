@@ -335,14 +335,14 @@ func (chain *TestChain) NextBlock() (abci.ResponseEndBlock, abci.ResponseCommit,
 
 // sendMsgs delivers a transaction through the application without returning the result.
 func (chain *TestChain) sendMsgs(msgs ...sdk.Msg) error {
-	_, err := chain.SendMsgs(msgs...)
+	_, err := chain.SendMessages(msgs...)
 	return err
 }
 
 // SendMsgs delivers a transaction through the application. It updates the senders sequence
 // number and updates the TestChain's headers. It returns the result and error if one
 // occurred.
-func (chain *TestChain) SendMsgs(msgs ...sdk.Msg) (*sdk.Result, error) {
+func (chain *TestChain) SendMessages(msgs ...sdk.Msg) (*sdk.Result, error) {
 	// ensure the chain has the latest time
 	chain.Coordinator.UpdateTimeForChain(chain)
 

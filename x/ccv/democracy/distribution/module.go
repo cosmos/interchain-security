@@ -45,13 +45,13 @@ type AppModule struct {
 // NewAppModule creates a new AppModule object using the native x/distribution module
 // AppModule constructor.
 func NewAppModule(
-	cdc codec.Codec, keeper keeper.Keeper, ak distrtypes.AccountKeeper,
+	cdc codec.Codec, distrkeeper keeper.Keeper, ak distrtypes.AccountKeeper,
 	bk distrtypes.BankKeeper, sk stakingkeeper.Keeper, feeCollectorName string,
 ) AppModule {
-	distrAppMod := distr.NewAppModule(cdc, keeper, ak, bk, sk)
+	distrAppMod := distr.NewAppModule(cdc, distrkeeper, ak, bk, sk)
 	return AppModule{
 		AppModule:        distrAppMod,
-		keeper:           keeper,
+		keeper:           distrkeeper,
 		accountKeeper:    ak,
 		bankKeeper:       bk,
 		stakingKeeper:    sk,

@@ -69,14 +69,14 @@ func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Pa
 	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 	proof, proofHeight := sender.Chain.QueryProof(packetKey)
 
-	RPmsg := channeltypes.NewMsgRecvPacket(packet, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
+	rpMsg := channeltypes.NewMsgRecvPacket(packet, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
 
 	_, resWithAck, err := simapp.SignAndDeliver(
 		receiver.Chain.T,
 		receiver.Chain.TxConfig,
 		receiver.Chain.App.GetBaseApp(),
 		receiver.Chain.GetContext().BlockHeader(),
-		[]sdk.Msg{RPmsg},
+		[]sdk.Msg{rpMsg},
 		receiver.Chain.ChainID,
 		[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
 		[]uint64{receiver.Chain.SenderAccount.GetSequence()},

@@ -20,7 +20,6 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -249,7 +248,7 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 		consumertypes.DefaultConsumerRedistributeFrac,
 		consumertypes.DefaultBlocksPerDistributionTransmission,
 		consumertypes.DefaultHistoricalEntries,
-		types.DefaultCCVTimeoutPeriod,
+		ccvtypes.DefaultCCVTimeoutPeriod,
 		consumertypes.DefaultTransferTimeoutPeriod,
 		consumertypes.DefaultConsumerUnbondingPeriod,
 	).(*providertypes.ConsumerAdditionProposal)

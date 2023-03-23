@@ -40,7 +40,7 @@ func (tr TestRun) sendTokens(
 		tr.validatorConfigs[action.to].delAddress,
 		fmt.Sprint(action.amount)+`stake`,
 
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
@@ -79,10 +79,10 @@ func (tr TestRun) startChain(
 		Mnemonic         string `json:"mnemonic"`
 		Allocation       string `json:"allocation"`
 		Stake            string `json:"stake"`
-		ValId            string `json:"val_id"`
+		ValID            string `json:"val_id"`
 		PrivValidatorKey string `json:"priv_validator_key"`
 		NodeKey          string `json:"node_key"`
-		IpSuffix         string `json:"ip_suffix"`
+		IPSuffix         string `json:"ip_suffix"`
 
 		ConsumerMnemonic         string `json:"consumer_mnemonic"`
 		ConsumerPrivValidatorKey string `json:"consumer_priv_validator_key"`
@@ -94,11 +94,11 @@ func (tr TestRun) startChain(
 		validators = append(validators, jsonValAttrs{
 			Mnemonic:         tr.validatorConfigs[val.id].mnemonic,
 			NodeKey:          tr.validatorConfigs[val.id].nodeKey,
-			ValId:            fmt.Sprint(val.id),
+			ValID:            fmt.Sprint(val.id),
 			PrivValidatorKey: tr.validatorConfigs[val.id].privValidatorKey,
 			Allocation:       fmt.Sprint(val.allocation) + "stake",
 			Stake:            fmt.Sprint(val.stake) + "stake",
-			IpSuffix:         tr.validatorConfigs[val.id].ipSuffix,
+			IPSuffix:         tr.validatorConfigs[val.id].ipSuffix,
 
 			ConsumerMnemonic:         tr.validatorConfigs[val.id].consumerMnemonic,
 			ConsumerPrivValidatorKey: tr.validatorConfigs[val.id].consumerPrivValidatorKey,
@@ -123,7 +123,7 @@ func (tr TestRun) startChain(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/start-chain.sh", chainConfig.binaryName, string(vals),
-		string(chainConfig.chainId), chainConfig.ipPrefix, genesisChanges,
+		string(chainConfig.chainID), chainConfig.ipPrefix, genesisChanges,
 		fmt.Sprint(action.skipGentx),
 		// override config/config.toml for each node on chain
 		// usually timeout_commit and peer_gossip_sleep_duration are changed to vary the test run duration
@@ -185,7 +185,7 @@ func (tr TestRun) submitTextProposal(
 		`--deposit`, fmt.Sprint(action.deposit)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
@@ -215,7 +215,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	prop := client.ConsumerAdditionProposalJSON{
 		Title:                             "Propose the addition of a new chain",
 		Description:                       "Gonna be a great chain",
-		ChainID:                           string(tr.chainConfigs[action.consumerChain].chainId),
+		ChainID:                           string(tr.chainConfigs[action.consumerChain].chainID),
 		InitialHeight:                     action.initialHeight,
 		GenesisHash:                       []byte("gen_hash"),
 		BinaryHash:                        []byte("bin_hash"),
@@ -254,7 +254,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		"/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--gas`, `900000`,
 		`--node`, tr.getValidatorNode(action.chain, action.from),
@@ -284,7 +284,7 @@ func (tr TestRun) submitConsumerRemovalProposal(
 	prop := client.ConsumerRemovalProposalJSON{
 		Title:       fmt.Sprintf("Stop the %v chain", action.consumerChain),
 		Description: "It was a great chain",
-		ChainID:     string(tr.chainConfigs[action.consumerChain].chainId),
+		ChainID:     string(tr.chainConfigs[action.consumerChain].chainID),
 		StopTime:    stopTime,
 		Deposit:     fmt.Sprint(action.deposit) + `stake`,
 	}
@@ -314,7 +314,7 @@ func (tr TestRun) submitConsumerRemovalProposal(
 		"/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
@@ -385,7 +385,7 @@ func (tr TestRun) submitParamChangeProposal(
 		"/params-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--gas`, "900000",
@@ -454,9 +454,9 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 		"/equivocation-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(providerChain.chainId),
-		`--home`, tr.getValidatorHome(providerChain.chainId, action.from),
-		`--node`, tr.getValidatorNode(providerChain.chainId, action.from),
+		`--chain-id`, string(providerChain.chainID),
+		`--home`, tr.getValidatorHome(providerChain.chainID, action.from),
+		`--node`, tr.getValidatorNode(providerChain.chainID, action.from),
 		`--gas`, "9000000",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
@@ -491,7 +491,7 @@ func (tr TestRun) voteGovProposal(
 				fmt.Sprint(action.propNumber), vote,
 
 				`--from`, `validator`+fmt.Sprint(val),
-				`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+				`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 				`--home`, tr.getValidatorHome(action.chain, val),
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
@@ -523,7 +523,7 @@ func (tr TestRun) startConsumerChain(
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.providerChain].binaryName,
 
 		"query", "provider", "consumer-genesis",
-		string(tr.chainConfigs[action.consumerChain].chainId),
+		string(tr.chainConfigs[action.consumerChain].chainID),
 
 		`--node`, tr.getQueryNode(action.providerChain),
 		`-o`, `json`,
@@ -587,7 +587,7 @@ func (tr TestRun) addChainToRelayer(
 	_ bool,
 ) {
 	queryNodeIP := tr.getQueryNodeIP(action.chain)
-	chainID := tr.chainConfigs[action.chain].chainId
+	chainID := tr.chainConfigs[action.chain].chainID
 	keyName := "query"
 	rpcAddr := "http://" + queryNodeIP + ":26658"
 	grpcAddr := "tcp://" + queryNodeIP + ":9091"
@@ -623,7 +623,7 @@ func (tr TestRun) addChainToRelayer(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"keys", "add",
-		"--chain", string(tr.chainConfigs[action.chain].chainId),
+		"--chain", string(tr.chainConfigs[action.chain].chainID),
 		"--mnemonic-file", "/root/.hermes/mnemonic.txt",
 	).CombinedOutput()
 
@@ -646,7 +646,7 @@ func (tr TestRun) addIbcConnection(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"create", "connection",
-		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--a-chain", string(tr.chainConfigs[action.chainA].chainID),
 		"--a-client", "07-tendermint-"+fmt.Sprint(action.clientA),
 		"--b-client", "07-tendermint-"+fmt.Sprint(action.clientB),
 	)
@@ -693,7 +693,7 @@ func (tr TestRun) addIbcChannel(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"create", "channel",
-		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--a-chain", string(tr.chainConfigs[action.chainA].chainID),
 		"--a-connection", "connection-"+fmt.Sprint(action.connectionA),
 		"--a-port", action.portA,
 		"--b-port", action.portB,
@@ -749,8 +749,8 @@ func (tr TestRun) transferChannelComplete(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenTryCmd arguments.
 	chanOpenTryCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"tx", "chan-open-try",
-		"--dst-chain", string(tr.chainConfigs[action.chainB].chainId),
-		"--src-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--dst-chain", string(tr.chainConfigs[action.chainB].chainID),
+		"--src-chain", string(tr.chainConfigs[action.chainA].chainID),
 		"--dst-connection", "connection-"+fmt.Sprint(action.connectionA),
 		"--dst-port", action.portB,
 		"--src-port", action.portA,
@@ -761,8 +761,8 @@ func (tr TestRun) transferChannelComplete(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenAckCmd arguments.
 	chanOpenAckCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"tx", "chan-open-ack",
-		"--dst-chain", string(tr.chainConfigs[action.chainA].chainId),
-		"--src-chain", string(tr.chainConfigs[action.chainB].chainId),
+		"--dst-chain", string(tr.chainConfigs[action.chainA].chainID),
+		"--src-chain", string(tr.chainConfigs[action.chainB].chainID),
 		"--dst-connection", "connection-"+fmt.Sprint(action.connectionA),
 		"--dst-port", action.portA,
 		"--src-port", action.portB,
@@ -774,8 +774,8 @@ func (tr TestRun) transferChannelComplete(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenConfirmCmd arguments.
 	chanOpenConfirmCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"tx", "chan-open-confirm",
-		"--dst-chain", string(tr.chainConfigs[action.chainB].chainId),
-		"--src-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--dst-chain", string(tr.chainConfigs[action.chainB].chainID),
+		"--src-chain", string(tr.chainConfigs[action.chainA].chainID),
 		"--dst-connection", "connection-"+fmt.Sprint(action.connectionA),
 		"--dst-port", action.portB,
 		"--src-port", action.portA,
@@ -826,7 +826,7 @@ func (tr TestRun) relayPackets(
 	// hermes clear packets ibc0 transfer channel-13
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes", "clear", "packets",
-		"--chain", string(tr.chainConfigs[action.chain].chainId),
+		"--chain", string(tr.chainConfigs[action.chain].chainID),
 		"--port", action.port,
 		"--channel", "channel-"+fmt.Sprint(action.channel),
 	)
@@ -884,7 +884,7 @@ func (tr TestRun) delegateTokens(
 		fmt.Sprint(action.amount)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
@@ -925,7 +925,7 @@ func (tr TestRun) unbondTokens(
 		fmt.Sprint(action.amount)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.sender),
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.sender),
 		`--node`, tr.getValidatorNode(action.chain, action.sender),
 		`--gas`, "900000",
@@ -973,7 +973,7 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 		redelegateDst,
 		fmt.Sprint(action.amount)+`stake`,
 		`--from`, `validator`+fmt.Sprint(action.txSender),
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.txSender),
 		`--node`, tr.getValidatorNode(action.chain, action.txSender),
 		// Need to manually set gas limit past default (200000), since redelegate has a lot of operations
@@ -1055,7 +1055,7 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		"tx", "slashing", "unjail",
 		// Validator is sender here
 		`--from`, `validator`+fmt.Sprint(action.validator),
-		`--chain-id`, string(tr.chainConfigs[action.provider].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.provider].chainID),
 		`--home`, tr.getValidatorHome(action.provider, action.validator),
 		`--node`, tr.getValidatorNode(action.provider, action.validator),
 		`--gas`, "900000",
@@ -1116,7 +1116,7 @@ func (tr TestRun) registerRepresentative(
 				`--commission-max-change-rate`, "0.01",
 				`--min-self-delegation`, "1",
 				`--from`, `validator`+fmt.Sprint(val),
-				`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+				`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 				`--home`, tr.getValidatorHome(action.chain, val),
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
@@ -1156,7 +1156,7 @@ func (tr TestRun) invokeDoublesignSlash(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/cause-doublesign.sh", chainConfig.binaryName, string(action.validator),
-		string(chainConfig.chainId), chainConfig.ipPrefix).CombinedOutput()
+		string(chainConfig.chainID), chainConfig.ipPrefix).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1179,10 +1179,10 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	assignKey := fmt.Sprintf(
 		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 900000 --keyring-backend test -b block -y -o json`,
 		tr.chainConfigs[chainID("provi")].binaryName,
-		string(tr.chainConfigs[action.chain].chainId),
+		string(tr.chainConfigs[action.chain].chainID),
 		action.consumerPubkey,
 		action.validator,
-		tr.chainConfigs[chainID("provi")].chainId,
+		tr.chainConfigs[chainID("provi")].chainID,
 		tr.getValidatorHome(chainID("provi"), action.validator),
 		tr.getValidatorNode(chainID("provi"), action.validator),
 	)

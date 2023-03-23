@@ -186,7 +186,7 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 	// verify consumer chain's states are removed
 	_, found := providerKeeper.GetConsumerGenesis(s.providerCtx(), chainID)
 	s.Require().False(found)
-	_, found = providerKeeper.GetConsumerClientId(s.providerCtx(), chainID)
+	_, found = providerKeeper.GetConsumerClientID(s.providerCtx(), chainID)
 	s.Require().False(found)
 
 	_, found = providerKeeper.GetChainToChannel(s.providerCtx(), chainID)

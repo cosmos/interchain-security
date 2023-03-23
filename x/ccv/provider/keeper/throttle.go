@@ -67,10 +67,9 @@ func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
 		// If validator is not found, or found but jailed, it's power is 0. This path is explicitly defined since the
 		// staking keeper's LastValidatorPower values are not updated till the staking keeper's endblocker.
 		return sdktypes.ZeroInt()
-	} else {
-		// Otherwise, return the staking keeper's LastValidatorPower value.
-		return sdktypes.NewInt(k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator()))
 	}
+	// Otherwise, return the staking keeper's LastValidatorPower value.
+	return sdktypes.NewInt(k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator()))
 }
 
 // HandlePacketDataForChain handles only the first queued slash packet relevant to the passed consumer chainID,
@@ -118,7 +117,6 @@ func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 	// If slash meter is full, or more than full considering updated allowance/total power,
 	allowance := k.GetSlashMeterAllowance(ctx)
 	if k.GetSlashMeter(ctx).GTE(allowance) {
-
 		// Update/set replenish time candidate to one replenish period from now.
 		// This time candidate will be updated in every future block until the slash meter becomes NOT full.
 		k.SetSlashMeterReplenishTimeCandidate(ctx)
@@ -356,7 +354,7 @@ func (k Keeper) GetLeadingVSCMaturedData(ctx sdktypes.Context, consumerChainID s
 	vscMaturedData []ccvtypes.VSCMaturedPacketData, ibcSeqNums []uint64,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
+	iteratorPrefix := providertypes.ChainIDWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
 	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 
@@ -364,8 +362,9 @@ func (k Keeper) GetLeadingVSCMaturedData(ctx sdktypes.Context, consumerChainID s
 	// and return vsc matured packet data instances until we encounter a slash packet data instance.
 	vscMaturedData = []ccvtypes.VSCMaturedPacketData{}
 	ibcSeqNums = []uint64{}
+	// The iterator is ordered by IBC sequence number.
 	for ; iterator.Valid(); iterator.Next() {
-
+		// The key is the IBC sequence number, and the value is the packet data.
 		bz := iterator.Value()
 		if bz[0] == slashPacketData {
 			break
@@ -406,7 +405,7 @@ func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID st
 	ibcSeqNums []uint64,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
+	iteratorPrefix := providertypes.ChainIDWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
 	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 
@@ -415,21 +414,21 @@ func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID st
 	vscMaturedData = []ccvtypes.VSCMaturedPacketData{}
 	ibcSeqNums = []uint64{}
 
+	// Iterate over the throttled packet data queue
 	for ; iterator.Valid(); iterator.Next() {
-
+		// The key is the IBC sequence number, and the value is the packet data.
 		bz := iterator.Value()
 		if bz[0] == slashPacketData {
 			if slashFound {
 				// Break for-loop, we've already found first slash packet data instance.
 				break
-			} else {
-				if err := slashData.Unmarshal(bz[1:]); err != nil {
-					// An error here would indicate something is very wrong,
-					// slash packet data is assumed to be correctly serialized in QueueThrottledPacketData.
-					panic(fmt.Sprintf("failed to unmarshal slash packet data: %v", err))
-				}
-				slashFound = true
 			}
+			if err := slashData.Unmarshal(bz[1:]); err != nil {
+				// An error here would indicate something is very wrong,
+				// slash packet data is assumed to be correctly serialized in QueueThrottledPacketData.
+				panic(fmt.Sprintf("failed to unmarshal slash packet data: %v", err))
+			}
+			slashFound = true
 		} else if bz[0] == vscMaturedPacketData {
 			vscMData := ccvtypes.VSCMaturedPacketData{}
 			if err := vscMData.Unmarshal(bz[1:]); err != nil {
@@ -465,7 +464,7 @@ func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID 
 	ibcSeqNums = []uint64{}
 
 	store := ctx.KVStore(k.storeKey)
-	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
+	iteratorPrefix := providertypes.ChainIDWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
 	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 
@@ -506,7 +505,7 @@ func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID 
 // DeleteAllPacketDataForConsumer deletes all queued packet data for the given consumer chain.
 func (k Keeper) DeleteThrottledPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
 	store := ctx.KVStore(k.storeKey)
-	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
+	iteratorPrefix := providertypes.ChainIDWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
 	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 
@@ -596,13 +595,13 @@ func (k Keeper) GetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context) time.T
 		// there is no deletion method exposed, so nil bytes would indicate something is very wrong.
 		panic("slash meter replenish time candidate not set")
 	}
-	time, err := sdktypes.ParseTimeBytes(bz)
+	chaintime, err := sdktypes.ParseTimeBytes(bz)
 	if err != nil {
 		// We should have obtained value bytes that were serialized in SetSlashMeterReplenishTimeCandidate,
 		// so an error here would indicate something is very wrong.
 		panic(fmt.Sprintf("failed to parse slash meter replenish time candidate: %s", err))
 	}
-	return time.UTC()
+	return chaintime.UTC()
 }
 
 // SetSlashMeterReplenishTimeCandidate sets the next time the slash meter may be replenished
