@@ -41,14 +41,7 @@ The consumer chain operates as any other cosmos-sdk chain. The ICS protocol does
 No. Consumer chains are free to choose how they wish to operate, which modules to include, use CosmWASM in a permissioned or a permissionless way.
 The only thing that separates consumer chains from standalone chains is that they share their validator set with the provider chain.
 
-## What's in it for the stakers?
-The consumer chains sends a portion of its fees and inflation as reward to the provider chain as defined by `consumer_redistribution_fraction`. The rewards are distributed (sent to the provider) every `blocks_per_distribution_transmission`.
-
-:::note
-  `consumer_redistribution_fraction` and `blocks_per_distribution_transmission` are parameters defined in the `ConsumerAdditionProposal` used to create the consumer chain. These parameters can be changed via consumer chain governance.
-:::
-
-## What's in it for the validators?
+## What's in it for the validators and stakers?
 The consumer chains sends a portion of its fees and inflation as reward to the provider chain as defined by `consumer_redistribution_fraction`. The rewards are distributed (sent to the provider) every `blocks_per_distribution_transmission`.
 
 :::note
