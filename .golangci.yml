@@ -2,4 +2,4 @@ linters-settings:
   staticcheck:
     checks:
       - all
-      - "ed25519" # cosmosEd25519 allowed in tests
+      - "Ed25519" # cosmosEd25519 allowed in tests

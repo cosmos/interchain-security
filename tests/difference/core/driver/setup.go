@@ -102,7 +102,7 @@ func (b *Builder) consAddr(i int64) sdk.ConsAddress {
 // getValidatorPK returns the validator private key using the given seed index
 func (b *Builder) getValidatorPK(seedIx int) mock.PV {
 	seed := []byte(b.initState.PKSeeds[seedIx])
-	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
+	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}} //nolint:staticcheck // SA1019: crypto/ed25519 is deprecated
 }
 
 func (b *Builder) getAppBytesAndSenders(
