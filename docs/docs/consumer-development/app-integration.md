@@ -11,7 +11,7 @@ To help you on your journey, the ICS team has provied multiple examples of a min
 The source code for the example app can be found [here](https://github.com/cosmos/interchain-security/tree/main/app/consumer).
 
 Please note that consumer chains do not implement the staking module - the validator set is replicated from the provider, meaning that the provider and the consumer use the same validator set and their stake on the provider directly determines their stake on the consumer.
-At present there is not an opt-in mechanism available, so all validators of the provider also must validate on the provider chain.
+At present there is no opt-in mechanism available, so all validators of the provider must also validate on the provider chain.
 
 Your chain should import the consumer module from `x/consumer` and register it in the correct places in your `app.go`.
 The `x/consumer` module will allow your chain to communicate with the provider using the ICS protocol. The module handles all IBC communication with the provider, and it is a simple drop-in.
