@@ -159,7 +159,7 @@ const config = {
             ],
           },
         ],
-        copyright: "",
+        copyright: "Informal Systems",
       },
       prism: {
         theme: lightCodeTheme,
