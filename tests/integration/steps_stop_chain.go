@@ -2,14 +2,19 @@ package main
 
 import "time"
 
-// submits a consumer-removal proposal and removes the chain
-func stepsStopChain(consumerName string, propNumber uint) []Step {
-	s := []Step{
+// start hermes so that all messages are relayed
+func stepsStartHermes() []Step {
+	return []Step{
 		{
-			// start hermes so that all messages are relayed
 			action: startHermesAction{},
 			state:  State{},
 		},
+	}
+}
+
+// submits a consumer-removal proposal and removes the chain
+func stepsStopChain(consumerName string, propNumber uint) []Step {
+	s := []Step{
 		{
 			action: submitConsumerRemovalProposalAction{
 				chain:          chainID("provi"),
