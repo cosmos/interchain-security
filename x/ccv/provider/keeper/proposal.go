@@ -28,7 +28,6 @@ import (
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcaprop1
 // Spec tag: [CCV-PCF-HCAPROP.1]
 func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
-
 	// verify the consumer addition proposal execution
 	// in cached context and discard the cached writes
 	if _, _, err := k.CreateConsumerClientInCachedCtx(ctx, *p); err != nil {
@@ -52,7 +51,6 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
 // Spec tag: [CCV-PCF-CRCLIENT.1]
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditionProposal) error {
-
 	chainID := prop.ChainId
 	// check that a client for this chain does not exist
 	if _, found := k.GetConsumerClientId(ctx, chainID); found {
@@ -343,7 +341,8 @@ func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, prop *types.Cons
 //
 // Note: this method is only used in testing
 func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.Time,
-	chainID string) (prop types.ConsumerAdditionProposal, found bool) {
+	chainID string,
+) (prop types.ConsumerAdditionProposal, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingCAPKey(spawnTime, chainID))
 	if bz == nil {
@@ -532,7 +531,6 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 //
 // Note: this method is split out from BeginBlockCCR to be easily unit tested.
 func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerRemovalProposal {
-
 	// store the (to be) executed consumer removal proposals in order
 	propsToExecute := []types.ConsumerRemovalProposal{}
 
