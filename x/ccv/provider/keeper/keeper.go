@@ -102,7 +102,7 @@ func (k Keeper) mustValidateFields() {
 }
 
 // Logger returns a module-specific logger.
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+func (Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+host.ModuleName+"-"+types.ModuleName)
 }
 
@@ -271,7 +271,7 @@ func (k Keeper) DeleteConsumerGenesis(ctx sdk.Context, chainID string) {
 
 // VerifyConsumerChain verifies that the chain trying to connect on the channel handshake
 // is the expected consumer chain.
-func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectionHops []string) error {
+func (k Keeper) VerifyConsumerChain(ctx sdk.Context, _ string, connectionHops []string) error {
 	if len(connectionHops) != 1 {
 		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
 	}
@@ -456,12 +456,12 @@ func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemo
 
 // SetUnbondingOpIndex sets the IDs of unbonding operations that are waiting for
 // a VSCMaturedPacket with vscID from a consumer with chainID
-func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint64, IDs []uint64) {
+func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint64, ids []uint64) {
 	store := ctx.KVStore(k.storeKey)
 
 	vscUnbondingOps := types.VscUnbondingOps{
 		VscId:          vscID,
-		UnbondingOpIds: IDs,
+		UnbondingOpIds: ids,
 	}
 	bz, err := vscUnbondingOps.Marshal()
 	if err != nil {

@@ -690,7 +690,7 @@ type addIbcChannelAction struct {
 type startHermesAction struct{}
 
 func (tr TestRun) startHermes(
-	action startHermesAction,
+	_ startHermesAction,
 	verbose bool,
 ) {
 	// hermes start is running in detached mode
