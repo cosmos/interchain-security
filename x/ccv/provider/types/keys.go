@@ -125,7 +125,7 @@ const (
 	ConsumerAddrsToPruneBytePrefix
 
 	// SlashLogBytePrefix is the byte prefix that will store the mapping from provider address to boolean
-	// denoting whether the provider address has commited any double signign infractions
+	// denoting whether the provider address has committed any double signign infractions
 	SlashLogBytePrefix
 )
 
@@ -330,8 +330,8 @@ func GlobalSlashEntryKey(entry GlobalSlashEntry) []byte {
 // MustParseGlobalSlashEntryKey returns the received time and chainID for a global slash queue entry key,
 // or panics if the key is invalid.
 func MustParseGlobalSlashEntryKey(bz []byte) (
-	recvTime time.Time, consumerChainID string, ibcSeqNum uint64) {
-
+	recvTime time.Time, consumerChainID string, ibcSeqNum uint64,
+) {
 	// Prefix is in first byte
 	expectedPrefix := []byte{GlobalSlashEntryBytePrefix}
 	if prefix := bz[:1]; !bytes.Equal(prefix, expectedPrefix) {

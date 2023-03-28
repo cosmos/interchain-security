@@ -11,7 +11,6 @@ import (
 )
 
 func TestValidatorConsensusKeyInUse(t *testing.T) {
-
 	newValidator := cryptotestutil.NewCryptoIdentityFromIntSeed(0)
 	anotherValidator0 := cryptotestutil.NewCryptoIdentityFromIntSeed(1)
 	anotherValidator1 := cryptotestutil.NewCryptoIdentityFromIntSeed(2)

@@ -230,7 +230,6 @@ func (k Keeper) getSlashPacketData(ctx sdk.Context, consumerChainID string, ibcS
 
 	packet := ccvtypes.SlashPacketData{}
 	err := packet.Unmarshal(bz[1:])
-
 	if err != nil {
 		// If the data cannot be unmarshaled, it is considered not found
 		return ccvtypes.SlashPacketData{}, false

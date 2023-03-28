@@ -18,7 +18,6 @@ import (
 
 // Tests validation of consumer states and params within a provider genesis state
 func TestValidateGenesisState(t *testing.T) {
-
 	testCases := []struct {
 		name     string
 		genState *types.GenesisState
@@ -412,8 +411,10 @@ func TestValidateGenesisState(t *testing.T) {
 			types.NewGenesisState(
 				types.DefaultValsetUpdateID,
 				nil,
-				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
-					ConsumerGenesis: consumertypes.GenesisState{}}},
+				[]types.ConsumerState{{
+					ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
+					ConsumerGenesis: consumertypes.GenesisState{},
+				}},
 				nil,
 				nil,
 				nil,
@@ -430,9 +431,11 @@ func TestValidateGenesisState(t *testing.T) {
 			types.NewGenesisState(
 				types.DefaultValsetUpdateID,
 				nil,
-				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
+				[]types.ConsumerState{{
+					ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
 					ConsumerGenesis:  getInitialConsumerGenesis(t, "chainid"),
-					SlashDowntimeAck: []string{"cosmosvaloper1qlmk6r5w5taqrky4ycur4zq6jqxmuzr688htpp"}}},
+					SlashDowntimeAck: []string{"cosmosvaloper1qlmk6r5w5taqrky4ycur4zq6jqxmuzr688htpp"},
+				}},
 				nil,
 				nil,
 				nil,
@@ -449,9 +452,11 @@ func TestValidateGenesisState(t *testing.T) {
 			types.NewGenesisState(
 				types.DefaultValsetUpdateID,
 				nil,
-				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
+				[]types.ConsumerState{{
+					ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
 					ConsumerGenesis:      getInitialConsumerGenesis(t, "chainid"),
-					PendingValsetChanges: []ccv.ValidatorSetChangePacketData{{}}}},
+					PendingValsetChanges: []ccv.ValidatorSetChangePacketData{{}},
+				}},
 				nil,
 				nil,
 				nil,
@@ -468,12 +473,15 @@ func TestValidateGenesisState(t *testing.T) {
 			types.NewGenesisState(
 				types.DefaultValsetUpdateID,
 				nil,
-				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
+				[]types.ConsumerState{{
+					ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
 					ConsumerGenesis: getInitialConsumerGenesis(t, "chainid"),
 					PendingValsetChanges: []ccv.ValidatorSetChangePacketData{{
 						SlashAcks:        []string{"cosmosvaloper1qlmk6r5w5taqrky4ycur4zq6jqxmuzr688htpp"},
 						ValsetUpdateId:   1,
-						ValidatorUpdates: []abci.ValidatorUpdate{{}}}}}},
+						ValidatorUpdates: []abci.ValidatorUpdate{{}},
+					}},
+				}},
 				nil,
 				nil,
 				nil,
@@ -620,8 +628,10 @@ func TestValidateGenesisState(t *testing.T) {
 			types.NewGenesisState(
 				types.DefaultValsetUpdateID,
 				nil,
-				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
-					UnbondingOpsIndex: []types.VscUnbondingOps{{VscId: 1}}}},
+				[]types.ConsumerState{{
+					ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
+					UnbondingOpsIndex: []types.VscUnbondingOps{{VscId: 1}},
+				}},
 				nil,
 				nil,
 				nil,
@@ -671,7 +681,7 @@ func getInitialConsumerGenesis(t *testing.T, chainID string) consumertypes.Genes
 		true,
 		true,
 	)
-	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash[:])
+	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
 
 	params := consumertypes.DefaultParams()
 	params.Enabled = true
