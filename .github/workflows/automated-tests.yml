@@ -3,11 +3,11 @@ on:
   push:
     branches:
       - main
-      - release/*
+      - release/v*
   pull_request:
     branches:
       - main
-      - release/*
+      - release/v*
 jobs:
   Automated_Tests:
     runs-on: ubuntu-latest
