@@ -689,8 +689,7 @@ type addIbcChannelAction struct {
 	order       string
 }
 
-type startHermesAction struct {
-}
+type startHermesAction struct{}
 
 func (tr TestRun) startHermes(
 	action startHermesAction,
