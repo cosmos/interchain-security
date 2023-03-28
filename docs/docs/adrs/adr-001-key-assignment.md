@@ -60,7 +60,7 @@ if _, consumerRegistered := GetConsumerClientID(chainID); consumerRegistered {
         // mark this old consumer key as prunable once the VSCMaturedPacket
         // for the current VSC ID is received
         oldConsumerAddr := utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
-        vscID := GetValidatorSetUpdateId()
+        vscID := GetValidatorSetUpdateID()
         AppendConsumerAddrsToPrune(chainID, vscID, oldConsumerAddr)
     } else {
         // the validator had no key assigned on this consumer chain
@@ -127,7 +127,7 @@ func (k Keeper) MakeConsumerGenesis(chainID string) (gen consumertypes.GenesisSt
 On `EndBlock` while queueing `VSCPacket`s to send to registered consumer chains:
 ```golang
 func QueueVSCPackets() {
-	valUpdateID := GetValidatorSetUpdateId()
+	valUpdateID := GetValidatorSetUpdateID()
 	// get the validator updates from the staking module
 	valUpdates := stakingKeeper.GetValidatorUpdates()
 

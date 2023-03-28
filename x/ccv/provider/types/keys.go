@@ -139,7 +139,7 @@ func MaturedUnbondingOpsKey() []byte {
 	return []byte{MaturedUnbondingOpsByteKey}
 }
 
-// ValidatorSetUpdateIdKey is the key that stores the current validator set update id
+// ValidatorSetUpdateIDKey is the key that stores the current validator set update id
 func ValidatorSetUpdateIDKey() []byte {
 	return []byte{ValidatorSetUpdateIDByteKey}
 }
