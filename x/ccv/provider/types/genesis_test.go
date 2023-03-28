@@ -681,7 +681,7 @@ func getInitialConsumerGenesis(t *testing.T, chainID string) consumertypes.Genes
 		true,
 		true,
 	)
-	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash[:])
+	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
 
 	params := consumertypes.DefaultParams()
 	params.Enabled = true

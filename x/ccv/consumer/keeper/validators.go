@@ -26,7 +26,7 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 		addr := pubkey.Address()
 		val, found := k.GetCCValidator(ctx, addr)
 
-		if found {
+		if found { //nolint:gocritic // this if-else chain isn't worth a conversion to a switch statement
 			// update or delete an existing validator
 			if change.Power < 1 {
 				k.DeleteCCValidator(ctx, addr)
@@ -44,17 +44,14 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 				// received from the provider are invalid.
 				panic(err)
 			}
-
 			k.SetCCValidator(ctx, ccVal)
 			k.AfterValidatorBonded(ctx, consAddr, nil)
-
 		} else {
 			// edge case: we received an update for 0 power
 			// but the validator is already deleted. Do not forward
 			// to tendermint.
 			continue
 		}
-
 		ret = append(ret, change)
 	}
 	return ret
@@ -63,11 +60,11 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 // IterateValidators - unimplemented on CCV keeper but perform a no-op in order to pass the slashing module InitGenesis.
 // It is allowed since the condition verifying validator public keys in HandleValidatorSignature (x/slashing/keeper/infractions.go) is removed
 // therefore it isn't required to store any validator public keys to the slashing states during genesis.
-func (k Keeper) IterateValidators(sdk.Context, func(index int64, validator stakingtypes.ValidatorI) (stop bool)) {
+func (Keeper) IterateValidators(sdk.Context, func(index int64, validator stakingtypes.ValidatorI) (stop bool)) {
 }
 
 // Validator - unimplemented on CCV keeper
-func (k Keeper) Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.ValidatorI {
+func (Keeper) Validator(_ sdk.Context, _ sdk.ValAddress) stakingtypes.ValidatorI {
 	panic("unimplemented on CCV keeper")
 }
 
@@ -77,7 +74,7 @@ func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
 }
 
 // ValidatorByConsAddr returns an empty validator
-func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.ValidatorI {
+func (Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.ValidatorI {
 	/*
 		NOTE:
 
@@ -118,18 +115,18 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 }
 
 // Jail - unimplemented on CCV keeper
-func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {}
+func (Keeper) Jail(_ sdk.Context, _ sdk.ConsAddress) {}
 
 // Unjail - unimplemented on CCV keeper
-func (k Keeper) Unjail(sdk.Context, sdk.ConsAddress) {}
+func (Keeper) Unjail(_ sdk.Context, _ sdk.ConsAddress) {}
 
 // Delegation - unimplemented on CCV keeper
-func (k Keeper) Delegation(sdk.Context, sdk.AccAddress, sdk.ValAddress) stakingtypes.DelegationI {
+func (Keeper) Delegation(sdk.Context, sdk.AccAddress, sdk.ValAddress) stakingtypes.DelegationI {
 	panic("unimplemented on CCV keeper")
 }
 
 // MaxValidators - unimplemented on CCV keeper
-func (k Keeper) MaxValidators(sdk.Context) uint32 {
+func (Keeper) MaxValidators(sdk.Context) uint32 {
 	panic("unimplemented on CCV keeper")
 }
 
@@ -180,7 +177,7 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	// Since the entries to be deleted are always in a continuous range, we can iterate
 	// over the historical entries starting from the most recent version to be pruned
 	// and then return at the first empty entry.
-	for i := ctx.BlockHeight() - int64(numHistoricalEntries); i >= 0; i-- {
+	for i := ctx.BlockHeight() - numHistoricalEntries; i >= 0; i-- {
 		_, found := k.GetHistoricalInfo(ctx, i)
 		if found {
 			k.DeleteHistoricalInfo(ctx, i)

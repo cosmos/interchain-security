@@ -72,7 +72,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 		{
 			description: "expect to not append invalid proposal using an already existing chain id",
 			malleate: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
-				k.SetConsumerClientId(ctx, chainID, "anyClientId")
+				k.SetConsumerClientID(ctx, chainID, "anyClientId")
 			},
 
 			prop: providertypes.NewConsumerAdditionProposal(
@@ -156,7 +156,7 @@ func TestCreateConsumerClient(t *testing.T) {
 		{
 			description: "client for this chain already exists, new one is not created",
 			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
-				providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
+				providerKeeper.SetConsumerClientID(ctx, "chainID", "clientID")
 
 				// Expect none of the client creation related calls to happen
 				mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Times(0)
@@ -196,12 +196,12 @@ func TestCreateConsumerClient(t *testing.T) {
 //
 // Note: Separated from TestCreateConsumerClient to also be called from TestCreateConsumerChainProposal.
 func testCreatedConsumerClient(t *testing.T,
-	ctx sdk.Context, providerKeeper providerkeeper.Keeper, expectedChainID string, expectedClientID string,
+	ctx sdk.Context, providerKeeper providerkeeper.Keeper, expectedChainID, expectedClientID string,
 ) {
 	// ClientID should be stored.
-	clientId, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
+	clientID, found := providerKeeper.GetConsumerClientID(ctx, expectedChainID)
 	require.True(t, found, "consumer client not found")
-	require.Equal(t, expectedClientID, clientId)
+	require.Equal(t, expectedClientID, clientID)
 
 	// Only assert that consumer genesis was set,
 	// more granular tests on consumer genesis should be defined in TestMakeConsumerGenesis
@@ -247,7 +247,7 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 		}
 		require.Empty(t, res, "consumer addition proposal was not deleted %s %s", tc.ChainId, tc.SpawnTime.String())
 		require.Equal(t, propsToExecute[numDeleted].ChainId, tc.ChainId)
-		numDeleted += 1
+		numDeleted++
 	}
 }
 
@@ -387,7 +387,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 		// chainID of the consumer chain
 		// tests need to check that the CCV channel is not closed prematurely
-		chainId string
+		chainID string
 	}
 
 	// Snapshot times asserted in tests
@@ -399,7 +399,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		{
 			description: "valid proposal",
 			setupMocks: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
-				k.SetConsumerClientId(ctx, chainID, "ClientID")
+				k.SetConsumerClientID(ctx, chainID, "ClientID")
 			},
 			prop: providertypes.NewConsumerRemovalProposal(
 				"title",
@@ -409,12 +409,12 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			).(*providertypes.ConsumerRemovalProposal),
 			blockTime:     hourAfterNow, // After stop time.
 			expAppendProp: true,
-			chainId:       "chainID",
+			chainID:       "chainID",
 		},
 		{
 			description: "valid proposal - stop_time in the past",
 			setupMocks: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
-				k.SetConsumerClientId(ctx, chainID, "ClientID")
+				k.SetConsumerClientID(ctx, chainID, "ClientID")
 			},
 			prop: providertypes.NewConsumerRemovalProposal(
 				"title",
@@ -424,12 +424,12 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			).(*providertypes.ConsumerRemovalProposal),
 			blockTime:     hourAfterNow, // After stop time.
 			expAppendProp: true,
-			chainId:       "chainID",
+			chainID:       "chainID",
 		},
 		{
 			description: "valid proposal - before stop_time in the future",
 			setupMocks: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
-				k.SetConsumerClientId(ctx, chainID, "ClientID")
+				k.SetConsumerClientID(ctx, chainID, "ClientID")
 			},
 			prop: providertypes.NewConsumerRemovalProposal(
 				"title",
@@ -439,7 +439,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			).(*providertypes.ConsumerRemovalProposal),
 			blockTime:     now,
 			expAppendProp: true,
-			chainId:       "chainID",
+			chainID:       "chainID",
 		},
 		{
 			description: "rejected valid proposal - consumer chain does not exist",
@@ -452,12 +452,12 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			).(*providertypes.ConsumerRemovalProposal),
 			blockTime:     hourAfterNow, // After stop time.
 			expAppendProp: false,
-			chainId:       "chainID-2",
+			chainID:       "chainID-2",
 		},
 	}
 
+	// Run test cases
 	for _, tc := range tests {
-
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
@@ -475,6 +475,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 		err := providerKeeper.HandleConsumerRemovalProposal(ctx, tc.prop)
 
+		// Assert expected result
 		if tc.expAppendProp {
 			require.NoError(t, err)
 
@@ -483,7 +484,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			require.True(t, found)
 
 			// confirm that the channel was not closed
-			_, found = providerKeeper.GetChainToChannel(ctx, tc.chainId)
+			_, found = providerKeeper.GetChainToChannel(ctx, tc.chainID)
 			require.True(t, found)
 		} else {
 			require.Error(t, err)
@@ -492,7 +493,6 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ChainId, tc.prop.StopTime)
 			require.False(t, found)
 		}
-
 		// Assert mock calls from setup function
 		ctrl.Finish()
 	}
@@ -547,8 +547,8 @@ func TestStopConsumerChain(t *testing.T) {
 		},
 	}
 
+	// Run test cases
 	for _, tc := range tests {
-
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
@@ -573,9 +573,9 @@ func TestStopConsumerChain(t *testing.T) {
 
 // testProviderStateIsCleaned executes test assertions for the proposer's state being cleaned after a stopped consumer chain.
 func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
-	expectedChainID string, expectedChannelID string,
+	expectedChainID, expectedChannelID string,
 ) {
-	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
+	_, found := providerKeeper.GetConsumerClientID(ctx, expectedChainID)
 	require.False(t, found)
 	_, found = providerKeeper.GetChainToChannel(ctx, expectedChainID)
 	require.False(t, found)
@@ -643,7 +643,7 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 		}
 		require.Empty(t, res, "consumer removal prop was not deleted %s %s", tc.ChainId, tc.StopTime.String())
 		require.Equal(t, propsToExecute[numDeleted].ChainId, tc.ChainId)
-		numDeleted += 1
+		numDeleted++
 	}
 }
 
@@ -981,8 +981,8 @@ func TestBeginBlockCCR(t *testing.T) {
 		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, prop.ChainId)...)
 	}
 	// Only first two consumer chains should be stopped
-	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
-	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
+	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(&mocks)...)
+	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(&mocks)...)
 
 	gomock.InOrder(expectations...)
 
@@ -1058,8 +1058,8 @@ func TestHandleEquivocationProposal(t *testing.T) {
 		{name: "slash logs not set", setSlashLogs: false, expectEquivsHandled: false, expectErr: true},
 		{name: "slash logs set", setSlashLogs: true, expectEquivsHandled: true, expectErr: false},
 	}
+	// Run test cases
 	for _, tc := range testCases {
-
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		keeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 

@@ -20,6 +20,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const consumer = "consumer"
+
 // TestValsetUpdateBlockHeight tests the getter, setter, and deletion methods for valset updates mapped to block height
 func TestValsetUpdateBlockHeight(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -92,7 +94,7 @@ func TestSlashAcks(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "consumer"
+	chainID := consumer
 
 	acks := providerKeeper.GetSlashAcks(ctx, chainID)
 	require.Nil(t, acks)
@@ -149,7 +151,7 @@ func TestPendingVSCs(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "consumer"
+	chainID := consumer
 
 	pending := providerKeeper.GetPendingVSCPackets(ctx, chainID)
 	require.Len(t, pending, 0)
@@ -398,7 +400,7 @@ func TestGetAllConsumerChains(t *testing.T) {
 	expectedGetAllOrder := []types.Chain{}
 	for i, chainID := range chainIDs {
 		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
-		pk.SetConsumerClientId(ctx, chainID, clientID)
+		pk.SetConsumerClientID(ctx, chainID, clientID)
 		expectedGetAllOrder = append(expectedGetAllOrder, types.Chain{ChainId: chainID, ClientId: clientID})
 	}
 	// sorting by chainID

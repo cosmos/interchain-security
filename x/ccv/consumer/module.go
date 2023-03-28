@@ -40,12 +40,12 @@ func (AppModuleBasic) Name() string {
 }
 
 // RegisterLegacyAminoCodec implements AppModuleBasic interface
-func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+func (AppModuleBasic) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {
 	// ccv.RegisterLegacyAminoCodec(cdc)
 }
 
 // RegisterInterfaces registers module concrete types into protobuf Any.
-func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func (AppModuleBasic) RegisterInterfaces(_ codectypes.InterfaceRegistry) {
 	// ccv.RegisterInterfaces(registry)
 }
 
@@ -56,7 +56,7 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 }
 
 // ValidateGenesis performs genesis state validation for the ibc consumer module.
-func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
+func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
 	var data consumertypes.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", consumertypes.ModuleName, err)
@@ -66,12 +66,12 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 }
 
 // RegisterRESTRoutes implements AppModuleBasic interface
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
+func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the ibc-consumer module.
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	err := consumertypes.RegisterQueryHandlerClient(context.Background(), mux, consumertypes.NewQueryClient(clientCtx))
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, runtimeMux *runtime.ServeMux) {
+	err := consumertypes.RegisterQueryHandlerClient(context.Background(), runtimeMux, consumertypes.NewQueryClient(clientCtx))
 	if err != nil {
 		// same behavior as in cosmos-sdk
 		panic(err)
@@ -102,12 +102,12 @@ func NewAppModule(k keeper.Keeper) AppModule {
 }
 
 // RegisterInvariants implements the AppModule interface
-func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
+func (AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {
 	// TODO
 }
 
 // Route implements the AppModule interface
-func (am AppModule) Route() sdk.Route {
+func (AppModule) Route() sdk.Route {
 	return sdk.Route{}
 }
 
@@ -117,7 +117,7 @@ func (AppModule) QuerierRoute() string {
 }
 
 // LegacyQuerierHandler implements the AppModule interface
-func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
+func (AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 	return nil
 }
 
@@ -148,7 +148,7 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 // BeginBlock implements the AppModule interface
 // Set the VSC ID for the subsequent block to the same value as the current block
 // Panic if the provider's channel was established and then closed
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 	channelID, found := am.keeper.GetProviderChannel(ctx)
 	if found && am.keeper.IsChannelClosed(ctx, channelID) {
 		// The CCV channel was established, but it was then closed;
@@ -171,7 +171,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 
 // EndBlock implements the AppModule interface
 // Flush PendingChanges to ABCI, send pending packets, write acknowledgements for packets that have finished unbonding.
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
 	// Execute EndBlock logic for the Reward Distribution sub-protocol
 	am.keeper.EndBlockRD(ctx)
 
@@ -199,7 +199,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 
 // GenerateGenesisState creates a randomized GenState of the transfer module.
 // TODO
-func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
+func (AppModule) GenerateGenesisState(_ *module.SimulationState) {
 }
 
 // ProposalContents doesn't return any content functions for governance proposals.
@@ -209,16 +209,16 @@ func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedP
 
 // RandomizedParams creates randomized consumer param changes for the simulator.
 // TODO
-func (AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
+func (AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
 	return nil
 }
 
 // RegisterStoreDecoder registers a decoder for consumer module's types
 // TODO
-func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
+func (AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {
 }
 
 // WeightedOperations returns the all the consumer module operations with their respective weights.
-func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {
+func (AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {
 	return nil
 }

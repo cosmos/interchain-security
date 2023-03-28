@@ -19,14 +19,14 @@ import (
 //
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coinit1
 // Spec Tag: [CCV-PCF-COINIT.1]
-func (am AppModule) OnChanOpenInit(
-	ctx sdk.Context,
-	order channeltypes.Order,
-	connectionHops []string,
-	portID string,
-	channelID string,
-	channelCap *capabilitytypes.Capability,
-	counterparty channeltypes.Counterparty,
+func (AppModule) OnChanOpenInit(
+	_ sdk.Context,
+	_ channeltypes.Order,
+	_ []string,
+	_ string,
+	_ string,
+	_ *capabilitytypes.Capability,
+	_ channeltypes.Counterparty,
 	version string,
 ) (string, error) {
 	return version, sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
@@ -98,7 +98,7 @@ func (am AppModule) OnChanOpenTry(
 // validateCCVChannelParams validates a ccv channel
 func validateCCVChannelParams(
 	ctx sdk.Context,
-	keeper *keeper.Keeper,
+	providerkeeper *keeper.Keeper,
 	order channeltypes.Order,
 	portID string,
 ) error {
@@ -107,7 +107,7 @@ func validateCCVChannelParams(
 	}
 
 	// the port ID must match the port ID the CCV module is bounded to
-	boundPort := keeper.GetPort(ctx)
+	boundPort := providerkeeper.GetPort(ctx)
 	if boundPort != portID {
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
 	}
@@ -118,12 +118,12 @@ func validateCCVChannelParams(
 //
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coack1
 // Spec tag: [CCV-PCF-COACK.1]
-func (am AppModule) OnChanOpenAck(
-	ctx sdk.Context,
-	portID,
-	channelID string,
-	counterpartyChannelID string,
-	counterpartyVersion string,
+func (AppModule) OnChanOpenAck(
+	_ sdk.Context,
+	_ string,
+	_ string,
+	_ string,
+	_ string,
 ) error {
 	return sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
 }
@@ -134,7 +134,7 @@ func (am AppModule) OnChanOpenAck(
 // Spec tag: [CCV-PCF-COCONFIRM.1]
 func (am AppModule) OnChanOpenConfirm(
 	ctx sdk.Context,
-	portID,
+	_ string,
 	channelID string,
 ) error {
 	err := am.keeper.SetConsumerChain(ctx, channelID)
@@ -145,20 +145,20 @@ func (am AppModule) OnChanOpenConfirm(
 }
 
 // OnChanCloseInit implements the IBCModule interface
-func (am AppModule) OnChanCloseInit(
-	ctx sdk.Context,
-	portID,
-	channelID string,
+func (AppModule) OnChanCloseInit(
+	_ sdk.Context,
+	_ string,
+	_ string,
 ) error {
 	// Disallow user-initiated channel closing for provider channels
 	return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
 }
 
 // OnChanCloseConfirm implements the IBCModule interface
-func (am AppModule) OnChanCloseConfirm(
-	ctx sdk.Context,
-	portID,
-	channelID string,
+func (AppModule) OnChanCloseConfirm(
+	_ sdk.Context,
+	_ string,
+	_ string,
 ) error {
 	return nil
 }

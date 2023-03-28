@@ -136,7 +136,7 @@ var (
 // App extends an ABCI application, but with most of its parameters exported.
 // They are exported for convenience in creating helper functions, as object
 // capabilities aren't needed for testing.
-type App struct { // nolint: golint
+type App struct { //nolint: golint
 	*baseapp.BaseApp
 	legacyAmino       *codec.LegacyAmino
 	appCodec          codec.Codec
@@ -156,7 +156,7 @@ type App struct { // nolint: golint
 	SlashingKeeper   slashingkeeper.Keeper
 
 	// NOTE the distribution keeper should either be removed
-	// from consumer chain or set to use an independant
+	// from consumer chain or set to use an independent
 	// different fee-pool from the consumer chain ConsumerKeeper
 
 	CrisisKeeper   crisiskeeper.Keeper
@@ -580,7 +580,7 @@ func (app *App) LoadHeight(height int64) error {
 }
 
 // ModuleAccountAddrs returns all the app's module account addresses.
-func (app *App) ModuleAccountAddrs() map[string]bool {
+func (*App) ModuleAccountAddrs() map[string]bool {
 	modAccAddrs := make(map[string]bool)
 	for acc := range maccPerms {
 		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
@@ -652,22 +652,22 @@ func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
 }
 
 // GetE2eBankKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
+func (app *App) GetE2eBankKeeper() e2e.BankKeeper {
 	return app.BankKeeper
 }
 
 // GetE2eAccountKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eAccountKeeper() e2e.E2eAccountKeeper {
+func (app *App) GetE2eAccountKeeper() e2e.AccountKeeper {
 	return app.AccountKeeper
 }
 
 // GetE2eSlashingKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
+func (app *App) GetE2eSlashingKeeper() e2e.SlashingKeeper {
 	return app.SlashingKeeper
 }
 
 // GetE2eEvidenceKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
+func (app *App) GetE2eEvidenceKeeper() e2e.EvidenceKeeper {
 	return app.EvidenceKeeper
 }
 
@@ -700,7 +700,7 @@ func (app *App) GetTxConfig() client.TxConfig {
 
 // RegisterAPIRoutes registers all application module routes with the provided
 // API server.
-func (app *App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
+func (*App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
 	rpc.RegisterRoutes(clientCtx, apiSvr.Router)
 	// Register legacy tx routes.

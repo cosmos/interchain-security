@@ -80,7 +80,7 @@ func LoadTraces(fn string) []TraceData {
 
 	var ret []TraceData
 
-	err = json.Unmarshal([]byte(byteValue), &ret)
+	err = json.Unmarshal(byteValue, &ret)
 
 	if err != nil {
 		panic(err)

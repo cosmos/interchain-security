@@ -184,8 +184,8 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 	}
 
 	pending := k.GetPendingPackets(ctx)
+	// send packets in FIFO order
 	for _, p := range pending.GetList() {
-
 		// send packet over IBC
 		err := utils.SendIBCPacket(
 			ctx,
@@ -207,7 +207,6 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
 	}
-
 	// clear pending data packets
 	k.DeletePendingDataPackets(ctx)
 }
@@ -234,7 +233,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		// check if there is an established CCV channel to provider
 		channelID, found := k.GetProviderChannel(ctx)
 		if !found {
-			return sdkerrors.Wrapf(types.ErrNoProposerChannelId, "recv ErrorAcknowledgement on non-established channel %s", packet.SourceChannel)
+			return sdkerrors.Wrapf(types.ErrNoProposerChannelID, "recv ErrorAcknowledgement on non-established channel %s", packet.SourceChannel)
 		}
 		if channelID != packet.SourceChannel {
 			// Close the established CCV channel as well

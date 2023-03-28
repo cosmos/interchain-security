@@ -90,7 +90,7 @@ func TestOnChanOpenTry(t *testing.T) {
 		},
 		{
 			"unexpected client ID mapped to chain ID", func(params *params, keeper *providerkeeper.Keeper) {
-				keeper.SetConsumerClientId(
+				keeper.SetConsumerClientID(
 					params.ctx,
 					"consumerChainID",
 					"invalidClientID",
@@ -109,15 +109,15 @@ func TestOnChanOpenTry(t *testing.T) {
 		},
 	}
 
+	// Run test cases
 	for _, tc := range testCases {
-
 		// Setup
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		providerModule := provider.NewAppModule(&providerKeeper)
 
 		providerKeeper.SetPort(ctx, ccv.ProviderPortID)
-		providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientIDToConsumer")
+		providerKeeper.SetConsumerClientID(ctx, "consumerChainID", "clientIDToConsumer")
 
 		// Instantiate valid params as default. Individual test cases mutate these as needed.
 		params := params{
@@ -295,7 +295,6 @@ func TestOnChanOpenConfirm(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 
@@ -310,7 +309,6 @@ func TestOnChanOpenConfirm(t *testing.T) {
 		err := providerModule.OnChanOpenConfirm(ctx, "providerPortID", "channelID")
 
 		if tc.expPass {
-
 			require.NoError(t, err)
 			// Validate channel mappings
 			channelID, found := providerKeeper.GetChainToChannel(ctx, "consumerChainID")
@@ -324,7 +322,6 @@ func TestOnChanOpenConfirm(t *testing.T) {
 			height, found := providerKeeper.GetInitChainHeight(ctx, "consumerChainID")
 			require.True(t, found)
 			require.Equal(t, ctx.BlockHeight(), int64(height))
-
 		} else {
 			require.Error(t, err)
 		}

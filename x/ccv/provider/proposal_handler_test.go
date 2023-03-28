@@ -84,8 +84,8 @@ func TestProviderProposalHandler(t *testing.T) {
 		},
 	}
 
+	// Run test cases
 	for _, tc := range testCases {
-
 		// Setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)

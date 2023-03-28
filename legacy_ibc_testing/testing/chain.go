@@ -61,7 +61,7 @@ type TestChain struct {
 	*testing.T
 
 	Coordinator   *Coordinator
-	App           TestingApp
+	App           AppTest
 	ChainID       string
 	LastHeader    *ibctmtypes.Header // header for last block height committed
 	CurrentHeader tmproto.Header     // header for current block height
@@ -276,7 +276,7 @@ func GetSentPacketKey(sequence uint64, channelID string) string {
 func (chain *TestChain) GetSentPacket(sequence uint64, channelID string) (packet channeltypes.Packet, found bool) {
 	sentPacketKey := GetSentPacketKey(sequence, channelID)
 	packet, found = chain.SentPackets[sentPacketKey]
-	return
+	return packet, found
 }
 
 // setSentPacketsFromEvents stores the sent packet reconstructed
@@ -335,14 +335,14 @@ func (chain *TestChain) NextBlock() (abci.ResponseEndBlock, abci.ResponseCommit,
 
 // sendMsgs delivers a transaction through the application without returning the result.
 func (chain *TestChain) sendMsgs(msgs ...sdk.Msg) error {
-	_, err := chain.SendMsgs(msgs...)
+	_, err := chain.SendMessages(msgs...)
 	return err
 }
 
 // SendMsgs delivers a transaction through the application. It updates the senders sequence
 // number and updates the TestChain's headers. It returns the result and error if one
 // occurred.
-func (chain *TestChain) SendMsgs(msgs ...sdk.Msg) (*sdk.Result, error) {
+func (chain *TestChain) SendMessages(msgs ...sdk.Msg) (*sdk.Result, error) {
 	// ensure the chain has the latest time
 	chain.Coordinator.UpdateTimeForChain(chain)
 
@@ -510,7 +510,7 @@ func (chain *TestChain) CreateTMClientHeader(chainID string, blockHeight int64, 
 		AppHash:            chain.CurrentHeader.AppHash,
 		LastResultsHash:    tmhash.Sum([]byte("last_results_hash")),
 		EvidenceHash:       tmhash.Sum([]byte("evidence_hash")),
-		ProposerAddress:    tmValSet.Proposer.Address, //nolint:staticcheck
+		ProposerAddress:    tmValSet.Proposer.Address,
 	}
 
 	hhash := tmHeader.Hash()
@@ -597,11 +597,11 @@ func (chain *TestChain) CreatePortCapability(scopedKeeper capabilitykeeper.Scope
 	_, ok := chain.App.GetScopedIBCKeeper().GetCapability(chain.GetContext(), host.PortPath(portID))
 	if !ok {
 		// create capability using the IBC capability keeper
-		cap, err := chain.App.GetScopedIBCKeeper().NewCapability(chain.GetContext(), host.PortPath(portID))
+		portCap, err := chain.App.GetScopedIBCKeeper().NewCapability(chain.GetContext(), host.PortPath(portID))
 		require.NoError(chain.T, err)
 
 		// claim capability using the scopedKeeper
-		err = scopedKeeper.ClaimCapability(chain.GetContext(), cap, host.PortPath(portID))
+		err = scopedKeeper.ClaimCapability(chain.GetContext(), portCap, host.PortPath(portID))
 		require.NoError(chain.T, err)
 	}
 
@@ -611,10 +611,10 @@ func (chain *TestChain) CreatePortCapability(scopedKeeper capabilitykeeper.Scope
 // GetPortCapability returns the port capability for the given portID. The capability must
 // exist, otherwise testing will fail.
 func (chain *TestChain) GetPortCapability(portID string) *capabilitytypes.Capability {
-	cap, ok := chain.App.GetScopedIBCKeeper().GetCapability(chain.GetContext(), host.PortPath(portID))
+	portCap, ok := chain.App.GetScopedIBCKeeper().GetCapability(chain.GetContext(), host.PortPath(portID))
 	require.True(chain.T, ok)
 
-	return cap
+	return portCap
 }
 
 // CreateChannelCapability binds and claims a capability for the given portID and channelID
@@ -625,9 +625,9 @@ func (chain *TestChain) CreateChannelCapability(scopedKeeper capabilitykeeper.Sc
 	// check if the portId is already binded, if not bind it
 	_, ok := chain.App.GetScopedIBCKeeper().GetCapability(chain.GetContext(), capName)
 	if !ok {
-		cap, err := chain.App.GetScopedIBCKeeper().NewCapability(chain.GetContext(), capName)
+		chanCap, err := chain.App.GetScopedIBCKeeper().NewCapability(chain.GetContext(), capName)
 		require.NoError(chain.T, err)
-		err = scopedKeeper.ClaimCapability(chain.GetContext(), cap, capName)
+		err = scopedKeeper.ClaimCapability(chain.GetContext(), chanCap, capName)
 		require.NoError(chain.T, err)
 	}
 
@@ -637,10 +637,10 @@ func (chain *TestChain) CreateChannelCapability(scopedKeeper capabilitykeeper.Sc
 // GetChannelCapability returns the channel capability for the given portID and channelID.
 // The capability must exist, otherwise testing will fail.
 func (chain *TestChain) GetChannelCapability(portID, channelID string) *capabilitytypes.Capability {
-	cap, ok := chain.App.GetScopedIBCKeeper().GetCapability(chain.GetContext(), host.ChannelCapabilityPath(portID, channelID))
+	chanCap, ok := chain.App.GetScopedIBCKeeper().GetCapability(chain.GetContext(), host.ChannelCapabilityPath(portID, channelID))
 	require.True(chain.T, ok)
 
-	return cap
+	return chanCap
 }
 
 // GetTimeoutHeight is a convenience function which returns a IBC packet timeout height

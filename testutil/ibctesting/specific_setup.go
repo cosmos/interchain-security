@@ -1,4 +1,4 @@
-package ibc_testing
+package ibctesting
 
 // Contains example setup code for running e2e tests against a provider, consumer,
 // and/or democracy consumer app.go implementation. This file is meant to be pattern matched
@@ -44,4 +44,33 @@ func DemocracyConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMes
 	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
 	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Codec)
+
+
+
+
+// Previous state to help with debug
+
+/*
+
+func ProviderAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
+	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)
+	testApp := appProvider.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
+		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.AppTest)
+	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
 }
+
+func ConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
+	encoding := cosmoscmd.MakeEncodingConfig(appConsumer.ModuleBasics)
+	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
+		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.AppTest)
+	return testApp, appConsumer.NewDefaultGenesisState(encoding.Marshaler)
+}
+
+func DemocracyConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
+	encoding := cosmoscmd.MakeEncodingConfig(appConsumerDemocracy.ModuleBasics)
+	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
+		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.AppTest)
+	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Marshaler)
+}
+
+/*
