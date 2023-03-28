@@ -596,7 +596,7 @@ func (k Keeper) CreateConsumerClientInCachedCtx(ctx sdk.Context, p types.Consume
 // from a given consumer removal proposal in a cached context
 func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRemovalProposal) (cc sdk.Context, writeCache func(), err error) {
 	cc, writeCache = ctx.CacheContext()
-	err = k.StopConsumerChain(ctx, p.ChainId, true)
+	err = k.StopConsumerChain(cc, p.ChainId, true)
 	return
 }
 
