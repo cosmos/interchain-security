@@ -387,7 +387,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 		// chainID of the consumer chain
 		// tests need to check that the CCV channel is not closed prematurely
-		chainId string
+		chainID string
 	}
 
 	// Snapshot times asserted in tests
@@ -409,7 +409,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			).(*providertypes.ConsumerRemovalProposal),
 			blockTime:     hourAfterNow, // After stop time.
 			expAppendProp: true,
-			chainId:       "chainID",
+			chainID:       "chainID",
 		},
 		{
 			description: "valid proposal - stop_time in the past",
@@ -424,7 +424,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			).(*providertypes.ConsumerRemovalProposal),
 			blockTime:     hourAfterNow, // After stop time.
 			expAppendProp: true,
-			chainId:       "chainID",
+			chainID:       "chainID",
 		},
 		{
 			description: "valid proposal - before stop_time in the future",
@@ -439,7 +439,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			).(*providertypes.ConsumerRemovalProposal),
 			blockTime:     now,
 			expAppendProp: true,
-			chainId:       "chainID",
+			chainID:       "chainID",
 		},
 		{
 			description: "rejected valid proposal - consumer chain does not exist",
@@ -452,7 +452,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			).(*providertypes.ConsumerRemovalProposal),
 			blockTime:     hourAfterNow, // After stop time.
 			expAppendProp: false,
-			chainId:       "chainID-2",
+			chainID:       "chainID-2",
 		},
 	}
 
@@ -484,7 +484,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			require.True(t, found)
 
 			// confirm that the channel was not closed
-			_, found = providerKeeper.GetChainToChannel(ctx, tc.chainId)
+			_, found = providerKeeper.GetChainToChannel(ctx, tc.chainID)
 			require.True(t, found)
 		} else {
 			require.Error(t, err)
