@@ -375,7 +375,7 @@ func TestGetAllConsumerAdditionProps(t *testing.T) {
 func TestHandleConsumerRemovalProposal(t *testing.T) {
 	type testCase struct {
 		description string
-		malleate    func(ctx sdk.Context, k providerkeeper.Keeper, chainID string)
+		setupMocks  func(ctx sdk.Context, k providerkeeper.Keeper, chainID string)
 
 		// Consumer removal proposal to handle
 		prop *providertypes.ConsumerRemovalProposal
@@ -384,16 +384,21 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		// Whether it's expected that the proposal is successfully verified
 		// and appended to the pending proposals
 		expAppendProp bool
+
+		// chainID of the consumer chain
+		// tests need to check that the CCV channel is not closed prematurely
+		chainId string
 	}
 
 	// Snapshot times asserted in tests
 	now := time.Now().UTC()
-	hourFromNow := now.Add(time.Hour).UTC()
+	hourAfterNow := now.Add(time.Hour).UTC()
+	hourBeforeNow := now.Add(-time.Hour).UTC()
 
 	tests := []testCase{
 		{
 			description: "valid proposal",
-			malleate: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
+			setupMocks: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
 				k.SetConsumerClientID(ctx, chainID, "ClientID")
 			},
 			prop: providertypes.NewConsumerRemovalProposal(
@@ -402,20 +407,52 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 				"chainID",
 				now,
 			).(*providertypes.ConsumerRemovalProposal),
-			blockTime:     hourFromNow, // After stop time.
+			blockTime:     hourAfterNow, // After stop time.
 			expAppendProp: true,
+			chainId:       "chainID",
 		},
 		{
-			description: "invalid valid proposal: consumer chain does not exist",
-			malleate:    func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {},
+			description: "valid proposal - stop_time in the past",
+			setupMocks: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
+				k.SetConsumerClientID(ctx, chainID, "ClientID")
+			},
+			prop: providertypes.NewConsumerRemovalProposal(
+				"title",
+				"description",
+				"chainID",
+				hourBeforeNow,
+			).(*providertypes.ConsumerRemovalProposal),
+			blockTime:     hourAfterNow, // After stop time.
+			expAppendProp: true,
+			chainId:       "chainID",
+		},
+		{
+			description: "valid proposal - before stop_time in the future",
+			setupMocks: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
+				k.SetConsumerClientID(ctx, chainID, "ClientID")
+			},
+			prop: providertypes.NewConsumerRemovalProposal(
+				"title",
+				"description",
+				"chainID",
+				hourAfterNow,
+			).(*providertypes.ConsumerRemovalProposal),
+			blockTime:     now,
+			expAppendProp: true,
+			chainId:       "chainID",
+		},
+		{
+			description: "rejected valid proposal - consumer chain does not exist",
+			setupMocks:  func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {},
 			prop: providertypes.NewConsumerRemovalProposal(
 				"title",
 				"description",
 				"chainID-2",
-				hourFromNow,
+				hourAfterNow,
 			).(*providertypes.ConsumerRemovalProposal),
-			blockTime:     hourFromNow, // After stop time.
+			blockTime:     hourAfterNow, // After stop time.
 			expAppendProp: false,
+			chainId:       "chainID-2",
 		},
 	}
 
@@ -428,13 +465,13 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		// Mock expectations and setup for stopping the consumer chain, if applicable
+		// Note: when expAppendProp is false, no mocks are setup,
+		// meaning no external keeper methods are allowed to be called.
 		if tc.expAppendProp {
 			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
 		}
-		// Note: when expAppendProp is false, no mocks are setup,
-		// meaning no external keeper methods are allowed to be called.
 
-		tc.malleate(ctx, providerKeeper, tc.prop.ChainId)
+		tc.setupMocks(ctx, providerKeeper, tc.prop.ChainId)
 
 		err := providerKeeper.HandleConsumerRemovalProposal(ctx, tc.prop)
 
@@ -444,6 +481,10 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 			// Proposal should be stored as pending
 			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ChainId, tc.prop.StopTime)
+			require.True(t, found)
+
+			// confirm that the channel was not closed
+			_, found = providerKeeper.GetChainToChannel(ctx, tc.chainId)
 			require.True(t, found)
 		} else {
 			require.Error(t, err)

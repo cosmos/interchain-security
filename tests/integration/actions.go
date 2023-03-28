@@ -592,7 +592,7 @@ func (tr TestRun) addChainToRelayer(
 	keyName := "query"
 	rpcAddr := "http://" + queryNodeIP + ":26658"
 	grpcAddr := "tcp://" + queryNodeIP + ":9091"
-	wsAddr := "ws://" + queryNodeIP + ":26657/websocket"
+	wsAddr := "ws://" + queryNodeIP + ":26658/websocket"
 
 	chainConfig := fmt.Sprintf(hermesChainConfigTemplate,
 		grpcAddr,
@@ -685,6 +685,28 @@ type addIbcChannelAction struct {
 	portA       string
 	portB       string
 	order       string
+}
+
+type startHermesAction struct {
+}
+
+func (tr TestRun) startHermes(
+	action startHermesAction,
+	verbose bool,
+) {
+	// hermes start is running in detached mode
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", "-d", tr.containerConfig.instanceName, "hermes",
+		"start",
+	)
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	if verbose {
+		fmt.Println("started Hermes")
+	}
 }
 
 func (tr TestRun) addIbcChannel(
