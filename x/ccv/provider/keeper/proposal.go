@@ -597,7 +597,7 @@ func (k Keeper) CreateConsumerClientInCachedCtx(ctx sdk.Context, p types.Consume
 func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRemovalProposal) (cc sdk.Context, writeCache func(), err error) {
 	cc, writeCache = ctx.CacheContext()
 	err = k.StopConsumerChain(cc, p.ChainId, true)
-	return
+	return cc, writeCache, err
 }
 
 // HandleEquivocationProposal handles an equivocation proposal.
