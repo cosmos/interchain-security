@@ -23,7 +23,7 @@ import (
 )
 
 // ProviderAppIniter implements ibctesting.AppIniter for a provider app
-func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
+func ProviderAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
 	encoding := providerappparams.MakeEncodingConfig()
 	testApp := appProvider.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
@@ -31,7 +31,7 @@ func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 }
 
 // ConsumerAppIniter implements ibctesting.AppIniter for a consumer app
-func ConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
+func ConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
 	encoding := consumerappparams.MakeEncodingConfig()
 	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
@@ -39,38 +39,32 @@ func ConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 }
 
 // DemocracyConsumerAppIniter implements ibctesting.AppIniter for a democracy consumer app
-func DemocracyConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
+func DemocracyConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
 	encoding := cdappparams.MakeEncodingConfig()
 	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
 	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Codec)
-
-
-
+}
 
 // Previous state to help with debug
 
-/*
+// func ProviderAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
+//	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)
+//	testApp := appProvider.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
+//		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.AppTest)
+//	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
+//}
 
-func ProviderAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
-	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)
-	testApp := appProvider.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.AppTest)
-	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
-}
+//func ConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
+//	encoding := cosmoscmd.MakeEncodingConfig(appConsumer.ModuleBasics)
+//	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
+//		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.AppTest)
+//	return testApp, appConsumer.NewDefaultGenesisState(encoding.Marshaler)
+//}
 
-func ConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
-	encoding := cosmoscmd.MakeEncodingConfig(appConsumer.ModuleBasics)
-	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.AppTest)
-	return testApp, appConsumer.NewDefaultGenesisState(encoding.Marshaler)
-}
-
-func DemocracyConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
-	encoding := cosmoscmd.MakeEncodingConfig(appConsumerDemocracy.ModuleBasics)
-	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.AppTest)
-	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Marshaler)
-}
-
-/*
+//func DemocracyConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
+//	encoding := cosmoscmd.MakeEncodingConfig(appConsumerDemocracy.ModuleBasics)
+//	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
+//		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.AppTest)
+//	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Marshaler)
+// }

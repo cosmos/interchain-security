@@ -130,7 +130,7 @@ var (
 var (
 	_ simapp.App              = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
-	_ ibctesting.TestingApp   = (*App)(nil)
+	_ ibctesting.AppTest      = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
