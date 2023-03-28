@@ -35,7 +35,6 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 			state: State{
 				chainID(consumerName): ChainState{
-
 					RepresentativePowers: &map[validatorID]uint{
 						validatorID("alice"): 100500000,
 						validatorID("bob"):   40000000,
@@ -87,7 +86,6 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-
 			action: voteGovProposalAction{
 				chain:      chainID(consumerName),
 				from:       []validatorID{validatorID("alice"), validatorID("bob")},
@@ -114,7 +112,6 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 			state: State{
 				chainID("provi"): ChainState{
-
 					Rewards: &Rewards{
 						IsRewarded: map[validatorID]bool{
 							validatorID("alice"): true,

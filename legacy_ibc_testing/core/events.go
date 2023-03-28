@@ -40,6 +40,7 @@ func ReconstructPacketFromEvent(event abci.Event) (packet types.Packet, err erro
 		uint64(sequence),
 
 		string(attrMap[string(types.AttributeKeySrcChannel)]), // sourceChannel,
+		string(attrMap[string(types.AttributeKeySrcPort)]),    // sourcePort,
 		string(attrMap[string(types.AttributeKeyDstPort)]),    // destinationPort,
 		string(attrMap[string(types.AttributeKeyDstChannel)]), // destinationChannel string,
 		timeoutHeight,
