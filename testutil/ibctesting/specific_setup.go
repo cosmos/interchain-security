@@ -33,6 +33,7 @@ func ConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
 	encoding := appparams.MakeEncodingConfig()
 	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
+
 	return testApp, appConsumer.NewDefaultGenesisState(encoding.Codec)
 }
 
