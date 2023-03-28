@@ -280,12 +280,12 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 	if err != nil {
 		return err
 	}
-	ccvClientId, found := k.GetConsumerClientID(ctx, tmClient.ChainId)
+	ccvClientID, found := k.GetConsumerClientID(ctx, tmClient.ChainId)
 	if !found {
 		return sdkerrors.Wrapf(ccv.ErrClientNotFound, "cannot find client for consumer chain %s", tmClient.ChainId)
 	}
-	if ccvClientId != clientID {
-		return sdkerrors.Wrapf(ccv.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
+	if ccvClientID != clientID {
+		return sdkerrors.Wrapf(ccv.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientID, clientID)
 	}
 
 	// Verify that there isn't already a CCV channel for the consumer chain
@@ -632,8 +632,8 @@ func (k Keeper) chanCloseInit(ctx sdk.Context, channelID string) error {
 }
 
 func (k Keeper) IncrementValidatorSetUpdateID(ctx sdk.Context) {
-	validatorSetUpdateId := k.GetValidatorSetUpdateID(ctx)
-	k.SetValidatorSetUpdateID(ctx, validatorSetUpdateId+1)
+	validatorSetUpdateID := k.GetValidatorSetUpdateID(ctx)
+	k.SetValidatorSetUpdateID(ctx, validatorSetUpdateID+1)
 }
 
 func (k Keeper) SetValidatorSetUpdateID(ctx sdk.Context, valUpdateID uint64) {
@@ -646,32 +646,32 @@ func (k Keeper) SetValidatorSetUpdateID(ctx sdk.Context, valUpdateID uint64) {
 	store.Set(types.ValidatorSetUpdateIDKey(), bz)
 }
 
-func (k Keeper) GetValidatorSetUpdateID(ctx sdk.Context) (validatorSetUpdateId uint64) {
+func (k Keeper) GetValidatorSetUpdateID(ctx sdk.Context) (validatorSetUpdateID uint64) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ValidatorSetUpdateIDKey())
 
 	if bz == nil {
-		validatorSetUpdateId = 0
+		validatorSetUpdateID = 0
 	} else {
 		// Unmarshal
-		validatorSetUpdateId = binary.BigEndian.Uint64(bz)
+		validatorSetUpdateID = binary.BigEndian.Uint64(bz)
 	}
 
-	return validatorSetUpdateId
+	return validatorSetUpdateID
 }
 
 // SetValsetUpdateBlockHeight sets the block height for a given valset update id
-func (k Keeper) SetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId, blockHeight uint64) {
+func (k Keeper) SetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateID, blockHeight uint64) {
 	store := ctx.KVStore(k.storeKey)
 	heightBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(heightBytes, blockHeight)
-	store.Set(types.ValsetUpdateBlockHeightKey(valsetUpdateId), heightBytes)
+	store.Set(types.ValsetUpdateBlockHeightKey(valsetUpdateID), heightBytes)
 }
 
 // GetValsetUpdateBlockHeight gets the block height for a given valset update id
-func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) (uint64, bool) {
+func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateID uint64) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
+	bz := store.Get(types.ValsetUpdateBlockHeightKey(valsetUpdateID))
 	if bz == nil {
 		return 0, false
 	}
@@ -689,11 +689,11 @@ func (k Keeper) GetAllValsetUpdateBlockHeights(ctx sdk.Context) (valsetUpdateBlo
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		valsetUpdateId := binary.BigEndian.Uint64(iterator.Key()[1:])
+		valsetUpdateID := binary.BigEndian.Uint64(iterator.Key()[1:])
 		height := binary.BigEndian.Uint64(iterator.Value())
 
 		valsetUpdateBlockHeights = append(valsetUpdateBlockHeights, types.ValsetUpdateIdToHeight{
-			ValsetUpdateId: valsetUpdateId,
+			ValsetUpdateId: valsetUpdateID,
 			Height:         height,
 		})
 	}
@@ -702,9 +702,9 @@ func (k Keeper) GetAllValsetUpdateBlockHeights(ctx sdk.Context) (valsetUpdateBlo
 }
 
 // DeleteValsetUpdateBlockHeight deletes the block height value for a given vaset update id
-func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) {
+func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateID uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
+	store.Delete(types.ValsetUpdateBlockHeightKey(valsetUpdateID))
 }
 
 // SetSlashAcks sets the slash acks under the given chain ID
@@ -846,11 +846,11 @@ func (k Keeper) SetConsumerClientID(ctx sdk.Context, chainID, clientID string) {
 // GetConsumerClientID returns the client ID for the given chain ID.
 func (k Keeper) GetConsumerClientID(ctx sdk.Context, chainID string) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	clientIdBytes := store.Get(types.ChainToClientKey(chainID))
-	if clientIdBytes == nil {
+	clientIDBytes := store.Get(types.ChainToClientKey(chainID))
+	if clientIDBytes == nil {
 		return "", false
 	}
-	return string(clientIdBytes), true
+	return string(clientIDBytes), true
 }
 
 // DeleteConsumerClientID removes from the store the clientID for the given chainID.
