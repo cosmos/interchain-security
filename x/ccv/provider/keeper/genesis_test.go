@@ -28,12 +28,12 @@ func TestInitAndExportGenesis(t *testing.T) {
 	params := providertypes.DefaultParams()
 
 	// create validator keys and addresses for key assignment
-	providerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7896)
-	provAddr := providerCryptoId.ProviderConsAddress()
+	providerCryptoID := crypto.NewCryptoIdentityFromIntSeed(7896)
+	provAddr := providerCryptoID.ProviderConsAddress()
 
-	consumerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7897)
-	consumerTmPubKey := consumerCryptoId.TMProtoCryptoPublicKey()
-	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
+	consumerCryptoID := crypto.NewCryptoIdentityFromIntSeed(7897)
+	consumerTmPubKey := consumerCryptoID.TMProtoCryptoPublicKey()
+	consumerConsAddr := consumerCryptoID.ConsumerConsAddress()
 
 	// create genesis struct
 	provGenesis := providertypes.NewGenesisState(vscID,
@@ -135,7 +135,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	chainID, found := pk.GetChannelToChain(ctx, provGenesis.ConsumerStates[0].ChannelId)
 	require.True(t, found)
 	require.Equal(t, cChainIDs[0], chainID)
-	require.Equal(t, vscID, pk.GetValidatorSetUpdateId(ctx))
+	require.Equal(t, vscID, pk.GetValidatorSetUpdateID(ctx))
 	height, found := pk.GetValsetUpdateBlockHeight(ctx, vscID)
 	require.True(t, found)
 	require.Equal(t, initHeight, height)
@@ -172,7 +172,7 @@ func assertConsumerChainStates(ctx sdk.Context, t *testing.T, pk keeper.Keeper, 
 		require.True(t, found)
 		require.Equal(t, *consumertypes.DefaultGenesisState(), gen)
 
-		clientID, found := pk.GetConsumerClientId(ctx, chainID)
+		clientID, found := pk.GetConsumerClientID(ctx, chainID)
 		require.True(t, found)
 		require.Equal(t, cs.ClientId, clientID)
 

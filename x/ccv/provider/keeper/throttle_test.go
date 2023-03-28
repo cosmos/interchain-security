@@ -25,20 +25,20 @@ func TestHandlePacketDataForChain(t *testing.T) {
 		name    string
 		chainID string
 		// Pending packet data that will be queued in the order specified by the slice
-		dataToQueue []interface{}
+		dataToQueue []any
 		// Indexes of packet data from dataToQueue that are expected to be handled and deleted from store
 		expectedHandledIndexes []int
 	}{
 		{
 			"no packets",
 			"my-cool-chain",
-			[]interface{}{},
+			[]any{},
 			[]int{},
 		},
 		{
 			"one slash packet should be handled",
 			"chain-37",
-			[]interface{}{
+			[]any{
 				testkeeper.GetNewSlashPacketData(),
 			},
 			[]int{0},
@@ -46,7 +46,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 		{
 			"one slash packet followed by one vsc matured packet should all be handled",
 			"chain-222",
-			[]interface{}{
+			[]any{
 				testkeeper.GetNewSlashPacketData(),
 				testkeeper.GetNewVSCMaturedPacketData(),
 			},
@@ -55,7 +55,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 		{
 			"one slash packet followed by multiple vsc matured packets should all be handled",
 			"chain-2223",
-			[]interface{}{
+			[]any{
 				testkeeper.GetNewSlashPacketData(),
 				testkeeper.GetNewVSCMaturedPacketData(),
 				testkeeper.GetNewVSCMaturedPacketData(),
@@ -68,7 +68,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 		{
 			"multiple slash packets followed by multiple vsc matured packets should only handle first slash packet",
 			"chain-9",
-			[]interface{}{
+			[]any{
 				testkeeper.GetNewSlashPacketData(),
 				testkeeper.GetNewSlashPacketData(),
 				testkeeper.GetNewVSCMaturedPacketData(),
@@ -79,7 +79,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 		{
 			"vsc matured packets sandwiched between slash packets should handle everything but the last slash packet",
 			"chain-000",
-			[]interface{}{
+			[]any{
 				testkeeper.GetNewSlashPacketData(),
 				testkeeper.GetNewVSCMaturedPacketData(),
 				testkeeper.GetNewVSCMaturedPacketData(),
@@ -97,7 +97,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 		{
 			"alternating slash and vsc matured packets should handle only the first slash, and trailing vsc matured packets",
 			"chain-00000",
-			[]interface{}{
+			[]any{
 				testkeeper.GetNewSlashPacketData(),
 				testkeeper.GetNewVSCMaturedPacketData(),
 				testkeeper.GetNewVSCMaturedPacketData(),
@@ -126,7 +126,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 		}
 
 		// Define our handler callbacks to simply store the data instances that are handled
-		handledData := []interface{}{}
+		handledData := []any{}
 		slashHandleCounter := func(ctx sdktypes.Context, chainID string, data ccvtypes.SlashPacketData) {
 			handledData = append(handledData, data)
 		}
@@ -156,7 +156,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 		}
 
 		// Assert that the unhandled queued data instances are as expected (i.e no unexpected deletions)
-		expectedDataThatsLeft := []interface{}{}
+		expectedDataThatsLeft := []any{}
 		for idx, data := range tc.dataToQueue {
 			if !slices.Contains(tc.expectedHandledIndexes, idx) {
 				expectedDataThatsLeft = append(expectedDataThatsLeft, data)
@@ -202,8 +202,8 @@ func TestSlashMeterReplenishment(t *testing.T) {
 			expectedAllowance: sdktypes.NewInt(500000000000000),
 		},
 	}
+	// Run test cases
 	for _, tc := range testCases {
-
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
@@ -601,8 +601,8 @@ func TestGetSlashMeterAllowance(t *testing.T) {
 			expectedAllowance: sdktypes.NewInt(3400000),
 		},
 	}
+	// Run test cases
 	for _, tc := range testCases {
-
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
@@ -989,8 +989,8 @@ func TestGetLeadingVSCMaturedData(t *testing.T) {
 		},
 	}
 
+	// Run test cases
 	for _, tc := range testCases {
-
 		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
@@ -1094,8 +1094,8 @@ func TestGetSlashAndTrailingData(t *testing.T) {
 		},
 	}
 
+	// Run test cases
 	for _, tc := range testCases {
-
 		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
@@ -1179,8 +1179,8 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		{max: 100},
 	}
 
+	// Test that the provider panics when the number of throttled packets exceeds the max allowed by params
 	for _, tc := range testCases {
-
 		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
@@ -1200,8 +1200,8 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		// Queue packet data instances until we reach the max (some slash packets, some VSC matured packets)
 		reachedMax := false
 		for i := 0; i < int(tc.max); i++ {
-			randBool := rand.Intn(2) == 0
-			var data interface{}
+			randBool := rand.Intn(2) == 0 //nolint:gosec // not used for security purposes
+			var data any
 			if randBool {
 				data = testkeeper.GetNewSlashPacketData()
 			} else {
@@ -1318,13 +1318,13 @@ func TestSlashMeterReplenishTimeCandidate(t *testing.T) {
 // Struct used for TestPendingPacketData and helpers
 type throttledPacketDataInstance struct {
 	IbcSeqNum uint64
-	Data      interface{}
+	Data      any
 }
 
 // getAllThrottledPacketDataInstances returns all throttled packet data instances in order
 // from the chain-specific packet data queue.
-func getAllThrottledPacketDataInstances(ctx sdktypes.Context, k *keeper.Keeper, consumerChainId string) (instances []throttledPacketDataInstance) {
-	_, _, allData, ibcSeqNums := k.GetAllThrottledPacketData(ctx, consumerChainId)
+func getAllThrottledPacketDataInstances(ctx sdktypes.Context, k *keeper.Keeper, consumerChainID string) (instances []throttledPacketDataInstance) {
+	_, _, allData, ibcSeqNums := k.GetAllThrottledPacketData(ctx, consumerChainID)
 	instances = []throttledPacketDataInstance{}
 	for idx, data := range allData {
 		instances = append(instances, throttledPacketDataInstance{
@@ -1346,10 +1346,10 @@ func getOrderedInstances(instances []throttledPacketDataInstance, orderbyIdx []i
 
 // Asserts that the throttled packet data retrieved for this consumer chain matches what's expected
 func assertPendingPacketDataOrdering(t *testing.T, k *keeper.Keeper, ctx sdktypes.Context,
-	consumerChainId string, expectedInstances []throttledPacketDataInstance,
+	consumerChainID string, expectedInstances []throttledPacketDataInstance,
 ) {
 	// Get all packet data for this chain
-	obtainedInstances := getAllThrottledPacketDataInstances(ctx, k, consumerChainId)
+	obtainedInstances := getAllThrottledPacketDataInstances(ctx, k, consumerChainID)
 	// No extra data should be present
 	require.Equal(t, len(expectedInstances), len(obtainedInstances))
 	// Assert order and correct serialization/deserialization for each data instance

@@ -11,7 +11,7 @@ import (
 
 func NewGenesisState(
 	vscID uint64,
-	vscIdToHeights []ValsetUpdateIdToHeight,
+	vscIDToHeights []ValsetUpdateIdToHeight,
 	consumerStates []ConsumerState,
 	unbondingOps []UnbondingOp,
 	matureUbdOps *ccv.MaturedUnbondingOps,
@@ -24,7 +24,7 @@ func NewGenesisState(
 ) *GenesisState {
 	return &GenesisState{
 		ValsetUpdateId:            vscID,
-		ValsetUpdateIdToHeight:    vscIdToHeights,
+		ValsetUpdateIdToHeight:    vscIDToHeights,
 		ConsumerStates:            consumerStates,
 		UnbondingOps:              unbondingOps,
 		MatureUnbondingOps:        matureUbdOps,
@@ -85,14 +85,12 @@ func (gs GenesisState) Validate() error {
 		return err
 	}
 
-	if err := KeyAssignmentValidateBasic(gs.ValidatorConsumerPubkeys,
+	err := KeyAssignmentValidateBasic(gs.ValidatorConsumerPubkeys,
 		gs.ValidatorsByConsumerAddr,
 		gs.ConsumerAddrsToPrune,
-	); err != nil {
-		return err
-	}
+	)
 
-	return nil
+	return err
 }
 
 func (gs GenesisState) ValidateUnbondingOp(ubdOp UnbondingOp) error {

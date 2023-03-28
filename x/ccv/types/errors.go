@@ -15,7 +15,7 @@ var (
 	ErrInvalidStatus            = sdkerrors.Register(ModuleName, 8, "invalid channel status")
 	ErrInvalidGenesis           = sdkerrors.Register(ModuleName, 9, "invalid genesis state")
 	ErrDuplicateChannel         = sdkerrors.Register(ModuleName, 10, "CCV channel already exists")
-	ErrInvalidVSCMaturedId      = sdkerrors.Register(ModuleName, 11, "invalid vscId for VSC packet")
+	ErrInvalidVSCMaturedID      = sdkerrors.Register(ModuleName, 11, "invalid vscId for VSC packet")
 	ErrInvalidVSCMaturedTime    = sdkerrors.Register(ModuleName, 12, "invalid maturity time for VSC packet")
 	ErrInvalidConsumerState     = sdkerrors.Register(ModuleName, 13, "provider chain has invalid state for consumer chain")
 	ErrInvalidConsumerClient    = sdkerrors.Register(ModuleName, 14, "ccv channel is not built on correct client")

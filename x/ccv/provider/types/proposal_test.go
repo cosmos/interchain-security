@@ -7,7 +7,7 @@ import (
 
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 
-	"github.com/golang/protobuf/proto" //nolint - see: https://github.com/cosmos/interchain-security/issues/236
+	"github.com/golang/protobuf/proto" //nolint:staticcheck // see: https://github.com/cosmos/interchain-security/issues/236
 	"github.com/stretchr/testify/require"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -193,7 +193,6 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		err := tc.proposal.ValidateBasic()
 		if tc.expPass {
 			require.NoError(t, err, "valid case: %s should not return error. got %w", tc.name, err)

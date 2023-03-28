@@ -48,7 +48,7 @@ func (s *CoreSuite) ctx(chain string) sdk.Context {
 	return s.chain(chain).GetContext()
 }
 
-func (s *CoreSuite) chainID(chain string) string {
+func (*CoreSuite) chainID(chain string) string {
 	return map[string]string{P: ibctesting.GetChainID(0), C: ibctesting.GetChainID(1)}[chain]
 }
 
@@ -65,16 +65,16 @@ func (s *CoreSuite) consumerChain() *ibctesting.TestChain {
 	return s.simibc.Chain(ibctesting.GetChainID(1))
 }
 
-func (b *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).StakingKeeper
+func (s *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
+	return s.providerChain().App.(*appProvider.App).StakingKeeper
 }
 
-func (b *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).SlashingKeeper
+func (s *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {
+	return s.providerChain().App.(*appProvider.App).SlashingKeeper
 }
 
-func (b *CoreSuite) consumerKeeper() consumerkeeper.Keeper {
-	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
+func (s *CoreSuite) consumerKeeper() consumerkeeper.Keeper {
+	return s.consumerChain().App.(*appConsumer.App).ConsumerKeeper
 }
 
 // height returns the height of the current header of chain
@@ -83,7 +83,7 @@ func (s *CoreSuite) height(chain string) int64 {
 }
 
 // time returns the time of the current header of chain
-func (s *CoreSuite) time(chain string) time.Time {
+func (s *CoreSuite) timechain(chain string) time.Time {
 	return s.chain(chain).CurrentHeader.Time
 }
 
@@ -151,7 +151,7 @@ func (s *CoreSuite) delegatorBalance() int64 {
 }
 
 // delegate delegates amt tokens to validator val
-func (s *CoreSuite) delegate(val int64, amt int64) {
+func (s *CoreSuite) delegate(val, amt int64) {
 	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	d := s.delegator()
@@ -163,7 +163,7 @@ func (s *CoreSuite) delegate(val int64, amt int64) {
 }
 
 // undelegate undelegates amt tokens from validator val
-func (s *CoreSuite) undelegate(val int64, amt int64) {
+func (s *CoreSuite) undelegate(val, amt int64) {
 	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	d := s.delegator()
@@ -227,7 +227,7 @@ func (s *CoreSuite) compareModelAndSystemState() {
 	modelTimeOffset := time.Duration(s.traces.Time()) * time.Second
 	sutHeightOffset := s.offsetHeight - 1
 	modelHeightOffset := int64(s.traces.Height())
-	s.Require().Equalf(sutTimeOffset.Add(modelTimeOffset), s.time(chain), diagnostic+"%s Time mismatch", chain)
+	s.Require().Equalf(sutTimeOffset.Add(modelTimeOffset), s.timechain(chain), diagnostic+"%s Time mismatch", chain)
 	s.Require().Equalf(sutHeightOffset+modelHeightOffset, s.height(chain), diagnostic+"%s Time mismatch", chain)
 	if chain == P {
 		for j := 0; j < s.initState.NumValidators; j++ {

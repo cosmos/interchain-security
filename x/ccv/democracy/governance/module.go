@@ -32,11 +32,11 @@ type AppModule struct {
 }
 
 // NewAppModule creates a new AppModule object using the native x/governance module AppModule constructor.
-func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak govtypes.AccountKeeper, bk govtypes.BankKeeper, isProposalWhitelisted func(govtypes.Content) bool) AppModule {
-	govAppModule := gov.NewAppModule(cdc, keeper, ak, bk)
+func NewAppModule(cdc codec.Codec, govkeeper keeper.Keeper, ak govtypes.AccountKeeper, bk govtypes.BankKeeper, isProposalWhitelisted func(govtypes.Content) bool) AppModule {
+	govAppModule := gov.NewAppModule(cdc, govkeeper, ak, bk)
 	return AppModule{
 		AppModule:             govAppModule,
-		keeper:                keeper,
+		keeper:                govkeeper,
 		isProposalWhitelisted: isProposalWhitelisted,
 	}
 }

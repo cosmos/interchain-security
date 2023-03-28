@@ -8,11 +8,11 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-func NewValidatorSetChangePacketData(valUpdates []abci.ValidatorUpdate, valUpdateID uint64, SlashAcks []string) ValidatorSetChangePacketData {
+func NewValidatorSetChangePacketData(valUpdates []abci.ValidatorUpdate, valUpdateID uint64, slashAcks []string) ValidatorSetChangePacketData {
 	return ValidatorSetChangePacketData{
 		ValidatorUpdates: valUpdates,
 		ValsetUpdateId:   valUpdateID,
-		SlashAcks:        SlashAcks,
+		SlashAcks:        slashAcks,
 	}
 }
 
@@ -51,10 +51,10 @@ func (mat VSCMaturedPacketData) GetBytes() []byte {
 	return bytes
 }
 
-func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, infractionType stakingtypes.InfractionType) *SlashPacketData {
+func NewSlashPacketData(validator abci.Validator, valUpdateID uint64, infractionType stakingtypes.InfractionType) *SlashPacketData {
 	return &SlashPacketData{
 		Validator:      validator,
-		ValsetUpdateId: valUpdateId,
+		ValsetUpdateId: valUpdateID,
 		Infraction:     infractionType,
 	}
 }
@@ -96,7 +96,7 @@ func (cp ConsumerPacketData) ValidateBasic() (err error) {
 		err = fmt.Errorf("invalid consumer packet type: %q", cp.Type)
 	}
 
-	return
+	return err
 }
 
 func (cp ConsumerPacketData) GetBytes() []byte {

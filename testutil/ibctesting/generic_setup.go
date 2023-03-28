@@ -1,4 +1,4 @@
-package ibc_testing
+package ibctesting
 
 import (
 	"fmt"

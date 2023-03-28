@@ -118,8 +118,8 @@ func TestOnChanOpenInit(t *testing.T) {
 		},
 	}
 
+	// Run test cases
 	for _, tc := range testCases {
-
 		// Common setup
 		consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))

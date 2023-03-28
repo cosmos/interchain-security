@@ -20,6 +20,8 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+const done = "done!!!!!!!!"
+
 type SendTokensAction struct {
 	chain  chainID
 	from   validatorID
@@ -40,7 +42,7 @@ func (tr TestRun) sendTokens(
 		tr.validatorConfigs[action.to].delAddress,
 		fmt.Sprint(action.amount)+`stake`,
 
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
@@ -79,10 +81,10 @@ func (tr TestRun) startChain(
 		Mnemonic         string `json:"mnemonic"`
 		Allocation       string `json:"allocation"`
 		Stake            string `json:"stake"`
-		ValId            string `json:"val_id"`
+		ValID            string `json:"val_id"`
 		PrivValidatorKey string `json:"priv_validator_key"`
 		NodeKey          string `json:"node_key"`
-		IpSuffix         string `json:"ip_suffix"`
+		IPSuffix         string `json:"ip_suffix"`
 
 		ConsumerMnemonic         string `json:"consumer_mnemonic"`
 		ConsumerPrivValidatorKey string `json:"consumer_priv_validator_key"`
@@ -94,11 +96,11 @@ func (tr TestRun) startChain(
 		validators = append(validators, jsonValAttrs{
 			Mnemonic:         tr.validatorConfigs[val.id].mnemonic,
 			NodeKey:          tr.validatorConfigs[val.id].nodeKey,
-			ValId:            fmt.Sprint(val.id),
+			ValID:            fmt.Sprint(val.id),
 			PrivValidatorKey: tr.validatorConfigs[val.id].privValidatorKey,
 			Allocation:       fmt.Sprint(val.allocation) + "stake",
 			Stake:            fmt.Sprint(val.stake) + "stake",
-			IpSuffix:         tr.validatorConfigs[val.id].ipSuffix,
+			IPSuffix:         tr.validatorConfigs[val.id].ipSuffix,
 
 			ConsumerMnemonic:         tr.validatorConfigs[val.id].consumerMnemonic,
 			ConsumerPrivValidatorKey: tr.validatorConfigs[val.id].consumerPrivValidatorKey,
@@ -123,7 +125,7 @@ func (tr TestRun) startChain(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/start-chain.sh", chainConfig.binaryName, string(vals),
-		string(chainConfig.chainId), chainConfig.ipPrefix, genesisChanges,
+		string(chainConfig.chainID), chainConfig.ipPrefix, genesisChanges,
 		fmt.Sprint(action.skipGentx),
 		// override config/config.toml for each node on chain
 		// usually timeout_commit and peer_gossip_sleep_duration are changed to vary the test run duration
@@ -149,7 +151,7 @@ func (tr TestRun) startChain(
 		if verbose {
 			fmt.Println("startChain: " + out)
 		}
-		if out == "done!!!!!!!!" {
+		if out == done {
 			break
 		}
 	}
@@ -174,10 +176,9 @@ type submitTextProposalAction struct {
 
 func (tr TestRun) submitTextProposal(
 	action submitTextProposalAction,
-	verbose bool,
+	_ bool,
 ) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName, //nolint:gosec // Bypass linter warning for spawning subprocess with cmd arguments.
 
 		"tx", "gov", "submit-proposal",
 		`--title`, action.title,
@@ -186,7 +187,7 @@ func (tr TestRun) submitTextProposal(
 		`--deposit`, fmt.Sprint(action.deposit)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
@@ -209,14 +210,14 @@ type submitConsumerAdditionProposalAction struct {
 
 func (tr TestRun) submitConsumerAdditionProposal(
 	action submitConsumerAdditionProposalAction,
-	verbose bool,
+	_ bool,
 ) {
 	spawnTime := tr.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
 	params := consumertypes.DefaultParams()
 	prop := client.ConsumerAdditionProposalJSON{
 		Title:                             "Propose the addition of a new chain",
 		Description:                       "Gonna be a great chain",
-		ChainId:                           string(tr.chainConfigs[action.consumerChain].chainId),
+		ChainID:                           string(tr.chainConfigs[action.consumerChain].chainID),
 		InitialHeight:                     action.initialHeight,
 		GenesisHash:                       []byte("gen_hash"),
 		BinaryHash:                        []byte("bin_hash"),
@@ -255,7 +256,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		"/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--gas`, `900000`,
 		`--node`, tr.getValidatorNode(action.chain, action.from),
@@ -279,13 +280,13 @@ type submitConsumerRemovalProposalAction struct {
 
 func (tr TestRun) submitConsumerRemovalProposal(
 	action submitConsumerRemovalProposalAction,
-	verbose bool,
+	_ bool,
 ) {
 	stopTime := tr.containerConfig.now.Add(action.stopTimeOffset)
 	prop := client.ConsumerRemovalProposalJSON{
 		Title:       fmt.Sprintf("Stop the %v chain", action.consumerChain),
 		Description: "It was a great chain",
-		ChainId:     string(tr.chainConfigs[action.consumerChain].chainId),
+		ChainID:     string(tr.chainConfigs[action.consumerChain].chainID),
 		StopTime:    stopTime,
 		Deposit:     fmt.Sprint(action.deposit) + `stake`,
 	}
@@ -315,7 +316,7 @@ func (tr TestRun) submitConsumerRemovalProposal(
 		"/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
@@ -334,7 +335,7 @@ type submitParamChangeProposalAction struct {
 	deposit  uint
 	subspace string
 	key      string
-	value    interface{}
+	value    any
 }
 
 type paramChangeProposalJSON struct {
@@ -345,14 +346,14 @@ type paramChangeProposalJSON struct {
 }
 
 type paramChangeJSON struct {
-	Subspace string      `json:"subspace"`
-	Key      string      `json:"key"`
-	Value    interface{} `json:"value"`
+	Subspace string `json:"subspace"`
+	Key      string `json:"key"`
+	Value    any    `json:"value"`
 }
 
 func (tr TestRun) submitParamChangeProposal(
 	action submitParamChangeProposalAction,
-	verbose bool,
+	_ bool,
 ) {
 	prop := paramChangeProposalJSON{
 		Title:       "Param change",
@@ -386,7 +387,7 @@ func (tr TestRun) submitParamChangeProposal(
 		"/params-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--gas`, "900000",
@@ -410,7 +411,7 @@ type submitEquivocationProposalAction struct {
 	from      validatorID
 }
 
-func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAction, verbose bool) {
+func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAction, _ bool) {
 	val := tr.validatorConfigs[action.validator]
 	providerChain := tr.chainConfigs[chainID("provi")]
 
@@ -455,9 +456,9 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 		"/equivocation-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(providerChain.chainId),
-		`--home`, tr.getValidatorHome(providerChain.chainId, action.from),
-		`--node`, tr.getValidatorNode(providerChain.chainId, action.from),
+		`--chain-id`, string(providerChain.chainID),
+		`--home`, tr.getValidatorHome(providerChain.chainID, action.from),
+		`--node`, tr.getValidatorNode(providerChain.chainID, action.from),
 		`--gas`, "9000000",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
@@ -478,7 +479,7 @@ type voteGovProposalAction struct {
 
 func (tr TestRun) voteGovProposal(
 	action voteGovProposalAction,
-	verbose bool,
+	_ bool,
 ) {
 	var wg sync.WaitGroup
 	for i, val := range action.from {
@@ -486,14 +487,12 @@ func (tr TestRun) voteGovProposal(
 		vote := action.vote[i]
 		go func(val validatorID, vote string) {
 			defer wg.Done()
-			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-			bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-
+			bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName, //nolint:gosec // Bypass linter warning for spawning subprocess with cmd arguments.
 				"tx", "gov", "vote",
 				fmt.Sprint(action.propNumber), vote,
 
 				`--from`, `validator`+fmt.Sprint(val),
-				`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+				`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 				`--home`, tr.getValidatorHome(action.chain, val),
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
@@ -525,7 +524,7 @@ func (tr TestRun) startConsumerChain(
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.providerChain].binaryName,
 
 		"query", "provider", "consumer-genesis",
-		string(tr.chainConfigs[action.consumerChain].chainId),
+		string(tr.chainConfigs[action.consumerChain].chainID),
 
 		`--node`, tr.getQueryNode(action.providerChain),
 		`-o`, `json`,
@@ -586,10 +585,10 @@ websocket_addr = "%s"
 
 func (tr TestRun) addChainToRelayer(
 	action addChainToRelayerAction,
-	verbose bool,
+	_ bool,
 ) {
 	queryNodeIP := tr.getQueryNodeIP(action.chain)
-	chainId := tr.chainConfigs[action.chain].chainId
+	chainID := tr.chainConfigs[action.chain].chainID
 	keyName := "query"
 	rpcAddr := "http://" + queryNodeIP + ":26658"
 	grpcAddr := "tcp://" + queryNodeIP + ":9091"
@@ -597,7 +596,7 @@ func (tr TestRun) addChainToRelayer(
 
 	chainConfig := fmt.Sprintf(hermesChainConfigTemplate,
 		grpcAddr,
-		chainId,
+		chainID,
 		keyName,
 		rpcAddr,
 		wsAddr,
@@ -605,8 +604,7 @@ func (tr TestRun) addChainToRelayer(
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, "/root/.hermes/config.toml")
 
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c", //nolint:gosec // G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 		bashCommand,
 	).CombinedOutput()
 	if err != nil {
@@ -615,8 +613,8 @@ func (tr TestRun) addChainToRelayer(
 
 	// Save mnemonic to file within container
 	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, tr.validatorConfigs[action.validator].mnemonic, "/root/.hermes/mnemonic.txt")
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
+
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c", //nolint:gosec // G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 		saveMnemonicCommand,
 	).CombinedOutput()
 	if err != nil {
@@ -626,7 +624,7 @@ func (tr TestRun) addChainToRelayer(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"keys", "add",
-		"--chain", string(tr.chainConfigs[action.chain].chainId),
+		"--chain", string(tr.chainConfigs[action.chain].chainID),
 		"--mnemonic-file", "/root/.hermes/mnemonic.txt",
 	).CombinedOutput()
 
@@ -649,7 +647,7 @@ func (tr TestRun) addIbcConnection(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"create", "connection",
-		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--a-chain", string(tr.chainConfigs[action.chainA].chainID),
 		"--a-client", "07-tendermint-"+fmt.Sprint(action.clientA),
 		"--b-client", "07-tendermint-"+fmt.Sprint(action.clientB),
 	)
@@ -671,7 +669,7 @@ func (tr TestRun) addIbcConnection(
 		if verbose {
 			fmt.Println("addIbcConnection: " + out)
 		}
-		if out == "done!!!!!!!!" {
+		if out == done {
 			break
 		}
 	}
@@ -692,7 +690,7 @@ type addIbcChannelAction struct {
 type startHermesAction struct{}
 
 func (tr TestRun) startHermes(
-	action startHermesAction,
+	_ startHermesAction,
 	verbose bool,
 ) {
 	// hermes start is running in detached mode
@@ -717,7 +715,7 @@ func (tr TestRun) addIbcChannel(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"create", "channel",
-		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--a-chain", string(tr.chainConfigs[action.chainA].chainID),
 		"--a-connection", "connection-"+fmt.Sprint(action.connectionA),
 		"--a-port", action.portA,
 		"--b-port", action.portB,
@@ -746,7 +744,7 @@ func (tr TestRun) addIbcChannel(
 		if verbose {
 			fmt.Println("addIBCChannel: " + out)
 		}
-		if out == "done!!!!!!!!" {
+		if out == done {
 			break
 		}
 	}
@@ -768,13 +766,13 @@ type transferChannelCompleteAction struct {
 
 func (tr TestRun) transferChannelComplete(
 	action transferChannelCompleteAction,
-	verbose bool,
+	_ bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenTryCmd arguments.
 	chanOpenTryCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"tx", "chan-open-try",
-		"--dst-chain", string(tr.chainConfigs[action.chainB].chainId),
-		"--src-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--dst-chain", string(tr.chainConfigs[action.chainB].chainID),
+		"--src-chain", string(tr.chainConfigs[action.chainA].chainID),
 		"--dst-connection", "connection-"+fmt.Sprint(action.connectionA),
 		"--dst-port", action.portB,
 		"--src-port", action.portA,
@@ -785,8 +783,8 @@ func (tr TestRun) transferChannelComplete(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenAckCmd arguments.
 	chanOpenAckCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"tx", "chan-open-ack",
-		"--dst-chain", string(tr.chainConfigs[action.chainA].chainId),
-		"--src-chain", string(tr.chainConfigs[action.chainB].chainId),
+		"--dst-chain", string(tr.chainConfigs[action.chainA].chainID),
+		"--src-chain", string(tr.chainConfigs[action.chainB].chainID),
 		"--dst-connection", "connection-"+fmt.Sprint(action.connectionA),
 		"--dst-port", action.portA,
 		"--src-port", action.portB,
@@ -798,8 +796,8 @@ func (tr TestRun) transferChannelComplete(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenConfirmCmd arguments.
 	chanOpenConfirmCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"tx", "chan-open-confirm",
-		"--dst-chain", string(tr.chainConfigs[action.chainB].chainId),
-		"--src-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--dst-chain", string(tr.chainConfigs[action.chainB].chainID),
+		"--src-chain", string(tr.chainConfigs[action.chainA].chainID),
 		"--dst-connection", "connection-"+fmt.Sprint(action.connectionA),
 		"--dst-port", action.portB,
 		"--src-port", action.portA,
@@ -850,7 +848,7 @@ func (tr TestRun) relayPackets(
 	// hermes clear packets ibc0 transfer channel-13
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes", "clear", "packets",
-		"--chain", string(tr.chainConfigs[action.chain].chainId),
+		"--chain", string(tr.chainConfigs[action.chain].chainID),
 		"--port", action.port,
 		"--channel", "channel-"+fmt.Sprint(action.channel),
 	)
@@ -908,7 +906,7 @@ func (tr TestRun) delegateTokens(
 		fmt.Sprint(action.amount)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
@@ -949,7 +947,7 @@ func (tr TestRun) unbondTokens(
 		fmt.Sprint(action.amount)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.sender),
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.sender),
 		`--node`, tr.getValidatorNode(action.chain, action.sender),
 		`--gas`, "900000",
@@ -988,8 +986,7 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 	if action.chain != chainID("provi") && dstCfg.useConsumerKey {
 		redelegateDst = dstCfg.consumerValoperAddress
 	}
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec",
+	cmd := exec.Command("docker", "exec", //nolint:gosec // Bypass linter warning for spawning subprocess with cmd arguments.
 		tr.containerConfig.instanceName,
 		tr.chainConfigs[action.chain].binaryName,
 
@@ -998,7 +995,7 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 		redelegateDst,
 		fmt.Sprint(action.amount)+`stake`,
 		`--from`, `validator`+fmt.Sprint(action.txSender),
-		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 		`--home`, tr.getValidatorHome(action.chain, action.txSender),
 		`--node`, tr.getValidatorNode(action.chain, action.txSender),
 		// Need to manually set gas limit past default (200000), since redelegate has a lot of operations
@@ -1033,7 +1030,7 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 }
 
 // Sets validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
-func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, down bool, verbose bool) {
+func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, down, verbose bool) {
 	var lastArg string
 	if down {
 		lastArg = "down"
@@ -1080,7 +1077,7 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		"tx", "slashing", "unjail",
 		// Validator is sender here
 		`--from`, `validator`+fmt.Sprint(action.validator),
-		`--chain-id`, string(tr.chainConfigs[action.provider].chainId),
+		`--chain-id`, string(tr.chainConfigs[action.provider].chainID),
 		`--home`, tr.getValidatorHome(action.provider, action.validator),
 		`--node`, tr.getValidatorNode(action.provider, action.validator),
 		`--gas`, "900000",
@@ -1098,7 +1095,7 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 	}
 
 	// wait for 1 blocks to make sure that tx got included
-	// in a block and packets commited before proceeding
+	// in a block and packets committed before proceeding
 	tr.waitBlocks(action.provider, 1, time.Minute)
 }
 
@@ -1110,7 +1107,7 @@ type registerRepresentativeAction struct {
 
 func (tr TestRun) registerRepresentative(
 	action registerRepresentativeAction,
-	verbose bool,
+	_ bool,
 ) {
 	var wg sync.WaitGroup
 	for i, val := range action.representatives {
@@ -1141,7 +1138,7 @@ func (tr TestRun) registerRepresentative(
 				`--commission-max-change-rate`, "0.01",
 				`--min-self-delegation`, "1",
 				`--from`, `validator`+fmt.Sprint(val),
-				`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+				`--chain-id`, string(tr.chainConfigs[action.chain].chainID),
 				`--home`, tr.getValidatorHome(action.chain, val),
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
@@ -1175,13 +1172,13 @@ type doublesignSlashAction struct {
 
 func (tr TestRun) invokeDoublesignSlash(
 	action doublesignSlashAction,
-	verbose bool,
+	_ bool,
 ) {
 	chainConfig := tr.chainConfigs[action.chain]
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/cause-doublesign.sh", chainConfig.binaryName, string(action.validator),
-		string(chainConfig.chainId), chainConfig.ipPrefix).CombinedOutput()
+		string(chainConfig.chainID), chainConfig.ipPrefix).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1204,10 +1201,10 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	assignKey := fmt.Sprintf(
 		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 900000 --keyring-backend test -b block -y -o json`,
 		tr.chainConfigs[chainID("provi")].binaryName,
-		string(tr.chainConfigs[action.chain].chainId),
+		string(tr.chainConfigs[action.chain].chainID),
 		action.consumerPubkey,
 		action.validator,
-		tr.chainConfigs[chainID("provi")].chainId,
+		tr.chainConfigs[chainID("provi")].chainID,
 		tr.getValidatorHome(chainID("provi"), action.validator),
 		tr.getValidatorNode(chainID("provi"), action.validator),
 	)
@@ -1235,8 +1232,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	}
 
 	if action.expectError {
-		if code.Int() == 0 {
-		} else if verbose {
+		if verbose {
 			fmt.Printf("got expected error during key assignment | code: %v | log: %s\n", code, rawLog)
 		}
 	}
@@ -1274,7 +1270,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 			if verbose {
 				fmt.Println("assign key - reconfigure: " + out)
 			}
-			if out == "done!!!!!!!!" {
+			if out == done {
 				break
 			}
 		}
@@ -1315,7 +1311,8 @@ func (tr TestRun) waitForSlashThrottleDequeue(
 			fmt.Printf("waiting for packed queue size to reach: %d - current: %d\n", action.nextQueueSize, globalQueueSize)
 		}
 
-		if globalQueueSize == chainQueueSize && globalQueueSize == action.nextQueueSize {
+		// wait for both queues to reach the same size
+		if globalQueueSize == chainQueueSize && globalQueueSize == action.nextQueueSize { //nolint:gocritic // we're just waiting for the queues to reach the same size
 			break
 		}
 

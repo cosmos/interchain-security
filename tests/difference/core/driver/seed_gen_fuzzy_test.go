@@ -14,8 +14,7 @@ import (
 )
 
 func GetPV(seed []byte) mock.PV {
-	//lint:ignore SA1019 We don't care because this is only a test.
-	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}} //nolint:staticcheck // SA1019: crypto/ed25519: NewKeyFromSeed is deprecated
+	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}} //nolint:staticcheck // SA1019: cryptoEd25519.NewKeyFromSeed is deprecated: Use NewKeyFromSeed instead
 }
 
 // getStakingKeyBytes takes seed bytes which can be be used to create
@@ -26,9 +25,9 @@ func getStakingKeyBytes(bz []byte) []byte {
 	pubKey, _ := pv.GetPubKey()
 	val := tmtypes.NewValidator(pubKey, 0)
 	addr, _ := sdk.ValAddressFromHex(val.Address.String())
-	PK := pv.PrivKey.PubKey()
+	pk := pv.PrivKey.PubKey()
 	valAddr, _ := sdk.ValAddressFromBech32(addr.String())
-	validator, _ := stakingtypes.NewValidator(valAddr, PK, stakingtypes.Description{})
+	validator, _ := stakingtypes.NewValidator(valAddr, pk, stakingtypes.Description{})
 	key := stakingtypes.GetValidatorsByPowerIndexKey(validator, sdk.DefaultPowerReduction)
 	return key
 }

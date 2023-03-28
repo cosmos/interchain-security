@@ -6,7 +6,7 @@ import "time"
 //
 // Note: These steps are not affected by slash packet throttling since
 // only one consumer initiated slash is implemented. Throttling is also
-// psuedo-disabled in this test by setting the slash meter replenish
+// pseudo-disabled in this test by setting the slash meter replenish
 // fraction to 1.0 in the config file.
 //
 // No slashing should occur for downtime slash initiated from the consumer chain

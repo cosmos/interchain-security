@@ -53,7 +53,7 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditionProposal) error {
 	chainID := prop.ChainId
 	// check that a client for this chain does not exist
-	if _, found := k.GetConsumerClientId(ctx, chainID); found {
+	if _, found := k.GetConsumerClientID(ctx, chainID); found {
 		return sdkerrors.Wrap(ccv.ErrDuplicateConsumerChain,
 			fmt.Sprintf("cannot create client for existent consumer chain: %s", chainID))
 	}
@@ -93,7 +93,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	if err != nil {
 		return err
 	}
-	k.SetConsumerClientId(ctx, chainID, clientID)
+	k.SetConsumerClientID(ctx, chainID, clientID)
 
 	// add the init timeout timestamp for this consumer chain
 	ts := ctx.BlockTime().Add(k.GetParams(ctx).InitTimeoutPeriod)
@@ -152,13 +152,13 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 // Spec tag: [CCV-PCF-STCC.1]
 func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan bool) (err error) {
 	// check that a client for chainID exists
-	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
+	if _, found := k.GetConsumerClientID(ctx, chainID); !found {
 		return sdkerrors.Wrap(ccv.ErrConsumerChainNotFound,
 			fmt.Sprintf("cannot stop non-existent consumer chain: %s", chainID))
 	}
 
 	// clean up states
-	k.DeleteConsumerClientId(ctx, chainID)
+	k.DeleteConsumerClientID(ctx, chainID)
 	k.DeleteConsumerGenesis(ctx, chainID)
 	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 	// Note: this call panics if the key assignment state is invalid
@@ -589,7 +589,7 @@ func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []type
 func (k Keeper) CreateConsumerClientInCachedCtx(ctx sdk.Context, p types.ConsumerAdditionProposal) (cc sdk.Context, writeCache func(), err error) {
 	cc, writeCache = ctx.CacheContext()
 	err = k.CreateConsumerClient(cc, &p)
-	return
+	return cc, writeCache, err
 }
 
 // StopConsumerChainInCachedCtx stop a consumer chain
@@ -597,7 +597,7 @@ func (k Keeper) CreateConsumerClientInCachedCtx(ctx sdk.Context, p types.Consume
 func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRemovalProposal) (cc sdk.Context, writeCache func(), err error) {
 	cc, writeCache = ctx.CacheContext()
 	err = k.StopConsumerChain(cc, p.ChainId, true)
-	return
+	return cc, writeCache, err
 }
 
 // HandleEquivocationProposal handles an equivocation proposal.

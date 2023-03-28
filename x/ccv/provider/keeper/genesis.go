@@ -24,7 +24,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 	}
 
-	k.SetValidatorSetUpdateId(ctx, genState.ValsetUpdateId)
+	k.SetValidatorSetUpdateID(ctx, genState.ValsetUpdateId)
 	for _, v2h := range genState.ValsetUpdateIdToHeight {
 		k.SetValsetUpdateBlockHeight(ctx, v2h.ValsetUpdateId, v2h.Height)
 	}
@@ -51,7 +51,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	// Set initial state for each consumer chain
 	for _, cs := range genState.ConsumerStates {
 		chainID := cs.ChainId
-		k.SetConsumerClientId(ctx, chainID, cs.ClientId)
+		k.SetConsumerClientID(ctx, chainID, cs.ClientId)
 		if err := k.SetConsumerGenesis(ctx, chainID, cs.ConsumerGenesis); err != nil {
 			// An error here would indicate something is very wrong,
 			// the ConsumerGenesis validated in ConsumerState.Validate().
@@ -98,6 +98,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	// export states for each consumer chains
 	var consumerStates []types.ConsumerState
 	for _, chain := range registeredChains {
+		// get consumer chain genesis
 		gen, found := k.GetConsumerGenesis(ctx, chain.ChainId)
 		if !found {
 			panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chain.ChainId, chain.ClientId))
@@ -112,9 +113,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		}
 
 		// try to find channel id for the current consumer chain
-		channelId, found := k.GetChainToChannel(ctx, chain.ChainId)
+		channelID, found := k.GetChainToChannel(ctx, chain.ChainId)
 		if found {
-			cs.ChannelId = channelId
+			cs.ChannelId = channelID
 			cs.InitialHeight, found = k.GetInitChainHeight(ctx, chain.ChainId)
 			if !found {
 				panic(fmt.Errorf("cannot find init height for consumer chain %s", chain.ChainId))
@@ -124,7 +125,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 		cs.PendingValsetChanges = k.GetPendingVSCPackets(ctx, chain.ChainId)
 		consumerStates = append(consumerStates, cs)
-
 	}
 
 	// ConsumerAddrsToPrune are added only for registered consumer chains
@@ -136,7 +136,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	params := k.GetParams(ctx)
 
 	return types.NewGenesisState(
-		k.GetValidatorSetUpdateId(ctx),
+		k.GetValidatorSetUpdateID(ctx),
 		k.GetAllValsetUpdateBlockHeights(ctx),
 		consumerStates,
 		k.GetAllUnbondingOps(ctx),

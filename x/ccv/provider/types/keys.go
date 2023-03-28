@@ -42,7 +42,7 @@ const (
 	MaturedUnbondingOpsByteKey
 
 	// ValidatorSetUpdateIdByteKey is the byte key that stores the current validator set update id
-	ValidatorSetUpdateIdByteKey
+	ValidatorSetUpdateIDByteKey
 
 	// SlashMeterByteKey is the byte key for storing the slash meter
 	SlashMeterByteKey
@@ -125,7 +125,7 @@ const (
 	ConsumerAddrsToPruneBytePrefix
 
 	// SlashLogBytePrefix is the byte prefix that will store the mapping from provider address to boolean
-	// denoting whether the provider address has commited any double signign infractions
+	// denoting whether the provider address has committed any double signign infractions
 	SlashLogBytePrefix
 )
 
@@ -140,8 +140,8 @@ func MaturedUnbondingOpsKey() []byte {
 }
 
 // ValidatorSetUpdateIdKey is the key that stores the current validator set update id
-func ValidatorSetUpdateIdKey() []byte {
-	return []byte{ValidatorSetUpdateIdByteKey}
+func ValidatorSetUpdateIDKey() []byte {
+	return []byte{ValidatorSetUpdateIDByteKey}
 }
 
 // SlashMeterKey returns the key storing the slash meter
@@ -206,13 +206,13 @@ func PendingCRPKey(timestamp time.Time, chainID string) []byte {
 // Note: chainId is hashed to a fixed length sequence of bytes here to prevent
 // injection attack between chainIDs.
 func UnbondingOpIndexKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndUintIdKey(UnbondingOpIndexBytePrefix, chainID, vscID)
+	return ChainIDAndUintIDKey(UnbondingOpIndexBytePrefix, chainID, vscID)
 }
 
 // ParseUnbondingOpIndexKey parses an unbonding op index key for VSC ID
 // Removes the prefix + chainID from index key and returns only the key part.
 func ParseUnbondingOpIndexKey(key []byte) (string, uint64, error) {
-	return ParseChainIdAndUintIdKey(UnbondingOpIndexBytePrefix, key)
+	return ParseChainIDAndUintIDKey(UnbondingOpIndexBytePrefix, key)
 }
 
 // UnbondingOpKey returns the key that stores a record of all the ids of consumer chains that
@@ -224,9 +224,9 @@ func UnbondingOpKey(id uint64) []byte {
 }
 
 // ValsetUpdateBlockHeightKey returns the key that storing the mapping from valset update ID to block height
-func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
+func ValsetUpdateBlockHeightKey(valsetUpdateID uint64) []byte {
 	vuidBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(vuidBytes, valsetUpdateId)
+	binary.BigEndian.PutUint64(vuidBytes, valsetUpdateID)
 	return append([]byte{ValsetUpdateBlockHeightBytePrefix}, vuidBytes...)
 }
 
@@ -255,37 +255,37 @@ func PendingVSCsKey(chainID string) []byte {
 // VscSendingTimestampKey returns the key under which the
 // sending timestamp of the VSCPacket with vsc ID is stored
 func VscSendingTimestampKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndUintIdKey(VscSendTimestampBytePrefix, chainID, vscID)
+	return ChainIDAndUintIDKey(VscSendTimestampBytePrefix, chainID, vscID)
 }
 
 // ParseVscTimeoutTimestampKey returns chain ID and vsc ID
 // for a VscSendingTimestampKey or an error if unparsable
 func ParseVscSendingTimestampKey(bz []byte) (string, uint64, error) {
-	return ParseChainIdAndUintIdKey(VscSendTimestampBytePrefix, bz)
+	return ParseChainIDAndUintIDKey(VscSendTimestampBytePrefix, bz)
 }
 
 // ConsumerValidatorsKey returns the key under which the
 // validator assigned keys for every consumer chain are stored
 func ConsumerValidatorsKey(chainID string, addr ProviderConsAddress) []byte {
-	return ChainIdAndConsAddrKey(ConsumerValidatorsBytePrefix, chainID, addr.ToSdkConsAddr())
+	return ChainIDAndConsAddrKey(ConsumerValidatorsBytePrefix, chainID, addr.ToSdkConsAddr())
 }
 
 // ValidatorsByConsumerAddrKey returns the key under which the mapping from validator addresses
 // on consumer chains to validator addresses on the provider chain is stored
 func ValidatorsByConsumerAddrKey(chainID string, addr ConsumerConsAddress) []byte {
-	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr.ToSdkConsAddr())
+	return ChainIDAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr.ToSdkConsAddr())
 }
 
 // KeyAssignmentReplacementsKey returns the key under which the
 // key assignments that need to be replaced in the current block are stored
 func KeyAssignmentReplacementsKey(chainID string, addr ProviderConsAddress) []byte {
-	return ChainIdAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr.ToSdkConsAddr())
+	return ChainIDAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr.ToSdkConsAddr())
 }
 
 // ConsumerAddrsToPruneKey returns the key under which the
 // mapping from VSC ids to consumer validators addresses is stored
 func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndUintIdKey(ConsumerAddrsToPruneBytePrefix, chainID, vscID)
+	return ChainIDAndUintIDKey(ConsumerAddrsToPruneBytePrefix, chainID, vscID)
 }
 
 // ThrottledPacketDataSizeKey returns the key storing the size of the throttled packet data queue for a given chain ID
@@ -295,21 +295,21 @@ func ThrottledPacketDataSizeKey(consumerChainID string) []byte {
 
 // ThrottledPacketDataKey returns the key storing the throttled packet data queue for a given chain ID and ibc seq num
 func ThrottledPacketDataKey(consumerChainID string, ibcSeqNum uint64) []byte {
-	return ChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, consumerChainID, ibcSeqNum)
+	return ChainIDAndUintIDKey(ThrottledPacketDataBytePrefix, consumerChainID, ibcSeqNum)
 }
 
 // MustParseThrottledPacketDataKey parses a throttled packet data key or panics upon failure
 func MustParseThrottledPacketDataKey(key []byte) (string, uint64) {
-	chainId, ibcSeqNum, err := ParseThrottledPacketDataKey(key)
+	chainID, ibcSeqNum, err := ParseThrottledPacketDataKey(key)
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse throttled packet data key: %s", err.Error()))
 	}
-	return chainId, ibcSeqNum
+	return chainID, ibcSeqNum
 }
 
 // ParseThrottledPacketDataKey parses a throttled packet data key
-func ParseThrottledPacketDataKey(key []byte) (chainId string, ibcSeqNum uint64, err error) {
-	return ParseChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, key)
+func ParseThrottledPacketDataKey(key []byte) (chainID string, ibcSeqNum uint64, err error) {
+	return ParseChainIDAndUintIDKey(ThrottledPacketDataBytePrefix, key)
 }
 
 // GlobalSlashEntryKey returns the key for storing a global slash queue entry.
@@ -353,8 +353,8 @@ func MustParseGlobalSlashEntryKey(bz []byte) (
 
 // ChainIdAndTsKey returns the key with the following format:
 // bytePrefix | len(chainID) | chainID | timestamp
-func ChainIdAndTsKey(prefix byte, chainID string, timestamp time.Time) []byte {
-	partialKey := ChainIdWithLenKey(prefix, chainID)
+func ChainIDAndTSKey(prefix byte, chainID string, timestamp time.Time) []byte {
+	partialKey := ChainIDWithLenKey(prefix, chainID)
 	timeBz := sdk.FormatTimeBytes(timestamp)
 	return ccvutils.AppendMany(
 		// Append the partialKey
@@ -364,30 +364,30 @@ func ChainIdAndTsKey(prefix byte, chainID string, timestamp time.Time) []byte {
 	)
 }
 
-// ChainIdWithLenKey returns the key with the following format:
+// ChainIDWithLenKey returns the key with the following format:
 // bytePrefix | len(chainID) | chainID
-func ChainIdWithLenKey(prefix byte, chainID string) []byte {
-	chainIdL := len(chainID)
+func ChainIDWithLenKey(prefix byte, chainID string) []byte {
+	chainIDL := len(chainID)
 	return ccvutils.AppendMany(
 		// Append the prefix
 		[]byte{prefix},
 		// Append the chainID length
-		sdk.Uint64ToBigEndian(uint64(chainIdL)),
+		sdk.Uint64ToBigEndian(uint64(chainIDL)),
 		// Append the chainID
 		[]byte(chainID),
 	)
 }
 
-// ParseChainIdAndTsKey returns the chain ID and time for a ChainIdAndTs key
-func ParseChainIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
+// ParseChainIDAndTSKey returns the chain ID and time for a ChainIDAndTS key
+func ParseChainIDAndTSKey(prefix byte, bz []byte) (string, time.Time, error) {
 	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
 	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
 		return "", time.Time{}, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
 	}
-	chainIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
-	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
-	timestamp, err := sdk.ParseTimeBytes(bz[prefixL+8+int(chainIdL):])
+	chainIDL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIDL)])
+	timestamp, err := sdk.ParseTimeBytes(bz[prefixL+8+int(chainIDL):])
 	if err != nil {
 		return "", time.Time{}, err
 	}
@@ -396,33 +396,33 @@ func ParseChainIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
 
 // ChainIdAndUintIdKey returns the key with the following format:
 // bytePrefix | len(chainID) | chainID | uint64(ID)
-func ChainIdAndUintIdKey(prefix byte, chainID string, uintId uint64) []byte {
-	partialKey := ChainIdWithLenKey(prefix, chainID)
+func ChainIDAndUintIDKey(prefix byte, chainID string, uintID uint64) []byte {
+	partialKey := ChainIDWithLenKey(prefix, chainID)
 	return ccvutils.AppendMany(
 		// Append the partialKey
 		partialKey,
 		// Append the uint id bytes
-		sdk.Uint64ToBigEndian(uintId),
+		sdk.Uint64ToBigEndian(uintID),
 	)
 }
 
 // ParseChainIdAndUintIdKey returns the chain ID and uint ID for a ChainIdAndUintId key
-func ParseChainIdAndUintIdKey(prefix byte, bz []byte) (string, uint64, error) {
+func ParseChainIDAndUintIDKey(prefix byte, bz []byte) (string, uint64, error) {
 	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
 	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
 		return "", 0, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
 	}
-	chainIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
-	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
-	uintID := sdk.BigEndianToUint64(bz[prefixL+8+int(chainIdL):])
+	chainIDL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIDL)])
+	uintID := sdk.BigEndianToUint64(bz[prefixL+8+int(chainIDL):])
 	return chainID, uintID, nil
 }
 
 // ChainIdAndConsAddrKey returns the key with the following format:
 // bytePrefix | len(chainID) | chainID | ConsAddress
-func ChainIdAndConsAddrKey(prefix byte, chainID string, addr sdk.ConsAddress) []byte {
-	partialKey := ChainIdWithLenKey(prefix, chainID)
+func ChainIDAndConsAddrKey(prefix byte, chainID string, addr sdk.ConsAddress) []byte {
+	partialKey := ChainIDWithLenKey(prefix, chainID)
 	return ccvutils.AppendMany(
 		// Append the partialKey
 		partialKey,
@@ -432,15 +432,15 @@ func ChainIdAndConsAddrKey(prefix byte, chainID string, addr sdk.ConsAddress) []
 }
 
 // ParseChainIdAndConsAddrKey returns the chain ID and ConsAddress for a ChainIdAndConsAddrKey key
-func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress, error) {
+func ParseChainIDAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress, error) {
 	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
 	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
 		return "", nil, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
 	}
-	chainIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
-	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
-	addr := bz[prefixL+8+int(chainIdL):]
+	chainIDL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIDL)])
+	addr := bz[prefixL+8+int(chainIDL):]
 	return chainID, addr, nil
 }
 

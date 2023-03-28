@@ -4,10 +4,9 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -31,8 +30,8 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		{"0.01", 40, -960, 30, 33}, // 960/30 = 32, so 33 replenishes to reach positive
 	}
 
+	// Run test cases
 	for _, tc := range testCases {
-
 		s.SetupTest()
 		s.SetupAllCCVChannels()
 		s.setupValidatorPowers()
@@ -93,7 +92,6 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 
 		// Replenish slash meter until it is positive
 		for i := 0; i < tc.expectedReplenishesTillPositive; i++ {
-
 			// Mutate cached context to have a block time after the current replenish candidate time.
 			cacheCtx = s.getCtxAfterReplenishCandidate(cacheCtx)
 			candidate := s.providerApp.GetProviderKeeper().GetSlashMeterReplenishTimeCandidate(cacheCtx)
@@ -183,8 +181,8 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	// They will each slash a different validator according to idx.
 	idx = 0
 	valsToSlash := []tmtypes.Validator{}
+	// Send 2 VSC matured packets from every consumer to provider
 	for _, bundle := range senderBundles {
-
 		// Setup signing info for validator to be jailed
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[idx])
 
@@ -395,7 +393,7 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 	for _, val := range s.providerChain.Vals.Validators {
 		power := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
 		s.Require().Equal(int64(1000), power)
-		stakingVal, found := stakingKeeper.GetValidatorByConsAddr(s.providerCtx(), sdktypes.ConsAddress(val.Address))
+		stakingVal, found := stakingKeeper.GetValidatorByConsAddr(s.providerCtx(), sdk.ConsAddress(val.Address))
 		if !found {
 			s.Require().Fail("validator not found")
 		}
@@ -504,21 +502,21 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 	}
 
 	// Confirm expected chain specific queue ordering.
-	expectedVscId := uint64(2000)
+	expectedVscID := uint64(2000)
 	for _, slashPacket := range slashPacketData {
 		// entries should be ordered by valset update id starting at 2000
-		s.Require().Equal(expectedVscId, slashPacket.ValsetUpdateId)
-		expectedVscId++
-		if (expectedVscId+5)%10 == 0 {
+		s.Require().Equal(expectedVscID, slashPacket.ValsetUpdateId)
+		expectedVscID++
+		if (expectedVscID+5)%10 == 0 {
 			// Skip over vsc matured packets
-			expectedVscId++
+			expectedVscID++
 		}
 	}
 	for idx, vscMaturedPacket := range vscMaturedPacketData {
 		// entries should be ordered by valset update id starting at 1005
 		// and show up every 10 packets
-		expectedVscId = uint64(1005) + 10*uint64(idx)
-		s.Require().Equal(expectedVscId, vscMaturedPacket.ValsetUpdateId)
+		expectedVscID = uint64(1005) + 10*uint64(idx)
+		s.Require().Equal(expectedVscID, vscMaturedPacket.ValsetUpdateId)
 	}
 
 	// Execute endblock to handle packets in throttled manner
@@ -539,7 +537,7 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 	// Confirm total power is now 3000 once updated by staking end blocker
 	s.providerChain.NextBlock()
 	totalPower := s.providerApp.GetE2eStakingKeeper().GetLastTotalPower(s.providerCtx())
-	s.Require().Equal(sdktypes.NewInt(3000), totalPower)
+	s.Require().Equal(sdk.NewInt(3000), totalPower)
 
 	// Now change replenish frac to 0.67 and fully replenish the meter.
 	params.SlashMeterReplenishFraction = "0.67"
@@ -566,10 +564,10 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 
 	// Setup first val with 1000 power and the rest with 10 power.
 	delAddr := s.providerChain.SenderAccount.GetAddress()
-	delegateByIdx(s, delAddr, sdktypes.NewInt(999999999), 0)
-	delegateByIdx(s, delAddr, sdktypes.NewInt(9999999), 1)
-	delegateByIdx(s, delAddr, sdktypes.NewInt(9999999), 2)
-	delegateByIdx(s, delAddr, sdktypes.NewInt(9999999), 3)
+	delegateByIdx(s, delAddr, sdk.NewInt(999999999), 0)
+	delegateByIdx(s, delAddr, sdk.NewInt(9999999), 1)
+	delegateByIdx(s, delAddr, sdk.NewInt(9999999), 2)
+	delegateByIdx(s, delAddr, sdk.NewInt(9999999), 3)
 	s.providerChain.NextBlock()
 
 	// Initialize slash meter
@@ -812,7 +810,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 	s.Require().Equal(len(globalEntries), 50*5)
 
 	// Set slash meter to negative value to not allow any slash packets to be handled.
-	providerKeeper.SetSlashMeter(s.providerCtx(), sdktypes.NewInt(-1))
+	providerKeeper.SetSlashMeter(s.providerCtx(), sdk.NewInt(-1))
 
 	// Set replenish time candidate so that no replenishment happens next block.
 	providerKeeper.SetSlashMeterReplenishTimeCandidate(s.providerCtx())
@@ -832,7 +830,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 
 func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPower bool) {
 	sdkVal, found := s.providerApp.GetE2eStakingKeeper().GetValidator(
-		s.providerCtx(), sdktypes.ValAddress(tmVal.Address))
+		s.providerCtx(), sdk.ValAddress(tmVal.Address))
 	s.Require().True(found)
 	s.Require().True(sdkVal.IsJailed())
 
@@ -845,7 +843,7 @@ func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPowe
 
 func (s *CCVTestSuite) confirmValidatorNotJailed(tmVal tmtypes.Validator, expectedPower int64) {
 	sdkVal, found := s.providerApp.GetE2eStakingKeeper().GetValidator(
-		s.providerCtx(), sdktypes.ValAddress(tmVal.Address))
+		s.providerCtx(), sdk.ValAddress(tmVal.Address))
 	s.Require().True(found)
 	valPower := s.providerApp.GetE2eStakingKeeper().GetLastValidatorPower(
 		s.providerCtx(), sdkVal.GetOperator())
@@ -864,7 +862,7 @@ func (s *CCVTestSuite) replenishSlashMeterTillPositive() {
 	}
 }
 
-func (s *CCVTestSuite) getCtxAfterReplenishCandidate(ctx sdktypes.Context) sdktypes.Context {
+func (s *CCVTestSuite) getCtxAfterReplenishCandidate(ctx sdk.Context) sdk.Context {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	candidate := providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx)
 	return ctx.WithBlockTime(candidate.Add(time.Minute))

@@ -81,7 +81,7 @@ func NewParams(
 
 // DefaultParams is the default params for the provider module
 func DefaultParams() Params {
-	// create default client state with chainID, trusting period, unbonding period, and inital height zeroed out.
+	// create default client state with chainID, trusting period, unbonding period, and initial height zeroed out.
 	// these fields will be populated during proposal handler.
 	return NewParams(
 		ibctmtypes.NewClientState(
@@ -152,7 +152,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	}
 }
 
-func validateTemplateClient(i interface{}) error {
+func validateTemplateClient(i any) error {
 	cs, ok := i.(ibctmtypes.ClientState)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T, expected: %T", i, ibctmtypes.ClientState{})
@@ -173,8 +173,6 @@ func validateTemplateClient(i interface{}) error {
 	copiedClient.UnbondingPeriod = consumertypes.DefaultConsumerUnbondingPeriod
 	copiedClient.LatestHeight = clienttypes.NewHeight(0, 1)
 
-	if err := copiedClient.Validate(); err != nil {
-		return err
-	}
-	return nil
+	err = copiedClient.Validate()
+	return err
 }

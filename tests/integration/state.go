@@ -39,7 +39,7 @@ type TextProposal struct {
 	Status      string
 }
 
-func (p TextProposal) isProposal() {}
+func (TextProposal) isProposal() {}
 
 type ConsumerAdditionProposal struct {
 	Deposit       uint
@@ -49,7 +49,7 @@ type ConsumerAdditionProposal struct {
 	Status        string
 }
 
-func (p ConsumerAdditionProposal) isProposal() {}
+func (ConsumerAdditionProposal) isProposal() {}
 
 type ConsumerRemovalProposal struct {
 	Deposit  uint
@@ -58,7 +58,7 @@ type ConsumerRemovalProposal struct {
 	Status   string
 }
 
-func (p ConsumerRemovalProposal) isProposal() {}
+func (ConsumerRemovalProposal) isProposal() {}
 
 type EquivocationProposal struct {
 	Height           uint
@@ -68,7 +68,7 @@ type EquivocationProposal struct {
 	Status           string
 }
 
-func (p EquivocationProposal) isProposal() {}
+func (EquivocationProposal) isProposal() {}
 
 type Rewards struct {
 	IsRewarded map[validatorID]bool
@@ -88,7 +88,7 @@ type ParamsProposal struct {
 	Value    string
 }
 
-func (p ParamsProposal) isProposal() {}
+func (ParamsProposal) isProposal() {}
 
 type Param struct {
 	Subspace string
@@ -363,12 +363,12 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			Description: description,
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal":
-		chainId := gjson.Get(string(bz), `content.chain_id`).String()
+		chainIDvar := gjson.Get(string(bz), `content.chain_id`).String()
 		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time().Sub(tr.containerConfig.now)
 
 		var chain chainID
 		for i, conf := range tr.chainConfigs {
-			if string(conf.chainId) == chainId {
+			if string(conf.chainID) == chainIDvar {
 				chain = i
 				break
 			}
@@ -385,12 +385,12 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			},
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
-		chainId := gjson.Get(string(bz), `content.chain_id`).String()
+		chainIDvar := gjson.Get(string(bz), `content.chain_id`).String()
 		stopTime := gjson.Get(string(bz), `content.stop_time`).Time().Sub(tr.containerConfig.now)
 
 		var chain chainID
 		for i, conf := range tr.chainConfigs {
-			if string(conf.chainId) == chainId {
+			if string(conf.chainID) == chainIDvar {
 				chain = i
 				break
 			}
@@ -469,10 +469,10 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 			valset.Total, uint(len(valset.Validators)))
 	}
 
+	// Find validator in set.
 	for _, val := range valset.Validators {
 		if val.Address == tr.validatorConfigs[validator].valconsAddress ||
 			val.Address == tr.validatorConfigs[validator].consumerValconsAddress {
-
 			votingPower, err := strconv.Atoi(val.VotingPower)
 			if err != nil {
 				log.Fatalf("error: %v", err)
@@ -649,7 +649,7 @@ func (tr TestRun) getValidatorIP(chain chainID, validator validatorID) string {
 }
 
 func (tr TestRun) getValidatorHome(chain chainID, validator validatorID) string {
-	return `/` + string(tr.chainConfigs[chain].chainId) + `/validator` + fmt.Sprint(validator)
+	return `/` + string(tr.chainConfigs[chain].chainID) + `/validator` + fmt.Sprint(validator)
 }
 
 // getQueryNode returns query node tcp address on chain.

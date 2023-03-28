@@ -75,7 +75,7 @@ Where proposal.json contains:
 			}
 
 			content := types.NewConsumerAdditionProposal(
-				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
+				proposal.Title, proposal.Description, proposal.ChainID, proposal.InitialHeight,
 				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime,
 				proposal.ConsumerRedistributionFraction, proposal.BlocksPerDistributionTransmission, proposal.HistoricalEntries,
 				proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod)
@@ -131,7 +131,7 @@ Where proposal.json contains:
 			}
 
 			content := types.NewConsumerRemovalProposal(
-				proposal.Title, proposal.Description, proposal.ChainId, proposal.StopTime)
+				proposal.Title, proposal.Description, proposal.ChainID, proposal.StopTime)
 
 			from := clientCtx.GetFromAddress()
 
@@ -211,7 +211,7 @@ Where proposal.json contains:
 type ConsumerAdditionProposalJSON struct {
 	Title         string             `json:"title"`
 	Description   string             `json:"description"`
-	ChainId       string             `json:"chain_id"`
+	ChainID       string             `json:"chain_id"`
 	InitialHeight clienttypes.Height `json:"initial_height"`
 	GenesisHash   []byte             `json:"genesis_hash"`
 	BinaryHash    []byte             `json:"binary_hash"`
@@ -233,7 +233,7 @@ type ConsumerAdditionProposalReq struct {
 
 	Title         string             `json:"title"`
 	Description   string             `json:"description"`
-	ChainId       string             `json:"chainId"`
+	ChainID       string             `json:"chainId"`
 	InitialHeight clienttypes.Height `json:"initialHeight"`
 	GenesisHash   []byte             `json:"genesisHash"`
 	BinaryHash    []byte             `json:"binaryHash"`
@@ -267,7 +267,7 @@ func ParseConsumerAdditionProposalJSON(proposalFile string) (ConsumerAdditionPro
 type ConsumerRemovalProposalJSON struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
-	ChainId     string    `json:"chain_id"`
+	ChainID     string    `json:"chain_id"`
 	StopTime    time.Time `json:"stop_time"`
 	Deposit     string    `json:"deposit"`
 }
@@ -278,7 +278,7 @@ type ConsumerRemovalProposalReq struct {
 
 	Title       string `json:"title"`
 	Description string `json:"description"`
-	ChainId     string `json:"chainId"`
+	ChainID     string `json:"chainId"`
 
 	StopTime time.Time `json:"stopTime"`
 	Deposit  sdk.Coins `json:"deposit"`
@@ -368,7 +368,7 @@ func postConsumerAdditionProposalHandlerFn(clientCtx client.Context) http.Handle
 		}
 
 		content := types.NewConsumerAdditionProposal(
-			req.Title, req.Description, req.ChainId, req.InitialHeight,
+			req.Title, req.Description, req.ChainID, req.InitialHeight,
 			req.GenesisHash, req.BinaryHash, req.SpawnTime,
 			req.ConsumerRedistributionFraction, req.BlocksPerDistributionTransmission, req.HistoricalEntries,
 			req.CcvTimeoutPeriod, req.TransferTimeoutPeriod, req.UnbondingPeriod)
@@ -399,7 +399,7 @@ func postConsumerRemovalProposalHandlerFn(clientCtx client.Context) http.Handler
 		}
 
 		content := types.NewConsumerRemovalProposal(
-			req.Title, req.Description, req.ChainId, req.StopTime,
+			req.Title, req.Description, req.ChainID, req.StopTime,
 		)
 
 		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
