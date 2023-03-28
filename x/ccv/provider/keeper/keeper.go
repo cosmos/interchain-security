@@ -81,7 +81,6 @@ func NewKeeper(
 // Validates that the provider keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
-
 	// Ensures no fields are missed in this validation
 	if reflect.ValueOf(k).NumField() != 13 {
 		panic("number of fields in provider keeper is not 13")
