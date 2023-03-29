@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"cosmossdk.io/simapp"
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
@@ -23,7 +24,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
 
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"

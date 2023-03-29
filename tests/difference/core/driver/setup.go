@@ -226,7 +226,7 @@ func (b *Builder) getAppBytesAndSenders(
 	})
 
 	// update total funds supply
-	genesisBank := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(), []banktypes.Metadata{})
+	genesisBank := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(), []banktypes.Metadata{}, []banktypes.SendEnabled{})
 	genesis[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(genesisBank)
 
 	stateBytes, err := json.MarshalIndent(genesis, "", " ")
@@ -387,7 +387,8 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	d := b.provider().SenderAccounts[del].SenderAccount.GetAddress()
 	coins := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	msg := stakingtypes.NewMsgDelegate(d, val, coins)
-	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
+	providerStaking := b.providerStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	_, err := pskServer.Delegate(sdk.WrapSDKContext(b.providerCtx()), msg)
 	b.suite.Require().NoError(err)
 }
@@ -415,7 +416,8 @@ func (b *Builder) addValidatorToStakingModule(privVal mock.PV) {
 		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
 		sdk.ZeroInt())
 	b.suite.Require().NoError(err)
-	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
+	providerStaking := b.providerStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.providerCtx()), msg)
 }
 
@@ -495,7 +497,7 @@ func (b *Builder) createConsumersLocalClientGenesis() *ibctmtypes.ClientState {
 	return ibctmtypes.NewClientState(
 		b.provider().ChainID, tmCfg.TrustLevel, tmCfg.TrustingPeriod, tmCfg.UnbondingPeriod, tmCfg.MaxClockDrift,
 		b.provider().LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
-		[]string{"upgrade", "upgradedIBCState"}, tmCfg.AllowUpdateAfterExpiry, tmCfg.AllowUpdateAfterMisbehaviour,
+		[]string{"upgrade", "upgradedIBCState"},
 	)
 }
 

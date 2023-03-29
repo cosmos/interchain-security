@@ -7,7 +7,7 @@ package ibctesting
 import (
 	"encoding/json"
 
-	simapp "github.com/cometbft/cometbft-db"
+	"cosmossdk.io/simapp"
 
 	appparams "github.com/cosmos/interchain-security/app/params"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"

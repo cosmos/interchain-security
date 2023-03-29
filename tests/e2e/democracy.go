@@ -11,7 +11,7 @@ import (
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	e2eutil "github.com/cosmos/interchain-security/testutil/e2e"
@@ -231,7 +231,7 @@ func submitProposalWithDepositAndVote(govKeeper e2eutil.GovKeeper, ctx sdk.Conte
 	}
 
 	for _, account := range accounts {
-		err = govKeeper.AddVote(ctx, proposal.ProposalId, account.SenderAccount.GetAddress(), govtypes.NewNonSplitVoteOption(govtypes.OptionYes))
+		err = govKeeper.AddVote(ctx, proposal.ProposalId, account.SenderAccount.GetAddress(), govv1.NewNonSplitVoteOption(govv1.OptionYes))
 		if err != nil {
 			return err
 		}
