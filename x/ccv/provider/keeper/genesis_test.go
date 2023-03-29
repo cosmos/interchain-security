@@ -159,13 +159,14 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, expectedAddrList, addrs)
 
 	// check provider chain's consumer chain states
-	assertConsumerChainStates(ctx, t, pk, provGenesis.ConsumerStates...)
+	assertConsumerChainStates(t, ctx, pk, provGenesis.ConsumerStates...)
 
 	// check the exported genesis
 	require.Equal(t, provGenesis, pk.ExportGenesis(ctx))
 }
 
-func assertConsumerChainStates(ctx sdk.Context, t *testing.T, pk keeper.Keeper, consumerStates ...providertypes.ConsumerState) {
+func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, consumerStates ...providertypes.ConsumerState) {
+	t.Helper()
 	for _, cs := range consumerStates {
 		chainID := cs.ChainId
 		gen, found := pk.GetConsumerGenesis(ctx, chainID)

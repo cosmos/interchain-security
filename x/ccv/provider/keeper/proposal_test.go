@@ -198,6 +198,7 @@ func TestCreateConsumerClient(t *testing.T) {
 func testCreatedConsumerClient(t *testing.T,
 	ctx sdk.Context, providerKeeper providerkeeper.Keeper, expectedChainID string, expectedClientID string,
 ) {
+	t.Helper()
 	// ClientID should be stored.
 	clientId, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
 	require.True(t, found, "consumer client not found")
@@ -575,6 +576,7 @@ func TestStopConsumerChain(t *testing.T) {
 func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
 	expectedChainID string, expectedChannelID string,
 ) {
+	t.Helper()
 	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
 	require.False(t, found)
 	_, found = providerKeeper.GetChainToChannel(ctx, expectedChainID)

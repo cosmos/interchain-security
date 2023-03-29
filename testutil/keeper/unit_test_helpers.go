@@ -44,7 +44,8 @@ type InMemKeeperParams struct {
 }
 
 // NewInMemKeeperParams instantiates in-memory keeper params with default values
-func NewInMemKeeperParams(t testing.TB) InMemKeeperParams {
+func NewInMemKeeperParams(tb testing.TB) InMemKeeperParams {
+	tb.Helper()
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
@@ -52,7 +53,7 @@ func NewInMemKeeperParams(t testing.TB) InMemKeeperParams {
 	stateStore := store.NewCommitMultiStore(db)
 	stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
-	require.NoError(t, stateStore.LoadLatestVersion())
+	require.NoError(tb, stateStore.LoadLatestVersion())
 
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
@@ -153,6 +154,7 @@ func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consu
 func GetProviderKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 	providerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers,
 ) {
+	t.Helper()
 	ctrl := gomock.NewController(t)
 	mocks := NewMockedKeepers(ctrl)
 	return NewInMemProviderKeeper(params, mocks), params.Ctx, ctrl, mocks
@@ -165,6 +167,7 @@ func GetProviderKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 	consumerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers,
 ) {
+	t.Helper()
 	ctrl := gomock.NewController(t)
 	mocks := NewMockedKeepers(ctrl)
 	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
@@ -222,6 +225,7 @@ func GetNewVSCMaturedPacketData() types.VSCMaturedPacketData {
 func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers,
 ) {
+	t.Helper()
 	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
 		"chainID", clienttypes.NewHeight(4, 5))
 	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
@@ -258,6 +262,7 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 
 // Obtains a CrossChainValidator with a newly generated key, and randomized field values
 func GetNewCrossChainValidator(t *testing.T) consumertypes.CrossChainValidator {
+	t.Helper()
 	b1 := make([]byte, 8)
 	_, _ = rand.Read(b1)
 	power := int64(binary.BigEndian.Uint64(b1))

@@ -16,6 +16,7 @@ import (
 // runCCVTestByName runs a single CCV e2e test by name, using a CCVTestSuite
 // initialized with the dummy provider and consumer defined in this repo.
 func runCCVTestByName(t *testing.T, methodName string) {
+	t.Helper()
 	suite := e2e.NewCCVTestSuite[*appProvider.App, *appConsumer.App](
 		icstestingutils.ProviderAppIniter, icstestingutils.ConsumerAppIniter, []string{})
 	suite.SetT(t)
@@ -28,6 +29,7 @@ func runCCVTestByName(t *testing.T, methodName string) {
 // using a ConsumerDemocracyTestSuite initialized with the dummy
 // democracy consumer defined in this repo.
 func runConsumerDemocracyTestByName(t *testing.T, methodName string) {
+	t.Helper()
 	suite := e2e.NewConsumerDemocracyTestSuite[*appConsumerDemocracy.App](
 		icstestingutils.DemocracyConsumerAppIniter)
 	suite.SetT(t)
@@ -37,6 +39,7 @@ func runConsumerDemocracyTestByName(t *testing.T, methodName string) {
 }
 
 func findAndCallMethod(t *testing.T, suite any, methodName string) {
+	t.Helper()
 	methodFinder := reflect.TypeOf(suite)
 	method, found := methodFinder.MethodByName(methodName)
 	if !found {

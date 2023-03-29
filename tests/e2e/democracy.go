@@ -1,3 +1,4 @@
+//nolint:all
 package e2e
 
 import (
@@ -44,7 +45,7 @@ func NewConsumerDemocracyTestSuite[T e2eutil.DemocConsumerApp](
 
 		// Add single democracy consumer to coordinator, store returned test chain and app.
 		democConsumer, democConsumerApp := icstestingutils.AddDemocracyConsumer[T](
-			coordinator, t, democConsumerAppIniter)
+			t, coordinator, democConsumerAppIniter)
 
 		// Pass variables to suite.
 		return coordinator, democConsumer, democConsumerApp
