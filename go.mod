@@ -3,8 +3,8 @@ module github.com/cosmos/interchain-security
 go 1.18
 
 require (
-	github.com/cosmos/cosmos-sdk v0.45.11
-	github.com/gogo/protobuf v1.3.3
+	github.com/cosmos/cosmos-sdk v0.47.0
+	github.com/cosmos/gogoproto v1.4.6
 	github.com/golang/protobuf v1.5.3
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
@@ -13,7 +13,7 @@ require (
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
-	github.com/tendermint/tendermint v0.34.26
+	github.com/cometbft/cometbft v0.37.0
 	github.com/tendermint/tm-db v0.6.7
 	github.com/tidwall/gjson v1.14.4
 	golang.org/x/crypto v0.5.0 // indirect
@@ -27,7 +27,7 @@ require (
 
 require (
 	github.com/confio/ics23/go v0.9.0
-	github.com/cosmos/ibc-go/v4 v4.2.0
+	github.com/cosmos/ibc-go/v7 v7.0.0
 	github.com/golang/mock v1.6.0
 	github.com/oxyno-zeta/gomock-extra-matcher v1.1.0
 	github.com/regen-network/cosmos-proto v0.3.1
@@ -136,13 +136,4 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	nhooyr.io/websocket v1.8.6 // indirect
-)
-
-replace (
-	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.2 //indirect
-	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.13-ics
-	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	github.com/stretchr/testify => github.com/stretchr/testify v1.7.1
-	github.com/tendermint/tendermint => github.com/informalsystems/tendermint v0.34.26
-	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )
