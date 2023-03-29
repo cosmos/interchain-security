@@ -159,7 +159,8 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
 	depositAmount := govKeeper.GetDepositParams(s.consumerCtx()).MinDeposit
 	votingParams := govKeeper.GetVotingParams(s.consumerCtx())
-	votingParams.VotingPeriod = 3 * time.Second
+	duration := (3 * time.Second)
+	votingParams.VotingPeriod = &duration
 	govKeeper.SetVotingParams(s.consumerCtx(), votingParams)
 	s.consumerChain.NextBlock()
 	votersOldBalances := getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts)
@@ -170,7 +171,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().NoError(err)
 	// set current header time to be equal or later than voting end time in order to process proposal from active queue,
 	// once the proposal is added to the chain
-	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(votingParams.VotingPeriod)
+	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*votingParams.VotingPeriod)
 	s.consumerChain.NextBlock()
 	// at this moment, proposal is added, but not yet executed. we are saving old param values for comparison
 	oldAuthParamValue := accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
@@ -191,7 +192,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	paramChange = proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{allowedChange}}
 	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, depositAmount)
 	s.Assert().NoError(err)
-	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(votingParams.VotingPeriod)
+	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*votingParams.VotingPeriod)
 	s.consumerChain.NextBlock()
 	oldMintParamValue = mintKeeper.GetParams(s.consumerCtx()).InflationMax
 	s.consumerChain.NextBlock()
@@ -206,7 +207,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	paramChange = proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{forbiddenChange}}
 	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, depositAmount)
 	s.Assert().NoError(err)
-	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(votingParams.VotingPeriod)
+	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*votingParams.VotingPeriod)
 	s.consumerChain.NextBlock()
 	oldAuthParamValue = accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
 	s.consumerChain.NextBlock()
@@ -225,13 +226,13 @@ func submitProposalWithDepositAndVote(govKeeper e2eutil.GovKeeper, ctx sdk.Conte
 	if err != nil {
 		return err
 	}
-	_, err = govKeeper.AddDeposit(ctx, proposal.ProposalId, accounts[0].SenderAccount.GetAddress(), depositAmount) // proposal becomes active
+	_, err = govKeeper.AddDeposit(ctx, proposal.Id, accounts[0].SenderAccount.GetAddress(), depositAmount) // proposal becomes active
 	if err != nil {
 		return err
 	}
 
 	for _, account := range accounts {
-		err = govKeeper.AddVote(ctx, proposal.ProposalId, account.SenderAccount.GetAddress(), govv1.NewNonSplitVoteOption(govv1.OptionYes))
+		err = govKeeper.AddVote(ctx, proposal.Id, account.SenderAccount.GetAddress(), govv1.NewNonSplitVoteOption(govv1.OptionYes))
 		if err != nil {
 			return err
 		}

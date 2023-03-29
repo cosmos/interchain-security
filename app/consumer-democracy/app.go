@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"cosmossdk.io/simapp"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -170,7 +169,6 @@ var (
 )
 
 var (
-	_ simapp.App              = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
 	_ ibctesting.AppTest      = (*App)(nil)
 )

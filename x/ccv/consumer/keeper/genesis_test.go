@@ -56,8 +56,6 @@ func TestInitGenesis(t *testing.T) {
 		clienttypes.Height{},
 		commitmenttypes.GetSDKSpecs(),
 		[]string{"upgrade", "upgradedIBCState"},
-		true,
-		true,
 	)
 
 	matPackets := []consumertypes.MaturingVSCPacket{

@@ -15,6 +15,7 @@ import (
 	tmdb "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
 
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
@@ -24,7 +25,7 @@ import (
 func ProviderAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
 	encoding := appparams.MakeEncodingConfig()
 	testApp := appProvider.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
+		simapp.DefaultNodeHome, 5, encoding, simtestutil.EmptyAppOptions{})
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Codec)
 }
 
@@ -32,7 +33,7 @@ func ProviderAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
 func ConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
 	encoding := appparams.MakeEncodingConfig()
 	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
+		simapp.DefaultNodeHome, 5, encoding, simtestutil.EmptyAppOptions{})
 	return testApp, appConsumer.NewDefaultGenesisState(encoding.Codec)
 }
 
@@ -40,6 +41,6 @@ func ConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
 func DemocracyConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
 	encoding := appparams.MakeEncodingConfig()
 	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
+		simapp.DefaultNodeHome, 5, encoding, simtestutil.EmptyAppOptions{})
 	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Codec)
 }

@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"cosmossdk.io/simapp"
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
@@ -132,7 +131,6 @@ var (
 )
 
 var (
-	_ simapp.App              = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
 	_ ibctesting.AppTest      = (*App)(nil)
 )
