@@ -8,7 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
@@ -152,7 +152,8 @@ func (s *CoreSuite) delegatorBalance() int64 {
 
 // delegate delegates amt tokens to validator val
 func (s *CoreSuite) delegate(val, amt int64) {
-	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
+	stakingProvider := s.providerStakingKeeper()
+	server := stakingkeeper.NewMsgServerImpl(&stakingProvider)
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
@@ -164,7 +165,8 @@ func (s *CoreSuite) delegate(val, amt int64) {
 
 // undelegate undelegates amt tokens from validator val
 func (s *CoreSuite) undelegate(val, amt int64) {
-	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
+	stakingProvider := s.providerStakingKeeper()
+	server := stakingkeeper.NewMsgServerImpl(&stakingProvider)
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)

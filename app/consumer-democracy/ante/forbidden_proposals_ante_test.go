@@ -3,19 +3,20 @@ package ante_test
 import (
 	"testing"
 
+	simappparams "cosmossdk.io/simapp/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	app "github.com/cosmos/interchain-security/app/consumer-democracy"
 	"github.com/cosmos/interchain-security/app/consumer-democracy/ante"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/spm/cosmoscmd"
 )
 
 func TestForbiddenProposalsDecorator(t *testing.T) {
-	txCfg := cosmoscmd.MakeEncodingConfig(app.ModuleBasics).TxConfig
+	txCfg := simappparams.MakeEncodingConfig(app.ModuleBasics).TxConfig
 
 	testCases := []struct {
 		name      string
@@ -90,8 +91,12 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 	}
 }
 
-func newParamChangeProposalMsg(changes []proposal.ParamChange) *govtypes.MsgSubmitProposal {
+func newParamChangeProposalMsg(changes []proposal.ParamChange) *govv1.MsgSubmitProposal {
 	paramChange := proposal.ParameterChangeProposal{Changes: changes}
-	msg, _ := govtypes.NewMsgSubmitProposal(&paramChange, sdk.NewCoins(), sdk.AccAddress{})
+	msgContent, err := govv1.NewLegacyContent(&paramChange, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	if err != nil {
+		return nil
+	}
+	msg, _ := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, sdk.NewCoins(), sdk.AccAddress{}.String(), "", "", "")
 	return msg
 }

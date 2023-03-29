@@ -9,7 +9,7 @@ import (
 	types "github.com/cosmos/interchain-security/x/ccv/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
-	_ "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	_ "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	io "io"
 	math "math"
 	math_bits "math/bits"

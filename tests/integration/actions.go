@@ -12,7 +12,7 @@ import (
 	"time"
 
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/provider/client"

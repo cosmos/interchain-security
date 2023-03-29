@@ -3,13 +3,13 @@ package e2e
 import (
 	"time"
 
+	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // TestBasicSlashPacketThrottling tests slash packet throttling with a single consumer,

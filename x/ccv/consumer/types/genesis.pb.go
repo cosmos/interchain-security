@@ -5,12 +5,12 @@ package types
 
 import (
 	fmt "fmt"
-	_ "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	types "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	_ "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	types "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	types2 "github.com/cosmos/interchain-security/x/ccv/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
-	types1 "github.com/tendermint/tendermint/abci/types"
+	types1 "github.com/cometbft/cometbft/abci/types"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	io "io"
 	math "math"
