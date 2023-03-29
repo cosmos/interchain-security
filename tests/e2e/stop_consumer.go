@@ -54,7 +54,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 		},
 		{
 			func(suite *CCVTestSuite) error {
-				testShares, err = providerStakingKeeper.Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+				testShares, err = providerStakingKeeper.Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, validator, true)
 				return err
 			},
 		},
@@ -154,7 +154,6 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 	// s.Require().NoError(err)
 
 	// expect to panic in consumer chain's BeginBlock due to the above
-
 
 	// check that the provider's channel is removed
 	// _, found := s.consumerApp.GetConsumerKeeper().GetProviderChannel(s.consumerCtx())

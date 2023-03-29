@@ -23,14 +23,12 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	// relay VSC packets from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
-
 	consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
 	consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(2))
 	s.consumerChain.NextBlock()
 
 	consumerAccountKeeper := s.consumerApp.GetE2eAccountKeeper()
 	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
-
 
 	consumerFeePoolAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), authtypes.FeeCollectorName).GetAddress()
 	feePoolTokensOld := consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerFeePoolAddr)
@@ -40,13 +38,11 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	feePoolTokens := consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerFeePoolAddr)
 	s.Require().Equal(sdk.NewInt(100).Add(feePoolTokensOld.AmountOf(sdk.DefaultBondDenom)), feePoolTokens.AmountOf(sdk.DefaultBondDenom))
 
-
 	frac, err := sdk.NewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
 	s.Require().NoError(err)
 	consumerExpectedRewards, _ := sdk.NewDecCoinsFromCoins(feePoolTokens...).MulDec(frac).TruncateDecimal()
 	providerExpectedRewards := feePoolTokens.Sub(consumerExpectedRewards)
 	s.consumerChain.NextBlock()
-
 
 	feePoolTokens = consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerFeePoolAddr)
 	s.Require().Equal(0, len(feePoolTokens))
@@ -56,8 +52,6 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	providerRedistributeAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName).GetAddress()
 	providerTokens := consumerBankKeeper.GetAllBalances(s.consumerCtx(), providerRedistributeAddr)
 	s.Require().Equal(providerExpectedRewards.AmountOf(sdk.DefaultBondDenom), providerTokens.AmountOf(sdk.DefaultBondDenom))
-
-
 
 	s.consumerChain.NextBlock()
 	providerTokens = consumerBankKeeper.GetAllBalances(s.consumerCtx(), providerRedistributeAddr)

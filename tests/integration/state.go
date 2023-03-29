@@ -73,9 +73,7 @@ func (p EquivocationProposal) isProposal() {}
 type Rewards struct {
 	IsRewarded map[validatorID]bool
 
-
 	IsIncrementalReward bool
-
 
 	IsNativeDenom bool
 }

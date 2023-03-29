@@ -180,7 +180,7 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	// Since the entries to be deleted are always in a continuous range, we can iterate
 	// over the historical entries starting from the most recent version to be pruned
 	// and then return at the first empty entry.
-	for i := ctx.BlockHeight() - int64(numHistoricalEntries); i >= 0; i-- {
+	for i := ctx.BlockHeight() - numHistoricalEntries; i >= 0; i-- {
 		_, found := k.GetHistoricalInfo(ctx, i)
 		if found {
 			k.DeleteHistoricalInfo(ctx, i)
