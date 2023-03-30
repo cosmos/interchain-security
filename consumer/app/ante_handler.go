@@ -6,7 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	ibcante "github.com/cosmos/ibc-go/v4/modules/core/ante"
 	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
-	consumerante "github.com/cosmos/interchain-security/app/consumer/ante"
+	consumerante "github.com/cosmos/interchain-security/consumer/app/ante"
 	ibcconsumerkeeper "github.com/cosmos/interchain-security/consumer/keeper"
 )
 

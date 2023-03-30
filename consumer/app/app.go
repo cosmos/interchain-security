@@ -17,7 +17,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -67,7 +66,6 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
 	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -81,10 +79,9 @@ import (
 	ibcconsumer "github.com/cosmos/interchain-security/consumer"
 	ibcconsumerkeeper "github.com/cosmos/interchain-security/consumer/keeper"
 	ibcconsumertypes "github.com/cosmos/interchain-security/consumer/types"
-	"github.com/cosmos/interchain-security/testutil/e2e"
-
+	// "github.com/cosmos/interchain-security/testutil/e2e"
 	// unnamed import of statik for swagger UI support
-	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
+	// _ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 )
 
 const (
@@ -128,7 +125,7 @@ var (
 )
 
 var (
-	_ simapp.App              = (*App)(nil)
+	// _ simapp.App              = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
 	_ cosmoscmd.CosmosApp     = (*App)(nil)
 	_ ibctesting.TestingApp   = (*App)(nil)
@@ -648,30 +645,30 @@ func (app *App) SimulationManager() *module.SimulationManager {
 
 // ConsumerApp interface implementations for e2e tests
 
-// GetConsumerKeeper implements the ConsumerApp interface.
-func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
-	return app.ConsumerKeeper
-}
+// // GetConsumerKeeper implements the ConsumerApp interface.
+// func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
+// 	return app.ConsumerKeeper
+// }
 
-// GetE2eBankKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
-	return app.BankKeeper
-}
+// // GetE2eBankKeeper implements the ConsumerApp interface.
+// func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
+// 	return app.BankKeeper
+// }
 
-// GetE2eAccountKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eAccountKeeper() e2e.E2eAccountKeeper {
-	return app.AccountKeeper
-}
+// // GetE2eAccountKeeper implements the ConsumerApp interface.
+// func (app *App) GetE2eAccountKeeper() e2e.E2eAccountKeeper {
+// 	return app.AccountKeeper
+// }
 
-// GetE2eSlashingKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
-	return app.SlashingKeeper
-}
+// // GetE2eSlashingKeeper implements the ConsumerApp interface.
+// func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
+// 	return app.SlashingKeeper
+// }
 
-// GetE2eEvidenceKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
-	return app.EvidenceKeeper
-}
+// // GetE2eEvidenceKeeper implements the ConsumerApp interface.
+// func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
+// 	return app.EvidenceKeeper
+// }
 
 // TestingApp functions
 
