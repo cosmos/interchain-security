@@ -21,14 +21,16 @@ require (
 	google.golang.org/genproto v0.0.0-20221024183307-1bc688fe9f3e
 	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.30.0
-	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
 	github.com/cosmos/ibc-go/v4 v4.2.0
 	github.com/cosmos/interchain-security v1.1.0
 	github.com/golang/mock v1.6.0
+	github.com/kylelemons/godebug v1.1.0
 	github.com/regen-network/cosmos-proto v0.3.1
+	github.com/tidwall/gjson v1.14.0
 )
 
 require (
@@ -119,6 +121,8 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tidwall/btree v1.5.0 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/zondax/hid v0.9.1 // indirect
 	github.com/zondax/ledger-go v0.14.1 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
