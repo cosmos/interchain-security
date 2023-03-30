@@ -3,6 +3,7 @@ package keeper
 import (
 	"time"
 
+	"cosmossdk.io/math"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -90,16 +91,16 @@ func (Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.Val
 
 // Slash queues a slashing request for the the provider chain
 // All queued slashing requests will be cleared in EndBlock
-func (k Keeper) Slash(
+func (k Keeper) SlashForked(
 	ctx sdk.Context,
 	addr sdk.ConsAddress,
 	infractionHeight, power int64,
 	_ sdk.Dec,
 	infraction stakingtypes.Infraction,
 ) {
-	// if infraction == stakingtypes.InfractionEmpty {
-	// 	return
-	// }
+	if infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
+		return
+	}
 
 	// get VSC ID for infraction height
 	vscID := k.GetHeightValsetUpdateID(ctx, uint64(infractionHeight))
@@ -118,6 +119,20 @@ func (k Keeper) Slash(
 		vscID,
 		infraction,
 	)
+}
+
+func (k Keeper) Slash(
+	ctx sdk.Context,
+	addr sdk.ConsAddress,
+	infractionHeight, power int64,
+	_ sdk.Dec,
+) math.Int {
+	//To Do impliment
+	return math.Int{}
+}
+
+func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, consAddr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec, _ stakingtypes.Infraction) math.Int {
+	return k.Slash(ctx, consAddr, infractionHeight, power, slashFactor)
 }
 
 // Jail - unimplemented on CCV keeper

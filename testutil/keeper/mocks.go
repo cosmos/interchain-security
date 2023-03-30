@@ -9,18 +9,23 @@ import (
 	reflect "reflect"
 	time "time"
 
+	"cosmossdk.io/math"
+	types8 "github.com/cometbft/cometbft/abci/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
 	types0 "github.com/cosmos/cosmos-sdk/x/auth/types"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/capability/types"
 	types2 "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	types3 "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	types4 "github.com/cosmos/cosmos-sdk/x/staking/types"
-	types5 "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	types6 "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	types7 "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
-	types8 "github.com/cometbft/cometbft/abci/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // MockStakingKeeper is a mock of StakingKeeper interface.
@@ -171,9 +176,16 @@ func (mr *MockStakingKeeperMockRecorder) PutUnbondingOnHold(ctx, id interface{})
 }
 
 // Slash mocks base method.
-func (m *MockStakingKeeper) Slash(arg0 types.Context, arg1 types.ConsAddress, arg2, arg3 int64, arg4 types.Dec, arg5 types4.Infraction) {
+func (m *MockStakingKeeper) Slash(arg0 types.Context, arg1 types.ConsAddress, arg2, arg3 int64, arg4 types.Dec) math.Int {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Slash", arg0, arg1, arg2, arg3, arg4, arg5)
+	m.ctrl.Call(m, "Slash", arg0, arg1, arg2, arg3, arg4)
+	return math.Int{}
+}
+
+func (m *MockStakingKeeper) SlashWithInfractionReason(arg0 sdk.Context, arg1 sdk.ConsAddress, arg3, arg4 int64, arg2 sdk.Dec, arg5 stakingtypes.Infraction) math.Int {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SlashWithInfractionReason", arg0, arg1, arg2, arg3, arg4, arg5)
+	return math.Int{}
 }
 
 // Slash indicates an expected call of Slash.
@@ -431,11 +443,19 @@ func (mr *MockChannelKeeperMockRecorder) GetNextSequenceSend(ctx, portID, channe
 }
 
 // SendPacket mocks base method.
-func (m *MockChannelKeeper) SendPacket(ctx types.Context, channelCap *types1.Capability, packet exported.PacketI) error {
+func (m *MockChannelKeeper) SendPacket(
+	ctx sdk.Context,
+	chanCap *capabilitytypes.Capability,
+	sourcePort string,
+	sourceChannel string,
+	timeoutHeight clienttypes.Height,
+	timeoutTimestamp uint64,
+	data []byte,
+) (sequence uint64, err error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendPacket", ctx, channelCap, packet)
+	ret := m.ctrl.Call(m, "SendPacket", ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 	ret0, _ := ret[0].(error)
-	return ret0
+	return 0, ret0
 }
 
 // SendPacket indicates an expected call of SendPacket.
@@ -777,17 +797,17 @@ func (m *MockIBCTransferKeeper) EXPECT() *MockIBCTransferKeeperMockRecorder {
 }
 
 // SendTransfer mocks base method.
-func (m *MockIBCTransferKeeper) SendTransfer(ctx types.Context, sourcePort, sourceChannel string, token types.Coin, sender types.AccAddress, receiver string, timeoutHeight types5.Height, timeoutTimestamp uint64) error {
+func (m *MockIBCTransferKeeper) Transfer(ctx context.Context, msgTransfer *transfertypes.MsgTransfer) (*transfertypes.MsgTransferResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendTransfer", ctx, sourcePort, sourceChannel, token, sender, receiver, timeoutHeight, timeoutTimestamp)
+	ret := m.ctrl.Call(m, "Transfer", ctx, msgTransfer)
 	ret0, _ := ret[0].(error)
-	return ret0
+	return nil, ret0
 }
 
 // SendTransfer indicates an expected call of SendTransfer.
-func (mr *MockIBCTransferKeeperMockRecorder) SendTransfer(ctx, sourcePort, sourceChannel, token, sender, receiver, timeoutHeight, timeoutTimestamp interface{}) *gomock.Call {
+func (mr *MockIBCTransferKeeperMockRecorder) Transfer(ctx, msgTransfer *transfertypes.MsgTransfer) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendTransfer", reflect.TypeOf((*MockIBCTransferKeeper)(nil).SendTransfer), ctx, sourcePort, sourceChannel, token, sender, receiver, timeoutHeight, timeoutTimestamp)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendTransfer", reflect.TypeOf((*MockIBCTransferKeeper)(nil).Transfer), ctx, msgTransfer)
 }
 
 // MockIBCCoreKeeper is a mock of IBCCoreKeeper interface.

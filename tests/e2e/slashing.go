@@ -338,7 +338,7 @@ func (s *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	providerKeeper.SetInitChainHeight(ctx, consumerChainID, initChainHeight)
 
 	// now the method will fail at infraction height check.
-	packetData.Infraction = stakingtypes.InfractionEmpty
+	packetData.Infraction = stakingtypes.Infraction_INFRACTION_UNSPECIFIED
 	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
 	s.Require().False(errAck.Success())
 	errAckCast = errAck.(channeltypes.Acknowledgement)
@@ -398,7 +398,7 @@ func (s *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	// expect error ack when infraction type in unspecified
 	tmAddr := s.providerChain.Vals.Validators[1].Address
 	slashingPkt.Validator.Address = tmAddr
-	slashingPkt.Infraction = stakingtypes.InfractionEmpty
+	slashingPkt.Infraction = stakingtypes.Infraction_INFRACTION_UNSPECIFIED
 
 	valInfo.Address = sdk.ConsAddress(tmAddr).String()
 	providerSlashingKeeper.SetValidatorSigningInfo(ctx, sdk.ConsAddress(tmAddr), valInfo)
