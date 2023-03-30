@@ -5,7 +5,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	consumertypes "github.com/cosmos/interchain-security/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 )
@@ -24,14 +23,14 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		return nil
 	}
 
-	k.SetPort(ctx, ccv.ConsumerPortID)
+	k.SetPort(ctx, consumertypes.ConsumerPortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
 	// port capability from capability InitGenesis
-	if !k.IsBound(ctx, ccv.ConsumerPortID) {
+	if !k.IsBound(ctx, consumertypes.ConsumerPortID) {
 		// transfer module binds to the transfer port on InitChain
 		// and claims the returned capability
-		err := k.BindPort(ctx, ccv.ConsumerPortID)
+		err := k.BindPort(ctx, consumertypes.ConsumerPortID)
 		if err != nil {
 			// If the binding fails, the chain MUST NOT start
 			panic(fmt.Sprintf("could not claim port capability: %v", err))

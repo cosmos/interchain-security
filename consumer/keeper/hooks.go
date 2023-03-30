@@ -2,7 +2,6 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 var (

@@ -5,7 +5,6 @@ import (
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 const (
@@ -80,7 +79,7 @@ func DefaultParams() Params {
 		DefaultBlocksPerDistributionTransmission,
 		"",
 		"",
-		ccvtypes.DefaultCCVTimeoutPeriod,
+		DefaultCCVTimeoutPeriod,
 		DefaultTransferTimeoutPeriod,
 		DefaultConsumerRedistributeFrac,
 		DefaultHistoricalEntries,
@@ -90,10 +89,10 @@ func DefaultParams() Params {
 
 // Validate all ccv-consumer module parameters
 func (p Params) Validate() error {
-	if err := ccvtypes.ValidateBool(p.Enabled); err != nil {
+	if err := ValidateBool(p.Enabled); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidatePositiveInt64(p.BlocksPerDistributionTransmission); err != nil {
+	if err := ValidatePositiveInt64(p.BlocksPerDistributionTransmission); err != nil {
 		return err
 	}
 	if err := validateDistributionTransmissionChannel(p.DistributionTransmissionChannel); err != nil {
@@ -102,19 +101,19 @@ func (p Params) Validate() error {
 	if err := validateProviderFeePoolAddrStr(p.ProviderFeePoolAddrStr); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
+	if err := ValidateDuration(p.CcvTimeoutPeriod); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateDuration(p.TransferTimeoutPeriod); err != nil {
+	if err := ValidateDuration(p.TransferTimeoutPeriod); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateStringFraction(p.ConsumerRedistributionFraction); err != nil {
+	if err := ValidateStringFraction(p.ConsumerRedistributionFraction); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidatePositiveInt64(p.HistoricalEntries); err != nil {
+	if err := ValidatePositiveInt64(p.HistoricalEntries); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateDuration(p.UnbondingPeriod); err != nil {
+	if err := ValidateDuration(p.UnbondingPeriod); err != nil {
 		return err
 	}
 	return nil
@@ -123,23 +122,23 @@ func (p Params) Validate() error {
 // ParamSetPairs implements params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, ccvtypes.ValidateBool),
+		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, ValidateBool),
 		paramtypes.NewParamSetPair(KeyBlocksPerDistributionTransmission,
-			p.BlocksPerDistributionTransmission, ccvtypes.ValidatePositiveInt64),
+			p.BlocksPerDistributionTransmission, ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyDistributionTransmissionChannel,
 			p.DistributionTransmissionChannel, validateDistributionTransmissionChannel),
 		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
 			p.ProviderFeePoolAddrStr, validateProviderFeePoolAddrStr),
-		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod,
-			p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(KeyCCVTimeoutPeriod,
+			p.CcvTimeoutPeriod, ValidateDuration),
 		paramtypes.NewParamSetPair(KeyTransferTimeoutPeriod,
-			p.TransferTimeoutPeriod, ccvtypes.ValidateDuration),
+			p.TransferTimeoutPeriod, ValidateDuration),
 		paramtypes.NewParamSetPair(KeyConsumerRedistributionFrac,
-			p.ConsumerRedistributionFraction, ccvtypes.ValidateStringFraction),
+			p.ConsumerRedistributionFraction, ValidateStringFraction),
 		paramtypes.NewParamSetPair(KeyHistoricalEntries,
-			p.HistoricalEntries, ccvtypes.ValidatePositiveInt64),
+			p.HistoricalEntries, ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyConsumerUnbondingPeriod,
-			p.UnbondingPeriod, ccvtypes.ValidateDuration),
+			p.UnbondingPeriod, ValidateDuration),
 	}
 }
 
@@ -149,7 +148,7 @@ func validateDistributionTransmissionChannel(i interface{}) error {
 		return nil
 	}
 	// Otherwise validate as usual for a channelID
-	return ccvtypes.ValidateChannelIdentifier(i)
+	return ValidateChannelIdentifier(i)
 }
 
 func validateProviderFeePoolAddrStr(i interface{}) error {
@@ -158,5 +157,5 @@ func validateProviderFeePoolAddrStr(i interface{}) error {
 		return nil
 	}
 	// Otherwise validate as usual for a bech32 address
-	return ccvtypes.ValidateBech32(i)
+	return ValidateBech32(i)
 }

@@ -7,16 +7,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	"github.com/cosmos/interchain-security/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // OnChanOpenInit implements the IBCModule interface
@@ -35,7 +32,7 @@ func (am AppModule) OnChanOpenInit(
 	// set to the default version if the provided version is empty according to the ICS26 spec
 	// https://github.com/cosmos/ibc/blob/main/spec/core/ics-026-routing-module/README.md#technical-specification
 	if strings.TrimSpace(version) == "" {
-		version = types.Version
+		version = consumertypes.Version
 	}
 
 	// ensure provider channel hasn't already been created
@@ -52,9 +49,9 @@ func (am AppModule) OnChanOpenInit(
 	}
 
 	// ensure the counterparty port ID matches the expected provider port ID
-	if counterparty.PortId != ccv.ProviderPortID {
+	if counterparty.PortId != consumertypes.ProviderPortID {
 		return "", sdkerrors.Wrapf(porttypes.ErrInvalidPort,
-			"invalid counterparty port: %s, expected %s", counterparty.PortId, ccv.ProviderPortID)
+			"invalid counterparty port: %s, expected %s", counterparty.PortId, consumertypes.ProviderPortID)
 	}
 
 	// Claim channel capability passed back by IBC module
@@ -91,8 +88,8 @@ func validateCCVChannelParams(
 	}
 
 	// the version must match the expected version
-	if version != ccv.Version {
-		return sdkerrors.Wrapf(ccv.ErrInvalidVersion, "got %s, expected %s", version, ccv.Version)
+	if version != consumertypes.Version {
+		return sdkerrors.Wrapf(ccv.ErrInvalidVersion, "got %s, expected %s", version, consumertypes.Version)
 	}
 	return nil
 }
@@ -125,15 +122,15 @@ func (am AppModule) OnChanOpenAck(
 			"provider channel: %s already established", providerChannel)
 	}
 
-	var md providertypes.HandshakeMetadata
+	var md consumertypes.HandshakeMetadata
 	if err := (&md).Unmarshal([]byte(counterpartyMetadata)); err != nil {
 		return sdkerrors.Wrapf(ccv.ErrInvalidHandshakeMetadata,
 			"error unmarshalling ibc-ack metadata: \n%v; \nmetadata: %v", err, counterpartyMetadata)
 	}
 
-	if md.Version != ccv.Version {
+	if md.Version != consumertypes.Version {
 		return sdkerrors.Wrapf(ccv.ErrInvalidVersion,
-			"invalid counterparty version: %s, expected %s", md.Version, ccv.Version)
+			"invalid counterparty version: %s, expected %s", md.Version, consumertypes.Version)
 	}
 
 	am.keeper.SetProviderFeePoolAddrStr(ctx, md.ProviderFeePoolAddr)
@@ -220,9 +217,9 @@ func (am AppModule) OnRecvPacket(
 ) ibcexported.Acknowledgement {
 	var (
 		ack  ibcexported.Acknowledgement
-		data ccv.ValidatorSetChangePacketData
+		data consumertypes.ValidatorSetChangePacketData
 	)
-	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
+	if err := consumertypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
 		errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("cannot unmarshal CCV packet data"))
 		ack = &errAck
 	} else {
@@ -248,7 +245,7 @@ func (am AppModule) OnAcknowledgementPacket(
 	_ sdk.AccAddress,
 ) error {
 	var ack channeltypes.Acknowledgement
-	if err := ccv.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
+	if err := consumertypes.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal consumer packet acknowledgement: %v", err)
 	}
 

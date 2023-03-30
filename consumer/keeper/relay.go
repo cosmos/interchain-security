@@ -7,12 +7,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	consumerutils "github.com/cosmos/interchain-security/consumer/keeper"
 	"github.com/cosmos/interchain-security/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	utils "github.com/cosmos/interchain-security/x/ccv/utils"
+	consumertypes "github.com/cosmos/interchain-security/consumer/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -22,7 +22,7 @@ import (
 //
 // Note: CCV uses an ordered IBC channel, meaning VSC packet changes will be accumulated (and later
 // processed by ApplyCCValidatorChanges) s.t. more recent val power changes overwrite older ones.
-func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) exported.Acknowledgement {
+func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges consumertypes.ValidatorSetChangePacketData) exported.Acknowledgement {
 	// get the provider channel
 	providerChannel, found := k.GetProviderChannel(ctx)
 	if found && providerChannel != packet.DestinationChannel {
@@ -40,7 +40,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		// emit event on first VSC packet to signal that CCV is working
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
-				ccv.EventTypeChannelEstablished,
+				consumertypes.EventTypeChannelEstablished,
 				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 				sdk.NewAttribute(channeltypes.AttributeKeyChannelID, packet.DestinationChannel),
 				sdk.NewAttribute(channeltypes.AttributeKeyPortID, packet.DestinationPort),
@@ -53,10 +53,10 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	if !exists {
 		pendingChanges = newChanges.ValidatorUpdates
 	} else {
-		pendingChanges = utils.AccumulateChanges(currentChanges.ValidatorUpdates, newChanges.ValidatorUpdates)
+		pendingChanges = AccumulateChanges(currentChanges.ValidatorUpdates, newChanges.ValidatorUpdates)
 	}
 
-	k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{
+	k.SetPendingChanges(ctx, consumertypes.ValidatorSetChangePacketData{
 		ValidatorUpdates: pendingChanges,
 	})
 
@@ -97,14 +97,14 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 	for _, maturityTime := range k.GetElapsedPacketMaturityTimes(ctx) {
 		// construct validator set change packet data
-		vscPacket := ccv.NewVSCMaturedPacketData(maturityTime.VscId)
+		vscPacket := consumertypes.NewVSCMaturedPacketData(maturityTime.VscId)
 
 		// Append VSCMatured packet to pending packets.
 		// Sending packets is attempted each EndBlock.
 		// Unsent packets remain in the queue until sent.
-		k.AppendPendingPacket(ctx, ccv.ConsumerPacketData{
-			Type: ccv.VscMaturedPacket,
-			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscPacket},
+		k.AppendPendingPacket(ctx, consumertypes.ConsumerPacketData{
+			Type: consumertypes.VscMaturedPacket,
+			Data: &consumertypes.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscPacket},
 		})
 
 		k.DeletePacketMaturityTimes(ctx, maturityTime.VscId, maturityTime.MaturityTime)
@@ -113,12 +113,12 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
-				ccv.EventTypeVSCMatured,
+				consumertypes.EventTypeVSCMatured,
 				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-				sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
-				sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
-				sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(maturityTime.VscId))),
-				sdk.NewAttribute(ccv.AttributeTimestamp, ctx.BlockTime().String()),
+				sdk.NewAttribute(consumertypes.AttributeChainID, ctx.ChainID()),
+				sdk.NewAttribute(consumertypes.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
+				sdk.NewAttribute(consumertypes.AttributeValSetUpdateID, strconv.Itoa(int(maturityTime.VscId))),
+				sdk.NewAttribute(consumertypes.AttributeTimestamp, ctx.BlockTime().String()),
 			),
 		)
 	}
@@ -141,13 +141,13 @@ func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, vals
 	}
 
 	// construct slash packet data
-	slashPacket := ccv.NewSlashPacketData(validator, valsetUpdateID, infraction)
+	slashPacket := consumertypes.NewSlashPacketData(validator, valsetUpdateID, infraction)
 
 	// append the Slash packet data to pending data packets
 	// to be sent once the CCV channel is established
-	k.AppendPendingPacket(ctx, ccv.ConsumerPacketData{
-		Type: ccv.SlashPacket,
-		Data: &ccv.ConsumerPacketData_SlashPacketData{
+	k.AppendPendingPacket(ctx, consumertypes.ConsumerPacketData{
+		Type: consumertypes.SlashPacket,
+		Data: &consumertypes.ConsumerPacketData_SlashPacketData{
 			SlashPacketData: slashPacket,
 		},
 	})
@@ -160,11 +160,11 @@ func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, vals
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			ccv.EventTypeConsumerSlashRequest,
+			consumertypes.EventTypeConsumerSlashRequest,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(ccv.AttributeValidatorAddress, sdk.ConsAddress(validator.Address).String()),
-			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(valsetUpdateID))),
-			sdk.NewAttribute(ccv.AttributeInfractionType, infraction.String()),
+			sdk.NewAttribute(consumertypes.AttributeValidatorAddress, sdk.ConsAddress(validator.Address).String()),
+			sdk.NewAttribute(consumertypes.AttributeValSetUpdateID, strconv.Itoa(int(valsetUpdateID))),
+			sdk.NewAttribute(consumertypes.AttributeInfractionType, infraction.String()),
 		),
 	)
 }
@@ -188,12 +188,12 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 	for _, p := range pending.GetList() {
 
 		// send packet over IBC
-		err := utils.SendIBCPacket(
+		err := consumerutils.SendIBCPacket(
 			ctx,
 			k.scopedKeeper,
 			k.channelKeeper,
-			channelID,          // source channel id
-			ccv.ConsumerPortID, // source port id
+			channelID,                    // source channel id
+			consumertypes.ConsumerPortID, // source port id
 			p.GetBytes(),
 			k.GetCCVTimeoutPeriod(ctx),
 		)
@@ -240,7 +240,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		}
 		if channelID != packet.SourceChannel {
 			// Close the established CCV channel as well
-			return k.ChanCloseInit(ctx, ccv.ConsumerPortID, channelID)
+			return k.ChanCloseInit(ctx, consumertypes.ConsumerPortID, channelID)
 		}
 	}
 	return nil
@@ -248,7 +248,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 
 // IsChannelClosed returns a boolean whether a given channel is in the CLOSED state
 func (k Keeper) IsChannelClosed(ctx sdk.Context, channelID string) bool {
-	channel, found := k.channelKeeper.GetChannel(ctx, ccv.ConsumerPortID, channelID)
+	channel, found := k.channelKeeper.GetChannel(ctx, consumertypes.ConsumerPortID, channelID)
 	if !found || channel.State == channeltypes.CLOSED {
 		return true
 	}
