@@ -127,11 +127,11 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	// try to send slash packet for downtime infraction
 	addr := ed25519.GenPrivKey().PubKey().Address()
 	val := abci.Validator{Address: addr}
-	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 2, stakingtypes.Downtime)
+	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 2, stakingtypes.Infraction_INFRACTION_DOWNTIME)
 	// try to send slash packet for the same downtime infraction
-	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.Downtime)
+	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.Infraction_INFRACTION_DOWNTIME)
 	// try to send slash packet for the double-sign infraction
-	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.DoubleSign)
+	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
 
 	// check that the packets were added to the list of pending data packets
 	consumerPackets = consumerKeeper.GetPendingPackets(s.consumerCtx())

@@ -258,7 +258,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 			SlashPacketData: ccv.NewSlashPacketData(
 				abci.Validator{Address: pubKey.Address(), Power: int64(1)},
 				1,
-				stakingtypes.Downtime),
+				stakingtypes.Infraction_INFRACTION_DOWNTIME),
 		},
 	}
 

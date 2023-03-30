@@ -179,9 +179,9 @@ func (s *CoreSuite) undelegate(val, amt int64) {
 // consumerSlash simulates a slash event occurring on the consumer chain.
 // It can be for a downtime or doublesign.
 func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
-	kind := stakingtypes.DoubleSign
+	kind := stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 	if isDowntime {
-		kind = stakingtypes.Downtime
+		kind = stakingtypes.Infraction_INFRACTION_DOWNTIME
 	}
 	ctx := s.ctx(C)
 	before := len(ctx.EventManager().Events())

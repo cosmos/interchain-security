@@ -67,7 +67,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
 
 	// Send slash packet from the first consumer chain
-	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Downtime, 1)
+	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
 	err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
 	s.Require().NoError(err)
 
@@ -195,7 +195,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
 
 	// Send slash packet from the first consumer chain
-	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.DoubleSign, 1)
+	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, 1)
 	err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
 	s.Require().NoError(err)
 
@@ -289,7 +289,7 @@ func (s *CCVTestSuite) TestHandleSlashPacketDowntime() {
 		*ccv.NewSlashPacketData(
 			abci.Validator{Address: tmVal.Address, Power: 0},
 			uint64(0),
-			stakingtypes.Downtime,
+			stakingtypes.Infraction_INFRACTION_DOWNTIME,
 		),
 	)
 
@@ -366,7 +366,7 @@ func (s *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 		abci.Validator{
 			Address: ed25519.GenPrivKey().PubKey().Address(),
 			Power:   int64(0),
-		}, uint64(0), stakingtypes.Downtime,
+		}, uint64(0), stakingtypes.Infraction_INFRACTION_DOWNTIME,
 	)
 
 	// Set initial block height for consumer chain
@@ -411,7 +411,7 @@ func (s *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	s.Require().Equal(uint64(0), (providerKeeper.GetThrottledPacketDataSize(ctx, consumerChainID)))
 
 	// expect to queue entries for the slash request
-	slashingPkt.Infraction = stakingtypes.Downtime
+	slashingPkt.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
 	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
 	s.Require().True(ack.Success())
 	s.Require().Equal(1, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
@@ -460,7 +460,7 @@ func (s *CCVTestSuite) TestValidatorDowntime() {
 		abci.Validator{Address: vals[0].Address, Power: valPower},
 		// get the VSC ID mapping the infraction height
 		consumerKeeper.GetHeightValsetUpdateID(ctx, uint64(missedBlockThreshold-sdk.ValidatorUpdateDelay-1)),
-		stakingtypes.Downtime,
+		stakingtypes.Infraction_INFRACTION_DOWNTIME,
 	)
 	expCommit := s.commitSlashPacket(ctx, *packetData)
 
@@ -564,7 +564,7 @@ func (s *CCVTestSuite) TestValidatorDoubleSigning() {
 		abci.Validator{Address: consAddr.Bytes(), Power: power},
 		// get VSC ID mapping to the infraction height with the TM delay subtracted
 		s.consumerApp.GetConsumerKeeper().GetHeightValsetUpdateID(ctx, uint64(infractionHeight-sdk.ValidatorUpdateDelay)),
-		stakingtypes.DoubleSign,
+		stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
 	)
 	expCommit := s.commitSlashPacket(ctx, *packetData)
 
@@ -613,7 +613,7 @@ func (s *CCVTestSuite) TestQueueAndSendSlashPacket() {
 	}
 	slashedVals := []slashedVal{}
 
-	infraction := stakingtypes.Downtime
+	infraction := stakingtypes.Infraction_INFRACTION_DOWNTIME
 	for j := 0; j < 2; j++ {
 		for i := 0; i < 4; i++ {
 			addr := ed25519.GenPrivKey().PubKey().Address()
@@ -623,7 +623,7 @@ func (s *CCVTestSuite) TestQueueAndSendSlashPacket() {
 			consumerKeeper.QueueSlashPacket(ctx, val, 0, infraction)
 			slashedVals = append(slashedVals, slashedVal{validator: val, infraction: infraction})
 		}
-		infraction = stakingtypes.DoubleSign
+		infraction = stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 	}
 
 	// expect to store a duplicate for each slash request
