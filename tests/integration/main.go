@@ -23,6 +23,7 @@ var localSdkPath = flag.String("local-sdk-path", "",
 	"path of a local sdk version to build and reference in integration tests")
 var useGaia = flag.Bool("use-gaia", false, "use gaia instead of ICS provider app")
 var gaiaTag = flag.String("gaia-tag", "", "gaia tag to use - default is latest")
+var dockerPath = flag.String("docker-path", "", "path to Dockerfile to use for tests")
 
 // runs integration tests
 // all docker containers are built sequentially to avoid race conditions when using local cosmos-sdk
@@ -76,7 +77,7 @@ func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag 
 	tr.SetDockerConfig(localSdkPath, useGaia, gaiaTag)
 
 	tr.validateStringLiterals()
-	tr.startDocker()
+	tr.startDocker(*dockerPath)
 	tr.executeSteps(steps)
 	tr.teardownDocker()
 }
@@ -170,7 +171,7 @@ func (tr *TestRun) executeSteps(steps []Step) {
 	fmt.Printf("=============== finished %s tests in %v ===============\n", tr.name, time.Since(start))
 }
 
-func (tr *TestRun) startDocker() {
+func (tr *TestRun) startDocker(dockerPath string) {
 	fmt.Printf("=============== building %s testRun ===============\n", tr.name)
 	localSdk := tr.localSdkPath
 	if localSdk == "" {
@@ -192,12 +193,13 @@ func (tr *TestRun) startDocker() {
 		}
 	}
 	scriptStr := fmt.Sprintf(
-		"tests/integration/testnet-scripts/start-docker.sh %s %s %s %s %s",
+		"tests/integration/testnet-scripts/start-docker.sh %s %s %s %s %s %s",
 		tr.containerConfig.containerName,
 		tr.containerConfig.instanceName,
 		localSdk,
 		useGaia,
 		gaiaTag,
+		dockerPath,
 	)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.

@@ -9,6 +9,7 @@ INSTANCE_NAME=$2
 LOCAL_SDK_PATH=${3:-"default"} # Sets this var to default if null or unset
 USE_GAIA_PROVIDER=${4:-"false"} # if true, use gaia as provider; if false, use ICS app
 USE_GAIA_TAG=${5:-""} # gaia tag to use if using gaia as provider; by default the latest tag is used
+USE_DOCKERFILE=${6:-"Dockerfile"} # dockerfile to use while migrating ICS to v47
 
 # Remove existing container instance
 set +e
@@ -37,7 +38,7 @@ then
     docker build  -f Dockerfile.gaia -t "$CONTAINER_NAME" --build-arg USE_GAIA_TAG="$USE_GAIA_TAG" .
 else
     printf "\n\nUsing ICS provider app as provider\n\n\n"
-    docker build -f Dockerfile -t "$CONTAINER_NAME"  .
+    docker build -f "$USE_DOCKERFILE" -t "$CONTAINER_NAME"  .
 fi
 
 # Remove copied sdk directory
