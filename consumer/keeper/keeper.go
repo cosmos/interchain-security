@@ -20,9 +20,14 @@ import (
 	"github.com/cosmos/interchain-security/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/tendermint/tendermint/libs/log"
 )
+
+func PanicIfZeroOrNil(x interface{}, nameForPanicMsg string) {
+	if x == nil || reflect.ValueOf(x).IsZero() {
+		panic("zero or nil value for " + nameForPanicMsg)
+	}
+}
 
 // Keeper defines the Cross-Chain Validation Consumer Keeper
 type Keeper struct {
@@ -92,20 +97,20 @@ func (k Keeper) mustValidateFields() {
 
 	// Note 14 fields will be validated, hooks are explicitly set after the constructor
 
-	utils.PanicIfZeroOrNil(k.storeKey, "storeKey")                   // 1
-	utils.PanicIfZeroOrNil(k.cdc, "cdc")                             // 2
-	utils.PanicIfZeroOrNil(k.paramStore, "paramStore")               // 3
-	utils.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")           // 4
-	utils.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")         // 5
-	utils.PanicIfZeroOrNil(k.portKeeper, "portKeeper")               // 6
-	utils.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")   // 7
-	utils.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")           // 8
-	utils.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")       // 9
-	utils.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")               // 10
-	utils.PanicIfZeroOrNil(k.authKeeper, "authKeeper")               // 11
-	utils.PanicIfZeroOrNil(k.ibcTransferKeeper, "ibcTransferKeeper") // 12
-	utils.PanicIfZeroOrNil(k.ibcCoreKeeper, "ibcCoreKeeper")         // 13
-	utils.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")   // 14
+	PanicIfZeroOrNil(k.storeKey, "storeKey")                   // 1
+	PanicIfZeroOrNil(k.cdc, "cdc")                             // 2
+	PanicIfZeroOrNil(k.paramStore, "paramStore")               // 3
+	PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")           // 4
+	PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")         // 5
+	PanicIfZeroOrNil(k.portKeeper, "portKeeper")               // 6
+	PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")   // 7
+	PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")           // 8
+	PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")       // 9
+	PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")               // 10
+	PanicIfZeroOrNil(k.authKeeper, "authKeeper")               // 11
+	PanicIfZeroOrNil(k.ibcTransferKeeper, "ibcTransferKeeper") // 12
+	PanicIfZeroOrNil(k.ibcCoreKeeper, "ibcCoreKeeper")         // 13
+	PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")   // 14
 }
 
 // Logger returns a module-specific logger.
