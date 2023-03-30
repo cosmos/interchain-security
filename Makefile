@@ -8,6 +8,10 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cd
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cdd
 
+
+test-consumer-v45:
+	go run ./tests/integration/... --happy-path-only --docker-path "./e2e_v45.docker"
+
 # test sdk v47 consumer with current provider
 test-consumer-v47:
 	go run ./tests/integration/... --happy-path-only --docker-path "./e2e.docker"
