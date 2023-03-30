@@ -15,6 +15,8 @@ RUN wget https://github.com/cosmos/interchain-security/archive/refs/tags/v1.1.0.
 RUN unzip v1.1.0.zip
 WORKDIR /provider/interchain-security-1.1.0
 RUN make install
+# delete consumerd binary to see if the local one is being used 
+RUN rm /go/bin/interchain-security-cd
 
 # Copy in the repo under test
 WORKDIR /
