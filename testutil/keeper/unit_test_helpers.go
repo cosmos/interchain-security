@@ -206,7 +206,7 @@ func GetNewSlashPacketData() ccvtypes.SlashPacketData {
 			Power:   int64(binary.BigEndian.Uint64(b1)),
 		},
 		ValsetUpdateId: binary.BigEndian.Uint64(b2),
-		Infraction:     stakingtypes.InfractionType(binary.BigEndian.Uint64(b2) % 3),
+		Infraction:     stakingtypes.Infraction(binary.BigEndian.Uint64(b2) % 3),
 	}
 }
 

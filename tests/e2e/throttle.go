@@ -298,7 +298,7 @@ func (s *CCVTestSuite) TestPacketSpam() {
 		// Increment ibc seq num for each packet (starting at 1)
 		ibcSeqNum++
 		// Set infraction type based on even/odd index.
-		var infractionType stakingtypes.InfractionType
+		var infractionType stakingtypes.Infraction
 		if ibcSeqNum%2 == 0 {
 			infractionType = stakingtypes.Downtime
 		} else {

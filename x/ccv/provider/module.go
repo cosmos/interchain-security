@@ -104,9 +104,9 @@ func (AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {
 }
 
 // Route implements the AppModule interface
-func (AppModule) Route() sdk.Route {
-	return sdk.Route{}
-}
+// func (AppModule) Route() sdk.Route {
+// 	return sdk.Route{}
+// }
 
 // QuerierRoute implements the AppModule interface
 func (AppModule) QuerierRoute() string {
@@ -114,9 +114,9 @@ func (AppModule) QuerierRoute() string {
 }
 
 // LegacyQuerierHandler implements the AppModule interface
-func (AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
-	return nil
-}
+// func (AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
+// 	return nil
+// }
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
@@ -179,7 +179,7 @@ func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedP
 }
 
 // RandomizedParams creates randomized provider param changes for the simulator.
-func (AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
+func (AppModule) RandomizedParams(_ *rand.Rand) []simtypes.LegacyParamChange {
 	return nil
 }
 

@@ -609,7 +609,7 @@ func (s *CCVTestSuite) TestQueueAndSendSlashPacket() {
 	// and 4 slash request for double-signing
 	type slashedVal struct {
 		validator  abci.Validator
-		infraction stakingtypes.InfractionType
+		infraction stakingtypes.Infraction
 	}
 	slashedVals := []slashedVal{}
 

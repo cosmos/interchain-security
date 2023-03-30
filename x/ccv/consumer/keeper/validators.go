@@ -90,10 +90,16 @@ func (Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.Val
 
 // Slash queues a slashing request for the the provider chain
 // All queued slashing requests will be cleared in EndBlock
-func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, _ sdk.Dec, infraction stakingtypes.InfractionType) {
-	if infraction == stakingtypes.InfractionEmpty {
-		return
-	}
+func (k Keeper) Slash(
+	ctx sdk.Context,
+	addr sdk.ConsAddress,
+	infractionHeight, power int64,
+	_ sdk.Dec,
+	infraction stakingtypes.Infraction,
+) {
+	// if infraction == stakingtypes.InfractionEmpty {
+	// 	return
+	// }
 
 	// get VSC ID for infraction height
 	vscID := k.GetHeightValsetUpdateID(ctx, uint64(infractionHeight))

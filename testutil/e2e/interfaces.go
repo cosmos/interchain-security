@@ -10,7 +10,6 @@ import (
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -140,10 +139,13 @@ type MintKeeper interface {
 }
 
 type GovKeeper interface {
-	GetDepositParams(ctx sdk.Context) govv1.DepositParams
-	GetVotingParams(ctx sdk.Context) govv1.VotingParams
-	SetVotingParams(ctx sdk.Context, votingParams govv1.VotingParams)
-	SubmitProposal(ctx sdk.Context, content govv1beta1.Content) (govv1.Proposal, error)
+	GetParams(ctx sdk.Context) govv1.Params
+	SetParams(ctx sdk.Context, params govv1.Params) error
+	// GetDepositParams(ctx sdk.Context) govv1.DepositParams
+	// GetVotingParams(ctx sdk.Context) govv1.VotingParams
+	// SetVotingParams(ctx sdk.Context, votingParams govv1.VotingParams)
+	// SubmitProposal(ctx sdk.Context, content govv1beta1.Content) (govv1.Proposal, error)
+	SubmitProposal(ctx sdk.Context, messages []sdk.Msg, metadata, title, summary string, proposer sdk.AccAddress) (govv1.Proposal, error)
 	AddDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress, depositAmount sdk.Coins) (bool, error)
-	AddVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress, options govv1.WeightedVoteOptions) error
+	AddVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress, options govv1.WeightedVoteOptions, metadata string) error
 }

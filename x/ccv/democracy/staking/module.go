@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/x/auth/exported"
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	"github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -36,8 +37,8 @@ type AppModule struct {
 
 // NewAppModule creates a new AppModule object using the native x/staking module
 // AppModule constructor.
-func NewAppModule(cdc codec.Codec, stakingkeeper keeper.Keeper, ak types.AccountKeeper, bk types.BankKeeper) AppModule {
-	stakingAppMod := staking.NewAppModule(cdc, stakingkeeper, ak, bk)
+func NewAppModule(cdc codec.Codec, stakingkeeper keeper.Keeper, ak types.AccountKeeper, bk types.BankKeeper, ss exported.Subspace) AppModule {
+	stakingAppMod := staking.NewAppModule(cdc, &stakingkeeper, ak, bk, ss)
 	return AppModule{
 		AppModule:  stakingAppMod,
 		keeper:     stakingkeeper,
@@ -51,10 +52,10 @@ func NewAppModule(cdc codec.Codec, stakingkeeper keeper.Keeper, ak types.Account
 // consumer chain's x/cvv/consumer module and so this module is not responsible
 // for returning the initial validator set.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState types.GenesisState
+	// var genesisState types.GenesisState
 
-	cdc.MustUnmarshalJSON(data, &genesisState)
-	_ = staking.InitGenesis(ctx, am.keeper, am.accKeeper, am.bankKeeper, &genesisState)
+	// cdc.MustUnmarshalJSON(data, &genesisState)
+	// _ = staking.InitGenesis(ctx, am.keeper, am.accKeeper, am.bankKeeper, &genesisState)
 
 	return []abci.ValidatorUpdate{}
 }

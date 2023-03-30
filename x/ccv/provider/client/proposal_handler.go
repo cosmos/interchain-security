@@ -13,18 +13,17 @@ import (
 	rest "github.com/cosmos/cosmos-sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/spf13/cobra"
 )
 
-var (
-	ConsumerAdditionProposalHandler = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd, ConsumerAdditionProposalRESTHandler)
-	ConsumerRemovalProposalHandler  = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd, ConsumerRemovalProposalRESTHandler)
-	EquivocationProposalHandler     = govclient.NewProposalHandler(SubmitEquivocationProposalTxCmd, EquivocationProposalRESTHandler)
-)
+// var (
+// 	ConsumerAdditionProposalHandler = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd, ConsumerAdditionProposalRESTHandler)
+// 	ConsumerRemovalProposalHandler  = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd, ConsumerRemovalProposalRESTHandler)
+// 	EquivocationProposalHandler     = govclient.NewProposalHandler(SubmitEquivocationProposalTxCmd, EquivocationProposalRESTHandler)
+// )
 
 // SubmitConsumerAdditionPropTxCmd returns a CLI command handler for submitting
 // a consumer addition proposal via a transaction.
@@ -317,12 +316,12 @@ func ParseEquivocationProposalJSON(proposalFile string) (EquivocationProposalJSO
 }
 
 // EquivocationProposalRESTHandler returns a ProposalRESTHandler that exposes the equivocation rest handler.
-func EquivocationProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
-	return govrest.ProposalRESTHandler{
-		SubRoute: "equivocation",
-		Handler:  postEquivocationProposalHandlerFn(clientCtx),
-	}
-}
+// func EquivocationProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
+// 	return govrest.ProposalRESTHandler{
+// 		SubRoute: "equivocation",
+// 		Handler:  postEquivocationProposalHandlerFn(clientCtx),
+// 	}
+// }
 
 func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalProposalJSON, error) {
 	proposal := ConsumerRemovalProposalJSON{}
@@ -340,20 +339,20 @@ func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalPropo
 }
 
 // ConsumerAdditionProposalRESTHandler returns a ProposalRESTHandler that exposes the consumer addition rest handler.
-func ConsumerAdditionProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
-	return govrest.ProposalRESTHandler{
-		SubRoute: "consumer_addition",
-		Handler:  postConsumerAdditionProposalHandlerFn(clientCtx),
-	}
-}
+// func ConsumerAdditionProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
+// 	return govrest.ProposalRESTHandler{
+// 		SubRoute: "consumer_addition",
+// 		Handler:  postConsumerAdditionProposalHandlerFn(clientCtx),
+// 	}
+// }
 
 // ConsumerRemovalProposalRESTHandler returns a ProposalRESTHandler that exposes the consumer removal rest handler.
-func ConsumerRemovalProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
-	return govrest.ProposalRESTHandler{
-		SubRoute: "consumer_removal",
-		Handler:  postConsumerRemovalProposalHandlerFn(clientCtx),
-	}
-}
+// func ConsumerRemovalProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
+// 	return govrest.ProposalRESTHandler{
+// 		SubRoute: "consumer_removal",
+// 		Handler:  postConsumerRemovalProposalHandlerFn(clientCtx),
+// 	}
+// }
 
 func postConsumerAdditionProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

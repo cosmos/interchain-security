@@ -88,18 +88,17 @@ import (
 	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
-	simappparams "cosmossdk.io/simapp/params"
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
+	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 
 	ibcprovider "github.com/cosmos/interchain-security/x/ccv/provider"
-	ibcproviderclient "github.com/cosmos/interchain-security/x/ccv/provider/client"
 	ibcproviderkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
@@ -139,9 +138,9 @@ var (
 				upgradeclient.LegacyCancelProposalHandler,
 				ibcclientclient.UpdateClientProposalHandler,
 				ibcclientclient.UpgradeProposalHandler,
-				ibcproviderclient.ConsumerAdditionProposalHandler,
-				ibcproviderclient.ConsumerRemovalProposalHandler,
-				ibcproviderclient.EquivocationProposalHandler,
+				// ibcproviderclient.ConsumerAdditionProposalHandler,
+				// ibcproviderclient.ConsumerRemovalProposalHandler,
+				// ibcproviderclient.EquivocationProposalHandler,
 			},
 		),
 		params.AppModuleBasic{},
@@ -809,7 +808,7 @@ func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 
 // GetTxConfig implements the TestingApp interface.
 func (*App) GetTxConfig() client.TxConfig {
-	return simappparams.MakeEncodingConfig(ModuleBasics).TxConfig
+	return simapp.MakeEncodingConfig(ModuleBasics).TxConfig
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided
