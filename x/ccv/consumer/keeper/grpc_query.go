@@ -34,7 +34,7 @@ func (k Keeper) QueryParams(c context.Context,
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	p := k.GetParams(ctx)
+	p := k.GetConsumerParams(ctx)
 
 	return &types.QueryParamsResponse{Params: p}, nil
 }

@@ -3,17 +3,17 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	rest "github.com/cosmos/cosmos-sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/spf13/cobra"
@@ -81,12 +81,17 @@ Where proposal.json contains:
 
 			from := clientCtx.GetFromAddress()
 
+			msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+			if err != nil {
+				return err
+			}
+
 			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
 			if err != nil {
 				return err
 			}
 
-			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), "")
 			if err != nil {
 				return err
 			}
@@ -134,12 +139,17 @@ Where proposal.json contains:
 
 			from := clientCtx.GetFromAddress()
 
+			msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+			if err != nil {
+				return err
+			}
+
 			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
 			if err != nil {
 				return err
 			}
 
-			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), "")
 			if err != nil {
 				return err
 			}
@@ -192,12 +202,17 @@ Where proposal.json contains:
 
 			from := clientCtx.GetFromAddress()
 
+			msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+			if err != nil {
+				return err
+			}
+
 			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
 			if err != nil {
 				return err
 			}
 
-			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), "")
 			if err != nil {
 				return err
 			}
@@ -226,27 +241,27 @@ type ConsumerAdditionProposalJSON struct {
 	Deposit string `json:"deposit"`
 }
 
-type ConsumerAdditionProposalReq struct {
-	BaseReq  rest.BaseReq   `json:"base_req"`
-	Proposer sdk.AccAddress `json:"proposer"`
+// type ConsumerAdditionProposalReq struct {
+// 	BaseReq  rest.BaseReq   `json:"base_req"`
+// 	Proposer sdk.AccAddress `json:"proposer"`
 
-	Title         string             `json:"title"`
-	Description   string             `json:"description"`
-	ChainID       string             `json:"chainId"`
-	InitialHeight clienttypes.Height `json:"initialHeight"`
-	GenesisHash   []byte             `json:"genesisHash"`
-	BinaryHash    []byte             `json:"binaryHash"`
-	SpawnTime     time.Time          `json:"spawnTime"`
+// 	Title         string             `json:"title"`
+// 	Description   string             `json:"description"`
+// 	ChainID       string             `json:"chainId"`
+// 	InitialHeight clienttypes.Height `json:"initialHeight"`
+// 	GenesisHash   []byte             `json:"genesisHash"`
+// 	BinaryHash    []byte             `json:"binaryHash"`
+// 	SpawnTime     time.Time          `json:"spawnTime"`
 
-	ConsumerRedistributionFraction    string        `json:"consumer_redistribution_fraction"`
-	BlocksPerDistributionTransmission int64         `json:"blocks_per_distribution_transmission"`
-	HistoricalEntries                 int64         `json:"historical_entries"`
-	CcvTimeoutPeriod                  time.Duration `json:"ccv_timeout_period"`
-	TransferTimeoutPeriod             time.Duration `json:"transfer_timeout_period"`
-	UnbondingPeriod                   time.Duration `json:"unbonding_period"`
+// 	ConsumerRedistributionFraction    string        `json:"consumer_redistribution_fraction"`
+// 	BlocksPerDistributionTransmission int64         `json:"blocks_per_distribution_transmission"`
+// 	HistoricalEntries                 int64         `json:"historical_entries"`
+// 	CcvTimeoutPeriod                  time.Duration `json:"ccv_timeout_period"`
+// 	TransferTimeoutPeriod             time.Duration `json:"transfer_timeout_period"`
+// 	UnbondingPeriod                   time.Duration `json:"unbonding_period"`
 
-	Deposit sdk.Coins `json:"deposit"`
-}
+// 	Deposit sdk.Coins `json:"deposit"`
+// }
 
 func ParseConsumerAdditionProposalJSON(proposalFile string) (ConsumerAdditionProposalJSON, error) {
 	proposal := ConsumerAdditionProposalJSON{}
@@ -271,17 +286,17 @@ type ConsumerRemovalProposalJSON struct {
 	Deposit     string    `json:"deposit"`
 }
 
-type ConsumerRemovalProposalReq struct {
-	BaseReq  rest.BaseReq   `json:"base_req"`
-	Proposer sdk.AccAddress `json:"proposer"`
+// type ConsumerRemovalProposalReq struct {
+// 	BaseReq  rest.BaseReq   `json:"base_req"`
+// 	Proposer sdk.AccAddress `json:"proposer"`
 
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	ChainID     string `json:"chainId"`
+// 	Title       string `json:"title"`
+// 	Description string `json:"description"`
+// 	ChainID     string `json:"chainId"`
 
-	StopTime time.Time `json:"stopTime"`
-	Deposit  sdk.Coins `json:"deposit"`
-}
+// 	StopTime time.Time `json:"stopTime"`
+// 	Deposit  sdk.Coins `json:"deposit"`
+// }
 
 type EquivocationProposalJSON struct {
 	// evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
@@ -290,15 +305,15 @@ type EquivocationProposalJSON struct {
 	Deposit string `json:"deposit"`
 }
 
-type EquivocationProposalReq struct {
-	BaseReq  rest.BaseReq   `json:"base_req"`
-	Proposer sdk.AccAddress `json:"proposer"`
+// type EquivocationProposalReq struct {
+// 	BaseReq  rest.BaseReq   `json:"base_req"`
+// 	Proposer sdk.AccAddress `json:"proposer"`
 
-	// evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	types.EquivocationProposal
+// 	// evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+// 	types.EquivocationProposal
 
-	Deposit sdk.Coins `json:"deposit"`
-}
+// 	Deposit sdk.Coins `json:"deposit"`
+// }
 
 func ParseEquivocationProposalJSON(proposalFile string) (EquivocationProposalJSON, error) {
 	proposal := EquivocationProposalJSON{}
@@ -354,89 +369,99 @@ func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalPropo
 // 	}
 // }
 
-func postConsumerAdditionProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var req ConsumerAdditionProposalReq
-		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
-			return
-		}
+// func postConsumerAdditionProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		var req ConsumerAdditionProposalReq
+// 		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
+// 			return
+// 		}
 
-		req.BaseReq = req.BaseReq.Sanitize()
-		if !req.BaseReq.ValidateBasic(w) {
-			return
-		}
+// 		req.BaseReq = req.BaseReq.Sanitize()
+// 		if !req.BaseReq.ValidateBasic(w) {
+// 			return
+// 		}
 
-		content := types.NewConsumerAdditionProposal(
-			req.Title, req.Description, req.ChainID, req.InitialHeight,
-			req.GenesisHash, req.BinaryHash, req.SpawnTime,
-			req.ConsumerRedistributionFraction, req.BlocksPerDistributionTransmission, req.HistoricalEntries,
-			req.CcvTimeoutPeriod, req.TransferTimeoutPeriod, req.UnbondingPeriod)
+// 		content := types.NewConsumerAdditionProposal(
+// 			req.Title, req.Description, req.ChainID, req.InitialHeight,
+// 			req.GenesisHash, req.BinaryHash, req.SpawnTime,
+// 			req.ConsumerRedistributionFraction, req.BlocksPerDistributionTransmission, req.HistoricalEntries,
+// 			req.CcvTimeoutPeriod, req.TransferTimeoutPeriod, req.UnbondingPeriod)
 
-		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
-		if rest.CheckBadRequestError(w, err) {
-			return
-		}
+// 		msg, err := govv1.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
+// 		if rest.CheckBadRequestError(w, err) {
+// 			return
+// 		}
 
-		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
-			return
-		}
+// 		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
+// 			return
+// 		}
 
-		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
-	}
-}
+// 		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
+// 	}
+// }
 
-func postConsumerRemovalProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var req ConsumerRemovalProposalReq
-		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
-			return
-		}
+// func postConsumerRemovalProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		var req ConsumerRemovalProposalReq
+// 		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
+// 			return
+// 		}
 
-		req.BaseReq = req.BaseReq.Sanitize()
-		if !req.BaseReq.ValidateBasic(w) {
-			return
-		}
+// 		req.BaseReq = req.BaseReq.Sanitize()
+// 		if !req.BaseReq.ValidateBasic(w) {
+// 			return
+// 		}
 
-		content := types.NewConsumerRemovalProposal(
-			req.Title, req.Description, req.ChainID, req.StopTime,
-		)
+// 		content := types.NewConsumerRemovalProposal(
+// 			req.Title, req.Description, req.ChainID, req.StopTime,
+// 		)
 
-		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
-		if rest.CheckBadRequestError(w, err) {
-			return
-		}
+// 		msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+// 		if err != nil {
+// 			return
+// 		}
 
-		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
-			return
-		}
+// 		msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, req.Deposit, req.Proposer.String(), "", content.GetTitle(), "")
+// 		if rest.CheckBadRequestError(w, err) {
+// 			return
+// 		}
 
-		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
-	}
-}
+// 		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
+// 			return
+// 		}
 
-func postEquivocationProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var req EquivocationProposalReq
-		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
-			return
-		}
+// 		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
+// 	}
+// }
 
-		req.BaseReq = req.BaseReq.Sanitize()
-		if !req.BaseReq.ValidateBasic(w) {
-			return
-		}
+// func postEquivocationProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		var req EquivocationProposalReq
+// 		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
+// 			return
+// 		}
 
-		content := types.NewEquivocationProposal(req.Title, req.Description, req.Equivocations)
+// 		req.BaseReq = req.BaseReq.Sanitize()
+// 		if !req.BaseReq.ValidateBasic(w) {
+// 			return
+// 		}
 
-		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
-		if rest.CheckBadRequestError(w, err) {
-			return
-		}
+// 		content := types.NewEquivocationProposal(req.Title, req.Description, req.Equivocations)
 
-		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
-			return
-		}
+// 		msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+// 		if err != nil {
+// 			return
+// 		}
 
-		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
-	}
-}
+// 		msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, req.Deposit, req.Proposer.String(), "", content.GetTitle(), "")
+// 		if rest.CheckBadRequestError(w, err) {
+// 			return
+// 		}
+
+// 		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
+// 			return
+// 		}
+
+// 		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
+// 	}
+// }
