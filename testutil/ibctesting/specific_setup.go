@@ -9,13 +9,13 @@ import (
 
 	"cosmossdk.io/simapp"
 
-	appparams "github.com/cosmos/interchain-security/app/params"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
 	tmdb "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
 
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
+	"github.com/cosmos/interchain-security/app"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
@@ -23,7 +23,7 @@ import (
 
 // ProviderAppIniter implements ibctesting.AppIniter for a provider app
 func ProviderAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
-	encoding := appparams.MakeEncodingConfig()
+	encoding := app.MakeEncodingConfigProviderApp()
 	testApp := appProvider.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simtestutil.EmptyAppOptions{})
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Codec)
@@ -31,7 +31,7 @@ func ProviderAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
 
 // ConsumerAppIniter implements ibctesting.AppIniter for a consumer app
 func ConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
-	encoding := appparams.MakeEncodingConfig()
+	encoding := app.MakeEncodingConfigDemocracyConsumerApp()
 	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simtestutil.EmptyAppOptions{})
 	return testApp, appConsumer.NewDefaultGenesisState(encoding.Codec)
@@ -39,7 +39,7 @@ func ConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
 
 // DemocracyConsumerAppIniter implements ibctesting.AppIniter for a democracy consumer app
 func DemocracyConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
-	encoding := appparams.MakeEncodingConfig()
+	encoding := app.MakeEncodingConfigDemocracyConsumerApp()
 	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simtestutil.EmptyAppOptions{})
 	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Codec)
