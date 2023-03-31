@@ -3,7 +3,6 @@ package ante_test
 import (
 	"testing"
 
-	simappparams "cosmossdk.io/simapp/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -12,11 +11,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	app "github.com/cosmos/interchain-security/app/consumer-democracy"
 	"github.com/cosmos/interchain-security/app/consumer-democracy/ante"
+	appparams "github.com/cosmos/interchain-security/app/params"
 	"github.com/stretchr/testify/require"
 )
 
 func TestForbiddenProposalsDecorator(t *testing.T) {
-	txCfg := simappparams.MakeEncodingConfig(app.ModuleBasics).TxConfig
+	txCfg := appparams.MakeEncodingConfig().TxConfig
 
 	testCases := []struct {
 		name      string

@@ -20,3 +20,13 @@ func MakeEncodingConfig() EncodingConfig {
 		Amino:             amino,
 	}
 }
+
+// MakeEncodingConfig creates an EncodingConfig for testing
+// func MakeEncodingConfig(moduleBasics module.BasicManager) EncodingConfig {
+// 	encodingConfig := makeEncodingConfig()
+// 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
+// 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+// 	moduleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
+// 	moduleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+// 	return encodingConfig
+// }
