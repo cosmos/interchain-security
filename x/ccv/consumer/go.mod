@@ -174,8 +174,6 @@ require (
 
 replace (
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.2 //indirect
-	// github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	// github.com/gogo/protobuf =>	github.com/cosmos/gogoproto v1.4.7
 	github.com/stretchr/testify => github.com/stretchr/testify v1.7.1	
 
 // google.golang.org/grpc => google.golang.org/grpc v1.33.2

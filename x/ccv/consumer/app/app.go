@@ -245,11 +245,15 @@ func New(
 		tkeys[paramstypes.TStoreKey],
 	)
 
+	// NOTE: https://docs.cosmos.network/main/migrations/upgrading#appgo-changes
+	// bApp.SetParamStore(
+	// 	app.ParamsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(
+	// 		paramskeeper.ConsensusParamsKeyTable()),
+	// )
+
 	// set the BaseApp's parameter store
-	bApp.SetParamStore(
-		app.ParamsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(
-			paramskeeper.ConsensusParamsKeyTable()),
-	)
+	app.ConsensusParamsKeeper = consensusparamkeeper.NewKeeper(appCodec, keys[consensusparamstypes.StoreKey], authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	bApp.SetParamStore(&app.ConsensusParamsKeeper)
 
 	// add capability keeper and ScopeToModule for ibc module
 	app.CapabilityKeeper = capabilitykeeper.NewKeeper(
