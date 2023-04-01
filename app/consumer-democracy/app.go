@@ -145,7 +145,7 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-		//router.AppModuleBasic{},
+		// router.AppModuleBasic{},
 		consumer.AppModuleBasic{},
 	)
 
@@ -240,7 +240,6 @@ func New(
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) cosmoscmd.App {
-
 	appCodec := encodingConfig.Marshaler
 	legacyAmino := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry

@@ -14,7 +14,6 @@ import (
 
 // TestParams tests the getting/setting of provider ccv module params.
 func TestParams(t *testing.T) {
-
 	// Construct an in-mem keeper with registered key table
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
