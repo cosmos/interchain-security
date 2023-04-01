@@ -89,7 +89,7 @@ $(BUILDDIR)/:
 ###                                Protobuf                                 ###
 ###############################################################################
 
-containerProtoVer=0.9.0
+containerProtoVer=0.11.5
 containerProtoImage=ghcr.io/cosmos/proto-builder:$(containerProtoVer)
 containerProtoGen=cosmos-sdk-proto-gen-$(containerProtoVer)
 containerProtoGenSwagger=cosmos-sdk-proto-gen-swagger-$(containerProtoVer)
@@ -118,11 +118,13 @@ proto-lint:
 proto-check-breaking:
 	@$(DOCKER_BUF) breaking --against $(HTTPS_GIT)#branch=main
 
-TM_URL              = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.5/proto/tendermint
-GOGO_PROTO_URL      = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
-CONFIO_URL          = https://raw.githubusercontent.com/confio/ics23/v0.7.1
-COSMOS_PROTO_URL    = https://raw.githubusercontent.com/regen-network/cosmos-proto/master
-SDK_PROTO_URL 		= https://raw.githubusercontent.com/cosmos/cosmos-sdk/interchain-security-rebase/proto/cosmos
+TM_URL              = https://raw.githubusercontent.com/cometbft/cometbft/v0.37.0/proto/tendermint
+GOGO_PROTO_URL      = https://raw.githubusercontent.com/cosmos/gogoproto/v1.4.7/gogoproto
+PROOFS_URL          = https://raw.githubusercontent.com/cosmos/ics23/v0.9.0/proto/cosmos
+# not needed any more
+# COSMOS_PROTO_URL    = https://raw.githubusercontent.com/cosmos/cosmos-proto/v1.0.0-beta.3
+SDK_PROTO_URL       = https://raw.githubusercontent.com/cosmos/cosmos-sdk/v0.47.0/proto/cosmos
+AMINO_PROTO_URL     = https://raw.githubusercontent.com/cosmos/cosmos-sdk/v0.47.0/proto/amino
 
 TM_CRYPTO_TYPES     = third_party/proto/tendermint/crypto
 TM_ABCI_TYPES       = third_party/proto/tendermint/abci
@@ -131,19 +133,27 @@ TM_VERSION          = third_party/proto/tendermint/version
 TM_LIBS             = third_party/proto/tendermint/libs/bits
 TM_P2P              = third_party/proto/tendermint/p2p
 
-SDK_QUERY 			= third_party/proto/cosmos/base/query/v1beta1
-SDK_BASE 			= third_party/proto/cosmos/base/v1beta1
-SDK_UPGRADE			= third_party/proto/cosmos/upgrade/v1beta1
-SDK_STAKING			= third_party/proto/cosmos/staking/v1beta1
-SDK_EVIDENCE		= third_party/proto/cosmos/evidence/v1beta1
+SDK_QUERY           = third_party/proto/cosmos/base/query/v1beta1
+SDK_BASE            = third_party/proto/cosmos/base/v1beta1
+SDK_UPGRADE         = third_party/proto/cosmos/upgrade/v1beta1
+SDK_STAKING         = third_party/proto/cosmos/staking/v1beta1
+SDK_EVIDENCE        = third_party/proto/cosmos/evidence/v1beta1
 
 GOGO_PROTO_TYPES    = third_party/proto/gogoproto
-CONFIO_TYPES        = third_party/proto/confio
-COSMOS_PROTO_TYPES  = third_party/proto/cosmos_proto
+PROOFS_TYPES        = third_party/proto/cosmos/ics23/v1
+# not needed any more
+# COSMOS_PROTO_TYPES  = third_party/proto/cosmos_proto
+AMINO_PROTO_TYPES   = third_party/proto/amino
 
 proto-update-deps:
-	@mkdir -p $(COSMOS_PROTO_TYPES)
-	@curl -sSL $(COSMOS_PROTO_URL)/cosmos.proto > $(COSMOS_PROTO_TYPES)/cosmos.proto
+	@mkdir -p $(GOGO_PROTO_TYPES)
+	@curl -sSL $(GOGO_PROTO_TYPES)/gogo.proto > $(GOGO_PROTO_TYPES)/gogo.proto
+
+	@mkdir -p $(AMINO_PROTO_URL)
+	@curl -sSL $(AMINO_PROTO_URL)/amino.proto > $(AMINO_PROTO_URL)/amino.proto
+
+# @mkdir -p $(COSMOS_PROTO_TYPES)
+# @curl -sSL $(COSMOS_PROTO_URL)/cosmos.proto > $(COSMOS_PROTO_TYPES)/cosmos.proto
 
 	@mkdir -p $(SDK_QUERY)
 	@curl -sSL $(SDK_PROTO_URL)/base/query/v1beta1/pagination.proto > $(SDK_QUERY)/pagination.proto
@@ -182,12 +192,12 @@ proto-update-deps:
 	@curl -sSL $(TM_URL)/crypto/proof.proto > $(TM_CRYPTO_TYPES)/proof.proto
 	@curl -sSL $(TM_URL)/crypto/keys.proto > $(TM_CRYPTO_TYPES)/keys.proto
 
-	@mkdir -p $(CONFIO_TYPES)
-	@curl -sSL $(CONFIO_URL)/proofs.proto > $(CONFIO_TYPES)/proofs.proto
+	@mkdir -p $(PROOFS_TYPES)
+	@curl -sSL $(PROOFS_URL)/ics23/v1/proofs.proto > $(PROOFS_TYPES)/proofs.proto
 
 ## insert go package option into proofs.proto file
 ## Issue link: https://github.com/confio/ics23/issues/32
-	@perl -i -l -p -e 'print "option go_package = \"github.com/confio/ics23/go\";" if $$. == 4' $(CONFIO_TYPES)/proofs.proto
+# @perl -i -l -p -e 'print "option go_package = \"github.com/confio/ics23/go\";" if $$. == 4' $(CONFIO_TYPES)/proofs.proto
 
 .PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps mocks
 

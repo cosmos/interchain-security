@@ -20,6 +20,6 @@ cp -r github.com/cosmos/interchain-security/* ./
 
 # copy shared types to consumer
 # previous command puts them in x/ccv/types
-cp github.com/cosmos/interchain-security/x/ccv/types/ccv.pb.go ./x/ccv/consumer/types/
+# cp github.com/cosmos/interchain-security/x/ccv/types/ccv.pb.go ./x/ccv/consumer/types/
 
 rm -rf github.com
