@@ -13,9 +13,7 @@ const (
 	DefaultCCVTimeoutPeriod = 4 * 7 * 24 * time.Hour
 )
 
-var (
-	KeyCCVTimeoutPeriod = []byte("CcvTimeoutPeriod")
-)
+var KeyCCVTimeoutPeriod = []byte("CcvTimeoutPeriod")
 
 func ValidateDuration(i interface{}) error {
 	period, ok := i.(time.Duration)

@@ -4,9 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-var (
-	_ ccv.ConsumerHooks = Keeper{}
-)
+var _ ccv.ConsumerHooks = Keeper{}
 
 // Hooks wrapper struct for ConsumerKeeper
 type Hooks struct {

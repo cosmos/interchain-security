@@ -15,15 +15,19 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-var verbose = flag.Bool("verbose", false, "turn verbose logging on/off")
-var happyPathOnly = flag.Bool("happy-path-only", false, "run happy path tests only")
-var includeMultiConsumer = flag.Bool("include-multi-consumer", false, "include multiconsumer tests in run")
-var parallel = flag.Bool("parallel", false, "run all tests in parallel")
-var localSdkPath = flag.String("local-sdk-path", "",
-	"path of a local sdk version to build and reference in integration tests")
-var useGaia = flag.Bool("use-gaia", false, "use gaia instead of ICS provider app")
-var gaiaTag = flag.String("gaia-tag", "", "gaia tag to use - default is latest")
-var dockerPath = flag.String("docker-path", "", "path to Dockerfile to use for tests")
+var (
+	verbose              = flag.Bool("verbose", false, "turn verbose logging on/off")
+	happyPathOnly        = flag.Bool("happy-path-only", false, "run happy path tests only")
+	includeMultiConsumer = flag.Bool("include-multi-consumer", false, "include multiconsumer tests in run")
+	parallel             = flag.Bool("parallel", false, "run all tests in parallel")
+	localSdkPath         = flag.String("local-sdk-path", "",
+		"path of a local sdk version to build and reference in integration tests")
+)
+var (
+	useGaia    = flag.Bool("use-gaia", false, "use gaia instead of ICS provider app")
+	gaiaTag    = flag.String("gaia-tag", "", "gaia tag to use - default is latest")
+	dockerPath = flag.String("docker-path", "", "path to Dockerfile to use for tests")
+)
 
 // runs integration tests
 // all docker containers are built sequentially to avoid race conditions when using local cosmos-sdk
