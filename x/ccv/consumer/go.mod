@@ -1,10 +1,10 @@
-module github.com/cosmos/interchain-security/consumer
+module github.com/cosmos/interchain-security/x/ccv/consumer
 
 go 1.19
 
 require (
 	github.com/cosmos/cosmos-sdk v0.47.0
-	github.com/gogo/protobuf v1.3.3
+	github.com/cosmos/gogoproto v1.4.7
 	github.com/golang/protobuf v1.5.3
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
@@ -12,9 +12,8 @@ require (
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.2
-	github.com/tendermint/spm v0.1.9
-	github.com/tendermint/tendermint v0.34.26
-	github.com/tendermint/tm-db v0.6.7
+	github.com/cometbft/cometbft v0.37.0
+	github.com/cometbft/cometbft-db v0.7.0
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
@@ -27,6 +26,8 @@ require (
 require (
 	github.com/cosmos/ibc-go/v7 v7.0.0
 	github.com/regen-network/cosmos-proto v0.3.1
+	// this should only be temporary
+	cosmossdk.io/simapp v0.0.0-20230224204036-a6adb0821462
 )
 
 require (
@@ -174,10 +175,8 @@ require (
 replace (
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.2 //indirect
 	// github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	github.com/gogo/protobuf =>	github.com/cosmos/gogoproto v1.4.7
+	// github.com/gogo/protobuf =>	github.com/cosmos/gogoproto v1.4.7
 	github.com/stretchr/testify => github.com/stretchr/testify v1.7.1	
-	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.37.0
-	github.com/tendermint/tm-db => github.com/cometbft/tm-db v0.7.0
 
 // google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )

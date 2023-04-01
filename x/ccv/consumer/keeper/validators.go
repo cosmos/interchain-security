@@ -5,10 +5,10 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/consumer/types"
-	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 )
 
 // ApplyCCValidatorChanges applies the given changes to the cross-chain validators states

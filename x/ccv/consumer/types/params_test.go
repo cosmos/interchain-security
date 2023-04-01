@@ -6,7 +6,7 @@ package types_test
 
 // 	"github.com/stretchr/testify/require"
 
-// 	consumertypes "github.com/cosmos/interchain-security/consumer/types"
+// 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 // )
 
 // // Tests the validation of consumer params that happens at genesis

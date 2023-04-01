@@ -17,9 +17,9 @@ import (
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/consumer/types"
-	consumertypes "github.com/cosmos/interchain-security/consumer/types"
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 func PanicIfZeroOrNil(x interface{}, nameForPanicMsg string) {
@@ -114,7 +114,7 @@ func (k Keeper) mustValidateFields() {
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", "x/"+host.ModuleName+"-"+types.ModuleName)
+	return ctx.Logger().With("module", "x/"+ibcexported.ModuleName+"-"+types.ModuleName)
 }
 
 func (k *Keeper) SetHooks(shconsumertypes.ConsumerHooks) *Keeper {

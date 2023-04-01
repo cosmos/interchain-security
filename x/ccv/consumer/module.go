@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"math/rand"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -19,10 +19,10 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 
-	"github.com/cosmos/interchain-security/consumer/client/cli"
-	"github.com/cosmos/interchain-security/consumer/keeper"
+	"github.com/cosmos/interchain-security/x/ccv/consumer/client/cli"
+	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 
-	consumertypes "github.com/cosmos/interchain-security/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 )
 
 var (

@@ -6,10 +6,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	appconsumer "github.com/cosmos/interchain-security/consumer/app"
-	"github.com/cosmos/interchain-security/consumer/app/ante"
+	appconsumer "github.com/cosmos/interchain-security/x/ccv/consumer/app"
+	"github.com/cosmos/interchain-security/x/ccv/consumer/app/ante"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/spm/cosmoscmd"
 )
 
 type consumerKeeper struct {
@@ -27,7 +26,7 @@ func noOpAnteDecorator() sdk.AnteHandler {
 }
 
 func TestMsgFilterDecorator(t *testing.T) {
-	txCfg := cosmoscmd.MakeEncodingConfig(appconsumer.ModuleBasics).TxConfig
+	txCfg := appconsumer.MakeEncodingConfig(appconsumer.ModuleBasics).TxConfig
 
 	testCases := []struct {
 		name           string
