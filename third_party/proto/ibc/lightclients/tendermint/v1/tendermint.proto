@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package ibc.lightclients.tendermint.v1;
 
-option go_package = "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types";
+option go_package = "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint;tendermint";
 
 import "tendermint/types/validator.proto";
 import "tendermint/types/types.proto";
-import "confio/proofs.proto";
+import "cosmos/ics23/v1/proofs.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "ibc/core/client/v1/client.proto";
@@ -41,7 +41,7 @@ message ClientState {
       [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"latest_height\""];
 
   // Proof specifications used in verifying counterparty state
-  repeated ics23.ProofSpec proof_specs = 8 [(gogoproto.moretags) = "yaml:\"proof_specs\""];
+  repeated cosmos.ics23.v1.ProofSpec proof_specs = 8 [(gogoproto.moretags) = "yaml:\"proof_specs\""];
 
   // Path at which next upgraded client will be committed.
   // Each element corresponds to the key for a single CommitmentProof in the
@@ -52,12 +52,11 @@ message ClientState {
   // "upgradedIBCState"}`
   repeated string upgrade_path = 9 [(gogoproto.moretags) = "yaml:\"upgrade_path\""];
 
-  // This flag, when set to true, will allow governance to recover a client
-  // which has expired
-  bool allow_update_after_expiry = 10 [(gogoproto.moretags) = "yaml:\"allow_update_after_expiry\""];
-  // This flag, when set to true, will allow governance to unfreeze a client
-  // whose chain has experienced a misbehaviour event
-  bool allow_update_after_misbehaviour = 11 [(gogoproto.moretags) = "yaml:\"allow_update_after_misbehaviour\""];
+  // allow_update_after_expiry is deprecated
+  bool allow_update_after_expiry = 10 [deprecated = true, (gogoproto.moretags) = "yaml:\"allow_update_after_expiry\""];
+  // allow_update_after_misbehaviour is deprecated
+  bool allow_update_after_misbehaviour = 11
+      [deprecated = true, (gogoproto.moretags) = "yaml:\"allow_update_after_misbehaviour\""];
 }
 
 // ConsensusState defines the consensus state from Tendermint.
@@ -70,7 +69,7 @@ message ConsensusState {
   // commitment root (i.e app hash)
   ibc.core.commitment.v1.MerkleRoot root                 = 2 [(gogoproto.nullable) = false];
   bytes                             next_validators_hash = 3 [
-    (gogoproto.casttype) = "github.com/tendermint/tendermint/libs/bytes.HexBytes",
+    (gogoproto.casttype) = "github.com/cometbft/cometbft/libs/bytes.HexBytes",
     (gogoproto.moretags) = "yaml:\"next_validators_hash\""
   ];
 }
@@ -80,7 +79,8 @@ message ConsensusState {
 message Misbehaviour {
   option (gogoproto.goproto_getters) = false;
 
-  string client_id = 1 [(gogoproto.moretags) = "yaml:\"client_id\""];
+  // ClientID is deprecated
+  string client_id = 1 [deprecated = true, (gogoproto.moretags) = "yaml:\"client_id\""];
   Header header_1  = 2 [(gogoproto.customname) = "Header1", (gogoproto.moretags) = "yaml:\"header_1\""];
   Header header_2  = 3 [(gogoproto.customname) = "Header2", (gogoproto.moretags) = "yaml:\"header_2\""];
 }
