@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
 type ForbiddenProposalsDecorator struct {
-	IsProposalWhitelisted func(govtypes.Msg) bool
+	IsProposalWhitelisted func(govtypes.Content) bool
 }
 
 func NewForbiddenProposalsDecorator(whiteListFn func(govtypes.Content) bool) ForbiddenProposalsDecorator {
@@ -19,8 +19,8 @@ func (decorator ForbiddenProposalsDecorator) AnteHandle(ctx sdk.Context, tx sdk.
 	currHeight := ctx.BlockHeight()
 
 	for _, msg := range tx.GetMsgs() {
-		submitProposalMgs, ok := msg.(*sdk.Msg)
-		// if the message is MsgSubmitProposal, check if proposal is whitelisted
+		submitProposalMgs, ok := msg.(*govtypes.MsgSubmitProposal)
+		//if the message is MsgSubmitProposal, check if proposal is whitelisted
 		if ok {
 			if !decorator.IsProposalWhitelisted(submitProposalMgs.GetContent()) {
 				return ctx, fmt.Errorf("tx contains unsupported proposal message types at height %d", currHeight)

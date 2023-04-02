@@ -3,6 +3,7 @@ package app
 import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	specialgovtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
@@ -38,9 +39,9 @@ var WhitelistedParams = map[paramChangeKey]struct{}{
 	// bank
 	{Subspace: banktypes.ModuleName, Key: "SendEnabled"}: {},
 	// governance
-	{Subspace: govtypes.ModuleName, Key: "depositparams"}: {}, // min_deposit, max_deposit_period
-	{Subspace: govtypes.ModuleName, Key: "votingparams"}:  {}, // voting_period
-	{Subspace: govtypes.ModuleName, Key: "tallyparams"}:   {}, // quorum,threshold,veto_threshold
+	{Subspace: specialgovtypes.ModuleName, Key: "depositparams"}: {}, // min_deposit, max_deposit_period
+	{Subspace: specialgovtypes.ModuleName, Key: "votingparams"}:  {}, // voting_period
+	{Subspace: specialgovtypes.ModuleName, Key: "tallyparams"}:   {}, // quorum,threshold,veto_threshold
 	// staking
 	{Subspace: stakingtypes.ModuleName, Key: "UnbondingTime"}:     {},
 	{Subspace: stakingtypes.ModuleName, Key: "MaxValidators"}:     {},

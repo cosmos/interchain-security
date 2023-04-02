@@ -11,7 +11,7 @@ import (
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	e2eutil "github.com/cosmos/interchain-security/testutil/e2e"
