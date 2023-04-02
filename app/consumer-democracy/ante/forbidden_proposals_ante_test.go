@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	app "github.com/cosmos/interchain-security/app/consumer-democracy"
 	"github.com/cosmos/interchain-security/app/consumer-democracy/ante"
@@ -27,7 +26,6 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 			ctx:  sdk.Context{},
 			msgs: []sdk.Msg{
 				newParamChangeProposalMsg([]proposal.ParamChange{
-					//only subspace and key are relevant for testing
 					{Subspace: banktypes.ModuleName, Key: "SendEnabled", Value: ""},
 				}),
 			},
