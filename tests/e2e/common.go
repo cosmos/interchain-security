@@ -556,8 +556,8 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
 	clientState := ibctm.NewClientState(
 		endpoint.Counterparty.Chain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
-		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
-	)
+		height, commitmenttypes.GetSDKSpecs(), tmConfig.AllowUpdateAfterExpiry, UpgradePath, ibctm.ClientState)
+
 	consensusState := endpoint.Counterparty.Chain.LastHeader.ConsensusState()
 
 	msg, err := clienttypes.NewMsgCreateClient(
