@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	appparams "github.com/cosmos/interchain-security/app/params"
 
 	"cosmossdk.io/simapp"
@@ -192,7 +193,7 @@ type App struct { // nolint: golint
 	keys    map[string]*storetypes.KVStoreKey
 	tkeys   map[string]*storetypes.TransientStoreKey
 	memKeys map[string]*storetypes.MemoryStoreKey
-	sdk
+
 	// keepers
 	AccountKeeper    authkeeper.AccountKeeper
 	BankKeeper       bankkeeper.Keeper
