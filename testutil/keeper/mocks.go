@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 	time "time"
 
+	types8 "github.com/cometbft/cometbft/abci/types"
 	types "github.com/cosmos/cosmos-sdk/types"
 	types0 "github.com/cosmos/cosmos-sdk/x/auth/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -20,7 +21,6 @@ import (
 	types7 "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
-	types8 "github.com/cometbft/cometbft/abci/types"
 )
 
 // MockStakingKeeper is a mock of StakingKeeper interface.

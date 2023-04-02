@@ -261,7 +261,6 @@ func TestGetAllUnbondingOpIndexes(t *testing.T) {
 }
 
 func TestMaturedUnbondingOps(t *testing.T) {
-
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 

@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"bytes"
+	"math/rand"
 	"sort"
 	"testing"
 	"time"
@@ -13,8 +14,6 @@ import (
 	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/stretchr/testify/require"
-
-	"math/rand"
 
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -356,7 +355,6 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 }
 
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
-
 	chainID := "chainID"
 	providerIdentities := []*cryptotestutil.CryptoIdentity{
 		cryptotestutil.NewCryptoIdentityFromIntSeed(0),
@@ -595,7 +593,6 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 			tc.mockSetup(ctx, k, mocks)
@@ -633,7 +630,6 @@ func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 				vs.power[i] = u.Power
 			}
 		}
-
 	}
 }
 
@@ -647,7 +643,6 @@ type Assignment struct {
 // of simulated scenarios where random key assignments and validator
 // set updates are generated.
 func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
-
 	CHAINID := "chainID"
 	// The number of full test executions to run
 	NUM_EXECUTIONS := 100
@@ -711,7 +706,6 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 	// and key assignments tx's. For each simulated 'block', the validator set replication
 	// properties and the pruning property are checked.
 	runRandomExecution := func() {
-
 		k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 		// Create validator sets for the provider and consumer. These are used to check the validator set

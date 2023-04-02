@@ -17,7 +17,6 @@ import (
 //
 // NOTE: this method may be used independently of the rest of simibc.
 func BeginBlock(c *ibctesting.TestChain, dt time.Duration) {
-
 	c.CurrentHeader = tmproto.Header{
 		ChainID:            c.ChainID,
 		Height:             c.App.LastBlockHeight() + 1,

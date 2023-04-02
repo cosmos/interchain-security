@@ -10,8 +10,10 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-const P = "provider"
-const C = "consumer"
+const (
+	P = "provider"
+	C = "consumer"
+)
 
 // ValStates represents the total delegation
 // and bond status of a validator
@@ -52,7 +54,8 @@ func init() {
 			"bbaaaababaabbaabababbaabbbbbbaaa",
 			"abbbababbbabaaaaabaaabbbbababaab",
 			"bbabaabaabbbbbabbbaababbbbabbbbb",
-			"aabbbabaaaaababbbabaabaabbbbbbba"},
+			"aabbbabaaaaababbbabaabaabbbbbbba",
+		},
 		NumValidators:          4,
 		MaxValidators:          2,
 		InitialDelegatorTokens: 10000000000000,
@@ -67,8 +70,10 @@ func init() {
 			Delegation:           []int{4000, 3000, 2000, 1000},
 			Tokens:               []int{5000, 4000, 3000, 2000},
 			ValidatorExtraTokens: []int{1000, 1000, 1000, 1000},
-			Status: []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded,
-				stakingtypes.Unbonded, stakingtypes.Unbonded},
+			Status: []stakingtypes.BondStatus{
+				stakingtypes.Bonded, stakingtypes.Bonded,
+				stakingtypes.Unbonded, stakingtypes.Unbonded,
+			},
 		},
 		MaxEntries: 1000000,
 		ConsensusParams: &abci.ConsensusParams{

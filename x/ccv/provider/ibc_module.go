@@ -29,7 +29,6 @@ func (am AppModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
-
 	return version, sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
 }
 
@@ -47,7 +46,6 @@ func (am AppModule) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (metadata string, err error) {
-
 	// Validate parameters
 	if err := validateCCVChannelParams(
 		ctx, am.keeper, order, portID,
@@ -259,7 +257,6 @@ func (am AppModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {
-
 	if err := am.keeper.OnTimeoutPacket(ctx, packet); err != nil {
 		return err
 	}

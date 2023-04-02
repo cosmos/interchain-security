@@ -157,7 +157,6 @@ func TestOnRecvVSCPacket(t *testing.T) {
 // in conjunction with the ibc module's execution of "acknowledgePacket",
 // according to https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements
 func TestOnAcknowledgementPacket(t *testing.T) {
-
 	// Channel ID to some dest chain that's not the established provider
 	channelIDToDestChain := "channelIDToDestChain"
 

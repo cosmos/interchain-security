@@ -112,8 +112,8 @@ func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.
 // Note: This function advances blocks in-between operations, where validator powers are
 // not checked, since they are checked in integration tests.
 func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
-	srcValAddr sdk.ValAddress, dstValAddr sdk.ValAddress, amount sdk.Int) {
-
+	srcValAddr sdk.ValAddress, dstValAddr sdk.ValAddress, amount sdk.Int,
+) {
 	// Delegate to src validator
 	srcValTokensBefore := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
 	_, sharesDelegated, _ := delegate(s, delAddr, amount)
@@ -180,8 +180,8 @@ func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 // Executes a BeginRedelegation (unbonding and redelegation) operation
 // on the provider chain using delegated funds from delAddr
 func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
-	ValDstAddr sdk.ValAddress, sharesAmount sdk.Dec) {
-
+	ValDstAddr sdk.ValAddress, sharesAmount sdk.Dec,
+) {
 	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
 	ctx := s.providerCtx()
 
@@ -324,8 +324,8 @@ func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID strin
 // Checks that an expected amount of redelegations exist for a delegator
 // via the staking keeper, then returns those redelegations.
 func checkRedelegations(s *CCVTestSuite, delAddr sdk.AccAddress,
-	expect uint16) []stakingtypes.Redelegation {
-
+	expect uint16,
+) []stakingtypes.Redelegation {
 	redelegations := s.providerApp.GetE2eStakingKeeper().GetRedelegations(s.providerCtx(), delAddr, 2)
 
 	s.Require().Len(redelegations, int(expect))
@@ -334,7 +334,8 @@ func checkRedelegations(s *CCVTestSuite, delAddr sdk.AccAddress,
 
 // Checks that a redelegation entry has a completion time equal to an expected time
 func checkRedelegationEntryCompletionTime(
-	s *CCVTestSuite, entry stakingtypes.RedelegationEntry, expectedCompletion time.Time) {
+	s *CCVTestSuite, entry stakingtypes.RedelegationEntry, expectedCompletion time.Time,
+) {
 	s.Require().Equal(expectedCompletion, entry.CompletionTime)
 }
 
@@ -381,7 +382,6 @@ func (suite *CCVTestSuite) SendEmptyVSCPacket() {
 // commitSlashPacket returns a commit hash for the given slash packet data
 // Note that it must be called before sending the embedding IBC packet.
 func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.SlashPacketData) []byte {
-
 	consumerPacket := ccv.ConsumerPacketData{
 		Type: ccv.SlashPacket,
 		Data: &ccv.ConsumerPacketData_SlashPacketData{
@@ -407,8 +407,8 @@ func (suite *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.
 // constructSlashPacketFromConsumer constructs an IBC packet embedding
 // slash packet data to be sent from consumer to provider
 func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
-	tmVal tmtypes.Validator, infractionType stakingtypes.InfractionType, ibcSeqNum uint64) channeltypes.Packet {
-
+	tmVal tmtypes.Validator, infractionType stakingtypes.InfractionType, ibcSeqNum uint64,
+) channeltypes.Packet {
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
 
@@ -440,8 +440,8 @@ func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.C
 // constructVSCMaturedPacketFromConsumer constructs an IBC packet embedding
 // VSC Matured packet data to be sent from consumer to provider
 func (s *CCVTestSuite) constructVSCMaturedPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
-	ibcSeqNum uint64) channeltypes.Packet {
-
+	ibcSeqNum uint64,
+) channeltypes.Packet {
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
 
@@ -575,8 +575,8 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 // GetConsumerEndpointClientAndConsState returns the client and consensus state
 // for a particular consumer endpoint, as specified by the consumer's bundle.
 func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
-	consumerBundle icstestingutils.ConsumerBundle) (exported.ClientState, exported.ConsensusState) {
-
+	consumerBundle icstestingutils.ConsumerBundle,
+) (exported.ClientState, exported.ConsensusState) {
 	ctx := consumerBundle.GetCtx()
 	consumerKeeper := consumerBundle.GetKeeper()
 
@@ -596,7 +596,6 @@ func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
 // setupValidatorPowers delegates from the sender account to give all
 // validators on the provider chain 1000 power.
 func (s *CCVTestSuite) setupValidatorPowers() {
-
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	for idx := range s.providerChain.Vals.Validators {
 		delegateByIdx(s, delAddr, sdk.NewInt(999999999), idx)

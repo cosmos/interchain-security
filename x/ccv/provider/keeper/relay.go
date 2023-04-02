@@ -21,7 +21,6 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	packet channeltypes.Packet,
 	data ccv.VSCMaturedPacketData,
 ) exported.Acknowledgement {
-
 	// check that the channel is established, panic if not
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !found {
@@ -56,7 +55,6 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 // trail slash packet data for that consumer, it will be handled in this method,
 // bypassing HandleThrottleQueues.
 func (k Keeper) HandleLeadingVSCMaturedPackets(ctx sdk.Context) {
-
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		leadingVscMatured, ibcSeqNums := k.GetLeadingVSCMaturedData(ctx, chain.ChainId)
 		for _, data := range leadingVscMatured {
@@ -192,7 +190,6 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 			data.GetBytes(),
 			k.GetCCVTimeoutPeriod(ctx),
 		)
-
 		if err != nil {
 			if clienttypes.ErrClientNotActive.Is(err) {
 				// IBC client is expired!
@@ -287,7 +284,6 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 // OnRecvSlashPacket delivers a received slash packet, validates it and
 // then queues the slash packet as pending if valid.
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
-
 	// check that the channel is established, panic if not
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !found {
@@ -361,8 +357,8 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 // handled or persisted in store. An error is returned if the packet is invalid,
 // and an error ack should be relayed to the sender.
 func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
-	packet channeltypes.Packet, data ccv.SlashPacketData) error {
-
+	packet channeltypes.Packet, data ccv.SlashPacketData,
+) error {
 	_, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	// return error if we cannot find infraction height matching the validator update id
 	if !found {
@@ -380,7 +376,6 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 // HandleSlashPacket potentially jails a misbehaving validator for a downtime infraction.
 // This method should NEVER be called with a double-sign infraction.
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
-
 	consumerConsAddr := providertypes.NewConsumerConsAddress(data.Validator.Address)
 	// Obtain provider chain consensus address using the consumer chain consensus address
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
@@ -507,8 +502,8 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 
 // getMappedInfractionHeight gets the infraction height mapped from val set ID for the given chain ID
 func (k Keeper) getMappedInfractionHeight(ctx sdk.Context,
-	chainID string, valsetUpdateID uint64) (height uint64, found bool) {
-
+	chainID string, valsetUpdateID uint64,
+) (height uint64, found bool) {
 	if valsetUpdateID == 0 {
 		return k.GetInitChainHeight(ctx, chainID)
 	} else {

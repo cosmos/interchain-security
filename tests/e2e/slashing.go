@@ -29,7 +29,6 @@ import (
 // and double-signing, see TestValidatorDowntime and TestValidatorDoubleSigning for
 // those types of tests.
 func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
-
 	// Setup CCV channel for all instantiated consumers
 	s.SetupAllCCVChannels()
 
@@ -160,7 +159,6 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 // Similar setup to TestRelayAndApplyDowntimePacket, but with a double sign slash packet.
 // Note that double-sign slash packets should not affect the provider validator set.
 func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
-
 	// Setup CCV channel for all instantiated consumers
 	s.SetupAllCCVChannels()
 
@@ -305,7 +303,6 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 
 // TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an e2e testing setting
 func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
-
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
 	firstBundle := suite.getFirstBundle()
@@ -366,8 +363,10 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	// construct slashing packet with non existing validator
 	slashingPkt := ccv.NewSlashPacketData(
-		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
-			Power: int64(0)}, uint64(0), stakingtypes.Downtime,
+		abci.Validator{
+			Address: ed25519.GenPrivKey().PubKey().Address(),
+			Power:   int64(0),
+		}, uint64(0), stakingtypes.Downtime,
 	)
 
 	// Set initial block height for consumer chain
@@ -619,7 +618,8 @@ func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 		for i := 0; i < 4; i++ {
 			addr := ed25519.GenPrivKey().PubKey().Address()
 			val := abci.Validator{
-				Address: addr}
+				Address: addr,
+			}
 			consumerKeeper.QueueSlashPacket(ctx, val, 0, infraction)
 			slashedVals = append(slashedVals, slashedVal{validator: val, infraction: infraction})
 		}
