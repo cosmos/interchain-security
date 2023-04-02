@@ -1,13 +1,5 @@
 name: Automated Tests
-on:
-  push:
-    branches:
-      - main
-      - release/v*
-  pull_request:
-    branches:
-      - main
-      - release/v*
+on: [push]
 jobs:
   Automated_Tests:
     runs-on: ubuntu-latest

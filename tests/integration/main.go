@@ -141,8 +141,6 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.assignConsumerPubKey(action, verbose)
 	case slashThrottleDequeue:
 		tr.waitForSlashThrottleDequeue(action, verbose)
-	case startHermesAction:
-		tr.startHermes(action, verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", tr.name, action)
 	}
