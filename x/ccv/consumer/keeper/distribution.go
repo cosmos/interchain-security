@@ -7,12 +7,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // EndBlockRD executes EndBlock logic for the Reward Distribution sub-protocol.
@@ -137,13 +136,13 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 		currentHeight := ctx.BlockHeight()
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
-				ccv.EventTypeFeeDistribution,
+				types.EventTypeFeeDistribution,
 				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-				sdk.NewAttribute(ccv.AttributeDistributionCurrentHeight, strconv.Itoa(int(currentHeight))),
-				sdk.NewAttribute(ccv.AttributeDistributionNextHeight, strconv.Itoa(int(currentHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
-				sdk.NewAttribute(ccv.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
-				sdk.NewAttribute(ccv.AttributeDistributionTotal, fpTokens.String()),
-				sdk.NewAttribute(ccv.AttributeDistributionToProvider, tstProviderTokens.String()),
+				sdk.NewAttribute(types.AttributeDistributionCurrentHeight, strconv.Itoa(int(currentHeight))),
+				sdk.NewAttribute(types.AttributeDistributionNextHeight, strconv.Itoa(int(currentHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
+				sdk.NewAttribute(types.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
+				sdk.NewAttribute(types.AttributeDistributionTotal, fpTokens.String()),
+				sdk.NewAttribute(types.AttributeDistributionToProvider, tstProviderTokens.String()),
 			),
 		)
 	}

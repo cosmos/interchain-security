@@ -11,34 +11,39 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
-	"github.com/tendermint/tendermint/libs/log"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	"github.com/cometbft/cometbft/libs/log"
 )
+
+func PanicIfZeroOrNil(x interface{}, nameForPanicMsg string) {
+	if x == nil || reflect.ValueOf(x).IsZero() {
+		panic("zero or nil value for " + nameForPanicMsg)
+	}
+}
 
 // Keeper defines the Cross-Chain Validation Consumer Keeper
 type Keeper struct {
 	storeKey          sdk.StoreKey
 	cdc               codec.BinaryCodec
 	paramStore        paramtypes.Subspace
-	scopedKeeper      ccv.ScopedKeeper
-	channelKeeper     ccv.ChannelKeeper
-	portKeeper        ccv.PortKeeper
-	connectionKeeper  ccv.ConnectionKeeper
-	clientKeeper      ccv.ClientKeeper
-	slashingKeeper    ccv.SlashingKeeper
-	hooks             ccv.ConsumerHooks
-	bankKeeper        ccv.BankKeeper
-	authKeeper        ccv.AccountKeeper
-	ibcTransferKeeper ccv.IBCTransferKeeper
-	ibcCoreKeeper     ccv.IBCCoreKeeper
+	scopedKeeper     consumertypes.ScopedKeeper
+	channelKeeper    consumertypes.ChannelKeeper
+	portKeeper       consumertypes.PortKeeper
+	connectionKeeper consumertypes.ConnectionKeeper
+	clientKeeper     consumertypes.ClientKeeper
+	slashingKeeper   consumertypes.SlashingKeeper
+	hooks            consumertypes.ConsumerHooks
+	bankKeeper       consumertypes.BankKeeper
+	authKeeper       consumertypes.AccountKeeper
+	ibcTransferKeeperconsumertypes.IBCTransferKeeper
+	ibcCoreKeeper    consumertypes.IBCCoreKeeper
 	feeCollectorName  string
 }
 
@@ -47,11 +52,11 @@ type Keeper struct {
 // collector (and not the provider chain)
 func NewKeeper(
 	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
-	scopedKeeper ccv.ScopedKeeper,
-	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
-	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
-	slashingKeeper ccv.SlashingKeeper, bankKeeper ccv.BankKeeper, accountKeeper ccv.AccountKeeper,
-	ibcTransferKeeper ccv.IBCTransferKeeper, ibcCoreKeeper ccv.IBCCoreKeeper,
+	scopedKeeper consumertypes.ScopedKeeper,
+	channelKeeper consumertypes.ChannelKeeper, portKeeper consumertypes.PortKeeper,
+	connectionKeeper consumertypes.ConnectionKeeper, clientKeeperconsumertypes.ClientKeeper,
+	slashingKeeperc onsumertypes.SlashingKeeper, bankKeeper consumertypes.BankKeeper, accountKeeper consumertypes.AccountKeeper,
+	ibcTransferKeeper consumertypes.IBCTransferKeeper, ibcCoreKeeper consumertypes.IBCCoreKeeper,
 	feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set
@@ -90,28 +95,28 @@ func (k Keeper) mustValidateFields() {
 
 	// Note 14 fields will be validated, hooks are explicitly set after the constructor
 
-	utils.PanicIfZeroOrNil(k.storeKey, "storeKey")                   // 1
-	utils.PanicIfZeroOrNil(k.cdc, "cdc")                             // 2
-	utils.PanicIfZeroOrNil(k.paramStore, "paramStore")               // 3
-	utils.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")           // 4
-	utils.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")         // 5
-	utils.PanicIfZeroOrNil(k.portKeeper, "portKeeper")               // 6
-	utils.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")   // 7
-	utils.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")           // 8
-	utils.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")       // 9
-	utils.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")               // 10
-	utils.PanicIfZeroOrNil(k.authKeeper, "authKeeper")               // 11
-	utils.PanicIfZeroOrNil(k.ibcTransferKeeper, "ibcTransferKeeper") // 12
-	utils.PanicIfZeroOrNil(k.ibcCoreKeeper, "ibcCoreKeeper")         // 13
-	utils.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")   // 14
+	PanicIfZeroOrNil(k.storeKey, "storeKey")                   // 1
+	PanicIfZeroOrNil(k.cdc, "cdc")                             // 2
+	PanicIfZeroOrNil(k.paramStore, "paramStore")               // 3
+	PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")           // 4
+	PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")         // 5
+	PanicIfZeroOrNil(k.portKeeper, "portKeeper")               // 6
+	PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")   // 7
+	PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")           // 8
+	PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")       // 9
+	PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")               // 10
+	PanicIfZeroOrNil(k.authKeeper, "authKeeper")               // 11
+	PanicIfZeroOrNil(k.ibcTransferKeeper, "ibcTransferKeeper") // 12
+	PanicIfZeroOrNil(k.ibcCoreKeeper, "ibcCoreKeeper")         // 13
+	PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")   // 14
 }
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", "x/"+host.ModuleName+"-"+types.ModuleName)
+	return ctx.Logger().With("module", "x/"+ibcexported.ModuleName+"-"+types.ModuleName)
 }
 
-func (k *Keeper) SetHooks(sh ccv.ConsumerHooks) *Keeper {
+func (k *Keeper) SetHooks(shconsumertypes.ConsumerHooks) *Keeper {
 	if k.hooks != nil {
 		// This should never happen as SetHooks is expected
 		// to be called only once in app.go
@@ -209,7 +214,7 @@ func (k Keeper) DeleteProviderChannel(ctx sdk.Context) {
 }
 
 // SetPendingChanges sets the pending validator set change packet that haven't been flushed to ABCI
-func (k Keeper) SetPendingChanges(ctx sdk.Context, updates ccv.ValidatorSetChangePacketData) {
+func (k Keeper) SetPendingChanges(ctx sdk.Context, updatesconsumertypes.ValidatorSetChangePacketData) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := updates.Marshal()
 	if err != nil {
@@ -226,7 +231,7 @@ func (k Keeper) GetPendingChanges(ctx sdk.Context) (*ccv.ValidatorSetChangePacke
 	if bz == nil {
 		return nil, false
 	}
-	var data ccv.ValidatorSetChangePacketData
+	var dataconsumertypes.ValidatorSetChangePacketData
 	if err := data.Unmarshal(bz); err != nil {
 		// This should never happen as PendingChanges is expected
 		// to be correctly serialized in SetPendingChanges
@@ -486,7 +491,7 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 }
 
 // SetPendingPackets sets the pending CCV packets
-func (k Keeper) SetPendingPackets(ctx sdk.Context, packets ccv.ConsumerPacketDataList) {
+func (k Keeper) SetPendingPackets(ctx sdk.Context, packetsconsumertypes.ConsumerPacketDataList) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := packets.Marshal()
 	if err != nil {
@@ -497,8 +502,8 @@ func (k Keeper) SetPendingPackets(ctx sdk.Context, packets ccv.ConsumerPacketDat
 }
 
 // GetPendingPackets returns the pending CCV packets from the store
-func (k Keeper) GetPendingPackets(ctx sdk.Context) ccv.ConsumerPacketDataList {
-	var packets ccv.ConsumerPacketDataList
+func (k Keeper) GetPendingPackets(ctx sdk.Context)consumertypes.ConsumerPacketDataList {
+	var packetsconsumertypes.ConsumerPacketDataList
 
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get([]byte{types.PendingDataPacketsBytePrefix})
@@ -526,5 +531,5 @@ func (k Keeper) DeletePendingDataPackets(ctx sdk.Context) {
 func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...ccv.ConsumerPacketData) {
 	pending := k.GetPendingPackets(ctx)
 	list := append(pending.GetList(), packet...)
-	k.SetPendingPackets(ctx, ccv.ConsumerPacketDataList{List: list})
+	k.SetPendingPackets(ctx,consumertypes.ConsumerPacketDataList{List: list})
 }

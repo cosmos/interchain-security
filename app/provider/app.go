@@ -148,7 +148,6 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-
 		ibcprovider.AppModuleBasic{},
 	)
 

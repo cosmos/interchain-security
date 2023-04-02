@@ -4,7 +4,7 @@ package interchain_security.ccv.consumer.v1;
 
 option go_package = "github.com/cosmos/interchain-security/x/ccv/consumer/types";
 
-import "interchain_security/ccv/v1/ccv.proto";
+import "interchain_security/ccv/consumer/v1/ccv.proto";
 import "interchain_security/ccv/consumer/v1/consumer.proto";
 import "tendermint/abci/types.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
@@ -35,7 +35,7 @@ message GenesisState {
   repeated OutstandingDowntime outstanding_downtime_slashing = 10
       [ (gogoproto.nullable) = false ];
    // PendingConsumerPackets nil on new chain, filled in on restart.
-   interchain_security.ccv.v1.ConsumerPacketDataList pending_consumer_packets = 11
+   interchain_security.ccv.consumer.v1.ConsumerPacketDataList pending_consumer_packets = 11
    [ (gogoproto.nullable) = false ];
   // LastTransmissionBlockHeight nil on new chain, filled in on restart.
   interchain_security.ccv.consumer.v1.LastTransmissionBlockHeight last_transmission_block_height = 12

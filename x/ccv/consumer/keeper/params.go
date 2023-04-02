@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // GetParams returns the params for the consumer ccv module
@@ -69,7 +68,7 @@ func (k Keeper) SetProviderFeePoolAddrStr(ctx sdk.Context, addr string) {
 // GetCCVTimeoutPeriod returns the timeout period for sent ccv related ibc packets
 func (k Keeper) GetCCVTimeoutPeriod(ctx sdk.Context) time.Duration {
 	var p time.Duration
-	k.paramStore.Get(ctx, ccvtypes.KeyCCVTimeoutPeriod, &p)
+	k.paramStore.Get(ctx, consumertypes.KeyCCVTimeoutPeriod, &p)
 	return p
 }
 

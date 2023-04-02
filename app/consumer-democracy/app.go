@@ -145,7 +145,6 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-
 		consumer.AppModuleBasic{},
 	)
 

@@ -17,6 +17,9 @@ cd ..
 
 # move proto files to the right places
 cp -r github.com/cosmos/interchain-security/* ./
-rm -rf github.com
 
-go mod tidy -compat=1.18
+# copy shared types to consumer
+# previous command puts them in x/ccv/types
+# cp github.com/cosmos/interchain-security/x/ccv/types/ccv.pb.go ./x/ccv/consumer/types/
+
+rm -rf github.com

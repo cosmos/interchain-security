@@ -5,11 +5,23 @@ import (
 	time "time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 )
 
 const (
+
+	// Version defines the current version the IBC CCV provider and consumer
+	// module supports
+	Version = "1"
+
+	// ProviderPortID is the default port id the provider CCV module binds to
+	ProviderPortID = "provider"
+
+	// ConsumerPortID is the default port id the consumer CCV module binds to
+	ConsumerPortID = "consumer"
+
+	// MemStoreKey defines the in-memory store key
+	MemStoreKey = "mem_ccv"
+
 	// ModuleName defines the CCV consumer module name
 	ModuleName = "ccvconsumer"
 
@@ -105,7 +117,7 @@ func PendingChangesKey() []byte {
 // PacketMaturityTimeKey returns the key for storing the maturity time for a given received VSC packet id
 func PacketMaturityTimeKey(vscID uint64, maturityTime time.Time) []byte {
 	ts := uint64(maturityTime.UTC().UnixNano())
-	return utils.AppendMany(
+	return AppendMany(
 		// Append the prefix
 		[]byte{PacketMaturityTimeBytePrefix},
 		// Append the time
@@ -137,4 +149,12 @@ func HistoricalInfoKey(height int64) []byte {
 	hBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(hBytes, uint64(height))
 	return append([]byte{HistoricalInfoBytePrefix}, hBytes...)
+}
+
+// AppendMany appends a variable number of byte slices together
+func AppendMany(byteses ...[]byte) (out []byte) {
+	for _, bytes := range byteses {
+		out = append(out, bytes...)
+	}
+	return out
 }

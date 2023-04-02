@@ -35,8 +35,9 @@ type paramChangeKey struct {
 }
 
 var WhitelistedParams = map[paramChangeKey]struct{}{
+	// bank
 	{Subspace: banktypes.ModuleName, Key: "SendEnabled"}: {},
-
+	// governance
 	{Subspace: govtypes.ModuleName, Key: "depositparams"}: {}, // min_deposit, max_deposit_period
 	{Subspace: govtypes.ModuleName, Key: "votingparams"}:  {}, // voting_period
 	{Subspace: govtypes.ModuleName, Key: "tallyparams"}:   {}, // quorum,threshold,veto_threshold
@@ -46,19 +47,20 @@ var WhitelistedParams = map[paramChangeKey]struct{}{
 	{Subspace: stakingtypes.ModuleName, Key: "MaxEntries"}:        {},
 	{Subspace: stakingtypes.ModuleName, Key: "HistoricalEntries"}: {},
 	{Subspace: stakingtypes.ModuleName, Key: "BondDenom"}:         {},
-
+	// distribution
 	{Subspace: distrtypes.ModuleName, Key: "communitytax"}:        {},
 	{Subspace: distrtypes.ModuleName, Key: "baseproposerreward"}:  {},
 	{Subspace: distrtypes.ModuleName, Key: "bonusproposerreward"}: {},
 	{Subspace: distrtypes.ModuleName, Key: "withdrawaddrenabled"}: {},
-
+	// mint
 	{Subspace: minttypes.ModuleName, Key: "MintDenom"}:           {},
 	{Subspace: minttypes.ModuleName, Key: "InflationRateChange"}: {},
 	{Subspace: minttypes.ModuleName, Key: "InflationMax"}:        {},
 	{Subspace: minttypes.ModuleName, Key: "InflationMin"}:        {},
 	{Subspace: minttypes.ModuleName, Key: "GoalBonded"}:          {},
 	{Subspace: minttypes.ModuleName, Key: "BlocksPerYear"}:       {},
-
+	// ibc transfer
 	{Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled"}:    {},
 	{Subspace: ibctransfertypes.ModuleName, Key: "ReceiveEnabled"}: {},
+	// add interchain account params(HostEnabled, AllowedMessages) once the module is added to the consumer app
 }
