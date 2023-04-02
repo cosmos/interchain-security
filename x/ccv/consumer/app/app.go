@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"cosmossdk.io/simapp"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -18,7 +17,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/std"
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -79,10 +77,9 @@ import (
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
-	ibcconsumer "github.com/cosmos/interchain-security/x/ccv/consumer"
-	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	ibcconsumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	ibcconsumer "github.com/cosmos/interchain-security/x/consumer"
+	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
+	ibcconsumertypes "github.com/cosmos/interchain-security/x/consumer/types"
 	// "github.com/cosmos/interchain-security/testutil/e2e"
 	// unnamed import of statik for swagger UI support
 	// _ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -130,10 +127,10 @@ var (
 )
 
 var (
-	_ simapp.App              = (*App)(nil)
+	// _ simapp.App              = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
 	// _ runtime.AppI            = (*App)(nil)
-	_ ibctesting.TestingApp = (*App)(nil)
+	// _ ibctesting.TestingApp = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -203,7 +200,7 @@ func New(
 	skipUpgradeHeights map[int64]bool,
 	homePath string,
 	invCheckPeriod uint,
-	encodingConfig EncodingConfig,
+	encodingConfig params.EncodingConfig,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
@@ -686,7 +683,7 @@ func (app *App) GetBaseApp() *baseapp.BaseApp {
 }
 
 // GetStakingKeeper implements the TestingApp interface.
-func (app *App) GetStakingKeeper() ibctesting.StakingKeeper {
+func (app *App) GetStakingKeeper() ibctestingtypes.StakingKeeper {
 	return app.ConsumerKeeper
 }
 
@@ -702,7 +699,7 @@ func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 
 // GetTxConfig implements the TestingApp interface.
 func (app *App) GetTxConfig() client.TxConfig {
-	return MakeEncodingConfig(ModuleBasics).TxConfig
+	return params.MakeTestEncodingConfig(ModuleBasics).TxConfig
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided
@@ -770,26 +767,4 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibcconsumertypes.ModuleName)
 
 	return paramsKeeper
-}
-
-// MakeTestEncodingConfig creates an EncodingConfig for testing. This function
-// should be used only in tests or when creating a new app instance (NewApp*()).
-// App user shouldn't create new codecs - use the app.AppCodec instead.
-// [DEPRECATED]
-func MakeTestEncodingConfig() appparams.EncodingConfig {
-	encodingConfig := appparams.MakeTestEncodingConfig()
-	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
-	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
-	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	return encodingConfig
-}
-
-// EncodingConfig specifies the concrete encoding types to use for a given app.
-// This is provided for compatibility between protobuf and amino implementations.
-type EncodingConfig struct {
-	InterfaceRegistry types.InterfaceRegistry
-	Marshaler         codec.Codec
-	TxConfig          client.TxConfig
-	Amino             *codec.LegacyAmino
 }

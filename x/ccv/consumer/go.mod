@@ -1,12 +1,14 @@
-module github.com/cosmos/interchain-security/x/ccv/consumer
+module github.com/cosmos/interchain-security/x/consumer
 
 go 1.19
 
 require (
 	github.com/cometbft/cometbft v0.37.0
 	github.com/cometbft/cometbft-db v0.7.0
-	github.com/cosmos/cosmos-sdk v0.47.0
 	github.com/cosmos/gogoproto v1.4.7
+	github.com/cosmos/ibc-go/v7 v7.0.0
+	github.com/cosmos/cosmos-sdk v0.47.0
+	cosmossdk.io/tools/rosetta v0.2.1
 	github.com/golang/protobuf v1.5.3
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
@@ -21,12 +23,6 @@ require (
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-)
-
-require (
-	// this should only be temporary
-	cosmossdk.io/simapp v0.0.0-20230224204036-a6adb0821462
-	github.com/cosmos/ibc-go/v7 v7.0.0
 )
 
 require (

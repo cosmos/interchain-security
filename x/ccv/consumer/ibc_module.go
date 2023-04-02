@@ -12,8 +12,8 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/x/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/x/consumer/types"
 )
 
 // OnChanOpenInit implements the IBCModule interface
@@ -36,7 +36,7 @@ func (am AppModule) OnChanOpenInit(
 
 	// ensure provider channel hasn't already been created
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok {
-		return "", sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
+		return "", sdkerrors.Wrapf(consumertypes.ErrDuplicateChannel,
 			"provider channel: %s already set", providerChannel)
 	}
 
@@ -88,7 +88,7 @@ func validateCCVChannelParams(
 
 	// the version must match the expected version
 	if version != consumertypes.Version {
-		return sdkerrors.Wrapf(ccv.ErrInvalidVersion, "got %s, expected %s", version, consumertypes.Version)
+		return sdkerrors.Wrapf(consumertypes.ErrInvalidVersion, "got %s, expected %s", version, consumertypes.Version)
 	}
 	return nil
 }
@@ -104,7 +104,7 @@ func (am AppModule) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
-	return "", sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
+	return "", sdkerrors.Wrap(consumertypes.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
 }
 
 // OnChanOpenAck implements the IBCModule interface
@@ -117,18 +117,18 @@ func (am AppModule) OnChanOpenAck(
 ) error {
 	// ensure provider channel has not already been created
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok {
-		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
+		return sdkerrors.Wrapf(consumertypes.ErrDuplicateChannel,
 			"provider channel: %s already established", providerChannel)
 	}
 
 	var md consumertypes.HandshakeMetadata
 	if err := (&md).Unmarshal([]byte(counterpartyMetadata)); err != nil {
-		return sdkerrors.Wrapf(ccv.ErrInvalidHandshakeMetadata,
+		return sdkerrors.Wrapf(consumertypes.ErrInvalidHandshakeMetadata,
 			"error unmarshalling ibc-ack metadata: \n%v; \nmetadata: %v", err, counterpartyMetadata)
 	}
 
 	if md.Version != consumertypes.Version {
-		return sdkerrors.Wrapf(ccv.ErrInvalidVersion,
+		return sdkerrors.Wrapf(consumertypes.ErrInvalidVersion,
 			"invalid counterparty version: %s, expected %s", md.Version, consumertypes.Version)
 	}
 
@@ -165,7 +165,7 @@ func (am AppModule) OnChanOpenAck(
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			ccv.EventTypeFeeTransferChannelOpened,
+			consumertypes.EventTypeFeeTransferChannelOpened,
 			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
 			sdk.NewAttribute(channeltypes.AttributeKeyChannelID, channelID),
 			sdk.NewAttribute(channeltypes.AttributeKeyPortID, transfertypes.PortID),
@@ -181,7 +181,7 @@ func (am AppModule) OnChanOpenConfirm(
 	portID,
 	channelID string,
 ) error {
-	return sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
+	return sdkerrors.Wrap(consumertypes.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
 }
 
 // OnChanCloseInit implements the IBCModule interface
@@ -227,9 +227,9 @@ func (am AppModule) OnRecvPacket(
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			ccv.EventTypePacket,
+			consumertypes.EventTypePacket,
 			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
-			sdk.NewAttribute(ccv.AttributeKeyAckSuccess, fmt.Sprintf("%t", ack != nil)),
+			sdk.NewAttribute(consumertypes.AttributeKeyAckSuccess, fmt.Sprintf("%t", ack != nil)),
 		),
 	)
 
@@ -254,24 +254,24 @@ func (am AppModule) OnAcknowledgementPacket(
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			ccv.EventTypePacket,
+			consumertypes.EventTypePacket,
 			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
-			sdk.NewAttribute(ccv.AttributeKeyAck, ack.String()),
+			sdk.NewAttribute(consumertypes.AttributeKeyAck, ack.String()),
 		),
 	)
 	switch resp := ack.Response.(type) {
 	case *channeltypes.Acknowledgement_Result:
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
-				ccv.EventTypePacket,
-				sdk.NewAttribute(ccv.AttributeKeyAckSuccess, string(resp.Result)),
+				consumertypes.EventTypePacket,
+				sdk.NewAttribute(consumertypes.AttributeKeyAckSuccess, string(resp.Result)),
 			),
 		)
 	case *channeltypes.Acknowledgement_Error:
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
-				ccv.EventTypePacket,
-				sdk.NewAttribute(ccv.AttributeKeyAckError, resp.Error),
+				consumertypes.EventTypePacket,
+				sdk.NewAttribute(consumertypes.AttributeKeyAckError, resp.Error),
 			),
 		)
 	}
@@ -288,7 +288,7 @@ func (am AppModule) OnTimeoutPacket(
 ) error {
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			ccv.EventTypeTimeout,
+			consumertypes.EventTypeTimeout,
 			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
 		),
 	)

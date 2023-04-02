@@ -17,8 +17,8 @@ import (
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/x/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/consumer/types"
 	"github.com/cometbft/cometbft/libs/log"
 )
 
