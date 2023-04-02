@@ -8,7 +8,7 @@ import (
 )
 
 type ForbiddenProposalsDecorator struct {
-	IsProposalWhitelisted func(govtypes.Content) bool
+	IsProposalWhitelisted func(govtypes.Msg) bool
 }
 
 func NewForbiddenProposalsDecorator(whiteListFn func(govtypes.Content) bool) ForbiddenProposalsDecorator {
@@ -19,7 +19,7 @@ func (decorator ForbiddenProposalsDecorator) AnteHandle(ctx sdk.Context, tx sdk.
 	currHeight := ctx.BlockHeight()
 
 	for _, msg := range tx.GetMsgs() {
-		submitProposalMgs, ok := msg.(*govtypes.MsgSubmitProposal)
+		submitProposalMgs, ok := msg.(*sdk.Msg)
 		// if the message is MsgSubmitProposal, check if proposal is whitelisted
 		if ok {
 			if !decorator.IsProposalWhitelisted(submitProposalMgs.GetContent()) {
