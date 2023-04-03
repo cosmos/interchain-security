@@ -54,7 +54,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, request abci.RequestEndBlock) []ab
 	return am.AppModule.EndBlock(ctx, request)
 }
 
-func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govtypesv1beta1.Proposal) {
+func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govtypesv1.Proposal) {
 	if am.isProposalWhitelisted(proposal.GetContent()) {
 		return
 	}
@@ -65,13 +65,13 @@ func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govtypesv1b
 	// private and cannot be called directly from the overridden app module
 	am.keeper.Tally(ctx, proposal)
 
-	am.keeper.DeleteProposal(ctx, proposal.ProposalId)
-	am.keeper.RefundDeposits(ctx, proposal.ProposalId)
+	am.keeper.DeleteProposal(ctx, proposal.Id)
+	am.keeper.RefundAndDeleteDeposits(ctx, proposal.Id)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			govtypes.EventTypeActiveProposal,
-			sdk.NewAttribute(govtypes.AttributeKeyProposalID, fmt.Sprintf("%d", proposal.ProposalId)),
+			sdk.NewAttribute(govtypes.AttributeKeyProposalID, fmt.Sprintf("%d", proposal.Id)),
 			sdk.NewAttribute(govtypes.AttributeKeyProposalResult, AttributeValueProposalForbidden),
 		),
 	)
