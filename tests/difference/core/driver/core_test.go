@@ -66,7 +66,7 @@ func (s *CoreSuite) consumerChain() *ibctesting.TestChain {
 }
 
 func (s *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
-	return s.providerChain().App.(*appProvider.App).StakingKeeper
+	return *s.providerChain().App.(*appProvider.App).StakingKeeper
 }
 
 func (s *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {

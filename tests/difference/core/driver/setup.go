@@ -68,7 +68,7 @@ func (b *Builder) consumerCtx() sdk.Context {
 }
 
 func (b *Builder) providerStakingKeeper() stakingkeeper.Keeper {
-	return b.provider().App.(*appProvider.App).StakingKeeper
+	return *b.provider().App.(*appProvider.App).StakingKeeper
 }
 
 func (b *Builder) providerSlashingKeeper() slashingkeeper.Keeper {
