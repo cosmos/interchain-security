@@ -625,7 +625,7 @@ func New(
 
 			fromVM := make(map[string]uint64)
 
-			for moduleName, _ := range app.MM.Modules {
+			for moduleName := range app.MM.Modules {
 				m := app.MM.Modules[moduleName]
 				if module, ok := m.(module.HasConsensusVersion); ok {
 					fromVM[moduleName] = module.ConsensusVersion()
