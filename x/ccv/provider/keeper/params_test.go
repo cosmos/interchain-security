@@ -34,8 +34,6 @@ func TestParams(t *testing.T) {
 			clienttypes.Height{},
 			commitmenttypes.GetSDKSpecs(),
 			[]string{"ibc", "upgradedIBCState"},
-			true,
-			false,
 		),
 		"0.25",
 		7*24*time.Hour,

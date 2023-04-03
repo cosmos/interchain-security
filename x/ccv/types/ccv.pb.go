@@ -224,7 +224,7 @@ type SlashPacketData struct {
 	// map to the infraction block height on the provider
 	ValsetUpdateId uint64 `protobuf:"varint,2,opt,name=valset_update_id,json=valsetUpdateId,proto3" json:"valset_update_id,omitempty"`
 	// tell if the slashing is for a downtime or a double-signing infraction
-	Infraction types1.InfractionType `protobuf:"varint,3,opt,name=infraction,proto3,enum=cosmos.staking.v1beta1.InfractionType" json:"infraction,omitempty"`
+	Infraction types1.Infraction `protobuf:"varint,3,opt,name=infraction,proto3,enum=cosmos.staking.v1beta1.InfractionType" json:"infraction,omitempty"`
 }
 
 func (m *SlashPacketData) Reset()         { *m = SlashPacketData{} }
