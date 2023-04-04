@@ -46,7 +46,12 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 				panic(err)
 			}
 			k.SetCCValidator(ctx, ccVal)
-			k.AfterValidatorBonded(ctx, consAddr, nil)
+			err = k.AfterValidatorBonded(ctx, consAddr, nil)
+			if err != nil {
+				// An error here would indicate that the validator updates
+				// received from the provider are invalid.
+				panic(err)
+			}
 		} else {
 			// edge case: we received an update for 0 power
 			// but the validator is already deleted. Do not forward
