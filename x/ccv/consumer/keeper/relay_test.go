@@ -119,7 +119,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	// Set module params with custom unbonding period
 	moduleParams := consumertypes.DefaultParams()
 	moduleParams.UnbondingPeriod = 100 * time.Hour
-	consumerKeeper.SetParams(ctx, moduleParams)
+	consumerKeeper.SetConsumerParams(ctx, moduleParams)
 
 	for _, tc := range testCases {
 		ack := consumerKeeper.OnRecvVSCPacket(ctx, tc.packet, tc.newChanges)

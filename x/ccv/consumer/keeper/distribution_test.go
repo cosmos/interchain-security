@@ -23,7 +23,7 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 	mockAccountKeeper := mocks.MockAccountKeeper
 	mockBankKeeper := mocks.MockBankKeeper
 	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
-	consumerKeeper.SetParams(ctx, types.DefaultParams())
+	consumerKeeper.SetConsumerParams(ctx, types.DefaultParams())
 
 	// Setup mock account balance
 	fracParam := consumerKeeper.GetConsumerRedistributionFrac(ctx)

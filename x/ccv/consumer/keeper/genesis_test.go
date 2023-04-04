@@ -122,7 +122,7 @@ func TestInitGenesis(t *testing.T) {
 				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 
 				require.Equal(t, validator.Address.Bytes(), ck.GetAllCCValidator(ctx)[0].Address)
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		}, {
 			"restart a chain without an established CCV channel",
@@ -149,7 +149,7 @@ func TestInitGenesis(t *testing.T) {
 				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
 				require.Equal(t, validator.Address.Bytes(), ck.GetAllCCValidator(ctx)[0].Address)
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		}, {
 			"restart a chain with an established CCV channel",
@@ -193,7 +193,7 @@ func TestInitGenesis(t *testing.T) {
 				assertHeightValsetUpdateIDs(t, ctx, &ck, updatedHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
 
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		},
 	}
@@ -288,7 +288,7 @@ func TestExportGenesis(t *testing.T) {
 				cVal, err := consumertypes.NewCCValidator(validator.Address.Bytes(), 1, pubKey)
 				require.NoError(t, err)
 				ck.SetCCValidator(ctx, cVal)
-				ck.SetParams(ctx, params)
+				ck.SetConsumerParams(ctx, params)
 
 				ck.AppendPendingPacket(ctx, consPackets.List...)
 				ck.SetHeightValsetUpdateID(ctx, defaultHeightValsetUpdateIDs[0].Height, defaultHeightValsetUpdateIDs[0].ValsetUpdateId)
@@ -315,7 +315,7 @@ func TestExportGenesis(t *testing.T) {
 				require.NoError(t, err)
 				ck.SetCCValidator(ctx, cVal)
 
-				ck.SetParams(ctx, params)
+				ck.SetConsumerParams(ctx, params)
 
 				ck.SetHeightValsetUpdateID(ctx, updatedHeightValsetUpdateIDs[0].Height, updatedHeightValsetUpdateIDs[0].ValsetUpdateId)
 				ck.SetHeightValsetUpdateID(ctx, updatedHeightValsetUpdateIDs[1].Height, updatedHeightValsetUpdateIDs[1].ValsetUpdateId)
@@ -350,7 +350,7 @@ func TestExportGenesis(t *testing.T) {
 			keeperParams.RegisterSdkCryptoCodecInterfaces()
 			consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 			defer ctrl.Finish()
-			consumerKeeper.SetParams(ctx, params)
+			consumerKeeper.SetConsumerParams(ctx, params)
 
 			// test setup
 			tc.malleate(ctx, consumerKeeper, mocks)
