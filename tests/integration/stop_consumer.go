@@ -13,7 +13,7 @@ import (
 func (s *CCVTestSuite) TestStopConsumerChain() {
 
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerStakingKeeper := s.providerApp.GetIntgStakingKeeper()
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 	firstBundle := s.getFirstBundle()
 
@@ -166,7 +166,7 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel bool) {
 	channelID := s.path.EndpointB.ChannelID
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerStakingKeeper := s.providerApp.GetIntgStakingKeeper()
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 	if checkChannel {
 		// check channel's state is closed

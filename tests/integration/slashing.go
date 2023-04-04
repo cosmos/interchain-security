@@ -35,8 +35,8 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 
 	validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
-	providerStakingKeeper := s.providerApp.GetIntgStakingKeeper()
-	providerSlashingKeeper := s.providerApp.GetIntgSlashingKeeper()
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
+	providerSlashingKeeper := s.providerApp.GetTestSlashingKeeper()
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	firstConsumerKeeper := s.getFirstBundle().GetKeeper()
 
@@ -164,9 +164,9 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	// Setup CCV channel for all instantiated consumers
 	s.SetupAllCCVChannels()
 
-	providerStakingKeeper := s.providerApp.GetIntgStakingKeeper()
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerSlashingKeeper := s.providerApp.GetIntgSlashingKeeper()
+	providerSlashingKeeper := s.providerApp.GetTestSlashingKeeper()
 
 	validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
@@ -266,8 +266,8 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 // Note that only downtime slash packets are processed by HandleSlashPacket.
 func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 	providerKeeper := suite.providerApp.GetProviderKeeper()
-	providerSlashingKeeper := suite.providerApp.GetIntgSlashingKeeper()
-	providerStakingKeeper := suite.providerApp.GetIntgStakingKeeper()
+	providerSlashingKeeper := suite.providerApp.GetTestSlashingKeeper()
+	providerStakingKeeper := suite.providerApp.GetTestStakingKeeper()
 
 	tmVal := suite.providerChain.Vals.Validators[0]
 	consAddr := sdk.ConsAddress(tmVal.Address)
@@ -307,7 +307,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	providerKeeper := suite.providerApp.GetProviderKeeper()
-	providerSlashingKeeper := suite.providerApp.GetIntgSlashingKeeper()
+	providerSlashingKeeper := suite.providerApp.GetTestSlashingKeeper()
 	firstBundle := suite.getFirstBundle()
 	consumerChainID := firstBundle.Chain.ChainID
 
@@ -428,7 +428,7 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 	suite.SendEmptyVSCPacket()
 
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
-	consumerSlashingKeeper := suite.consumerApp.GetIntgSlashingKeeper()
+	consumerSlashingKeeper := suite.consumerApp.GetTestSlashingKeeper()
 	consumerIBCKeeper := suite.consumerApp.GetIBCKeeper()
 
 	// sync suite context after CCV channel is established
@@ -551,7 +551,7 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	}
 
 	// add validator signing-info to the store
-	suite.consumerApp.GetIntgSlashingKeeper().SetValidatorSigningInfo(ctx, consAddr, slashingtypes.ValidatorSigningInfo{
+	suite.consumerApp.GetTestSlashingKeeper().SetValidatorSigningInfo(ctx, consAddr, slashingtypes.ValidatorSigningInfo{
 		Address:    consAddr.String(),
 		Tombstoned: false,
 	})
@@ -570,7 +570,7 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	expCommit := suite.commitSlashPacket(ctx, *packetData)
 
 	// expect to send slash packet when handling double-sign evidence
-	suite.consumerApp.GetIntgEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
+	suite.consumerApp.GetTestEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
 
 	// check slash packet is queued
 	pendingPackets := suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)

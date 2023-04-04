@@ -86,7 +86,7 @@ import (
 	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	intgutil "github.com/cosmos/interchain-security/testutil/integration"
+	testutil "github.com/cosmos/interchain-security/testutil/integration"
 	ccvdistr "github.com/cosmos/interchain-security/x/ccv/democracy/distribution"
 
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -766,43 +766,43 @@ func (app *App) GetConsumerKeeper() consumerkeeper.Keeper {
 	return app.ConsumerKeeper
 }
 
-// GetIntgBankKeeper implements the ConsumerApp interface.
-func (app *App) GetIntgBankKeeper() intgutil.IntgBankKeeper {
+// GetTestBankKeeper implements the ConsumerApp interface.
+func (app *App) GetTestBankKeeper() testutil.TestBankKeeper {
 	return app.BankKeeper
 }
 
-// GetIntgAccountKeeper implements the ConsumerApp interface.
-func (app *App) GetIntgAccountKeeper() intgutil.IntgAccountKeeper {
+// GetTestAccountKeeper implements the ConsumerApp interface.
+func (app *App) GetTestAccountKeeper() testutil.TestAccountKeeper {
 	return app.AccountKeeper
 }
 
-// GetIntgSlashingKeeper implements the ConsumerApp interface.
-func (app *App) GetIntgSlashingKeeper() intgutil.IntgSlashingKeeper {
+// GetTestSlashingKeeper implements the ConsumerApp interface.
+func (app *App) GetTestSlashingKeeper() testutil.TestSlashingKeeper {
 	return app.SlashingKeeper
 }
 
-// GetIntgEvidenceKeeper implements the ConsumerApp interface.
-func (app *App) GetIntgEvidenceKeeper() intgutil.IntgEvidenceKeeper {
+// GetTestEvidenceKeeper implements the ConsumerApp interface.
+func (app *App) GetTestEvidenceKeeper() testutil.TestEvidenceKeeper {
 	return app.EvidenceKeeper
 }
 
-// GetIntgStakingKeeper implements the ConsumerApp interface.
-func (app *App) GetIntgStakingKeeper() intgutil.IntgStakingKeeper {
+// GetTestStakingKeeper implements the ConsumerApp interface.
+func (app *App) GetTestStakingKeeper() testutil.TestStakingKeeper {
 	return app.StakingKeeper
 }
 
-// GetIntgDistributionKeeper implements the ConsumerApp interface.
-func (app *App) GetIntgDistributionKeeper() intgutil.IntgDistributionKeeper {
+// GetTestDistributionKeeper implements the ConsumerApp interface.
+func (app *App) GetTestDistributionKeeper() testutil.TestDistributionKeeper {
 	return app.DistrKeeper
 }
 
-// GetIntgMintKeeper implements the ConsumerApp interface.
-func (app *App) GetIntgMintKeeper() intgutil.IntgMintKeeper {
+// GetTestMintKeeper implements the ConsumerApp interface.
+func (app *App) GetTestMintKeeper() testutil.TestMintKeeper {
 	return app.MintKeeper
 }
 
-// GetIntgGovKeeper implements the ConsumerApp interface.
-func (app *App) GetIntgGovKeeper() intgutil.IntgGovKeeper {
+// GetTestGovKeeper implements the ConsumerApp interface.
+func (app *App) GetTestGovKeeper() testutil.TestGovKeeper {
 	return app.GovKeeper
 }
 

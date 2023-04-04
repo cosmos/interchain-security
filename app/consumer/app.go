@@ -84,7 +84,7 @@ import (
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
-	intgutil "github.com/cosmos/interchain-security/testutil/integration"
+	testutil "github.com/cosmos/interchain-security/testutil/integration"
 )
 
 const (
@@ -653,23 +653,23 @@ func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
 	return app.ConsumerKeeper
 }
 
-// GetIntgBankKeeper implements the ConsumerApp interface.
-func (app *App) GetIntgBankKeeper() intgutil.IntgBankKeeper {
+// GetTestBankKeeper implements the ConsumerApp interface.
+func (app *App) GetTestBankKeeper() testutil.TestBankKeeper {
 	return app.BankKeeper
 }
 
-// GetIntgAccountKeeper implements the ConsumerApp interface.
-func (app *App) GetIntgAccountKeeper() intgutil.IntgAccountKeeper {
+// GetTestAccountKeeper implements the ConsumerApp interface.
+func (app *App) GetTestAccountKeeper() testutil.TestAccountKeeper {
 	return app.AccountKeeper
 }
 
-// GetIntgSlashingKeeper implements the ConsumerApp interface.
-func (app *App) GetIntgSlashingKeeper() intgutil.IntgSlashingKeeper {
+// GetTestSlashingKeeper implements the ConsumerApp interface.
+func (app *App) GetTestSlashingKeeper() testutil.TestSlashingKeeper {
 	return app.SlashingKeeper
 }
 
-// GetIntgEvidenceKeeper implements the ConsumerApp interface.
-func (app *App) GetIntgEvidenceKeeper() intgutil.IntgEvidenceKeeper {
+// GetTestEvidenceKeeper implements the ConsumerApp interface.
+func (app *App) GetTestEvidenceKeeper() testutil.TestEvidenceKeeper {
 	return app.EvidenceKeeper
 }
 

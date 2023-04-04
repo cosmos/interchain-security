@@ -14,7 +14,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	intgutil "github.com/cosmos/interchain-security/testutil/integration"
+	testutil "github.com/cosmos/interchain-security/testutil/integration"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/stretchr/testify/suite"
 )
@@ -23,13 +23,13 @@ type ConsumerDemocracyTestSuite struct {
 	suite.Suite
 	coordinator   *ibctesting.Coordinator
 	consumerChain *ibctesting.TestChain
-	consumerApp   intgutil.DemocConsumerApp
+	consumerApp   testutil.DemocConsumerApp
 	setupCallback DemocSetupCallback
 }
 
 // NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite,
 // ready to be tested against using suite.Run().
-func NewConsumerDemocracyTestSuite[T intgutil.DemocConsumerApp](
+func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
 	democConsumerAppIniter ibctesting.AppIniter) *ConsumerDemocracyTestSuite {
 
 	democSuite := new(ConsumerDemocracyTestSuite)
@@ -37,7 +37,7 @@ func NewConsumerDemocracyTestSuite[T intgutil.DemocConsumerApp](
 	democSuite.setupCallback = func(t *testing.T) (
 		*ibctesting.Coordinator,
 		*ibctesting.TestChain,
-		intgutil.DemocConsumerApp,
+		testutil.DemocConsumerApp,
 	) {
 		// Instantiate the test coordinator
 		coordinator := ibctesting.NewCoordinator(t, 0)
@@ -57,7 +57,7 @@ func NewConsumerDemocracyTestSuite[T intgutil.DemocConsumerApp](
 type DemocSetupCallback func(t *testing.T) (
 	coord *ibctesting.Coordinator,
 	consumerChain *ibctesting.TestChain,
-	consumerApp intgutil.DemocConsumerApp,
+	consumerApp testutil.DemocConsumerApp,
 )
 
 // SetupTest sets up in-mem state before every test relevant to ccv with a democracy consumer
@@ -70,10 +70,10 @@ func (suite *ConsumerDemocracyTestSuite) SetupTest() {
 func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 
 	s.consumerChain.NextBlock()
-	stakingKeeper := s.consumerApp.GetIntgStakingKeeper()
-	accountKeeper := s.consumerApp.GetIntgAccountKeeper()
-	distrKeeper := s.consumerApp.GetIntgDistributionKeeper()
-	bankKeeper := s.consumerApp.GetIntgBankKeeper()
+	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
+	accountKeeper := s.consumerApp.GetTestAccountKeeper()
+	distrKeeper := s.consumerApp.GetTestDistributionKeeper()
+	bankKeeper := s.consumerApp.GetTestBankKeeper()
 	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
 
 	currentRepresentativesRewards := map[string]sdk.Dec{}
@@ -147,11 +147,11 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 }
 
 func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
-	govKeeper := s.consumerApp.GetIntgGovKeeper()
-	stakingKeeper := s.consumerApp.GetIntgStakingKeeper()
-	bankKeeper := s.consumerApp.GetIntgBankKeeper()
-	accountKeeper := s.consumerApp.GetIntgAccountKeeper()
-	mintKeeper := s.consumerApp.GetIntgMintKeeper()
+	govKeeper := s.consumerApp.GetTestGovKeeper()
+	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
+	bankKeeper := s.consumerApp.GetTestBankKeeper()
+	accountKeeper := s.consumerApp.GetTestAccountKeeper()
+	mintKeeper := s.consumerApp.GetTestMintKeeper()
 	newAuthParamValue := uint64(128)
 	newMintParamValue := sdk.NewDecWithPrec(1, 1) // "0.100000000000000000"
 	allowedChange := proposaltypes.ParamChange{Subspace: minttypes.ModuleName, Key: "InflationMax", Value: fmt.Sprintf("\"%s\"", newMintParamValue)}
@@ -219,7 +219,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
-func submitProposalWithDepositAndVote(govKeeper intgutil.IntgGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
+func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
 	accounts []ibctesting.SenderAccount, depositAmount sdk.Coins) error {
 	proposal, err := govKeeper.SubmitProposal(ctx, &paramChange)
 	if err != nil {
@@ -239,7 +239,7 @@ func submitProposalWithDepositAndVote(govKeeper intgutil.IntgGovKeeper, ctx sdk.
 	return nil
 }
 
-func getAccountsBalances(ctx sdk.Context, bankKeeper intgutil.IntgBankKeeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]sdk.Int {
+func getAccountsBalances(ctx sdk.Context, bankKeeper testutil.TestBankKeeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]sdk.Int {
 	accountsBalances := map[string]sdk.Int{}
 	for _, acc := range accounts {
 		accountsBalances[string(acc.SenderAccount.GetAddress())] =

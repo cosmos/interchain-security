@@ -6,7 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/ibc-go/v4/testing/mock"
-	intgutil "github.com/cosmos/interchain-security/testutil/integration"
+	testutil "github.com/cosmos/interchain-security/testutil/integration"
 	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
 
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
@@ -25,7 +25,7 @@ import (
 type SetupProviderCallback func(t *testing.T) (
 	coord *ibctesting.Coordinator,
 	providerChain *ibctesting.TestChain,
-	providerApp intgutil.ProviderApp,
+	providerApp testutil.ProviderApp,
 )
 
 // Callback for instantiating a new consumer test chain
@@ -44,12 +44,12 @@ type CCVTestSuite struct {
 	setupConsumerCallback SetupConsumerCallback
 
 	providerChain *ibctesting.TestChain
-	providerApp   intgutil.ProviderApp
+	providerApp   testutil.ProviderApp
 
 	// The first consumer chain among multiple.
 	consumerChain *ibctesting.TestChain
 	// The first consumer app among multiple.
-	consumerApp intgutil.ConsumerApp
+	consumerApp testutil.ConsumerApp
 	// The ccv path to the first consumer among multiple.
 	path *ibctesting.Path
 	// The transfer path to the first consumer among multiple.
@@ -62,7 +62,7 @@ type CCVTestSuite struct {
 }
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
-func NewCCVTestSuite[Tp intgutil.ProviderApp, Tc intgutil.ConsumerApp](
+func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string) *CCVTestSuite {
 
 	ccvSuite := new(CCVTestSuite)
@@ -71,7 +71,7 @@ func NewCCVTestSuite[Tp intgutil.ProviderApp, Tc intgutil.ConsumerApp](
 	ccvSuite.setupProviderCallback = func(t *testing.T) (
 		*ibctesting.Coordinator,
 		*ibctesting.TestChain,
-		intgutil.ProviderApp,
+		testutil.ProviderApp,
 	) {
 		// Instantiate the test coordinator.
 		coordinator := ibctesting.NewCoordinator(t, 0)

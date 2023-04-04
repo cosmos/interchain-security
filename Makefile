@@ -8,17 +8,17 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cd
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cdd
 
-# run all tests: unit, e2e, diff, and E2E
+# run all tests: unit, integration, diff, and E2E
 test: 
 	go test ./... && go run ./tests/e2e/... 
 
-# run e2e and unit tests
+# run unit and integration tests
 test-short:
-	go test ./tests/e2e/... ./x/... ./app/...
+	go test ./x/... ./app/... ./tests/integration/...
 
-# run integration tests
-test-integration:
-	go test ./tests/integration/...
+# run E2E tests
+test-e2e:
+	go test ./tests/e2e/...
 
 # run difference tests
 test-diff:

@@ -31,13 +31,13 @@ type ProviderApp interface {
 
 	GetProviderKeeper() providerkeeper.Keeper
 	// Returns a staking keeper interface with more capabilities than the expected_keepers interface
-	GetIntgStakingKeeper() IntgStakingKeeper
-	// Intgurns a bank keeper interface with more capabilities than the expected_keepers interface
-	GetIntgBankKeeper() IntgBankKeeper
-	// Intgurns a slashing keeper interface with more capabilities than the expected_keepers interface
-	GetIntgSlashingKeeper() IntgSlashingKeeper
+	GetTestStakingKeeper() TestStakingKeeper
+	// Testurns a bank keeper interface with more capabilities than the expected_keepers interface
+	GetTestBankKeeper() TestBankKeeper
+	// Testurns a slashing keeper interface with more capabilities than the expected_keepers interface
+	GetTestSlashingKeeper() TestSlashingKeeper
 	// Integrurns a distribution keeper interface with more capabilities than the expected_keepers interface
-	GetIntgDistributionKeeper() IntgDistributionKeeper
+	GetTestDistributionKeeper() TestDistributionKeeper
 }
 
 // The interface that any consumer app must implement to be compatible with integration tests
@@ -54,25 +54,25 @@ type ConsumerApp interface {
 	//
 
 	// Returns a bank keeper interface with more capabilities than the expected_keepers interface
-	GetIntgBankKeeper() IntgBankKeeper
-	// Intgs an account keeper interface with more capabilities than the expected_keepers interface
-	GetIntgAccountKeeper() IntgAccountKeeper
-	// Intgs a slashing keeper interface with more capabilities than the expected_keepers interface
-	GetIntgSlashingKeeper() IntgSlashingKeeper
-	// Intgs an evidence keeper interface with more capabilities than the expected_keepers interface
-	GetIntgEvidenceKeeper() IntgEvidenceKeeper
+	GetTestBankKeeper() TestBankKeeper
+	// Tests an account keeper interface with more capabilities than the expected_keepers interface
+	GetTestAccountKeeper() TestAccountKeeper
+	// Tests a slashing keeper interface with more capabilities than the expected_keepers interface
+	GetTestSlashingKeeper() TestSlashingKeeper
+	// Tests an evidence keeper interface with more capabilities than the expected_keepers interface
+	GetTestEvidenceKeeper() TestEvidenceKeeper
 }
 
 type DemocConsumerApp interface {
 	ConsumerApp
 	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
-	GetIntgDistributionKeeper() IntgDistributionKeeper
-	// Intgs a staking keeper interface with more capabilities than the expected_keepers interface
-	GetIntgStakingKeeper() IntgStakingKeeper
-	// Intgs a mint keeper interface with more capabilities than the expected_keepers interface
-	GetIntgMintKeeper() IntgMintKeeper
-	// Intgs a gov keeper interface with more capabilities than the expected_keepers interface
-	GetIntgGovKeeper() IntgGovKeeper
+	GetTestDistributionKeeper() TestDistributionKeeper
+	// Tests a staking keeper interface with more capabilities than the expected_keepers interface
+	GetTestStakingKeeper() TestStakingKeeper
+	// Tests a mint keeper interface with more capabilities than the expected_keepers interface
+	GetTestMintKeeper() TestMintKeeper
+	// Tests a gov keeper interface with more capabilities than the expected_keepers interface
+	GetTestGovKeeper() TestGovKeeper
 }
 
 //
@@ -80,7 +80,7 @@ type DemocConsumerApp interface {
 // since integration tests require extra functionality from external keepers.
 //
 
-type IntgStakingKeeper interface {
+type TestStakingKeeper interface {
 	ccvtypes.StakingKeeper
 	Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.Int, tokenSrc types.BondStatus,
 		validator types.Validator, subtractAccount bool) (newShares sdk.Dec, err error)
@@ -100,18 +100,18 @@ type IntgStakingKeeper interface {
 	GetValidatorSet() types.ValidatorSet
 }
 
-type IntgBankKeeper interface {
+type TestBankKeeper interface {
 	ccvtypes.BankKeeper
 	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress,
 		recipientModule string, amt sdk.Coins) error
 }
 
-type IntgAccountKeeper interface {
+type TestAccountKeeper interface {
 	ccvtypes.AccountKeeper
 	GetParams(sdk.Context) authtypes.Params
 }
 
-type IntgSlashingKeeper interface {
+type TestSlashingKeeper interface {
 	ccvtypes.SlashingKeeper
 	SetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress,
 		info slashingtypes.ValidatorSigningInfo)
@@ -122,11 +122,11 @@ type IntgSlashingKeeper interface {
 		address sdk.ConsAddress, handler func(index int64, missed bool) (stop bool))
 }
 
-type IntgEvidenceKeeper interface {
+type TestEvidenceKeeper interface {
 	HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
 }
 
-type IntgDistributionKeeper interface {
+type TestDistributionKeeper interface {
 	GetFeePoolCommunityCoins(ctx sdk.Context) sdk.DecCoins
 	GetDistributionAccount(ctx sdk.Context) authtypes.ModuleAccountI
 	GetValidatorOutstandingRewards(ctx sdk.Context,
@@ -134,11 +134,11 @@ type IntgDistributionKeeper interface {
 	GetCommunityTax(ctx sdk.Context) (percent sdk.Dec)
 }
 
-type IntgMintKeeper interface {
+type TestMintKeeper interface {
 	GetParams(ctx sdk.Context) (params minttypes.Params)
 }
 
-type IntgGovKeeper interface {
+type TestGovKeeper interface {
 	GetDepositParams(ctx sdk.Context) govtypes.DepositParams
 	GetVotingParams(ctx sdk.Context) govtypes.VotingParams
 	SetVotingParams(ctx sdk.Context, votingParams govtypes.VotingParams)

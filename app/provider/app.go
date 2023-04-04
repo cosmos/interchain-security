@@ -98,7 +98,7 @@ import (
 	ibcproviderkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
-	intgutil "github.com/cosmos/interchain-security/testutil/integration"
+	testutil "github.com/cosmos/interchain-security/testutil/integration"
 
 	"github.com/tendermint/spm/cosmoscmd"
 
@@ -758,23 +758,23 @@ func (app *App) GetProviderKeeper() ibcproviderkeeper.Keeper {
 	return app.ProviderKeeper
 }
 
-// GetIntgStakingKeeper implements the ProviderApp interface.
-func (app *App) GetIntgStakingKeeper() intgutil.IntgStakingKeeper {
+// GetTestStakingKeeper implements the ProviderApp interface.
+func (app *App) GetTestStakingKeeper() testutil.TestStakingKeeper {
 	return app.StakingKeeper
 }
 
-// GetIntgBankKeeper implements the ProviderApp interface.
-func (app *App) GetIntgBankKeeper() intgutil.IntgBankKeeper {
+// GetTestBankKeeper implements the ProviderApp interface.
+func (app *App) GetTestBankKeeper() testutil.TestBankKeeper {
 	return app.BankKeeper
 }
 
-// GetIntgSlashingKeeper implements the ProviderApp interface.
-func (app *App) GetIntgSlashingKeeper() intgutil.IntgSlashingKeeper {
+// GetTestSlashingKeeper implements the ProviderApp interface.
+func (app *App) GetTestSlashingKeeper() testutil.TestSlashingKeeper {
 	return app.SlashingKeeper
 }
 
-// GetIntgDistributionKeeper implements the ProviderApp interface.
-func (app *App) GetIntgDistributionKeeper() intgutil.IntgDistributionKeeper {
+// GetTestDistributionKeeper implements the ProviderApp interface.
+func (app *App) GetTestDistributionKeeper() testutil.TestDistributionKeeper {
 	return app.DistrKeeper
 }
 
