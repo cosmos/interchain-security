@@ -3,13 +3,18 @@ module github.com/cosmos/interchain-security
 go 1.18
 
 require (
-	github.com/cosmos/cosmos-sdk v0.45.11
+	github.com/confio/ics23/go v0.9.0
+	github.com/cosmos/cosmos-sdk v0.45.12
+	github.com/cosmos/ibc-go/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.3
+	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.3
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/kylelemons/godebug v1.1.0
+	github.com/oxyno-zeta/gomock-extra-matcher v1.1.0
 	github.com/rakyll/statik v0.1.7
+	github.com/regen-network/cosmos-proto v0.3.1
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
@@ -18,21 +23,13 @@ require (
 	github.com/tendermint/tm-db v0.6.7
 	github.com/tidwall/gjson v1.14.4
 	golang.org/x/crypto v0.5.0 // indirect
+	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	google.golang.org/genproto v0.0.0-20221024183307-1bc688fe9f3e
 	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v2 v2.4.0
-)
-
-require (
-	github.com/confio/ics23/go v0.9.0
-	github.com/cosmos/ibc-go/v4 v4.2.0
-	github.com/golang/mock v1.6.0
-	github.com/oxyno-zeta/gomock-extra-matcher v1.1.0
-	github.com/regen-network/cosmos-proto v0.3.1
-	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
 )
 
 require (
