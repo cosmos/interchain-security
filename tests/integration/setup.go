@@ -5,12 +5,12 @@ import (
 
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
 	"github.com/cosmos/ibc-go/v7/testing/mock"
 
-	"github.com/cosmos/interchain-security/testutil"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
+	testutil "github.com/cosmos/interchain-security/testutil/integration" // TODO: rename the import this is crazy difficult to use.
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 

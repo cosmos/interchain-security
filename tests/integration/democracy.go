@@ -15,7 +15,7 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	"github.com/cosmos/interchain-security/app/params"
+	params "github.com/cosmos/interchain-security/app/params"
 	testutil "github.com/cosmos/interchain-security/testutil/integration"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/stretchr/testify/suite"
