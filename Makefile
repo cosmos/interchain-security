@@ -187,3 +187,11 @@ proto-update-deps:
 
 .PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps mocks
 
+###############################################################################
+###                              Documentation                              ###
+###############################################################################
+
+build-docs:
+	@cd docs && ./build.sh
+
+.PHONY: build-docs
