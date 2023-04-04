@@ -13,6 +13,56 @@ func concatSteps(steps ...[]Step) []Step {
 	return concat
 }
 
+var simpleTestSteps = concatSteps(
+	[]Step{
+		{
+			action: StartChainAction{
+				chain: chainID("provi"),
+				validators: []StartChainValidator{
+					{id: validatorID("bob"), stake: 500000000, allocation: 10000000000},
+					{id: validatorID("alice"), stake: 500000000, allocation: 10000000000},
+					{id: validatorID("carol"), stake: 500000000, allocation: 10000000000},
+				},
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValBalances: &map[validatorID]uint{
+						validatorID("alice"): 9500000000,
+						validatorID("bob"):   9500000000,
+						validatorID("carol"): 9500000000,
+					},
+				},
+			},
+		},
+		{
+			action: delegateTokensAction{
+				chain:  chainID("provi"),
+				from:   validatorID("alice"),
+				to:     validatorID("alice"),
+				amount: 11000000,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: SendTokensAction{
+				chain:  chainID("provi"),
+				from:   validatorID("alice"),
+				to:     validatorID("bob"),
+				amount: 100,
+			},
+			state: State{},
+		},
+	},
+)
+
 var happyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
