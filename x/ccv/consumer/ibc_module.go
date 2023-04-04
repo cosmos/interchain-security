@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -38,7 +39,7 @@ func (am AppModule) OnChanOpenInit(
 
 	// ensure provider channel hasn't already been created
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok {
-		return "", sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
+		return "", errorsmod.Wrapf(ccv.ErrDuplicateChannel,
 			"provider channel: %s already set", providerChannel)
 	}
 
@@ -51,7 +52,7 @@ func (am AppModule) OnChanOpenInit(
 
 	// ensure the counterparty port ID matches the expected provider port ID
 	if counterparty.PortId != ccv.ProviderPortID {
-		return "", sdkerrors.Wrapf(porttypes.ErrInvalidPort,
+		return "", errorsmod.Wrapf(porttypes.ErrInvalidPort,
 			"invalid counterparty port: %s, expected %s", counterparty.PortId, ccv.ProviderPortID)
 	}
 
@@ -79,18 +80,18 @@ func validateCCVChannelParams(
 ) error {
 	// Only ordered channels allowed
 	if order != channeltypes.ORDERED {
-		return sdkerrors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.ORDERED, order)
+		return errorsmod.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.ORDERED, order)
 	}
 
 	// the port ID must match the port ID the CCV module is bounded to
 	boundPort := ccvkeeper.GetPort(ctx)
 	if boundPort != portID {
-		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
+		return errorsmod.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
 	}
 
 	// the version must match the expected version
 	if version != ccv.Version {
-		return sdkerrors.Wrapf(ccv.ErrInvalidVersion, "got %s, expected %s", version, ccv.Version)
+		return errorsmod.Wrapf(ccv.ErrInvalidVersion, "got %s, expected %s", version, ccv.Version)
 	}
 	return nil
 }
@@ -106,7 +107,7 @@ func (AppModule) OnChanOpenTry(
 	_ channeltypes.Counterparty,
 	_ string,
 ) (string, error) {
-	return "", sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
+	return "", errorsmod.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
 }
 
 // OnChanOpenAck implements the IBCModule interface
@@ -119,18 +120,18 @@ func (am AppModule) OnChanOpenAck(
 ) error {
 	// ensure provider channel has not already been created
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok {
-		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
+		return errorsmod.Wrapf(ccv.ErrDuplicateChannel,
 			"provider channel: %s already established", providerChannel)
 	}
 
 	var md providertypes.HandshakeMetadata
 	if err := (&md).Unmarshal([]byte(counterpartyMetadata)); err != nil {
-		return sdkerrors.Wrapf(ccv.ErrInvalidHandshakeMetadata,
+		return errorsmod.Wrapf(ccv.ErrInvalidHandshakeMetadata,
 			"error unmarshalling ibc-ack metadata: \n%v; \nmetadata: %v", err, counterpartyMetadata)
 	}
 
 	if md.Version != ccv.Version {
-		return sdkerrors.Wrapf(ccv.ErrInvalidVersion,
+		return errorsmod.Wrapf(ccv.ErrInvalidVersion,
 			"invalid counterparty version: %s, expected %s", md.Version, ccv.Version)
 	}
 
@@ -183,7 +184,7 @@ func (AppModule) OnChanOpenConfirm(
 	_ string,
 	_ string,
 ) error {
-	return sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
+	return errorsmod.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
 }
 
 // OnChanCloseInit implements the IBCModule interface
@@ -196,7 +197,7 @@ func (am AppModule) OnChanCloseInit(
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok && providerChannel != channelID {
 		return nil
 	}
-	return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
+	return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
 }
 
 // OnChanCloseConfirm implements the IBCModule interface
@@ -247,7 +248,7 @@ func (am AppModule) OnAcknowledgementPacket(
 ) error {
 	var ack channeltypes.Acknowledgement
 	if err := ccv.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal consumer packet acknowledgement: %v", err)
+		return errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal consumer packet acknowledgement: %v", err)
 	}
 
 	if err := am.keeper.OnAcknowledgementPacket(ctx, packet, ack); err != nil {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
@@ -28,7 +28,7 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 
 	gen, ok := k.GetConsumerGenesis(ctx, req.ChainId)
 	if !ok {
-		return nil, sdkerrors.Wrap(types.ErrUnknownConsumerChainID, req.ChainId)
+		return nil, errorsmod.Wrap(types.ErrUnknownConsumerChainID, req.ChainId)
 	}
 
 	return &types.QueryConsumerGenesisResponse{GenesisState: gen}, nil

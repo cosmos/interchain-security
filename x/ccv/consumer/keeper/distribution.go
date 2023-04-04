@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
+	errorsmod "cosmossdk.io/errors"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -183,7 +183,7 @@ func (k Keeper) ChannelOpenInit(ctx sdk.Context, msg *channeltypes.MsgChannelOpe
 func (k Keeper) GetConnectionHops(ctx sdk.Context, srcPort, srcChan string) ([]string, error) {
 	ch, found := k.channelKeeper.GetChannel(ctx, srcPort, srcChan)
 	if !found {
-		return []string{}, sdkerrors.Wrapf(ccv.ErrChannelNotFound,
+		return []string{}, errorsmod.Wrapf(ccv.ErrChannelNotFound,
 			"cannot get connection hops from non-existent channel")
 	}
 	return ch.ConnectionHops, nil

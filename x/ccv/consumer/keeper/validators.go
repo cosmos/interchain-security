@@ -127,7 +127,7 @@ func (k Keeper) Slash(
 	infractionHeight, power int64,
 	_ sdk.Dec,
 ) math.Int {
-	//To Do impliment
+
 	return math.Int{}
 }
 
