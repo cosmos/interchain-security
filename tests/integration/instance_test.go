@@ -32,7 +32,6 @@ func TestCCVTestSuite(t *testing.T) {
 
 // Executes a standard suite of tests, against a democracy consumer app.go implementation.
 func TestConsumerDemocracyCCVTestSuite(t *testing.T) {
-
 	// Pass in concrete app type that implement the interface defined in /testutil/e2e/interfaces.go
 	// IMPORTANT: the concrete app types passed in as type parameters here must match the
 	// concrete app types returned by the relevant app initers.
