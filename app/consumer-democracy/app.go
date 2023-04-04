@@ -412,15 +412,6 @@ func New(
 		),
 	)
 
-	app.IBCKeeper = ibckeeper.NewKeeper(
-		appCodec,
-		keys[ibchost.StoreKey],
-		app.GetSubspace(ibchost.ModuleName),
-		&app.ConsumerKeeper,
-		app.UpgradeKeeper,
-		scopedIBCKeeper,
-	)
-
 	// Create CCV consumer and modules
 	app.ConsumerKeeper = consumerkeeper.NewKeeper(
 		appCodec,
@@ -437,6 +428,15 @@ func New(
 		&app.TransferKeeper,
 		app.IBCKeeper,
 		authtypes.FeeCollectorName,
+	)
+
+	app.IBCKeeper = ibckeeper.NewKeeper(
+		appCodec,
+		keys[ibchost.StoreKey],
+		app.GetSubspace(ibchost.ModuleName),
+		&app.ConsumerKeeper,
+		app.UpgradeKeeper,
+		scopedIBCKeeper,
 	)
 
 	// consumer keeper satisfies the staking keeper interface
