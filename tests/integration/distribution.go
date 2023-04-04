@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 import (
 	"strings"
@@ -12,8 +12,7 @@ import (
 
 // This test is valid for minimal viable consumer chain
 func (s *CCVTestSuite) TestRewardsDistribution() {
-
-	//set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain
+	// set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain
 	s.SetupCCVChannel(s.path)
 	s.SetupTransferChannel()
 	bondAmt := sdk.NewInt(10000000)
@@ -24,15 +23,15 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	// relay VSC packets from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
-	//reward for the provider chain will be sent after each 2 blocks
+	// reward for the provider chain will be sent after each 2 blocks
 	consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
 	consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(2))
 	s.consumerChain.NextBlock()
 
-	consumerAccountKeeper := s.consumerApp.GetE2eAccountKeeper()
-	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
+	consumerAccountKeeper := s.consumerApp.GetTestAccountKeeper()
+	consumerBankKeeper := s.consumerApp.GetTestBankKeeper()
 
-	//send coins to the fee pool which is used for reward distribution
+	// send coins to the fee pool which is used for reward distribution
 	consumerFeePoolAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), authtypes.FeeCollectorName).GetAddress()
 	feePoolTokensOld := consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerFeePoolAddr)
 	fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
@@ -41,14 +40,14 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	feePoolTokens := consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerFeePoolAddr)
 	s.Require().Equal(sdk.NewInt(100).Add(feePoolTokensOld.AmountOf(sdk.DefaultBondDenom)), feePoolTokens.AmountOf(sdk.DefaultBondDenom))
 
-	//calculate the reward for consumer and provider chain. Consumer will receive ConsumerRedistributeFrac, the rest is going to provider
+	// calculate the reward for consumer and provider chain. Consumer will receive ConsumerRedistributeFrac, the rest is going to provider
 	frac, err := sdk.NewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
 	s.Require().NoError(err)
 	consumerExpectedRewards, _ := sdk.NewDecCoinsFromCoins(feePoolTokens...).MulDec(frac).TruncateDecimal()
 	providerExpectedRewards := feePoolTokens.Sub(consumerExpectedRewards)
 	s.consumerChain.NextBlock()
 
-	//amount from the fee pool is devided between consumer redistribute address and address reserved for provider chain
+	// amount from the fee pool is devided between consumer redistribute address and address reserved for provider chain
 	feePoolTokens = consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerFeePoolAddr)
 	s.Require().Equal(0, len(feePoolTokens))
 	consumerRedistributeAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerRedistributeName).GetAddress()
@@ -58,7 +57,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	providerTokens := consumerBankKeeper.GetAllBalances(s.consumerCtx(), providerRedistributeAddr)
 	s.Require().Equal(providerExpectedRewards.AmountOf(sdk.DefaultBondDenom), providerTokens.AmountOf(sdk.DefaultBondDenom))
 
-	//send the reward to provider chain after 2 blocks
+	// send the reward to provider chain after 2 blocks
 
 	s.consumerChain.NextBlock()
 	providerTokens = consumerBankKeeper.GetAllBalances(s.consumerCtx(), providerRedistributeAddr)
@@ -66,7 +65,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 
 	relayAllCommittedPackets(s, s.consumerChain, s.transferPath, transfertypes.PortID, s.transferPath.EndpointA.ChannelID, 1)
 	s.providerChain.NextBlock()
-	communityCoins := s.providerApp.GetE2eDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
+	communityCoins := s.providerApp.GetTestDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
 	ibcCoinIndex := -1
 	for i, coin := range communityCoins {
 		if strings.HasPrefix(coin.Denom, "ibc") {
@@ -79,7 +78,6 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 
 // TestSendRewardsRetries tests that failed reward transmissions are retried every BlocksPerDistributionTransmission blocks
 func (s *CCVTestSuite) TestSendRewardsRetries() {
-
 	// TODO: this setup can be consolidated with other tests in the file
 
 	// ccv and transmission channels setup
@@ -93,7 +91,7 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 	// relay VSC packets from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
-	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
+	consumerBankKeeper := s.consumerApp.GetTestBankKeeper()
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
 	// reward for the provider chain will be sent after each 1000 blocks
@@ -150,9 +148,8 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 // number of block have passed. It also checks that the IBC transfer transfer states are discarded if
 // the reward distribution to the provider has failed.
 //
-// Note: this method is effectively a unit test for EndBLockRD(), but is written as an e2e test to avoid excessive mocking.
+// Note: this method is effectively a unit test for EndBLockRD(), but is written as an integration test to avoid excessive mocking.
 func (s *CCVTestSuite) TestEndBlockRD() {
-
 	testCases := []struct {
 		name                    string
 		prepareRewardDist       bool
@@ -199,7 +196,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
 		consumerKeeper := s.consumerApp.GetConsumerKeeper()
-		consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
+		consumerBankKeeper := s.consumerApp.GetTestBankKeeper()
 
 		// reward for the provider chain will be sent after each 1000 blocks
 		consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
@@ -246,8 +243,8 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 }
 
 // getEscrowBalance gets the current balances in the escrow account holding the transfered tokens to the provider
-func (s CCVTestSuite) getEscrowBalance() sdk.Coins { //nolint:govet // this is a test so we can copy locks
-	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
+func (s CCVTestSuite) getEscrowBalance() sdk.Coins {
+	consumerBankKeeper := s.consumerApp.GetTestBankKeeper()
 	transChanID := s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(s.consumerCtx())
 	escAddr := transfertypes.GetEscrowAddress(transfertypes.PortID, transChanID)
 	return consumerBankKeeper.GetAllBalances(s.consumerCtx(), escAddr)
