@@ -34,9 +34,9 @@ type StakingKeeper interface {
 	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec) math.Int
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
-	PowerReduction(ctx sdk.Context) sdk.Int
+	PowerReduction(ctx sdk.Context) math.Int
 	PutUnbondingOnHold(ctx sdk.Context, id uint64) error
-	GetLastTotalPower(ctx sdk.Context) sdk.Int
+	GetLastTotalPower(ctx sdk.Context) math.Int
 	SlashWithInfractionReason(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec, stakingtypes.Infraction) math.Int
 }
 
