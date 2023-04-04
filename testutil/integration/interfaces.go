@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 import (
 	"time"
@@ -20,7 +20,7 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// The interface that any provider app must implement to be compatible with ccv e2e tests.
+// The interface that any provider app must implement to be compatible with ccv integration tests.
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ProviderApp interface {
 	ibctesting.TestingApp
@@ -31,16 +31,16 @@ type ProviderApp interface {
 
 	GetProviderKeeper() providerkeeper.Keeper
 	// Returns a staking keeper interface with more capabilities than the expected_keepers interface
-	GetE2eStakingKeeper() E2eStakingKeeper
-	// Returns a bank keeper interface with more capabilities than the expected_keepers interface
-	GetE2eBankKeeper() E2eBankKeeper
-	// Returns a slashing keeper interface with more capabilities than the expected_keepers interface
-	GetE2eSlashingKeeper() E2eSlashingKeeper
-	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
-	GetE2eDistributionKeeper() E2eDistributionKeeper
+	GetTestStakingKeeper() TestStakingKeeper
+	// Testurns a bank keeper interface with more capabilities than the expected_keepers interface
+	GetTestBankKeeper() TestBankKeeper
+	// Testurns a slashing keeper interface with more capabilities than the expected_keepers interface
+	GetTestSlashingKeeper() TestSlashingKeeper
+	// Integrurns a distribution keeper interface with more capabilities than the expected_keepers interface
+	GetTestDistributionKeeper() TestDistributionKeeper
 }
 
-// The interface that any consumer app must implement to be compatible with e2e tests
+// The interface that any consumer app must implement to be compatible with integration tests
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ConsumerApp interface {
 	ibctesting.TestingApp
@@ -54,33 +54,33 @@ type ConsumerApp interface {
 	//
 
 	// Returns a bank keeper interface with more capabilities than the expected_keepers interface
-	GetE2eBankKeeper() E2eBankKeeper
-	// Returns an account keeper interface with more capabilities than the expected_keepers interface
-	GetE2eAccountKeeper() E2eAccountKeeper
-	// Returns a slashing keeper interface with more capabilities than the expected_keepers interface
-	GetE2eSlashingKeeper() E2eSlashingKeeper
-	// Returns an evidence keeper interface with more capabilities than the expected_keepers interface
-	GetE2eEvidenceKeeper() E2eEvidenceKeeper
+	GetTestBankKeeper() TestBankKeeper
+	// Tests an account keeper interface with more capabilities than the expected_keepers interface
+	GetTestAccountKeeper() TestAccountKeeper
+	// Tests a slashing keeper interface with more capabilities than the expected_keepers interface
+	GetTestSlashingKeeper() TestSlashingKeeper
+	// Tests an evidence keeper interface with more capabilities than the expected_keepers interface
+	GetTestEvidenceKeeper() TestEvidenceKeeper
 }
 
 type DemocConsumerApp interface {
 	ConsumerApp
 	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
-	GetE2eDistributionKeeper() E2eDistributionKeeper
-	// Returns a staking keeper interface with more capabilities than the expected_keepers interface
-	GetE2eStakingKeeper() E2eStakingKeeper
-	// Returns a mint keeper interface with more capabilities than the expected_keepers interface
-	GetE2eMintKeeper() E2eMintKeeper
-	// Returns a gov keeper interface with more capabilities than the expected_keepers interface
-	GetE2eGovKeeper() E2eGovKeeper
+	GetTestDistributionKeeper() TestDistributionKeeper
+	// Tests a staking keeper interface with more capabilities than the expected_keepers interface
+	GetTestStakingKeeper() TestStakingKeeper
+	// Tests a mint keeper interface with more capabilities than the expected_keepers interface
+	GetTestMintKeeper() TestMintKeeper
+	// Tests a gov keeper interface with more capabilities than the expected_keepers interface
+	GetTestGovKeeper() TestGovKeeper
 }
 
 //
 // The following keeper interfaces are wrappers around the expected keepers for ccv modules,
-// since e2e tests require extra functionality from external keepers.
+// since integration tests require extra functionality from external keepers.
 //
 
-type E2eStakingKeeper interface {
+type TestStakingKeeper interface {
 	ccvtypes.StakingKeeper
 	Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.Int, tokenSrc types.BondStatus,
 		validator types.Validator, subtractAccount bool) (newShares sdk.Dec, err error)
@@ -100,18 +100,18 @@ type E2eStakingKeeper interface {
 	GetValidatorSet() types.ValidatorSet
 }
 
-type E2eBankKeeper interface {
+type TestBankKeeper interface {
 	ccvtypes.BankKeeper
 	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress,
 		recipientModule string, amt sdk.Coins) error
 }
 
-type E2eAccountKeeper interface {
+type TestAccountKeeper interface {
 	ccvtypes.AccountKeeper
 	GetParams(sdk.Context) authtypes.Params
 }
 
-type E2eSlashingKeeper interface {
+type TestSlashingKeeper interface {
 	ccvtypes.SlashingKeeper
 	SetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress,
 		info slashingtypes.ValidatorSigningInfo)
@@ -122,11 +122,11 @@ type E2eSlashingKeeper interface {
 		address sdk.ConsAddress, handler func(index int64, missed bool) (stop bool))
 }
 
-type E2eEvidenceKeeper interface {
+type TestEvidenceKeeper interface {
 	HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
 }
 
-type E2eDistributionKeeper interface {
+type TestDistributionKeeper interface {
 	GetFeePoolCommunityCoins(ctx sdk.Context) sdk.DecCoins
 	GetDistributionAccount(ctx sdk.Context) authtypes.ModuleAccountI
 	GetValidatorOutstandingRewards(ctx sdk.Context,
@@ -134,11 +134,11 @@ type E2eDistributionKeeper interface {
 	GetCommunityTax(ctx sdk.Context) (percent sdk.Dec)
 }
 
-type E2eMintKeeper interface {
+type TestMintKeeper interface {
 	GetParams(ctx sdk.Context) (params minttypes.Params)
 }
 
-type E2eGovKeeper interface {
+type TestGovKeeper interface {
 	GetDepositParams(ctx sdk.Context) govtypes.DepositParams
 	GetVotingParams(ctx sdk.Context) govtypes.VotingParams
 	SetVotingParams(ctx sdk.Context, votingParams govtypes.VotingParams)

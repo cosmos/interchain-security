@@ -29,7 +29,7 @@ var (
 	gaiaTag = flag.String("gaia-tag", "", "gaia tag to use - default is latest")
 )
 
-// runs integration tests
+// runs E2E tests
 // all docker containers are built sequentially to avoid race conditions when using local cosmos-sdk
 // after building docker containers, all tests are run in parallel using their respective docker containers
 func main() {
@@ -197,7 +197,7 @@ func (tr *TestRun) startDocker() {
 		}
 	}
 	scriptStr := fmt.Sprintf(
-		"tests/integration/testnet-scripts/start-docker.sh %s %s %s %s %s",
+		"tests/e2e/testnet-scripts/start-docker.sh %s %s %s %s %s",
 		tr.containerConfig.containerName,
 		tr.containerConfig.instanceName,
 		localSdk,

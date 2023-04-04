@@ -494,7 +494,7 @@ func (k Keeper) SetPendingPackets(ctx sdk.Context, packets ccv.ConsumerPacketDat
 		// This should never happen
 		panic(fmt.Errorf("failed to marshal ConsumerPacketDataList: %w", err))
 	}
-	store.Set([]byte{types.PendingDataPacketsBytePrefix}, bz)
+	store.Set(types.PendingDataPacketsKey(), bz)
 }
 
 // GetPendingPackets returns the pending CCV packets from the store
@@ -502,7 +502,7 @@ func (k Keeper) GetPendingPackets(ctx sdk.Context) ccv.ConsumerPacketDataList {
 	var packets ccv.ConsumerPacketDataList
 
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get([]byte{types.PendingDataPacketsBytePrefix})
+	bz := store.Get(types.PendingDataPacketsKey())
 	if bz == nil {
 		return packets
 	}
@@ -520,7 +520,7 @@ func (k Keeper) GetPendingPackets(ctx sdk.Context) ccv.ConsumerPacketDataList {
 // DeletePendingDataPackets clears the pending data packets in store
 func (k Keeper) DeletePendingDataPackets(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete([]byte{types.PendingDataPacketsBytePrefix})
+	store.Delete(types.PendingDataPacketsKey())
 }
 
 // AppendPendingDataPacket appends the given data packet to the pending data packets in store
