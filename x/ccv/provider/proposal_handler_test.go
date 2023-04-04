@@ -78,7 +78,7 @@ func TestProviderProposalHandler(t *testing.T) {
 		},
 		{
 			name: "unsupported proposal type",
-			content: &distributiontypes.CommunityPoolSpendProposal{
+			content: &distributiontypes.CommunityPoolSpendProposal{ //nolint:staticcheck // we are making sure that we do not support this proposal type
 				Title:       "title",
 				Description: "desc",
 				Recipient:   "",

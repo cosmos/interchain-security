@@ -18,6 +18,7 @@ import (
 	types1 "github.com/cosmos/cosmos-sdk/x/capability/types"
 	types2 "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	types3 "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	types4 "github.com/cosmos/cosmos-sdk/x/staking/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -25,7 +26,6 @@ import (
 	types7 "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // MockStakingKeeper is a mock of StakingKeeper interface.
