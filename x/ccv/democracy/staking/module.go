@@ -51,7 +51,7 @@ func NewAppModule(cdc codec.Codec, stakingkeeper keeper.Keeper, ak types.Account
 // however, it returns no validator updates as validators are tracked via the
 // consumer chain's x/cvv/consumer module and so this module is not responsible
 // for returning the initial validator set.
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
+func (AppModule) InitGenesis(_ sdk.Context, _ codec.JSONCodec, _ json.RawMessage) []abci.ValidatorUpdate {
 	// var genesisState types.GenesisState
 
 	// cdc.MustUnmarshalJSON(data, &genesisState)

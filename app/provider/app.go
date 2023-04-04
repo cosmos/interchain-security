@@ -810,7 +810,7 @@ func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 }
 
 // GetTxConfig implements the TestingApp interface.
-func (app *App) GetTxConfig() client.TxConfig {
+func (*App) GetTxConfig() client.TxConfig {
 	return MakeTestEncodingConfig().TxConfig
 }
 

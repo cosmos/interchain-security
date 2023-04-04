@@ -31,12 +31,12 @@ func (k Keeper) SetConsumerParams(ctx sdk.Context, params types.Params) {
 }
 
 // GetParams implement from staking keeper
-func (k Keeper) GetParams(ctx sdk.Context) stakingtypes.Params {
+func (Keeper) GetParams(_ sdk.Context) stakingtypes.Params {
 	return stakingtypes.DefaultParams()
 }
 
 // SetParams implement from staking keeper
-func (k Keeper) SetParams(ctx sdk.Context, params stakingtypes.Params) {
+func (Keeper) SetParams(_ sdk.Context, _ stakingtypes.Params) {
 }
 
 // GetEnabled returns the enabled flag for the consumer module

@@ -17,7 +17,7 @@ func (k Keeper) Hooks() Hooks {
 	return Hooks{k}
 }
 
-func (k Keeper) AfterValidatorBonded(ctx sdk.Context, consAddr sdk.ConsAddress, valAddr sdk.ValAddress) error {
+func (k Keeper) AfterValidatorBonded(ctx sdk.Context, consAddr sdk.ConsAddress, _ sdk.ValAddress) error {
 	if k.hooks != nil {
 		err := k.hooks.AfterValidatorBonded(ctx, consAddr, nil)
 		return err
