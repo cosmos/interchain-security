@@ -1,6 +1,6 @@
-# manually run full integration test suite
+# manually run full E2E test suite
 # all tests are run sequentially
-name: manual-integration-main
+name: manual-e2e-main
 on:
   workflow_dispatch:
 
@@ -22,5 +22,5 @@ jobs:
         with:
           go-version: "1.18" # The Go version to download (if necessary) and use.
 
-      - name: Integration tests
-        run: make test-integration
+      - name: E2E tests
+        run: make test-e2e
