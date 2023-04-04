@@ -7,7 +7,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/app/consumer/ante"
-	appparams "github.com/cosmos/interchain-security/app/params"
+	"github.com/cosmos/interchain-security/app/params"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,7 +26,7 @@ func noOpAnteDecorator() sdk.AnteHandler {
 }
 
 func TestMsgFilterDecorator(t *testing.T) {
-	txCfg := appparams.MakeEncodingConfig().TxConfig
+	txCfg := params.MakeTestEncodingConfig().TxConfig
 
 	testCases := []struct {
 		name           string

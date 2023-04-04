@@ -14,7 +14,7 @@ import (
 )
 
 func TestDisabledModulesDecorator(t *testing.T) {
-	txCfg := appparams.MakeEncodingConfig().TxConfig
+	txCfg := appparams.MakeTestEncodingConfig().TxConfig
 
 	testCases := []struct {
 		name      string

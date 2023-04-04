@@ -23,7 +23,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-
+	"github.com/cosmos/cosmos-sdk/std"
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -703,8 +703,8 @@ func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 }
 
 // GetTxConfig implements the TestingApp interface.
-func (*App) GetTxConfig() client.TxConfig {
-	return appparams.MakeEncodingConfig().TxConfig
+func (app *App) GetTxConfig() client.TxConfig {
+	return MakeTestEncodingConfig().TxConfig
 }
 
 func (*App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
@@ -774,4 +774,17 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibcconsumertypes.ModuleName)
 
 	return paramsKeeper
+}
+
+// MakeTestEncodingConfig creates an EncodingConfig for testing. This function
+// should be used only in tests or when creating a new app instance (NewApp*()).
+// App user shouldn't create new codecs - use the app.AppCodec instead.
+// [DEPRECATED]
+func MakeTestEncodingConfig() appparams.EncodingConfig {
+	encodingConfig := appparams.MakeTestEncodingConfig()
+	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	return encodingConfig
 }

@@ -10,7 +10,7 @@ import (
 	types2 "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
-	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
+	github_com_gogo_protobuf_types "github.com/cosmos/gogoproto/types"
 	crypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	_ "google.golang.org/protobuf/types/known/timestamppb"

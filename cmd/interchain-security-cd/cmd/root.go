@@ -8,8 +8,6 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/version"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -36,17 +34,19 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 
+	"cosmossdk.io/simapp"
 	rosettaCmd "cosmossdk.io/tools/rosetta/cmd"
 )
 
 // NewRootCmd creates a new root command for wasmd. It is called once in the
 // main function.
 func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
-	encodingConfig := params.MakeEncodingConfig()
+	encodingConfig := params.MakeTestEncodingConfig()
 
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Codec).
@@ -54,13 +54,13 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		WithTxConfig(encodingConfig.TxConfig).
 		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
-		WithAccountRetriever(authtypes.AccountRetriever{}).
-		WithHomeDir(app.DefaultNodeHome).
-		WithViper("")
+		WithAccountRetriever(types.AccountRetriever{}).
+		WithHomeDir(simapp.DefaultNodeHome).
+		WithViper("") // In simapp, we don't use any prefix for env variables.
 
 	rootCmd := &cobra.Command{
-		Use:   version.AppName,
-		Short: "Kujira Daemon (server)",
+		Use:   "simd",
+		Short: "simulation app",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// set the default command outputs
 			cmd.SetOut(cmd.OutOrStdout())
@@ -127,7 +127,7 @@ func initAppConfig() (string, any) {
 	//   own app.toml to override, or use this default value.
 	//
 	// In simapp, we set the min gas prices to 0.
-	srvCfg.MinGasPrices = "0whale"
+	srvCfg.MinGasPrices = "0stake"
 	// srvCfg.BaseConfig.IAVLDisableFastNode = true // disable fastnode by default
 
 	customAppConfig := CustomAppConfig{

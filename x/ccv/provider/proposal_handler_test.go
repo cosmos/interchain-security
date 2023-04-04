@@ -82,7 +82,8 @@ func TestProviderProposalHandler(t *testing.T) {
 				Title:       "title",
 				Description: "desc",
 				Recipient:   "",
-				Amount:      sdk.NewCoins(sdk.NewCoin("communityfunds", sdk.NewInt(10)))},
+				Amount:      sdk.NewCoins(sdk.NewCoin("communityfunds", sdk.NewInt(10))),
+			},
 		},
 	}
 

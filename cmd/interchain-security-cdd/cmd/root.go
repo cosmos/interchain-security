@@ -46,7 +46,7 @@ import (
 // NewRootCmd creates a new root command for wasmd. It is called once in the
 // main function.
 func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
-	encodingConfig := params.MakeEncodingConfig()
+	encodingConfig := params.MakeTestEncodingConfig()
 
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Codec).
@@ -127,7 +127,7 @@ func initAppConfig() (string, any) {
 	//   own app.toml to override, or use this default value.
 	//
 	// In simapp, we set the min gas prices to 0.
-	srvCfg.MinGasPrices = "0whale"
+	srvCfg.MinGasPrices = "0stake"
 	// srvCfg.BaseConfig.IAVLDisableFastNode = true // disable fastnode by default
 
 	customAppConfig := CustomAppConfig{
