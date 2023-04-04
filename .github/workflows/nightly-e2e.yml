@@ -2,7 +2,7 @@
 
 # !! Relevant changes to this file should be propagated manual-integration.yml
 
-name: nightly-integration-main
+name: nightly-e2e-main
 on:
   schedule:
     # run every day at 03:00 UTC
@@ -53,7 +53,7 @@ jobs:
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "❗Integration tests failed❗",
+                    "text": "E2E tests failed❗",
                     "emoji": true
                   }
                 },
