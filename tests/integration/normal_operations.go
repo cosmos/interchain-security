@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
