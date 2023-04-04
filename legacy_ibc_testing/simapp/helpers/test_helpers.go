@@ -1,19 +1,20 @@
 package helpers
 
 import (
+	"math/rand"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsign "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	"math/rand"
 )
 
 /*
 TODO: Remove after upgrading to ibc-go v5
 legacy_ibc_testing is temporarily copied into the interchain-security repository for the purpose of testing only.
-The e2e test suites rely on modifications to ibc-go's test framework that cannot be back-ported to the canonical version that ics will rely on.
+The integration test suites rely on modifications to ibc-go's test framework that cannot be back-ported to the canonical version that ics will rely on.
 These files will be deprecated once ICS is able to upgrade to ibc-go v5.
 */
 

@@ -84,10 +84,11 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
+
 	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/cosmos/interchain-security/testutil/e2e"
+	testutil "github.com/cosmos/interchain-security/testutil/integration"
 	ccvdistr "github.com/cosmos/interchain-security/x/ccv/democracy/distribution"
 
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -759,50 +760,50 @@ func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
 }
 
-// DemocConsumerApp interface implementations for e2e tests
+// DemocConsumerApp interface implementations for integration tests
 
 // GetConsumerKeeper implements the ConsumerApp interface.
 func (app *App) GetConsumerKeeper() consumerkeeper.Keeper {
 	return app.ConsumerKeeper
 }
 
-// GetE2eBankKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
+// GetTestBankKeeper implements the ConsumerApp interface.
+func (app *App) GetTestBankKeeper() testutil.TestBankKeeper {
 	return app.BankKeeper
 }
 
-// GetE2eAccountKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eAccountKeeper() e2e.E2eAccountKeeper {
+// GetTestAccountKeeper implements the ConsumerApp interface.
+func (app *App) GetTestAccountKeeper() testutil.TestAccountKeeper {
 	return app.AccountKeeper
 }
 
-// GetE2eSlashingKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
+// GetTestSlashingKeeper implements the ConsumerApp interface.
+func (app *App) GetTestSlashingKeeper() testutil.TestSlashingKeeper {
 	return app.SlashingKeeper
 }
 
-// GetE2eEvidenceKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
+// GetTestEvidenceKeeper implements the ConsumerApp interface.
+func (app *App) GetTestEvidenceKeeper() testutil.TestEvidenceKeeper {
 	return app.EvidenceKeeper
 }
 
-// GetE2eStakingKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eStakingKeeper() e2e.E2eStakingKeeper {
+// GetTestStakingKeeper implements the ConsumerApp interface.
+func (app *App) GetTestStakingKeeper() testutil.TestStakingKeeper {
 	return app.StakingKeeper
 }
 
-// GetE2eDistributionKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eDistributionKeeper() e2e.E2eDistributionKeeper {
+// GetTestDistributionKeeper implements the ConsumerApp interface.
+func (app *App) GetTestDistributionKeeper() testutil.TestDistributionKeeper {
 	return app.DistrKeeper
 }
 
-// GetE2eMintKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eMintKeeper() e2e.E2eMintKeeper {
+// GetTestMintKeeper implements the ConsumerApp interface.
+func (app *App) GetTestMintKeeper() testutil.TestMintKeeper {
 	return app.MintKeeper
 }
 
-// GetE2eGovKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eGovKeeper() e2e.E2eGovKeeper {
+// GetTestGovKeeper implements the ConsumerApp interface.
+func (app *App) GetTestGovKeeper() testutil.TestGovKeeper {
 	return app.GovKeeper
 }
 

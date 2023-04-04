@@ -8,35 +8,35 @@ Unit tests are useful for simple standalone functionality, and CRUD operations. 
 
 [Mocked external keepers](./testutil/keeper/mocks.go) (implemented with [gomock](https://github.com/golang/mock)) are available for testing code that briefly interacts with external modules, but still only a single function/method relevant to ccv, and a single chain. Ie. do not use mocked external keepers to test the integration of the ccv module with external modules, or integration between consumer and provider.
 
-## End to End (e2e) Tests
+## Integration Tests
 
-[e2e-tests](./tests/e2e/) utilize the [IBC Testing Package](https://github.com/cosmos/ibc-go/tree/main/testing), and test functionality that is wider in scope than a unit test, but still able to be validated in-memory. Ie. code where advancing blocks would be useful, simulated handshakes, simulated packet relays, etc.
+[integration-tests](./tests/integration/) utilize the [IBC Testing Package](https://github.com/cosmos/ibc-go/tree/main/testing), and test functionality that is wider in scope than a unit test, but still able to be validated in-memory. Ie. code where advancing blocks would be useful, simulated handshakes, simulated packet relays, etc.
 
-To run e2e tests against your own consumer/provider implementations, use [instance_test.go](./tests/e2e/instance_test.go) as an example. All you'll need to do is make sure your applications implement the necessary interfaces defined in [interfaces.go](./testutil/e2e/interfaces.go), pattern match [specific_setup.go](./testutil/ibc_testing/specific_setup.go), then pass in the appropriate types and parameters to the suite, as is done in `instance_test.go` for the dummy provider/consumer implementations.
+To run integration tests against your own consumer/provider implementations, use [instance_test.go](./tests/integration/instance_test.go) as an example. All you'll need to do is make sure your applications implement the necessary interfaces defined in [interfaces.go](./testutil/integration/interfaces.go), pattern match [specific_setup.go](./testutil/ibc_testing/specific_setup.go), then pass in the appropriate types and parameters to the suite, as is done in `instance_test.go` for the dummy provider/consumer implementations.
 
 ## Differential Tests (WIP)
 
-Similar to e2e tests, but they compare the system state to an expected state generated from a model implementation.
+[Differential tests](./tests/difference/) is similar to integration tests, but they compare the system state to an expected state generated from a model implementation.
 
-## Integration Tests 
+## End-to-End (E2E) Tests 
 
-[Integration tests](./tests/integration/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. Integration tests use queries/transactions invoked from CLI to drive and validate the code.
+[E2E tests](./tests/e2e/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. E2E tests use queries/transactions invoked from CLI to drive and validate the code.
 
 ## Running Tests
 Tests can be run using `make`:
 
 ```bash
-# run unit, e2e, diff, and integration tests
+# run unit, integration, diff, and E2E tests
 make test
 
-# run unit and e2e tests - prefer this for local development
+# run unit and integration tests - prefer this for local development
 make test-short
 
 # run difference tests
 make test-diff
 
-# run integration tests
-make test-integration
+# run E2E tests
+make test-e2e
 
 # equivalent to make test with caching disabled
 make test-no-cache
@@ -44,28 +44,28 @@ make test-no-cache
 
 Alternatively you can run tests using `go test`:
 ```bash
-# run all unit, e2e, and diff tests using go
+# run all unit, integration, and diff tests using go
 go test ./...
-# run all unit, e2e, and diff tests with verbose output
+# run all unit, integration, and diff tests with verbose output
 go test -v ./..
-# run all unit, e2e, and diff tests with coverage stats
+# run all unit, integration, and diff tests with coverage stats
 go test -coverpkg=./x/... -coverprofile=coverage.out ./...
 # run a single unit test
 go test -run <unit-test-name> path/to/package
 # example: run a single unit test
 go test -run TestSlashAcks ./x/ccv/provider/keeper
-# run a single e2e test
+# run a single integration test
 go test -run <test-suite-name>/<test-name> ./...
-# example: run a single e2e test
+# example: run a single integration test
 go test -run TestProviderTestSuite/TestPacketRoundtrip ./...
-# run all integration tests
-go run ./tests/integration/...
-# run all integration tests with a local cosmos sdk
-go run ./tests/integration/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/"
+# run all E2E tests
+go run ./tests/e2e/...
+# run all E2E tests with a local cosmos sdk
+go run ./tests/e2e/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/"
 # run golang native fuzz tests (https://go.dev/doc/tutorial/fuzz)
 go test -fuzz=<regex-to-match-test-name>
-# run verbose integration tests
-go run ./tests/integration/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/" --verbose
+# run verbose E2E tests
+go run ./tests/e2e/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/" --verbose
 ```
 
 ### Tesing with Gaia as the provider
