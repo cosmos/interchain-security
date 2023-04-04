@@ -54,8 +54,8 @@ func ParseChannelIDFromEvents(events sdk.Events) (string, error) {
 	for _, ev := range events {
 		if ev.Type == channeltypes.EventTypeChannelOpenInit || ev.Type == channeltypes.EventTypeChannelOpenTry {
 			for _, attr := range ev.Attributes {
-				if string(attr.Key) == channeltypes.AttributeKeyChannelID {
-					return string(attr.Value), nil
+				if attr.Key == channeltypes.AttributeKeyChannelID {
+					return attr.Value, nil
 				}
 			}
 		}
@@ -69,7 +69,7 @@ func ParseAckFromEvents(events sdk.Events) ([]byte, error) {
 	for _, ev := range events {
 		if ev.Type == channeltypes.EventTypeWriteAck {
 			for _, attr := range ev.Attributes {
-				if string(attr.Key) == channeltypes.AttributeKeyAck {
+				if attr.Key == channeltypes.AttributeKeyAckHex {
 					return []byte(attr.Value), nil
 				}
 			}
