@@ -126,10 +126,11 @@ func (k Keeper) SlashForked(
 	)
 }
 
-func (k Keeper) Slash(
-	ctx sdk.Context,
-	addr sdk.ConsAddress,
-	infractionHeight, power int64,
+func (Keeper) Slash(
+	_ sdk.Context,
+	_ sdk.ConsAddress,
+	_ int64,
+	_ int64,
 	_ sdk.Dec,
 ) math.Int {
 	return math.Int{}
