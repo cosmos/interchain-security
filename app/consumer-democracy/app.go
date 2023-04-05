@@ -82,12 +82,6 @@ import (
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 
-<<<<<<< HEAD
-=======
-	distr "github.com/cosmos/cosmos-sdk/x/distribution"
-
-	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
->>>>>>> main
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	testutil "github.com/cosmos/interchain-security/testutil/integration"

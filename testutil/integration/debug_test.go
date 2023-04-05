@@ -9,24 +9,15 @@ import (
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
-<<<<<<< HEAD:testutil/e2e/debug_test.go
-	"github.com/cosmos/interchain-security/tests/e2e"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
-=======
 	integr "github.com/cosmos/interchain-security/tests/integration"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
->>>>>>> main:testutil/integration/debug_test.go
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
 )
 
 // runCCVTestByName runs a single CCV integration test by name, using a CCVTestSuite
 // initialized with the dummy provider and consumer defined in this repo.
 func runCCVTestByName(t *testing.T, methodName string) {
-<<<<<<< HEAD:testutil/e2e/debug_test.go
-	suite := e2e.NewCCVTestSuite[*appProvider.App, *appConsumer.App](
-=======
 
 	suite := integr.NewCCVTestSuite[*appProvider.App, *appConsumer.App](
->>>>>>> main:testutil/integration/debug_test.go
 		icstestingutils.ProviderAppIniter, icstestingutils.ConsumerAppIniter, []string{})
 	suite.SetT(t)
 	suite.SetupTest()
@@ -38,12 +29,8 @@ func runCCVTestByName(t *testing.T, methodName string) {
 // using a ConsumerDemocracyTestSuite initialized with the dummy
 // democracy consumer defined in this repo.
 func runConsumerDemocracyTestByName(t *testing.T, methodName string) {
-<<<<<<< HEAD:testutil/e2e/debug_test.go
-	suite := e2e.NewConsumerDemocracyTestSuite[*appConsumerDemocracy.App](
-=======
 
 	suite := integr.NewConsumerDemocracyTestSuite[*appConsumerDemocracy.App](
->>>>>>> main:testutil/integration/debug_test.go
 		icstestingutils.DemocracyConsumerAppIniter)
 	suite.SetT(t)
 	suite.SetupTest()

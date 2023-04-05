@@ -31,15 +31,6 @@ type ProviderApp interface {
 
 	GetProviderKeeper() providerkeeper.Keeper
 	// Returns a staking keeper interface with more capabilities than the expected_keepers interface
-<<<<<<< HEAD:testutil/e2e/interfaces.go
-	GetE2eStakingKeeper() StakingKeeper
-	// Returns a bank keeper interface with more capabilities than the expected_keepers interface
-	GetE2eBankKeeper() BankKeeper
-	// Returns a slashing keeper interface with more capabilities than the expected_keepers interface
-	GetE2eSlashingKeeper() SlashingKeeper
-	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
-	GetE2eDistributionKeeper() DistributionKeeper
-=======
 	GetTestStakingKeeper() TestStakingKeeper
 	// Testurns a bank keeper interface with more capabilities than the expected_keepers interface
 	GetTestBankKeeper() TestBankKeeper
@@ -47,7 +38,6 @@ type ProviderApp interface {
 	GetTestSlashingKeeper() TestSlashingKeeper
 	// Integrurns a distribution keeper interface with more capabilities than the expected_keepers interface
 	GetTestDistributionKeeper() TestDistributionKeeper
->>>>>>> main:testutil/integration/interfaces.go
 }
 
 // The interface that any consumer app must implement to be compatible with integration tests
@@ -64,15 +54,6 @@ type ConsumerApp interface {
 	//
 
 	// Returns a bank keeper interface with more capabilities than the expected_keepers interface
-<<<<<<< HEAD:testutil/e2e/interfaces.go
-	GetE2eBankKeeper() BankKeeper
-	// Returns an account keeper interface with more capabilities than the expected_keepers interface
-	GetE2eAccountKeeper() AccountKeeper
-	// Returns a slashing keeper interface with more capabilities than the expected_keepers interface
-	GetE2eSlashingKeeper() SlashingKeeper
-	// Returns an evidence keeper interface with more capabilities than the expected_keepers interface
-	GetE2eEvidenceKeeper() EvidenceKeeper
-=======
 	GetTestBankKeeper() TestBankKeeper
 	// Tests an account keeper interface with more capabilities than the expected_keepers interface
 	GetTestAccountKeeper() TestAccountKeeper
@@ -80,21 +61,11 @@ type ConsumerApp interface {
 	GetTestSlashingKeeper() TestSlashingKeeper
 	// Tests an evidence keeper interface with more capabilities than the expected_keepers interface
 	GetTestEvidenceKeeper() TestEvidenceKeeper
->>>>>>> main:testutil/integration/interfaces.go
 }
 
 type DemocConsumerApp interface {
 	ConsumerApp
 	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
-<<<<<<< HEAD:testutil/e2e/interfaces.go
-	GetE2eDistributionKeeper() DistributionKeeper
-	// Returns a staking keeper interface with more capabilities than the expected_keepers interface
-	GetE2eStakingKeeper() StakingKeeper
-	// Returns a mint keeper interface with more capabilities than the expected_keepers interface
-	GetE2eMintKeeper() MintKeeper
-	// Returns a gov keeper interface with more capabilities than the expected_keepers interface
-	GetE2eGovKeeper() GovKeeper
-=======
 	GetTestDistributionKeeper() TestDistributionKeeper
 	// Tests a staking keeper interface with more capabilities than the expected_keepers interface
 	GetTestStakingKeeper() TestStakingKeeper
@@ -102,7 +73,6 @@ type DemocConsumerApp interface {
 	GetTestMintKeeper() TestMintKeeper
 	// Tests a gov keeper interface with more capabilities than the expected_keepers interface
 	GetTestGovKeeper() TestGovKeeper
->>>>>>> main:testutil/integration/interfaces.go
 }
 
 //
@@ -110,11 +80,7 @@ type DemocConsumerApp interface {
 // since integration tests require extra functionality from external keepers.
 //
 
-<<<<<<< HEAD:testutil/e2e/interfaces.go
-type StakingKeeper interface {
-=======
 type TestStakingKeeper interface {
->>>>>>> main:testutil/integration/interfaces.go
 	ccvtypes.StakingKeeper
 	Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.Int, tokenSrc types.BondStatus,
 		validator types.Validator, subtractAccount bool) (newShares sdk.Dec, err error)
@@ -134,30 +100,18 @@ type TestStakingKeeper interface {
 	GetValidatorSet() types.ValidatorSet
 }
 
-<<<<<<< HEAD:testutil/e2e/interfaces.go
-type BankKeeper interface {
-=======
 type TestBankKeeper interface {
->>>>>>> main:testutil/integration/interfaces.go
 	ccvtypes.BankKeeper
 	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress,
 		recipientModule string, amt sdk.Coins) error
 }
 
-<<<<<<< HEAD:testutil/e2e/interfaces.go
-type AccountKeeper interface {
-=======
 type TestAccountKeeper interface {
->>>>>>> main:testutil/integration/interfaces.go
 	ccvtypes.AccountKeeper
 	GetParams(sdk.Context) authtypes.Params
 }
 
-<<<<<<< HEAD:testutil/e2e/interfaces.go
-type SlashingKeeper interface {
-=======
 type TestSlashingKeeper interface {
->>>>>>> main:testutil/integration/interfaces.go
 	ccvtypes.SlashingKeeper
 	SetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress,
 		info slashingtypes.ValidatorSigningInfo)
@@ -168,19 +122,11 @@ type TestSlashingKeeper interface {
 		address sdk.ConsAddress, handler func(index int64, missed bool) (stop bool))
 }
 
-<<<<<<< HEAD:testutil/e2e/interfaces.go
-type EvidenceKeeper interface {
-	HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
-}
-
-type DistributionKeeper interface {
-=======
 type TestEvidenceKeeper interface {
 	HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
 }
 
 type TestDistributionKeeper interface {
->>>>>>> main:testutil/integration/interfaces.go
 	GetFeePoolCommunityCoins(ctx sdk.Context) sdk.DecCoins
 	GetDistributionAccount(ctx sdk.Context) authtypes.ModuleAccountI
 	GetValidatorOutstandingRewards(ctx sdk.Context,
@@ -188,12 +134,11 @@ type TestDistributionKeeper interface {
 	GetCommunityTax(ctx sdk.Context) (percent sdk.Dec)
 }
 
-<<<<<<< HEAD:testutil/e2e/interfaces.go
-type MintKeeper interface {
+type TestMintKeeper interface {
 	GetParams(ctx sdk.Context) (params minttypes.Params)
 }
 
-type GovKeeper interface {
+type TestGovKeeper interface {
 	GetParams(ctx sdk.Context) govv1.Params
 	SetParams(ctx sdk.Context, params govv1.Params) error
 	// GetDepositParams(ctx sdk.Context) govv1.DepositParams
@@ -201,17 +146,6 @@ type GovKeeper interface {
 	// SetVotingParams(ctx sdk.Context, votingParams govv1.VotingParams)
 	// SubmitProposal(ctx sdk.Context, content govv1beta1.Content) (govv1.Proposal, error)
 	SubmitProposal(ctx sdk.Context, messages []sdk.Msg, metadata, title, summary string, proposer sdk.AccAddress) (govv1.Proposal, error)
-=======
-type TestMintKeeper interface {
-	GetParams(ctx sdk.Context) (params minttypes.Params)
-}
-
-type TestGovKeeper interface {
-	GetDepositParams(ctx sdk.Context) govtypes.DepositParams
-	GetVotingParams(ctx sdk.Context) govtypes.VotingParams
-	SetVotingParams(ctx sdk.Context, votingParams govtypes.VotingParams)
-	SubmitProposal(ctx sdk.Context, content govtypes.Content) (govtypes.Proposal, error)
->>>>>>> main:testutil/integration/interfaces.go
 	AddDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress, depositAmount sdk.Coins) (bool, error)
 	AddVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress, options govv1.WeightedVoteOptions, metadata string) error
 }

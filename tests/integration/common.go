@@ -16,7 +16,7 @@ import (
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
 	testutil "github.com/cosmos/interchain-security/testutil/integration"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -190,7 +190,7 @@ func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddre
 		ctx,
 		delAddr,
 		valSrcAddr,
-		valDstAddr,
+		ValDstAddr,
 		sharesAmount,
 	)
 	s.Require().NoError(err)

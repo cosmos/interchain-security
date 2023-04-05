@@ -222,7 +222,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 }
 
 func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
-	accounts []ibctesting.SenderAccount, depositAmount sdk.Coins) error {
+	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins) error {
 	msgContent, err := govv1.NewLegacyContent(&paramChange, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	if err != nil {
 		return err
