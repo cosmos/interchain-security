@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	appparams "github.com/cosmos/interchain-security/app/params"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
@@ -18,6 +20,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+
+	"github.com/cosmos/cosmos-sdk/std"
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -168,7 +172,7 @@ var (
 
 var (
 	_ servertypes.Application = (*App)(nil)
-	_ ibctesting.AppTest      = (*App)(nil)
+	_ ibctesting.TestingApp   = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -885,4 +889,17 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(providertypes.ModuleName)
 
 	return paramsKeeper
+}
+
+// MakeTestEncodingConfig creates an EncodingConfig for testing. This function
+// should be used only in tests or when creating a new app instance (NewApp*()).
+// App user shouldn't create new codecs - use the app.AppCodec instead.
+// [DEPRECATED]
+func MakeTestEncodingConfig() appparams.EncodingConfig {
+	encodingConfig := appparams.MakeTestEncodingConfig()
+	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	return encodingConfig
 }

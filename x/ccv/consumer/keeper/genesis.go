@@ -17,8 +17,20 @@ import (
 //  2. A consumer chain restarts after a client to the provider was created, but the CCV channel handshake is still in progress
 //  3. A consumer chain restarts after the CCV channel handshake was completed.
 func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) []abci.ValidatorUpdate {
+
+	// PreCCV is true during the process of a standalone to consumer changeover.
+	// At the PreCCV point in the process, the standalone chain has just been upgraded to include
+	// the consumer ccv module, but the standalone staking keeper is still managing the validator set.
+	// Once the provider validator set starts validating blocks, the consumer CCV module
+	// will take over proof of stake capabilities, but the standalone staking keeper will
+	// stick around for slashing/jailing purposes.
+	if state.PreCCV {
+		k.SetPreCCVTrue(ctx)
+		k.SetInitialValSet(ctx, state.InitialValSet)
+	}
+
 	k.SetConsumerParams(ctx, state.Params)
-	// TODO: Remove enabled flag and find a better way to setup e2e tests
+	// TODO: Remove enabled flag and find a better way to setup integration tests
 	// See: https://github.com/cosmos/interchain-security/issues/339
 	if !state.Params.Enabled {
 		return nil
@@ -85,6 +97,10 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 
 		// set provider client id
 		k.SetProviderClientID(ctx, state.ProviderClientId)
+	}
+
+	if state.PreCCV {
+		return []abci.ValidatorUpdate{}
 	}
 
 	// populate cross chain validators states with initial valset

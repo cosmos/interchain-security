@@ -16,7 +16,11 @@ import (
 )
 
 func TestForbiddenProposalsDecorator(t *testing.T) {
+<<<<<<< HEAD
 	txCfg := appparams.MakeEncodingConfig().TxConfig
+=======
+	txCfg := app.MakeTestEncodingConfig().TxConfig
+>>>>>>> main
 
 	testCases := []struct {
 		name      string

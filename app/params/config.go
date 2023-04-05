@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	Bech32Prefix = "provider"
+	Bech32Prefix = "cosmos"
 
 	// Bech32PrefixAccAddr defines the Bech32 prefix of an account's address
 	Bech32PrefixAccAddr = Bech32Prefix

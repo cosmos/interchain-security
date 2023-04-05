@@ -8,6 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
+	appparams "github.com/cosmos/interchain-security/app/params"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -17,6 +20,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	
+	"github.com/cosmos/cosmos-sdk/std"
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -115,7 +120,7 @@ import (
 
 const (
 	AppName              = "interchain-security-cd"
-	upgradeName          = "v07-Theta"
+	upgradeName          = "v07-Theta" // arbitrary name, define your own appropriately named upgrade
 	AccountAddressPrefix = "cosmos"
 )
 
@@ -170,7 +175,7 @@ var (
 
 var (
 	_ servertypes.Application = (*App)(nil)
-	_ ibctesting.AppTest      = (*App)(nil)
+	_ ibctesting.TestingApp   = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -332,7 +337,7 @@ func New(
 		app.AccountKeeper,
 	)
 
-	ccvstakingKeeper := stakingkeeper.NewKeeper(
+	app.stakingKeeper := stakingkeeper.NewKeeper(
 		appCodec,
 		keys[stakingtypes.StoreKey],
 		app.AccountKeeper,
@@ -362,7 +367,7 @@ func New(
 		keys[distrtypes.StoreKey],
 		app.AccountKeeper,
 		app.BankKeeper,
-		ccvstakingKeeper,
+		&app.stakingKeeper,
 		consumertypes.ConsumerRedistributeName,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
@@ -438,6 +443,8 @@ func New(
 		app.UpgradeKeeper,
 		scopedIBCKeeper,
 	)
+	// Setting the staking keeper is only needed for standalone to consumer changeover chains
+	app.ConsumerKeeper.SetStandaloneStakingKeeper(app.StakingKeeper)
 
 	// consumer keeper satisfies the staking keeper interface
 	// of the slashing module
@@ -640,6 +647,7 @@ func New(
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
 		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
+
 			app.IBCKeeper.ConnectionKeeper.SetParams(ctx, ibcconnectiontypes.DefaultParams())
 
 			fromVM := make(map[string]uint64)
@@ -651,8 +659,33 @@ func New(
 				}
 			}
 
+			// For a new consumer chain, this code (together with the entire SetUpgradeHandler) is not needed at all,
+			// upgrade handler code is application specific. However, as an example, standalone to consumer
+			// changeover chains should utilize customized upgrade handler code similar to below.
+
+			// TODO: should have a way to read from current node home
+			userHomeDir, err := os.UserHomeDir()
+			if err != nil {
+				stdlog.Println("Failed to get home dir %2", err)
+			}
+			nodeHome := userHomeDir + "/.sovereign/config/genesis.json"
+			appState, _, err := genutiltypes.GenesisStateFromGenFile(nodeHome)
+			if err != nil {
+				return fromVM, fmt.Errorf("failed to unmarshal genesis state: %w", err)
+			}
+
+			var consumerGenesis = consumertypes.GenesisState{}
+			appCodec.MustUnmarshalJSON(appState[consumertypes.ModuleName], &consumerGenesis)
+
+			consumerGenesis.PreCCV = true
+			app.ConsumerKeeper.InitGenesis(ctx, &consumerGenesis)
+
 			ctx.Logger().Info("start to run module migrations...")
 
+			// Note: consumer ccv module is added to app.MM.Modules constructor above,
+			// meaning the consumer ccv module will have an entry in fromVM.
+			// Since a consumer ccv module entry exists in fromVM, the RunMigrations method
+			// will not call the consumer ccv module's InitGenesis method a second time.
 			return app.MM.RunMigrations(ctx, app.configurator, fromVM)
 		},
 	)
@@ -663,7 +696,12 @@ func New(
 	}
 
 	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
-		storeUpgrades := store.StoreUpgrades{}
+		// Chains may need to add a KV store to their application. The following code
+		// is needed for standalone chains that're changing over to a consumer chain, with a consumer ccv module.
+		// When a chain starts from height 0 (like for testing purposes in this repo), the following code is not needed.
+		storeUpgrades := store.StoreUpgrades{
+			Added: []string{consumertypes.ModuleName},
+		}
 
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
@@ -923,4 +961,17 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(consumertypes.ModuleName)
 
 	return paramsKeeper
+}
+
+// MakeTestEncodingConfig creates an EncodingConfig for testing. This function
+// should be used only in tests or when creating a new app instance (NewApp*()).
+// App user shouldn't create new codecs - use the app.AppCodec instead.
+// [DEPRECATED]
+func MakeTestEncodingConfig() appparams.EncodingConfig {
+	encodingConfig := appparams.MakeTestEncodingConfig()
+	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	return encodingConfig
 }

@@ -132,7 +132,7 @@ var (
 
 var (
 	_ servertypes.Application = (*App)(nil)
-	_ ibctesting.AppTest      = (*App)(nil)
+	_ ibctesting.TestingApp   = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -775,3 +775,16 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 
 	return paramsKeeper
 }
+
+// // MakeTestEncodingConfig creates an EncodingConfig for testing. This function
+// // should be used only in tests or when creating a new app instance (NewApp*()).
+// // App user shouldn't create new codecs - use the app.AppCodec instead.
+// // [DEPRECATED]
+// func MakeTestEncodingConfig() appparams.EncodingConfig {
+// 	encodingConfig := appparams.MakeTestEncodingConfig()
+// 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
+// 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+// 	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
+// 	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+// 	return encodingConfig
+// }
