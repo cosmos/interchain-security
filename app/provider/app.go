@@ -168,7 +168,7 @@ var (
 
 var (
 	_ servertypes.Application = (*App)(nil)
-	_ ibctesting.AppTest      = (*App)(nil)
+	_ ibctesting.TestingApp   = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -808,7 +808,7 @@ func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 }
 
 // GetTxConfig implements the TestingApp interface.
-func (*App) GetTxConfig() client.TxConfig {
+func (app *App) GetTxConfig() client.TxConfig {
 	return MakeTestEncodingConfig().TxConfig
 }
 
