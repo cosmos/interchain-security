@@ -35,7 +35,7 @@ The integration test suites rely on modifications to ibc-go's test framework tha
 These files will be deprecated once ICS is able to upgrade to ibc-go v5.
 */
 
-type AppIniter func() (AppTest, map[string]json.RawMessage)
+type AppIniter func() (TestingApp, map[string]json.RawMessage)
 
 // func SetupTestingApp() (AppTest, map[string]json.RawMessage) {
 // 	db := dbm.NewMemDB()
@@ -46,7 +46,7 @@ type AppIniter func() (AppTest, map[string]json.RawMessage)
 
 var DefaultTestingAppInit AppIniter
 
-type AppTest interface {
+type TestingApp interface {
 	abci.Application
 
 	// ibc-go additions
@@ -68,7 +68,7 @@ type AppTest interface {
 // that also act as delegators. For simplicity, each validator is bonded with a delegation
 // of one consensus engine unit (10^6) in the default token of the simapp from first genesis
 // account. A Nop logger is set in SimApp.
-func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction sdk.Int, balances ...banktypes.Balance) AppTest {
+func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction sdk.Int, balances ...banktypes.Balance) TestingApp {
 	app, genesisState := appIniter()
 
 	baseapp.SetChainID(chainID)(app.GetBaseApp())

@@ -51,11 +51,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				keyringBackend, _ := cmd.Flags().GetString(flags.FlagKeyringBackend)
 				if keyringBackend != "" && clientCtx.Keyring == nil {
 					var err error
-<<<<<<< HEAD
 					kr, err = keyring.New(sdk.KeyringServiceName(), keyringBackend, clientCtx.HomeDir, inBuf, clientCtx.Codec)
-=======
-					kr, err = keyring.New(sdk.KeyringServiceName(), keyringBackend, clientCtx.HomeDir, inBuf)
->>>>>>> main
 					if err != nil {
 						return err
 					}
@@ -67,14 +63,10 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				if err != nil {
 					return fmt.Errorf("failed to get address from Keyring: %w", err)
 				}
-<<<<<<< HEAD
 				addr, err = info.GetAddress()
 				if err != nil {
 					return fmt.Errorf("failed to get address from Keyring: %w", err)
 				}
-=======
-				addr = info.GetAddress()
->>>>>>> main
 			}
 
 			coins, err := sdk.ParseCoinsNormalized(args[1])

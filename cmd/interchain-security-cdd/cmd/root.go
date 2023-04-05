@@ -4,13 +4,11 @@ import (
 	"errors"
 	"io"
 	"os"
-<<<<<<< HEAD
+	"path/filepath"
 
 	"github.com/spf13/cast"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/version"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -22,21 +20,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	app "github.com/cosmos/interchain-security/app/consumer-democracy"
+	simapp "github.com/cosmos/interchain-security/app/consumer-democracy"
 	"github.com/cosmos/interchain-security/app/params"
 
-=======
-	"path/filepath"
-
-	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
-	"github.com/spf13/cast"
-	"github.com/spf13/cobra"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
-	"github.com/tendermint/tendermint/libs/log"
-	dbm "github.com/tendermint/tm-db"
-
-	"github.com/cosmos/cosmos-sdk/baseapp"
->>>>>>> main
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
@@ -45,16 +31,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/pruning"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/server"
-<<<<<<< HEAD
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 
+	rosettaCmd "cosmossdk.io/tools/rosetta/cmd"
+	"github.com/cosmos/cosmos-sdk/snapshots"
+	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-
-	rosettaCmd "cosmossdk.io/tools/rosetta/cmd"
 )
 
 // NewRootCmd creates a new root command for wasmd. It is called once in the
@@ -64,40 +51,10 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Codec).
-=======
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	"github.com/cosmos/cosmos-sdk/store"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
-	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-	simapp "github.com/cosmos/interchain-security/app/consumer-democracy"
-	"github.com/cosmos/interchain-security/app/params"
-)
-
-// NewRootCmd creates a new root command for simd. It is called once in the
-// main function.
-func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
-	encodingConfig := simapp.MakeTestEncodingConfig()
-	initClientCtx := client.Context{}.
-		WithCodec(encodingConfig.Marshaler).
->>>>>>> main
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
 		WithTxConfig(encodingConfig.TxConfig).
 		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
-<<<<<<< HEAD
-		WithAccountRetriever(authtypes.AccountRetriever{}).
-		WithHomeDir(app.DefaultNodeHome).
-		WithViper("")
-
-	rootCmd := &cobra.Command{
-		Use:   version.AppName,
-		Short: "Kujira Daemon (server)",
-=======
 		WithAccountRetriever(types.AccountRetriever{}).
 		WithHomeDir(simapp.DefaultNodeHome).
 		WithViper("") // In simapp, we don't use any prefix for env variables.
@@ -105,7 +62,6 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	rootCmd := &cobra.Command{
 		Use:   "simd",
 		Short: "simulation app",
->>>>>>> main
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// set the default command outputs
 			cmd.SetOut(cmd.OutOrStdout())
@@ -126,14 +82,9 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 			}
 
 			customAppTemplate, customAppConfig := initAppConfig()
-<<<<<<< HEAD
 			customCfg := cometcfg.DefaultConfig()
 
 			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCfg)
-=======
-
-			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig)
->>>>>>> main
 		},
 	}
 
@@ -144,11 +95,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 // initAppConfig helps to override default appConfig template and configs.
 // return "", nil if no custom configuration is required for the application.
-<<<<<<< HEAD
-func initAppConfig() (string, any) {
-=======
 func initAppConfig() (string, interface{}) {
->>>>>>> main
 	// The following code snippet is just for reference.
 
 	// WASMConfig defines configuration for the wasm module.
@@ -181,11 +128,7 @@ func initAppConfig() (string, interface{}) {
 	//   own app.toml to override, or use this default value.
 	//
 	// In simapp, we set the min gas prices to 0.
-<<<<<<< HEAD
-	srvCfg.MinGasPrices = "0whale"
-=======
 	srvCfg.MinGasPrices = "0stake"
->>>>>>> main
 	// srvCfg.BaseConfig.IAVLDisableFastNode = true // disable fastnode by default
 
 	customAppConfig := CustomAppConfig{
@@ -208,61 +151,35 @@ lru_size = 0`
 }
 
 func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
-<<<<<<< HEAD
 	a := appCreator{encodingConfig}
 
-	gentxModule := app.ModuleBasics[genutiltypes.ModuleName].(genutil.AppModuleBasic)
+	gentxModule := simapp.ModuleBasics[genutiltypes.ModuleName].(genutil.AppModuleBasic)
 
-	rootCmd.AddCommand(
-		genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome),
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome, gentxModule.GenTxValidator),
-		genutilcli.MigrateGenesisCmd(),
-		genutilcli.GenTxCmd(app.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome),
-		genutilcli.ValidateGenesisCmd(app.ModuleBasics),
-		AddGenesisAccountCmd(app.DefaultNodeHome),
-=======
-	cfg := sdk.GetConfig()
-	cfg.Seal()
-
-	a := appCreator{encodingConfig}
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(simapp.ModuleBasics, simapp.DefaultNodeHome),
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, simapp.DefaultNodeHome),
+		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, simapp.DefaultNodeHome, gentxModule.GenTxValidator),
 		genutilcli.MigrateGenesisCmd(),
 		genutilcli.GenTxCmd(simapp.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, simapp.DefaultNodeHome),
 		genutilcli.ValidateGenesisCmd(simapp.ModuleBasics),
 		AddGenesisAccountCmd(simapp.DefaultNodeHome),
->>>>>>> main
 		tmcli.NewCompletionCmd(rootCmd, true),
 		debug.Cmd(),
 		config.Cmd(),
 		pruning.PruningCmd(a.newApp),
 	)
 
-<<<<<<< HEAD
-	server.AddCommands(rootCmd, app.DefaultNodeHome, a.newApp, a.appExport, addModuleInitFlags)
-=======
 	server.AddCommands(rootCmd, simapp.DefaultNodeHome, a.newApp, a.appExport, addModuleInitFlags)
->>>>>>> main
 
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
 		rpc.StatusCommand(),
 		queryCommand(),
 		txCommand(),
-<<<<<<< HEAD
-		keys.Commands(app.DefaultNodeHome),
-	)
-
-	// add rosetta
-	rootCmd.AddCommand(rosettaCmd.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Codec))
-=======
 		keys.Commands(simapp.DefaultNodeHome),
 	)
 
 	// add rosetta
-	rootCmd.AddCommand(server.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
->>>>>>> main
+	rootCmd.AddCommand(rosettaCmd.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Codec))
 }
 
 func addModuleInitFlags(startCmd *cobra.Command) {
@@ -274,11 +191,7 @@ func queryCommand() *cobra.Command {
 		Use:                        "query",
 		Aliases:                    []string{"q"},
 		Short:                      "Querying subcommands",
-<<<<<<< HEAD
-		DisableFlagParsing:         false,
-=======
 		DisableFlagParsing:         true,
->>>>>>> main
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
@@ -291,11 +204,7 @@ func queryCommand() *cobra.Command {
 		authcmd.QueryTxCmd(),
 	)
 
-<<<<<<< HEAD
-	app.ModuleBasics.AddQueryCommands(cmd)
-=======
 	simapp.ModuleBasics.AddQueryCommands(cmd)
->>>>>>> main
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
@@ -305,11 +214,7 @@ func txCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "tx",
 		Short:                      "Transactions subcommands",
-<<<<<<< HEAD
-		DisableFlagParsing:         false,
-=======
 		DisableFlagParsing:         true,
->>>>>>> main
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
@@ -325,11 +230,7 @@ func txCommand() *cobra.Command {
 		authcmd.GetDecodeCommand(),
 	)
 
-<<<<<<< HEAD
-	app.ModuleBasics.AddTxCommands(cmd)
-=======
 	simapp.ModuleBasics.AddTxCommands(cmd)
->>>>>>> main
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
@@ -347,34 +248,18 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 		cache = store.NewCommitKVStoreCacheManager()
 	}
 
-<<<<<<< HEAD
-	pruningOpts, err := server.GetPruningOptionsFromFlags(appOpts)
-	if err != nil {
-		panic(err)
-	}
-
-=======
->>>>>>> main
 	skipUpgradeHeights := make(map[int64]bool)
 	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
 		skipUpgradeHeights[int64(h)] = true
 	}
 
-<<<<<<< HEAD
-	return app.New(
-		logger,
-		db,
-		traceStore,
-		true,
-		skipUpgradeHeights,
-=======
 	pruningOpts, err := server.GetPruningOptionsFromFlags(appOpts)
 	if err != nil {
 		panic(err)
 	}
 
 	snapshotDir := filepath.Join(cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
-	snapshotDB, err := sdk.NewLevelDB("metadata", snapshotDir)
+	snapshotDB, err := dbm.NewGoLevelDB("metadata", snapshotDir)
 	if err != nil {
 		panic(err)
 	}
@@ -383,18 +268,18 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 		panic(err)
 	}
 
+	opts := snapshottypes.SnapshotOptions{
+		Interval:   cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval)),
+		KeepRecent: cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent)),
+	}
+
 	return simapp.New(
 		logger, db, traceStore, true, skipUpgradeHeights,
->>>>>>> main
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		a.encCfg,
 		appOpts,
 		baseapp.SetPruning(pruningOpts),
-<<<<<<< HEAD
-		baseapp.SetInterBlockCache(cache),
-=======
->>>>>>> main
 		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
 		baseapp.SetHaltHeight(cast.ToUint64(appOpts.Get(server.FlagHaltHeight))),
 		baseapp.SetHaltTime(cast.ToUint64(appOpts.Get(server.FlagHaltTime))),
@@ -402,45 +287,7 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 		baseapp.SetInterBlockCache(cache),
 		baseapp.SetTrace(cast.ToBool(appOpts.Get(server.FlagTrace))),
 		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(server.FlagIndexEvents))),
-<<<<<<< HEAD
-	)
-}
-
-// appExport creates a new cddApp (optionally at a given height)
-// and exports state.
-func (a appCreator) appExport(
-	logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool, jailAllowedAddrs []string, appOpts servertypes.AppOptions, modulesToExport []string,
-) (servertypes.ExportedApp, error) {
-	var cddApp *app.App
-	homePath, ok := appOpts.Get(flags.FlagHome).(string)
-	if !ok || homePath == "" {
-		return servertypes.ExportedApp{}, errors.New("application home is not set")
-	}
-
-	loadLatest := height == -1
-	cddApp = app.New(
-		logger,
-		db,
-		traceStore,
-		loadLatest,
-		map[int64]bool{},
-		homePath,
-		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		a.encCfg,
-		appOpts,
-	)
-
-	if height != -1 {
-		if err := cddApp.LoadHeight(height); err != nil {
-			return servertypes.ExportedApp{}, err
-		}
-	}
-
-	return cddApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
-=======
-		baseapp.SetSnapshotStore(snapshotStore),
-		baseapp.SetSnapshotInterval(cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval))),
-		baseapp.SetSnapshotKeepRecent(cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent))),
+		baseapp.SetSnapshot(snapshotStore, opts),
 		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(server.FlagIAVLCacheSize))),
 		baseapp.SetIAVLDisableFastNode(cast.ToBool(appOpts.Get(server.FlagDisableIAVLFastNode))),
 	)
@@ -450,7 +297,7 @@ func (a appCreator) appExport(
 // and exports state.
 func (a appCreator) appExport(
 	logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool, jailAllowedAddrs []string,
-	appOpts servertypes.AppOptions,
+	appOpts servertypes.AppOptions, modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
 	var simApp *simapp.App
 	homePath, ok := appOpts.Get(flags.FlagHome).(string)
@@ -469,5 +316,4 @@ func (a appCreator) appExport(
 	}
 
 	return simApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
->>>>>>> main
 }

@@ -1,8 +1,8 @@
 package keeper
 
 import (
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // ChangeoverToConsumer includes the logic that needs to execute during the process of a
