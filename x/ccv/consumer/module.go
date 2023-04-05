@@ -149,6 +149,7 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 // Set the VSC ID for the subsequent block to the same value as the current block
 // Panic if the provider's channel was established and then closed
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+
 	channelID, found := am.keeper.GetProviderChannel(ctx)
 	if found && am.keeper.IsChannelClosed(ctx, channelID) {
 		// The CCV channel was established, but it was then closed;
@@ -171,7 +172,17 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 
 // EndBlock implements the AppModule interface
 // Flush PendingChanges to ABCI, send pending packets, write acknowledgements for packets that have finished unbonding.
+//
+// TODO: e2e tests confirming behavior with and without standalone -> consumer changeover
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+
+	// If PreCCV state is active, consumer is a previously standalone chain
+	// that was just upgraded to include the consumer ccv module, execute changeover logic.
+	if am.keeper.IsPreCCV(ctx) {
+		initialValUpdates := am.keeper.ChangeoverToConsumer(ctx)
+		return initialValUpdates
+	}
+
 	// Execute EndBlock logic for the Reward Distribution sub-protocol
 	am.keeper.EndBlockRD(ctx)
 
