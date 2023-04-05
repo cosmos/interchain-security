@@ -11,11 +11,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	app "github.com/cosmos/interchain-security/app/consumer-democracy"
 	"github.com/cosmos/interchain-security/app/consumer-democracy/ante"
+	appparams "github.com/cosmos/interchain-security/app/params"
 	"github.com/stretchr/testify/require"
 )
 
 func TestForbiddenProposalsDecorator(t *testing.T) {
-	txCfg := app.MakeTestEncodingConfig().TxConfig
+	txCfg := appparams.MakeTestEncodingConfig().TxConfig
 
 	testCases := []struct {
 		name      string

@@ -55,7 +55,7 @@ type AppTest interface {
 	GetStakingKeeper() core.StakingKeeper
 	GetIBCKeeper() *keeper.Keeper
 	GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper
-	GetTxConfig() client.TxConfig
+	TxConfig() client.TxConfig
 
 	// Implemented by SimApp
 	AppCodec() codec.Codec

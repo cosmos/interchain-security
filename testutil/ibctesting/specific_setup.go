@@ -7,8 +7,6 @@ package ibctesting
 import (
 	"encoding/json"
 
-	"cosmossdk.io/simapp"
-
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
 	tmdb "github.com/cometbft/cometbft-db"
@@ -24,23 +22,23 @@ import (
 // ProviderAppIniter implements ibctesting.AppIniter for a provider app
 func ProviderAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
 	encoding := app.MakeEncodingConfigProviderApp()
-	testApp := appProvider.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simtestutil.EmptyAppOptions{})
+	testApp := appProvider.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true,
+		simtestutil.EmptyAppOptions{})
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Codec)
 }
 
 // ConsumerAppIniter implements ibctesting.AppIniter for a consumer app
 func ConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
 	encoding := app.MakeEncodingConfigDemocracyConsumerApp()
-	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simtestutil.EmptyAppOptions{})
+	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true,
+		simtestutil.EmptyAppOptions{})
 	return testApp, appConsumer.NewDefaultGenesisState(encoding.Codec)
 }
 
 // DemocracyConsumerAppIniter implements ibctesting.AppIniter for a democracy consumer app
 func DemocracyConsumerAppIniter() (ibctesting.AppTest, map[string]json.RawMessage) {
 	encoding := app.MakeEncodingConfigDemocracyConsumerApp()
-	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simtestutil.EmptyAppOptions{})
+	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true,
+		simtestutil.EmptyAppOptions{})
 	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Codec)
 }

@@ -280,7 +280,7 @@ func (b *Builder) newChain(
 			Time:    coord.CurrentTime.UTC(),
 		},
 		QueryServer:    app.GetIBCKeeper(),
-		TxConfig:       app.GetTxConfig(),
+		TxConfig:       app.TxConfig(),
 		Codec:          app.AppCodec(),
 		Vals:           validators,
 		NextVals:       validators,

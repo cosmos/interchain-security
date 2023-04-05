@@ -239,7 +239,7 @@ type appCreator struct {
 }
 
 // newApp is an appCreator
-func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
+func (appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
 	var cache sdk.MultiStorePersistentCache
 
 	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
@@ -261,10 +261,6 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 		db,
 		traceStore,
 		true,
-		skipUpgradeHeights,
-		cast.ToString(appOpts.Get(flags.FlagHome)),
-		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		a.encCfg,
 		appOpts,
 		baseapp.SetPruning(pruningOpts),
 		baseapp.SetInterBlockCache(cache),
@@ -280,7 +276,7 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 
 // appExport creates a pdApp (optionally at a given height)
 // and exports state.
-func (a appCreator) appExport(
+func (appCreator) appExport(
 	logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool, jailAllowedAddrs []string, appOpts servertypes.AppOptions, _ []string,
 ) (servertypes.ExportedApp, error) {
 	var pdApp *app.App
@@ -295,10 +291,7 @@ func (a appCreator) appExport(
 		db,
 		traceStore,
 		loadLatest,
-		map[int64]bool{},
-		homePath,
-		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		a.encCfg,
+
 		appOpts,
 	)
 

@@ -15,6 +15,7 @@ import (
 	tmos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -141,9 +142,8 @@ type App struct { //nolint: golint
 	*baseapp.BaseApp
 	legacyAmino       *codec.LegacyAmino
 	appCodec          codec.Codec
+	txConfig          client.TxConfig
 	interfaceRegistry types.InterfaceRegistry
-
-	invCheckPeriod uint
 
 	// keys to access the substores
 	keys    map[string]*storetypes.KVStoreKey
@@ -198,21 +198,21 @@ func New(
 	db dbm.DB,
 	traceStore io.Writer,
 	loadLatest bool,
-	skipUpgradeHeights map[int64]bool,
-	homePath string,
-	invCheckPeriod uint,
-	encodingConfig appparams.EncodingConfig,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
+	encodingConfig := makeEncodingConfig()
+
 	appCodec := encodingConfig.Codec
 	legacyAmino := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
+	txConfig := encodingConfig.TxConfig
 
-	bApp := baseapp.NewBaseApp(AppName, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
+	bApp := baseapp.NewBaseApp(AppName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
+	bApp.SetTxEncoder(txConfig.TxEncoder())
 
 	keys := sdk.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey, slashingtypes.StoreKey,
@@ -228,8 +228,8 @@ func New(
 		BaseApp:           bApp,
 		legacyAmino:       legacyAmino,
 		appCodec:          appCodec,
+		txConfig:          txConfig,
 		interfaceRegistry: interfaceRegistry,
-		invCheckPeriod:    invCheckPeriod,
 		keys:              keys,
 		tkeys:             tkeys,
 		memKeys:           memKeys,
@@ -303,6 +303,14 @@ func New(
 		app.ConsumerKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+
+	// get skipUpgradeHeights from the app options
+	skipUpgradeHeights := map[int64]bool{}
+	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
+		skipUpgradeHeights[int64(h)] = true
+	}
+	invCheckPeriod := cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod))
+
 	app.CrisisKeeper = *crisiskeeper.NewKeeper(
 		appCodec,
 		keys[crisistypes.StoreKey],
@@ -312,6 +320,8 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
+	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
+
 	app.UpgradeKeeper = *upgradekeeper.NewKeeper(
 		skipUpgradeHeights,
 		keys[upgradetypes.StoreKey],
@@ -320,6 +330,7 @@ func New(
 		app.BaseApp,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		appCodec,
 		keys[ibchost.StoreKey],
@@ -618,6 +629,11 @@ func (app *App) InterfaceRegistry() types.InterfaceRegistry {
 	return app.interfaceRegistry
 }
 
+// TxConfig returns SimApp's TxConfig
+func (app *App) TxConfig() client.TxConfig {
+	return app.txConfig
+}
+
 // GetKey returns the KVStoreKey for the provided store key.
 //
 // NOTE: This is solely to be used for testing purposes.
@@ -701,11 +717,6 @@ func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 	return app.ScopedIBCKeeper
 }
 
-// GetTxConfig implements the TestingApp interface.
-func (*App) GetTxConfig() client.TxConfig {
-	return MakeTestEncodingConfig().TxConfig
-}
-
 func (*App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
 	// Register new tx routes from grpc-gateway.
@@ -775,11 +786,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	return paramsKeeper
 }
 
-// MakeTestEncodingConfig creates an EncodingConfig for testing. This function
-// should be used only in tests or when creating a new app instance (NewApp*()).
-// App user shouldn't create new codecs - use the app.AppCodec instead.
-// [DEPRECATED]
-func MakeTestEncodingConfig() appparams.EncodingConfig {
+func makeEncodingConfig() appparams.EncodingConfig {
 	encodingConfig := appparams.MakeTestEncodingConfig()
 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)

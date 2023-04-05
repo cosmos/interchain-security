@@ -142,7 +142,7 @@ func NewTestChainWithValSet(t *testing.T, coord *Coordinator, appIniter AppInite
 		Time:    coord.CurrentTime.UTC(),
 	}
 
-	txConfig := app.GetTxConfig()
+	txConfig := app.TxConfig()
 
 	// create an account to send transactions from
 	chain := &TestChain{

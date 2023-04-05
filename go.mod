@@ -33,10 +33,10 @@ require (
 require (
 	cosmossdk.io/errors v1.0.0-beta.7
 	cosmossdk.io/math v1.0.0
-	cosmossdk.io/simapp v0.0.0-20230224204036-a6adb0821462
 	cosmossdk.io/tools/rosetta v0.2.1
 	github.com/cosmos/gogoproto v1.4.6
 	github.com/cosmos/ics23/go v0.9.1-0.20221207100636-b1abd8678aab
+	github.com/spf13/viper v1.15.0
 )
 
 require (
@@ -149,7 +149,6 @@ require (
 	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.15.0 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c // indirect

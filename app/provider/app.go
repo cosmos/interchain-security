@@ -12,6 +12,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -178,9 +179,8 @@ type App struct { //nolint: golint
 	*baseapp.BaseApp
 	legacyAmino       *codec.LegacyAmino
 	appCodec          codec.Codec
+	txConfig          client.TxConfig
 	interfaceRegistry types.InterfaceRegistry
-
-	invCheckPeriod uint
 
 	// keys to access the substores
 	keys    map[string]*storetypes.KVStoreKey
@@ -237,13 +237,11 @@ func New(
 	db dbm.DB,
 	traceStore io.Writer,
 	loadLatest bool,
-	skipUpgradeHeights map[int64]bool,
-	homePath string,
-	invCheckPeriod uint,
-	encodingConfig appparams.EncodingConfig,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
+	encodingConfig := makeEncodingConfig()
+
 	appCodec := encodingConfig.Codec
 	legacyAmino := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
@@ -271,7 +269,6 @@ func New(
 		legacyAmino:       legacyAmino,
 		appCodec:          appCodec,
 		interfaceRegistry: interfaceRegistry,
-		invCheckPeriod:    invCheckPeriod,
 		keys:              keys,
 		tkeys:             tkeys,
 		memKeys:           memKeys,
@@ -356,6 +353,14 @@ func New(
 		app.StakingKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+
+	// get skipUpgradeHeights from the app options
+	skipUpgradeHeights := map[int64]bool{}
+	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
+		skipUpgradeHeights[int64(h)] = true
+	}
+	invCheckPeriod := cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod))
+
 	app.CrisisKeeper = *crisiskeeper.NewKeeper(
 		appCodec,
 		keys[crisistypes.StoreKey],
@@ -364,6 +369,9 @@ func New(
 		authtypes.FeeCollectorName,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+
+	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
+
 	app.UpgradeKeeper = *upgradekeeper.NewKeeper(
 		skipUpgradeHeights,
 		keys[upgradetypes.StoreKey],
@@ -758,6 +766,11 @@ func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
 }
 
+// TxConfig returns SimApp's TxConfig
+func (app *App) TxConfig() client.TxConfig {
+	return app.txConfig
+}
+
 // ProviderApp interface implementations for e2e tests
 
 // GetProviderKeeper implements the ProviderApp interface.
@@ -805,11 +818,6 @@ func (app *App) GetIBCKeeper() *ibckeeper.Keeper {
 // GetScopedIBCKeeper implements the TestingApp interface.
 func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 	return app.ScopedIBCKeeper
-}
-
-// GetTxConfig implements the TestingApp interface.
-func (*App) GetTxConfig() client.TxConfig {
-	return MakeTestEncodingConfig().TxConfig
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided
@@ -887,11 +895,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	return paramsKeeper
 }
 
-// MakeTestEncodingConfig creates an EncodingConfig for testing. This function
-// should be used only in tests or when creating a new app instance (NewApp*()).
-// App user shouldn't create new codecs - use the app.AppCodec instead.
-// [DEPRECATED]
-func MakeTestEncodingConfig() appparams.EncodingConfig {
+func makeEncodingConfig() appparams.EncodingConfig {
 	encodingConfig := appparams.MakeTestEncodingConfig()
 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
