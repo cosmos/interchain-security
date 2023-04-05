@@ -12,8 +12,8 @@ import (
 var _ types.QueryServer = Keeper{}
 
 func (k Keeper) QueryNextFeeDistribution(c context.Context,
-	req *types.QueryNextFeeDistributionEstimateRequest) (*types.QueryNextFeeDistributionEstimateResponse, error) {
-
+	req *types.QueryNextFeeDistributionEstimateRequest,
+) (*types.QueryNextFeeDistributionEstimateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
 	if req == nil {
@@ -26,8 +26,8 @@ func (k Keeper) QueryNextFeeDistribution(c context.Context,
 }
 
 func (k Keeper) QueryParams(c context.Context,
-	req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
-
+	req *types.QueryParamsRequest,
+) (*types.QueryParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
 	if req == nil {

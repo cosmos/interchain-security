@@ -48,8 +48,8 @@ func (cb ConsumerBundle) GetKeeper() consumerkeeper.Keeper {
 
 // AddProvider adds a new provider chain to the coordinator and returns the test chain and app type
 func AddProvider[T testutil.ProviderApp](coordinator *ibctesting.Coordinator, t *testing.T, appIniter ibctesting.AppIniter) (
-	*ibctesting.TestChain, T) {
-
+	*ibctesting.TestChain, T,
+) {
 	provider := ibctesting.NewTestChain(t, coordinator, appIniter, provChainID)
 	coordinator.Chains[provChainID] = provider
 
@@ -63,8 +63,8 @@ func AddProvider[T testutil.ProviderApp](coordinator *ibctesting.Coordinator, t 
 
 // AddDemocracyConsumer adds a new democ consumer chain to the coordinator and returns the test chain and app type
 func AddDemocracyConsumer[T testutil.DemocConsumerApp](coordinator *ibctesting.Coordinator, t *testing.T,
-	appIniter ibctesting.AppIniter) (*ibctesting.TestChain, T) {
-
+	appIniter ibctesting.AppIniter,
+) (*ibctesting.TestChain, T) {
 	democConsumer := ibctesting.NewTestChain(t, coordinator, appIniter, democConsumerChainID)
 	coordinator.Chains[democConsumerChainID] = democConsumer
 

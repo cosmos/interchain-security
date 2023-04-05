@@ -218,7 +218,6 @@ func (s *CoreSuite) endAndBeginBlock(chain string) {
 // compareModelAndSystemState compares the state in the SUT to the state in the
 // the model.
 func (s *CoreSuite) compareModelAndSystemState() {
-
 	// Get a diagnostic for debugging
 	diagnostic := s.traces.Diagnostic()
 	chain := s.traces.Action().Chain
@@ -260,7 +259,6 @@ func (s *CoreSuite) compareModelAndSystemState() {
 }
 
 func (s *CoreSuite) executeTrace() {
-
 	for i := range s.traces.Actions() {
 		s.traces.CurrentActionIx = i
 
@@ -331,7 +329,6 @@ func (s *CoreSuite) TestTraces() {
 		}
 	}
 	fmt.Println("Shortest [traceIx, actionIx]:", shortest, shortestLen)
-
 }
 
 func TestCoreSuite(t *testing.T) {

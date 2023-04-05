@@ -51,7 +51,6 @@ func (tr TestRun) sendTokens(
 		fmt.Println("sendTokens cmd:", cmd.String())
 	}
 	bz, err := cmd.CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -194,7 +193,6 @@ func (tr TestRun) submitTextProposal(
 		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -503,7 +501,6 @@ func (tr TestRun) voteGovProposal(
 				`-b`, `block`,
 				`-y`,
 			).CombinedOutput()
-
 			if err != nil {
 				log.Fatal(err, "\n", string(bz))
 			}
@@ -539,7 +536,6 @@ func (tr TestRun) startConsumerChain(
 	}
 
 	bz, err := cmd.CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -693,8 +689,7 @@ type addIbcChannelAction struct {
 	order       string
 }
 
-type startHermesAction struct {
-}
+type startHermesAction struct{}
 
 func (tr TestRun) startHermes(
 	action startHermesAction,
@@ -863,7 +858,6 @@ func (tr TestRun) relayPackets(
 		log.Println("relayPackets cmd:", cmd.String())
 	}
 	bz, err := cmd.CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1040,7 +1034,6 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 
 // Sets validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
 func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, down bool, verbose bool) {
-
 	var lastArg string
 	if down {
 		lastArg = "down"
@@ -1077,7 +1070,6 @@ type unjailValidatorAction struct {
 
 // Sends an unjail transaction to the provider chain
 func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
-
 	// wait a block to be sure downtime_jail_duration has elapsed
 	tr.waitBlocks(action.provider, 1, time.Minute)
 
@@ -1156,7 +1148,6 @@ func (tr TestRun) registerRepresentative(
 				`-b`, `block`,
 				`-y`,
 			).CombinedOutput()
-
 			if err != nil {
 				log.Fatal(err, "\n", string(bz))
 			}
@@ -1191,7 +1182,6 @@ func (tr TestRun) invokeDoublesignSlash(
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/cause-doublesign.sh", chainConfig.binaryName, string(action.validator),
 		string(chainConfig.chainId), chainConfig.ipPrefix).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1312,7 +1302,6 @@ func (tr TestRun) waitForSlashThrottleDequeue(
 	action slashThrottleDequeue,
 	verbose bool,
 ) {
-
 	timeout := time.Now().Add(action.timeout)
 	initialGlobalQueueSize := int(tr.getGlobalSlashQueueSize())
 

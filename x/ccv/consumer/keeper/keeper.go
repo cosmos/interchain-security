@@ -95,7 +95,6 @@ func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
 // Validates that the consumer keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
-
 	// Ensures no fields are missed in this validation
 	if reflect.ValueOf(k).NumField() != 16 {
 		panic("number of fields in consumer keeper is not 16")

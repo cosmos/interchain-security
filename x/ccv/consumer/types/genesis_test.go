@@ -374,7 +374,8 @@ func TestValidateRestartGenesisState(t *testing.T) {
 			types.NewRestartGenesisState("ccvclient", "",
 				[]types.MaturingVSCPacket{{1, time.Time{}}}, valUpdates, nil, ccv.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{}, params),
 			true,
-		}, {
+		},
+		{
 			"invalid restart consumer genesis state: maturing packet defined when handshake is still in progress",
 			types.NewRestartGenesisState("ccvclient", "",
 				[]types.MaturingVSCPacket{{1, time.Time{}}}, valUpdates, heightToValsetUpdateID, ccv.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{}, params),

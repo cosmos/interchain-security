@@ -11,7 +11,6 @@ import (
 // driver hold. This test therefore does not test the system, but only that
 // the driver is correctly setup.
 func (s *CoreSuite) TestAssumptionsSetup() {
-
 	const FAIL_MSG = "Assumptions for core diff test failed: there is a problem with the driver or how the test is setup."
 
 	// Staking module maxValidators param is correct
