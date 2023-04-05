@@ -204,12 +204,7 @@ func New(
 	encodingConfig appparams.EncodingConfig,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
-<<<<<<< HEAD
-) cosmoscmd.App {
-=======
 ) *App {
-
->>>>>>> origin/main
 	appCodec := encodingConfig.Marshaler
 	legacyAmino := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
