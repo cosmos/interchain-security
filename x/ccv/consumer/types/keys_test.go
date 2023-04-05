@@ -9,7 +9,6 @@ import (
 
 // Tests that all singular keys, or prefixes to fully resolves keys are non duplicate byte values.
 func TestNoDuplicates(t *testing.T) {
-
 	prefixes := getAllKeyPrefixes()
 	seen := []byte{}
 
@@ -21,7 +20,6 @@ func TestNoDuplicates(t *testing.T) {
 
 // Returns all key prefixes to fully resolved keys, any of which should be a single, unique byte.
 func getAllKeyPrefixes() []byte {
-
 	return []byte{
 		PortByteKey,
 		LastDistributionTransmissionByteKey,

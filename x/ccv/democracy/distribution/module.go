@@ -75,7 +75,6 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 func (am AppModule) AllocateTokens(
 	ctx sdk.Context,
 ) {
-
 	// fetch and clear the collected fees for distribution, since this is
 	// called in BeginBlock, collected fees will be from the previous block
 	// (and distributed to the current representatives)
@@ -109,9 +108,9 @@ func (am AppModule) AllocateTokens(
 
 	// allocate tokens proportionally to representatives voting power
 	vs.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) bool {
-		//we get this validator's percentage of the total power by dividing their tokens by the total bonded tokens
+		// we get this validator's percentage of the total power by dividing their tokens by the total bonded tokens
 		powerFraction := sdk.NewDecFromInt(validator.GetTokens()).QuoTruncate(sdk.NewDecFromInt(totalBondedTokens))
-		//we truncate here again, which means that the reward will be slightly lower than it should be
+		// we truncate here again, which means that the reward will be slightly lower than it should be
 		reward := feesCollected.MulDecTruncate(representativesFraction).MulDecTruncate(powerFraction)
 		am.keeper.AllocateTokensToValidator(ctx, validator, reward)
 		remaining = remaining.Sub(reward)
@@ -120,7 +119,7 @@ func (am AppModule) AllocateTokens(
 	})
 
 	// allocate community funding
-	//due to the 3 truncations above, remaining sent to the community pool will be slightly more than it should be. This is OK
+	// due to the 3 truncations above, remaining sent to the community pool will be slightly more than it should be. This is OK
 	feePool.CommunityPool = feePool.CommunityPool.Add(remaining...)
 	am.keeper.SetFeePool(ctx, feePool)
 }

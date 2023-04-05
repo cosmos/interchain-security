@@ -63,8 +63,8 @@ type CCVTestSuite struct {
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
 func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
-	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string) *CCVTestSuite {
-
+	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string,
+) *CCVTestSuite {
 	ccvSuite := new(CCVTestSuite)
 
 	// Define callback to set up the provider chain
@@ -268,9 +268,8 @@ func (suite *CCVTestSuite) SetupTransferChannel() {
 
 	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
 	// so transfer channel will be on stage INIT when CompleteSetupCCVChannel returns.
-	suite.transferPath.EndpointA.ChannelID =
-		suite.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(
-			suite.consumerChain.GetContext())
+	suite.transferPath.EndpointA.ChannelID = suite.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(
+		suite.consumerChain.GetContext())
 
 	// Complete TRY, ACK, CONFIRM for transfer path
 	err := suite.transferPath.EndpointB.ChanOpenTry()

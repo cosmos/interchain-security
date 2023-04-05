@@ -16,7 +16,6 @@ import (
 // TestBasicSlashPacketThrottling tests slash packet throttling with a single consumer,
 // two slash packets, and no VSC matured packets. The most basic scenario.
 func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
-
 	// setupValidatePowers gives the default 4 validators 25% power each (1000 power).
 	// Note this in test cases.
 	testCases := []struct {
@@ -148,7 +147,6 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 // TestMultiConsumerSlashPacketThrottling tests slash packet throttling in the context of multiple
 // consumers sending slash packets to the provider, with VSC matured packets sprinkled around.
 func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
-
 	// Setup test
 	s.SetupAllCCVChannels()
 	s.setupValidatorPowers()
@@ -271,7 +269,6 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 // TestPacketSpam confirms that the provider can handle a large number of
 // incoming slash packets in a single block.
 func (s *CCVTestSuite) TestPacketSpam() {
-
 	// Setup ccv channels to all consumers
 	s.SetupAllCCVChannels()
 
@@ -334,7 +331,6 @@ func (s *CCVTestSuite) TestPacketSpam() {
 }
 
 func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
-
 	// Setup ccv channels to all consumers
 	s.SetupAllCCVChannels()
 
@@ -423,7 +419,6 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 // Note: The global queue is ordered by: time, then IBC sequence number, see GlobalSlashEntryKey.
 // The chain specific queue is ordered by: IBC sequence number, see ThrottledPacketDataKey.
 func (s *CCVTestSuite) TestQueueOrdering() {
-
 	// Setup ccv channels to all consumers
 	s.SetupAllCCVChannels()
 
@@ -567,7 +562,6 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 // TestSlashingSmallValidators tests that multiple slash packets from validators with small
 // power can be handled by the provider chain in a non-throttled manner.
 func (s *CCVTestSuite) TestSlashingSmallValidators() {
-
 	s.SetupAllCCVChannels()
 
 	// Setup first val with 1000 power and the rest with 10 power.
@@ -649,7 +643,6 @@ func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
 // but some of the slash packets are for the same validator, and therefore some packets
 // will be applied to a validator that is already jailed but still not unbonded (ie. still slashable).
 func (s *CCVTestSuite) TestSlashSameValidator() {
-
 	s.SetupAllCCVChannels()
 
 	// Setup 4 validators with 25% of the total power each.
@@ -704,7 +697,6 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 // the slash meter can allow any number of slash packets to be handled in a single block when
 // its allowance is set to "1.0".
 func (s CCVTestSuite) TestSlashAllValidators() {
-
 	s.SetupAllCCVChannels()
 
 	// Setup 4 validators with 25% of the total power each.
@@ -770,7 +762,6 @@ func (s CCVTestSuite) TestSlashAllValidators() {
 }
 
 func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
-
 	s.SetupAllCCVChannels()
 	providerKeeper := s.providerApp.GetProviderKeeper()
 

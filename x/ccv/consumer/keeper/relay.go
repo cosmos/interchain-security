@@ -178,7 +178,6 @@ func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, vals
 // operations that resulted in validator updates included in that VSC have matured on
 // the consumer chain.
 func (k Keeper) SendPackets(ctx sdk.Context) {
-
 	channelID, ok := k.GetProviderChannel(ctx)
 	if !ok {
 		return
@@ -197,7 +196,6 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			p.GetBytes(),
 			k.GetCCVTimeoutPeriod(ctx),
 		)
-
 		if err != nil {
 			if clienttypes.ErrClientNotActive.Is(err) {
 				k.Logger(ctx).Debug("IBC client is inactive, packet remains in queue", "type", p.Type.String())
