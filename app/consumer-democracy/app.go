@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	appparams "github.com/cosmos/interchain-security/app/params"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -18,6 +20,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
+	"github.com/cosmos/cosmos-sdk/std"
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -74,7 +77,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
-	"github.com/tendermint/spm/cosmoscmd"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
@@ -166,7 +168,6 @@ var (
 var (
 	_ simapp.App              = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
-	_ cosmoscmd.CosmosApp     = (*App)(nil)
 	_ ibctesting.TestingApp   = (*App)(nil)
 )
 
@@ -236,10 +237,10 @@ func New(
 	skipUpgradeHeights map[int64]bool,
 	homePath string,
 	invCheckPeriod uint,
-	encodingConfig cosmoscmd.EncodingConfig,
+	encodingConfig appparams.EncodingConfig,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
-) cosmoscmd.App {
+) *App {
 
 	appCodec := encodingConfig.Marshaler
 	legacyAmino := encodingConfig.Amino
@@ -829,7 +830,7 @@ func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 
 // GetTxConfig implements the TestingApp interface.
 func (app *App) GetTxConfig() client.TxConfig {
-	return cosmoscmd.MakeEncodingConfig(ModuleBasics).TxConfig
+	return MakeTestEncodingConfig().TxConfig
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided
@@ -901,4 +902,17 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(consumertypes.ModuleName)
 
 	return paramsKeeper
+}
+
+// MakeTestEncodingConfig creates an EncodingConfig for testing. This function
+// should be used only in tests or when creating a new app instance (NewApp*()).
+// App user shouldn't create new codecs - use the app.AppCodec instead.
+// [DEPRECATED]
+func MakeTestEncodingConfig() appparams.EncodingConfig {
+	encodingConfig := appparams.MakeTestEncodingConfig()
+	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	return encodingConfig
 }
