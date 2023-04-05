@@ -328,7 +328,7 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   500,
-						validatorID("carol"): 495, // slashed because infraction was commited on provider
+						validatorID("carol"): 495, // slashed because infraction was committed on provider
 					},
 				},
 				chainID(consumer1): ChainState{

@@ -47,7 +47,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	providerExpectedRewards := feePoolTokens.Sub(consumerExpectedRewards)
 	s.consumerChain.NextBlock()
 
-	// amount from the fee pool is devided between consumer redistribute address and address reserved for provider chain
+	// amount from the fee pool is divided between consumer redistribute address and address reserved for provider chain
 	feePoolTokens = consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerFeePoolAddr)
 	s.Require().Equal(0, len(feePoolTokens))
 	consumerRedistributeAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerRedistributeName).GetAddress()

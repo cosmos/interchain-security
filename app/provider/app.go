@@ -149,7 +149,7 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-		//router.AppModuleBasic{},
+		// router.AppModuleBasic{},
 		ibcprovider.AppModuleBasic{},
 	)
 
@@ -196,7 +196,7 @@ type App struct { // nolint: golint
 	MintKeeper       mintkeeper.Keeper
 
 	// NOTE the distribution keeper should either be removed
-	// from consumer chain or set to use an independant
+	// from consumer chain or set to use an independent
 	// different fee-pool from the consumer chain ConsumerKeeper
 	DistrKeeper distrkeeper.Keeper
 
@@ -244,7 +244,6 @@ func New(
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
-
 	appCodec := encodingConfig.Marshaler
 	legacyAmino := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry

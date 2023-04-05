@@ -37,7 +37,6 @@ func (s *CCVTestSuite) TestPacketRoundtrip() {
 // TestQueueAndSendVSCMaturedPackets tests the behavior of EndBlock QueueVSCMaturedPackets call
 // and its integration with SendPackets call.
 func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
-
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 
 	// setup CCV channel

@@ -34,6 +34,7 @@ type Coordinator struct {
 
 // NewCoordinator initializes Coordinator with N TestChain's
 func NewCoordinator(t *testing.T, n int) *Coordinator {
+	t.Helper()
 	chains := make(map[string]*TestChain)
 	coord := &Coordinator{
 		T:           t,
@@ -204,8 +205,8 @@ func (coord *Coordinator) CommitNBlocks(chain *TestChain, n uint64) {
 
 // CommitBlockGetResponses commits a block and provides abci responses
 func (coord *Coordinator) CommitBlockGetResponses(chain *TestChain) (
-	abci.ResponseEndBlock, abci.ResponseCommit, abci.ResponseBeginBlock) {
-
+	abci.ResponseEndBlock, abci.ResponseCommit, abci.ResponseBeginBlock,
+) {
 	ebRes, cRes, bbResp := chain.NextBlock()
 	coord.IncrementTime()
 	return ebRes, cRes, bbResp

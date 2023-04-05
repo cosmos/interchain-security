@@ -19,7 +19,6 @@ import (
 
 // Executes the standard group of ccv tests against a consumer and provider app.go implementation.
 func TestCCVTestSuite(t *testing.T) {
-
 	// Pass in concrete app types that implement the interfaces defined in /testutil/e2e/interfaces.go
 	// IMPORTANT: the concrete app types passed in as type parameters here must match the
 	// concrete app types returned by the relevant app initers.
@@ -33,7 +32,6 @@ func TestCCVTestSuite(t *testing.T) {
 
 // Executes a standard suite of tests, against a democracy consumer app.go implementation.
 func TestConsumerDemocracyCCVTestSuite(t *testing.T) {
-
 	// Pass in concrete app type that implement the interface defined in /testutil/e2e/interfaces.go
 	// IMPORTANT: the concrete app types passed in as type parameters here must match the
 	// concrete app types returned by the relevant app initers.
@@ -50,7 +48,6 @@ func TestConsumerDemocracyCCVTestSuite(t *testing.T) {
 // Executes a specialized group of tests specific to a democracy consumer,
 // against a democracy consumer app.go implementation.
 func TestConsumerDemocracyTestSuite(t *testing.T) {
-
 	// Pass in concrete app type that implement the interface defined in /testutil/e2e/interfaces.go
 	// IMPORTANT: the concrete app type passed in as a type parameter here must match the
 	// concrete app type returned by the relevant app initer.

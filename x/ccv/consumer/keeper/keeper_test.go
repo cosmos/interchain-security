@@ -23,7 +23,6 @@ import (
 
 // TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper
 func TestProviderClientID(t *testing.T) {
-
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -37,7 +36,6 @@ func TestProviderClientID(t *testing.T) {
 
 // TestProviderChannel tests getter and setter functionality for the channel ID stored on consumer keeper
 func TestProviderChannel(t *testing.T) {
-
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -160,7 +158,6 @@ func TestInitialValSet(t *testing.T) {
 			Power:  10978554,
 		},
 	}, consumerKeeper.GetInitialValSet(ctx))
-
 }
 
 // TestGetLastSovereignValidators tests the getter method for getting the last valset
@@ -251,7 +248,6 @@ func TestPacketMaturityTime(t *testing.T) {
 
 // TestCrossChainValidator tests the getter, setter, and deletion method for cross chain validator records
 func TestCrossChainValidator(t *testing.T) {
-
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	// Explicitly register codec with public key interface
 	keeperParams.RegisterSdkCryptoCodecInterfaces()
@@ -321,7 +317,6 @@ func TestGetAllCCValidator(t *testing.T) {
 }
 
 func TestSetPendingPackets(t *testing.T) {
-
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -341,11 +336,12 @@ func TestSetPendingPackets(t *testing.T) {
 		},
 		{
 			Type: ccv.SlashPacket,
-			Data: &ccv.ConsumerPacketData_SlashPacketData{SlashPacketData: ccv.NewSlashPacketData(
-				abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(), Power: int64(0)},
-				3,
-				stakingtypes.DoubleSign,
-			),
+			Data: &ccv.ConsumerPacketData_SlashPacketData{
+				SlashPacketData: ccv.NewSlashPacketData(
+					abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(), Power: int64(0)},
+					3,
+					stakingtypes.DoubleSign,
+				),
 			},
 		},
 		{
@@ -362,14 +358,17 @@ func TestSetPendingPackets(t *testing.T) {
 	require.Equal(t, dataPackets, storedDataPackets.List)
 
 	slashPacket := ccv.NewSlashPacketData(
-		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
-			Power: int64(2)},
+		abci.Validator{
+			Address: ed25519.GenPrivKey().PubKey().Address(),
+			Power:   int64(2),
+		},
 		uint64(4),
 		stakingtypes.Downtime,
 	)
 	dataPackets = append(dataPackets, ccv.ConsumerPacketData{
 		Type: ccv.SlashPacket,
-		Data: &ccv.ConsumerPacketData_SlashPacketData{SlashPacketData: slashPacket}},
+		Data: &ccv.ConsumerPacketData_SlashPacketData{SlashPacketData: slashPacket},
+	},
 	)
 	consumerKeeper.AppendPendingPacket(ctx, dataPackets[len(dataPackets)-1])
 	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
@@ -377,8 +376,10 @@ func TestSetPendingPackets(t *testing.T) {
 	require.Equal(t, dataPackets, storedDataPackets.List)
 
 	vscMaturedPakcet := ccv.NewVSCMaturedPacketData(4)
-	dataPackets = append(dataPackets, ccv.ConsumerPacketData{Type: ccv.VscMaturedPacket,
-		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscMaturedPakcet}},
+	dataPackets = append(dataPackets, ccv.ConsumerPacketData{
+		Type: ccv.VscMaturedPacket,
+		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscMaturedPakcet},
+	},
 	)
 	consumerKeeper.AppendPendingPacket(ctx, dataPackets[len(dataPackets)-1])
 	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
@@ -393,7 +394,6 @@ func TestSetPendingPackets(t *testing.T) {
 
 // TestVerifyProviderChain tests the VerifyProviderChain method for the consumer keeper
 func TestVerifyProviderChain(t *testing.T) {
-
 	testCases := []struct {
 		name string
 		// State-mutating setup specific to this test case

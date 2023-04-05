@@ -26,7 +26,6 @@ import (
 // It covers the start of a new chain, the restart of a chain during the CCV channel handshake
 // and finally the restart of chain when the CCV channel is already established.
 func TestInitGenesis(t *testing.T) {
-
 	// mock the consumer genesis state values
 	provClientID := "tendermint-07"
 	provChannelID := "ChannelID"
@@ -45,7 +44,7 @@ func TestInitGenesis(t *testing.T) {
 	provConsState := ibctmtypes.NewConsensusState(
 		time.Time{},
 		commitmenttypes.NewMerkleRoot([]byte("apphash")),
-		tmtypes.NewValidatorSet([]*tmtypes.Validator{validator}).Hash()[:],
+		tmtypes.NewValidatorSet([]*tmtypes.Validator{validator}).Hash(),
 	)
 
 	provClientState := ibctmtypes.NewClientState(
@@ -224,7 +223,6 @@ func TestInitGenesis(t *testing.T) {
 // TestExportGenesis tests that a consumer chain genesis is correctly exported to genesis
 // It covers the restart of chain when a CCV channel is or isn't established yet.
 func TestExportGenesis(t *testing.T) {
-
 	// create provider channel and client ids
 	provClientID := "tendermint-07"
 	provChannelID := "provChannelID"
@@ -296,7 +294,6 @@ func TestExportGenesis(t *testing.T) {
 
 				ck.AppendPendingPacket(ctx, consPackets.List...)
 				ck.SetHeightValsetUpdateID(ctx, defaultHeightValsetUpdateIDs[0].Height, defaultHeightValsetUpdateIDs[0].ValsetUpdateId)
-
 			},
 			consumertypes.NewRestartGenesisState(
 				provClientID,
@@ -350,7 +347,6 @@ func TestExportGenesis(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			keeperParams := testkeeper.NewInMemKeeperParams(t)
 			// Explicitly register codec with public key interface
 			keeperParams.RegisterSdkCryptoCodecInterfaces()
@@ -372,12 +368,14 @@ func TestExportGenesis(t *testing.T) {
 
 // assert that the default CCV consumer port ID is stored and bounded
 func assertConsumerPortIsBound(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper) {
+	t.Helper()
 	require.Equal(t, ck.GetPort(ctx), string(ccv.ConsumerPortID))
 	require.True(t, ck.IsBound(ctx, ccv.ConsumerPortID))
 }
 
 // assert that the given client ID matches the provider client ID in the store
 func assertProviderClientID(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, clientID string) {
+	t.Helper()
 	cid, ok := ck.GetProviderClientID(ctx)
 	require.True(t, ok)
 	require.Equal(t, clientID, cid)
@@ -385,6 +383,7 @@ func assertProviderClientID(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Ke
 
 // assert that the given input match the height to valset update ID mappings in the store
 func assertHeightValsetUpdateIDs(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, heighValsetUpdateIDs []consumertypes.HeightToValsetUpdateID) {
+	t.Helper()
 	ctr := 0
 
 	for _, heightToValsetUpdateID := range ck.GetAllHeightToValsetUpdateIDs(ctx) {

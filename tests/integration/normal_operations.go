@@ -71,7 +71,7 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 			expLen: 0,
 		},
 		{
-			height: initHeight + int64(consumertypes.DefaultHistoricalEntries) + 2,
+			height: initHeight + consumertypes.DefaultHistoricalEntries + 2,
 			found:  true,
 			expLen: initValsetLen + 2,
 		},

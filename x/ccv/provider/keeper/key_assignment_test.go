@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"bytes"
+	"math/rand"
 	"sort"
 	"testing"
 	"time"
@@ -14,8 +15,6 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
-	"math/rand"
-
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
@@ -23,7 +22,7 @@ import (
 )
 
 func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
-	chainID := "consumer"
+	chainID := consumer
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 	consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 
@@ -100,7 +99,7 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 }
 
 func TestValidatorByConsumerAddrCRUD(t *testing.T) {
-	chainID := "consumer"
+	chainID := consumer
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 	consumerAddr := types.NewConsumerConsAddress([]byte("consumerAddr"))
 
@@ -177,7 +176,7 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 }
 
 func TestKeyAssignmentReplacementCRUD(t *testing.T) {
-	chainID := "consumer"
+	chainID := consumer
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 	expCPubKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	var expPower int64 = 100
@@ -234,7 +233,7 @@ func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 }
 
 func TestConsumerAddrsToPruneCRUD(t *testing.T) {
-	chainID := "consumer"
+	chainID := consumer
 	consumerAddr := types.NewConsumerConsAddress([]byte("consumerAddr1"))
 	vscID := uint64(1)
 
@@ -356,7 +355,6 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 }
 
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
-
 	chainID := "chainID"
 	providerIdentities := []*cryptotestutil.CryptoIdentity{
 		cryptotestutil.NewCryptoIdentityFromIntSeed(0),
@@ -595,7 +593,6 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 			tc.mockSetup(ctx, k, mocks)
@@ -633,7 +630,6 @@ func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 				vs.power[i] = u.Power
 			}
 		}
-
 	}
 }
 
@@ -647,7 +643,6 @@ type Assignment struct {
 // of simulated scenarios where random key assignments and validator
 // set updates are generated.
 func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
-
 	CHAINID := "chainID"
 	// The number of full test executions to run
 	NUM_EXECUTIONS := 100
@@ -711,7 +706,6 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 	// and key assignments tx's. For each simulated 'block', the validator set replication
 	// properties and the pruning property are checked.
 	runRandomExecution := func() {
-
 		k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 		// Create validator sets for the provider and consumer. These are used to check the validator set

@@ -13,7 +13,6 @@ import (
 )
 
 func TestChangeoverToConsumer(t *testing.T) {
-
 	cIds := []crypto.CryptoIdentity{}
 	for i := 0; i < 10; i++ {
 		cIds = append(cIds, *crypto.NewCryptoIdentityFromIntSeed(i + 42834729))
