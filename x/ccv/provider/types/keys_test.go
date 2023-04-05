@@ -29,7 +29,7 @@ func getAllKeyPrefixes() []byte {
 	return []byte{
 		providertypes.PortByteKey,
 		providertypes.MaturedUnbondingOpsByteKey,
-		providertypes.ValidatorSetUpdateIdByteKey,
+		providertypes.ValidatorSetUpdateIDByteKey,
 		providertypes.SlashMeterByteKey,
 		providertypes.SlashMeterReplenishTimeCandidateByteKey,
 		providertypes.ChainToChannelBytePrefix,
@@ -72,7 +72,7 @@ func getAllFullyDefinedKeys() [][]byte {
 	return [][]byte{
 		providertypes.PortKey(),
 		providertypes.MaturedUnbondingOpsKey(),
-		providertypes.ValidatorSetUpdateIdKey(),
+		providertypes.ValidatorSetUpdateIDKey(),
 		providertypes.SlashMeterKey(),
 		providertypes.SlashMeterReplenishTimeCandidateKey(),
 		providertypes.ChainToChannelKey("chainID"),
