@@ -30,7 +30,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 	}
 
 	k.SetParams(ctx, state.Params)
-	// TODO: Remove enabled flag and find a better way to setup e2e tests
+	// TODO: Remove enabled flag and find a better way to setup integration tests
 	// See: https://github.com/cosmos/interchain-security/issues/339
 	if !state.Params.Enabled {
 		return nil

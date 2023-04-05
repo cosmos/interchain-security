@@ -50,6 +50,12 @@ const (
 	// received over CCV channel but not yet flushed over ABCI
 	PendingChangesByteKey
 
+	// PendingDataPacketsByteKey is the byte key for storing
+	// a list of data packets that cannot be sent yet to the provider
+	// chain either because the CCV channel is not established or
+	// because the client is expired
+	PendingDataPacketsByteKey
+
 	// HistoricalInfoKey is the byte prefix that will store the historical info for a given height
 	HistoricalInfoBytePrefix
 
@@ -62,24 +68,15 @@ const (
 	// OutstandingDowntimePrefix is the byte prefix that will store the validators outstanding downtime by consensus address
 	OutstandingDowntimeBytePrefix
 
-	// PendingDataPacketsBytePrefix is the byte prefix for storing
-	// a list of data packets that cannot be sent yet to the provider
-	// chain either because the CCV channel is not established or
-	// because the client is expired
-	PendingDataPacketsBytePrefix
-
-	// CrossChainValidatorPrefix is the byte that will store cross-chain validators by consensus address
+	// CrossChainValidatorPrefix is the byte prefix that will store cross-chain validators by consensus address
 	CrossChainValidatorBytePrefix
 
-	// PreCCVByteKey is the byte to store the consumer is running on democracy staking module without consumer
-	PreCCVByteKey
-
-	// InitialValSetByteKey is the byte to store the initial validator set for a consumer
-	InitialValSetByteKey
-
-	// LastStandaloneHeightByteKey is the byte that will store last standalone height
-	LastStandaloneHeightByteKey
+	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
+
+//
+// Fully defined key func section
+//
 
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {
@@ -111,16 +108,18 @@ func PendingChangesKey() []byte {
 	return []byte{PendingChangesByteKey}
 }
 
-func PreCCVKey() []byte {
-	return []byte{PreCCVByteKey}
+// PendingDataPacketsKey returns the key for storing a list of data packets
+// that cannot be sent yet to the provider chain either because the CCV channel
+// is not established or because the client is expired.
+func PendingDataPacketsKey() []byte {
+	return []byte{PendingDataPacketsByteKey}
 }
 
-func InitialValSetKey() []byte {
-	return []byte{InitialValSetByteKey}
-}
-
-func LastStandaloneHeightKey() []byte {
-	return []byte{LastStandaloneHeightByteKey}
+// HistoricalInfoKey returns the key to historical info to a given block height
+func HistoricalInfoKey(height int64) []byte {
+	hBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(hBytes, uint64(height))
+	return append([]byte{HistoricalInfoBytePrefix}, hBytes...)
 }
 
 // PacketMaturityTimeKey returns the key for storing the maturity time for a given received VSC packet id
@@ -153,9 +152,8 @@ func CrossChainValidatorKey(addr []byte) []byte {
 	return append([]byte{CrossChainValidatorBytePrefix}, addr...)
 }
 
-// HistoricalInfoKey returns the key to historical info to a given block height
-func HistoricalInfoKey(height int64) []byte {
-	hBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(hBytes, uint64(height))
-	return append([]byte{HistoricalInfoBytePrefix}, hBytes...)
-}
+// NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go
+
+//
+// End of fully defined key func section
+//

@@ -11,64 +11,93 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Tests that all singular keys, or prefixes to fully resolves keys are a single byte long,
-// preventing injection attacks into restricted parts of a full store.
-func TestSameLength(t *testing.T) {
-
-	keys := getSingleByteKeys()
-
-	for _, keyByteArray := range keys {
-		require.Equal(t, 1, len(keyByteArray))
-	}
-}
-
 // Tests that all singular keys, or prefixes to fully resolves keys are non duplicate byte values.
 func TestNoDuplicates(t *testing.T) {
 
-	keys := getSingleByteKeys()
+	prefixes := getAllKeyPrefixes()
+	seen := []byte{}
 
-	for i, keyByteArray := range keys {
-		keys[i] = nil
-		require.NotContains(t, keys, keyByteArray)
+	for _, prefix := range prefixes {
+		require.NotContains(t, seen, prefix, "Duplicate key prefix: %v", prefix)
+		seen = append(seen, prefix)
 	}
 }
 
-// Returns all singular keys, or prefixes to fully resolved keys,
-// any of which should be a single, unique byte.
-func getSingleByteKeys() [][]byte {
+// Returns all key prefixes to fully resolved keys, any of which should be a single, unique byte.
+func getAllKeyPrefixes() []byte {
 
-	keys := make([][]byte, 32)
-	i := 0
+	return []byte{
+		providertypes.PortByteKey,
+		providertypes.MaturedUnbondingOpsByteKey,
+		providertypes.ValidatorSetUpdateIdByteKey,
+		providertypes.SlashMeterByteKey,
+		providertypes.SlashMeterReplenishTimeCandidateByteKey,
+		providertypes.ChainToChannelBytePrefix,
+		providertypes.ChannelToChainBytePrefix,
+		providertypes.ChainToClientBytePrefix,
+		providertypes.InitTimeoutTimestampBytePrefix,
+		providertypes.PendingCAPBytePrefix,
+		providertypes.PendingCRPBytePrefix,
+		providertypes.UnbondingOpBytePrefix,
+		providertypes.UnbondingOpIndexBytePrefix,
+		providertypes.ValsetUpdateBlockHeightBytePrefix,
+		providertypes.ConsumerGenesisBytePrefix,
+		providertypes.SlashAcksBytePrefix,
+		providertypes.InitChainHeightBytePrefix,
+		providertypes.PendingVSCsBytePrefix,
+		providertypes.VscSendTimestampBytePrefix,
+		providertypes.ThrottledPacketDataSizeBytePrefix,
+		providertypes.ThrottledPacketDataBytePrefix,
+		providertypes.GlobalSlashEntryBytePrefix,
+		providertypes.ConsumerValidatorsBytePrefix,
+		providertypes.ValidatorsByConsumerAddrBytePrefix,
+		providertypes.KeyAssignmentReplacementsBytePrefix,
+		providertypes.ConsumerAddrsToPruneBytePrefix,
+		providertypes.SlashLogBytePrefix,
+	}
+}
 
-	keys[i], i = providertypes.PortKey(), i+1
-	keys[i], i = providertypes.MaturedUnbondingOpsKey(), i+1
-	keys[i], i = providertypes.ValidatorSetUpdateIdKey(), i+1
-	keys[i], i = providertypes.SlashMeterKey(), i+1
-	keys[i], i = providertypes.SlashMeterReplenishTimeCandidateKey(), i+1
-	keys[i], i = []byte{providertypes.ChainToChannelBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ChannelToChainBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ChainToClientBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.InitTimeoutTimestampBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.PendingCAPBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.PendingCRPBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.UnbondingOpBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.UnbondingOpIndexBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ValsetUpdateBlockHeightBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ConsumerGenesisBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.SlashAcksBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.InitChainHeightBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.PendingVSCsBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.VscSendTimestampBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ConsumerValidatorsBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ValidatorsByConsumerAddrBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.KeyAssignmentReplacementsBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ConsumerAddrsToPruneBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ThrottledPacketDataSizeBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ThrottledPacketDataBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.GlobalSlashEntryBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.SlashLogBytePrefix}, i+1
+func TestNoPrefixOverlap(t *testing.T) {
+	keys := getAllFullyDefinedKeys()
+	seenPrefixes := []byte{}
+	for _, key := range keys {
+		require.NotContains(t, seenPrefixes, key[0], "Duplicate key prefix: %v", key[0])
+		seenPrefixes = append(seenPrefixes, key[0])
+	}
+}
 
-	return keys[:i]
+// getAllFullyDefinedKeys returns instances of byte arrays returned from fully defined key functions.
+// Note we only care about checking prefixes here, so parameters into the key functions are arbitrary.
+func getAllFullyDefinedKeys() [][]byte {
+	return [][]byte{
+		providertypes.PortKey(),
+		providertypes.MaturedUnbondingOpsKey(),
+		providertypes.ValidatorSetUpdateIdKey(),
+		providertypes.SlashMeterKey(),
+		providertypes.SlashMeterReplenishTimeCandidateKey(),
+		providertypes.ChainToChannelKey("chainID"),
+		providertypes.ChannelToChainKey("channelID"),
+		providertypes.ChainToClientKey("chainID"),
+		providertypes.InitTimeoutTimestampKey("chainID"),
+		providertypes.PendingCAPKey(time.Time{}, "chainID"),
+		providertypes.PendingCRPKey(time.Time{}, "chainID"),
+		providertypes.UnbondingOpKey(7),
+		providertypes.UnbondingOpIndexKey("chainID", 7),
+		providertypes.ValsetUpdateBlockHeightKey(7),
+		providertypes.ConsumerGenesisKey("chainID"),
+		providertypes.SlashAcksKey("chainID"),
+		providertypes.InitChainHeightKey("chainID"),
+		providertypes.PendingVSCsKey("chainID"),
+		providertypes.VscSendingTimestampKey("chainID", 8),
+		providertypes.ThrottledPacketDataSizeKey("chainID"),
+		providertypes.ThrottledPacketDataKey("chainID", 88),
+		providertypes.GlobalSlashEntryKey(providertypes.GlobalSlashEntry{}),
+		providertypes.ConsumerValidatorsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.ValidatorsByConsumerAddrKey("chainID", providertypes.NewConsumerConsAddress([]byte{0x05})),
+		providertypes.KeyAssignmentReplacementsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.ConsumerAddrsToPruneKey("chainID", 88),
+		providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05})),
+	}
 }
 
 // Tests the construction and parsing of ChainIdAndTs keys
