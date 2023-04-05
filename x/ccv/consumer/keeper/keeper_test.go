@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
+	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -81,6 +82,118 @@ func TestPendingChanges(t *testing.T) {
 	gotPd, ok = consumerKeeper.GetPendingChanges(ctx)
 	require.False(t, ok)
 	require.Nil(t, gotPd, "got non-nil pending changes after Delete")
+}
+
+// TestLastSovereignHeight tests the getter and setter for the last standalone height
+func TestLastSovereignHeight(t *testing.T) {
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Default value should be 0 without any setter
+	require.Equal(t, int64(0), consumerKeeper.GetLastStandaloneHeight(ctx))
+
+	// Set/get the last standalone height being 10
+	consumerKeeper.SetLastStandaloneHeight(ctx, 10)
+	require.Equal(t, int64(10), consumerKeeper.GetLastStandaloneHeight(ctx))
+
+	// Set/get the last standalone height being 43234426
+	consumerKeeper.SetLastStandaloneHeight(ctx, 43234426)
+	require.Equal(t, int64(43234426), consumerKeeper.GetLastStandaloneHeight(ctx))
+}
+
+// TestPreCCV tests the getter, setter and deletion methods for the pre-CCV state flag
+func TestPreCCV(t *testing.T) {
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Default value is false without any setter
+	require.False(t, consumerKeeper.IsPreCCV(ctx))
+
+	// Set/get the pre-CCV state to true
+	consumerKeeper.SetPreCCVTrue(ctx)
+	require.True(t, consumerKeeper.IsPreCCV(ctx))
+
+	// Delete the pre-CCV state, setting it to false
+	consumerKeeper.DeletePreCCV(ctx)
+	require.False(t, consumerKeeper.IsPreCCV(ctx))
+}
+
+// TestInitialValSet tests the getter and setter methods for storing the initial validator set for a consumer
+func TestInitialValSet(t *testing.T) {
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Default value is empty val update list
+	require.Empty(t, consumerKeeper.GetInitialValSet(ctx))
+
+	// Set/get the initial validator set
+	cId1 := crypto.NewCryptoIdentityFromIntSeed(7896)
+	cId2 := crypto.NewCryptoIdentityFromIntSeed(7897)
+	cId3 := crypto.NewCryptoIdentityFromIntSeed(7898)
+	valUpdates := []abci.ValidatorUpdate{
+		{
+			PubKey: cId1.TMProtoCryptoPublicKey(),
+			Power:  1097,
+		},
+		{
+			PubKey: cId2.TMProtoCryptoPublicKey(),
+			Power:  19068,
+		},
+		{
+			PubKey: cId3.TMProtoCryptoPublicKey(),
+			Power:  10978554,
+		},
+	}
+
+	consumerKeeper.SetInitialValSet(ctx, valUpdates)
+	require.Equal(t, []abci.ValidatorUpdate{
+		{
+			PubKey: cId1.TMProtoCryptoPublicKey(),
+			Power:  1097,
+		},
+		{
+			PubKey: cId2.TMProtoCryptoPublicKey(),
+			Power:  19068,
+		},
+		{
+			PubKey: cId3.TMProtoCryptoPublicKey(),
+			Power:  10978554,
+		},
+	}, consumerKeeper.GetInitialValSet(ctx))
+
+}
+
+// TestGetLastSovereignValidators tests the getter method for getting the last valset
+// from the standalone staking keeper
+func TestGetLastSovereignValidators(t *testing.T) {
+	ck, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Should panic if pre-CCV is true but staking keeper is not set
+	ck.SetPreCCVTrue(ctx)
+	require.Panics(t, func() { ck.GetLastStandaloneValidators(ctx) })
+
+	// Should panic if staking keeper is set but pre-CCV is false
+	ck.SetStandaloneStakingKeeper(mocks.MockStakingKeeper)
+	ck.DeletePreCCV(ctx)
+	require.False(t, ck.IsPreCCV(ctx))
+	require.Panics(t, func() { ck.GetLastStandaloneValidators(ctx) })
+
+	// Set the pre-CCV state to true and get the last standalone validators from mock
+	ck.SetPreCCVTrue(ctx)
+	require.True(t, ck.IsPreCCV(ctx))
+	cId1 := crypto.NewCryptoIdentityFromIntSeed(11)
+	val := cId1.SDKStakingValidator()
+	val.Description.Moniker = "sanity check this is the correctly serialized val"
+	gomock.InOrder(
+		mocks.MockStakingKeeper.EXPECT().GetLastValidators(ctx).Return([]stakingtypes.Validator{
+			val,
+		}),
+	)
+	lastSovVals := ck.GetLastStandaloneValidators(ctx)
+	require.Equal(t, []stakingtypes.Validator{val}, lastSovVals)
+	require.Equal(t, "sanity check this is the correctly serialized val",
+		lastSovVals[0].Description.Moniker)
 }
 
 // TestPacketMaturityTime tests getter, setter, and iterator functionality for the packet maturity time of a received VSC packet
