@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 import (
 	"fmt"
@@ -34,8 +34,8 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 
 	validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
-	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
-	providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
+	providerSlashingKeeper := s.providerApp.GetTestSlashingKeeper()
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	firstConsumerKeeper := s.getFirstBundle().GetKeeper()
 
@@ -162,9 +162,9 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	// Setup CCV channel for all instantiated consumers
 	s.SetupAllCCVChannels()
 
-	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
+	providerSlashingKeeper := s.providerApp.GetTestSlashingKeeper()
 
 	validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
@@ -260,12 +260,12 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	s.Require().Error(err)
 }
 
-// TestHandleSlashPacketDowntime tests the handling of a downtime related slash packet, with e2e tests.
+// TestHandleSlashPacketDowntime tests the handling of a downtime related slash packet, with integration tests.
 // Note that only downtime slash packets are processed by HandleSlashPacket.
-func (s *CCVTestSuite) TestHandleSlashPacketDowntime() {
-	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
-	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
+	providerKeeper := suite.providerApp.GetProviderKeeper()
+	providerSlashingKeeper := suite.providerApp.GetTestSlashingKeeper()
+	providerStakingKeeper := suite.providerApp.GetTestStakingKeeper()
 
 	tmVal := s.providerChain.Vals.Validators[0]
 	consAddr := sdk.ConsAddress(tmVal.Address)
@@ -301,11 +301,12 @@ func (s *CCVTestSuite) TestHandleSlashPacketDowntime() {
 	s.Require().Equal(s.providerCtx().BlockTime().Add(jailDuration), signingInfo.JailedUntil)
 }
 
-// TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an e2e testing setting
-func (s *CCVTestSuite) TestOnRecvSlashPacketErrors() {
-	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
-	firstBundle := s.getFirstBundle()
+// TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an integration testing setting
+func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
+
+	providerKeeper := suite.providerApp.GetProviderKeeper()
+	providerSlashingKeeper := suite.providerApp.GetTestSlashingKeeper()
+	firstBundle := suite.getFirstBundle()
 	consumerChainID := firstBundle.Chain.ChainID
 
 	s.SetupAllCCVChannels()
@@ -426,9 +427,9 @@ func (s *CCVTestSuite) TestValidatorDowntime() {
 	s.SetupCCVChannel(s.path)
 	s.SendEmptyVSCPacket()
 
-	consumerKeeper := s.consumerApp.GetConsumerKeeper()
-	consumerSlashingKeeper := s.consumerApp.GetE2eSlashingKeeper()
-	consumerIBCKeeper := s.consumerApp.GetIBCKeeper()
+	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
+	consumerSlashingKeeper := suite.consumerApp.GetTestSlashingKeeper()
+	consumerIBCKeeper := suite.consumerApp.GetIBCKeeper()
 
 	// sync suite context after CCV channel is established
 	ctx := s.consumerCtx()
@@ -550,7 +551,7 @@ func (s *CCVTestSuite) TestValidatorDoubleSigning() {
 	}
 
 	// add validator signing-info to the store
-	s.consumerApp.GetE2eSlashingKeeper().SetValidatorSigningInfo(ctx, consAddr, slashingtypes.ValidatorSigningInfo{
+	suite.consumerApp.GetTestSlashingKeeper().SetValidatorSigningInfo(ctx, consAddr, slashingtypes.ValidatorSigningInfo{
 		Address:    consAddr.String(),
 		Tombstoned: false,
 	})
@@ -569,7 +570,7 @@ func (s *CCVTestSuite) TestValidatorDoubleSigning() {
 	expCommit := s.commitSlashPacket(ctx, *packetData)
 
 	// expect to send slash packet when handling double-sign evidence
-	s.consumerApp.GetE2eEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
+	suite.consumerApp.GetTestEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
 
 	// check slash packet is queued
 	pendingPackets := s.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)

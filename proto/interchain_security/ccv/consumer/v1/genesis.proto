@@ -40,6 +40,7 @@ message GenesisState {
   // LastTransmissionBlockHeight nil on new chain, filled in on restart.
   interchain_security.ccv.consumer.v1.LastTransmissionBlockHeight last_transmission_block_height = 12
   [ (gogoproto.nullable) = false ];
+  bool preCCV = 13; // flag indicating whether the consumer CCV module starts in pre-CCV state
 }
 
 // HeightValsetUpdateID defines the genesis information for the mapping 

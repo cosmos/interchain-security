@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	errorsmod "cosmossdk.io/errors"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -28,21 +29,25 @@ import (
 
 // Keeper defines the Cross-Chain Validation Consumer Keeper
 type Keeper struct {
-	storeKey          storetypes.StoreKey
-	cdc               codec.BinaryCodec
-	paramStore        paramtypes.Subspace
-	scopedKeeper      ccv.ScopedKeeper
-	channelKeeper     ccv.ChannelKeeper
-	portKeeper        ccv.PortKeeper
-	connectionKeeper  ccv.ConnectionKeeper
-	clientKeeper      ccv.ClientKeeper
-	slashingKeeper    ccv.SlashingKeeper
-	hooks             ccv.ConsumerHooks
-	bankKeeper        ccv.BankKeeper
-	authKeeper        ccv.AccountKeeper
-	ibcTransferKeeper ccv.IBCTransferKeeper
-	ibcCoreKeeper     ccv.IBCCoreKeeper
-	feeCollectorName  string
+	storeKey         sdk.StoreKey
+	cdc              codec.BinaryCodec
+	paramStore       paramtypes.Subspace
+	scopedKeeper     ccv.ScopedKeeper
+	channelKeeper    ccv.ChannelKeeper
+	portKeeper       ccv.PortKeeper
+	connectionKeeper ccv.ConnectionKeeper
+	clientKeeper     ccv.ClientKeeper
+	// standaloneStakingKeeper is the staking keeper that managed proof of stake for a previously standalone chain,
+	// before the chain went through a standalone to consumer changeover.
+	// This keeper is not used for consumers that launched with ICS, and is therefore set after the constructor.
+	standaloneStakingKeeper ccv.StakingKeeper
+	slashingKeeper          ccv.SlashingKeeper
+	hooks                   ccv.ConsumerHooks
+	bankKeeper              ccv.BankKeeper
+	authKeeper              ccv.AccountKeeper
+	ibcTransferKeeper       ccv.IBCTransferKeeper
+	ibcCoreKeeper           ccv.IBCCoreKeeper
+	feeCollectorName        string
 }
 
 // NewKeeper creates a new Consumer Keeper instance
@@ -63,35 +68,42 @@ func NewKeeper(
 	}
 
 	k := Keeper{
-		storeKey:          key,
-		cdc:               cdc,
-		paramStore:        paramSpace,
-		scopedKeeper:      scopedKeeper,
-		channelKeeper:     channelKeeper,
-		portKeeper:        portKeeper,
-		connectionKeeper:  connectionKeeper,
-		clientKeeper:      clientKeeper,
-		slashingKeeper:    slashingKeeper,
-		bankKeeper:        bankKeeper,
-		authKeeper:        accountKeeper,
-		ibcTransferKeeper: ibcTransferKeeper,
-		ibcCoreKeeper:     ibcCoreKeeper,
-		feeCollectorName:  feeCollectorName,
+		storeKey:                key,
+		cdc:                     cdc,
+		paramStore:              paramSpace,
+		scopedKeeper:            scopedKeeper,
+		channelKeeper:           channelKeeper,
+		portKeeper:              portKeeper,
+		connectionKeeper:        connectionKeeper,
+		clientKeeper:            clientKeeper,
+		slashingKeeper:          slashingKeeper,
+		bankKeeper:              bankKeeper,
+		authKeeper:              accountKeeper,
+		ibcTransferKeeper:       ibcTransferKeeper,
+		ibcCoreKeeper:           ibcCoreKeeper,
+		feeCollectorName:        feeCollectorName,
+		standaloneStakingKeeper: nil,
 	}
 
 	k.mustValidateFields()
 	return k
 }
 
+func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
+	k.standaloneStakingKeeper = sk
+}
+
 // Validates that the consumer keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 15 {
-		panic("number of fields in provider keeper is not 15")
+	if reflect.ValueOf(k).NumField() != 16 {
+		panic("number of fields in consumer keeper is not 16")
 	}
 
-	// Note 14 fields will be validated, hooks are explicitly set after the constructor
+	// Note 14 / 16 fields will be validated,
+	// hooks are explicitly set after the constructor,
+	// stakingKeeper is optionally set after the constructor,
 
 	utils.PanicIfZeroOrNil(k.storeKey, "storeKey")                   // 1
 	utils.PanicIfZeroOrNil(k.cdc, "cdc")                             // 2
@@ -242,6 +254,66 @@ func (k Keeper) GetPendingChanges(ctx sdk.Context) (*ccv.ValidatorSetChangePacke
 func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.PendingChangesKey())
+}
+
+func (k Keeper) GetLastStandaloneHeight(ctx sdk.Context) int64 {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.LastStandaloneHeightKey())
+	if bz == nil {
+		return 0
+	}
+	height := sdk.BigEndianToUint64(bz)
+	return int64(height)
+}
+
+func (k Keeper) SetLastStandaloneHeight(ctx sdk.Context, height int64) {
+	bz := sdk.Uint64ToBigEndian(uint64(height))
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.LastStandaloneHeightKey(), bz)
+}
+
+func (k Keeper) IsPreCCV(ctx sdk.Context) bool {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.PreCCVKey())
+	return bz != nil
+}
+
+func (k Keeper) SetPreCCVTrue(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	bz := sdk.Uint64ToBigEndian(uint64(1))
+	store.Set(types.PreCCVKey(), bz)
+}
+
+func (k Keeper) DeletePreCCV(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.PreCCVKey())
+}
+
+func (k Keeper) SetInitialValSet(ctx sdk.Context, initialValSet []tmtypes.ValidatorUpdate) {
+	store := ctx.KVStore(k.storeKey)
+	initialValSetState := types.GenesisState{
+		InitialValSet: initialValSet,
+	}
+	bz := k.cdc.MustMarshal(&initialValSetState)
+	store.Set(types.InitialValSetKey(), bz)
+}
+
+func (k Keeper) GetInitialValSet(ctx sdk.Context) []tmtypes.ValidatorUpdate {
+	store := ctx.KVStore(k.storeKey)
+	initialValSet := types.GenesisState{}
+	bz := store.Get(types.InitialValSetKey())
+	if bz != nil {
+		k.cdc.MustUnmarshal(bz, &initialValSet)
+		return initialValSet.InitialValSet
+	}
+	return []tmtypes.ValidatorUpdate{}
+}
+
+func (k Keeper) GetLastStandaloneValidators(ctx sdk.Context) []stakingtypes.Validator {
+	if !k.IsPreCCV(ctx) || k.standaloneStakingKeeper == nil {
+		panic("cannot get last standalone validators if not in pre-ccv state, or if standalone staking keeper is nil")
+	}
+	return k.standaloneStakingKeeper.GetLastValidators(ctx)
 }
 
 // GetElapsedPacketMaturityTimes returns a slice of already elapsed PacketMaturityTimes, sorted by maturity times,

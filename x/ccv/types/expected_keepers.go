@@ -31,13 +31,20 @@ type StakingKeeper interface {
 	GetLastValidatorPower(ctx sdk.Context, operator sdk.ValAddress) (power int64)
 	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
 	Jail(sdk.Context, sdk.ConsAddress) // jail a validator
-	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec) math.Int
+	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec, stakingtypes.InfractionType)
+	Unjail(ctx sdk.Context, addr sdk.ConsAddress)
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
 	PowerReduction(ctx sdk.Context) math.Int
 	PutUnbondingOnHold(ctx sdk.Context, id uint64) error
-	GetLastTotalPower(ctx sdk.Context) math.Int
-	SlashWithInfractionReason(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec, stakingtypes.Infraction) math.Int
+	IterateValidators(ctx sdk.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool))
+	Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.ValidatorI
+	IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool
+	ValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) stakingtypes.ValidatorI
+	Delegation(ctx sdk.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) stakingtypes.DelegationI
+	MaxValidators(ctx sdk.Context) uint32
+	GetLastTotalPower(ctx sdk.Context) sdk.Int
+	GetLastValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
 }
 
 type EvidenceKeeper interface {

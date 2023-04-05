@@ -33,6 +33,7 @@ require (
 require (
 	cosmossdk.io/errors v1.0.0-beta.7
 	cosmossdk.io/math v1.0.0
+	cosmossdk.io/simapp v0.0.0-20230224204036-a6adb0821462
 	cosmossdk.io/tools/rosetta v0.2.1
 	github.com/cosmos/gogoproto v1.4.6
 	github.com/cosmos/ics23/go v0.9.1-0.20221207100636-b1abd8678aab

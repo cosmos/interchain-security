@@ -102,7 +102,7 @@ import (
 	ibcproviderkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
-	e2e "github.com/cosmos/interchain-security/testutil/e2e"
+	testutil "github.com/cosmos/interchain-security/testutil/integration"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -778,23 +778,23 @@ func (app *App) GetProviderKeeper() ibcproviderkeeper.Keeper {
 	return app.ProviderKeeper
 }
 
-// GetE2eStakingKeeper implements the ProviderApp interface.
-func (app *App) GetE2eStakingKeeper() e2e.StakingKeeper {
+// GetTestStakingKeeper implements the ProviderApp interface.
+func (app *App) GetTestStakingKeeper() testutil.TestStakingKeeper {
 	return app.StakingKeeper
 }
 
-// GetE2eBankKeeper implements the ProviderApp interface.
-func (app *App) GetE2eBankKeeper() e2e.BankKeeper {
+// GetTestBankKeeper implements the ProviderApp interface.
+func (app *App) GetTestBankKeeper() testutil.TestBankKeeper {
 	return app.BankKeeper
 }
 
-// GetE2eSlashingKeeper implements the ProviderApp interface.
-func (app *App) GetE2eSlashingKeeper() e2e.SlashingKeeper {
+// GetTestSlashingKeeper implements the ProviderApp interface.
+func (app *App) GetTestSlashingKeeper() testutil.TestSlashingKeeper {
 	return app.SlashingKeeper
 }
 
-// GetE2eDistributionKeeper implements the ProviderApp interface.
-func (app *App) GetE2eDistributionKeeper() e2e.DistributionKeeper {
+// GetTestDistributionKeeper implements the ProviderApp interface.
+func (app *App) GetTestDistributionKeeper() testutil.TestDistributionKeeper {
 	return app.DistrKeeper
 }
 
@@ -818,6 +818,11 @@ func (app *App) GetIBCKeeper() *ibckeeper.Keeper {
 // GetScopedIBCKeeper implements the TestingApp interface.
 func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 	return app.ScopedIBCKeeper
+}
+
+// GetTxConfig implements the TestingApp interface.
+func (app *App) GetTxConfig() client.TxConfig {
+	return MakeTestEncodingConfig().TxConfig
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided

@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 import (
 	"fmt"
@@ -17,8 +17,8 @@ import (
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-	"github.com/cosmos/interchain-security/testutil/e2e"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/testutil/integration"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
@@ -51,7 +51,7 @@ func (s *CCVTestSuite) consumerCtx() sdk.Context {
 }
 
 func (s *CCVTestSuite) providerBondDenom() string {
-	return s.providerApp.GetE2eStakingKeeper().BondDenom(s.providerCtx())
+	return s.providerApp.GetTestStakingKeeper().BondDenom(s.providerCtx())
 }
 
 func (s *CCVTestSuite) getValByIdx(index int) (validator stakingtypes.Validator, valAddr sdk.ValAddress) {
@@ -62,8 +62,8 @@ func (s *CCVTestSuite) getValByIdx(index int) (validator stakingtypes.Validator,
 	return s.getVal(s.providerCtx(), valAddr), valAddr
 }
 
-func (s *CCVTestSuite) getVal(_ sdk.Context, valAddr sdk.ValAddress) stakingtypes.Validator {
-	validator, found := s.providerApp.GetE2eStakingKeeper().GetValidator(s.providerCtx(), valAddr)
+func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingtypes.Validator {
+	validator, found := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), valAddr)
 	s.Require().True(found)
 	return validator
 }
@@ -82,11 +82,11 @@ func (s *CCVTestSuite) setDefaultValSigningInfo(tmVal tmtypes.Validator) {
 	consAddr := s.getValConsAddr(tmVal)
 	valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, s.providerCtx().BlockHeight(),
 		s.providerCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
-	s.providerApp.GetE2eSlashingKeeper().SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
+	s.providerApp.GetTestSlashingKeeper().SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
 }
 
-func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) math.Int {
-	return s.providerApp.GetE2eBankKeeper().GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
+func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
+	return s.providerApp.GetTestBankKeeper().GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }
 
 // delegateAndUndelegate delegates bondAmt from delAddr to the first validator
@@ -153,7 +153,7 @@ func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int, id
 	// choose a validator
 	validator, valAddr := s.getValByIdx(idx)
 	// delegate bondAmt tokens on provider to change validator powers
-	shares, err := s.providerApp.GetE2eStakingKeeper().Delegate(
+	shares, err := s.providerApp.GetTestStakingKeeper().Delegate(
 		s.providerCtx(),
 		delAddr,
 		bondAmt,
@@ -168,8 +168,8 @@ func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int, id
 }
 
 // undelegate unbonds an amount of delegator shares from a given validator
-func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (valsetUpdate uint64) {
-	_, err := s.providerApp.GetE2eStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, sharesAmount)
+func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (valsetUpdateId uint64) {
+	_, err := s.providerApp.GetTestStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, sharesAmount)
 	s.Require().NoError(err)
 
 	// save the current valset update ID
@@ -181,9 +181,9 @@ func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 // Executes a BeginRedelegation (unbonding and redelegation) operation
 // on the provider chain using delegated funds from delAddr
 func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
-	valDstAddr sdk.ValAddress, sharesAmount sdk.Dec,
-) {
-	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	ValDstAddr sdk.ValAddress, sharesAmount sdk.Dec) {
+
+	stakingKeeper := s.providerApp.GetTestStakingKeeper()
 	ctx := s.providerCtx()
 
 	// delegate bondAmt tokens on provider to change validator powers
@@ -285,8 +285,8 @@ func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	incrementTime(s, jumpPeriod)
 }
 
-func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found, onHold bool, msgAndArgs ...any) {
-	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerApp.GetE2eStakingKeeper(), id)
+func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, onHold bool, msgAndArgs ...interface{}) {
+	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerApp.GetTestStakingKeeper(), id)
 	s.Require().Equal(
 		found,
 		wasFound,
@@ -325,9 +325,9 @@ func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID strin
 // Checks that an expected amount of redelegations exist for a delegator
 // via the staking keeper, then returns those redelegations.
 func checkRedelegations(s *CCVTestSuite, delAddr sdk.AccAddress,
-	expect uint16,
-) []stakingtypes.Redelegation {
-	redelegations := s.providerApp.GetE2eStakingKeeper().GetRedelegations(s.providerCtx(), delAddr, 2)
+	expect uint16) []stakingtypes.Redelegation {
+
+	redelegations := s.providerApp.GetTestStakingKeeper().GetRedelegations(s.providerCtx(), delAddr, 2)
 
 	s.Require().Len(redelegations, int(expect))
 	return redelegations
@@ -340,7 +340,7 @@ func checkRedelegationEntryCompletionTime(
 	s.Require().Equal(expectedCompletion, entry.CompletionTime)
 }
 
-func getStakingUnbondingDelegationEntry(ctx sdk.Context, k e2e.StakingKeeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
+func getStakingUnbondingDelegationEntry(ctx sdk.Context, k testutil.TestStakingKeeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
 	stakingUbd, found := k.GetUnbondingDelegationByUnbondingID(ctx, id)
 
 	for _, entry := range stakingUbd.Entries {
@@ -604,7 +604,7 @@ func (s *CCVTestSuite) setupValidatorPowers() {
 
 	s.providerChain.NextBlock()
 
-	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	stakingKeeper := s.providerApp.GetTestStakingKeeper()
 	for _, val := range s.providerChain.Vals.Validators {
 		power := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
 		s.Require().Equal(int64(1000), power)

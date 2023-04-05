@@ -13,6 +13,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+// Note: for a democracy consumer, this "democracy staking" keeper is only for governance capabilities,
+// where the ccv consumer module is responsible for proof of stake capabilities, validator set updates, etc.
+
 var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
@@ -51,8 +54,12 @@ func NewAppModule(cdc codec.Codec, stakingkeeper keeper.Keeper, ak types.Account
 // however, it returns no validator updates as validators are tracked via the
 // consumer chain's x/cvv/consumer module and so this module is not responsible
 // for returning the initial validator set.
-func (AppModule) InitGenesis(_ sdk.Context, _ codec.JSONCodec, _ json.RawMessage) []abci.ValidatorUpdate {
-	// var genesisState types.GenesisState
+//
+// Note: InitGenesis is not called during the soft upgrade of a module
+// (as a part of a changeover from standalone -> consumer chain),
+// so there is no special handling needed in this method for a consumer being in the pre-CCV state.
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
+	var genesisState types.GenesisState
 
 	// cdc.MustUnmarshalJSON(data, &genesisState)
 	// _ = staking.InitGenesis(ctx, am.keeper, am.accKeeper, am.bankKeeper, &genesisState)
@@ -64,6 +71,12 @@ func (AppModule) InitGenesis(_ sdk.Context, _ codec.JSONCodec, _ json.RawMessage
 // however, it returns no validator updates as validators are tracked via the
 // consumer chain's x/cvv/consumer module and so this module is not responsible
 // for returning the initial validator set.
+//
+// Note: This method does not require any special handling for PreCCV being true
+// (as a part of the changeover from standalone -> consumer chain).
+// The ccv consumer Endblocker is ordered to run before the staking Endblocker,
+// so if PreCCV is true during one block, the ccv consumer Enblocker will return the proper validator updates,
+// the PreCCV flag will be toggled to false, and no validator updates should be returned by this method.
 func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
 	_ = am.keeper.BlockValidatorUpdates(ctx)
 	return []abci.ValidatorUpdate{}

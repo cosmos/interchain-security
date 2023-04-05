@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	appparams "github.com/cosmos/interchain-security/app/params"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -64,6 +65,8 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
+	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -80,14 +83,11 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	testutil "github.com/cosmos/interchain-security/testutil/integration"
+	ccvdistr "github.com/cosmos/interchain-security/x/ccv/democracy/distribution"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
-
-	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/cosmos/interchain-security/testutil/e2e"
-	ccvdistr "github.com/cosmos/interchain-security/x/ccv/democracy/distribution"
 
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -116,7 +116,7 @@ import (
 
 const (
 	AppName              = "interchain-security-cd"
-	upgradeName          = "v07-Theta"
+	upgradeName          = "v07-Theta" // arbitrary name, define your own appropriately named upgrade
 	AccountAddressPrefix = "cosmos"
 )
 
@@ -330,7 +330,7 @@ func New(
 		app.AccountKeeper,
 	)
 
-	ccvstakingKeeper := stakingkeeper.NewKeeper(
+	stakingKeeper := stakingkeeper.NewKeeper(
 		appCodec,
 		keys[stakingtypes.StoreKey],
 		app.AccountKeeper,
@@ -649,6 +649,7 @@ func New(
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
 		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
+
 			app.IBCKeeper.ConnectionKeeper.SetParams(ctx, ibcconnectiontypes.DefaultParams())
 
 			fromVM := make(map[string]uint64)
@@ -660,8 +661,33 @@ func New(
 				}
 			}
 
+			// For a new consumer chain, this code (together with the entire SetUpgradeHandler) is not needed at all,
+			// upgrade handler code is application specific. However, as an example, standalone to consumer
+			// changeover chains should utilize customized upgrade handler code similar to below.
+
+			// TODO: should have a way to read from current node home
+			userHomeDir, err := os.UserHomeDir()
+			if err != nil {
+				stdlog.Println("Failed to get home dir %2", err)
+			}
+			nodeHome := userHomeDir + "/.sovereign/config/genesis.json"
+			appState, _, err := genutiltypes.GenesisStateFromGenFile(nodeHome)
+			if err != nil {
+				return fromVM, fmt.Errorf("failed to unmarshal genesis state: %w", err)
+			}
+
+			var consumerGenesis = consumertypes.GenesisState{}
+			appCodec.MustUnmarshalJSON(appState[consumertypes.ModuleName], &consumerGenesis)
+
+			consumerGenesis.PreCCV = true
+			app.ConsumerKeeper.InitGenesis(ctx, &consumerGenesis)
+
 			ctx.Logger().Info("start to run module migrations...")
 
+			// Note: consumer ccv module is added to app.MM.Modules constructor above,
+			// meaning the consumer ccv module will have an entry in fromVM.
+			// Since a consumer ccv module entry exists in fromVM, the RunMigrations method
+			// will not call the consumer ccv module's InitGenesis method a second time.
 			return app.MM.RunMigrations(ctx, app.configurator, fromVM)
 		},
 	)
@@ -790,50 +816,50 @@ func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
 }
 
-// DemocConsumerApp interface implementations for e2e tests
+// DemocConsumerApp interface implementations for integration tests
 
 // GetConsumerKeeper implements the ConsumerApp interface.
 func (app *App) GetConsumerKeeper() consumerkeeper.Keeper {
 	return app.ConsumerKeeper
 }
 
-// GetE2eBankKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eBankKeeper() e2e.BankKeeper {
+// GetTestBankKeeper implements the ConsumerApp interface.
+func (app *App) GetTestBankKeeper() testutil.TestBankKeeper {
 	return app.BankKeeper
 }
 
-// GetE2eAccountKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eAccountKeeper() e2e.AccountKeeper {
+// GetTestAccountKeeper implements the ConsumerApp interface.
+func (app *App) GetTestAccountKeeper() testutil.TestAccountKeeper {
 	return app.AccountKeeper
 }
 
-// GetE2eSlashingKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eSlashingKeeper() e2e.SlashingKeeper {
+// GetTestSlashingKeeper implements the ConsumerApp interface.
+func (app *App) GetTestSlashingKeeper() testutil.TestSlashingKeeper {
 	return app.SlashingKeeper
 }
 
-// GetE2eEvidenceKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eEvidenceKeeper() e2e.EvidenceKeeper {
+// GetTestEvidenceKeeper implements the ConsumerApp interface.
+func (app *App) GetTestEvidenceKeeper() testutil.TestEvidenceKeeper {
 	return app.EvidenceKeeper
 }
 
-// GetE2eStakingKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eStakingKeeper() e2e.StakingKeeper {
+// GetTestStakingKeeper implements the ConsumerApp interface.
+func (app *App) GetTestStakingKeeper() testutil.TestStakingKeeper {
 	return app.StakingKeeper
 }
 
-// GetE2eDistributionKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eDistributionKeeper() e2e.DistributionKeeper {
+// GetTestDistributionKeeper implements the ConsumerApp interface.
+func (app *App) GetTestDistributionKeeper() testutil.TestDistributionKeeper {
 	return app.DistrKeeper
 }
 
-// GetE2eMintKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eMintKeeper() e2e.MintKeeper {
+// GetTestMintKeeper implements the ConsumerApp interface.
+func (app *App) GetTestMintKeeper() testutil.TestMintKeeper {
 	return app.MintKeeper
 }
 
-// GetE2eGovKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eGovKeeper() e2e.GovKeeper {
+// GetTestGovKeeper implements the ConsumerApp interface.
+func (app *App) GetTestGovKeeper() testutil.TestGovKeeper {
 	return app.GovKeeper
 }
 

@@ -56,6 +56,15 @@ const (
 	// because the client is expired
 	PendingDataPacketsByteKey
 
+	// PreCCVByteKey is the byte to store the consumer is running on democracy staking module without consumer
+	PreCCVByteKey
+
+	// InitialValSetByteKey is the byte to store the initial validator set for a consumer
+	InitialValSetByteKey
+
+	// LastStandaloneHeightByteKey is the byte that will store last standalone height
+	LastStandaloneHeightByteKey
+
 	// HistoricalInfoKey is the byte prefix that will store the historical info for a given height
 	HistoricalInfoBytePrefix
 
@@ -113,6 +122,18 @@ func PendingChangesKey() []byte {
 // is not established or because the client is expired.
 func PendingDataPacketsKey() []byte {
 	return []byte{PendingDataPacketsByteKey}
+}
+
+func PreCCVKey() []byte {
+	return []byte{PreCCVByteKey}
+}
+
+func InitialValSetKey() []byte {
+	return []byte{InitialValSetByteKey}
+}
+
+func LastStandaloneHeightKey() []byte {
+	return []byte{LastStandaloneHeightByteKey}
 }
 
 // HistoricalInfoKey returns the key to historical info to a given block height

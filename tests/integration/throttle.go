@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 import (
 	"time"
@@ -36,7 +36,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		s.SetupAllCCVChannels()
 		s.setupValidatorPowers()
 
-		providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+		providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 		// Use default params (incl replenish period), but set replenish fraction to tc value.
 		params := providertypes.DefaultParams()
@@ -150,7 +150,7 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	s.setupValidatorPowers()
 
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 	// First confirm that VSC matured packets are handled immediately (not queued)
 	// when no slash packets are sent.
@@ -389,7 +389,7 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 	s.providerChain.NextBlock()
 	s.providerChain.NextBlock()
 
-	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	stakingKeeper := s.providerApp.GetTestStakingKeeper()
 	for _, val := range s.providerChain.Vals.Validators {
 		power := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
 		s.Require().Equal(int64(1000), power)
@@ -536,8 +536,8 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 
 	// Confirm total power is now 3000 once updated by staking end blocker
 	s.providerChain.NextBlock()
-	totalPower := s.providerApp.GetE2eStakingKeeper().GetLastTotalPower(s.providerCtx())
-	s.Require().Equal(sdk.NewInt(3000), totalPower)
+	totalPower := s.providerApp.GetTestStakingKeeper().GetLastTotalPower(s.providerCtx())
+	s.Require().Equal(sdktypes.NewInt(3000), totalPower)
 
 	// Now change replenish frac to 0.67 and fully replenish the meter.
 	params.SlashMeterReplenishFraction = "0.67"
@@ -574,7 +574,7 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	s.providerApp.GetProviderKeeper().InitializeSlashMeter(s.providerCtx())
 
 	// Assert that we start out with no jailings
-	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 	vals := providerStakingKeeper.GetAllValidators(s.providerCtx())
 	for _, val := range vals {
 		s.Require().False(val.IsJailed())
@@ -829,23 +829,23 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 }
 
 func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPower bool) {
-	sdkVal, found := s.providerApp.GetE2eStakingKeeper().GetValidator(
-		s.providerCtx(), sdk.ValAddress(tmVal.Address))
+	sdkVal, found := s.providerApp.GetTestStakingKeeper().GetValidator(
+		s.providerCtx(), sdktypes.ValAddress(tmVal.Address))
 	s.Require().True(found)
 	s.Require().True(sdkVal.IsJailed())
 
 	if checkPower {
-		valPower := s.providerApp.GetE2eStakingKeeper().GetLastValidatorPower(
+		valPower := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(
 			s.providerCtx(), sdkVal.GetOperator())
 		s.Require().Equal(int64(0), valPower)
 	}
 }
 
 func (s *CCVTestSuite) confirmValidatorNotJailed(tmVal tmtypes.Validator, expectedPower int64) {
-	sdkVal, found := s.providerApp.GetE2eStakingKeeper().GetValidator(
-		s.providerCtx(), sdk.ValAddress(tmVal.Address))
+	sdkVal, found := s.providerApp.GetTestStakingKeeper().GetValidator(
+		s.providerCtx(), sdktypes.ValAddress(tmVal.Address))
 	s.Require().True(found)
-	valPower := s.providerApp.GetE2eStakingKeeper().GetLastValidatorPower(
+	valPower := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(
 		s.providerCtx(), sdkVal.GetOperator())
 	s.Require().Equal(expectedPower, valPower)
 	s.Require().False(sdkVal.IsJailed())

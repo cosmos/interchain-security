@@ -1,6 +1,3 @@
-//go:build !test_amino
-// +build !test_amino
-
 package params
 
 import (
@@ -9,19 +6,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 )
 
-// MakeTestEncodingConfig creates an EncodingConfig for a non-amino based test configuration.
-// This function should be used only internally (in the SDK).
-// App user should'nt create new codecs - use the app.AppCodec instead.
-// [DEPRECATED]
+// MakeTestEncodingConfig creates an EncodingConfig for an amino based test configuration.
 func MakeTestEncodingConfig() EncodingConfig {
-	cdc := codec.NewLegacyAmino()
+	amino := codec.NewLegacyAmino()
 	interfaceRegistry := types.NewInterfaceRegistry()
 	chainCodec := codec.NewProtoCodec(interfaceRegistry)
+	txCfg := tx.NewTxConfig(chainCodec, tx.DefaultSignModes)
 
 	return EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
-		Codec:             chainCodec,
-		TxConfig:          tx.NewTxConfig(chainCodec, tx.DefaultSignModes),
-		Amino:             cdc,
+		Marshaler:         chainCodec,
+		TxConfig:          txCfg,
+		Amino:             amino,
 	}
 }
