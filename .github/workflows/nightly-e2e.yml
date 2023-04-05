@@ -1,0 +1,68 @@
+# Run integration tests nightly on main
+
+# !! Relevant changes to this file should be propagated manual-integration.yml
+
+name: nightly-e2e-main
+on:
+  schedule:
+    # run every day at 03:00 UTC
+    #        ┌───────────── minute (0 - 59)
+    #        │  ┌───────────── hour (0 - 23)
+    #        │  │ ┌───────────── day of the month (1 - 31)
+    #        │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+    #        │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+    #        │  │ │ │ │
+    #        │  │ │ │ │
+    #        │  │ │ │ │
+    #        *  * * * *
+    - cron: '0 3 * * *'
+
+jobs:
+  nightly-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.18'
+
+      - uses: actions/checkout@v3
+
+      - name: E2E tests
+        run: make test-e2e
+
+
+  nightly-test-fail:
+    needs: nightly-test
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack on failure
+        uses: slackapi/slack-github-action@v1.23.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          BRANCH: ${{ github.ref_name }}
+          RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          COMMITS_URL: "${{ github.server_url }}/${{ github.repository }}/commits/${{ github.ref_name }}"
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "E2E tests failed❗",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":skull: Nightly E2E tests for `${{ env.BRANCH }}` failed.\n\nSee the <${{ env.RUN_URL }}|run details> and the <${{ env.COMMITS_URL }}|latest commits> possibly related to the failure."
+                  }
+                }
+              ]
+            }
