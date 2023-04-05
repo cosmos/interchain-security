@@ -20,28 +20,28 @@ CONSUMER_PRIVATE_KEY=$7
 CONSUMER_NODE_KEY=$8
 
 # kill validator node
-pkill -f  /$CHAIN_ID/validator$VAL_ID
+pkill -f  /"$CHAIN_ID"/validator"$VAL_ID"
 
 # swap valstate -> validator will sync on restart
-echo '{"height": "0","round": 0,"step": 0,"signature":"","signbytes":""}' > /$CHAIN_ID/validator$VAL_ID/data/priv_validator_state.json
+echo '{"height": "0","round": 0,"step": 0,"signature":"","signbytes":""}' > /"$CHAIN_ID"/validator"$VAL_ID"/data/priv_validator_state.json
 
 
 # swap private key
 # echo "$CONSUMER_NODE_KEY" > /$CHAIN_ID/assignvalidator$VAL_ID/config/node_key.json
-echo "$CONSUMER_PRIVATE_KEY" > /$CHAIN_ID/validator$VAL_ID/config/priv_validator_key.json
+echo "$CONSUMER_PRIVATE_KEY" > /"$CHAIN_ID"/validator"$VAL_ID"/config/priv_validator_key.json
 
-echo "$CONSUMER_NODE_KEY" > /$CHAIN_ID/validator$VAL_ID/config/node_key.json
+echo "$CONSUMER_NODE_KEY" > /"$CHAIN_ID"/validator"$VAL_ID"/config/node_key.json
 
 # remove old key
-$BIN keys delete validator$VAL_ID --keyring-backend test --home /$CHAIN_ID/validator$VAL_ID --yes
+$BIN keys delete validator"$VAL_ID" --keyring-backend test --home /"$CHAIN_ID"/validator"$VAL_ID" --yes
 
 # add new key from mnemonic
-echo "$CONSUMER_MNEMONIC" | $BIN keys add validator$VAL_ID --keyring-backend test --home /$CHAIN_ID/validator$VAL_ID --recover  --output json
+echo "$CONSUMER_MNEMONIC" | $BIN keys add validator"$VAL_ID" --keyring-backend test --home /"$CHAIN_ID"/validator"$VAL_ID" --recover  --output json
 
 
 # restart node with new key
 ARGS="--home /$CHAIN_ID/validator$VAL_ID --address tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26655 --rpc.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26658 --grpc.address $CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:9091 --log_level trace --p2p.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26656 --grpc-web.enable=false"
 
-ip netns exec $CHAIN_ID-$VAL_ID $BIN $ARGS start &> /$CHAIN_ID/validator$VAL_ID/logs &
+ip netns exec "$CHAIN_ID"-"$VAL_ID" "$BIN" "$ARGS" start &> /"$CHAIN_ID"/validator"$VAL_ID"/logs &
 
 echo 'done!!!!!!!!'

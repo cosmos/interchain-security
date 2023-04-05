@@ -45,7 +45,7 @@ NODES=$(echo "$VALIDATORS" | jq '. | length')
 # Create virtual bridge device (acts like a switch)
 ip link add name virtual-bridge type bridge || true 
 
-for i in $(seq 0 $(($NODES - 1)));
+for i in $(seq 0 $((NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
     VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$i].ip_suffix")
@@ -53,52 +53,53 @@ do
     IP_ADDR="$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX/24" 
 
     # Create network namespace 
-    ip netns add $NET_NAMESPACE_NAME
+    ip netns add "$NET_NAMESPACE_NAME"
     # Create virtual ethernet device to connect with bridge 
-    ip link add $NET_NAMESPACE_NAME-in type veth peer name $NET_NAMESPACE_NAME-out
+    ip link add "$NET_NAMESPACE_NAME"-in type veth peer name "$NET_NAMESPACE_NAME"-out
     # Connect input end of virtual ethernet device to namespace
-    ip link set $NET_NAMESPACE_NAME-in netns $NET_NAMESPACE_NAME
+    ip link set "$NET_NAMESPACE_NAME"-in netns "$NET_NAMESPACE_NAME"
     # Assign ip address to namespace
-    ip netns exec $NET_NAMESPACE_NAME ip addr add $IP_ADDR dev $NET_NAMESPACE_NAME-in
+    ip netns exec "$NET_NAMESPACE_NAME" ip addr add "$IP_ADDR" dev "$NET_NAMESPACE_NAME"-in
     # Connect output end of virtual ethernet device to bridge
-    ip link set $NET_NAMESPACE_NAME-out master virtual-bridge
+    ip link set "$NET_NAMESPACE_NAME"-out master virtual-bridge
 done
 
 # Enable bridge interface
 ip link set virtual-bridge up
 
-for i in $(seq 0 $(($NODES - 1)));
+for i in $(seq 0 $((NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
     NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
 
     # Enable in/out interfaces for the namespace 
-    ip link set $NET_NAMESPACE_NAME-out up
-    ip netns exec $NET_NAMESPACE_NAME ip link set dev $NET_NAMESPACE_NAME-in up
+    ip link set "$NET_NAMESPACE_NAME"-out up
+    ip netns exec "$NET_NAMESPACE_NAME" ip link set dev "$NET_NAMESPACE_NAME"-in up
     # Enable loopback device
-    ip netns exec $NET_NAMESPACE_NAME ip link set dev lo up
+    ip netns exec "$NET_NAMESPACE_NAME" ip link set dev lo up
 done
 
 # Assign IP for bridge, to route between default network namespace and bridge 
 BRIDGE_IP="$CHAIN_IP_PREFIX.254/24"
-ip addr add $BRIDGE_IP dev virtual-bridge
+ip addr add "$BRIDGE_IP" dev virtual-bridge
 
 # first we start a genesis.json with the first validator
 # the first validator will also collect the gentx's once gnerated
 FIRST_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[0].val_id")
 FIRST_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[0].ip_suffix")
-echo "$VALIDATORS" | jq -r ".[0].mnemonic" | $BIN init --home /$CHAIN_ID/validator$FIRST_VAL_ID --chain-id=$CHAIN_ID validator$FIRST_VAL_ID --recover > /dev/null
+export FIRST_VAL_IP_SUFFIX
+echo "$VALIDATORS" | jq -r ".[0].mnemonic" | $BIN init --home /"$CHAIN_ID"/validator"$FIRST_VAL_ID" --chain-id="$CHAIN_ID" validator"$FIRST_VAL_ID" --recover > /dev/null
 
 # Apply jq transformations to genesis file
-jq "$GENESIS_TRANSFORM" /$CHAIN_ID/validator$FIRST_VAL_ID/config/genesis.json > /$CHAIN_ID/edited-genesis.json
-mv /$CHAIN_ID/edited-genesis.json /$CHAIN_ID/genesis.json
+jq "$GENESIS_TRANSFORM" /"$CHAIN_ID"/validator"$FIRST_VAL_ID"/config/genesis.json > /"$CHAIN_ID"/edited-genesis.json
+mv /"$CHAIN_ID"/edited-genesis.json /"$CHAIN_ID"/genesis.json
 
 
 
 
 # CREATE VALIDATOR HOME FOLDERS ETC
 
-for i in $(seq 0 $(($NODES - 1)));
+for i in $(seq 0 $((NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
     START_WITH_CONSUMER_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].start_with_consumer_key")
@@ -107,84 +108,84 @@ do
     # the --home parameter on gaiad
     # optionally start validator with a key different from provider chain key
     if [[ "$CHAIN_ID" != "provi" && "$START_WITH_CONSUMER_KEY" = "true" ]]; then
-        echo "$VALIDATORS" | jq -r ".[$i].consumer_mnemonic" | $BIN keys add validator$VAL_ID \
-            --home /$CHAIN_ID/validator$VAL_ID \
+        echo "$VALIDATORS" | jq -r ".[$i].consumer_mnemonic" | $BIN keys add validator"$VAL_ID" \
+            --home /"$CHAIN_ID"/validator"$VAL_ID" \
             --keyring-backend test \
             --recover > /dev/null
     else
-        echo "$VALIDATORS" | jq -r ".[$i].mnemonic" | $BIN keys add validator$VAL_ID \
-        --home /$CHAIN_ID/validator$VAL_ID \
+        echo "$VALIDATORS" | jq -r ".[$i].mnemonic" | $BIN keys add validator"$VAL_ID" \
+        --home /"$CHAIN_ID"/validator"$VAL_ID" \
         --keyring-backend test \
         --recover > /dev/null
     fi
     
     # Give validators their initial token allocations
     # move the genesis in
-    mv /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$VAL_ID/config/genesis.json
+    mv /"$CHAIN_ID"/genesis.json /"$CHAIN_ID"/validator"$VAL_ID"/config/genesis.json
     
     # give this validator some money
     ALLOCATION=$(echo "$VALIDATORS" | jq -r ".[$i].allocation")
-    $BIN add-genesis-account validator$VAL_ID $ALLOCATION \
-        --home /$CHAIN_ID/validator$VAL_ID \
+    $BIN add-genesis-account validator"$VAL_ID" "$ALLOCATION" \
+        --home /"$CHAIN_ID"/validator"$VAL_ID" \
         --keyring-backend test
 
     # move the genesis back out
-    mv /$CHAIN_ID/validator$VAL_ID/config/genesis.json /$CHAIN_ID/genesis.json
+    mv /"$CHAIN_ID"/validator"$VAL_ID"/config/genesis.json /"$CHAIN_ID"/genesis.json
 done
 
 
 
 # MAKE GENTXS AND SET UP LOCAL VALIDATOR STATE
 
-for i in $(seq 0 $(($NODES - 1)));
+for i in $(seq 0 $((NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
 
     # Copy in the genesis.json
-    cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$VAL_ID/config/genesis.json
+    cp /"$CHAIN_ID"/genesis.json /"$CHAIN_ID"/validator"$VAL_ID"/config/genesis.json
 
     # Copy in validator state file
-    echo '{"height": "0","round": 0,"step": 0}' > /$CHAIN_ID/validator$VAL_ID/data/priv_validator_state.json
+    echo '{"height": "0","round": 0,"step": 0}' > /"$CHAIN_ID"/validator"$VAL_ID"/data/priv_validator_state.json
 
     START_WITH_CONSUMER_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].start_with_consumer_key")
     if [[ "$CHAIN_ID" != "provi" && "$START_WITH_CONSUMER_KEY" = "true" ]]; then
         # start with assigned consumer key
         PRIV_VALIDATOR_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].consumer_priv_validator_key")
         if [[ "$PRIV_VALIDATOR_KEY" ]]; then
-            echo "$PRIV_VALIDATOR_KEY" > /$CHAIN_ID/validator$VAL_ID/config/priv_validator_key.json
+            echo "$PRIV_VALIDATOR_KEY" > /"$CHAIN_ID"/validator"$VAL_ID"/config/priv_validator_key.json
         fi
     else
         PRIV_VALIDATOR_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].priv_validator_key")
         if [[ "$PRIV_VALIDATOR_KEY" ]]; then
-            echo "$PRIV_VALIDATOR_KEY" > /$CHAIN_ID/validator$VAL_ID/config/priv_validator_key.json
+            echo "$PRIV_VALIDATOR_KEY" > /"$CHAIN_ID"/validator"$VAL_ID"/config/priv_validator_key.json
         fi
     fi
 
     NODE_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].node_key")
     if [[ "$NODE_KEY" ]]; then
-        echo "$NODE_KEY" > /$CHAIN_ID/validator$VAL_ID/config/node_key.json
+        echo "$NODE_KEY" > /"$CHAIN_ID"/validator"$VAL_ID"/config/node_key.json
     fi
 
     # Make a gentx (this command also sets up validator state on disk even if we are not going to use the gentx for anything)
     if [ "$SKIP_GENTX" = "false" ] ; then 
         STAKE_AMOUNT=$(echo "$VALIDATORS" | jq -r ".[$i].stake")
-        $BIN gentx validator$VAL_ID "$STAKE_AMOUNT" \
-            --home /$CHAIN_ID/validator$VAL_ID \
+        $BIN gentx validator"$VAL_ID" "$STAKE_AMOUNT" \
+            --home /"$CHAIN_ID"/validator"$VAL_ID" \
             --keyring-backend test \
-            --moniker validator$VAL_ID \
-            --chain-id=$CHAIN_ID
+            --moniker validator"$VAL_ID" \
+            --chain-id="$CHAIN_ID"
 
         # Copy gentxs to the first validator for possible future collection. 
         # Obviously we don't need to copy the first validator's gentx to itself
-        if [ $VAL_ID != $FIRST_VAL_ID ]; then
-            cp /$CHAIN_ID/validator$VAL_ID/config/gentx/* /$CHAIN_ID/validator$FIRST_VAL_ID/config/gentx/
+        if [ "$VAL_ID" != "$FIRST_VAL_ID" ]; then
+            cp /"$CHAIN_ID"/validator"$VAL_ID"/config/gentx/* /"$CHAIN_ID"/validator"$FIRST_VAL_ID"/config/gentx/
         fi
     fi
 
     # Modify tendermint configs of validator
     if [ "$TENDERMINT_CONFIG_TRANSFORM" != "" ] ; then 
         #'s/foo/bar/;s/abc/def/'
-        sed -i "$TENDERMINT_CONFIG_TRANSFORM" $CHAIN_ID/validator$VAL_ID/config/config.toml
+        sed -i "$TENDERMINT_CONFIG_TRANSFORM" "$CHAIN_ID"/validator"$VAL_ID"/config/config.toml
     fi
 done
 
@@ -195,16 +196,16 @@ done
 
 if [ "$SKIP_GENTX" = "false" ] ; then
     # make the final genesis.json
-    $BIN collect-gentxs --home /$CHAIN_ID/validator$FIRST_VAL_ID
+    $BIN collect-gentxs --home /"$CHAIN_ID"/validator"$FIRST_VAL_ID"
 
     # and copy it to the root 
-    cp /$CHAIN_ID/validator$FIRST_VAL_ID/config/genesis.json /$CHAIN_ID/genesis.json
+    cp /"$CHAIN_ID"/validator"$FIRST_VAL_ID"/config/genesis.json /"$CHAIN_ID"/genesis.json
 
     # put the now final genesis.json into the correct folders
-    for i in $(seq 1 $(($NODES - 1)));
+    for i in $(seq 1 $((NODES - 1)));
     do
         VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
-        cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$VAL_ID/config/genesis.json
+        cp /"$CHAIN_ID"/genesis.json /"$CHAIN_ID"/validator"$VAL_ID"/config/genesis.json
     done
 fi
 
@@ -213,7 +214,7 @@ fi
 
 # START VALIDATOR NODES
 
-for i in $(seq 0 $(($NODES - 1)));
+for i in $(seq 0 $((NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
     VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$i].ip_suffix")
@@ -230,12 +231,12 @@ do
 
     PERSISTENT_PEERS=""
 
-    for j in $(seq 0 $(($NODES - 1)));
+    for j in $(seq 0 $((NODES - 1)));
     do
-        if [ $i -ne $j ]; then
+        if [ "$i" -ne "$j" ]; then
             PEER_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$j].val_id")
             PEER_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$j].ip_suffix")  
-            NODE_ID=$($BIN tendermint show-node-id --home /$CHAIN_ID/validator$PEER_VAL_ID)
+            NODE_ID=$($BIN tendermint show-node-id --home /"$CHAIN_ID"/validator"$PEER_VAL_ID")
             ADDRESS="$NODE_ID@$CHAIN_IP_PREFIX.$PEER_VAL_IP_SUFFIX:26656"
             # (jq -r '.body.memo' /$CHAIN_ID/validator$j/config/gentx/*) # Getting the address from the gentx should also work
             PERSISTENT_PEERS="$PERSISTENT_PEERS,$ADDRESS"
@@ -246,7 +247,7 @@ do
     PERSISTENT_PEERS="--p2p.persistent_peers ${PERSISTENT_PEERS:1}"
 
     ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
-    ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/validator$VAL_ID/logs &
+    ip netns exec "$NET_NAMESPACE_NAME" "$BIN" "$ARGS" start &> /"$CHAIN_ID"/validator"$VAL_ID"/logs &
 done
 
 ## SETUP DOUBLE SIGNING NODE NETWORK NAMESPACE
@@ -257,16 +258,16 @@ SYBIL_IP_SUFFIX="252"
 SYBIL_NET_NAMESPACE_NAME="$CHAIN_ID-$SYBIL_NODE_ID"
 SYBIL_IP_ADDR="$CHAIN_IP_PREFIX.$SYBIL_IP_SUFFIX/24"
 
-ip netns add $SYBIL_NET_NAMESPACE_NAME
-ip link add $SYBIL_NET_NAMESPACE_NAME-in type veth peer name $SYBIL_NET_NAMESPACE_NAME-out
-ip link set $SYBIL_NET_NAMESPACE_NAME-in netns $SYBIL_NET_NAMESPACE_NAME
-ip netns exec $SYBIL_NET_NAMESPACE_NAME ip addr add $SYBIL_IP_ADDR dev $SYBIL_NET_NAMESPACE_NAME-in
-ip link set $SYBIL_NET_NAMESPACE_NAME-out master virtual-bridge
+ip netns add "$SYBIL_NET_NAMESPACE_NAME"
+ip link add "$SYBIL_NET_NAMESPACE_NAME"-in type veth peer name "$SYBIL_NET_NAMESPACE_NAME"-out
+ip link set "$SYBIL_NET_NAMESPACE_NAME"-in netns "$SYBIL_NET_NAMESPACE_NAME"
+ip netns exec "$SYBIL_NET_NAMESPACE_NAME" ip addr add "$SYBIL_IP_ADDR" dev "$SYBIL_NET_NAMESPACE_NAME"-in
+ip link set "$SYBIL_NET_NAMESPACE_NAME"-out master virtual-bridge
 
 ## DOUBLE SIGNING ENABLE DEVICE
-ip link set $SYBIL_NET_NAMESPACE_NAME-out up
-ip netns exec $SYBIL_NET_NAMESPACE_NAME ip link set dev $SYBIL_NET_NAMESPACE_NAME-in up
-ip netns exec $SYBIL_NET_NAMESPACE_NAME ip link set dev lo up
+ip link set "$SYBIL_NET_NAMESPACE_NAME"-out up
+ip netns exec "$SYBIL_NET_NAMESPACE_NAME" ip link set dev "$SYBIL_NET_NAMESPACE_NAME"-in up
+ip netns exec "$SYBIL_NET_NAMESPACE_NAME" ip link set dev lo up
 ## DONE DOUBLE SIGNING NODE ENABLE DEVICE
 
 ## SETUP QUERY NODE NETWORK NAMESPACE
@@ -275,22 +276,22 @@ QUERY_IP_SUFFIX="253"
 QUERY_NET_NAMESPACE_NAME="$CHAIN_ID-$QUERY_NODE_ID"
 QUERY_IP_ADDR="$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX/24"
 
-ip netns add $QUERY_NET_NAMESPACE_NAME
-ip link add $QUERY_NET_NAMESPACE_NAME-in type veth peer name $QUERY_NET_NAMESPACE_NAME-out
-ip link set $QUERY_NET_NAMESPACE_NAME-in netns $QUERY_NET_NAMESPACE_NAME
-ip netns exec $QUERY_NET_NAMESPACE_NAME ip addr add $QUERY_IP_ADDR dev $QUERY_NET_NAMESPACE_NAME-in
-ip link set $QUERY_NET_NAMESPACE_NAME-out master virtual-bridge
+ip netns add "$QUERY_NET_NAMESPACE_NAME"
+ip link add "$QUERY_NET_NAMESPACE_NAME"-in type veth peer name "$QUERY_NET_NAMESPACE_NAME"-out
+ip link set "$QUERY_NET_NAMESPACE_NAME"-in netns "$QUERY_NET_NAMESPACE_NAME"
+ip netns exec "$QUERY_NET_NAMESPACE_NAME" ip addr add "$QUERY_IP_ADDR" dev "$QUERY_NET_NAMESPACE_NAME"-in
+ip link set "$QUERY_NET_NAMESPACE_NAME"-out master virtual-bridge
 ## DONE ADD SETUP QUERY NODE NETWORK NAMESPACE
 
 ## QUERY NODE ENABLE DEVICE
-ip link set $QUERY_NET_NAMESPACE_NAME-out up
-ip netns exec $QUERY_NET_NAMESPACE_NAME ip link set dev $QUERY_NET_NAMESPACE_NAME-in up
-ip netns exec $QUERY_NET_NAMESPACE_NAME ip link set dev lo up
+ip link set "$QUERY_NET_NAMESPACE_NAME"-out up
+ip netns exec "$QUERY_NET_NAMESPACE_NAME" ip link set dev "$QUERY_NET_NAMESPACE_NAME"-in up
+ip netns exec "$QUERY_NET_NAMESPACE_NAME" ip link set dev lo up
 ## DONE QUERY NODE ENABLE DEVICE
 
 ## INIT QUERY NODE
-$BIN init --home /$CHAIN_ID/$QUERY_NODE_ID --chain-id=$CHAIN_ID $QUERY_NODE_ID > /dev/null
-cp /$CHAIN_ID/genesis.json /$CHAIN_ID/$QUERY_NODE_ID/config/genesis.json
+$BIN init --home /"$CHAIN_ID"/$QUERY_NODE_ID --chain-id="$CHAIN_ID" $QUERY_NODE_ID > /dev/null
+cp /"$CHAIN_ID"/genesis.json /"$CHAIN_ID"/$QUERY_NODE_ID/config/genesis.json
 ## DONE INIT QUERY NODE
 
 
@@ -307,11 +308,11 @@ QUERY_ENABLE_WEBGRPC="--grpc-web.enable=false"
 QUERY_PERSISTENT_PEERS=""
 
 ## add validators to persistend peers of QUERY node
-for j in $(seq 0 $(($NODES - 1)));
+for j in $(seq 0 $((NODES - 1)));
 do
     PEER_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$j].val_id")
     PEER_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$j].ip_suffix")
-    NODE_ID=$($BIN tendermint show-node-id --home /$CHAIN_ID/validator$PEER_VAL_ID)
+    NODE_ID=$($BIN tendermint show-node-id --home /"$CHAIN_ID"/validator"$PEER_VAL_ID")
     ADDRESS="$NODE_ID@$CHAIN_IP_PREFIX.$PEER_VAL_IP_SUFFIX:26656"
     QUERY_PERSISTENT_PEERS="$QUERY_PERSISTENT_PEERS,$ADDRESS"
 done
@@ -321,7 +322,7 @@ QUERY_PERSISTENT_PEERS="--p2p.persistent_peers ${QUERY_PERSISTENT_PEERS:1}"
 
 ## START NODE
 ARGS="$QUERY_GAIA_HOME $QUERY_LISTEN_ADDRESS $QUERY_RPC_ADDRESS $QUERY_GRPC_ADDRESS $QUERY_LOG_LEVEL $QUERY_P2P_ADDRESS $QUERY_ENABLE_WEBGRPC $QUERY_PERSISTENT_PEERS"
-ip netns exec $QUERY_NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/$QUERY_NODE_ID/logs &
+ip netns exec "$QUERY_NET_NAMESPACE_NAME" "$BIN" "$ARGS" start &> /"$CHAIN_ID"/$QUERY_NODE_ID/logs &
 ## DONE START NODE
 
 
@@ -333,4 +334,4 @@ set -e
 
 echo "done!!!!!!!!"
 
-read -p "Press Return to Close..."
+read -pr "Press Return to Close..."
