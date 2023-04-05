@@ -24,7 +24,7 @@ import (
 // The interface that any provider app must implement to be compatible with ccv integration tests.
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ProviderApp interface {
-	ibctesting.AppTest
+	ibctesting.TestingApp
 
 	//
 	// Keeper getters
@@ -44,7 +44,7 @@ type ProviderApp interface {
 // The interface that any consumer app must implement to be compatible with integration tests
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ConsumerApp interface {
-	ibctesting.AppTest
+	ibctesting.TestingApp
 
 	BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock
 	GetConsumerKeeper() consumerkeeper.Keeper

@@ -333,7 +333,7 @@ func New(
 		app.AccountKeeper,
 	)
 
-	app.StakingKeeper = stakingkeeper.NewKeeper(
+	app.StakingKeeper = *stakingkeeper.NewKeeper(
 		appCodec,
 		keys[stakingtypes.StoreKey],
 		app.AccountKeeper,
@@ -344,7 +344,7 @@ func New(
 	app.MintKeeper = mintkeeper.NewKeeper(
 		appCodec,
 		keys[minttypes.StoreKey],
-		ccvstakingKeeper,
+		app.StakingKeeper,
 		app.AccountKeeper,
 		app.BankKeeper,
 		authtypes.FeeCollectorName,
@@ -695,7 +695,7 @@ func New(
 		// Chains may need to add a KV store to their application. The following code
 		// is needed for standalone chains that're changing over to a consumer chain, with a consumer ccv module.
 		// When a chain starts from height 0 (like for testing purposes in this repo), the following code is not needed.
-		storeUpgrades := store.StoreUpgrades{
+		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{consumertypes.ModuleName},
 		}
 

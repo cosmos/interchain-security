@@ -61,7 +61,7 @@ type TestChain struct {
 	*testing.T
 
 	Coordinator   *Coordinator
-	App           AppTest
+	App           TestingApp
 	ChainID       string
 	LastHeader    *ibctmtypes.Header // header for last block height committed
 	CurrentHeader tmproto.Header     // header for current block height
