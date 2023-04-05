@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 import (
 	"time"
@@ -77,7 +77,7 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 	for i, tc := range testCases {
 		providerKeeper := s.providerApp.GetProviderKeeper()
 		consumerKeeper := s.consumerApp.GetConsumerKeeper()
-		stakingKeeper := s.providerApp.GetE2eStakingKeeper()
+		stakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 		s.SetupCCVChannel(s.path)
 
@@ -213,7 +213,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 
 	for i, tc := range testCases {
 		providerKeeper := s.providerApp.GetProviderKeeper()
-		stakingKeeper := s.providerApp.GetE2eStakingKeeper()
+		stakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 		// delegate bondAmt and undelegate 1/2 of it
 		bondAmt := sdk.NewInt(10000000)
@@ -301,7 +301,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 // Check that unbonding has completed in provider staking
 func (s *CCVTestSuite) TestUnbondingNoConsumer() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 	// remove all consumer chains, which were already started during setup
 	for chainID := range s.consumerBundles {
@@ -338,7 +338,7 @@ func (s *CCVTestSuite) TestUnbondingNoConsumer() {
 // submitted on a provider chain with no consumers
 func (s *CCVTestSuite) TestRedelegationNoConsumer() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	stakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 	// stop the consumer chain, which was already started during setup
 	err := providerKeeper.StopConsumerChain(s.providerCtx(), s.consumerChain.ChainID, true)
@@ -386,7 +386,7 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
-	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	stakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 	// set VSC timeout period to not trigger the removal of the consumer chain
 	providerUnbondingPeriod := stakingKeeper.UnbondingTime(s.providerCtx())

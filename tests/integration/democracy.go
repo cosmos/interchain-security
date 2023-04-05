@@ -1,5 +1,4 @@
-//nolint:all
-package e2e
+package integration
 
 import (
 	"fmt"
@@ -15,7 +14,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	e2eutil "github.com/cosmos/interchain-security/testutil/e2e"
+	testutil "github.com/cosmos/interchain-security/testutil/integration"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/stretchr/testify/suite"
 )
@@ -24,21 +23,21 @@ type ConsumerDemocracyTestSuite struct {
 	suite.Suite
 	coordinator   *ibctesting.Coordinator
 	consumerChain *ibctesting.TestChain
-	consumerApp   e2eutil.DemocConsumerApp
+	consumerApp   testutil.DemocConsumerApp
 	setupCallback DemocSetupCallback
 }
 
 // NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite,
 // ready to be tested against using suite.Run().
-func NewConsumerDemocracyTestSuite[T e2eutil.DemocConsumerApp](
-	democConsumerAppIniter ibctesting.AppIniter) *ConsumerDemocracyTestSuite {
-
+func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
+	democConsumerAppIniter ibctesting.AppIniter,
+) *ConsumerDemocracyTestSuite {
 	democSuite := new(ConsumerDemocracyTestSuite)
 
 	democSuite.setupCallback = func(t *testing.T) (
 		*ibctesting.Coordinator,
 		*ibctesting.TestChain,
-		e2eutil.DemocConsumerApp,
+		testutil.DemocConsumerApp,
 	) {
 		// Instantiate the test coordinator
 		coordinator := ibctesting.NewCoordinator(t, 0)
@@ -58,7 +57,7 @@ func NewConsumerDemocracyTestSuite[T e2eutil.DemocConsumerApp](
 type DemocSetupCallback func(t *testing.T) (
 	coord *ibctesting.Coordinator,
 	consumerChain *ibctesting.TestChain,
-	consumerApp e2eutil.DemocConsumerApp,
+	consumerApp testutil.DemocConsumerApp,
 )
 
 // SetupTest sets up in-mem state before every test relevant to ccv with a democracy consumer
@@ -69,12 +68,11 @@ func (suite *ConsumerDemocracyTestSuite) SetupTest() {
 }
 
 func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
-
 	s.consumerChain.NextBlock()
-	stakingKeeper := s.consumerApp.GetE2eStakingKeeper()
-	accountKeeper := s.consumerApp.GetE2eAccountKeeper()
-	distrKeeper := s.consumerApp.GetE2eDistributionKeeper()
-	bankKeeper := s.consumerApp.GetE2eBankKeeper()
+	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
+	accountKeeper := s.consumerApp.GetTestAccountKeeper()
+	distrKeeper := s.consumerApp.GetTestDistributionKeeper()
+	bankKeeper := s.consumerApp.GetTestBankKeeper()
 	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
 
 	currentRepresentativesRewards := map[string]sdk.Dec{}
@@ -89,7 +87,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 
 	distrModuleAccount := distrKeeper.GetDistributionAccount(s.consumerCtx())
 	providerRedistributeAccount := accountKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName)
-	//balance of consumer redistribute address will always be 0 when checked between 2 NextBlock() calls
+	// balance of consumer redistribute address will always be 0 when checked between 2 NextBlock() calls
 
 	currentDistrModuleAccountBalance := sdk.NewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
 	currentProviderFeeAccountBalance := sdk.NewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), providerRedistributeAccount.GetAddress(), bondDenom).Amount)
@@ -124,23 +122,23 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 
 	consumerRedistributionFraction := sdk.MustNewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
 
-	//confirm that the total amount given to the community pool plus all representatives is equal to the total amount taken out of distribution
+	// confirm that the total amount given to the community pool plus all representatives is equal to the total amount taken out of distribution
 	s.Require().Equal(distrModuleDifference, consumerRedistributeDifference)
-	//confirm that the percentage given to the community pool is equal to the configured community tax percentage.
+	// confirm that the percentage given to the community pool is equal to the configured community tax percentage.
 	s.Require().Equal(communityPoolDifference.Quo(consumerRedistributeDifference),
 		distrKeeper.GetCommunityTax(s.consumerCtx()))
-	//check that the fraction actually kept by the consumer is the correct fraction. using InEpsilon because the math code uses truncations
+	// check that the fraction actually kept by the consumer is the correct fraction. using InEpsilon because the math code uses truncations
 	s.Require().InEpsilon(distrModuleDifference.Quo(
 		providerDifference.Add(distrModuleDifference)).MustFloat64(),
 		consumerRedistributionFraction.MustFloat64(), float64(0.0001))
-	//check that the fraction actually kept by the provider is the correct fraction. using InEpsilon because the math code uses truncations
+	// check that the fraction actually kept by the provider is the correct fraction. using InEpsilon because the math code uses truncations
 	s.Require().InEpsilon(providerDifference.Quo(
 		providerDifference.Add(distrModuleDifference)).MustFloat64(),
 		sdk.NewDec(1).Sub(consumerRedistributionFraction).MustFloat64(), float64(0.0001))
 
 	totalRepresentativePower := stakingKeeper.GetValidatorSet().TotalBondedTokens(s.consumerCtx())
 
-	//check that each representative has gotten the correct amount of rewards
+	// check that each representative has gotten the correct amount of rewards
 	for key, representativeTokens := range representativesTokens {
 		powerFraction := sdk.NewDecFromInt(representativeTokens).QuoTruncate(sdk.NewDecFromInt(totalRepresentativePower))
 		s.Require().Equal(powerFraction, representativeDifference[key].Quo(consumerRedistributeDifference.Sub(communityPoolDifference)))
@@ -148,11 +146,11 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 }
 
 func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
-	govKeeper := s.consumerApp.GetE2eGovKeeper()
-	stakingKeeper := s.consumerApp.GetE2eStakingKeeper()
-	bankKeeper := s.consumerApp.GetE2eBankKeeper()
-	accountKeeper := s.consumerApp.GetE2eAccountKeeper()
-	mintKeeper := s.consumerApp.GetE2eMintKeeper()
+	govKeeper := s.consumerApp.GetTestGovKeeper()
+	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
+	bankKeeper := s.consumerApp.GetTestBankKeeper()
+	accountKeeper := s.consumerApp.GetTestAccountKeeper()
+	mintKeeper := s.consumerApp.GetTestMintKeeper()
 	newAuthParamValue := uint64(128)
 	newMintParamValue := sdk.NewDecWithPrec(1, 1) // "0.100000000000000000"
 	allowedChange := proposaltypes.ParamChange{Subspace: minttypes.ModuleName, Key: "InflationMax", Value: fmt.Sprintf("\"%s\"", newMintParamValue)}
@@ -166,30 +164,30 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.consumerChain.NextBlock()
 	votersOldBalances := getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts)
 
-	//submit proposal with forbidden and allowed changes
+	// submit proposal with forbidden and allowed changes
 	paramChange := proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{allowedChange, forbiddenChange}}
 	err := submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, depositAmount)
 	s.Assert().NoError(err)
-	//set current header time to be equal or later than voting end time in order to process proposal from active queue,
-	//once the proposal is added to the chain
+	// set current header time to be equal or later than voting end time in order to process proposal from active queue,
+	// once the proposal is added to the chain
 	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(votingParams.VotingPeriod)
 	s.consumerChain.NextBlock()
-	//at this moment, proposal is added, but not yet executed. we are saving old param values for comparison
+	// at this moment, proposal is added, but not yet executed. we are saving old param values for comparison
 	oldAuthParamValue := accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
 	oldMintParamValue := mintKeeper.GetParams(s.consumerCtx()).InflationMax
 	s.consumerChain.NextBlock()
-	//at this moment, proposal is executed or deleted if forbidden
+	// at this moment, proposal is executed or deleted if forbidden
 	currentAuthParamValue := accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
 	currentMintParamValue := mintKeeper.GetParams(s.consumerCtx()).InflationMax
-	//check that parameters are not changed, since the proposal contained both forbidden and allowed changes
+	// check that parameters are not changed, since the proposal contained both forbidden and allowed changes
 	s.Assert().Equal(oldAuthParamValue, currentAuthParamValue)
 	s.Assert().NotEqual(newAuthParamValue, currentAuthParamValue)
 	s.Assert().Equal(oldMintParamValue, currentMintParamValue)
 	s.Assert().NotEqual(newMintParamValue, currentMintParamValue)
-	//deposit is refunded
+	// deposit is refunded
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 
-	//submit proposal with allowed changes
+	// submit proposal with allowed changes
 	paramChange = proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{allowedChange}}
 	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, depositAmount)
 	s.Assert().NoError(err)
@@ -198,13 +196,13 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	oldMintParamValue = mintKeeper.GetParams(s.consumerCtx()).InflationMax
 	s.consumerChain.NextBlock()
 	currentMintParamValue = mintKeeper.GetParams(s.consumerCtx()).InflationMax
-	//check that parameters are changed, since the proposal contained only allowed changes
+	// check that parameters are changed, since the proposal contained only allowed changes
 	s.Assert().Equal(newMintParamValue, currentMintParamValue)
 	s.Assert().NotEqual(oldMintParamValue, currentMintParamValue)
-	//deposit is refunded
+	// deposit is refunded
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 
-	//submit proposal with forbidden changes
+	// submit proposal with forbidden changes
 	paramChange = proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{forbiddenChange}}
 	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, depositAmount)
 	s.Assert().NoError(err)
@@ -213,20 +211,21 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	oldAuthParamValue = accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
 	s.consumerChain.NextBlock()
 	currentAuthParamValue = accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
-	//check that parameters are not changed, since the proposal contained forbidden changes
+	// check that parameters are not changed, since the proposal contained forbidden changes
 	s.Assert().Equal(oldAuthParamValue, currentAuthParamValue)
 	s.Assert().NotEqual(newAuthParamValue, currentAuthParamValue)
-	//deposit is refunded
+	// deposit is refunded
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
-func submitProposalWithDepositAndVote(govKeeper e2eutil.E2eGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
-	accounts []ibctesting.SenderAccount, depositAmount sdk.Coins) error {
+func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
+	accounts []ibctesting.SenderAccount, depositAmount sdk.Coins,
+) error {
 	proposal, err := govKeeper.SubmitProposal(ctx, &paramChange)
 	if err != nil {
 		return err
 	}
-	_, err = govKeeper.AddDeposit(ctx, proposal.ProposalId, accounts[0].SenderAccount.GetAddress(), depositAmount) //proposal becomes active
+	_, err = govKeeper.AddDeposit(ctx, proposal.ProposalId, accounts[0].SenderAccount.GetAddress(), depositAmount) // proposal becomes active
 	if err != nil {
 		return err
 	}
@@ -240,11 +239,10 @@ func submitProposalWithDepositAndVote(govKeeper e2eutil.E2eGovKeeper, ctx sdk.Co
 	return nil
 }
 
-func getAccountsBalances(ctx sdk.Context, bankKeeper e2eutil.E2eBankKeeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]sdk.Int {
+func getAccountsBalances(ctx sdk.Context, bankKeeper testutil.TestBankKeeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]sdk.Int {
 	accountsBalances := map[string]sdk.Int{}
 	for _, acc := range accounts {
-		accountsBalances[string(acc.SenderAccount.GetAddress())] =
-			bankKeeper.GetBalance(ctx, acc.SenderAccount.GetAddress(), bondDenom).Amount
+		accountsBalances[string(acc.SenderAccount.GetAddress())] = bankKeeper.GetBalance(ctx, acc.SenderAccount.GetAddress(), bondDenom).Amount
 	}
 
 	return accountsBalances

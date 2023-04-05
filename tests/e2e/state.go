@@ -72,9 +72,11 @@ func (p EquivocationProposal) isProposal() {}
 
 type Rewards struct {
 	IsRewarded map[validatorID]bool
-
+	// if true it will calculate if the validator/delegator is rewarded between 2 successive blocks,
+	// otherwise it will calculate if it received any rewards since the 1st block
 	IsIncrementalReward bool
-
+	// if true checks rewards for "stake" token, otherwise checks rewards from
+	// other chains (e.g. false is used to check if provider received rewards from a consumer chain)
 	IsNativeDenom bool
 }
 
