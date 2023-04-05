@@ -180,7 +180,7 @@ func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 // Executes a BeginRedelegation (unbonding and redelegation) operation
 // on the provider chain using delegated funds from delAddr
 func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
-	ValDstAddr sdk.ValAddress, sharesAmount sdk.Dec,
+	valDstAddr sdk.ValAddress, sharesAmount sdk.Dec,
 ) {
 	stakingKeeper := s.providerApp.GetTestStakingKeeper()
 	ctx := s.providerCtx()

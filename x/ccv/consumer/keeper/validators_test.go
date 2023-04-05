@@ -178,9 +178,10 @@ func GenerateValidators(tb testing.TB) []*tmtypes.Validator {
 }
 
 // Sets each input tmtypes.Validator as a types.CrossChainValidator in the consumer keeper store
-func SetCCValidators(t testing.TB, consumerKeeper keeper.Keeper,
+func SetCCValidators(tb testing.TB, consumerKeeper keeper.Keeper,
 	ctx sdk.Context, validators []*tmtypes.Validator,
 ) {
+	tb.Helper()
 	for _, v := range validators {
 		publicKey, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
 		require.NoError(tb, err)

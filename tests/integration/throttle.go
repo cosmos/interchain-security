@@ -538,7 +538,7 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 	// Confirm total power is now 3000 once updated by staking end blocker
 	s.providerChain.NextBlock()
 	totalPower := s.providerApp.GetTestStakingKeeper().GetLastTotalPower(s.providerCtx())
-	s.Require().Equal(sdktypes.NewInt(3000), totalPower)
+	s.Require().Equal(sdk.NewInt(3000), totalPower)
 
 	// Now change replenish frac to 0.67 and fully replenish the meter.
 	params.SlashMeterReplenishFraction = "0.67"
@@ -831,7 +831,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 
 func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPower bool) {
 	sdkVal, found := s.providerApp.GetTestStakingKeeper().GetValidator(
-		s.providerCtx(), sdktypes.ValAddress(tmVal.Address))
+		s.providerCtx(), sdk.ValAddress(tmVal.Address))
 	s.Require().True(found)
 	s.Require().True(sdkVal.IsJailed())
 
@@ -844,7 +844,7 @@ func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPowe
 
 func (s *CCVTestSuite) confirmValidatorNotJailed(tmVal tmtypes.Validator, expectedPower int64) {
 	sdkVal, found := s.providerApp.GetTestStakingKeeper().GetValidator(
-		s.providerCtx(), sdktypes.ValAddress(tmVal.Address))
+		s.providerCtx(), sdk.ValAddress(tmVal.Address))
 	s.Require().True(found)
 	valPower := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(
 		s.providerCtx(), sdkVal.GetOperator())

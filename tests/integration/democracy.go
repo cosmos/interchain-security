@@ -39,6 +39,7 @@ func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
 		*ibctesting.TestChain,
 		testutil.DemocConsumerApp,
 	) {
+		t.Helper()
 		// Instantiate the test coordinator
 		coordinator := ibctesting.NewCoordinator(t, 0)
 
