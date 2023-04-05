@@ -982,7 +982,7 @@ func (m *ProviderConsAddress) GetAddress() []byte {
 	return nil
 }
 
-// AddressList contains a list of consumer consensus addresses
+// ConsumerAddressList contains a list of consumer consensus addresses
 type ConsumerAddressList struct {
 	Addresses []*ConsumerConsAddress `protobuf:"bytes,1,rep,name=addresses,proto3" json:"addresses,omitempty"`
 }
