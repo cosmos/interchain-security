@@ -12,10 +12,10 @@ import (
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	params "github.com/cosmos/interchain-security/app/params"
 	testutil "github.com/cosmos/interchain-security/testutil/integration"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/stretchr/testify/suite"
@@ -149,6 +149,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 
 func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	govKeeper := s.consumerApp.GetTestGovKeeper()
+	params := govKeeper.GetParams(s.consumerCtx())
 	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
 	bankKeeper := s.consumerApp.GetTestBankKeeper()
 	accountKeeper := s.consumerApp.GetTestAccountKeeper()
@@ -169,7 +170,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 
 	// submit proposal with forbidden and allowed changes
 	paramChange := proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{allowedChange, forbiddenChange}}
-	err := submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, proposer.GetAddress(), depositAmount)
+	err := submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, proposer.GetAddress(), sdk.NewCoins(depositAmount...))
 	s.Assert().NoError(err)
 	// set current header time to be equal or later than voting end time in order to process proposal from active queue,
 	// once the proposal is added to the chain
@@ -222,13 +223,13 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 }
 
 func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
-	accounts []ibctesting.SenderAccount, depositAmount sdk.Coins,
+	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
 ) error {
-	proposal, err := govKeeper.SubmitProposal(ctx, &paramChange)
+	msgContent, err := govv1.NewLegacyContent(&paramChange, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	if err != nil {
 		return err
 	}
-	proposal, err = govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "", paramChange.Title, paramChange.Description, proposer)
+	proposal, err := govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "", paramChange.Title, paramChange.Description, proposer)
 	if err != nil {
 		return err
 	}
