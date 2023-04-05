@@ -162,12 +162,13 @@ func IsValSetSorted(data []stakingtypes.Validator, powerReduction sdk.Int) bool 
 }
 
 // Generates 4 test validators with non zero voting power
-func GenerateValidators(t testing.TB) []*tmtypes.Validator {
+func GenerateValidators(tb testing.TB) []*tmtypes.Validator {
+	tb.Helper()
 	numValidators := 4
 	validators := []*tmtypes.Validator{}
 	for i := 0; i < numValidators; i++ {
 		pubKey, err := testkeeper.GenPubKey()
-		require.NoError(t, err)
+		require.NoError(tb, err)
 
 		votingPower := int64(i + 1)
 		validator := tmtypes.NewValidator(pubKey, votingPower)
@@ -177,15 +178,16 @@ func GenerateValidators(t testing.TB) []*tmtypes.Validator {
 }
 
 // Sets each input tmtypes.Validator as a types.CrossChainValidator in the consumer keeper store
-func SetCCValidators(t testing.TB, consumerKeeper keeper.Keeper,
+func SetCCValidators(tb testing.TB, consumerKeeper keeper.Keeper,
 	ctx sdk.Context, validators []*tmtypes.Validator,
 ) {
+	tb.Helper()
 	for _, v := range validators {
 		publicKey, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
-		require.NoError(t, err)
+		require.NoError(tb, err)
 
 		ccv, err := types.NewCCValidator(v.Address, v.VotingPower, publicKey)
-		require.NoError(t, err)
+		require.NoError(tb, err)
 		consumerKeeper.SetCCValidator(ctx, ccv)
 	}
 }

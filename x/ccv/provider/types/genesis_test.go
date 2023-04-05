@@ -659,6 +659,7 @@ func TestValidateGenesisState(t *testing.T) {
 }
 
 func getInitialConsumerGenesis(t *testing.T, chainID string) consumertypes.GenesisState {
+	t.Helper()
 	// generate validator public key
 	pubKey, err := testutil.GenPubKey()
 	require.NoError(t, err)
@@ -681,7 +682,7 @@ func getInitialConsumerGenesis(t *testing.T, chainID string) consumertypes.Genes
 		true,
 		true,
 	)
-	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash[:])
+	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
 
 	params := consumertypes.DefaultParams()
 	params.Enabled = true

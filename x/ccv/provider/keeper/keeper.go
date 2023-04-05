@@ -456,12 +456,12 @@ func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemo
 
 // SetUnbondingOpIndex sets the IDs of unbonding operations that are waiting for
 // a VSCMaturedPacket with vscID from a consumer with chainID
-func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint64, IDs []uint64) {
+func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint64, ids []uint64) {
 	store := ctx.KVStore(k.storeKey)
 
 	vscUnbondingOps := types.VscUnbondingOps{
 		VscId:          vscID,
-		UnbondingOpIds: IDs,
+		UnbondingOpIds: ids,
 	}
 	bz, err := vscUnbondingOps.Marshal()
 	if err != nil {

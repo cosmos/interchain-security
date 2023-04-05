@@ -125,7 +125,7 @@ const (
 	ConsumerAddrsToPruneBytePrefix
 
 	// SlashLogBytePrefix is the byte prefix that will store the mapping from provider address to boolean
-	// denoting whether the provider address has commited any double signign infractions
+	// denoting whether the provider address has committed any double signign infractions
 	SlashLogBytePrefix
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go

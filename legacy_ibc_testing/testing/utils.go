@@ -18,6 +18,7 @@ These files will be deprecated once ICS is able to upgrade to ibc-go v5.
 // ApplyValSetChanges takes in tmtypes.ValidatorSet and []abci.ValidatorUpdate and will return a new tmtypes.ValidatorSet which has the
 // provided validator updates applied to the provided validator set.
 func ApplyValSetChanges(t *testing.T, valSet *tmtypes.ValidatorSet, valUpdates []abci.ValidatorUpdate) *tmtypes.ValidatorSet {
+	t.Helper()
 	updates, err := tmtypes.PB2TM.ValidatorUpdates(valUpdates)
 	require.NoError(t, err)
 

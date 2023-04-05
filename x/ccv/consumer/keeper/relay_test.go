@@ -16,7 +16,6 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -77,21 +76,21 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	}{
 		{
 			"success on first packet",
-			channeltypes.NewPacket(pd.GetBytes(), 1, ccv.ProviderPortID, providerCCVChannelID, ccv.ConsumerPortID, consumerCCVChannelID,
+			channeltypes.NewPacket(pd.GetBytes(), 1, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 		},
 		{
 			"success on subsequent packet",
-			channeltypes.NewPacket(pd.GetBytes(), 2, ccv.ProviderPortID, providerCCVChannelID, ccv.ConsumerPortID, consumerCCVChannelID,
+			channeltypes.NewPacket(pd.GetBytes(), 2, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 		},
 		{
 			"success on packet with more changes",
-			channeltypes.NewPacket(pd2.GetBytes(), 3, ccv.ProviderPortID, providerCCVChannelID, ccv.ConsumerPortID, consumerCCVChannelID,
+			channeltypes.NewPacket(pd2.GetBytes(), 3, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes2},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
@@ -185,9 +184,9 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	packet := channeltypes.NewPacket(
 		packetData.GetBytes(),
 		1,
-		ccv.ConsumerPortID,   // Source port
+		types.ConsumerPortID, // Source port
 		channelIDToDestChain, // Source channel
-		ccv.ProviderPortID,   // Dest (counter party) port
+		types.ProviderPortID, // Dest (counter party) port
 		channelIDOnDest,      // Dest (counter party) channel
 		clienttypes.Height{},
 		uint64(time.Now().Add(60*time.Second).UnixNano()),
@@ -205,20 +204,20 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	gomock.InOrder(
 
 		mocks.MockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.ChannelCapabilityPath(ccv.ConsumerPortID, channelIDToDestChain),
+			ctx, host.ChannelCapabilityPath(types.ConsumerPortID, channelIDToDestChain),
 		).Return(dummyCap, true).Times(1),
 		// Due to input error ack, ChanCloseInit is called on channel to destination chain
 		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
-			ctx, ccv.ConsumerPortID, channelIDToDestChain, dummyCap,
+			ctx, types.ConsumerPortID, channelIDToDestChain, dummyCap,
 		).Return(nil).Times(1),
 
 		mocks.MockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.ChannelCapabilityPath(ccv.ConsumerPortID, channelIDToProvider),
+			ctx, host.ChannelCapabilityPath(types.ConsumerPortID, channelIDToProvider),
 		).Return(dummyCap, true).Times(1),
 		// Due to input error ack and existence of established channel to provider,
 		// ChanCloseInit is called on channel to provider
 		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
-			ctx, ccv.ConsumerPortID, channelIDToProvider, dummyCap,
+			ctx, types.ConsumerPortID, channelIDToProvider, dummyCap,
 		).Return(nil).Times(1),
 	)
 

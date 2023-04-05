@@ -157,7 +157,7 @@ type App struct { // nolint: golint
 	SlashingKeeper   slashingkeeper.Keeper
 
 	// NOTE the distribution keeper should either be removed
-	// from consumer chain or set to use an independant
+	// from consumer chain or set to use an independent
 	// different fee-pool from the consumer chain ConsumerKeeper
 
 	CrisisKeeper   crisiskeeper.Keeper

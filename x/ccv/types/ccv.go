@@ -8,11 +8,11 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-func NewValidatorSetChangePacketData(valUpdates []abci.ValidatorUpdate, valUpdateID uint64, SlashAcks []string) ValidatorSetChangePacketData {
+func NewValidatorSetChangePacketData(valUpdates []abci.ValidatorUpdate, valUpdateID uint64, slashAcks []string) ValidatorSetChangePacketData {
 	return ValidatorSetChangePacketData{
 		ValidatorUpdates: valUpdates,
 		ValsetUpdateId:   valUpdateID,
-		SlashAcks:        SlashAcks,
+		SlashAcks:        slashAcks,
 	}
 }
 

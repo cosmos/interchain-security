@@ -73,12 +73,13 @@ func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		*ibctesting.TestChain,
 		testutil.ProviderApp,
 	) {
+		t.Helper()
 		// Instantiate the test coordinator.
 		coordinator := ibctesting.NewCoordinator(t, 0)
 
 		// Add provider to coordinator, store returned test chain and app.
 		// Concrete provider app type is passed to the generic function here.
-		provider, providerApp := icstestingutils.AddProvider[Tp](coordinator, t, providerAppIniter)
+		provider, providerApp := icstestingutils.AddProvider[Tp](t, coordinator, providerAppIniter)
 
 		// Pass variables to suite.
 		return coordinator, provider, providerApp

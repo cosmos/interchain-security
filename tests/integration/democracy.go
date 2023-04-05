@@ -39,12 +39,13 @@ func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
 		*ibctesting.TestChain,
 		testutil.DemocConsumerApp,
 	) {
+		t.Helper()
 		// Instantiate the test coordinator
 		coordinator := ibctesting.NewCoordinator(t, 0)
 
 		// Add single democracy consumer to coordinator, store returned test chain and app.
 		democConsumer, democConsumerApp := icstestingutils.AddDemocracyConsumer[T](
-			coordinator, t, democConsumerAppIniter)
+			t, coordinator, democConsumerAppIniter)
 
 		// Pass variables to suite.
 		return coordinator, democConsumer, democConsumerApp

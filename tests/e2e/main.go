@@ -23,6 +23,7 @@ var (
 	localSdkPath         = flag.String("local-sdk-path", "",
 		"path of a local sdk version to build and reference in integration tests")
 )
+
 var (
 	useGaia = flag.Bool("use-gaia", false, "use gaia instead of ICS provider app")
 	gaiaTag = flag.String("gaia-tag", "", "gaia tag to use - default is latest")

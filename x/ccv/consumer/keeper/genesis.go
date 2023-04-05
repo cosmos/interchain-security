@@ -161,5 +161,5 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 		)
 	}
 
-	return
+	return genesis
 }

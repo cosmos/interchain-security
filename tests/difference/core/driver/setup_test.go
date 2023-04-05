@@ -123,8 +123,8 @@ func (s *CoreSuite) TestAssumptionsSetup() {
 	// The offset time is the last committed time, but the SUT is +1 block ahead
 	// because the currentHeader time is ahead of the last committed. Therefore sub
 	// the difference (duration of 1 block).
-	s.Require().Equal(int64(s.offsetTimeUnix), s.time(P).Add(-s.initState.BlockInterval).Unix())
-	s.Require().Equal(int64(s.offsetTimeUnix), s.time(C).Add(-s.initState.BlockInterval).Unix())
+	s.Require().Equal(s.offsetTimeUnix, s.time(P).Add(-s.initState.BlockInterval).Unix())
+	s.Require().Equal(s.offsetTimeUnix, s.time(C).Add(-s.initState.BlockInterval).Unix())
 
 	// The offset height is the last committed height, but the SUT is +1 because
 	// the currentHeader is +1 ahead of the last committed. Therefore sub 1.

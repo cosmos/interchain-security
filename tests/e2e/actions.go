@@ -27,6 +27,8 @@ type SendTokensAction struct {
 	amount uint
 }
 
+const done = "done!!!!!!!!"
+
 func (tr TestRun) sendTokens(
 	action SendTokensAction,
 	verbose bool,
@@ -149,7 +151,7 @@ func (tr TestRun) startChain(
 		if verbose {
 			fmt.Println("startChain: " + out)
 		}
-		if out == "done!!!!!!!!" {
+		if out == done {
 			break
 		}
 	}
@@ -671,7 +673,7 @@ func (tr TestRun) addIbcConnection(
 		if verbose {
 			fmt.Println("addIbcConnection: " + out)
 		}
-		if out == "done!!!!!!!!" {
+		if out == done {
 			break
 		}
 	}
@@ -746,7 +748,7 @@ func (tr TestRun) addIbcChannel(
 		if verbose {
 			fmt.Println("addIBCChannel: " + out)
 		}
-		if out == "done!!!!!!!!" {
+		if out == done {
 			break
 		}
 	}
@@ -1098,7 +1100,7 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 	}
 
 	// wait for 1 blocks to make sure that tx got included
-	// in a block and packets commited before proceeding
+	// in a block and packets committed before proceeding
 	tr.waitBlocks(action.provider, 1, time.Minute)
 }
 
@@ -1274,7 +1276,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 			if verbose {
 				fmt.Println("assign key - reconfigure: " + out)
 			}
-			if out == "done!!!!!!!!" {
+			if out == done {
 				break
 			}
 		}
@@ -1315,7 +1317,8 @@ func (tr TestRun) waitForSlashThrottleDequeue(
 			fmt.Printf("waiting for packed queue size to reach: %d - current: %d\n", action.nextQueueSize, globalQueueSize)
 		}
 
-		if globalQueueSize == chainQueueSize && globalQueueSize == action.nextQueueSize {
+		// check if global queue size is equal to chain queue size
+		if globalQueueSize == chainQueueSize && globalQueueSize == action.nextQueueSize { //nolint:gocritic // this is the comparison that we want here.
 			break
 		}
 

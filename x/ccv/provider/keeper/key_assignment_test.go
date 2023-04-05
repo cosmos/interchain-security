@@ -22,7 +22,7 @@ import (
 )
 
 func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
-	chainID := "consumer"
+	chainID := consumer
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 	consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 
@@ -99,7 +99,7 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 }
 
 func TestValidatorByConsumerAddrCRUD(t *testing.T) {
-	chainID := "consumer"
+	chainID := consumer
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 	consumerAddr := types.NewConsumerConsAddress([]byte("consumerAddr"))
 
@@ -176,7 +176,7 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 }
 
 func TestKeyAssignmentReplacementCRUD(t *testing.T) {
-	chainID := "consumer"
+	chainID := consumer
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 	expCPubKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	var expPower int64 = 100
@@ -233,7 +233,7 @@ func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 }
 
 func TestConsumerAddrsToPruneCRUD(t *testing.T) {
-	chainID := "consumer"
+	chainID := consumer
 	consumerAddr := types.NewConsumerConsAddress([]byte("consumerAddr1"))
 	vscID := uint64(1)
 
