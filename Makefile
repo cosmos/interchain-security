@@ -8,60 +8,64 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cd
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cdd
 
-# run all tests: unit, e2e, diff, and integration
+# run all tests: unit, integration, diff, and E2E
 test: 
-	go test ./... && go run ./tests/integration/... 
+	go test ./... && go run ./tests/e2e/... 
 
-# run e2e and unit tests
+# run unit and integration tests
 test-short:
-	go test ./tests/e2e/... ./x/... ./app/...
+	go test ./x/... ./app/... ./tests/integration/...
+
+# run E2E tests
+test-e2e:
+	go test ./tests/e2e/...
 
 # run difference tests
 test-diff:
 	go test ./tests/difference/...
 
-# run only happy path integration tests
-test-integration-short:
-	go run ./tests/integration/... --happy-path-only
+# run only happy path E2E tests
+test-e2e-short:
+	go run ./tests/e2e/... --happy-path-only
 
-# run full integration tests in sequence (including multiconsumer)
-test-integration:
-	go run ./tests/integration/... --include-multi-consumer
+# run full E2E tests in sequence (including multiconsumer)
+test-e2e:
+	go run ./tests/e2e/... --include-multi-consumer
 
-# run full integration tests in parallel (including multiconsumer)
-test-integration-parallel:
-	go run ./tests/integration/... --include-multi-consumer --parallel
+# run full E2E tests in parallel (including multiconsumer)
+test-e2e-parallel:
+	go run ./tests/e2e/... --include-multi-consumer --parallel
 
-# run full integration tests in sequence (including multiconsumer) using latest tagged gaia
-test-gaia-integration:
-	go run ./tests/integration/... --include-multi-consumer --use-gaia
+# run full E2E tests in sequence (including multiconsumer) using latest tagged gaia
+test-gaia-e2e:
+	go run ./tests/e2e/... --include-multi-consumer --use-gaia
 
-# run only happy path integration tests using latest tagged gaia
-test-gaia-integration-short:
-	go run ./tests/integration/... --happy-path-only --use-gaia
+# run only happy path E2E tests using latest tagged gaia
+test-gaia-e2e-short:
+	go run ./tests/e2e/... --happy-path-only --use-gaia
 
-# run full integration tests in parallel (including multiconsumer) using latest tagged gaia
-test-gaia-integration-parallel:
-	go run ./tests/integration/... --include-multi-consumer --parallel --use-gaia
+# run full E2E tests in parallel (including multiconsumer) using latest tagged gaia
+test-gaia-e2e-parallel:
+	go run ./tests/e2e/... --include-multi-consumer --parallel --use-gaia
 
-# run full integration tests in sequence (including multiconsumer) using specific tagged version of gaia
-# usage: GAIA_TAG=v9.0.0 make test-gaia-integration-tagged
-test-gaia-integration-tagged:
-	go run ./tests/integration/... --include-multi-consumer --use-gaia --gaia-tag $(GAIA_TAG)
+# run full E2E tests in sequence (including multiconsumer) using specific tagged version of gaia
+# usage: GAIA_TAG=v9.0.0 make test-gaia-e2e-tagged
+test-gaia-e2e-tagged:
+	go run ./tests/e2e/... --include-multi-consumer --use-gaia --gaia-tag $(GAIA_TAG)
 
-# run only happy path integration tests using latest tagged gaia
-# usage: GAIA_TAG=v9.0.0 make test-gaia-integration-short-tagged
-test-gaia-integration-short-tagged:
-	go run ./tests/integration/... --happy-path-only --use-gaia --gaia-tag $(GAIA_TAG)
+# run only happy path E2E tests using latest tagged gaia
+# usage: GAIA_TAG=v9.0.0 make test-gaia-e2e-short-tagged
+test-gaia-e2e-short-tagged:
+	go run ./tests/e2e/... --happy-path-only --use-gaia --gaia-tag $(GAIA_TAG)
 
-# run full integration tests in parallel (including multiconsumer) using specific tagged version of gaia
-# usage: GAIA_TAG=v9.0.0 make test-gaia-integration-parallel-tagged
-test-gaia-integration-parallel-tagged:
-	go run ./tests/integration/... --include-multi-consumer --parallel --use-gaia --gaia-tag $(GAIA_TAG)
+# run full E2E tests in parallel (including multiconsumer) using specific tagged version of gaia
+# usage: GAIA_TAG=v9.0.0 make test-gaia-e2e-parallel-tagged
+test-gaia-e2e-parallel-tagged:
+	go run ./tests/e2e/... --include-multi-consumer --parallel --use-gaia --gaia-tag $(GAIA_TAG)
 
 # run all tests with caching disabled
 test-no-cache:
-	go test ./... -count=1 && go run ./tests/integration/...
+	go test ./... -count=1 && go run ./tests/e2e/...
 
 mockgen_cmd=go run github.com/golang/mock/mockgen
 mocks:

@@ -1,13 +1,14 @@
-package e2e
+package integration
 
 import (
 	"testing"
 
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	"github.com/cosmos/ibc-go/v7/testing/mock"
-	e2eutil "github.com/cosmos/interchain-security/testutil/e2e"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint"
+	"github.com/cosmos/ibc-go/v4/testing/mock"
+	testutil "github.com/cosmos/interchain-security/testutil/integration"
+	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
 
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -25,7 +26,7 @@ import (
 type SetupProviderCallback func(t *testing.T) (
 	coord *ibctesting.Coordinator,
 	providerChain *ibctesting.TestChain,
-	providerApp e2eutil.ProviderApp,
+	providerApp testutil.ProviderApp,
 )
 
 // Callback for instantiating a new consumer test chain
@@ -35,7 +36,7 @@ type SetupConsumerCallback func(s *testifysuite.Suite, coord *ibctesting.Coordin
 )
 
 // CCVTestSuite is an in-mem test suite which implements the standard group of tests validating
-// the e2e functionality of ccv enabled chains.
+// the integration functionality of ccv enabled chains.
 // Any method implemented for this struct will be ran when suite.Run() is called.
 type CCVTestSuite struct {
 	testifysuite.Suite
@@ -44,12 +45,12 @@ type CCVTestSuite struct {
 	setupConsumerCallback SetupConsumerCallback
 
 	providerChain *ibctesting.TestChain
-	providerApp   e2eutil.ProviderApp
+	providerApp   testutil.ProviderApp
 
 	// The first consumer chain among multiple.
 	consumerChain *ibctesting.TestChain
 	// The first consumer app among multiple.
-	consumerApp e2eutil.ConsumerApp
+	consumerApp testutil.ConsumerApp
 	// The ccv path to the first consumer among multiple.
 	path *ibctesting.Path
 	// The transfer path to the first consumer among multiple.
@@ -62,16 +63,16 @@ type CCVTestSuite struct {
 }
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
-func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
-	providerAppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string,
-) *CCVTestSuite {
+func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
+	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string) *CCVTestSuite {
+
 	ccvSuite := new(CCVTestSuite)
 
 	// Define callback to set up the provider chain
 	ccvSuite.setupProviderCallback = func(t *testing.T) (
 		*ibctesting.Coordinator,
 		*ibctesting.TestChain,
-		e2eutil.ProviderApp,
+		testutil.ProviderApp,
 	) {
 		// Instantiate the test coordinator.
 		coordinator := ibctesting.NewCoordinator(t, 0)

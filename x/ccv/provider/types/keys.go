@@ -127,7 +127,13 @@ const (
 	// SlashLogBytePrefix is the byte prefix that will store the mapping from provider address to boolean
 	// denoting whether the provider address has committed any double signign infractions
 	SlashLogBytePrefix
+
+	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
+
+//
+// Fully defined key func section
+//
 
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {
@@ -202,6 +208,14 @@ func PendingCRPKey(timestamp time.Time, chainID string) []byte {
 	)
 }
 
+// UnbondingOpKey returns the key that stores a record of all the ids of consumer chains that
+// need to unbond before a given unbonding operation can unbond on this chain.
+func UnbondingOpKey(id uint64) []byte {
+	bz := make([]byte, 8)
+	binary.BigEndian.PutUint64(bz, id)
+	return append([]byte{UnbondingOpBytePrefix}, bz...)
+}
+
 // UnbondingOpIndexKey returns an unbonding op index key
 // Note: chainId is hashed to a fixed length sequence of bytes here to prevent
 // injection attack between chainIDs.
@@ -213,14 +227,6 @@ func UnbondingOpIndexKey(chainID string, vscID uint64) []byte {
 // Removes the prefix + chainID from index key and returns only the key part.
 func ParseUnbondingOpIndexKey(key []byte) (string, uint64, error) {
 	return ParseChainIDAndUintIDKey(UnbondingOpIndexBytePrefix, key)
-}
-
-// UnbondingOpKey returns the key that stores a record of all the ids of consumer chains that
-// need to unbond before a given unbonding operation can unbond on this chain.
-func UnbondingOpKey(id uint64) []byte {
-	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, id)
-	return append([]byte{UnbondingOpBytePrefix}, bz...)
 }
 
 // ValsetUpdateBlockHeightKey returns the key that storing the mapping from valset update ID to block height
@@ -262,30 +268,6 @@ func VscSendingTimestampKey(chainID string, vscID uint64) []byte {
 // for a VscSendingTimestampKey or an error if unparsable
 func ParseVscSendingTimestampKey(bz []byte) (string, uint64, error) {
 	return ParseChainIDAndUintIDKey(VscSendTimestampBytePrefix, bz)
-}
-
-// ConsumerValidatorsKey returns the key under which the
-// validator assigned keys for every consumer chain are stored
-func ConsumerValidatorsKey(chainID string, addr ProviderConsAddress) []byte {
-	return ChainIDAndConsAddrKey(ConsumerValidatorsBytePrefix, chainID, addr.ToSdkConsAddr())
-}
-
-// ValidatorsByConsumerAddrKey returns the key under which the mapping from validator addresses
-// on consumer chains to validator addresses on the provider chain is stored
-func ValidatorsByConsumerAddrKey(chainID string, addr ConsumerConsAddress) []byte {
-	return ChainIDAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr.ToSdkConsAddr())
-}
-
-// KeyAssignmentReplacementsKey returns the key under which the
-// key assignments that need to be replaced in the current block are stored
-func KeyAssignmentReplacementsKey(chainID string, addr ProviderConsAddress) []byte {
-	return ChainIDAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr.ToSdkConsAddr())
-}
-
-// ConsumerAddrsToPruneKey returns the key under which the
-// mapping from VSC ids to consumer validators addresses is stored
-func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
-	return ChainIDAndUintIDKey(ConsumerAddrsToPruneBytePrefix, chainID, vscID)
 }
 
 // ThrottledPacketDataSizeKey returns the key storing the size of the throttled packet data queue for a given chain ID
@@ -350,6 +332,45 @@ func MustParseGlobalSlashEntryKey(bz []byte) (
 
 	return recvTime, chainID, ibcSeqNum
 }
+
+// ConsumerValidatorsKey returns the key under which the
+// validator assigned keys for every consumer chain are stored
+func ConsumerValidatorsKey(chainID string, addr ProviderConsAddress) []byte {
+	return ChainIdAndConsAddrKey(ConsumerValidatorsBytePrefix, chainID, addr.ToSdkConsAddr())
+}
+
+// ValidatorsByConsumerAddrKey returns the key under which the mapping from validator addresses
+// on consumer chains to validator addresses on the provider chain is stored
+func ValidatorsByConsumerAddrKey(chainID string, addr ConsumerConsAddress) []byte {
+	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr.ToSdkConsAddr())
+}
+
+// KeyAssignmentReplacementsKey returns the key under which the
+// key assignments that need to be replaced in the current block are stored
+func KeyAssignmentReplacementsKey(chainID string, addr ProviderConsAddress) []byte {
+	return ChainIdAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr.ToSdkConsAddr())
+}
+
+// ConsumerAddrsToPruneKey returns the key under which the
+// mapping from VSC ids to consumer validators addresses is stored
+func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
+	return ChainIdAndUintIdKey(ConsumerAddrsToPruneBytePrefix, chainID, vscID)
+}
+
+// SlashLogKey returns the key to a validator's slash log
+func SlashLogKey(providerAddr ProviderConsAddress) []byte {
+	return append([]byte{SlashLogBytePrefix}, providerAddr.ToSdkConsAddr().Bytes()...)
+}
+
+// NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go
+
+//
+// End of fully defined key func section
+//
+
+//
+// Generic helpers section
+//
 
 // ChainIdAndTsKey returns the key with the following format:
 // bytePrefix | len(chainID) | chainID | timestamp
@@ -444,7 +465,6 @@ func ParseChainIDAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 	return chainID, addr, nil
 }
 
-// SlashLogKey returns the key to a validator's slash log
-func SlashLogKey(providerAddr ProviderConsAddress) []byte {
-	return append([]byte{SlashLogBytePrefix}, providerAddr.ToSdkConsAddr().Bytes()...)
-}
+//
+// End of generic helpers section
+//

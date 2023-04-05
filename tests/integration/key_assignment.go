@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 import (
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"

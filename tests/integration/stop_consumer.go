@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 import (
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -12,7 +12,7 @@ import (
 // Tests the functionality of stopping a consumer chain at a higher level than unit tests
 func (s *CCVTestSuite) TestStopConsumerChain() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 	firstBundle := s.getFirstBundle()
 
@@ -164,7 +164,7 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel bool) {
 	channelID := s.path.EndpointB.ChannelID
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 	if checkChannel {
 		// check channel's state is closed

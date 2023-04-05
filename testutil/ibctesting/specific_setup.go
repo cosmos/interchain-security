@@ -1,8 +1,8 @@
 package ibctesting
 
-// Contains example setup code for running e2e tests against a provider, consumer,
+// Contains example setup code for running integration tests against a provider, consumer,
 // and/or democracy consumer app.go implementation. This file is meant to be pattern matched
-// for apps running e2e tests against their implementation.
+// for apps running integration tests against their implementation.
 
 import (
 	"encoding/json"

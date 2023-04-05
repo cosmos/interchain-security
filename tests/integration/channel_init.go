@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 // TestInitTimeout tests the init timeout
 func (s *CCVTestSuite) TestInitTimeout() {
