@@ -102,7 +102,7 @@ func (b *Builder) consAddr(i int64) sdk.ConsAddress {
 // getValidatorPK returns the validator private key using the given seed index
 func (b *Builder) getValidatorPK(seedIx int) mock.PV {
 	seed := []byte(b.initState.PKSeeds[seedIx])
-	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
+	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}} //nolint:staticcheck // SA1019: cosmosEd25519.PrivKey is deprecated: PrivKey defines a ed25519 private key. NOTE: ed25519 keys must not be used in SDK apps except in a tendermint validator context.
 }
 
 func (b *Builder) getAppBytesAndSenders(
@@ -111,7 +111,6 @@ func (b *Builder) getAppBytesAndSenders(
 	genesis map[string]json.RawMessage,
 	validators *tmtypes.ValidatorSet,
 ) ([]byte, []ibctesting.SenderAccount) {
-
 	accounts := []authtypes.GenesisAccount{}
 	balances := []banktypes.Balance{}
 	senderAccounts := []ibctesting.SenderAccount{}
@@ -234,7 +233,6 @@ func (b *Builder) getAppBytesAndSenders(
 	require.NoError(b.suite.T(), err)
 
 	return stateBytes, senderAccounts
-
 }
 
 func (b *Builder) newChain(
@@ -244,7 +242,6 @@ func (b *Builder) newChain(
 	validators *tmtypes.ValidatorSet,
 	signers map[string]tmtypes.PrivValidator,
 ) *ibctesting.TestChain {
-
 	app, genesis := appInit()
 
 	stateBytes, senderAccounts := b.getAppBytesAndSenders(chainID, app, genesis, validators)
@@ -328,7 +325,6 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 }
 
 func (b *Builder) createProviderAndConsumer() {
-
 	coordinator := ibctesting.NewCoordinator(b.suite.T(), 0)
 
 	// Create validators
@@ -340,7 +336,6 @@ func (b *Builder) createProviderAndConsumer() {
 
 	b.coordinator = coordinator
 	b.valAddresses = addresses
-
 }
 
 // setSigningInfos sets the validator signing info in the provider Slashing module
@@ -361,7 +356,6 @@ func (b *Builder) setSigningInfos() {
 // Checks that the lexicographic ordering of validator addresses as computed in
 // the staking module match the ordering of validators in the model.
 func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
-
 	check := func(lesser sdk.ValAddress, greater sdk.ValAddress) {
 		lesserV, _ := b.providerStakingKeeper().GetValidator(b.providerCtx(), lesser)
 		greaterV, _ := b.providerStakingKeeper().GetValidator(b.providerCtx(), greater)
@@ -426,7 +420,6 @@ func (b *Builder) addValidatorToStakingModule(privVal mock.PV) {
 }
 
 func (b *Builder) addExtraProviderValidators() {
-
 	for i, status := range b.initState.ValStates.Status {
 		if status == stakingtypes.Unbonded {
 			privVal := b.getValidatorPK(i)

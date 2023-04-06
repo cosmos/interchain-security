@@ -81,7 +81,6 @@ func NewKeeper(
 // Validates that the provider keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
-
 	// Ensures no fields are missed in this validation
 	if reflect.ValueOf(k).NumField() != 13 {
 		panic("number of fields in provider keeper is not 13")
@@ -457,12 +456,12 @@ func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemo
 
 // SetUnbondingOpIndex sets the IDs of unbonding operations that are waiting for
 // a VSCMaturedPacket with vscID from a consumer with chainID
-func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint64, IDs []uint64) {
+func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint64, ids []uint64) {
 	store := ctx.KVStore(k.storeKey)
 
 	vscUnbondingOps := types.VscUnbondingOps{
 		VscId:          vscID,
-		UnbondingOpIds: IDs,
+		UnbondingOpIds: ids,
 	}
 	bz, err := vscUnbondingOps.Marshal()
 	if err != nil {

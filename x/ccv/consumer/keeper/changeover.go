@@ -28,7 +28,6 @@ func (k Keeper) FirstConsumerHeight(ctx sdk.Context) int64 {
 // that will be given to tendermint, which allows the consumer chain to
 // start using the provider valset, while the standalone valset is given zero voting power where appropriate.
 func (k Keeper) ChangeoverToConsumer(ctx sdk.Context) (initialValUpdates []abci.ValidatorUpdate) {
-
 	initialValUpdates = k.GetInitialValSet(ctx)
 	// set last standalone height
 	k.SetLastStandaloneHeight(ctx, ctx.BlockHeight())

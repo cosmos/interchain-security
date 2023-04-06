@@ -13,7 +13,6 @@ import (
 )
 
 func TestChangeoverToConsumer(t *testing.T) {
-
 	cIds := []crypto.CryptoIdentity{}
 	for i := 0; i < 10; i++ {
 		cIds = append(cIds, *crypto.NewCryptoIdentityFromIntSeed(i + 42834729))
@@ -75,6 +74,14 @@ func TestChangeoverToConsumer(t *testing.T) {
 			lastSovVals:                 sovVals,
 			initialValUpdates:           initialValUpdates,
 			expectedReturnValUpdatesLen: 10,
+		},
+		{
+			name:        "validator is contained in both sov val set and initial val updates, using cIds[7]",
+			lastSovVals: []stakingtypes.Validator{cIds[7].SDKStakingValidator()},
+			initialValUpdates: []abci.ValidatorUpdate{
+				{Power: 55, PubKey: cIds[7].TMProtoCryptoPublicKey()},
+			},
+			expectedReturnValUpdatesLen: 1,
 		},
 	}
 
@@ -149,6 +156,10 @@ func TestChangeoverToConsumer(t *testing.T) {
 				tmProtoPubKey, err := sdkcryptocodec.ToTmProtoPublicKey(ccvValPubKey)
 				require.NoError(t, err)
 				if returnedValUpdate.PubKey.Equal(tmProtoPubKey) {
+					// If val was already matched to a val update for new set, it's power wont be 0
+					if found {
+						continue
+					}
 					// Assert power of the val update is zero
 					require.Equal(t, int64(0), returnedValUpdate.Power)
 					found = true

@@ -13,7 +13,7 @@ import (
 /*
 TODO: Remove after upgrading to ibc-go v5
 legacy_ibc_testing is temporarily copied into the interchain-security repository for the purpose of testing only.
-The e2e test suites rely on modifications to ibc-go's test framework that cannot be back-ported to the canonical version that ics will rely on.
+The integration test suites rely on modifications to ibc-go's test framework that cannot be back-ported to the canonical version that ics will rely on.
 These files will be deprecated once ICS is able to upgrade to ibc-go v5.
 */
 
@@ -34,6 +34,7 @@ type Coordinator struct {
 
 // NewCoordinator initializes Coordinator with N TestChain's
 func NewCoordinator(t *testing.T, n int) *Coordinator {
+	t.Helper()
 	chains := make(map[string]*TestChain)
 	coord := &Coordinator{
 		T:           t,
@@ -204,8 +205,8 @@ func (coord *Coordinator) CommitNBlocks(chain *TestChain, n uint64) {
 
 // CommitBlockGetResponses commits a block and provides abci responses
 func (coord *Coordinator) CommitBlockGetResponses(chain *TestChain) (
-	abci.ResponseEndBlock, abci.ResponseCommit, abci.ResponseBeginBlock) {
-
+	abci.ResponseEndBlock, abci.ResponseCommit, abci.ResponseBeginBlock,
+) {
 	ebRes, cRes, bbResp := chain.NextBlock()
 	coord.IncrementTime()
 	return ebRes, cRes, bbResp

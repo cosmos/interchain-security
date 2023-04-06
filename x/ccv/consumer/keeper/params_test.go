@@ -6,7 +6,6 @@ import (
 
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
@@ -23,10 +22,10 @@ func TestParams(t *testing.T) {
 		"",
 		"",
 		ccv.DefaultCCVTimeoutPeriod,
-		consumertypes.DefaultTransferTimeoutPeriod,
-		consumertypes.DefaultConsumerRedistributeFrac,
-		consumertypes.DefaultHistoricalEntries,
-		consumertypes.DefaultConsumerUnbondingPeriod,
+		types.DefaultTransferTimeoutPeriod,
+		types.DefaultConsumerRedistributeFrac,
+		types.DefaultHistoricalEntries,
+		types.DefaultConsumerUnbondingPeriod,
 	) // these are the default params, IBC suite independently sets enabled=true
 
 	params := consumerKeeper.GetParams(ctx)

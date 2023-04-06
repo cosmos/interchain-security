@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	appparams "github.com/cosmos/interchain-security/app/params"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -18,6 +20,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
+	"github.com/cosmos/cosmos-sdk/std"
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -98,9 +101,7 @@ import (
 	ibcproviderkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
-	e2e "github.com/cosmos/interchain-security/testutil/e2e"
-
-	"github.com/tendermint/spm/cosmoscmd"
+	testutil "github.com/cosmos/interchain-security/testutil/integration"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -148,7 +149,7 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-		//router.AppModuleBasic{},
+		// router.AppModuleBasic{},
 		ibcprovider.AppModuleBasic{},
 	)
 
@@ -167,7 +168,6 @@ var (
 var (
 	_ simapp.App              = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
-	_ cosmoscmd.CosmosApp     = (*App)(nil)
 	_ ibctesting.TestingApp   = (*App)(nil)
 )
 
@@ -196,7 +196,7 @@ type App struct { // nolint: golint
 	MintKeeper       mintkeeper.Keeper
 
 	// NOTE the distribution keeper should either be removed
-	// from consumer chain or set to use an independant
+	// from consumer chain or set to use an independent
 	// different fee-pool from the consumer chain ConsumerKeeper
 	DistrKeeper distrkeeper.Keeper
 
@@ -240,11 +240,10 @@ func New(
 	skipUpgradeHeights map[int64]bool,
 	homePath string,
 	invCheckPeriod uint,
-	encodingConfig cosmoscmd.EncodingConfig,
+	encodingConfig appparams.EncodingConfig,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
-) cosmoscmd.App {
-
+) *App {
 	appCodec := encodingConfig.Marshaler
 	legacyAmino := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
@@ -751,30 +750,30 @@ func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
 }
 
-// ProviderApp interface implementations for e2e tests
+// ProviderApp interface implementations for integration tests
 
 // GetProviderKeeper implements the ProviderApp interface.
 func (app *App) GetProviderKeeper() ibcproviderkeeper.Keeper {
 	return app.ProviderKeeper
 }
 
-// GetE2eStakingKeeper implements the ProviderApp interface.
-func (app *App) GetE2eStakingKeeper() e2e.E2eStakingKeeper {
+// GetTestStakingKeeper implements the ProviderApp interface.
+func (app *App) GetTestStakingKeeper() testutil.TestStakingKeeper {
 	return app.StakingKeeper
 }
 
-// GetE2eBankKeeper implements the ProviderApp interface.
-func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
+// GetTestBankKeeper implements the ProviderApp interface.
+func (app *App) GetTestBankKeeper() testutil.TestBankKeeper {
 	return app.BankKeeper
 }
 
-// GetE2eSlashingKeeper implements the ProviderApp interface.
-func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
+// GetTestSlashingKeeper implements the ProviderApp interface.
+func (app *App) GetTestSlashingKeeper() testutil.TestSlashingKeeper {
 	return app.SlashingKeeper
 }
 
-// GetE2eDistributionKeeper implements the ProviderApp interface.
-func (app *App) GetE2eDistributionKeeper() e2e.E2eDistributionKeeper {
+// GetTestDistributionKeeper implements the ProviderApp interface.
+func (app *App) GetTestDistributionKeeper() testutil.TestDistributionKeeper {
 	return app.DistrKeeper
 }
 
@@ -802,7 +801,7 @@ func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 
 // GetTxConfig implements the TestingApp interface.
 func (app *App) GetTxConfig() client.TxConfig {
-	return cosmoscmd.MakeEncodingConfig(ModuleBasics).TxConfig
+	return MakeTestEncodingConfig().TxConfig
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided
@@ -874,4 +873,17 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(providertypes.ModuleName)
 
 	return paramsKeeper
+}
+
+// MakeTestEncodingConfig creates an EncodingConfig for testing. This function
+// should be used only in tests or when creating a new app instance (NewApp*()).
+// App user shouldn't create new codecs - use the app.AppCodec instead.
+// [DEPRECATED]
+func MakeTestEncodingConfig() appparams.EncodingConfig {
+	encodingConfig := appparams.MakeTestEncodingConfig()
+	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	return encodingConfig
 }

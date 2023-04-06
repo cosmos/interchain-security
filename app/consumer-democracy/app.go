@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	appparams "github.com/cosmos/interchain-security/app/params"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -20,6 +21,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
+	"github.com/cosmos/cosmos-sdk/std"
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -76,7 +78,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
-	"github.com/tendermint/spm/cosmoscmd"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
@@ -84,10 +85,11 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
+
 	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/cosmos/interchain-security/testutil/e2e"
+	testutil "github.com/cosmos/interchain-security/testutil/integration"
 	ccvdistr "github.com/cosmos/interchain-security/x/ccv/democracy/distribution"
 
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -147,7 +149,7 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-		//router.AppModuleBasic{},
+		// router.AppModuleBasic{},
 		consumer.AppModuleBasic{},
 	)
 
@@ -168,7 +170,6 @@ var (
 var (
 	_ simapp.App              = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
-	_ cosmoscmd.CosmosApp     = (*App)(nil)
 	_ ibctesting.TestingApp   = (*App)(nil)
 )
 
@@ -238,11 +239,10 @@ func New(
 	skipUpgradeHeights map[int64]bool,
 	homePath string,
 	invCheckPeriod uint,
-	encodingConfig cosmoscmd.EncodingConfig,
+	encodingConfig appparams.EncodingConfig,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
-) cosmoscmd.App {
-
+) *App {
 	appCodec := encodingConfig.Marshaler
 	legacyAmino := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
@@ -630,7 +630,6 @@ func New(
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
 		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
-
 			app.IBCKeeper.ConnectionKeeper.SetParams(ctx, ibcconnectiontypes.DefaultParams())
 
 			fromVM := make(map[string]uint64)
@@ -654,7 +653,7 @@ func New(
 				return fromVM, fmt.Errorf("failed to unmarshal genesis state: %w", err)
 			}
 
-			var consumerGenesis = consumertypes.GenesisState{}
+			consumerGenesis := consumertypes.GenesisState{}
 			appCodec.MustUnmarshalJSON(appState[consumertypes.ModuleName], &consumerGenesis)
 
 			consumerGenesis.PreCCV = true
@@ -794,50 +793,50 @@ func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
 }
 
-// DemocConsumerApp interface implementations for e2e tests
+// DemocConsumerApp interface implementations for integration tests
 
 // GetConsumerKeeper implements the ConsumerApp interface.
 func (app *App) GetConsumerKeeper() consumerkeeper.Keeper {
 	return app.ConsumerKeeper
 }
 
-// GetE2eBankKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
+// GetTestBankKeeper implements the ConsumerApp interface.
+func (app *App) GetTestBankKeeper() testutil.TestBankKeeper {
 	return app.BankKeeper
 }
 
-// GetE2eAccountKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eAccountKeeper() e2e.E2eAccountKeeper {
+// GetTestAccountKeeper implements the ConsumerApp interface.
+func (app *App) GetTestAccountKeeper() testutil.TestAccountKeeper {
 	return app.AccountKeeper
 }
 
-// GetE2eSlashingKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
+// GetTestSlashingKeeper implements the ConsumerApp interface.
+func (app *App) GetTestSlashingKeeper() testutil.TestSlashingKeeper {
 	return app.SlashingKeeper
 }
 
-// GetE2eEvidenceKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
+// GetTestEvidenceKeeper implements the ConsumerApp interface.
+func (app *App) GetTestEvidenceKeeper() testutil.TestEvidenceKeeper {
 	return app.EvidenceKeeper
 }
 
-// GetE2eStakingKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eStakingKeeper() e2e.E2eStakingKeeper {
+// GetTestStakingKeeper implements the ConsumerApp interface.
+func (app *App) GetTestStakingKeeper() testutil.TestStakingKeeper {
 	return app.StakingKeeper
 }
 
-// GetE2eDistributionKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eDistributionKeeper() e2e.E2eDistributionKeeper {
+// GetTestDistributionKeeper implements the ConsumerApp interface.
+func (app *App) GetTestDistributionKeeper() testutil.TestDistributionKeeper {
 	return app.DistrKeeper
 }
 
-// GetE2eMintKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eMintKeeper() e2e.E2eMintKeeper {
+// GetTestMintKeeper implements the ConsumerApp interface.
+func (app *App) GetTestMintKeeper() testutil.TestMintKeeper {
 	return app.MintKeeper
 }
 
-// GetE2eGovKeeper implements the ConsumerApp interface.
-func (app *App) GetE2eGovKeeper() e2e.E2eGovKeeper {
+// GetTestGovKeeper implements the ConsumerApp interface.
+func (app *App) GetTestGovKeeper() testutil.TestGovKeeper {
 	return app.GovKeeper
 }
 
@@ -865,7 +864,7 @@ func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 
 // GetTxConfig implements the TestingApp interface.
 func (app *App) GetTxConfig() client.TxConfig {
-	return cosmoscmd.MakeEncodingConfig(ModuleBasics).TxConfig
+	return MakeTestEncodingConfig().TxConfig
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided
@@ -937,4 +936,17 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(consumertypes.ModuleName)
 
 	return paramsKeeper
+}
+
+// MakeTestEncodingConfig creates an EncodingConfig for testing. This function
+// should be used only in tests or when creating a new app instance (NewApp*()).
+// App user shouldn't create new codecs - use the app.AppCodec instead.
+// [DEPRECATED]
+func MakeTestEncodingConfig() appparams.EncodingConfig {
+	encodingConfig := appparams.MakeTestEncodingConfig()
+	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	return encodingConfig
 }

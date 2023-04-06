@@ -41,7 +41,7 @@ import (
 /*
 TODO: Remove after upgrading to ibc-go v5
 legacy_ibc_testing is temporarily copied into the interchain-security repository for the purpose of testing only.
-The e2e test suites rely on modifications to ibc-go's test framework that cannot be back-ported to the canonical version that ics will rely on.
+The integration test suites rely on modifications to ibc-go's test framework that cannot be back-ported to the canonical version that ics will rely on.
 These files will be deprecated once ICS is able to upgrade to ibc-go v5.
 */
 
@@ -106,6 +106,7 @@ type TestChain struct {
 // CONTRACT: Validator array must be provided in the order expected by Tendermint.
 // i.e. sorted first by power and then lexicographically by address.
 func NewTestChainWithValSet(t *testing.T, coord *Coordinator, appIniter AppIniter, chainID string, valSet *tmtypes.ValidatorSet, signers map[string]tmtypes.PrivValidator) *TestChain {
+	t.Helper()
 	genAccs := []authtypes.GenesisAccount{}
 	genBals := []banktypes.Balance{}
 	senderAccs := []SenderAccount{}
@@ -171,6 +172,7 @@ func NewTestChainWithValSet(t *testing.T, coord *Coordinator, appIniter AppInite
 // NewTestChain initializes a new test chain with a default of 4 validators
 // Use this function if the tests do not need custom control over the validator set
 func NewTestChain(t *testing.T, coord *Coordinator, appIniter AppIniter, chainID string) *TestChain {
+	t.Helper()
 	// generate validators private/public key
 	var (
 		validatorsPerChain = 4
@@ -299,7 +301,6 @@ func (chain *TestChain) setSentPacketsFromEvents(events []abci.Event) {
 // returned on block `n` to the validators of block `n+2`.
 // It calls BeginBlock with the new block created before returning.
 func (chain *TestChain) NextBlock() (abci.ResponseEndBlock, abci.ResponseCommit, abci.ResponseBeginBlock) {
-
 	ebRes := chain.App.EndBlock(abci.RequestEndBlock{Height: chain.CurrentHeader.Height})
 	// store packets sent during EndBlock
 	chain.setSentPacketsFromEvents(ebRes.Events)
@@ -511,7 +512,7 @@ func (chain *TestChain) CreateTMClientHeader(chainID string, blockHeight int64, 
 		AppHash:            chain.CurrentHeader.AppHash,
 		LastResultsHash:    tmhash.Sum([]byte("last_results_hash")),
 		EvidenceHash:       tmhash.Sum([]byte("evidence_hash")),
-		ProposerAddress:    tmValSet.Proposer.Address, //nolint:staticcheck
+		ProposerAddress:    tmValSet.Proposer.Address,
 	}
 
 	hhash := tmHeader.Hash()

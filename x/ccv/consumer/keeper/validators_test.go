@@ -17,7 +17,6 @@ import (
 
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper
 func TestApplyCCValidatorChanges(t *testing.T) {
-
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	// Explicitly register cdc with public key interface
 	keeperParams.RegisterSdkCryptoCodecInterfaces()
@@ -69,19 +68,22 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 		changes       []abci.ValidatorUpdate
 		expTotalPower int64
 		expValsNum    int
-	}{{ // add new bonded validator
-		changes:       changes[len(changes)-1:],
-		expTotalPower: changesPower,
-		expValsNum:    len(ccVals) + 1,
-	}, { // update a validator voting power
-		changes:       []abci.ValidatorUpdate{{PubKey: changes[0].PubKey, Power: changes[0].Power + 3}},
-		expTotalPower: changesPower + 3,
-		expValsNum:    len(ccVals) + 1,
-	}, { // unbond a validator
-		changes:       []abci.ValidatorUpdate{{PubKey: changes[0].PubKey, Power: 0}},
-		expTotalPower: changesPower - changes[0].Power,
-		expValsNum:    len(ccVals),
-	},
+	}{
+		{ // add new bonded validator
+			changes:       changes[len(changes)-1:],
+			expTotalPower: changesPower,
+			expValsNum:    len(ccVals) + 1,
+		},
+		{ // update a validator voting power
+			changes:       []abci.ValidatorUpdate{{PubKey: changes[0].PubKey, Power: changes[0].Power + 3}},
+			expTotalPower: changesPower + 3,
+			expValsNum:    len(ccVals) + 1,
+		},
+		{ // unbond a validator
+			changes:       []abci.ValidatorUpdate{{PubKey: changes[0].PubKey, Power: 0}},
+			expTotalPower: changesPower - changes[0].Power,
+			expValsNum:    len(ccVals),
+		},
 		{ // update all validators voting power
 			changes: []abci.ValidatorUpdate{
 				{PubKey: changes[0].PubKey, Power: changes[0].Power + 1},
@@ -106,7 +108,6 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 
 // Tests the getter and setter behavior for historical info
 func TestHistoricalInfo(t *testing.T) {
-
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	// Explicitly register cdc with public key interface
 	keeperParams.RegisterSdkCryptoCodecInterfaces()
@@ -161,12 +162,13 @@ func IsValSetSorted(data []stakingtypes.Validator, powerReduction sdk.Int) bool 
 }
 
 // Generates 4 test validators with non zero voting power
-func GenerateValidators(t testing.TB) []*tmtypes.Validator {
+func GenerateValidators(tb testing.TB) []*tmtypes.Validator {
+	tb.Helper()
 	numValidators := 4
 	validators := []*tmtypes.Validator{}
 	for i := 0; i < numValidators; i++ {
 		pubKey, err := testkeeper.GenPubKey()
-		require.NoError(t, err)
+		require.NoError(tb, err)
 
 		votingPower := int64(i + 1)
 		validator := tmtypes.NewValidator(pubKey, votingPower)
@@ -176,14 +178,16 @@ func GenerateValidators(t testing.TB) []*tmtypes.Validator {
 }
 
 // Sets each input tmtypes.Validator as a types.CrossChainValidator in the consumer keeper store
-func SetCCValidators(t testing.TB, consumerKeeper keeper.Keeper,
-	ctx sdk.Context, validators []*tmtypes.Validator) {
+func SetCCValidators(tb testing.TB, consumerKeeper keeper.Keeper,
+	ctx sdk.Context, validators []*tmtypes.Validator,
+) {
+	tb.Helper()
 	for _, v := range validators {
 		publicKey, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
-		require.NoError(t, err)
+		require.NoError(tb, err)
 
 		ccv, err := types.NewCCValidator(v.Address, v.VotingPower, publicKey)
-		require.NoError(t, err)
+		require.NoError(tb, err)
 		consumerKeeper.SetCCValidator(ctx, ccv)
 	}
 }

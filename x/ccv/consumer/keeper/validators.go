@@ -39,7 +39,6 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 				val.Power = change.Power
 				k.SetCCValidator(ctx, val)
 			}
-
 		} else if 0 < change.Power {
 			// create a new validator
 			consAddr := sdk.ConsAddress(addr)
@@ -130,7 +129,8 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		ctx,
 		abci.Validator{
 			Address: addr.Bytes(),
-			Power:   power},
+			Power:   power,
+		},
 		vscID,
 		infraction,
 	)
@@ -198,7 +198,6 @@ func (k Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
 // TrackHistoricalInfo saves the latest historical-info and deletes the oldest
 // heights that are below pruning height
 func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
-
 	numHistoricalEntries := k.GetHistoricalEntries(ctx)
 
 	// Prune store to ensure we only have parameter-defined historical entries.
@@ -208,7 +207,7 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	// Since the entries to be deleted are always in a continuous range, we can iterate
 	// over the historical entries starting from the most recent version to be pruned
 	// and then return at the first empty entry.
-	for i := ctx.BlockHeight() - int64(numHistoricalEntries); i >= 0; i-- {
+	for i := ctx.BlockHeight() - numHistoricalEntries; i >= 0; i-- {
 		_, found := k.GetHistoricalInfo(ctx, i)
 		if found {
 			k.DeleteHistoricalInfo(ctx, i)

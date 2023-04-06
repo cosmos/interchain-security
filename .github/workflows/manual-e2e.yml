@@ -1,0 +1,26 @@
+# manually run full E2E test suite
+# all tests are run sequentially
+name: manual-e2e-main
+on:
+  workflow_dispatch:
+
+jobs:
+  manual-integration-main:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.18'
+      - uses: actions/checkout@v3
+
+      - name: Checkout LFS objects
+        run: git lfs checkout
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.18" # The Go version to download (if necessary) and use.
+
+      - name: E2E tests
+        run: make test-e2e

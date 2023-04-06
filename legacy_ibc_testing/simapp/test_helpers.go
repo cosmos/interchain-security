@@ -25,7 +25,7 @@ import (
 /*
 TODO: Remove after upgrading to ibc-go v5
 legacy_ibc_testing is temporarily copied into the interchain-security repository for the purpose of testing only.
-The e2e test suites rely on modifications to ibc-go's test framework that cannot be back-ported to the canonical version that ics will rely on.
+The integration test suites rely on modifications to ibc-go's test framework that cannot be back-ported to the canonical version that ics will rely on.
 These files will be deprecated once ICS is able to upgrade to ibc-go v5.
 */
 
@@ -90,6 +90,7 @@ func SignAndDeliver(
 	t *testing.T, txCfg client.TxConfig, app *bam.BaseApp, header tmproto.Header, msgs []sdk.Msg,
 	chainID string, accNums, accSeqs []uint64, expSimPass, expPass bool, priv ...cryptotypes.PrivKey,
 ) (sdk.GasInfo, *sdk.Result, error) {
+	t.Helper()
 	tx, err := helpers.GenTx(
 		txCfg,
 		msgs,

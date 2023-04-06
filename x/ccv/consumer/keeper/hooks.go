@@ -5,9 +5,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-var (
-	_ ccv.ConsumerHooks = Keeper{}
-)
+var _ ccv.ConsumerHooks = Keeper{}
 
 // Hooks wrapper struct for ConsumerKeeper
 type Hooks struct {

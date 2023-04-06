@@ -175,7 +175,6 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 //
 // TODO: e2e tests confirming behavior with and without standalone -> consumer changeover
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-
 	// If PreCCV state is active, consumer is a previously standalone chain
 	// that was just upgraded to include the consumer ccv module, execute changeover logic.
 	if am.keeper.IsPreCCV(ctx) {
