@@ -256,7 +256,7 @@ func New(
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 
 	keys := sdk.NewKVStoreKeys(
-		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
+		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey, crisistypes.StoreKey,
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
@@ -414,6 +414,14 @@ func New(
 		// register the governance hooks
 		),
 	)
+	app.IBCKeeper = ibckeeper.NewKeeper(
+		appCodec,
+		keys[ibchost.StoreKey],
+		app.GetSubspace(ibchost.ModuleName),
+		&app.ConsumerKeeper,
+		app.UpgradeKeeper,
+		scopedIBCKeeper,
+	)
 
 	// Create CCV consumer and modules
 	app.ConsumerKeeper = consumerkeeper.NewKeeper(
@@ -433,14 +441,6 @@ func New(
 		authtypes.FeeCollectorName,
 	)
 
-	app.IBCKeeper = ibckeeper.NewKeeper(
-		appCodec,
-		keys[ibchost.StoreKey],
-		app.GetSubspace(ibchost.ModuleName),
-		&app.ConsumerKeeper,
-		app.UpgradeKeeper,
-		scopedIBCKeeper,
-	)
 	// Setting the staking keeper is only needed for standalone to consumer changeover chains
 	app.ConsumerKeeper.SetStandaloneStakingKeeper(app.StakingKeeper)
 
