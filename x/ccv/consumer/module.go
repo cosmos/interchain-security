@@ -149,7 +149,6 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 // Set the VSC ID for the subsequent block to the same value as the current block
 // Panic if the provider's channel was established and then closed
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
-
 	channelID, found := am.keeper.GetProviderChannel(ctx)
 	if found && am.keeper.IsChannelClosed(ctx, channelID) {
 		// The CCV channel was established, but it was then closed;
