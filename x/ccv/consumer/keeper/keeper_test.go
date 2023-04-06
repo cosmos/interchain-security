@@ -87,21 +87,17 @@ func TestLastSovereignHeight(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	// Default value should be 0 without any setter
-	lastStandaloneHeight, found := consumerKeeper.GetLastStandaloneHeight(ctx)
-	require.False(t, found)
-	require.Equal(t, int64(0), lastStandaloneHeight)
+	// Panics without setter
+	require.Panics(t, func() { consumerKeeper.GetLastStandaloneHeight(ctx) })
 
 	// Set/get the last standalone height being 10
 	consumerKeeper.SetLastStandaloneHeight(ctx, 10)
-	lastStandaloneHeight, found = consumerKeeper.GetLastStandaloneHeight(ctx)
-	require.True(t, found)
+	lastStandaloneHeight := consumerKeeper.GetLastStandaloneHeight(ctx)
 	require.Equal(t, int64(10), lastStandaloneHeight)
 
 	// Set/get the last standalone height being 43234426
 	consumerKeeper.SetLastStandaloneHeight(ctx, 43234426)
-	lastStandaloneHeight, found = consumerKeeper.GetLastStandaloneHeight(ctx)
-	require.True(t, found)
+	lastStandaloneHeight = consumerKeeper.GetLastStandaloneHeight(ctx)
 	require.Equal(t, int64(43234426), lastStandaloneHeight)
 }
 

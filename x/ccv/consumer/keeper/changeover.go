@@ -5,20 +5,20 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
+// TODO: tests around this logic
+// ChangeoverIsComplete returns whether the standalone to consumer changeover process is complete.
 func (k Keeper) ChangeoverIsComplete(ctx sdk.Context) bool {
-	// TODO: confirm correctness here.
+	if !k.IsPrevStandaloneChain() {
+		panic("ChangeoverIsComplete should only be called on previously standalone consumers")
+	}
 	return ctx.BlockHeight() >= k.FirstConsumerHeight(ctx)
 }
 
-// TODO: store this height directly in a better way when prov valset is used
+// The first height that the ccv valset will be in effect is 2 blocks after last standalone height
+// (aka height that the ccv module first returned updates to tendermint), because the new valset is committed
+// in block N+1, and in effect for block N+2.
 func (k Keeper) FirstConsumerHeight(ctx sdk.Context) int64 {
-	lastStandaloneHeight, found := k.GetLastStandaloneHeight(ctx)
-	// If last standalone height not found, chain has always been consumer
-	if !found {
-		return 0
-	}
-	// Else first consumer height is 2 blocks after last standalone height
-	return lastStandaloneHeight + 2
+	return k.GetLastStandaloneHeight(ctx) + 2
 }
 
 // ChangeoverToConsumer includes the logic that needs to execute during the process of a

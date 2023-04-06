@@ -112,8 +112,7 @@ func TestChangeoverToConsumer(t *testing.T) {
 		require.False(t, consumerKeeper.IsPreCCV(ctx))
 
 		// Last standalone height should be set to current block height
-		lastStandaloneHeight, found := consumerKeeper.GetLastStandaloneHeight(ctx)
-		require.True(t, found)
+		lastStandaloneHeight := consumerKeeper.GetLastStandaloneHeight(ctx)
 		require.Equal(t, ctx.BlockHeight(), lastStandaloneHeight)
 
 		// Cross chain validator states should be populated with initial valset

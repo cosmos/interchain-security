@@ -87,8 +87,14 @@ func NewKeeper(
 	return k
 }
 
+// SetStandaloneStakingKeeper sets the standalone staking keeper for the consumer chain.
+// This method should only be called for previously standalone chains that are now consumers.
 func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
 	k.standaloneStakingKeeper = sk
+}
+
+func (k Keeper) IsPrevStandaloneChain() bool {
+	return k.standaloneStakingKeeper != nil
 }
 
 // Validates that the consumer keeper is initialized with non-zero and
@@ -254,14 +260,14 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store.Delete(types.PendingChangesKey())
 }
 
-func (k Keeper) GetLastStandaloneHeight(ctx sdk.Context) (height int64, found bool) {
+func (k Keeper) GetLastStandaloneHeight(ctx sdk.Context) int64 {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.LastStandaloneHeightKey())
 	if bz == nil {
-		return 0, false
+		panic("last standalone height not set")
 	}
-	height = int64(sdk.BigEndianToUint64(bz))
-	return height, true
+	height := sdk.BigEndianToUint64(bz)
+	return int64(height)
 }
 
 func (k Keeper) SetLastStandaloneHeight(ctx sdk.Context, height int64) {

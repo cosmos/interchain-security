@@ -78,8 +78,9 @@ func (k Keeper) Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.Val
 
 // IsJailed returns the outstanding slashing flag for the given validator adddress
 func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
-	// if the changeover is not complete, return the standalone staking keeper's jailed status
-	if !k.ChangeoverIsComplete(ctx) {
+	// if the changeover is not complete for prev standalone chain,
+	// return the standalone staking keeper's jailed status
+	if k.IsPrevStandaloneChain() && !k.ChangeoverIsComplete(ctx) {
 		return k.standaloneStakingKeeper.IsValidatorJailed(ctx, addr)
 	}
 	// Otherwise, return the ccv consumer keeper's notion of a validator being jailed
@@ -103,14 +104,16 @@ func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.V
 
 // Slash queues a slashing request for the the provider chain
 // All queued slashing requests will be cleared in EndBlock
+// TODO: UT for this
 func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, _ sdk.Dec, infraction stakingtypes.InfractionType) {
 
 	if infraction == stakingtypes.InfractionEmpty {
 		return
 	}
 
-	// If infraction happened before the changeover was completed, slash only on the standalone staking keeper.
-	if infractionHeight < k.FirstConsumerHeight(ctx) {
+	// If this is a previously standalone chain and infraction happened before the changeover was completed,
+	// slash only on the standalone staking keeper.
+	if k.IsPrevStandaloneChain() && infractionHeight < k.FirstConsumerHeight(ctx) {
 		k.standaloneStakingKeeper.Slash(ctx, addr, infractionHeight, power, sdk.Dec{}, infraction)
 		return
 	}
