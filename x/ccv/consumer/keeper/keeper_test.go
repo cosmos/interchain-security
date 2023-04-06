@@ -92,13 +92,11 @@ func TestLastSovereignHeight(t *testing.T) {
 
 	// Set/get the last standalone height being 10
 	consumerKeeper.SetLastStandaloneHeight(ctx, 10)
-	lastStandaloneHeight := consumerKeeper.GetLastStandaloneHeight(ctx)
-	require.Equal(t, int64(10), lastStandaloneHeight)
+	require.Equal(t, int64(10), consumerKeeper.GetLastStandaloneHeight(ctx))
 
 	// Set/get the last standalone height being 43234426
 	consumerKeeper.SetLastStandaloneHeight(ctx, 43234426)
-	lastStandaloneHeight = consumerKeeper.GetLastStandaloneHeight(ctx)
-	require.Equal(t, int64(43234426), lastStandaloneHeight)
+	require.Equal(t, int64(43234426), consumerKeeper.GetLastStandaloneHeight(ctx))
 }
 
 // TestPreCCV tests the getter, setter and deletion methods for the pre-CCV state flag
