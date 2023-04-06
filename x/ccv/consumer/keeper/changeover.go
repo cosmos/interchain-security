@@ -5,7 +5,6 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// TODO: tests around this logic
 // ChangeoverIsComplete returns whether the standalone to consumer changeover process is complete.
 func (k Keeper) ChangeoverIsComplete(ctx sdk.Context) bool {
 	if !k.IsPrevStandaloneChain() {
