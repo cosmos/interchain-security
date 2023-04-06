@@ -11,7 +11,6 @@ import (
 // driver hold. This test therefore does not test the system, but only that
 // the driver is correctly setup.
 func (s *CoreSuite) TestAssumptionsSetup() {
-
 	const FAIL_MSG = "Assumptions for core diff test failed: there is a problem with the driver or how the test is setup."
 
 	// Staking module maxValidators param is correct
@@ -124,8 +123,8 @@ func (s *CoreSuite) TestAssumptionsSetup() {
 	// The offset time is the last committed time, but the SUT is +1 block ahead
 	// because the currentHeader time is ahead of the last committed. Therefore sub
 	// the difference (duration of 1 block).
-	s.Require().Equal(int64(s.offsetTimeUnix), s.time(P).Add(-s.initState.BlockInterval).Unix())
-	s.Require().Equal(int64(s.offsetTimeUnix), s.time(C).Add(-s.initState.BlockInterval).Unix())
+	s.Require().Equal(s.offsetTimeUnix, s.time(P).Add(-s.initState.BlockInterval).Unix())
+	s.Require().Equal(s.offsetTimeUnix, s.time(C).Add(-s.initState.BlockInterval).Unix())
 
 	// The offset height is the last committed height, but the SUT is +1 because
 	// the currentHeader is +1 ahead of the last committed. Therefore sub 1.

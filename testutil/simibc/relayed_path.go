@@ -1,9 +1,8 @@
 package simibc
 
 import (
-	"time"
-
 	"testing"
+	"time"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
@@ -32,6 +31,7 @@ type RelayedPath struct {
 // packets, acks or headers. Requires a fully initialised path where
 // the connection and any channel handshakes have been COMPLETED.
 func MakeRelayedPath(t *testing.T, path *ibctesting.Path) RelayedPath {
+	t.Helper()
 	return RelayedPath{
 		t:             t,
 		clientHeaders: map[string][]*ibctmtypes.Header{},

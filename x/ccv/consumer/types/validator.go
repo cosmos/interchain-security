@@ -7,7 +7,6 @@ import (
 )
 
 func NewCCValidator(address []byte, power int64, pubKey cryptotypes.PubKey) (CrossChainValidator, error) {
-
 	pkAny, err := codectypes.NewAnyWithValue(pubKey)
 	if err != nil {
 		return CrossChainValidator{}, err
@@ -34,5 +33,4 @@ func (ccv CrossChainValidator) ConsPubKey() (cryptotypes.PubKey, error) {
 	}
 
 	return pk, nil
-
 }

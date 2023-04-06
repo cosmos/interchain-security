@@ -300,7 +300,6 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 // Advance time so that provider's unbonding op completes
 // Check that unbonding has completed in provider staking
 func (s *CCVTestSuite) TestUnbondingNoConsumer() {
-
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
@@ -338,7 +337,6 @@ func (s *CCVTestSuite) TestUnbondingNoConsumer() {
 // TestRedelegationNoConsumer tests a redelegate transaction
 // submitted on a provider chain with no consumers
 func (s *CCVTestSuite) TestRedelegationNoConsumer() {
-
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	stakingKeeper := s.providerApp.GetTestStakingKeeper()
 
