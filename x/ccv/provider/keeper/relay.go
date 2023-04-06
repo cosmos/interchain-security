@@ -10,9 +10,9 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	utils "github.com/cosmos/interchain-security/x/ccv/utils"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	utils "github.com/cosmos/interchain-security/v2/x/ccv/utils"
 )
 
 // OnRecvVSCMaturedPacket handles a VSCMatured packet
@@ -199,7 +199,7 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 				return
 			}
 			// TODO do not panic if the send fails
-			// https://github.com/cosmos/interchain-security/issues/649
+			// https://github.com/cosmos/interchain-security/v2/issues/649
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
 		// set the VSC send timestamp for this packet;

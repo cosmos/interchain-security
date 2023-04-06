@@ -15,9 +15,9 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )

@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	"github.com/golang/mock/gomock"
 
 	tmtypes "github.com/cometbft/cometbft/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	cryptoutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 )

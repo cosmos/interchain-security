@@ -20,11 +20,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	consumerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -173,7 +173,7 @@ func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 // Registers proto interfaces for params.Cdc
 //
 // For now, we explicitly force certain unit tests to register sdk crypto interfaces.
-// TODO: This function will be executed automatically once https://github.com/cosmos/interchain-security/issues/273 is solved.
+// TODO: This function will be executed automatically once https://github.com/cosmos/interchain-security/v2/issues/273 is solved.
 func (params *InMemKeeperParams) RegisterSdkCryptoCodecInterfaces() {
 	ir := codectypes.NewInterfaceRegistry()
 	// Public key implementation registered here

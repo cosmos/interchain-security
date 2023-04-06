@@ -21,8 +21,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	app "github.com/cosmos/interchain-security/app/consumer-democracy"
-	"github.com/cosmos/interchain-security/app/params"
+	app "github.com/cosmos/interchain-security/v2/app/consumer-democracy"
+	"github.com/cosmos/interchain-security/v2/app/params"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"

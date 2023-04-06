@@ -9,10 +9,10 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	testutil "github.com/cosmos/interchain-security/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	testutil "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 

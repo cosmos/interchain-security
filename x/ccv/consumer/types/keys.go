@@ -6,7 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	utils "github.com/cosmos/interchain-security/x/ccv/utils"
+	utils "github.com/cosmos/interchain-security/v2/x/ccv/utils"
 )
 
 const (

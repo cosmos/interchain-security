@@ -9,9 +9,9 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	app "github.com/cosmos/interchain-security/app/consumer-democracy"
-	"github.com/cosmos/interchain-security/app/consumer-democracy/ante"
-	appparams "github.com/cosmos/interchain-security/app/params"
+	app "github.com/cosmos/interchain-security/v2/app/consumer-democracy"
+	"github.com/cosmos/interchain-security/v2/app/consumer-democracy/ante"
+	appparams "github.com/cosmos/interchain-security/v2/app/params"
 	"github.com/stretchr/testify/require"
 )
 

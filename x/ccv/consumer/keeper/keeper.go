@@ -12,8 +12,8 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	errorsmod "cosmossdk.io/errors"
+	tmtypes "github.com/cometbft/cometbft/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -22,14 +22,14 @@ import (
 
 	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
+	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/utils"
 )
 
 // Keeper defines the Cross-Chain Validation Consumer Keeper
 type Keeper struct {
-	storeKey         sdk.StoreKey
+	storeKey         storetypes.StoreKey
 	cdc              codec.BinaryCodec
 	paramStore       paramtypes.Subspace
 	scopedKeeper     ccv.ScopedKeeper

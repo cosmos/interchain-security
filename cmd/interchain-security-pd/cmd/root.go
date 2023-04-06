@@ -19,8 +19,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	"github.com/cosmos/interchain-security/app/params"
-	app "github.com/cosmos/interchain-security/app/provider"
+	"github.com/cosmos/interchain-security/v2/app/params"
+	app "github.com/cosmos/interchain-security/v2/app/provider"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"

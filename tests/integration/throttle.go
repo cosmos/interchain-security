@@ -7,9 +7,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibctesting"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // TestBasicSlashPacketThrottling tests slash packet throttling with a single consumer,
@@ -537,7 +537,7 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 	// Confirm total power is now 3000 once updated by staking end blocker
 	s.providerChain.NextBlock()
 	totalPower := s.providerApp.GetTestStakingKeeper().GetLastTotalPower(s.providerCtx())
-	s.Require().Equal(sdktypes.NewInt(3000), totalPower)
+	s.Require().Equal(sdk.NewInt(3000), totalPower)
 
 	// Now change replenish frac to 0.67 and fully replenish the meter.
 	params.SlashMeterReplenishFraction = "0.67"
@@ -830,7 +830,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 
 func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPower bool) {
 	sdkVal, found := s.providerApp.GetTestStakingKeeper().GetValidator(
-		s.providerCtx(), sdktypes.ValAddress(tmVal.Address))
+		s.providerCtx(), sdk.ValAddress(tmVal.Address))
 	s.Require().True(found)
 	s.Require().True(sdkVal.IsJailed())
 
@@ -843,7 +843,7 @@ func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPowe
 
 func (s *CCVTestSuite) confirmValidatorNotJailed(tmVal tmtypes.Validator, expectedPower int64) {
 	sdkVal, found := s.providerApp.GetTestStakingKeeper().GetValidator(
-		s.providerCtx(), sdktypes.ValAddress(tmVal.Address))
+		s.providerCtx(), sdk.ValAddress(tmVal.Address))
 	s.Require().True(found)
 	valPower := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(
 		s.providerCtx(), sdkVal.GetOperator())

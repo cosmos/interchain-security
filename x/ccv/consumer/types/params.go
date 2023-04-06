@@ -5,7 +5,7 @@ import (
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 const (

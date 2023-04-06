@@ -8,16 +8,15 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
+	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibctesting"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -227,10 +226,7 @@ func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.
 	if err != nil {
 		return err
 	}
-	proposal, err := govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "", paramChange.Title, paramChange.Description, proposer)
-	if err != nil {
-		return err
-	}
+
 	_, err = govKeeper.AddDeposit(ctx, proposal.Id, accounts[0].SenderAccount.GetAddress(), depositAmount) // proposal becomes active
 	if err != nil {
 		return err
@@ -245,8 +241,8 @@ func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.
 	return nil
 }
 
-func getAccountsBalances(ctx sdk.Context, bankKeeper testutil.TestBankKeeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]sdk.Int {
-	accountsBalances := map[string]sdk.Int{}
+func getAccountsBalances(ctx sdk.Context, bankKeeper testutil.TestBankKeeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]math.Int {
+	accountsBalances := map[string]math.Int{}
 	for _, acc := range accounts {
 		accountsBalances[string(acc.SenderAccount.GetAddress())] = bankKeeper.GetBalance(ctx, acc.SenderAccount.GetAddress(), bondDenom).Amount
 	}

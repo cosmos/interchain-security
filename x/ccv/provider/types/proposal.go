@@ -10,7 +10,7 @@ import (
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 const (

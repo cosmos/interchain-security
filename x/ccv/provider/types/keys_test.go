@@ -5,9 +5,9 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	cryptoutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 )
 

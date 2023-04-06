@@ -16,11 +16,11 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
+	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibctesting"
+	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -85,7 +85,7 @@ func (s *CCVTestSuite) setDefaultValSigningInfo(tmVal tmtypes.Validator) {
 	s.providerApp.GetTestSlashingKeeper().SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
 }
 
-func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
+func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) math.Int {
 	return s.providerApp.GetTestBankKeeper().GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }
 
@@ -181,7 +181,7 @@ func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 // Executes a BeginRedelegation (unbonding and redelegation) operation
 // on the provider chain using delegated funds from delAddr
 func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
-	ValDstAddr sdk.ValAddress, sharesAmount sdk.Dec) {
+	valDstAddr sdk.ValAddress, sharesAmount sdk.Dec) {
 
 	stakingKeeper := s.providerApp.GetTestStakingKeeper()
 	ctx := s.providerCtx()

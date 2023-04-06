@@ -11,14 +11,15 @@ import (
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
+	consumerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/consumer/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // The interface that any provider app must implement to be compatible with ccv integration tests.
@@ -140,10 +141,10 @@ type TestMintKeeper interface {
 }
 
 type TestGovKeeper interface {
-	GetDepositParams(ctx sdk.Context) govtypes.DepositParams
-	GetVotingParams(ctx sdk.Context) govtypes.VotingParams
-	SetVotingParams(ctx sdk.Context, votingParams govtypes.VotingParams)
-	SubmitProposal(ctx sdk.Context, content govtypes.Content) (govtypes.Proposal, error)
+	GetDepositParams(ctx sdk.Context) govv1.DepositParams
+	GetVotingParams(ctx sdk.Context) govv1.VotingParams
+	SetVotingParams(ctx sdk.Context, votingParams govv1.VotingParams)
+	SubmitProposal(ctx sdk.Context, content govv1beta1.Content) (govv1beta1.Proposal, error)
 	AddDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress, depositAmount sdk.Coins) (bool, error)
 	AddVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress, options govv1.WeightedVoteOptions, metadata string) error
 }

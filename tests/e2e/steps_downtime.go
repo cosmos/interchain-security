@@ -203,7 +203,7 @@ func stepsDowntime(consumerName string) []Step {
 			},
 		},
 
-		// TODO: Test full unbonding functionality, tracked as: https://github.com/cosmos/interchain-security/issues/311
+		// TODO: Test full unbonding functionality, tracked as: https://github.com/cosmos/interchain-security/v2/issues/311
 
 	}
 }

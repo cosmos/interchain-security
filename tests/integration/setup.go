@@ -7,15 +7,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/cosmos/ibc-go/v7/testing/mock"
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
+	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
 
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibctesting"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibctesting"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
 
 	testifysuite "github.com/stretchr/testify/suite"
 )
@@ -257,7 +257,7 @@ func (s *CCVTestSuite) SetupCCVChannel(path *ibctesting.Path) {
 }
 
 // TODO: Make SetupTransferChannel functional for multiple consumers by pattern matching SetupCCVChannel.
-// See: https://github.com/cosmos/interchain-security/issues/506
+// See: https://github.com/cosmos/interchain-security/v2/issues/506
 func (s *CCVTestSuite) SetupTransferChannel() {
 	// transfer path will use the same connection as ccv path
 

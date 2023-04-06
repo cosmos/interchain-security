@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	appparams "github.com/cosmos/interchain-security/app/params"
+	appparams "github.com/cosmos/interchain-security/v2/app/params"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -81,24 +81,24 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
-	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
-	ccvdistr "github.com/cosmos/interchain-security/x/ccv/democracy/distribution"
+	ibctestingcore "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
+	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
+	ccvdistr "github.com/cosmos/interchain-security/v2/x/ccv/democracy/distribution"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ccvstaking "github.com/cosmos/interchain-security/x/ccv/democracy/staking"
+	ccvstaking "github.com/cosmos/interchain-security/v2/x/ccv/democracy/staking"
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	ccvgov "github.com/cosmos/interchain-security/x/ccv/democracy/governance"
+	ccvgov "github.com/cosmos/interchain-security/v2/x/ccv/democracy/governance"
 
 	// add mint
 	mint "github.com/cosmos/cosmos-sdk/x/mint"
@@ -106,9 +106,9 @@ import (
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	consumer "github.com/cosmos/interchain-security/x/ccv/consumer"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumer "github.com/cosmos/interchain-security/v2/x/ccv/consumer"
+	consumerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -355,6 +355,7 @@ func New(
 		&app.ConsumerKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec,
 		keys[distrtypes.StoreKey],
@@ -845,7 +846,7 @@ func (app *App) GetTestEvidenceKeeper() testutil.TestEvidenceKeeper {
 
 // GetTestStakingKeeper implements the ConsumerApp interface.
 func (app *App) GetTestStakingKeeper() testutil.TestStakingKeeper {
-	return app.StakingKeeper
+	return app.C
 }
 
 // GetTestDistributionKeeper implements the ConsumerApp interface.

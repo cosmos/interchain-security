@@ -5,10 +5,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
-	appparams "github.com/cosmos/interchain-security/app/params"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
+	appConsumer "github.com/cosmos/interchain-security/v2/app/consumer"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/v2/app/consumer-democracy"
+	appparams "github.com/cosmos/interchain-security/v2/app/params"
+	appProvider "github.com/cosmos/interchain-security/v2/app/provider"
 )
 
 // MakeEncodingConfig creates an EncodingConfig for an amino based test configuration.

@@ -20,10 +20,10 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
 	errorsmod "cosmossdk.io/errors"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/utils"
 
 	"github.com/cometbft/cometbft/libs/log"
 )
@@ -711,7 +711,7 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateID ui
 // SetSlashAcks sets the slash acks under the given chain ID
 //
 // TODO: SlashAcks should be persisted as a list of ConsumerConsAddr types, not strings.
-// See https://github.com/cosmos/interchain-security/issues/728
+// See https://github.com/cosmos/interchain-security/v2/issues/728
 func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -730,7 +730,7 @@ func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 // GetSlashAcks returns the slash acks stored under the given chain ID
 //
 // TODO: SlashAcks should be persisted as a list of ConsumerConsAddr types, not strings.
-// See https://github.com/cosmos/interchain-security/issues/728
+// See https://github.com/cosmos/interchain-security/v2/issues/728
 func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SlashAcksKey(chainID))
@@ -766,7 +766,7 @@ func (k Keeper) DeleteSlashAcks(ctx sdk.Context, chainID string) {
 
 // AppendSlashAck appends the given slash ack to the given chain ID slash acks in store
 func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID,
-	ack string, // TODO: consumer cons addr should be accepted here, see https://github.com/cosmos/interchain-security/issues/728
+	ack string, // TODO: consumer cons addr should be accepted here, see https://github.com/cosmos/interchain-security/v2/issues/728
 ) {
 	acks := k.GetSlashAcks(ctx, chainID)
 	acks = append(acks, ack)

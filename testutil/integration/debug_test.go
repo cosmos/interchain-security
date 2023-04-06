@@ -6,11 +6,11 @@ import (
 	"reflect"
 	"testing"
 
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
-	integr "github.com/cosmos/interchain-security/tests/integration"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	appConsumer "github.com/cosmos/interchain-security/v2/app/consumer"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/v2/app/consumer-democracy"
+	appProvider "github.com/cosmos/interchain-security/v2/app/provider"
+	integr "github.com/cosmos/interchain-security/v2/tests/integration"
+	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibctesting"
 )
 
 // runCCVTestByName runs a single CCV integration test by name, using a CCVTestSuite

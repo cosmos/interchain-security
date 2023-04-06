@@ -9,7 +9,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	github_com_gogo_protobuf_types "github.com/cosmos/gogoproto/types"
-	_ "github.com/cosmos/interchain-security/x/ccv/types"
+	_ "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	_ "github.com/regen-network/cosmos-proto"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
@@ -34,7 +34,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // Params defines the parameters for CCV consumer module
 type Params struct {
 	// TODO: Remove enabled flag and find a better way to setup integration tests
-	// See: https://github.com/cosmos/interchain-security/issues/339
+	// See: https://github.com/cosmos/interchain-security/v2/issues/339
 	Enabled bool `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	///////////////////////
 	// Distribution Params

@@ -7,8 +7,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	utils "github.com/cosmos/interchain-security/x/ccv/utils"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	utils "github.com/cosmos/interchain-security/v2/x/ccv/utils"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"

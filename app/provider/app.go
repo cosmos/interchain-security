@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	appparams "github.com/cosmos/interchain-security/app/params"
+	appparams "github.com/cosmos/interchain-security/v2/app/params"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -86,8 +86,8 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
-	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	ibctestingcore "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
 
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -98,11 +98,11 @@ import (
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 
-	ibcprovider "github.com/cosmos/interchain-security/x/ccv/provider"
-	ibcproviderkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ibcprovider "github.com/cosmos/interchain-security/v2/x/ccv/provider"
+	ibcproviderkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
+	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -822,7 +822,7 @@ func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 
 // GetTxConfig implements the TestingApp interface.
 func (app *App) GetTxConfig() client.TxConfig {
-	return MakeTestEncodingConfig().TxConfig
+	return makeEncodingConfig().TxConfig
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided

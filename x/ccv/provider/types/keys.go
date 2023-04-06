@@ -8,7 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ccvutils "github.com/cosmos/interchain-security/x/ccv/utils"
+	ccvutils "github.com/cosmos/interchain-security/v2/x/ccv/utils"
 )
 
 type Status int

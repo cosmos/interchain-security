@@ -9,13 +9,13 @@ import (
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 
 	tmtypes "github.com/cometbft/cometbft/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	keepertestutil "github.com/cosmos/interchain-security/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	keepertestutil "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -262,10 +262,10 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 
 // TestHandleSlashPacketDowntime tests the handling of a downtime related slash packet, with integration tests.
 // Note that only downtime slash packets are processed by HandleSlashPacket.
-func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
-	providerKeeper := suite.providerApp.GetProviderKeeper()
-	providerSlashingKeeper := suite.providerApp.GetTestSlashingKeeper()
-	providerStakingKeeper := suite.providerApp.GetTestStakingKeeper()
+func (s *CCVTestSuite) TestHandleSlashPacketDowntime() {
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	providerSlashingKeeper := s.providerApp.GetTestSlashingKeeper()
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 	tmVal := s.providerChain.Vals.Validators[0]
 	consAddr := sdk.ConsAddress(tmVal.Address)
@@ -302,11 +302,11 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 }
 
 // TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an integration testing setting
-func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
+func (s *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
-	providerKeeper := suite.providerApp.GetProviderKeeper()
-	providerSlashingKeeper := suite.providerApp.GetTestSlashingKeeper()
-	firstBundle := suite.getFirstBundle()
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	providerSlashingKeeper := s.providerApp.GetTestSlashingKeeper()
+	firstBundle := s.getFirstBundle()
 	consumerChainID := firstBundle.Chain.ChainID
 
 	s.SetupAllCCVChannels()
@@ -375,7 +375,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	// Expect no error ack if validator does not exist
 	// TODO: this behavior should be changed to return an error ack,
-	// see: https://github.com/cosmos/interchain-security/issues/546
+	// see: https://github.com/cosmos/interchain-security/v2/issues/546
 	ack := providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
 	s.Require().True(ack.Success())
 
@@ -427,9 +427,9 @@ func (s *CCVTestSuite) TestValidatorDowntime() {
 	s.SetupCCVChannel(s.path)
 	s.SendEmptyVSCPacket()
 
-	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
-	consumerSlashingKeeper := suite.consumerApp.GetTestSlashingKeeper()
-	consumerIBCKeeper := suite.consumerApp.GetIBCKeeper()
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
+	consumerSlashingKeeper := s.consumerApp.GetTestSlashingKeeper()
+	consumerIBCKeeper := s.consumerApp.GetIBCKeeper()
 
 	// sync suite context after CCV channel is established
 	ctx := s.consumerCtx()
@@ -551,7 +551,7 @@ func (s *CCVTestSuite) TestValidatorDoubleSigning() {
 	}
 
 	// add validator signing-info to the store
-	suite.consumerApp.GetTestSlashingKeeper().SetValidatorSigningInfo(ctx, consAddr, slashingtypes.ValidatorSigningInfo{
+	s.consumerApp.GetTestSlashingKeeper().SetValidatorSigningInfo(ctx, consAddr, slashingtypes.ValidatorSigningInfo{
 		Address:    consAddr.String(),
 		Tombstoned: false,
 	})
@@ -570,7 +570,7 @@ func (s *CCVTestSuite) TestValidatorDoubleSigning() {
 	expCommit := s.commitSlashPacket(ctx, *packetData)
 
 	// expect to send slash packet when handling double-sign evidence
-	suite.consumerApp.GetTestEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
+	s.consumerApp.GetTestEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
 
 	// check slash packet is queued
 	pendingPackets := s.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)

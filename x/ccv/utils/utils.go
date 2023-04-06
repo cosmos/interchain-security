@@ -13,7 +13,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci.ValidatorUpdate {

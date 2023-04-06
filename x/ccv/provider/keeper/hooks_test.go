@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	cryptotestutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
 	"github.com/golang/mock/gomock"
 )
 
