@@ -150,7 +150,7 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 // Panic if the provider's channel was established and then closed
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	// Set largest soft opt out validator power
-	am.keeper.SetLargestSoftOptOutValidatorPower(ctx)
+	am.keeper.UpdateLargestSoftOptOutValidatorPower(ctx)
 
 	channelID, found := am.keeper.GetProviderChannel(ctx)
 	if found && am.keeper.IsChannelClosed(ctx, channelID) {

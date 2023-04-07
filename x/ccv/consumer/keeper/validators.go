@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"encoding/binary"
 	"sort"
 	"time"
 
@@ -101,12 +102,15 @@ func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.V
 	return stakingtypes.Validator{}
 }
 
-const OPT_OUT_PERCENTAGE = "0.05"
+func (k Keeper) SetLargestSoftOptOutValidatorPower(ctx sdk.Context, power uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.LargestSoftOptOutValidatorPowerKey(), sdk.Uint64ToBigEndian(power))
+}
 
-// SetLargestSoftOptOutValidatorPower sets the largest validator power that is allowed to soft opt out
+// UpdateLargestSoftOptOutValidatorPower sets the largest validator power that is allowed to soft opt out
 // This is the largest validator power such that the sum of the power of all validators with a lower or equal power
 // is less than 5% of the total power of all validators
-func (k Keeper) SetLargestSoftOptOutValidatorPower(ctx sdk.Context) int64 {
+func (k Keeper) UpdateLargestSoftOptOutValidatorPower(ctx sdk.Context) {
 	// get all validators
 	valset := k.GetAllCCValidator(ctx)
 
@@ -124,25 +128,26 @@ func (k Keeper) SetLargestSoftOptOutValidatorPower(ctx sdk.Context) int64 {
 	// get power of the biggest validator who is allowed to soft opt out
 	powerSum := sdk.ZeroDec()
 	for _, val := range valset {
-		// if powerSum / totalPower > OPT_OUT_PERCENTAGE
-		if powerSum.Quo(totalPower).GT(sdk.MustNewDecFromStr(OPT_OUT_PERCENTAGE)) {
-			return val.Power
+		// if powerSum / totalPower > SoftOptOutThreshold
+		if powerSum.Quo(totalPower).GT(sdk.MustNewDecFromStr(k.GetSoftOptOutThreshold(ctx))) {
+			// set largestSoftOptOutValidatorPower to the power of this validator
+			k.SetLargestSoftOptOutValidatorPower(ctx, uint64(val.Power))
+			return
 		}
 		powerSum = powerSum.Add(sdk.NewDecFromInt(sdk.NewInt(val.Power)))
 	}
-	// This will be hit if the OPT_OUT_PERCENTAGE param is greater than 1
+	// This will be hit if the SoftOptOutThreshold param is greater than 1
 	panic("unreachable")
 }
 
 // GetLargestSoftOptOutValidatorPower returns the largest validator power that is allowed to soft opt out
 func (k Keeper) GetLargestSoftOptOutValidatorPower(ctx sdk.Context) int64 {
-	// store := ctx.KVStore(k.storeKey)
-	// bz := store.Get(types.LargestSoftOptOutValidatorPowerKey)
-	// if bz == nil {
-	// 	return 0
-	// }
-	// return int64(binary.BigEndian.Uint64(bz))
-	return 0
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.LargestSoftOptOutValidatorPowerKey())
+	if bz == nil {
+		return 0
+	}
+	return int64(binary.BigEndian.Uint64(bz))
 }
 
 // Slash queues a slashing request for the the provider chain

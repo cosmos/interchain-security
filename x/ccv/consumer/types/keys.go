@@ -80,6 +80,10 @@ const (
 	// CrossChainValidatorPrefix is the byte prefix that will store cross-chain validators by consensus address
 	CrossChainValidatorBytePrefix
 
+	// LargestSoftOptOutValidatorPowerByteKey is the byte key that will store the power of the largest validator that is
+	// allowed to soft opt out
+	LargestSoftOptOutValidatorPowerByteKey
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -171,6 +175,11 @@ func OutstandingDowntimeKey(address sdk.ConsAddress) []byte {
 // CrossChainValidatorKey returns the key to a cross chain validator by consensus address
 func CrossChainValidatorKey(addr []byte) []byte {
 	return append([]byte{CrossChainValidatorBytePrefix}, addr...)
+}
+
+// LargestSoftOptOutValidatorPowerKey returns the key to the power of the largest validator that is allowed to soft opt out
+func LargestSoftOptOutValidatorPowerKey() []byte {
+	return []byte{LargestSoftOptOutValidatorPowerByteKey}
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go

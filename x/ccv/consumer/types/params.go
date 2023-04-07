@@ -35,6 +35,9 @@ const (
 	// than the default unbonding period on the provider, where the provider uses
 	// the staking module default.
 	DefaultConsumerUnbondingPeriod = stakingtypes.DefaultUnbondingTime - 24*time.Hour
+
+	// By default, the bottom 5% of the validator set can opt out of validating consumer chains
+	DefaultSoftOptOutThreshold = "0.05"
 )
 
 // Reflection based keys for params subspace
@@ -88,6 +91,7 @@ func DefaultParams() Params {
 		DefaultConsumerRedistributeFrac,
 		DefaultHistoricalEntries,
 		DefaultConsumerUnbondingPeriod,
+		DefaultSoftOptOutThreshold,
 	)
 }
 
@@ -118,6 +122,9 @@ func (p Params) Validate() error {
 		return err
 	}
 	if err := ccvtypes.ValidateDuration(p.UnbondingPeriod); err != nil {
+		return err
+	}
+	if err := ccvtypes.ValidateStringFraction(p.SoftOptOutThreshold); err != nil {
 		return err
 	}
 	return nil

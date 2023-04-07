@@ -36,6 +36,7 @@ func getAllKeyPrefixes() []byte {
 		HeightValsetUpdateIDBytePrefix,
 		OutstandingDowntimeBytePrefix,
 		CrossChainValidatorBytePrefix,
+		LargestSoftOptOutValidatorPowerByteKey,
 	}
 }
 
@@ -67,5 +68,6 @@ func getAllFullyDefinedKeys() [][]byte {
 		HeightValsetUpdateIDKey(0),
 		OutstandingDowntimeKey([]byte{}),
 		CrossChainValidatorKey([]byte{}),
+		LargestSoftOptOutValidatorPowerKey(),
 	}
 }

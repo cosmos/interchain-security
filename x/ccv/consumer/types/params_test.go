@@ -19,47 +19,59 @@ func TestValidateParams(t *testing.T) {
 		{"default params", consumertypes.DefaultParams(), true},
 		{
 			"custom valid params",
-			consumertypes.NewParams(true, 5, "", "", 1004, 1005, "0.5", 1000, 24*21*time.Hour), true,
+			consumertypes.NewParams(true, 5, "", "", 1004, 1005, "0.5", 1000, 24*21*time.Hour, "0.05"), true,
 		},
 		{
 			"custom invalid params, block per dist transmission",
-			consumertypes.NewParams(true, -5, "", "", 5, 1005, "0.5", 1000, 24*21*time.Hour), false,
+			consumertypes.NewParams(true, -5, "", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "0.05"), false,
 		},
 		{
 			"custom invalid params, dist transmission channel",
-			consumertypes.NewParams(true, 5, "badchannel/", "", 5, 1005, "0.5", 1000, 24*21*time.Hour), false,
+			consumertypes.NewParams(true, 5, "badchannel/", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "0.05"), false,
 		},
 		{
 			"custom invalid params, provider fee pool addr string",
-			consumertypes.NewParams(true, 5, "", "imabadaddress", 5, 1005, "0.5", 1000, 24*21*time.Hour), false,
+			consumertypes.NewParams(true, 5, "", "imabadaddress", 5, 1005, "0.5", 1000, 24*21*time.Hour, "0.05"), false,
 		},
 		{
 			"custom invalid params, ccv timeout",
-			consumertypes.NewParams(true, 5, "", "", -5, 1005, "0.5", 1000, 24*21*time.Hour), false,
+			consumertypes.NewParams(true, 5, "", "", -5, 1005, "0.5", 1000, 24*21*time.Hour, "0.05"), false,
 		},
 		{
 			"custom invalid params, transfer timeout",
-			consumertypes.NewParams(true, 5, "", "", 1004, -7, "0.5", 1000, 24*21*time.Hour), false,
+			consumertypes.NewParams(true, 5, "", "", 1004, -7, "0.5", 1000, 24*21*time.Hour, "0.05"), false,
 		},
 		{
 			"custom invalid params, consumer redist fraction is negative",
-			consumertypes.NewParams(true, 5, "", "", 5, 1005, "-0.5", 1000, 24*21*time.Hour), false,
+			consumertypes.NewParams(true, 5, "", "", 5, 1005, "-0.5", 1000, 24*21*time.Hour, "0.05"), false,
 		},
 		{
 			"custom invalid params, consumer redist fraction is over 1",
-			consumertypes.NewParams(true, 5, "", "", 5, 1005, "1.2", 1000, 24*21*time.Hour), false,
+			consumertypes.NewParams(true, 5, "", "", 5, 1005, "1.2", 1000, 24*21*time.Hour, "0.05"), false,
 		},
 		{
 			"custom invalid params, bad consumer redist fraction ",
-			consumertypes.NewParams(true, 5, "", "", 5, 1005, "notFrac", 1000, 24*21*time.Hour), false,
+			consumertypes.NewParams(true, 5, "", "", 5, 1005, "notFrac", 1000, 24*21*time.Hour, "0.05"), false,
 		},
 		{
 			"custom invalid params, negative num historical entries",
-			consumertypes.NewParams(true, 5, "", "", 5, 1005, "0.5", -100, 24*21*time.Hour), false,
+			consumertypes.NewParams(true, 5, "", "", 5, 1005, "0.5", -100, 24*21*time.Hour, "0.05"), false,
 		},
 		{
 			"custom invalid params, negative unbonding period",
-			consumertypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, -24*21*time.Hour), false,
+			consumertypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, -24*21*time.Hour, "0.05"), false,
+		},
+		{
+			"custom invalid params, soft opt out threshold is negative",
+			consumertypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "-0.05"), false,
+		},
+		{
+			"custom invalid params, soft opt out threshold is over 1",
+			consumertypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "1.05"), false,
+		},
+		{
+			"custom invalid params, bad soft opt out threshold ",
+			consumertypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "nickelback"), false,
 		},
 	}
 

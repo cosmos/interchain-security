@@ -21,6 +21,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetConsumerRedistributionFrac(ctx),
 		k.GetHistoricalEntries(ctx),
 		k.GetUnbondingPeriod(ctx),
+		k.GetSoftOptOutThreshold(ctx),
 	)
 }
 
