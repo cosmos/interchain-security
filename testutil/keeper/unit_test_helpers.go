@@ -195,6 +195,18 @@ func GenPubKey() (crypto.PubKey, error) {
 	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
 }
 
+// Generates a public key for unit tests (abiding by tricky interface implementations from tm/sdk) or panics
+func MustGenPubKey() crypto.PubKey {
+	privKey := PrivateKey{ed25519.GenPrivKey()}
+	key, err := cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
+
+	if err != nil {
+		panic(err)
+	}
+
+	return key
+}
+
 // Obtains slash packet data with a newly generated key, and randomized field values
 func GetNewSlashPacketData() types.SlashPacketData {
 	b1 := make([]byte, 8)

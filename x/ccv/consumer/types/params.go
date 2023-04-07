@@ -150,6 +150,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.HistoricalEntries, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyConsumerUnbondingPeriod,
 			p.UnbondingPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(KeySoftOptOutThreshold,
+			p.SoftOptOutThreshold, ccvtypes.ValidateStringFraction),
 	}
 }
 
