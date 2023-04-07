@@ -178,6 +178,11 @@ func (k Keeper) ChannelOpenInit(ctx sdk.Context, msg *channeltypes.MsgChannelOpe
 	return k.ibcCoreKeeper.ChannelOpenInit(sdk.WrapSDKContext(ctx), msg)
 }
 
+func (k Keeper) TransferChannelExists(ctx sdk.Context, channelID string) bool {
+	_, found := k.channelKeeper.GetChannel(ctx, transfertypes.PortID, channelID)
+	return found
+}
+
 func (k Keeper) GetConnectionHops(ctx sdk.Context, srcPort, srcChan string) ([]string, error) {
 	ch, found := k.channelKeeper.GetChannel(ctx, srcPort, srcChan)
 	if !found {

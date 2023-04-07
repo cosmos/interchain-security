@@ -607,3 +607,17 @@ func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...ccv.ConsumerPacke
 	list := append(pending.GetList(), packet...)
 	k.SetPendingPackets(ctx, ccv.ConsumerPacketDataList{List: list})
 }
+
+// SetStandaloneTransferChannelID sets the channelID of an existing transfer channel,
+// for a chain which used to be a standalone chain.
+func (k Keeper) SetStandaloneTransferChannelID(ctx sdk.Context, channelID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.StandaloneTransferChannelIDKey(), []byte(channelID))
+}
+
+// GetStandaloneTransferChannelID returns the channelID of an existing transfer channel,
+// for a chain which used to be a standalone chain.
+func (k Keeper) GetStandaloneTransferChannelID(ctx sdk.Context) string {
+	store := ctx.KVStore(k.storeKey)
+	return string(store.Get(types.StandaloneTransferChannelIDKey()))
+}

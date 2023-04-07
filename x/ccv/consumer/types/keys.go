@@ -65,6 +65,10 @@ const (
 	// LastStandaloneHeightByteKey is the byte that will store last standalone height
 	LastStandaloneHeightByteKey
 
+	// StandaloneTransferChannelIDByteKey is the byte storing the channelID of transfer channel
+	// that existed from a standalone chain changing over to a consumer
+	StandaloneTransferChannelIDByteKey
+
 	// HistoricalInfoKey is the byte prefix that will store the historical info for a given height
 	HistoricalInfoBytePrefix
 
@@ -134,6 +138,12 @@ func InitialValSetKey() []byte {
 
 func LastStandaloneHeightKey() []byte {
 	return []byte{LastStandaloneHeightByteKey}
+}
+
+// StandaloneTransferChannelIDKey returns the key to the transfer channelID that existed from a standalone chain
+// changing over to a consumer
+func StandaloneTransferChannelIDKey() []byte {
+	return []byte{StandaloneTransferChannelIDByteKey}
 }
 
 // HistoricalInfoKey returns the key to historical info to a given block height
