@@ -428,8 +428,7 @@ func New(
 	)
 
 	// Setting the standalone staking keeper is only needed for standalone to consumer changeover chains
-	// We do not set the keeper here since this app.go was originally designed as a normal democracry consumer.
-	// app.ConsumerKeeper.SetStandaloneStakingKeeper(app.StakingKeeper)
+	app.ConsumerKeeper.SetStandaloneStakingKeeper(app.StakingKeeper)
 
 	// consumer keeper satisfies the staking keeper interface
 	// of the slashing module

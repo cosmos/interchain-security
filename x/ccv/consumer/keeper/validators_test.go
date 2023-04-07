@@ -128,8 +128,8 @@ func TestIsValidatorJailed(t *testing.T) {
 	consumerKeeper.SetStandaloneStakingKeeper(mocks.MockStakingKeeper)
 	require.True(t, consumerKeeper.IsPrevStandaloneChain())
 
-	// Set LastStandaloneHeight to current block height so that ChangeoverIsComplete() is false
-	consumerKeeper.SetLastStandaloneHeight(ctx, ctx.BlockHeight())
+	// Set init genesis height to current block height so that ChangeoverIsComplete() is false
+	consumerKeeper.SetInitGenesisHeight(ctx, ctx.BlockHeight())
 	require.False(t, consumerKeeper.ChangeoverIsComplete(ctx))
 
 	// At this point, the state of the consumer keeper is s.t. IsValidatorJailed() queries the standalone staking keeper
@@ -179,8 +179,8 @@ func TestSlash(t *testing.T) {
 		ctx, []byte{0x01, 0x02, 0x03}, infractionHeight, int64(6),
 		sdk.MustNewDecFromStr("0.05"), stakingtypes.Downtime).Times(1)
 
-	// Also setup last standalone height s.t. infraction height is before first consumer height
-	consumerKeeper.SetLastStandaloneHeight(ctx, 4)
+	// Also setup init genesis height s.t. infraction height is before first consumer height
+	consumerKeeper.SetInitGenesisHeight(ctx, 4)
 	require.Equal(t, consumerKeeper.FirstConsumerHeight(ctx), int64(6))
 
 	consumerKeeper.Slash(ctx, []byte{0x01, 0x02, 0x03}, infractionHeight, 6,

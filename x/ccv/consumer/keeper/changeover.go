@@ -13,11 +13,11 @@ func (k Keeper) ChangeoverIsComplete(ctx sdk.Context) bool {
 	return ctx.BlockHeight() >= k.FirstConsumerHeight(ctx)
 }
 
-// The first height that the ccv valset will be in effect is 2 blocks after last standalone height
-// (aka height that the ccv module first returned updates to tendermint), because the new valset is committed
-// in block N+1, and in effect for block N+2.
+// The first height that the ccv valset will be in effect is 2 blocks after init genesis height
+// (aka height that the ccv module first returned updates to tendermint), because if init genesis is block N,
+// the new valset is committed in block N+1, and in effect for block N+2.
 func (k Keeper) FirstConsumerHeight(ctx sdk.Context) int64 {
-	return k.GetLastStandaloneHeight(ctx) + 2
+	return k.GetInitGenesisHeight(ctx) + 2
 }
 
 // ChangeoverToConsumer includes the logic that needs to execute during the process of a
@@ -27,10 +27,8 @@ func (k Keeper) FirstConsumerHeight(ctx sdk.Context) int64 {
 // that will be given to tendermint, which allows the consumer chain to
 // start using the provider valset, while the standalone valset is given zero voting power where appropriate.
 func (k Keeper) ChangeoverToConsumer(ctx sdk.Context) (initialValUpdates []abci.ValidatorUpdate) {
-	initialValUpdates = k.GetInitialValSet(ctx)
-	// set last standalone height
-	k.SetLastStandaloneHeight(ctx, ctx.BlockHeight())
 	// populate cross chain validators states with initial valset
+	initialValUpdates = k.GetInitialValSet(ctx)
 	k.ApplyCCValidatorChanges(ctx, initialValUpdates)
 
 	// Add validator updates to initialValUpdates, such that the "old" validators returned from standalone staking module

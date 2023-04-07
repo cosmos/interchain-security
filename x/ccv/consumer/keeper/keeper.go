@@ -260,7 +260,7 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store.Delete(types.PendingChangesKey())
 }
 
-func (k Keeper) GetLastStandaloneHeight(ctx sdk.Context) int64 {
+func (k Keeper) GetInitGenesisHeight(ctx sdk.Context) int64 {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.LastStandaloneHeightKey())
 	if bz == nil {
@@ -270,7 +270,7 @@ func (k Keeper) GetLastStandaloneHeight(ctx sdk.Context) int64 {
 	return int64(height)
 }
 
-func (k Keeper) SetLastStandaloneHeight(ctx sdk.Context, height int64) {
+func (k Keeper) SetInitGenesisHeight(ctx sdk.Context, height int64) {
 	bz := sdk.Uint64ToBigEndian(uint64(height))
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.LastStandaloneHeightKey(), bz)
