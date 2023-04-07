@@ -18,7 +18,7 @@ Additionally, you can check the [testnet repo](https://github.com/cosmos/testnet
 
 To help validators and other node runners onboard onto your chain, please prepare a repository with information on how to run your chain.
 
-This should include (at minumum):
+This should include (at minimum):
 
 - [ ] genesis.json witout CCV data (before the propsal passes)
 - [ ] genesis.json with CCV data (after spawn time passes)

@@ -37,7 +37,7 @@ Consumer chain team initializes the chain genesis.json and prepares binaries whi
 Consumer chain team (or their advocates) submits a `ConsumerAdditionProposal`.
 The most important parameters for validators are:
 - `spawn_time` - the time after which the consumer chain must be started
-- `genesis_hash` - hash of the pre-ccv genesis.json; the file does not contain any validator info -> the infomation is available only after the proposal is passed and `spawn_time` is reached
+- `genesis_hash` - hash of the pre-ccv genesis.json; the file does not contain any validator info -> the information is available only after the proposal is passed and `spawn_time` is reached
 - `binary_hash` - hash of the consumer chain binary used to validate the software builds
 
 ### 4. CCV Genesis state generation
@@ -80,7 +80,7 @@ hermes start
 ```
 
 ## Downtime Infractions
-At present, the consumer chain can report evidence about downtime infracations to the provider chain. The `min_signed_per_window` and `signed_blocks_window` can be different on each consumer chain and are subject to changes via consumer chain governance.
+At present, the consumer chain can report evidence about downtime infractions to the provider chain. The `min_signed_per_window` and `signed_blocks_window` can be different on each consumer chain and are subject to changes via consumer chain governance.
 
 :::info
 Causing a downtime infraction on any consumer chain will not incur a slash penalty. Instead, the offending validator will be jailed on the provider chain and consequently on all consumer chains.
