@@ -196,13 +196,6 @@ func SetCCValidators(tb testing.TB, consumerKeeper keeper.Keeper,
 // Soft opt out allows the bottom 5% of validators in the set to opt out. UpdateLargestSoftOptOutValidatorPower
 // should update the largest soft opt out validator power to the power of the largest validator which is allowed to opt out
 func TestUpdateLargestSoftOptOutValidatorPower(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	// Explicitly register cdc with public key interface
-	keeperParams.RegisterSdkCryptoCodecInterfaces()
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
-	consumerKeeper.SetParams(ctx, types.DefaultParams())
-	defer ctrl.Finish()
-
 	testCases := []struct {
 		name string
 		// validators to set in store
@@ -211,31 +204,39 @@ func TestUpdateLargestSoftOptOutValidatorPower(t *testing.T) {
 		expLargestSoftOptOutValidatorPower int64
 	}{
 		{
-			name: "1",
+			name: "One",
 			validators: []*tmtypes.Validator{
 				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
 				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
 				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
 				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 3),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 14),
-			},
-			expLargestSoftOptOutValidatorPower: 1,
-		},
-		{
-			name: "2",
-			validators: []*tmtypes.Validator{
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 3),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 100),
+				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 49),
+				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 51),
 			},
 			expLargestSoftOptOutValidatorPower: 3,
+		},
+		{
+			name: "Two",
+			validators: []*tmtypes.Validator{
+				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
+				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
+				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
+				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 3),
+				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 500),
+			},
+			expLargestSoftOptOutValidatorPower: 500,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			keeperParams := testkeeper.NewInMemKeeperParams(t)
+			// Explicitly register cdc with public key interface
+			keeperParams.RegisterSdkCryptoCodecInterfaces()
+			consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+			consumerKeeper.SetParams(ctx, types.DefaultParams())
+			defer ctrl.Finish()
+
 			// set validators in store
 			SetCCValidators(t, consumerKeeper, ctx, tc.validators)
 
@@ -243,7 +244,7 @@ func TestUpdateLargestSoftOptOutValidatorPower(t *testing.T) {
 			consumerKeeper.UpdateLargestSoftOptOutValidatorPower(ctx)
 
 			// expect largest soft opt out validator power to be updated
-			require.Equal(t, tc.expLargestSoftOptOutValidatorPower, consumerKeeper.GetLargestSoftOptOutValidatorPower(ctx))
+			require.Equal(t, tc.expLargestSoftOptOutValidatorPower, consumerKeeper.GetSoftOptOutThresholdPower(ctx))
 		})
 	}
 }
