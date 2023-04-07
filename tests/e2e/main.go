@@ -35,6 +35,13 @@ var (
 func main() {
 	flag.Parse()
 
+	if true {
+		fmt.Println("=============== running soft opt out ===============")
+		tr := DefaultTestRun()
+		tr.Run(softOptOutSteps, *localSdkPath, *useGaia, *gaiaTag)
+		return
+	}
+
 	if happyPathOnly != nil && *happyPathOnly {
 		fmt.Println("=============== running happy path only ===============")
 		tr := DefaultTestRun()

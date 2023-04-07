@@ -1,5 +1,7 @@
 package main
 
+import clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+
 type Step struct {
 	action interface{}
 	state  State
@@ -51,4 +53,167 @@ var multipleConsumers = concatSteps(
 	stepsMultiConsumerDowntimeFromConsumer("consu", "densu"),
 	stepsMultiConsumerDowntimeFromProvider("consu", "densu"),
 	stepsMultiConsumerDoubleSign("consu", "densu"), // double sign on one of the chains
+)
+
+var softOptOutSteps = concatSteps(
+	[]Step{
+		{
+			action: StartChainAction{
+				chain: chainID("provi"),
+				validators: []StartChainValidator{
+					{id: validatorID("bob"), stake: 10000000, allocation: 10000000000},
+					{id: validatorID("alice"), stake: 500000000, allocation: 10000000000},
+					{id: validatorID("carol"), stake: 500000000, allocation: 10000000000},
+				},
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValBalances: &map[validatorID]uint{
+						validatorID("alice"): 9900000000,
+						validatorID("bob"):   9500000000,
+						validatorID("carol"): 9500000000,
+					},
+				},
+			},
+		},
+		{
+			action: submitConsumerAdditionProposalAction{
+				chain:         chainID("provi"),
+				from:          validatorID("alice"),
+				deposit:       10000001,
+				consumerChain: chainID("consu"),
+				spawnTime:     0,
+				initialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: ConsumerAdditionProposal{
+							Deposit:       10000001,
+							Chain:         chainID("consu"),
+							SpawnTime:     0,
+							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+							Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
+						},
+					},
+				},
+			},
+		},
+		{
+			action: voteGovProposalAction{
+				chain:      chainID("provi"),
+				from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
+				vote:       []string{"yes", "yes", "yes"},
+				propNumber: 1,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: ConsumerAdditionProposal{
+							Deposit:       10000001,
+							Chain:         chainID("consu"),
+							SpawnTime:     0,
+							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+							Status:        "PROPOSAL_STATUS_PASSED",
+						},
+					},
+				},
+			},
+		},
+		{
+			action: startConsumerChainAction{
+				consumerChain: chainID("consu"),
+				providerChain: chainID("provi"),
+				validators: []StartChainValidator{
+					{id: validatorID("bob"), stake: 10000000, allocation: 10000000000},
+					{id: validatorID("alice"), stake: 500000000, allocation: 10000000000},
+					{id: validatorID("carol"), stake: 500000000, allocation: 10000000000},
+				},
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValBalances: &map[validatorID]uint{
+						validatorID("alice"): 9900000000,
+						validatorID("bob"):   9500000000,
+						validatorID("carol"): 9500000000,
+					},
+				},
+				chainID("consu"): ChainState{
+					ValBalances: &map[validatorID]uint{
+						validatorID("alice"): 10000000000,
+						validatorID("bob"):   10000000000,
+						validatorID("carol"): 10000000000,
+					},
+				},
+			},
+		},
+		{
+			action: addIbcConnectionAction{
+				chainA:  chainID("consu"),
+				chainB:  chainID("provi"),
+				clientA: 0,
+				clientB: 1,
+			},
+			state: State{},
+		},
+		{
+			action: addIbcChannelAction{
+				chainA:      chainID("consu"),
+				chainB:      chainID("provi"),
+				connectionA: 0,
+				portA:       "consumer", // TODO: check port mapping
+				portB:       "provider",
+				order:       "ordered",
+			},
+			state: State{},
+		},
+		{
+			action: downtimeSlashAction{
+				chain:     chainID("consu"),
+				validator: validatorID("alice"),
+			},
+			state: State{
+				// validator should be slashed on consumer, powers not affected on either chain yet
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   500,
+						validatorID("carol"): 501,
+					},
+				},
+				chainID("consu"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   500,
+						validatorID("carol"): 501,
+					},
+				},
+			},
+		},
+		{
+			action: relayPacketsAction{
+				chain:   chainID("provi"),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 10,
+						// Downtime jailing and corresponding voting power change is not processed by provider
+						// because alice is smaller than the threshold
+						validatorID("bob"):   500,
+						validatorID("carol"): 501,
+					},
+				},
+				chainID("consu"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   500,
+						validatorID("carol"): 501,
+					},
+				},
+			},
+		},
+	},
 )
