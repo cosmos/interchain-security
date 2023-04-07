@@ -47,6 +47,7 @@ var (
 	KeyConsumerRedistributionFrac        = []byte("ConsumerRedistributionFraction")
 	KeyHistoricalEntries                 = []byte("HistoricalEntries")
 	KeyConsumerUnbondingPeriod           = []byte("UnbondingPeriod")
+	KeySoftOptOutThreshold               = []byte("SoftOptOutThreshold")
 )
 
 // ParamKeyTable type declaration for parameters
@@ -59,7 +60,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
 	ccvTimeoutPeriod time.Duration, transferTimeoutPeriod time.Duration,
 	consumerRedistributionFraction string, historicalEntries int64,
-	consumerUnbondingPeriod time.Duration,
+	consumerUnbondingPeriod time.Duration, softOptOutThreshold string,
 ) Params {
 	return Params{
 		Enabled:                           enabled,
@@ -71,6 +72,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		ConsumerRedistributionFraction:    consumerRedistributionFraction,
 		HistoricalEntries:                 historicalEntries,
 		UnbondingPeriod:                   consumerUnbondingPeriod,
+		SoftOptOutThreshold:               softOptOutThreshold,
 	}
 }
 

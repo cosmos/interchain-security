@@ -52,6 +52,11 @@ message Params {
   // which should be smaller than that of the provider in general.
   google.protobuf.Duration unbonding_period = 9
       [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // The threshold for the percentage of validators at the bottom of the set who
+  // can opt out of running the consumer chain without being punished. For example, a
+  // value of 5% means that the validators in the smallest 5% of the set can opt out
+  string soft_opt_out_threshold = 10;
 }
 
 // LastTransmissionBlockHeight is the last time validator holding
