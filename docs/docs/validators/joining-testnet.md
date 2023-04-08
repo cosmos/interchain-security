@@ -89,7 +89,7 @@ $: touch statesync.sh
 $ chmod 700 statesync.sh # make executable
 ```
 
-Paste the following intructions into the `statesync.sh`:
+Paste the following instructions into the `statesync.sh`:
 
 ```bash
 #!/bin/bash
