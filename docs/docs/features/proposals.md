@@ -54,7 +54,7 @@ When proposals of this type are passed, the consumer chain in question will be g
 After the consumer chain removal, the chain in question will no longer be secured by the provider's validator set.
 
 :::info
-The chain in question my continue to produce blocks, but the validator set can no longer be slashed for any infractions commited on that chain.
+The chain in question my continue to produce blocks, but the validator set can no longer be slashed for any infractions committed on that chain.
 Additional steps are required to completely offboard a consumer chain, such as re-introducing the staking module and removing the provider's validators from the active set.
 More information will be made available in the [Consumer Offboarding Checklist](../consumer-development/offboarding.md).
 :::
@@ -74,7 +74,7 @@ Minimal example:
 ## `EquivocationProposal`
 :::tip
 `EquivocationProposal` will only be accepted on the provider chain if at least one of the consumer chains submits equivocation evidence to the provider.
-Sending equivocation evidece to the provider is handled automatically by the interchain security protocol when an equivocation infraction is detected on the consumer chain.
+Sending equivocation evidence to the provider is handled automatically by the interchain security protocol when an equivocation infraction is detected on the consumer chain.
 :::
 
 Proposal type used to suggest slashing a validator for double signing on consumer chain.
@@ -82,7 +82,7 @@ When proposals of this type are passed, the validator in question will be slashe
 
 :::warning
 Take note that an equivocation slash causes a validator to be tombstoned (can never re-enter the active set).
-Tomstoning a validator on the provider chain will remove the validator from the validator set of all consumer chains.
+Tombstoning a validator on the provider chain will remove the validator from the validator set of all consumer chains.
 :::
 
 Minimal example:
