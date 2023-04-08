@@ -6,7 +6,6 @@ import (
 )
 
 func (suite *CCVTestSuite) TestRecycleTransferChannel() {
-
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 
 	// Only create a connection between consumer and provider
