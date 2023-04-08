@@ -140,7 +140,7 @@ func (am AppModule) OnChanOpenAck(
 	// Initialize distribution token transfer channel
 
 	// First check if an existing transfer channel exists, if this consumer was a previously standalone chain.
-	if am.keeper.IsPrevStandaloneChain() {
+	if am.keeper.IsPrevStandaloneChain(ctx) {
 		transChannelID := am.keeper.GetStandaloneTransferChannelID(ctx)
 		found := am.keeper.TransferChannelExists(ctx, transChannelID)
 		if found {

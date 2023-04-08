@@ -69,6 +69,9 @@ const (
 	// that existed from a standalone chain changing over to a consumer
 	StandaloneTransferChannelIDByteKey
 
+	// PrevStandaloneChainByteKey is the byte storing the flag marking whether this chain was previously standalone
+	PrevStandaloneChainByteKey
+
 	// HistoricalInfoKey is the byte prefix that will store the historical info for a given height
 	HistoricalInfoBytePrefix
 
@@ -144,6 +147,11 @@ func LastStandaloneHeightKey() []byte {
 // changing over to a consumer
 func StandaloneTransferChannelIDKey() []byte {
 	return []byte{StandaloneTransferChannelIDByteKey}
+}
+
+// PrevStandaloneChainKey returns the key to the flag marking whether this chain was previously standalone
+func PrevStandaloneChainKey() []byte {
+	return []byte{PrevStandaloneChainByteKey}
 }
 
 // HistoricalInfoKey returns the key to historical info to a given block height

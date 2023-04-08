@@ -93,10 +93,6 @@ func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
 	k.standaloneStakingKeeper = sk
 }
 
-func (k Keeper) IsPrevStandaloneChain() bool {
-	return k.standaloneStakingKeeper != nil
-}
-
 // Validates that the consumer keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
@@ -606,6 +602,16 @@ func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...ccv.ConsumerPacke
 	pending := k.GetPendingPackets(ctx)
 	list := append(pending.GetList(), packet...)
 	k.SetPendingPackets(ctx, ccv.ConsumerPacketDataList{List: list})
+}
+
+func (k Keeper) MarkAsPrevStandaloneChain(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.PrevStandaloneChainKey(), []byte{})
+}
+
+func (k Keeper) IsPrevStandaloneChain(ctx sdk.Context) bool {
+	store := ctx.KVStore(k.storeKey)
+	return store.Has(types.PrevStandaloneChainKey())
 }
 
 // SetStandaloneTransferChannelID sets the channelID of an existing transfer channel,

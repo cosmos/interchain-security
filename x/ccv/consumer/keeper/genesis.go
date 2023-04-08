@@ -25,6 +25,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 	// stick around for slashing/jailing purposes.
 	if state.PreCCV {
 		k.SetPreCCVTrue(ctx)
+		k.MarkAsPrevStandaloneChain(ctx)
 		k.SetInitialValSet(ctx, state.InitialValSet)
 	}
 	k.SetInitGenesisHeight(ctx, ctx.BlockHeight()) // Usually 0, but not the case for changeover chains
