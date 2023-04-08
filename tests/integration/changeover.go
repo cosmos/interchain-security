@@ -47,4 +47,8 @@ func (suite *CCVTestSuite) TestRecycleTransferChannel() {
 	// Confirm channel exists
 	found := consumerKeeper.TransferChannelExists(suite.consumerCtx(), transChan)
 	suite.Require().True(found)
+
+	// Sanity check, only two channels should exist, one transfer and one ccv
+	channels := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetAllChannels(suite.consumerCtx())
+	suite.Require().Len(channels, 2)
 }
