@@ -6,8 +6,8 @@ sidebar_position: 4
 A consumer chain is essentially a regular Cosmos-SDK based chain that uses the interchain security module to achieve economic security by stake deposited on the provider chain, instead of it's own chain.
 In essence, provider chain and consumer chains are different networks (different infrastructures) that are bound together by the provider's validator set. By being bound to the provider's validator set, a consumer chain inherits the economic security guarantees of the provider chain (in terms of total stake).
 
-To maintain the proof of stake model, the consumer chain is able to send evidece of infractions (double signing and downtime) to the provider chain so the offending validators can be penalized.
-Any infraction commited on any of the consumer chains is reflected on the provider and all other consumer chains.
+To maintain the proof of stake model, the consumer chain is able to send evidence of infractions (double signing and downtime) to the provider chain so the offending validators can be penalized.
+Any infraction committed on any of the consumer chains is reflected on the provider and all other consumer chains.
 
 In the current implementation there are 2 important changes brought by the interchain security module:
 

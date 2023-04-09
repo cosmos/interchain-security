@@ -16,7 +16,7 @@ Sending and distributing rewards from consumer chains to provider chain is handl
 :::tip
 The following chain parameters dictate consumer chain distribution amount and frequency.
 They are set at consumer genesis and `blocks_per_distribution_transmission`, `consumer_redistribution_fraction`
-`transfer_timeout_period` must be provided in every `ConsumerChainAddition` propsal.
+`transfer_timeout_period` must be provided in every `ConsumerChainAddition` proposal.
 :::
 
 
