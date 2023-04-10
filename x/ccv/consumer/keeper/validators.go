@@ -133,6 +133,7 @@ func (k Keeper) UpdateLargestSoftOptOutValidatorPower(ctx sdk.Context) {
 		if powerSum.Quo(totalPower).GT(sdk.MustNewDecFromStr(k.GetSoftOptOutThreshold(ctx))) {
 			// set largestSoftOptOutValidatorPower to the power of this validator
 			k.SetLargestSoftOptOutValidatorPower(ctx, uint64(val.Power))
+			k.Logger(ctx).Info("largest soft opt out validator power updated", "power", val.Power)
 			return
 		}
 	}
