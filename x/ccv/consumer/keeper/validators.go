@@ -136,7 +136,7 @@ func (k Keeper) UpdateLargestSoftOptOutValidatorPower(ctx sdk.Context) {
 			return
 		}
 	}
-	// This will be hit if the SoftOptOutThreshold param is greater than 1
+	// This will be hit if the SoftOptOutThreshold param is equal to 1
 	panic("unreachable")
 }
 
