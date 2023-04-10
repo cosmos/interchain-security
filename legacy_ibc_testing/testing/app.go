@@ -2,6 +2,7 @@ package testing
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -71,6 +72,8 @@ type TestingApp interface {
 func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction sdk.Int, balances ...banktypes.Balance) TestingApp {
 	app, genesisState := appIniter()
 
+	// fmt.Println(chainID, genesisState[stakingtypes.ModuleName])
+
 	baseapp.SetChainID(chainID)(app.GetBaseApp())
 
 	// set genesis accounts
@@ -118,6 +121,17 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 		bondDenom = sdk.DefaultBondDenom
 	}
 
+	totalSupply := sdk.NewCoins()
+	for _, b := range balances {
+		// add genesis acc tokens to total supply
+		totalSupply = totalSupply.Add(b.Coins...)
+	}
+
+	for range delegations {
+		// add delegated tokens to total supply
+		totalSupply = totalSupply.Add(sdk.NewCoin(bondDenom, bondAmt))
+	}
+
 	// add bonded amount to bonded pool module account
 	balances = append(balances, banktypes.Balance{
 		Address: authtypes.NewModuleAddress(stakingtypes.BondedPoolName).String(),
@@ -125,11 +139,18 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 	})
 
 	// set validators and delegations
-	stakingGenesis = *stakingtypes.NewGenesisState(stakingGenesis.Params, validators, delegations)
-	genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(&stakingGenesis)
+	if genesisState[stakingtypes.ModuleName] != nil {
+		stakingGenesis = *stakingtypes.NewGenesisState(stakingGenesis.Params, validators, delegations)
+		genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(&stakingGenesis)
+	} else {
+		fmt.Println(chainID, "hello")
+		stakingGenesis = *stakingtypes.NewGenesisState(stakingtypes.DefaultParams(), validators, delegations)
+		genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(&stakingGenesis)
+		fmt.Println(string(genesisState[stakingtypes.ModuleName]))
+	}
 
 	// update total supply
-	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(), []banktypes.Metadata{}, []banktypes.SendEnabled{})
+	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{}, []banktypes.SendEnabled{})
 	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
 
 	stateBytes, err := json.MarshalIndent(genesisState, "", " ")

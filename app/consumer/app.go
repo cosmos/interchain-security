@@ -301,7 +301,7 @@ func New(
 		appCodec,
 		legacyAmino,
 		keys[slashingtypes.StoreKey],
-		app.ConsumerKeeper,
+		&app.ConsumerKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	app.CrisisKeeper = *crisiskeeper.NewKeeper(
