@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v1.1.0
+
+Date: March 24th, 2023
+
+This is a minor release of Interchain Security (ICS), also known as _Replicated Security_ (RS), which resolves a bug in the core protocol.
+
+Changes included:
+
+* [fix StopConsumerChain not running in cachedContext](https://github.com/cosmos/interchain-security/pull/802)
+
 ## v1.0.0
 
 Date: February 6th, 2023
