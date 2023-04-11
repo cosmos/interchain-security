@@ -21,7 +21,6 @@ var simpleTestSteps = concatSteps(
 				validators: []StartChainValidator{
 					{id: validatorID("bob"), stake: 500000000, allocation: 10000000000},
 					{id: validatorID("alice"), stake: 500000000, allocation: 10000000000},
-					{id: validatorID("carol"), stake: 500000000, allocation: 10000000000},
 				},
 			},
 			state: State{
@@ -29,7 +28,6 @@ var simpleTestSteps = concatSteps(
 					ValBalances: &map[validatorID]uint{
 						validatorID("alice"): 9500000000,
 						validatorID("bob"):   9500000000,
-						validatorID("carol"): 9500000000,
 					},
 				},
 			},
@@ -46,7 +44,6 @@ var simpleTestSteps = concatSteps(
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
 						validatorID("bob"):   500,
-						validatorID("carol"): 500,
 					},
 				},
 			},
