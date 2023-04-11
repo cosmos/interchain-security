@@ -55,7 +55,7 @@ message Params {
 
   // The threshold for the percentage of validators at the bottom of the set who
   // can opt out of running the consumer chain without being punished. For example, a
-  // value of 5% means that the validators in the smallest 5% of the set can opt out
+  // value of 0.05 means that the validators in the bottom 5% of the set can opt out
   string soft_opt_out_threshold = 10;
 }
 
