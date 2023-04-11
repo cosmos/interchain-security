@@ -107,10 +107,10 @@ func (k Keeper) SetLargestSoftOptOutValidatorPower(ctx sdk.Context, power uint64
 	store.Set(types.SoftOptOutThresholdPowerKey(), sdk.Uint64ToBigEndian(power))
 }
 
-// UpdateLargestSoftOptOutValidatorPower sets the largest validator power that is allowed to soft opt out
-// This is the largest validator power such that the sum of the power of all validators with a lower or equal power
-// is less than 5% of the total power of all validators
-func (k Keeper) UpdateLargestSoftOptOutValidatorPower(ctx sdk.Context) {
+// UpdateSoftOptOutThresholdPower sets the smallest validator power that cannot soft opt out.
+// This is the smallest validator power such that the sum of the power of all validators with a lower power
+// is less than [SoftOptOutThreshold] of the total power of all validators.
+func (k Keeper) UpdateSoftOptOutThresholdPower(ctx sdk.Context) {
 	// get all validators
 	valset := k.GetAllCCValidator(ctx)
 
@@ -141,7 +141,7 @@ func (k Keeper) UpdateLargestSoftOptOutValidatorPower(ctx sdk.Context) {
 	panic("unreachable")
 }
 
-// GetSoftOptOutThresholdPower returns the largest validator power that is allowed to soft opt out
+// GetSoftOptOutThresholdPower returns the smallest validator power that cannot soft opt out.
 func (k Keeper) GetSoftOptOutThresholdPower(ctx sdk.Context) int64 {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SoftOptOutThresholdPowerKey())
