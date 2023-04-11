@@ -137,8 +137,8 @@ func (k Keeper) UpdateSoftOptOutThresholdPower(ctx sdk.Context) {
 			return
 		}
 	}
-	// This will be hit if the SoftOptOutThreshold param is equal to 1
-	panic("unreachable")
+	panic(`UpdateSoftOptOutThresholdPower should not reach this point. 
+	CCValset is empty or logic is incorrect.`)
 }
 
 // GetSoftOptOutThresholdPower returns the smallest validator power that cannot soft opt out.
