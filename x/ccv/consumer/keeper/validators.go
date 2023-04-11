@@ -115,7 +115,7 @@ func (k Keeper) UpdateLargestSoftOptOutValidatorPower(ctx sdk.Context) {
 	valset := k.GetAllCCValidator(ctx)
 
 	// sort validators by power ascending
-	sort.Slice(valset, func(i, j int) bool {
+	sort.SliceStable(valset, func(i, j int) bool {
 		return valset[i].Power < valset[j].Power
 	})
 
