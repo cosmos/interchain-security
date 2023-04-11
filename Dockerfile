@@ -41,3 +41,8 @@ ADD ./tests/integration/testnet-scripts /testnet-scripts
 
 # Copy in the hermes config
 ADD ./tests/integration/testnet-scripts/hermes-config.toml /root/.hermes/config.toml
+
+# Copy in Tendermock and install requirements
+ADD ./tests/integration/tendermock /tendermock
+RUN dnf install -y python3-pip
+RUN pip install -r tendermock/requirements.txt
