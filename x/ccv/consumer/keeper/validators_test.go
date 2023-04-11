@@ -6,6 +6,7 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -197,6 +198,9 @@ func SetCCValidators(tb testing.TB, consumerKeeper keeper.Keeper,
 // TestUpdateSoftOptOutThresholdPower should update the threshold validator power to the power of the
 // smallest validator which cannot opt out.
 func TestUpdateSoftOptOutThresholdPower(t *testing.T) {
+
+	cIds := crypto.GenMultipleCryptoIds(6, 682934679238)
+
 	testCases := []struct {
 		name string
 		// soft opt out threshold set as param
@@ -210,12 +214,12 @@ func TestUpdateSoftOptOutThresholdPower(t *testing.T) {
 			name:         "One",
 			optOutThresh: "0.05",
 			validators: []*tmtypes.Validator{
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 3),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 49),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 51),
+				tmtypes.NewValidator(cIds[0].TMCryptoPubKey(), 1),
+				tmtypes.NewValidator(cIds[1].TMCryptoPubKey(), 1),
+				tmtypes.NewValidator(cIds[2].TMCryptoPubKey(), 1),
+				tmtypes.NewValidator(cIds[3].TMCryptoPubKey(), 3),
+				tmtypes.NewValidator(cIds[4].TMCryptoPubKey(), 49),
+				tmtypes.NewValidator(cIds[5].TMCryptoPubKey(), 51),
 			},
 			// 107 total power, validator with 3 power passes 0.05 threshold (6 / 107 = 0.056) and cannot opt out
 			expSmallestNonOptOutValPower: 3,
@@ -224,12 +228,12 @@ func TestUpdateSoftOptOutThresholdPower(t *testing.T) {
 			name:         "One in different order",
 			optOutThresh: "0.05",
 			validators: []*tmtypes.Validator{
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 3),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 51),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 49),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
+				tmtypes.NewValidator(cIds[0].TMCryptoPubKey(), 3),
+				tmtypes.NewValidator(cIds[1].TMCryptoPubKey(), 51),
+				tmtypes.NewValidator(cIds[2].TMCryptoPubKey(), 1),
+				tmtypes.NewValidator(cIds[3].TMCryptoPubKey(), 49),
+				tmtypes.NewValidator(cIds[4].TMCryptoPubKey(), 1),
+				tmtypes.NewValidator(cIds[5].TMCryptoPubKey(), 1),
 			},
 			// Same result as first test case, just confirms order of validators doesn't matter
 			expSmallestNonOptOutValPower: 3,
@@ -238,11 +242,11 @@ func TestUpdateSoftOptOutThresholdPower(t *testing.T) {
 			name:         "Two",
 			optOutThresh: "0.05",
 			validators: []*tmtypes.Validator{
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 3),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 500),
+				tmtypes.NewValidator(cIds[0].TMCryptoPubKey(), 1),
+				tmtypes.NewValidator(cIds[1].TMCryptoPubKey(), 1),
+				tmtypes.NewValidator(cIds[2].TMCryptoPubKey(), 1),
+				tmtypes.NewValidator(cIds[3].TMCryptoPubKey(), 3),
+				tmtypes.NewValidator(cIds[4].TMCryptoPubKey(), 500),
 			},
 			// 506 total power, validator with 500 passes 0.05 threshold and cannot opt out
 			expSmallestNonOptOutValPower: 500,
@@ -251,12 +255,12 @@ func TestUpdateSoftOptOutThresholdPower(t *testing.T) {
 			name:         "Three",
 			optOutThresh: "0.30",
 			validators: []*tmtypes.Validator{
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 53),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 52),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 51),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 50),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
-				tmtypes.NewValidator(testkeeper.MustGenPubKey(), 1),
+				tmtypes.NewValidator(cIds[0].TMCryptoPubKey(), 53),
+				tmtypes.NewValidator(cIds[1].TMCryptoPubKey(), 52),
+				tmtypes.NewValidator(cIds[2].TMCryptoPubKey(), 51),
+				tmtypes.NewValidator(cIds[3].TMCryptoPubKey(), 50),
+				tmtypes.NewValidator(cIds[4].TMCryptoPubKey(), 1),
+				tmtypes.NewValidator(cIds[5].TMCryptoPubKey(), 1),
 			},
 			// 208 total power, (50 + 1 + 1) / 208 ~= 0.25, validator with 51 passes 0.30 threshold and cannot opt out
 			expSmallestNonOptOutValPower: 51,
