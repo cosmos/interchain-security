@@ -7,7 +7,7 @@ import (
 )
 
 // Tests the tracking of historical info in the context of new blocks being committed
-func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so we can copy locks
+func (k CCVTestSuite) TestHistoricalInfo() {
 	consumerKeeper := k.consumerApp.GetConsumerKeeper()
 	cCtx := k.consumerChain.GetContext
 
@@ -18,7 +18,7 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 
 	// define an utility function that creates a new cross-chain validator
 	// and then call track historical info in the next block
-	createVal := func(k CCVTestSuite) { //nolint:govet // this is a test so we can copy locks
+	createVal := func(k CCVTestSuite) {
 		// add new validator to consumer states
 		pk := ed25519.GenPrivKey().PubKey()
 		cVal, err := consumertypes.NewCCValidator(pk.Address(), int64(1), pk)
@@ -37,7 +37,7 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 	testSetup := []func(CCVTestSuite){
 		createVal,
 		createVal,
-		func(k CCVTestSuite) { //nolint:govet // this is a test so we can copy locks
+		func(k CCVTestSuite) {
 			historicalEntries := k.consumerApp.GetConsumerKeeper().GetHistoricalEntries(k.consumerCtx())
 			newHeight := k.consumerChain.GetContext().BlockHeight() + historicalEntries
 			header := tmproto.Header{
@@ -50,7 +50,7 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 	}
 
 	for _, ts := range testSetup {
-		ts(k) //nolint:govet // this is a test so we can copy locks
+		ts(k)
 	}
 
 	// test cases verify that historical info entries are pruned when their height
