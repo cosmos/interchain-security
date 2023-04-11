@@ -33,6 +33,9 @@ SKIP_GENTX=$6
 # A sed string modifying the tendermint config
 TENDERMINT_CONFIG_TRANSFORM=$7
 
+# stores a comma separated list of nodes addresses
+NODE_LISTEN_ADDR_STR=""
+
 
 
 # CREATE VALIDATORS AND DO GENESIS CEREMONY
@@ -223,6 +226,7 @@ do
     RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26658"
     GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:9091"
     LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26655"
+    NODE_LISTEN_ADDR_STR="$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26656,$NODE_LISTEN_ADDR_STR"
     P2P_ADDRESS="--p2p.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26656"
     # LOG_LEVEL="--log_level trace" # switch to trace to see panic messages and rich and all debug msgs
     LOG_LEVEL="--log_level info"
@@ -246,7 +250,8 @@ do
     PERSISTENT_PEERS="--p2p.persistent_peers ${PERSISTENT_PEERS:1}"
 
     ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
-    ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/validator$VAL_ID/logs &
+    ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start --transport=grpc --with-tendermint=false &> /$CHAIN_ID/validator$VAL_ID/logs &
+
 done
 
 ## SETUP DOUBLE SIGNING NODE NETWORK NAMESPACE
@@ -299,6 +304,7 @@ QUERY_GAIA_HOME="--home /$CHAIN_ID/$QUERY_NODE_ID"
 QUERY_RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658"
 QUERY_GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:9091"
 QUERY_LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26655"
+NODE_LISTEN_ADDR_STR="$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26656,$NODE_LISTEN_ADDR_STR"
 QUERY_P2P_ADDRESS="--p2p.laddr tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26656"
 # QUERY_LOG_LEVEL="--log_level trace" # switch to trace to see panic messages and rich and all debug msgs
 QUERY_LOG_LEVEL="--log_level info"
@@ -321,14 +327,21 @@ QUERY_PERSISTENT_PEERS="--p2p.persistent_peers ${QUERY_PERSISTENT_PEERS:1}"
 
 ## START NODE
 ARGS="$QUERY_GAIA_HOME $QUERY_LISTEN_ADDRESS $QUERY_RPC_ADDRESS $QUERY_GRPC_ADDRESS $QUERY_LOG_LEVEL $QUERY_P2P_ADDRESS $QUERY_ENABLE_WEBGRPC $QUERY_PERSISTENT_PEERS"
-ip netns exec $QUERY_NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/$QUERY_NODE_ID/logs &
+ip netns exec $QUERY_NET_NAMESPACE_NAME $BIN $ARGS start --with-tendermint=false &> /$CHAIN_ID/$QUERY_NODE_ID/logs &
 ## DONE START NODE
+
+echo "Node addresses:"
+echo $NODE_LISTEN_ADDR_STR
+
+
+
+# exit
 
 
 
 # poll for chain start
 set +e
-until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 0.3 ; done
+until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 15 ; done
 set -e
 
 echo "done!!!!!!!!"
