@@ -102,15 +102,16 @@ func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.V
 	return stakingtypes.Validator{}
 }
 
-func (k Keeper) SetLargestSoftOptOutValidatorPower(ctx sdk.Context, power uint64) {
+// SetSmallestNonOptOutPower sets the smallest validator power that cannot soft opt out.
+func (k Keeper) SetSmallestNonOptOutPower(ctx sdk.Context, power uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.SoftOptOutThresholdPowerKey(), sdk.Uint64ToBigEndian(power))
+	store.Set(types.SmallestNonOptOutPowerKey(), sdk.Uint64ToBigEndian(power))
 }
 
-// UpdateSoftOptOutThresholdPower sets the smallest validator power that cannot soft opt out.
+// UpdateSmallestNonOptOutPower updates the smallest validator power that cannot soft opt out.
 // This is the smallest validator power such that the sum of the power of all validators with a lower power
 // is less than [SoftOptOutThreshold] of the total power of all validators.
-func (k Keeper) UpdateSoftOptOutThresholdPower(ctx sdk.Context) {
+func (k Keeper) UpdateSmallestNonOptOutPower(ctx sdk.Context) {
 	// get all validators
 	valset := k.GetAllCCValidator(ctx)
 
@@ -125,15 +126,15 @@ func (k Keeper) UpdateSoftOptOutThresholdPower(ctx sdk.Context) {
 		totalPower = totalPower.Add(sdk.NewDecFromInt(sdk.NewInt(val.Power)))
 	}
 
-	// get power of the biggest validator who is allowed to soft opt out
+	// get power of the smallest validator that cannot soft opt out
 	powerSum := sdk.ZeroDec()
 	for _, val := range valset {
 		powerSum = powerSum.Add(sdk.NewDecFromInt(sdk.NewInt(val.Power)))
 		// if powerSum / totalPower > SoftOptOutThreshold
 		if powerSum.Quo(totalPower).GT(sdk.MustNewDecFromStr(k.GetSoftOptOutThreshold(ctx))) {
-			// set largestSoftOptOutValidatorPower to the power of this validator
-			k.SetLargestSoftOptOutValidatorPower(ctx, uint64(val.Power))
-			k.Logger(ctx).Info("largest soft opt out validator power updated", "power", val.Power)
+			// set smallest non opt out power
+			k.SetSmallestNonOptOutPower(ctx, uint64(val.Power))
+			k.Logger(ctx).Info("smallest non opt out power updated", "power", val.Power)
 			return
 		}
 	}
@@ -141,10 +142,10 @@ func (k Keeper) UpdateSoftOptOutThresholdPower(ctx sdk.Context) {
 	CCValset is empty or logic is incorrect.`)
 }
 
-// GetSoftOptOutThresholdPower returns the smallest validator power that cannot soft opt out.
-func (k Keeper) GetSoftOptOutThresholdPower(ctx sdk.Context) int64 {
+// GetSmallestNonOptOutPower returns the smallest validator power that cannot soft opt out.
+func (k Keeper) GetSmallestNonOptOutPower(ctx sdk.Context) int64 {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.SoftOptOutThresholdPowerKey())
+	bz := store.Get(types.SmallestNonOptOutPowerKey())
 	if bz == nil {
 		return 0
 	}
@@ -161,7 +162,7 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 	// if this is a downtime infraction and the validator is allowed to
 	// soft opt out, do not queue a slash packet
 	if infraction == stakingtypes.Downtime {
-		if power < k.GetSoftOptOutThresholdPower(ctx) {
+		if power < k.GetSmallestNonOptOutPower(ctx) {
 			// soft opt out
 			k.Logger(ctx).Debug("soft opt out",
 				"validator", addr,

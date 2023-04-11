@@ -31,12 +31,12 @@ func getAllKeyPrefixes() []byte {
 		PreCCVByteKey,
 		InitialValSetByteKey,
 		LastStandaloneHeightByteKey,
+		SmallestNonOptOutPowerByteKey,
 		HistoricalInfoBytePrefix,
 		PacketMaturityTimeBytePrefix,
 		HeightValsetUpdateIDBytePrefix,
 		OutstandingDowntimeBytePrefix,
 		CrossChainValidatorBytePrefix,
-		SoftOptOutThresholdPowerByteKey,
 	}
 }
 
@@ -63,11 +63,11 @@ func getAllFullyDefinedKeys() [][]byte {
 		PreCCVKey(),
 		InitialValSetKey(),
 		LastStandaloneHeightKey(),
+		SmallestNonOptOutPowerKey(),
 		HistoricalInfoKey(0),
 		PacketMaturityTimeKey(0, time.Time{}),
 		HeightValsetUpdateIDKey(0),
 		OutstandingDowntimeKey([]byte{}),
 		CrossChainValidatorKey([]byte{}),
-		SoftOptOutThresholdPowerKey(),
 	}
 }

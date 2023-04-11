@@ -65,6 +65,9 @@ const (
 	// LastStandaloneHeightByteKey is the byte that will store last standalone height
 	LastStandaloneHeightByteKey
 
+	// SmallestNonOptOutPowerByteKey is the byte that will store the smallest val power that cannot opt out
+	SmallestNonOptOutPowerByteKey
+
 	// HistoricalInfoKey is the byte prefix that will store the historical info for a given height
 	HistoricalInfoBytePrefix
 
@@ -79,10 +82,6 @@ const (
 
 	// CrossChainValidatorPrefix is the byte prefix that will store cross-chain validators by consensus address
 	CrossChainValidatorBytePrefix
-
-	// SoftOptOutThresholdPowerByteKey is the byte key that will store the power of the largest validator that is
-	// allowed to soft opt out
-	SoftOptOutThresholdPowerByteKey
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
@@ -140,6 +139,10 @@ func LastStandaloneHeightKey() []byte {
 	return []byte{LastStandaloneHeightByteKey}
 }
 
+func SmallestNonOptOutPowerKey() []byte {
+	return []byte{SmallestNonOptOutPowerByteKey}
+}
+
 // HistoricalInfoKey returns the key to historical info to a given block height
 func HistoricalInfoKey(height int64) []byte {
 	hBytes := make([]byte, 8)
@@ -175,11 +178,6 @@ func OutstandingDowntimeKey(address sdk.ConsAddress) []byte {
 // CrossChainValidatorKey returns the key to a cross chain validator by consensus address
 func CrossChainValidatorKey(addr []byte) []byte {
 	return append([]byte{CrossChainValidatorBytePrefix}, addr...)
-}
-
-// SoftOptOutThresholdPowerKey returns the key to the power of the largest validator that is allowed to soft opt out
-func SoftOptOutThresholdPowerKey() []byte {
-	return []byte{SoftOptOutThresholdPowerByteKey}
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go

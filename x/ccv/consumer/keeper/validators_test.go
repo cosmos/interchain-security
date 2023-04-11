@@ -193,11 +193,10 @@ func SetCCValidators(tb testing.TB, consumerKeeper keeper.Keeper,
 	}
 }
 
-// Tests that TestUpdateSoftOptOutThresholdPower updates the smallest validator power that cannot soft opt out.
+// Tests that UpdateSmallestNonOptOutPower updates the smallest validator power that cannot soft opt out.
 // Soft opt out allows the bottom [SoftOptOutThreshold] portion of validators in the set to opt out.
-// TestUpdateSoftOptOutThresholdPower should update the threshold validator power to the power of the
-// smallest validator which cannot opt out.
-func TestUpdateSoftOptOutThresholdPower(t *testing.T) {
+// UpdateSmallestNonOptOutPower should update the smallest validator power that cannot opt out.
+func TestUpdateSmallestNonOptOutPower(t *testing.T) {
 
 	cIds := crypto.GenMultipleCryptoIds(6, 682934679238)
 
@@ -281,11 +280,11 @@ func TestUpdateSoftOptOutThresholdPower(t *testing.T) {
 			// set validators in store
 			SetCCValidators(t, consumerKeeper, ctx, tc.validators)
 
-			// update threshold power
-			consumerKeeper.UpdateSoftOptOutThresholdPower(ctx)
+			// update smallest power of validator which cannot opt out
+			consumerKeeper.UpdateSmallestNonOptOutPower(ctx)
 
 			// expect smallest power of validator which cannot opt out to be updated
-			require.Equal(t, tc.expSmallestNonOptOutValPower, consumerKeeper.GetSoftOptOutThresholdPower(ctx))
+			require.Equal(t, tc.expSmallestNonOptOutValPower, consumerKeeper.GetSmallestNonOptOutPower(ctx))
 		})
 	}
 }
