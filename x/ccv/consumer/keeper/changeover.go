@@ -15,9 +15,9 @@ func (k Keeper) ChangeoverIsComplete(ctx sdk.Context) bool {
 
 // The first height that the ccv valset will be in effect is 2 blocks after init genesis height
 // (aka height that the ccv module first returned updates to tendermint), because if init genesis is block N,
-// the new valset is committed in block N+1, and in effect for block N+2.
+// the new valset is committed in block N+ValidatorUpdateDelay, and in effect for block N+ValidatorUpdateDelay+1.
 func (k Keeper) FirstConsumerHeight(ctx sdk.Context) int64 {
-	return k.GetInitGenesisHeight(ctx) + 2
+	return k.GetInitGenesisHeight(ctx) + sdk.ValidatorUpdateDelay + 1
 }
 
 // ChangeoverToConsumer includes the logic that needs to execute during the process of a
