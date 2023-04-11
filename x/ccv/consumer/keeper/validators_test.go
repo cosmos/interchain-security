@@ -18,8 +18,6 @@ import (
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper
 func TestApplyCCValidatorChanges(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	// Explicitly register cdc with public key interface
-	keeperParams.RegisterSdkCryptoCodecInterfaces()
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
@@ -109,8 +107,6 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 // Tests the getter and setter behavior for historical info
 func TestHistoricalInfo(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	// Explicitly register cdc with public key interface
-	keeperParams.RegisterSdkCryptoCodecInterfaces()
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockHeight(15)
