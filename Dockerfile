@@ -10,8 +10,10 @@ ENV GOOS=linux
 ENV GOFLAGS="-buildvcs=false"
 
 # cache go modules
-ADD ./go.mod /go.mod
+COPY go.mod /go.mod
+COPY go.sum /go.sum
 RUN go mod download
+RUN if [ -d "./cosmos-sdk" ]; then go mod edit -replace github.com/cosmos/cosmos-sdk=./cosmos-sdk; fi
 
 # Copy in the repo under test
 ADD . /interchain-security
@@ -20,7 +22,6 @@ WORKDIR /interchain-security
 
 # Do not specify version here. It leads to odd replacement behavior 
 RUN if [ -d "./cosmos-sdk" ]; then go mod edit -replace github.com/cosmos/cosmos-sdk=./cosmos-sdk; fi
-RUN go mod tidy
 
 # Install interchain security binary
 RUN make install
