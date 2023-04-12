@@ -51,7 +51,8 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	var pendingChanges []abci.ValidatorUpdate
 	currentChanges, exists := k.GetPendingChanges(ctx)
 	if !exists {
-		pendingChanges = newChanges.ValidatorUpdates
+		// Still accumulate changes if no pending changes exist. New changes must be deduplicated
+		pendingChanges = utils.AccumulateChanges([]abci.ValidatorUpdate{}, newChanges.ValidatorUpdates)
 	} else {
 		pendingChanges = utils.AccumulateChanges(currentChanges.ValidatorUpdates, newChanges.ValidatorUpdates)
 	}

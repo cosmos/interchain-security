@@ -13,6 +13,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
@@ -150,6 +151,61 @@ func TestOnRecvVSCPacket(t *testing.T) {
 			"no packet maturity time for case: %s", tc.name,
 		)
 	}
+}
+
+// TestOnRecvVSCPacketDuplicateUpdates tests that the consumer can correctly handle a single VSC packet
+// with duplicate valUpdates for the same pub key.
+//
+// Note: This scenario shouldn't usually happen, ie. the provider shouldn't send duplicate val updates
+// for the same pub key. But it's useful to guard against.
+func TestOnRecvVSCPacketDuplicateUpdates(t *testing.T) {
+
+	// Arbitrary channel IDs
+	consumerCCVChannelID := "consumerCCVChannelID"
+	providerCCVChannelID := "providerCCVChannelID"
+
+	// Keeper setup
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	consumerKeeper.SetProviderChannel(ctx, consumerCCVChannelID)
+	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
+
+	// Construct packet/data with duplicate val updates for the same pub key
+	cId := crypto.NewCryptoIdentityFromIntSeed(43278947)
+	valUpdates := []abci.ValidatorUpdate{
+		{
+			PubKey: cId.TMProtoCryptoPublicKey(),
+			Power:  0,
+		},
+		{
+			PubKey: cId.TMProtoCryptoPublicKey(),
+			Power:  473289,
+		},
+	}
+	vscData := types.NewValidatorSetChangePacketData(
+		valUpdates,
+		1,
+		nil,
+	)
+	packet := channeltypes.NewPacket(vscData.GetBytes(), 2, types.ProviderPortID,
+		providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID, clienttypes.NewHeight(1, 0), 0)
+
+	// Confirm no pending changes exist before OnRecvVSCPacket
+	_, ok := consumerKeeper.GetPendingChanges(ctx)
+	require.False(t, ok)
+
+	// Execute OnRecvVSCPacket
+	ack := consumerKeeper.OnRecvVSCPacket(ctx, packet, vscData)
+	require.NotNil(t, ack)
+	require.True(t, ack.Success())
+
+	// Confirm pending changes are queued by OnRecvVSCPacket
+	gotPendingChanges, ok := consumerKeeper.GetPendingChanges(ctx)
+	require.True(t, ok)
+
+	// Confirm that only the latest update is kept, duplicate update is discarded
+	require.Equal(t, 1, len(gotPendingChanges.ValidatorUpdates))
+	require.Equal(t, valUpdates[1], gotPendingChanges.ValidatorUpdates[0]) // Only latest update should be kept
 }
 
 // TestOnAcknowledgementPacket tests application logic for acknowledgments of sent VSCMatured and Slash packets
