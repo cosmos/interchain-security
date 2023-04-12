@@ -31,7 +31,7 @@ USER root
 
 # Copy in Tendermock and install requirements
 ADD ./tests/integration/tendermock/requirements.txt /requirements.txt
-RUN pip install -r tendermock/requirements.txt
+RUN pip install -r /requirements.txt
 ADD ./tests/integration/tendermock/ /tendermock
 
 
