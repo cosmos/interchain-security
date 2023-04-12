@@ -15,7 +15,7 @@ import (
 // UpdateSmallestNonOptOutPower should update the smallest validator power that cannot opt out.
 func TestUpdateSmallestNonOptOutPower(t *testing.T) {
 
-	cIds := crypto.GenMultipleCryptoIds(6, 682934679238)
+	cIds := crypto.GenMultipleCryptoIds(7, 682934679238)
 
 	testCases := []struct {
 		name string
@@ -69,16 +69,17 @@ func TestUpdateSmallestNonOptOutPower(t *testing.T) {
 		},
 		{
 			name:         "Three",
-			optOutThresh: "0.30",
+			optOutThresh: "0.199999",
 			validators: []*tmtypes.Validator{
-				tmtypes.NewValidator(cIds[0].TMCryptoPubKey(), 53),
-				tmtypes.NewValidator(cIds[1].TMCryptoPubKey(), 52),
-				tmtypes.NewValidator(cIds[2].TMCryptoPubKey(), 51),
-				tmtypes.NewValidator(cIds[3].TMCryptoPubKey(), 50),
-				tmtypes.NewValidator(cIds[4].TMCryptoPubKey(), 1),
+				tmtypes.NewValidator(cIds[0].TMCryptoPubKey(), 54),
+				tmtypes.NewValidator(cIds[1].TMCryptoPubKey(), 53),
+				tmtypes.NewValidator(cIds[2].TMCryptoPubKey(), 52),
+				tmtypes.NewValidator(cIds[3].TMCryptoPubKey(), 51),
+				tmtypes.NewValidator(cIds[4].TMCryptoPubKey(), 50),
 				tmtypes.NewValidator(cIds[5].TMCryptoPubKey(), 1),
+				tmtypes.NewValidator(cIds[6].TMCryptoPubKey(), 1),
 			},
-			// 208 total power, (50 + 1 + 1) / 208 ~= 0.25, validator with 51 passes 0.30 threshold and cannot opt out
+			// 262 total power, (50 + 1 + 1) / 262 ~= 0.19, validator with 51 passes 0.199999 threshold and cannot opt out
 			expSmallestNonOptOutValPower: 51,
 		},
 	}
