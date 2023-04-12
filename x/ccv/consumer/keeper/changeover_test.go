@@ -88,7 +88,6 @@ func TestChangeoverToConsumer(t *testing.T) {
 	for _, tc := range testCases {
 
 		keeperParams := uthelpers.NewInMemKeeperParams(t)
-		keeperParams.RegisterSdkCryptoCodecInterfaces()
 		consumerKeeper, ctx, ctrl, mocks := uthelpers.GetConsumerKeeperAndCtx(t, keeperParams)
 		defer ctrl.Finish()
 
