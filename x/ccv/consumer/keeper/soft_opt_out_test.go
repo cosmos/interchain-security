@@ -14,7 +14,6 @@ import (
 // Soft opt out allows the bottom [SoftOptOutThreshold] portion of validators in the set to opt out.
 // UpdateSmallestNonOptOutPower should update the smallest validator power that cannot opt out.
 func TestUpdateSmallestNonOptOutPower(t *testing.T) {
-
 	cIds := crypto.GenMultipleCryptoIds(7, 682934679238)
 
 	testCases := []struct {
@@ -86,10 +85,7 @@ func TestUpdateSmallestNonOptOutPower(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			keeperParams := testkeeper.NewInMemKeeperParams(t)
-			// Explicitly register cdc with public key interface
-			keeperParams.RegisterSdkCryptoCodecInterfaces()
-			consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+			consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 			moduleParams := types.DefaultParams()
 			moduleParams.SoftOptOutThreshold = tc.optOutThresh
 			consumerKeeper.SetParams(ctx, moduleParams)
