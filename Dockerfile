@@ -26,8 +26,14 @@ FROM informalsystems/hermes:1.2.0 AS hermes-builder
 
 FROM --platform=linux/amd64 fedora:36
 RUN dnf update -y
-RUN dnf install -y which iproute iputils procps-ng vim-minimal tmux net-tools htop jq
+RUN dnf install -y which iproute iputils procps-ng vim-minimal tmux net-tools htop jq python3-pip
 USER root
+
+# Copy in Tendermock and install requirements
+ADD ./tests/integration/tendermock/requirements.txt /requirements.txt
+RUN pip install -r tendermock/requirements.txt
+ADD ./tests/integration/tendermock/ /tendermock
+
 
 COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/
 
@@ -41,8 +47,3 @@ ADD ./tests/integration/testnet-scripts /testnet-scripts
 
 # Copy in the hermes config
 ADD ./tests/integration/testnet-scripts/hermes-config.toml /root/.hermes/config.toml
-
-# Copy in Tendermock and install requirements
-ADD ./tests/integration/tendermock /tendermock
-RUN dnf install -y python3-pip
-RUN pip install -r tendermock/requirements.txt
