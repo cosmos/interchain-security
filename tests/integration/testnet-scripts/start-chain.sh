@@ -226,7 +226,7 @@ do
     RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26658"
     GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:9091"
     LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26655"
-    NODE_LISTEN_ADDR_STR="$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26656,$NODE_LISTEN_ADDR_STR"
+    NODE_LISTEN_ADDR_STR="$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:2665,$NODE_LISTEN_ADDR_STR"
     P2P_ADDRESS="--p2p.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26656"
     # LOG_LEVEL="--log_level trace" # switch to trace to see panic messages and rich and all debug msgs
     LOG_LEVEL="--log_level info"
@@ -336,7 +336,7 @@ echo $NODE_LISTEN_ADDR_STR
 
 sleep 8
 
-ip netns exec $QUERY_NET_NAMESPACE_NAME python3 tendermock/src/tendermock.py --tendermock-host $CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX --tendermock-port 26658 --app-addresses 7.7.7.4:26655,7.7.7.5:26655 provi/validatoralice/config/genesis.json &> tendermock_out.log &
+ip netns exec $QUERY_NET_NAMESPACE_NAME python3 tendermock/src/tendermock.py --tendermock-host $CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX --tendermock-port 26658 --app-addresses 7.7.7.4:26655,7.7.7.5:26655,7.7.7.6:26655 provi/validatoralice/config/genesis.json &> tendermock_out.log &
 
 sleep 3
 # exit
