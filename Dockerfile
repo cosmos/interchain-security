@@ -9,6 +9,10 @@ ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOFLAGS="-buildvcs=false"
 
+# cache go modules
+ADD ./go.mod /go.mod
+RUN go mod download
+
 # Copy in the repo under test
 ADD . /interchain-security
 
