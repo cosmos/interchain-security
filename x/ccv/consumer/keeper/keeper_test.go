@@ -249,8 +249,6 @@ func TestPacketMaturityTime(t *testing.T) {
 // TestCrossChainValidator tests the getter, setter, and deletion method for cross chain validator records
 func TestCrossChainValidator(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	// Explicitly register codec with public key interface
-	keeperParams.RegisterSdkCryptoCodecInterfaces()
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
@@ -290,8 +288,6 @@ func TestCrossChainValidator(t *testing.T) {
 // TestGetAllCCValidator tests GetAllCCValidator behaviour correctness
 func TestGetAllCCValidator(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	// Explicitly register codec with public key interface
-	keeperParams.RegisterSdkCryptoCodecInterfaces()
 	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
