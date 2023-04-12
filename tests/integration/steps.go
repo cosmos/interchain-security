@@ -21,6 +21,7 @@ func generateSimpleTestSteps() []Step {
 				validators: []StartChainValidator{
 					{id: validatorID("bob"), stake: 500000000, allocation: 10000000000},
 					{id: validatorID("alice"), stake: 500000000, allocation: 10000000000},
+					{id: validatorID("carol"), stake: 500000000, allocation: 10000000000},
 				},
 			},
 			state: State{
@@ -28,6 +29,7 @@ func generateSimpleTestSteps() []Step {
 					ValBalances: &map[validatorID]uint{
 						validatorID("alice"): 9500000000,
 						validatorID("bob"):   9500000000,
+						validatorID("carol"): 9500000000,
 					},
 				},
 			},
