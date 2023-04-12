@@ -42,7 +42,7 @@ func (tr TestRun) sendTokens(
 
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
-		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--node`, tr.getQueryNode(action.chain),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -916,7 +916,7 @@ func (tr TestRun) delegateTokens(
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
-		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--node`, tr.getQueryNode(action.chain),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
