@@ -13,8 +13,8 @@ func concatSteps(steps ...[]Step) []Step {
 	return concat
 }
 
-var simpleTestSteps = concatSteps(
-	[]Step{
+func generateSimpleTestSteps() []Step {
+	startChainStep := []Step{
 		{
 			action: StartChainAction{
 				chain: chainID("provi"),
@@ -32,33 +32,34 @@ var simpleTestSteps = concatSteps(
 				},
 			},
 		},
-		{
-			action: delegateTokensAction{
-				chain:  chainID("provi"),
-				from:   validatorID("alice"),
-				to:     validatorID("alice"),
-				amount: 11000000,
-			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   500,
+	}
+
+	sendTokenSteps := []Step{}
+	for i := 1; i < 100; i++ {
+		diff := uint(i * 100)
+		sendTokenSteps = append(sendTokenSteps,
+			Step{
+				action: SendTokensAction{
+					chain:  chainID("provi"),
+					from:   validatorID("alice"),
+					to:     validatorID("bob"),
+					amount: 100,
+				},
+				state: State{
+					chainID("provi"): ChainState{
+						ValBalances: &map[validatorID]uint{
+							validatorID("alice"): 9500000000 - diff,
+							validatorID("bob"):   9500000000 + diff,
+						},
 					},
 				},
-			},
-		},
-		{
-			action: SendTokensAction{
-				chain:  chainID("provi"),
-				from:   validatorID("alice"),
-				to:     validatorID("bob"),
-				amount: 100,
-			},
-			state: State{},
-		},
-	},
-)
+			})
+	}
+
+	return concatSteps(startChainStep, sendTokenSteps)
+}
+
+var simpleTestSteps = generateSimpleTestSteps()
 
 var happyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
