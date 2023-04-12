@@ -18,7 +18,7 @@ test-short:
 
 # run E2E tests
 test-e2e:
-	go test ./tests/e2e/...
+	go run ./tests/e2e/...
 
 # run difference tests
 test-diff:
@@ -29,7 +29,7 @@ test-e2e-short:
 	go run ./tests/e2e/... --happy-path-only
 
 # run full E2E tests in sequence (including multiconsumer)
-test-e2e:
+test-e2e-multi-consumer:
 	go run ./tests/e2e/... --include-multi-consumer
 
 # run full E2E tests in parallel (including multiconsumer)
