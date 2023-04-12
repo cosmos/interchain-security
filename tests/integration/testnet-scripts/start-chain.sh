@@ -334,14 +334,18 @@ echo "Node addresses:"
 echo $NODE_LISTEN_ADDR_STR
 
 
+sleep 8
 
+ip netns exec $QUERY_NET_NAMESPACE_NAME python3 tendermock/src/tendermock.py --tendermock-host $CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX --tendermock-port 26658 --app-addresses 7.7.7.4:26655,7.7.7.5:26655 provi/validatoralice/config/genesis.json &> tendermock_out.log &
+
+sleep 3
 # exit
 
 
 
 # poll for chain start
 set +e
-until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 15 ; done
+until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658"; do sleep 3 ; done
 set -e
 
 echo "done!!!!!!!!"
