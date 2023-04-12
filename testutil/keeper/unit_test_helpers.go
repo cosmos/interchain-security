@@ -56,6 +56,7 @@ func NewInMemKeeperParams(tb testing.TB) InMemKeeperParams {
 	require.NoError(tb, stateStore.LoadLatestVersion())
 
 	registry := codectypes.NewInterfaceRegistry()
+	cryptocodec.RegisterInterfaces(registry) // Public key implementation registered here
 	cdc := codec.NewProtoCodec(registry)
 
 	paramsSubspace := paramstypes.NewSubspace(cdc,
@@ -171,18 +172,6 @@ func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 	ctrl := gomock.NewController(t)
 	mocks := NewMockedKeepers(ctrl)
 	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
-}
-
-// Registers proto interfaces for params.Cdc
-//
-// For now, we explicitly force certain unit tests to register sdk crypto interfaces.
-// TODO: This function will be executed automatically once https://github.com/cosmos/interchain-security/issues/273 is solved.
-func (params *InMemKeeperParams) RegisterSdkCryptoCodecInterfaces() {
-	ir := codectypes.NewInterfaceRegistry()
-	// Public key implementation registered here
-	cryptocodec.RegisterInterfaces(ir)
-	// Replace default cdc, with a custom (registered) codec
-	params.Cdc = codec.NewProtoCodec(ir)
 }
 
 type PrivateKey struct {
