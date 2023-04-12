@@ -159,7 +159,6 @@ func TestOnRecvVSCPacket(t *testing.T) {
 // Note: This scenario shouldn't usually happen, ie. the provider shouldn't send duplicate val updates
 // for the same pub key. But it's useful to guard against.
 func TestOnRecvVSCPacketDuplicateUpdates(t *testing.T) {
-
 	// Arbitrary channel IDs
 	consumerCCVChannelID := "consumerCCVChannelID"
 	providerCCVChannelID := "providerCCVChannelID"
