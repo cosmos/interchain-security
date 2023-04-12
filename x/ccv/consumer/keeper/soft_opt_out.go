@@ -21,6 +21,12 @@ func (k Keeper) UpdateSmallestNonOptOutPower(ctx sdk.Context) {
 	// get all validators
 	valset := k.GetAllCCValidator(ctx)
 
+	// Valset should only be empty for hacky tests. Log error in case this ever happens in prod.
+	if len(valset) == 0 {
+		k.Logger(ctx).Error("UpdateSoftOptOutThresholdPower called with empty validator set")
+		return
+	}
+
 	// sort validators by power ascending
 	sort.SliceStable(valset, func(i, j int) bool {
 		return valset[i].Power < valset[j].Power
@@ -44,8 +50,7 @@ func (k Keeper) UpdateSmallestNonOptOutPower(ctx sdk.Context) {
 			return
 		}
 	}
-	panic(`UpdateSoftOptOutThresholdPower should not reach this point. 
-	CCValset is empty or logic is incorrect.`)
+	panic("UpdateSoftOptOutThresholdPower should not reach this point. Incorrect logic!")
 }
 
 // GetSmallestNonOptOutPower returns the smallest validator power that cannot soft opt out.
