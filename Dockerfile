@@ -12,7 +12,6 @@ ENV GOFLAGS="-buildvcs=false"
 # cache go modules - done before the files are copied to allow docker to better cache
 COPY go.mod /go.mod
 COPY go.sum /go.sum
-RUN if [ -d "./cosmos-sdk" ]; then go mod edit -replace github.com/cosmos/cosmos-sdk=./cosmos-sdk; fi
 RUN go mod download
 
 
