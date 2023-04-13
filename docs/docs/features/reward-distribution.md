@@ -26,7 +26,7 @@ The fraction of tokens sent from consumer to provider during distribution events
 :::tip
 Example:
 
-With `consumer_redistribution_fraction` set to `0.75` the consumer chain would send 75% percent of its block rewards and accumulated fees to the provider chain every `n` blocks where `n == blocks_per_distribution_transmission`.
+With `consumer_redistribution_fraction` set to `0.75` the consumer chain would send 75% of its block rewards and accumulated fees to the consumer chain and the remaining 25% to the provider chain every `n` blocks where `n == blocks_per_distribution_transmission`.
 :::
 
 ### `blocks_per_distribution_transmission`
