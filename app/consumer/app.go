@@ -63,6 +63,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
@@ -81,6 +83,7 @@ import (
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 
+	"github.com/cosmos/cosmos-sdk/x/staking"
 	ibcconsumer "github.com/cosmos/interchain-security/x/ccv/consumer"
 	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	ibcconsumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -127,6 +130,8 @@ var (
 		ibcconsumertypes.ConsumerRedistributeName:     nil,
 		ibcconsumertypes.ConsumerToSendToProviderName: nil,
 		ibctransfertypes.ModuleName:                   {authtypes.Minter, authtypes.Burner},
+		stakingtypes.BondedPoolName:                   {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:                {authtypes.Burner, authtypes.Staking},
 	}
 )
 
@@ -170,6 +175,7 @@ type App struct { //nolint: golint
 	FeeGrantKeeper feegrantkeeper.Keeper
 	AuthzKeeper    authzkeeper.Keeper
 	ConsumerKeeper ibcconsumerkeeper.Keeper
+	StakingKeeper  *stakingkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper         capabilitykeeper.ScopedKeeper
@@ -216,7 +222,7 @@ func New(
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 
 	keys := sdk.NewKVStoreKeys(
-		authtypes.StoreKey, banktypes.StoreKey, slashingtypes.StoreKey, crisistypes.StoreKey,
+		authtypes.StoreKey, banktypes.StoreKey, slashingtypes.StoreKey, crisistypes.StoreKey, stakingtypes.StoreKey,
 		paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
@@ -280,6 +286,14 @@ func New(
 		keys[banktypes.StoreKey],
 		app.AccountKeeper,
 		bankBlockedAddrs,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
+	app.StakingKeeper = stakingkeeper.NewKeeper(
+		appCodec,
+		keys[stakingtypes.StoreKey],
+		app.AccountKeeper,
+		app.BankKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
@@ -394,6 +408,7 @@ func New(
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.ConsumerKeeper, app.GetSubspace(slashingtypes.ModuleName)),
 		upgrade.NewAppModule(&app.UpgradeKeeper),
+		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
@@ -418,6 +433,7 @@ func New(
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		slashingtypes.ModuleName,
+		stakingtypes.ModuleName,
 		evidencetypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
@@ -435,6 +451,7 @@ func New(
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		slashingtypes.ModuleName,
+		stakingtypes.ModuleName,
 		evidencetypes.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
@@ -453,13 +470,13 @@ func New(
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		slashingtypes.ModuleName,
+		stakingtypes.ModuleName,
 		crisistypes.ModuleName,
 		ibchost.ModuleName,
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
-
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
@@ -480,6 +497,7 @@ func New(
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
+		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		params.NewAppModule(app.ParamsKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper), ibc.NewAppModule(app.IBCKeeper),
 		transferModule,

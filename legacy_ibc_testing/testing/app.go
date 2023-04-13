@@ -2,12 +2,12 @@ package testing
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/cosmos/interchain-security/legacy_ibc_testing/core"
 
+	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtypes "github.com/cometbft/cometbft/types"
@@ -72,8 +72,6 @@ type TestingApp interface {
 func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction sdk.Int, balances ...banktypes.Balance) TestingApp {
 	app, genesisState := appIniter()
 
-	// fmt.Println(chainID, genesisState[stakingtypes.ModuleName])
-
 	baseapp.SetChainID(chainID)(app.GetBaseApp())
 
 	// set genesis accounts
@@ -100,12 +98,12 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 			Description:       stakingtypes.Description{},
 			UnbondingHeight:   int64(0),
 			UnbondingTime:     time.Unix(0, 0).UTC(),
-			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
+			Commission:        stakingtypes.NewCommission(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec()),
 			MinSelfDelegation: sdk.ZeroInt(),
 		}
 
 		validators = append(validators, validator)
-		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec()))
+		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), math.LegacyOneDec()))
 	}
 
 	// set validators and delegations
@@ -121,16 +119,9 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 		bondDenom = sdk.DefaultBondDenom
 	}
 
-	totalSupply := sdk.NewCoins()
-	for _, b := range balances {
-		// add genesis acc tokens to total supply
-		totalSupply = totalSupply.Add(b.Coins...)
-	}
-
-	for range delegations {
-		// add delegated tokens to total supply
-		totalSupply = totalSupply.Add(sdk.NewCoin(bondDenom, bondAmt))
-	}
+	// set validators and delegations
+	stakingGenesis = *stakingtypes.NewGenesisState(stakingtypes.DefaultParams(), validators, delegations)
+	genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(&stakingGenesis)
 
 	// add bonded amount to bonded pool module account
 	balances = append(balances, banktypes.Balance{
@@ -138,19 +129,8 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, bondAmt.Mul(sdk.NewInt(int64(len(valSet.Validators)))))},
 	})
 
-	// set validators and delegations
-	if genesisState[stakingtypes.ModuleName] != nil {
-		stakingGenesis = *stakingtypes.NewGenesisState(stakingGenesis.Params, validators, delegations)
-		genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(&stakingGenesis)
-	} else {
-		fmt.Println(chainID, "hello")
-		stakingGenesis = *stakingtypes.NewGenesisState(stakingtypes.DefaultParams(), validators, delegations)
-		genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(&stakingGenesis)
-		fmt.Println(string(genesisState[stakingtypes.ModuleName]))
-	}
-
 	// update total supply
-	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{}, []banktypes.SendEnabled{})
+	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(), []banktypes.Metadata{}, []banktypes.SendEnabled{})
 	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
 
 	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
