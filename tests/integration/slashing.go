@@ -684,11 +684,9 @@ func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 	suite.Require().Len(pendingPackets.List, 1)
 
 	// Pass 5 blocks, confirming the consumer doesn't panic
-	suite.consumerChain.NextBlock()
-	suite.consumerChain.NextBlock()
-	suite.consumerChain.NextBlock()
-	suite.consumerChain.NextBlock()
-	suite.consumerChain.NextBlock()
+	for i := 0; i < 5; i++ {
+		suite.consumerChain.NextBlock()
+	}
 
 	// Check packet is still queued
 	pendingPackets = consumerKeeper.GetPendingPackets(suite.consumerCtx())

@@ -9,9 +9,9 @@ VSR simply means that the same validator set is used to secure both the provider
 
 ## What even is a consumer chain?
 
-Consumer chain is blockchain operated by the same the same validator operators as the provider chain. The ICS protocol ensures the validator set replication properties (informs consumer chain about the current state of the validator set on the provider)
+Consumer chain is blockchain operated by the same validator operators as the provider chain. The ICS protocol ensures the validator set replication properties (informs consumer chain about the current state of the validator set on the provider)
 
-Consumer chains are run on infrastructure (virtual or phyisical machines) distinct from the provider, have their own configurations and operating requirements.
+Consumer chains are run on infrastructure (virtual or physical machines) distinct from the provider, have their own configurations and operating requirements.
 
 ## What happens to consumer if provider is down?
 In case the provider chain halts or experiences difficulties the consumer chain will keep operating - the provider chain and consumer chains represent different networks, which only share the validator set.
@@ -67,7 +67,7 @@ There are multiple opt-out mechanisms under active research.
 ## How does Equivocation Governance Slashing work?
 To avoid potential attacks directed at provider chain validators, a new mechanism was introduced:
 
-When a validator double-signs on the provider chain a special type of slash packet is relayed to the provider chain. The provider will store information about the double signing validator and allow a governance proposal to be submitted.
+When a validator double-signs on the consumer chain, a special type of slash packet is relayed to the provider chain. The provider will store information about the double signing validator and allow a governance proposal to be submitted.
 If the double-signing proposal passes, the offending validator will be slashed on the provider chain and tombstoned. Tombstoning will permanently exclude the validator from the active set of the provider.
 
 :::caution
@@ -80,14 +80,14 @@ Consumer chains are standalone chains, in the sense that they can run arbitrary 
 Consumer chain upgrades are unlikely to impact the provider chain, as long as there are no changes to the ICS module.
 
 ## How can I connect to the testnets?
-Check out the [Joining Replicated Security testnet](../validators/joining-testnet.md) section.
+Check out the [Joining Replicated Security testnet](./validators/joining-testnet.md) section.
 
 ## How do I start using ICS?
-To become a consumer chain use this [checklist](../consumer-development/onboarding.md) and check the [App integration section](../consumer-development/app-integration.md)
+To become a consumer chain use this [checklist](./consumer-development/onboarding.md) and check the [App integration section](./consumer-development/app-integration.md)
 
 ## Which relayers are supported?
 Currently supported versions:
 - Hermes 1.3
 
 ## How does key delegation work in ICS?
-You can check the [Key Assignment Guide](../features/key-assignment.md) for specific instructions.
+You can check the [Key Assignment Guide](./features/key-assignment.md) for specific instructions.
