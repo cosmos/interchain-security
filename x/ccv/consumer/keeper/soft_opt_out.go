@@ -18,6 +18,16 @@ func (k Keeper) SetSmallestNonOptOutPower(ctx sdk.Context, power uint64) {
 // This is the smallest validator power such that the sum of the power of all validators with a lower power
 // is less than [SoftOptOutThreshold] of the total power of all validators.
 func (k Keeper) UpdateSmallestNonOptOutPower(ctx sdk.Context) {
+	// get soft opt-out threshold
+	optOutThreshold := sdk.MustNewDecFromStr(k.GetSoftOptOutThreshold(ctx))
+	if optOutThreshold.IsZero() {
+		// If the SoftOptOutThreshold is zero, then soft opt-out is disable.
+		// Setting the smallest non-opt-out power to zero, fixes the diff-testing
+		// when soft opt-out is disable.
+		k.SetSmallestNonOptOutPower(ctx, uint64(0))
+		return
+	}
+
 	// get all validators
 	valset := k.GetAllCCValidator(ctx)
 
@@ -43,7 +53,7 @@ func (k Keeper) UpdateSmallestNonOptOutPower(ctx sdk.Context) {
 	for _, val := range valset {
 		powerSum = powerSum.Add(sdk.NewDecFromInt(sdk.NewInt(val.Power)))
 		// if powerSum / totalPower > SoftOptOutThreshold
-		if powerSum.Quo(totalPower).GT(sdk.MustNewDecFromStr(k.GetSoftOptOutThreshold(ctx))) {
+		if powerSum.Quo(totalPower).GT(optOutThreshold) {
 			// set smallest non opt out power
 			k.SetSmallestNonOptOutPower(ctx, uint64(val.Power))
 			k.Logger(ctx).Info("smallest non opt out power updated", "power", val.Power)
