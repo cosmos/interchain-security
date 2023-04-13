@@ -309,6 +309,7 @@ func (k Keeper) MakeConsumerGenesis(
 		prop.ConsumerRedistributionFraction,
 		prop.HistoricalEntries,
 		prop.UnbondingPeriod,
+		"0.05",
 	)
 
 	gen = *consumertypes.NewInitialGenesisState(
