@@ -492,18 +492,24 @@ class CCVProvider {
       totalPower += token;
     });
 
-    // Soft opt out threshold is set as 0.05. See createConsumerGenesis() in diff test setup.go
-    const softOptOutThreshold = 0.05;
-
-    // get power of the smallest validator that cannot soft opt out
     let smallestNonOptOutPower = -1;
-    let powerSum = 0;
 
-    for (let i = 0; i < sortedTokens.length; i++) {
-      powerSum += sortedTokens[i];
-      if (powerSum / totalPower > softOptOutThreshold) {
-        smallestNonOptOutPower = sortedTokens[i];
-        break;
+    // Soft opt out threshold is set as 0 as for now soft opt-out is disabled. 
+    // See createConsumerGenesis() in diff test setup.go
+    const softOptOutThreshold = 0;
+
+    if (softOptOutThreshold == 0) {
+      smallestNonOptOutPower = 0
+    } else {
+      // get power of the smallest validator that cannot soft opt out
+      let powerSum = 0;
+
+      for (let i = 0; i < sortedTokens.length; i++) {
+        powerSum += sortedTokens[i];
+        if (powerSum / totalPower > softOptOutThreshold) {
+          smallestNonOptOutPower = sortedTokens[i];
+          break;
+        }
       }
     }
     
