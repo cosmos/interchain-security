@@ -81,6 +81,20 @@ func TestUpdateSmallestNonOptOutPower(t *testing.T) {
 			// 262 total power, (50 + 1 + 1) / 262 ~= 0.19, validator with 51 passes 0.199999 threshold and cannot opt out
 			expSmallestNonOptOutValPower: 51,
 		},
+		{
+			name:         "soft opt-out disabled",
+			optOutThresh: "0",
+			validators: []*tmtypes.Validator{
+				tmtypes.NewValidator(cIds[0].TMCryptoPubKey(), 54),
+				tmtypes.NewValidator(cIds[1].TMCryptoPubKey(), 53),
+				tmtypes.NewValidator(cIds[2].TMCryptoPubKey(), 52),
+				tmtypes.NewValidator(cIds[3].TMCryptoPubKey(), 51),
+				tmtypes.NewValidator(cIds[4].TMCryptoPubKey(), 50),
+				tmtypes.NewValidator(cIds[5].TMCryptoPubKey(), 1),
+				tmtypes.NewValidator(cIds[6].TMCryptoPubKey(), 1),
+			},
+			expSmallestNonOptOutValPower: 0,
+		},
 	}
 
 	for _, tc := range testCases {
