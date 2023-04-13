@@ -508,7 +508,7 @@ class CCVProvider {
     }
     
     if (smallestNonOptOutPower == -1) {
-      // TODO: kill program, control flow should never reach here
+      throw new Error('control flow should not reach here');
     }
 
     if (this.m.staking.tokens[data.val] < smallestNonOptOutPower) {
