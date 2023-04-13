@@ -66,7 +66,7 @@ func TestValidateParams(t *testing.T) {
 			consumertypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "-0.05"), false,
 		},
 		{
-			"custom invalid params, soft opt out threshold is over 0.33",
+			"custom invalid params, soft opt out threshold is over 0.2",
 			consumertypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "0.44"), false,
 		},
 		{
