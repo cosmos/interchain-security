@@ -16,7 +16,7 @@ var (
 	ErrNoValidatorConsumerAddress       = sdkerrors.Register(ModuleName, 8, "error getting validator consumer address")
 	ErrNoValidatorProviderAddress       = sdkerrors.Register(ModuleName, 9, "error getting validator provider address")
 	ErrConsumerKeyInUse                 = sdkerrors.Register(ModuleName, 10, "consumer key is already in use by a validator")
-	ErrCannotAssignDefaultKeyAssignment = sdkerrors.Register(ModuleName, 11, "cannot assign default key assignment")
+	ErrCannotAssignDefaultKeyAssignment = sdkerrors.Register(ModuleName, 11, "cannot re-assign default key assignment")
 	ErrInvalidConsumerParams            = sdkerrors.Register(ModuleName, 12, "invalid consumer params")
 	ErrInvalidProviderAddress           = sdkerrors.Register(ModuleName, 13, "invalid provider address")
 )
