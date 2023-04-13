@@ -287,7 +287,7 @@ func (suite *CCVTestSuite) SetupTransferChannel() {
 	suite.Require().NoError(err)
 }
 
-func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) {
+func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) { //nolint:govet // this is a test so we can copy locks
 	consumerKeeper := consumerBundle.GetKeeper()
 	providerStakingKeeper := s.providerApp.GetStakingKeeper()
 
