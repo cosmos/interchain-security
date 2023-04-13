@@ -205,7 +205,6 @@ func TestGlobalSlashEntryKeyAndParse(t *testing.T) {
 
 // Tests the construction and parsing of ChainIdAndConsAddr keys
 func TestChainIdAndConsAddrAndParse(t *testing.T) {
-
 	cIds := []*crypto.CryptoIdentity{
 		crypto.NewCryptoIdentityFromIntSeed(99998),
 		crypto.NewCryptoIdentityFromIntSeed(99999),
