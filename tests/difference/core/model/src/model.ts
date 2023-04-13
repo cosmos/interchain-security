@@ -483,7 +483,8 @@ class CCVProvider {
     //
 
     // Sort token powers from lowest to highest
-    const sortedTokens = this.m.staking.tokens.sort((a, b) => a - b);
+    const tokens = this.m.staking.tokens;
+    const sortedTokens = Object.values(tokens).sort((a, b) => a - b);
 
     // Get total power (token is 1:1 to power)
     let totalPower = 0;
