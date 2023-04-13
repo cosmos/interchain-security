@@ -187,7 +187,7 @@ func validateSoftOptOutThreshold(i interface{}) error {
 	if dec.IsNegative() {
 		return fmt.Errorf("soft opt out threshold cannot be negative, got %s", str)
 	}
-	if dec.Sub(sdktypes.MustNewDecFromStr("0.2")).IsPositive() {
+	if !dec.Sub(sdktypes.MustNewDecFromStr("0.2")).IsNegative() {
 		return fmt.Errorf("soft opt out threshold cannot be greater than 0.2, got %s", str)
 	}
 	return nil
