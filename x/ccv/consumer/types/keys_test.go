@@ -2,51 +2,72 @@ package types
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
 
-// Tests that all singular keys, or prefixes to fully resolves keys are a single byte long,
-// preventing injection attacks into restricted parts of a full store.
-func TestSameLength(t *testing.T) {
-
-	keys := getSingleByteKeys()
-
-	for _, keyByteArray := range keys {
-		require.Equal(t, 1, len(keyByteArray))
-	}
-}
-
 // Tests that all singular keys, or prefixes to fully resolves keys are non duplicate byte values.
 func TestNoDuplicates(t *testing.T) {
+	prefixes := getAllKeyPrefixes()
+	seen := []byte{}
 
-	keys := getSingleByteKeys()
-
-	for i, keyByteArray := range keys {
-		keys[i] = nil
-		require.NotContains(t, keys, keyByteArray)
+	for _, prefix := range prefixes {
+		require.NotContains(t, seen, prefix, "Duplicate key prefix: %v", prefix)
+		seen = append(seen, prefix)
 	}
 }
 
-// Returns all singular keys, or prefixes to fully resolved keys,
-// any of which should be a single, unique byte.
-func getSingleByteKeys() [][]byte {
+// Returns all key prefixes to fully resolved keys, any of which should be a single, unique byte.
+func getAllKeyPrefixes() []byte {
+	return []byte{
+		PortByteKey,
+		LastDistributionTransmissionByteKey,
+		UnbondingTimeByteKey,
+		ProviderClientByteKey,
+		ProviderChannelByteKey,
+		PendingChangesByteKey,
+		PendingDataPacketsByteKey,
+		PreCCVByteKey,
+		InitialValSetByteKey,
+		LastStandaloneHeightByteKey,
+		SmallestNonOptOutPowerByteKey,
+		HistoricalInfoBytePrefix,
+		PacketMaturityTimeBytePrefix,
+		HeightValsetUpdateIDBytePrefix,
+		OutstandingDowntimeBytePrefix,
+		CrossChainValidatorBytePrefix,
+	}
+}
 
-	keys := make([][]byte, 32)
-	i := 0
+func TestNoPrefixOverlap(t *testing.T) {
+	keys := getAllFullyDefinedKeys()
+	seenPrefixes := []byte{}
+	for _, key := range keys {
+		require.NotContains(t, seenPrefixes, key[0], "Duplicate key prefix: %v", key[0])
+		seenPrefixes = append(seenPrefixes, key[0])
+	}
+}
 
-	keys[i], i = PortKey(), i+1
-	keys[i], i = LastDistributionTransmissionKey(), i+1
-	keys[i], i = UnbondingTimeKey(), i+1
-	keys[i], i = ProviderClientIDKey(), i+1
-	keys[i], i = ProviderChannelKey(), i+1
-	keys[i], i = PendingChangesKey(), i+1
-	keys[i], i = []byte{HistoricalInfoBytePrefix}, i+1
-	keys[i], i = []byte{PacketMaturityTimeBytePrefix}, i+1
-	keys[i], i = []byte{HeightValsetUpdateIDBytePrefix}, i+1
-	keys[i], i = []byte{OutstandingDowntimeBytePrefix}, i+1
-	keys[i], i = []byte{PendingDataPacketsBytePrefix}, i+1
-	keys[i], i = []byte{CrossChainValidatorBytePrefix}, i+1
-
-	return keys[:i]
+// getAllFullyDefinedKeys returns instances of byte arrays returned from fully defined key functions.
+// Note we only care about checking prefixes here, so parameters into the key functions are arbitrary.
+func getAllFullyDefinedKeys() [][]byte {
+	return [][]byte{
+		PortKey(),
+		LastDistributionTransmissionKey(),
+		UnbondingTimeKey(),
+		ProviderClientIDKey(),
+		ProviderChannelKey(),
+		PendingChangesKey(),
+		PendingDataPacketsKey(),
+		PreCCVKey(),
+		InitialValSetKey(),
+		LastStandaloneHeightKey(),
+		SmallestNonOptOutPowerKey(),
+		HistoricalInfoKey(0),
+		PacketMaturityTimeKey(0, time.Time{}),
+		HeightValsetUpdateIDKey(0),
+		OutstandingDowntimeKey([]byte{}),
+		CrossChainValidatorKey([]byte{}),
+	}
 }

@@ -46,6 +46,15 @@ func NewCryptoIdentityFromIntSeed(i int) *CryptoIdentity {
 	return NewCryptoIdentityFromBytesSeed(seed)
 }
 
+// GenMultipleCryptoIds generates and returns multiple CryptoIdentities from a starting int seed.
+func GenMultipleCryptoIds(num int, fromIntSeed int) []*CryptoIdentity {
+	ids := make([]*CryptoIdentity, num)
+	for i := 0; i < num; i++ {
+		ids[i] = NewCryptoIdentityFromIntSeed(fromIntSeed + i)
+	}
+	return ids
+}
+
 func (v *CryptoIdentity) TMValidator(power int64) *tmtypes.Validator {
 	return tmtypes.NewValidator(v.TMCryptoPubKey(), power)
 }

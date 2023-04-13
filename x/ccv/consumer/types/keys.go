@@ -50,6 +50,24 @@ const (
 	// received over CCV channel but not yet flushed over ABCI
 	PendingChangesByteKey
 
+	// PendingDataPacketsByteKey is the byte key for storing
+	// a list of data packets that cannot be sent yet to the provider
+	// chain either because the CCV channel is not established or
+	// because the client is expired
+	PendingDataPacketsByteKey
+
+	// PreCCVByteKey is the byte to store the consumer is running on democracy staking module without consumer
+	PreCCVByteKey
+
+	// InitialValSetByteKey is the byte to store the initial validator set for a consumer
+	InitialValSetByteKey
+
+	// LastStandaloneHeightByteKey is the byte that will store last standalone height
+	LastStandaloneHeightByteKey
+
+	// SmallestNonOptOutPowerByteKey is the byte that will store the smallest val power that cannot opt out
+	SmallestNonOptOutPowerByteKey
+
 	// HistoricalInfoKey is the byte prefix that will store the historical info for a given height
 	HistoricalInfoBytePrefix
 
@@ -100,6 +118,29 @@ func ProviderChannelKey() []byte {
 // PendingChangesKey returns the key for storing pending validator set changes
 func PendingChangesKey() []byte {
 	return []byte{PendingChangesByteKey}
+}
+
+// PendingDataPacketsKey returns the key for storing a list of data packets
+// that cannot be sent yet to the provider chain either because the CCV channel
+// is not established or because the client is expired.
+func PendingDataPacketsKey() []byte {
+	return []byte{PendingDataPacketsByteKey}
+}
+
+func PreCCVKey() []byte {
+	return []byte{PreCCVByteKey}
+}
+
+func InitialValSetKey() []byte {
+	return []byte{InitialValSetByteKey}
+}
+
+func LastStandaloneHeightKey() []byte {
+	return []byte{LastStandaloneHeightByteKey}
+}
+
+func SmallestNonOptOutPowerKey() []byte {
+	return []byte{SmallestNonOptOutPowerByteKey}
 }
 
 // PacketMaturityTimeKey returns the key for storing the maturity time for a given received VSC packet id
