@@ -78,7 +78,7 @@ func (k Keeper) DistributeRewardsInternally(ctx sdk.Context) {
 	// tokens do not go through the consumer redistribute split twice in the
 	// event that the transfer fails the tokens are returned to the consumer
 	// chain.
-	remainingTokens := fpTokens.Sub(consRedistrTokens[0])
+	remainingTokens := fpTokens.Sub(consRedistrTokens...)
 	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
 		types.ConsumerToSendToProviderName, remainingTokens)
 	if err != nil {

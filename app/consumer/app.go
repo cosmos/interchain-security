@@ -90,6 +90,7 @@ import (
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
+	tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	testutil "github.com/cosmos/interchain-security/testutil/integration"
 )
 
@@ -120,6 +121,7 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
+		tendermint.AppModuleBasic{},
 		// router.AppModuleBasic{},
 		ibcconsumer.AppModuleBasic{},
 	)
