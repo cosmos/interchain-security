@@ -258,7 +258,7 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 
 func (k Keeper) GetInitGenesisHeight(ctx sdk.Context) int64 {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.LastStandaloneHeightKey())
+	bz := store.Get(types.InitGenesisHeightKey())
 	if bz == nil {
 		panic("last standalone height not set")
 	}
@@ -269,7 +269,7 @@ func (k Keeper) GetInitGenesisHeight(ctx sdk.Context) int64 {
 func (k Keeper) SetInitGenesisHeight(ctx sdk.Context, height int64) {
 	bz := sdk.Uint64ToBigEndian(uint64(height))
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.LastStandaloneHeightKey(), bz)
+	store.Set(types.InitGenesisHeightKey(), bz)
 }
 
 func (k Keeper) IsPreCCV(ctx sdk.Context) bool {

@@ -62,8 +62,8 @@ const (
 	// InitialValSetByteKey is the byte to store the initial validator set for a consumer
 	InitialValSetByteKey
 
-	// LastStandaloneHeightByteKey is the byte that will store last standalone height
-	LastStandaloneHeightByteKey
+	// InitGenesisHeightByteKey is the byte that will store the init genesis height
+	InitGenesisHeightByteKey
 
 	// SmallestNonOptOutPowerByteKey is the byte that will store the smallest val power that cannot opt out
 	SmallestNonOptOutPowerByteKey
@@ -142,8 +142,8 @@ func InitialValSetKey() []byte {
 	return []byte{InitialValSetByteKey}
 }
 
-func LastStandaloneHeightKey() []byte {
-	return []byte{LastStandaloneHeightByteKey}
+func InitGenesisHeightKey() []byte {
+	return []byte{InitGenesisHeightByteKey}
 }
 
 func SmallestNonOptOutPowerKey() []byte {
