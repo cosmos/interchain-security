@@ -482,23 +482,23 @@ class CCVProvider {
     // Soft opt out logic
     //
 
-    // Sort token powers in descending order
-    var sortedTokens = this.m.staking.tokens.sort((a, b) => b - a); // double check this
+    // Sort token powers from lowest to highest
+    const sortedTokens = this.m.staking.tokens.sort((a, b) => a - b);
 
     // Get total power (token is 1:1 to power)
-    var totalPower:number = 0;
+    let totalPower = 0;
     sortedTokens.forEach((token, _) => {
       totalPower += token;
     });
 
     // Get soft opt out threshold, hardcode it as 0.05 for now
-    var softOptOutThreshold = 0.05;
+    const softOptOutThreshold = 0.05;
 
     // get power of the smallest validator that cannot soft opt out
-    var smallestNonOptOutPower = -1;
-    var powerSum = 0;
+    let smallestNonOptOutPower = -1;
+    let powerSum = 0;
 
-    for (var i = 0; i < sortedTokens.length; i++) {
+    for (let i = 0; i < sortedTokens.length; i++) {
       powerSum += sortedTokens[i];
       if (powerSum / totalPower > softOptOutThreshold) {
         smallestNonOptOutPower = sortedTokens[i];
