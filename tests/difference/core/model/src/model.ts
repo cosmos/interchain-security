@@ -492,7 +492,7 @@ class CCVProvider {
       totalPower += token;
     });
 
-    // Get soft opt out threshold, hardcode it as 0.05 for now
+    // Soft opt out threshold is set as 0.05. See createConsumerGenesis() in diff test setup.go
     const softOptOutThreshold = 0.05;
 
     // get power of the smallest validator that cannot soft opt out
