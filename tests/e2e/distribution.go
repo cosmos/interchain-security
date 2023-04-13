@@ -245,8 +245,8 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 	}
 }
 
-// getEscrowBalance gets the current balances in the escrow account holding the transfered tokens to the provider
-func (s CCVTestSuite) getEscrowBalance() sdk.Coins {
+// getEscrowBalance gets the current balances in the escrow account holding the transferred tokens to the provider
+func (s CCVTestSuite) getEscrowBalance() sdk.Coins { //nolint:govet // we copy locks for this test
 	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
 	transChanID := s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(s.consumerCtx())
 	escAddr := transfertypes.GetEscrowAddress(transfertypes.PortID, transChanID)
