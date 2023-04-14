@@ -149,6 +149,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	govKeeper := s.consumerApp.GetTestGovKeeper()
 	params := govKeeper.GetParams(s.consumerCtx())
+	fmt.Println(params)
 	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
 	bankKeeper := s.consumerApp.GetTestBankKeeper()
 	accountKeeper := s.consumerApp.GetTestAccountKeeper()
