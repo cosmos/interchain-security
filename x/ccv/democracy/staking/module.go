@@ -59,12 +59,10 @@ func NewAppModule(cdc codec.Codec, stakingkeeper keeper.Keeper, ak types.Account
 // (as a part of a changeover from standalone -> consumer chain),
 // so there is no special handling needed in this method for a consumer being in the pre-CCV state.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
-	// var genesisState types.GenesisState
+	var genesisState types.GenesisState
 
-	// cdc.MustUnmarshalJSON(data, &genesisState)
-	// _ = staking.InitGenesis(ctx, am.keeper, am.accKeeper, am.bankKeeper, &genesisState)
-
-	return []abci.ValidatorUpdate{}
+	cdc.MustUnmarshalJSON(data, &genesisState)
+	return InitGenesis(ctx, am.keeper, am.accKeeper, am.bankKeeper, &genesisState)
 }
 
 // EndBlock delegates the EndBlock call to the underlying x/staking module,
