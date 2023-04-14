@@ -8,7 +8,6 @@ require (
 	github.com/confio/ics23/go v0.9.0 // indirect
 	github.com/cosmos/cosmos-sdk v0.47.1
 	github.com/cosmos/ibc-go/v7 v7.0.0
-	github.com/gogo/protobuf v1.3.3
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.3
 	github.com/gorilla/mux v1.8.0
@@ -37,6 +36,8 @@ require (
 	github.com/cosmos/gogoproto v1.4.6
 	github.com/cosmos/ics23/go v0.9.1-0.20221207100636-b1abd8678aab
 )
+
+require github.com/gogo/protobuf v1.3.2 // indirect
 
 require (
 	cloud.google.com/go v0.110.0 // indirect
@@ -177,10 +178,5 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace (
-	// github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.15-ics
-	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	github.com/stretchr/testify => github.com/stretchr/testify v1.7.1
-// github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.27
-// google.golang.org/grpc => google.golang.org/grpc v1.33.2
-)
+// github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.15-ics
+replace github.com/stretchr/testify => github.com/stretchr/testify v1.7.1
