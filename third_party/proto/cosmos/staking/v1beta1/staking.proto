@@ -352,16 +352,16 @@ message Pool {
   ];
 }
 
-// InfractionType indicates the infraction type a validator commited.
-enum InfractionType {
+// Infraction indicates the infraction type a validator commited.
+enum Infraction  {
   option (gogoproto.goproto_enum_prefix) = false;
 
   // UNSPECIFIED defines an empty infraction type.
-  INFRACTION_TYPE_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "InfractionEmpty"];
+  INFRACTION_UNSPECIFIED = 0 ;
   // DOUBLE_SIGN defines a validator that double-signs a block.
-  INFRACTION_TYPE_DOUBLE_SIGN = 1 [(gogoproto.enumvalue_customname) = "DoubleSign"];
+  INFRACTION_DOUBLE_SIGN = 1 ;
   // DOWNTIME defines a validator that missed signing too many blocks.
-  INFRACTION_TYPE_DOWNTIME = 2 [(gogoproto.enumvalue_customname) = "Downtime"];
+  INFRACTION_DOWNTIME = 2 ;
 }
 
 // ValidatorUpdates defines an array of abci.ValidatorUpdate objects.

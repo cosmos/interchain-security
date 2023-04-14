@@ -5,13 +5,13 @@ package types
 
 import (
 	fmt "fmt"
+	crypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	types1 "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	types "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	types2 "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	_ "github.com/cosmos/gogoproto/gogoproto"
+	_07_tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	_ "github.com/cosmos/gogoproto/proto"
 	proto "github.com/cosmos/gogoproto/proto"
-	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
-	crypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	github_com_gogo_protobuf_types "github.com/cosmos/gogoproto/types"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
@@ -326,7 +326,7 @@ func (m *GlobalSlashEntry) GetProviderValConsAddr() *ProviderConsAddress {
 
 // Params defines the parameters for CCV Provider module
 type Params struct {
-	TemplateClient *types2.ClientState `protobuf:"bytes,1,opt,name=template_client,json=templateClient,proto3" json:"template_client,omitempty"`
+	TemplateClient *_07_tendermint.ClientState `protobuf:"bytes,1,opt,name=template_client,json=templateClient,proto3" json:"template_client,omitempty"`
 	// TrustingPeriodFraction is used to compute the consumer and provider IBC client's TrustingPeriod from the chain defined UnbondingPeriod
 	TrustingPeriodFraction string `protobuf:"bytes,2,opt,name=trusting_period_fraction,json=trustingPeriodFraction,proto3" json:"trusting_period_fraction,omitempty"`
 	// Sent IBC packets will timeout after this duration
@@ -381,7 +381,7 @@ func (m *Params) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Params proto.InternalMessageInfo
 
-func (m *Params) GetTemplateClient() *types2.ClientState {
+func (m *Params) GetTemplateClient() *_07_tendermint.ClientState {
 	if m != nil {
 		return m.TemplateClient
 	}
@@ -3843,7 +3843,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.TemplateClient == nil {
-				m.TemplateClient = &types2.ClientState{}
+				m.TemplateClient = &_07_tendermint.ClientState{}
 			}
 			if err := m.TemplateClient.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
