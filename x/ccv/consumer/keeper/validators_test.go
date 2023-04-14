@@ -175,7 +175,7 @@ func TestSlash(t *testing.T) {
 	infractionHeight := int64(5)
 	mocks.MockStakingKeeper.EXPECT().Slash(
 		ctx, []byte{0x01, 0x02, 0x03}, infractionHeight, int64(6),
-		sdk.MustNewDecFromStr("0.05"), stakingtypes.Downtime).Times(1)
+		sdk.MustNewDecFromStr("0.05"), stakingtypes.InfractionEmpty).Times(1) // We pass empty infraction to standalone staking keeper since it's not used
 
 	// Also setup init genesis height s.t. infraction height is before first consumer height
 	consumerKeeper.SetInitGenesisHeight(ctx, 4)
