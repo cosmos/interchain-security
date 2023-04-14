@@ -178,5 +178,6 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-// github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.15-ics
+replace github.com/cosmos/cosmos-sdk => github.com/notional-labs/cosmos-sdk v0.47.2-0.20230414120426-d02aaa4e2da1
+
 replace github.com/stretchr/testify => github.com/stretchr/testify v1.7.1
