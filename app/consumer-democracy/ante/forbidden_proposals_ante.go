@@ -24,19 +24,19 @@ func (decorator ForbiddenProposalsDecorator) AnteHandle(ctx sdk.Context, tx sdk.
 	for _, msg := range tx.GetMsgs() {
 		submitProposalMgs, ok := msg.(*govv1.MsgSubmitProposal)
 		// if the message is MsgSubmitProposal, check if proposal is whitelisted
-		message := submitProposalMgs.GetMessages()[0]
-
-		sdkMsg := &govv1.MsgExecLegacyContent{
-			Content:   message,
-			Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		}
-
-		content, err := govv1.LegacyContentFromMessage(sdkMsg)
-		if err != nil {
-			return ctx, err
-		}
 
 		if ok {
+			message := submitProposalMgs.GetMessages()[0]
+
+			sdkMsg := &govv1.MsgExecLegacyContent{
+				Content:   message,
+				Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+			}
+
+			content, err := govv1.LegacyContentFromMessage(sdkMsg)
+			if err != nil {
+				return ctx, err
+			}
 			if !decorator.IsProposalWhitelisted(content) {
 				return ctx, fmt.Errorf("tx contains unsupported proposal message types at height %d", currHeight)
 			}
