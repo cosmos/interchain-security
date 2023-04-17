@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 )
 
@@ -28,15 +28,17 @@ func (decorator ForbiddenProposalsDecorator) AnteHandle(ctx sdk.Context, tx sdk.
 		if ok {
 			message := submitProposalMgs.GetMessages()[0]
 
-			sdkMsg := &govv1.MsgExecLegacyContent{
-				Content:   message,
-				Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+			sdkMsg, ok := message.GetCachedValue().(*govv1.MsgExecLegacyContent)
+
+			if !ok {
+				return ctx, sdkerrors.ErrInvalidType.Wrapf("expected %T, got %T", (*govv1.MsgExecLegacyContent)(nil), message.GetCachedValue())
 			}
 
 			content, err := govv1.LegacyContentFromMessage(sdkMsg)
 			if err != nil {
 				return ctx, err
 			}
+
 			if !decorator.IsProposalWhitelisted(content) {
 				return ctx, fmt.Errorf("tx contains unsupported proposal message types at height %d", currHeight)
 			}
