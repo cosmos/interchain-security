@@ -205,6 +205,10 @@ func stepsDowntime(consumerName string) []Step {
 	}
 }
 
+// stepsDowntimeWithOptOut returns steps validating that alice can incur downtime
+// and not be slashed/jailed, since her voting power is less than 5% of the total.
+//
+// Note: 60 / (60 + 500 + 950) ~= 0.04
 func stepsDowntimeWithOptOut(consumerName string) []Step {
 	return []Step{
 		{

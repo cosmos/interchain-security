@@ -127,6 +127,9 @@ func stepsUnbond(consumerName string) []Step {
 	}
 }
 
+// stepsRedelegateForOptOut tests redelegation, and sets up voting powers s.t
+// alice will have less than 5% of the total voting power. This is needed to
+// test opt-out functionality.
 func stepsRedelegateForOptOut(consumerName string) []Step {
 	return []Step{
 		{
