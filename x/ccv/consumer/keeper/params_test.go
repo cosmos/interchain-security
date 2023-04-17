@@ -5,7 +5,6 @@ import (
 	"time"
 
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +20,7 @@ func TestParams(t *testing.T) {
 		1000,
 		"",
 		"",
-		ccv.DefaultCCVTimeoutPeriod,
+		types.DefaultCCVTimeoutPeriod,
 		types.DefaultTransferTimeoutPeriod,
 		types.DefaultConsumerRedistributeFrac,
 		types.DefaultHistoricalEntries,

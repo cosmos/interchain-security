@@ -36,7 +36,7 @@ func ReconstructPacketFromEvent(event abci.Event) (packet types.Packet, err erro
 		return packet, err
 	}
 	return types.NewPacket(
-		attrMap[string(types.AttributeKeyData)], // data
+		attrMap[string(types.AttributeKeyDataHex)], // data
 		uint64(sequence),
 		string(attrMap[string(types.AttributeKeySrcPort)]),    // sourcePort,
 		string(attrMap[string(types.AttributeKeySrcChannel)]), // sourceChannel,
