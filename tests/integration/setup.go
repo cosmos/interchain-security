@@ -287,7 +287,7 @@ func (s *CCVTestSuite) SetupTransferChannel() {
 	s.Require().NoError(err)
 }
 
-func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) { 
+func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) {
 	consumerKeeper := consumerBundle.GetKeeper()
 	providerStakingKeeper := s.providerApp.GetStakingKeeper()
 

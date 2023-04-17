@@ -534,6 +534,7 @@ func TestStopConsumerChain(t *testing.T) {
 func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
 	expectedChainID, expectedChannelID string,
 ) {
+	t.Helper()
 	_, found := providerKeeper.GetConsumerClientID(ctx, expectedChainID)
 	require.False(t, found)
 	_, found = providerKeeper.GetChainToChannel(ctx, expectedChainID)
