@@ -153,7 +153,6 @@ var (
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		tendermint.AppModuleBasic{},
-		// router.AppModuleBasic{},
 		ibcprovider.AppModuleBasic{},
 	)
 

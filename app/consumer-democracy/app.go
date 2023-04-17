@@ -154,7 +154,6 @@ var (
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		tendermint.AppModuleBasic{},
-		// router.AppModuleBasic{},
 		consumer.AppModuleBasic{},
 	)
 
@@ -442,7 +441,7 @@ func New(
 		authtypes.FeeCollectorName,
 	)
 
-	// Setting the staking keeper is only needed for standalone to consumer changeover chains
+	// Setting the standalone staking keeper is only needed for standalone to consumer changeover chains
 	app.ConsumerKeeper.SetStandaloneStakingKeeper(app.StakingKeeper)
 
 	// consumer keeper satisfies the staking keeper interface
@@ -519,6 +518,7 @@ func New(
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
+	// NOTE: the soft opt-out requires that the consumer module's beginblocker comes after the slashing module's beginblocker
 	app.MM.SetOrderBeginBlockers(
 		// upgrades should be run first
 		upgradetypes.ModuleName,

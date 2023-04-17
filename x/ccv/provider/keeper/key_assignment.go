@@ -414,6 +414,13 @@ func (k Keeper) AssignConsumerKey(
 				types.ErrConsumerKeyInUse, "a different validator already uses the consumer key",
 			)
 		}
+		_, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
+		if !found {
+			return sdkerrors.Wrapf(
+				types.ErrCannotAssignDefaultKeyAssignment,
+				"a validator cannot assign the default key assignment unless its key on that consumer has already been assigned",
+			)
+		}
 	}
 
 	if _, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {

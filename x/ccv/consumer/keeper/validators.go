@@ -13,10 +13,6 @@ import (
 )
 
 //
-// TODO: Address https://github.com/cosmos/interchain-security/issues/781 in this file.
-// Particularly, we need to better define which keepers are responsible for slashing capabilities
-// during/after a standalone to consumer changeover.
-//
 // TODO: make unit tests for all of: MVP consumer, democ consumer, and pre-ccv consumer
 // for previously unimplemented methods, if they're implemented to solve the above issue.
 //
@@ -80,6 +76,12 @@ func (Keeper) Validator(_ sdk.Context, _ sdk.ValAddress) stakingtypes.ValidatorI
 
 // IsJailed returns the outstanding slashing flag for the given validator adddress
 func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
+	// if the changeover is not complete for prev standalone chain,
+	// return the standalone staking keeper's jailed status
+	if k.IsPrevStandaloneChain() && !k.ChangeoverIsComplete(ctx) {
+		return k.standaloneStakingKeeper.IsValidatorJailed(ctx, addr)
+	}
+	// Otherwise, return the ccv consumer keeper's notion of a validator being jailed
 	return k.OutstandingDowntime(ctx, addr)
 }
 
@@ -111,6 +113,27 @@ func (k Keeper) SlashForked(
 		return
 	}
 
+	// If this is a previously standalone chain and infraction happened before the changeover was completed,
+	// slash only on the standalone staking keeper.
+	if k.IsPrevStandaloneChain() && infractionHeight < k.FirstConsumerHeight(ctx) {
+		k.standaloneStakingKeeper.Slash(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.InfractionEmpty)
+		return
+	}
+
+	// Otherwise infraction happened after the changeover was completed.
+
+	// if this is a downtime infraction and the validator is allowed to
+	// soft opt out, do not queue a slash packet
+	if infraction == stakingtypes.Downtime {
+		if power < k.GetSmallestNonOptOutPower(ctx) {
+			// soft opt out
+			k.Logger(ctx).Debug("soft opt out",
+				"validator", addr,
+				"power", power,
+			)
+			return
+		}
+	}
 	// get VSC ID for infraction height
 	vscID := k.GetHeightValsetUpdateID(ctx, uint64(infractionHeight))
 
@@ -144,10 +167,18 @@ func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, consAddr sdk.ConsAddr
 }
 
 // Jail - unimplemented on CCV keeper
-func (Keeper) Jail(_ sdk.Context, _ sdk.ConsAddress) {}
+//
+// This method should be a no-op even during a standalone to consumer changeover.
+// Once the upgrade has happened as a part of the changeover,
+// the provider validator set will soon be in effect, and jailing is n/a.
+func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {}
 
 // Unjail - unimplemented on CCV keeper
-func (Keeper) Unjail(_ sdk.Context, _ sdk.ConsAddress) {}
+//
+// This method should be a no-op even during a standalone to consumer changeover.
+// Once the upgrade has happened as a part of the changeover,
+// the provider validator set will soon be in effect, and jailing is n/a.
+func (k Keeper) Unjail(sdk.Context, sdk.ConsAddress) {}
 
 // Delegation - unimplemented on CCV keeper
 func (Keeper) Delegation(sdk.Context, sdk.AccAddress, sdk.ValAddress) stakingtypes.DelegationI {

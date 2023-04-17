@@ -20,14 +20,14 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-const done = "done!!!!!!!!"
-
 type SendTokensAction struct {
 	chain  chainID
 	from   validatorID
 	to     validatorID
 	amount uint
 }
+
+const done = "done!!!!!!!!"
 
 func (tr TestRun) sendTokens(
 	action SendTokensAction,
@@ -687,6 +687,27 @@ type addIbcChannelAction struct {
 	order       string
 }
 
+type startHermesAction struct{}
+
+func (tr TestRun) startHermes(
+	action startHermesAction,
+	verbose bool,
+) {
+	// hermes start is running in detached mode
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", "-d", tr.containerConfig.instanceName, "hermes",
+		"start",
+	)
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	if verbose {
+		fmt.Println("started Hermes")
+	}
+}
+
 func (tr TestRun) addIbcChannel(
 	action addIbcChannelAction,
 	verbose bool,
@@ -1009,7 +1030,7 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 }
 
 // Sets validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
-func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, down, verbose bool) {
+func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, down bool, verbose bool) {
 	var lastArg string
 	if down {
 		lastArg = "down"

@@ -660,6 +660,7 @@ func TestValidateGenesisState(t *testing.T) {
 }
 
 func getInitialConsumerGenesis(t *testing.T, chainID string) consumertypes.GenesisState {
+	t.Helper()
 	// generate validator public key
 	cId := crypto.NewCryptoIdentityFromIntSeed(239668)
 	pubKey := cId.TMCryptoPubKey()

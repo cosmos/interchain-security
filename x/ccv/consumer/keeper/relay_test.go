@@ -15,6 +15,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -76,21 +77,21 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	}{
 		{
 			"success on first packet",
-			channeltypes.NewPacket(pd.GetBytes(), 1, ccv.ProviderPortID, providerCCVChannelID, ccv.ConsumerPortID, consumerCCVChannelID,
+			channeltypes.NewPacket(pd.GetBytes(), 1, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
 			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 		},
 		{
 			"success on subsequent packet",
-			channeltypes.NewPacket(pd.GetBytes(), 2, ccv.ProviderPortID, providerCCVChannelID, ccv.ConsumerPortID, consumerCCVChannelID,
+			channeltypes.NewPacket(pd.GetBytes(), 2, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
 			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 		},
 		{
 			"success on packet with more changes",
-			channeltypes.NewPacket(pd2.GetBytes(), 3, ccv.ProviderPortID, providerCCVChannelID, ccv.ConsumerPortID, consumerCCVChannelID,
+			channeltypes.NewPacket(pd2.GetBytes(), 3, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
 			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes2},
 			ccv.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
@@ -152,6 +153,60 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	}
 }
 
+// TestOnRecvVSCPacketDuplicateUpdates tests that the consumer can correctly handle a single VSC packet
+// with duplicate valUpdates for the same pub key.
+//
+// Note: This scenario shouldn't usually happen, ie. the provider shouldn't send duplicate val updates
+// for the same pub key. But it's useful to guard against.
+func TestOnRecvVSCPacketDuplicateUpdates(t *testing.T) {
+	// Arbitrary channel IDs
+	consumerCCVChannelID := "consumerCCVChannelID"
+	providerCCVChannelID := "providerCCVChannelID"
+
+	// Keeper setup
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	consumerKeeper.SetProviderChannel(ctx, consumerCCVChannelID)
+	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
+
+	// Construct packet/data with duplicate val updates for the same pub key
+	cId := crypto.NewCryptoIdentityFromIntSeed(43278947)
+	valUpdates := []abci.ValidatorUpdate{
+		{
+			PubKey: cId.TMProtoCryptoPublicKey(),
+			Power:  0,
+		},
+		{
+			PubKey: cId.TMProtoCryptoPublicKey(),
+			Power:  473289,
+		},
+	}
+	vscData := types.NewValidatorSetChangePacketData(
+		valUpdates,
+		1,
+		nil,
+	)
+	packet := channeltypes.NewPacket(vscData.GetBytes(), 2, types.ProviderPortID,
+		providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID, clienttypes.NewHeight(1, 0), 0)
+
+	// Confirm no pending changes exist before OnRecvVSCPacket
+	_, ok := consumerKeeper.GetPendingChanges(ctx)
+	require.False(t, ok)
+
+	// Execute OnRecvVSCPacket
+	ack := consumerKeeper.OnRecvVSCPacket(ctx, packet, vscData)
+	require.NotNil(t, ack)
+	require.True(t, ack.Success())
+
+	// Confirm pending changes are queued by OnRecvVSCPacket
+	gotPendingChanges, ok := consumerKeeper.GetPendingChanges(ctx)
+	require.True(t, ok)
+
+	// Confirm that only the latest update is kept, duplicate update is discarded
+	require.Equal(t, 1, len(gotPendingChanges.ValidatorUpdates))
+	require.Equal(t, valUpdates[1], gotPendingChanges.ValidatorUpdates[0]) // Only latest update should be kept
+}
+
 // TestOnAcknowledgementPacket tests application logic for acknowledgments of sent VSCMatured and Slash packets
 // in conjunction with the ibc module's execution of "acknowledgePacket",
 // according to https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements
@@ -184,9 +239,9 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	packet := channeltypes.NewPacket(
 		packetData.GetBytes(),
 		1,
-		ccv.ConsumerPortID,   // Source port
+		types.ConsumerPortID, // Source port
 		channelIDToDestChain, // Source channel
-		ccv.ProviderPortID,   // Dest (counter party) port
+		types.ProviderPortID, // Dest (counter party) port
 		channelIDOnDest,      // Dest (counter party) channel
 		clienttypes.Height{},
 		uint64(time.Now().Add(60*time.Second).UnixNano()),
@@ -204,20 +259,20 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	gomock.InOrder(
 
 		mocks.MockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.ChannelCapabilityPath(ccv.ConsumerPortID, channelIDToDestChain),
+			ctx, host.ChannelCapabilityPath(types.ConsumerPortID, channelIDToDestChain),
 		).Return(dummyCap, true).Times(1),
 		// Due to input error ack, ChanCloseInit is called on channel to destination chain
 		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
-			ctx, ccv.ConsumerPortID, channelIDToDestChain, dummyCap,
+			ctx, types.ConsumerPortID, channelIDToDestChain, dummyCap,
 		).Return(nil).Times(1),
 
 		mocks.MockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.ChannelCapabilityPath(ccv.ConsumerPortID, channelIDToProvider),
+			ctx, host.ChannelCapabilityPath(types.ConsumerPortID, channelIDToProvider),
 		).Return(dummyCap, true).Times(1),
 		// Due to input error ack and existence of established channel to provider,
 		// ChanCloseInit is called on channel to provider
 		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
-			ctx, ccv.ConsumerPortID, channelIDToProvider, dummyCap,
+			ctx, types.ConsumerPortID, channelIDToProvider, dummyCap,
 		).Return(nil).Times(1),
 	)
 

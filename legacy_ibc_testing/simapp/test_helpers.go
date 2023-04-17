@@ -89,6 +89,7 @@ func SignAndDeliver(
 	t *testing.T, txCfg client.TxConfig, app *bam.BaseApp, _ tmproto.Header, msgs []sdk.Msg,
 	chainID string, accNums, accSeqs []uint64, _, expPass bool, priv ...cryptotypes.PrivKey,
 ) (sdk.GasInfo, *sdk.Result, error) {
+	t.Helper()
 	tx, err := helpers.GenTx(
 		txCfg,
 		msgs,

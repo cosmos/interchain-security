@@ -202,8 +202,6 @@ func TestInitGenesis(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			keeperParams := testkeeper.NewInMemKeeperParams(t)
-			// explicitly register codec with public key interface
-			keeperParams.RegisterSdkCryptoCodecInterfaces()
 			consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 			defer ctrl.Finish()
 
@@ -347,8 +345,6 @@ func TestExportGenesis(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			keeperParams := testkeeper.NewInMemKeeperParams(t)
-			// Explicitly register codec with public key interface
-			keeperParams.RegisterSdkCryptoCodecInterfaces()
 			consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 			defer ctrl.Finish()
 			consumerKeeper.SetConsumerParams(ctx, params)
@@ -367,12 +363,14 @@ func TestExportGenesis(t *testing.T) {
 
 // assert that the default CCV consumer port ID is stored and bounded
 func assertConsumerPortIsBound(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper) {
+	t.Helper()
 	require.Equal(t, ck.GetPort(ctx), string(ccv.ConsumerPortID))
 	require.True(t, ck.IsBound(ctx, ccv.ConsumerPortID))
 }
 
 // assert that the given client ID matches the provider client ID in the store
 func assertProviderClientID(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, clientID string) {
+	t.Helper()
 	cid, ok := ck.GetProviderClientID(ctx)
 	require.True(t, ok)
 	require.Equal(t, clientID, cid)
@@ -380,6 +378,7 @@ func assertProviderClientID(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Ke
 
 // assert that the given input match the height to valset update ID mappings in the store
 func assertHeightValsetUpdateIDs(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, heighValsetUpdateIDs []consumertypes.HeightToValsetUpdateID) {
+	t.Helper()
 	ctr := 0
 
 	for _, heightToValsetUpdateID := range ck.GetAllHeightToValsetUpdateIDs(ctx) {

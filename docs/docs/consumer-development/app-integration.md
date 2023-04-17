@@ -4,7 +4,7 @@ sidebar_position: 1
 # Developing an ICS consumer chain
 
 When developing an ICS consumer chain, besides just focusing on your chain's logic you should aim to allocate time to ensure that your chain is compatible with the ICS protocol.
-To help you on your journey, the ICS team has provied multiple examples of a minumum viable consumer chain applications.
+To help you on your journey, the ICS team has provided multiple examples of a minimum viable consumer chain applications.
 
 ## Basic consumer chain
 

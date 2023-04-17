@@ -31,6 +31,7 @@ type RelayedPath struct {
 // packets, acks or headers. Requires a fully initialised path where
 // the connection and any channel handshakes have been COMPLETED.
 func MakeRelayedPath(t *testing.T, path *ibctesting.Path) RelayedPath {
+	t.Helper()
 	return RelayedPath{
 		t:             t,
 		clientHeaders: map[string][]*ibctmtypes.Header{},

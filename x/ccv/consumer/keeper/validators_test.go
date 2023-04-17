@@ -20,8 +20,6 @@ import (
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper
 func TestApplyCCValidatorChanges(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	// Explicitly register cdc with public key interface
-	keeperParams.RegisterSdkCryptoCodecInterfaces()
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
@@ -108,11 +106,90 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 	}
 }
 
+// TestIsValidatorJailed tests the IsValidatorJailed method for a consumer keeper
+func TestIsValidatorJailed(t *testing.T) {
+	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Consumer keeper from test setup should return false for IsPrevStandaloneChain()
+	require.False(t, consumerKeeper.IsPrevStandaloneChain())
+
+	// IsValidatorJailed should return false for an arbitrary consensus address
+	consAddr := []byte{0x01, 0x02, 0x03}
+	require.False(t, consumerKeeper.IsValidatorJailed(ctx, consAddr))
+
+	// Set outstanding downtime for that addr
+	consumerKeeper.SetOutstandingDowntime(ctx, consAddr)
+
+	// Now confirm IsValidatorJailed returns true
+	require.True(t, consumerKeeper.IsValidatorJailed(ctx, consAddr))
+
+	// Next, we set a value for the standalone staking keeper so IsPrevStandaloneChain() returns true
+	consumerKeeper.SetStandaloneStakingKeeper(mocks.MockStakingKeeper)
+	require.True(t, consumerKeeper.IsPrevStandaloneChain())
+
+	// Set init genesis height to current block height so that ChangeoverIsComplete() is false
+	consumerKeeper.SetInitGenesisHeight(ctx, ctx.BlockHeight())
+	require.False(t, consumerKeeper.ChangeoverIsComplete(ctx))
+
+	// At this point, the state of the consumer keeper is s.t. IsValidatorJailed() queries the standalone staking keeper
+
+	// Now mock that a validator is jailed from the standalone staking keeper
+	mocks.MockStakingKeeper.EXPECT().IsValidatorJailed(ctx, consAddr).Return(true).Times(1)
+
+	// Confirm IsValidatorJailed returns true
+	require.True(t, consumerKeeper.IsValidatorJailed(ctx, consAddr))
+}
+
+func TestSlash(t *testing.T) {
+	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// If we call slash with infraction type empty, no slash packet will be queued
+	consumerKeeper.Slash(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.InfractionEmpty)
+	pendingPackets := consumerKeeper.GetPendingPackets(ctx)
+	require.Len(t, pendingPackets.List, 0)
+
+	// Consumer keeper from test setup should return false for IsPrevStandaloneChain()
+	require.False(t, consumerKeeper.IsPrevStandaloneChain())
+
+	// Now setup a value for vscID mapped to infraction height
+	consumerKeeper.SetHeightValsetUpdateID(ctx, 5, 6)
+
+	// Call slash with valid infraction type and confirm 1 slash packet is queued
+	consumerKeeper.Slash(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.Downtime)
+	pendingPackets = consumerKeeper.GetPendingPackets(ctx)
+	require.Len(t, pendingPackets.List, 1)
+
+	// Next, we set a value for the standalone staking keeper so IsPrevStandaloneChain() returns true
+	consumerKeeper.SetStandaloneStakingKeeper(mocks.MockStakingKeeper)
+	require.True(t, consumerKeeper.IsPrevStandaloneChain())
+
+	// At this point, the state of the consumer keeper is s.t.
+	// Slash() calls the standalone staking keeper's Slash()
+
+	// If we call slash with infraction type empty, standalone staking keeper's slash will not be called
+	// (if it was called, test would panic without mocking the call)
+	consumerKeeper.Slash(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.InfractionEmpty)
+
+	// Now setup a mock for Slash, and confirm that it is called against
+	// standalone staking keeper with valid infraction type
+	infractionHeight := int64(5)
+	mocks.MockStakingKeeper.EXPECT().Slash(
+		ctx, []byte{0x01, 0x02, 0x03}, infractionHeight, int64(6),
+		sdk.MustNewDecFromStr("0.05"), stakingtypes.InfractionEmpty).Times(1) // We pass empty infraction to standalone staking keeper since it's not used
+
+	// Also setup init genesis height s.t. infraction height is before first consumer height
+	consumerKeeper.SetInitGenesisHeight(ctx, 4)
+	require.Equal(t, consumerKeeper.FirstConsumerHeight(ctx), int64(6))
+
+	consumerKeeper.Slash(ctx, []byte{0x01, 0x02, 0x03}, infractionHeight, 6,
+		sdk.MustNewDecFromStr("0.05"), stakingtypes.Downtime)
+}
+
 // Tests the getter and setter behavior for historical info
 func TestHistoricalInfo(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	// Explicitly register cdc with public key interface
-	keeperParams.RegisterSdkCryptoCodecInterfaces()
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockHeight(15)
@@ -164,12 +241,13 @@ func IsValSetSorted(data []stakingtypes.Validator, powerReduction math.Int) bool
 }
 
 // Generates 4 test validators with non zero voting power
-func GenerateValidators(t testing.TB) []*tmtypes.Validator {
+func GenerateValidators(tb testing.TB) []*tmtypes.Validator {
+	tb.Helper()
 	numValidators := 4
 	validators := []*tmtypes.Validator{}
 	for i := 0; i < numValidators; i++ {
-		cId := crypto.NewCryptoIdentityFromIntSeed(234 + i)
-		pubKey := cId.TMCryptoPubKey()
+		pubKey, err := testkeeper.GenPubKey()
+		require.NoError(tb, err)
 
 		votingPower := int64(i + 1)
 		validator := tmtypes.NewValidator(pubKey, votingPower)
@@ -179,15 +257,16 @@ func GenerateValidators(t testing.TB) []*tmtypes.Validator {
 }
 
 // Sets each input tmtypes.Validator as a types.CrossChainValidator in the consumer keeper store
-func SetCCValidators(t testing.TB, consumerKeeper keeper.Keeper,
+func SetCCValidators(tb testing.TB, consumerKeeper keeper.Keeper,
 	ctx sdk.Context, validators []*tmtypes.Validator,
 ) {
+	tb.Helper()
 	for _, v := range validators {
 		publicKey, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
-		require.NoError(t, err)
+		require.NoError(tb, err)
 
 		ccv, err := types.NewCCValidator(v.Address, v.VotingPower, publicKey)
-		require.NoError(t, err)
+		require.NoError(tb, err)
 		consumerKeeper.SetCCValidator(ctx, ccv)
 	}
 }

@@ -28,7 +28,7 @@ import (
 // Note: This method does not test the actual slash packet sending logic for downtime
 // and double-signing, see TestValidatorDowntime and TestValidatorDoubleSigning for
 // those types of tests.
-func (suite *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
+func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	// Setup CCV channel for all instantiated consumers
 	suite.SetupAllCCVChannels()
 
@@ -158,7 +158,7 @@ func (suite *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 
 // Similar setup to TestRelayAndApplyDowntimePacket, but with a double sign slash packet.
 // Note that double-sign slash packets should not affect the provider validator set.
-func (suite *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
+func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	// Setup CCV channel for all instantiated consumers
 	suite.SetupAllCCVChannels()
 
@@ -664,4 +664,40 @@ func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 	dataPackets = consumerKeeper.GetPendingPackets(ctx)
 	suite.Require().Empty(dataPackets)
 	suite.Require().Len(dataPackets.GetList(), 0)
+}
+
+// TestCISBeforeCCVEstablished tests that the consumer chain doesn't panic or
+// have any undesired behavior when a slash packet is queued before the CCV channel is established.
+// Then once the CCV channel is established, the slash packet should be sent soon after.
+func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
+	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
+
+	// Check pending packets is empty
+	pendingPackets := consumerKeeper.GetPendingPackets(suite.consumerCtx())
+	suite.Require().Len(pendingPackets.List, 0)
+
+	consumerKeeper.Slash(suite.consumerCtx(), []byte{0x01, 0x02, 0x3},
+		66, 4324, sdk.MustNewDecFromStr("0.05"), stakingtypes.Downtime)
+
+	// Check slash packet was queued
+	pendingPackets = consumerKeeper.GetPendingPackets(suite.consumerCtx())
+	suite.Require().Len(pendingPackets.List, 1)
+
+	// Pass 5 blocks, confirming the consumer doesn't panic
+	for i := 0; i < 5; i++ {
+		suite.consumerChain.NextBlock()
+	}
+
+	// Check packet is still queued
+	pendingPackets = consumerKeeper.GetPendingPackets(suite.consumerCtx())
+	suite.Require().Len(pendingPackets.List, 1)
+
+	// establish ccv channel
+	suite.SetupCCVChannel(suite.path)
+	suite.SendEmptyVSCPacket()
+
+	// Pass one more block, and confirm the packet is sent now that ccv channel is established
+	suite.consumerChain.NextBlock()
+	pendingPackets = consumerKeeper.GetPendingPackets(suite.consumerCtx())
+	suite.Require().Len(pendingPackets.List, 0)
 }
