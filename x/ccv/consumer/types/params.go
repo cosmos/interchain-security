@@ -1,8 +1,10 @@
 package types
 
 import (
+	fmt "fmt"
 	time "time"
 
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
@@ -124,7 +126,7 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidateDuration(p.UnbondingPeriod); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateStringFraction(p.SoftOptOutThreshold); err != nil {
+	if err := validateSoftOptOutThreshold(p.SoftOptOutThreshold); err != nil {
 		return err
 	}
 	return nil
@@ -151,7 +153,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyConsumerUnbondingPeriod,
 			p.UnbondingPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySoftOptOutThreshold,
-			p.SoftOptOutThreshold, ccvtypes.ValidateStringFraction),
+			p.SoftOptOutThreshold, validateSoftOptOutThreshold),
 	}
 }
 
@@ -171,4 +173,22 @@ func validateProviderFeePoolAddrStr(i interface{}) error {
 	}
 	// Otherwise validate as usual for a bech32 address
 	return ccvtypes.ValidateBech32(i)
+}
+
+func validateSoftOptOutThreshold(i interface{}) error {
+	str, ok := i.(string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	dec, err := sdktypes.NewDecFromStr(str)
+	if err != nil {
+		return err
+	}
+	if dec.IsNegative() {
+		return fmt.Errorf("soft opt out threshold cannot be negative, got %s", str)
+	}
+	if !dec.Sub(sdktypes.MustNewDecFromStr("0.2")).IsNegative() {
+		return fmt.Errorf("soft opt out threshold cannot be greater than 0.2, got %s", str)
+	}
+	return nil
 }
