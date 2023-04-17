@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
-	"sort"
 	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -102,54 +100,6 @@ func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.V
 		the only requirement on the returned value is that it isn't null.
 	*/
 	return stakingtypes.Validator{}
-}
-
-func (k Keeper) SetLargestSoftOptOutValidatorPower(ctx sdk.Context, power uint64) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.SoftOptOutThresholdPowerKey(), sdk.Uint64ToBigEndian(power))
-}
-
-// UpdateLargestSoftOptOutValidatorPower sets the largest validator power that is allowed to soft opt out
-// This is the largest validator power such that the sum of the power of all validators with a lower or equal power
-// is less than 5% of the total power of all validators
-func (k Keeper) UpdateLargestSoftOptOutValidatorPower(ctx sdk.Context) {
-	// get all validators
-	valset := k.GetAllCCValidator(ctx)
-
-	// sort validators by power ascending
-	sort.Slice(valset, func(i, j int) bool {
-		return valset[i].Power < valset[j].Power
-	})
-
-	// get total power in set
-	totalPower := sdk.ZeroDec()
-	for _, val := range valset {
-		totalPower = totalPower.Add(sdk.NewDecFromInt(sdk.NewInt(val.Power)))
-	}
-
-	// get power of the biggest validator who is allowed to soft opt out
-	powerSum := sdk.ZeroDec()
-	for _, val := range valset {
-		powerSum = powerSum.Add(sdk.NewDecFromInt(sdk.NewInt(val.Power)))
-		// if powerSum / totalPower > SoftOptOutThreshold
-		if powerSum.Quo(totalPower).GT(sdk.MustNewDecFromStr(k.GetSoftOptOutThreshold(ctx))) {
-			// set largestSoftOptOutValidatorPower to the power of this validator
-			k.SetLargestSoftOptOutValidatorPower(ctx, uint64(val.Power))
-			return
-		}
-	}
-	// This will be hit if the SoftOptOutThreshold param is greater than 1
-	panic("unreachable")
-}
-
-// GetSoftOptOutThresholdPower returns the largest validator power that is allowed to soft opt out
-func (k Keeper) GetSoftOptOutThresholdPower(ctx sdk.Context) int64 {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.SoftOptOutThresholdPowerKey())
-	if bz == nil {
-		return 0
-	}
-	return int64(binary.BigEndian.Uint64(bz))
 }
 
 // Slash queues a slashing request for the the provider chain
