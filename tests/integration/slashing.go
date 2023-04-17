@@ -303,7 +303,6 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 
 // TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an integration testing setting
 func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
-
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 	providerSlashingKeeper := suite.providerApp.GetTestSlashingKeeper()
 	firstBundle := suite.getFirstBundle()

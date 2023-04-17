@@ -1200,7 +1200,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		// Queue packet data instances until we reach the max (some slash packets, some VSC matured packets)
 		reachedMax := false
 		for i := 0; i < int(tc.max); i++ {
-			randBool := rand.Intn(2) == 0 //nolint:gosec // not used for security purposes
+			randBool := rand.Intn(2) == 0 
 			var data any
 			if randBool {
 				data = testkeeper.GetNewSlashPacketData()

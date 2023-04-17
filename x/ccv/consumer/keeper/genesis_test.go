@@ -85,7 +85,7 @@ func TestInitGenesis(t *testing.T) {
 	defaultHeightValsetUpdateIDs := []consumertypes.HeightToValsetUpdateID{
 		{ValsetUpdateId: vscID, Height: blockHeight},
 	}
-	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs, //nolint:gocritic // we mean to append to another slice
+	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs, 
 		consumertypes.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
 	)
 
@@ -265,7 +265,7 @@ func TestExportGenesis(t *testing.T) {
 	defaultHeightValsetUpdateIDs := []consumertypes.HeightToValsetUpdateID{
 		{ValsetUpdateId: vscID, Height: blockHeight},
 	}
-	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs, //nolint:gocritic // we mean to append to another slice
+	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs, 
 		consumertypes.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
 	)
 	ltbh := consumertypes.LastTransmissionBlockHeight{Height: int64(1000)}

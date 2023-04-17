@@ -63,8 +63,8 @@ type CCVTestSuite struct {
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
 func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
-	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string) *CCVTestSuite {
-
+	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string,
+) *CCVTestSuite {
 	ccvSuite := new(CCVTestSuite)
 
 	// Define callback to set up the provider chain

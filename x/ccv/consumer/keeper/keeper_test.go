@@ -158,7 +158,6 @@ func TestInitialValSet(t *testing.T) {
 			Power:  10978554,
 		},
 	}, consumerKeeper.GetInitialValSet(ctx))
-
 }
 
 // TestGetLastSovereignValidators tests the getter method for getting the last valset
