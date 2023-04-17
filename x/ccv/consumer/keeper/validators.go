@@ -36,7 +36,7 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 		addr := pubkey.Address()
 		val, found := k.GetCCValidator(ctx, addr)
 
-		if found { 
+		if found {
 			// update or delete an existing validator
 			if change.Power < 1 {
 				k.DeleteCCValidator(ctx, addr)
@@ -136,7 +136,6 @@ func (k Keeper) Slash(
 	infractionHeight, power int64,
 	_ sdk.Dec,
 ) math.Int {
-
 	return math.Int{}
 }
 

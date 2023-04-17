@@ -28,7 +28,7 @@ func GenTx(gen client.TxConfig, msgs []sdk.Msg, feeAmt sdk.Coins, gas uint64, ch
 	sigs := make([]signing.SignatureV2, len(priv))
 
 	// create a random length memo
-	r := rand.New(rand.NewSource(rand.Int63())) 
+	r := rand.New(rand.NewSource(rand.Int63()))
 
 	memo := simulation.RandStringOfLength(r, simulation.RandIntBetween(r, 0, 100))
 

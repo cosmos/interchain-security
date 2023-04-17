@@ -56,7 +56,7 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 		providerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(numAssignments + i).ProviderConsAddress()
 		testAssignments = append(testAssignments,
 			types.ValidatorConsumerPubKey{
-				ChainId:      chainIDs[rand.Intn(len(chainIDs))], 
+				ChainId:      chainIDs[rand.Intn(len(chainIDs))],
 				ProviderAddr: &providerAddr,
 				ConsumerKey:  &consumerKey,
 			},
@@ -133,7 +133,7 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 		providerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(numAssignments + i).ProviderConsAddress()
 		testAssignments = append(testAssignments,
 			types.ValidatorByConsumerAddr{
-				ChainId:      chainIDs[rand.Intn(len(chainIDs))], 
+				ChainId:      chainIDs[rand.Intn(len(chainIDs))],
 				ConsumerAddr: &consumerAddr,
 				ProviderAddr: &providerAddr,
 			},
@@ -212,7 +212,7 @@ func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 			types.KeyAssignmentReplacement{
 				ProviderAddr: &providerAddr,
 				PrevCKey:     &consumerKey,
-				Power:        rand.Int63(), 
+				Power:        rand.Int63(),
 			},
 		)
 	}
@@ -271,8 +271,8 @@ func TestGetAllConsumerAddrsToPrune(t *testing.T) {
 		}
 		testAssignments = append(testAssignments,
 			types.ConsumerAddrsToPrune{
-				ChainId:       chainIDs[rand.Intn(len(chainIDs))], 
-				VscId:         rand.Uint64(),                      
+				ChainId:       chainIDs[rand.Intn(len(chainIDs))],
+				VscId:         rand.Uint64(),
 				ConsumerAddrs: &consumerAddresses,
 			},
 		)
@@ -674,11 +674,11 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 	// Helper: simulates creation of staking module EndBlock updates.
 	getStakingUpdates := func() (ret []abci.ValidatorUpdate) {
 		// Get a random set of validators to update. It is important to test subsets of all validators.
-		validators := rand.Perm(len(providerIDS))[0:rand.Intn(len(providerIDS)+1)] 
+		validators := rand.Perm(len(providerIDS))[0:rand.Intn(len(providerIDS)+1)]
 		for _, i := range validators {
 			// Power 0, 1, or 2 represents
 			// deletion, update (from 0 or 2), update (from 0 or 1)
-			power := rand.Intn(3) 
+			power := rand.Intn(3)
 			ret = append(ret, abci.ValidatorUpdate{
 				PubKey: providerIDS[i].TMProtoCryptoPublicKey(),
 				Power:  int64(power),
@@ -689,9 +689,9 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 	// Helper: simulates creation of assignment tx's to be done.
 	getAssignments := func() (ret []Assignment) {
-		for i, numAssignments := 0, rand.Intn(numAssignmentsPerBlock); i < numAssignments; i++ { 
-			randomIxP := rand.Intn(len(providerIDS))   
-			randomIxC := rand.Intn(len(assignableIDS)) 
+		for i, numAssignments := 0, rand.Intn(numAssignmentsPerBlock); i < numAssignments; i++ {
+			randomIxP := rand.Intn(len(providerIDS))
+			randomIxC := rand.Intn(len(assignableIDS))
 			ret = append(ret, Assignment{
 				val: providerIDS[randomIxP].SDKStakingValidator(),
 				ck:  assignableIDS[randomIxC].TMProtoCryptoPublicKey(),
@@ -797,7 +797,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			// delivery of maturity packets from the consumer chain.
 			prunedVscid := greatestPrunedVSCID +
 				// +1 and -1 because id was incremented (-1), (+1) to make upper bound inclusive
-				rand.Intn(int(k.GetValidatorSetUpdateID(ctx))+1-1-greatestPrunedVSCID) 
+				rand.Intn(int(k.GetValidatorSetUpdateID(ctx))+1-1-greatestPrunedVSCID)
 			k.PruneKeyAssignments(ctx, chainID, uint64(prunedVscid))
 			greatestPrunedVSCID = prunedVscid
 
