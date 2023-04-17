@@ -1349,6 +1349,7 @@ func getOrderedInstances(instances []throttledPacketDataInstance, orderbyIdx []i
 func assertPendingPacketDataOrdering(t *testing.T, k *keeper.Keeper, ctx sdktypes.Context,
 	consumerChainID string, expectedInstances []throttledPacketDataInstance,
 ) {
+	t.Helper()
 	// Get all packet data for this chain
 	obtainedInstances := getAllThrottledPacketDataInstances(ctx, k, consumerChainID)
 	// No extra data should be present
