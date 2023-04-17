@@ -106,7 +106,7 @@ func (k Keeper) SlashForked(
 	ctx sdk.Context,
 	addr sdk.ConsAddress,
 	infractionHeight, power int64,
-	_ sdk.Dec,
+	slashFactor sdk.Dec,
 	infraction stakingtypes.Infraction,
 ) {
 	if infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
@@ -116,7 +116,7 @@ func (k Keeper) SlashForked(
 	// If this is a previously standalone chain and infraction happened before the changeover was completed,
 	// slash only on the standalone staking keeper.
 	if k.IsPrevStandaloneChain() && infractionHeight < k.FirstConsumerHeight(ctx) {
-		k.standaloneStakingKeeper.Slash(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
+		k.standaloneStakingKeeper.Slash(ctx, addr, infractionHeight, power, slashFactor)
 		return
 	}
 
