@@ -198,6 +198,7 @@ func TestCreateConsumerClient(t *testing.T) {
 func testCreatedConsumerClient(t *testing.T,
 	ctx sdk.Context, providerKeeper providerkeeper.Keeper, expectedChainID, expectedClientID string,
 ) {
+	t.Helper()
 	// ClientID should be stored.
 	clientID, found := providerKeeper.GetConsumerClientID(ctx, expectedChainID)
 	require.True(t, found, "consumer client not found")
