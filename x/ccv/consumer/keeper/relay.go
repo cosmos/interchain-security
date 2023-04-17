@@ -12,7 +12,7 @@ import (
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	utils "github.com/cosmos/interchain-security/x/ccv/utils"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -53,7 +53,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	if exists {
 		currentValUpdates = currentChanges.ValidatorUpdates
 	}
-	pendingChanges := utils.AccumulateChanges(currentValUpdates, newChanges.ValidatorUpdates)
+	pendingChanges := ccvtypes.AccumulateChanges(currentValUpdates, newChanges.ValidatorUpdates)
 
 	k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{
 		ValidatorUpdates: pendingChanges,
@@ -186,7 +186,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 	for _, p := range pending.GetList() {
 
 		// send packet over IBC
-		err := utils.SendIBCPacket(
+		err := ccvtypes.SendIBCPacket(
 			ctx,
 			k.scopedKeeper,
 			k.channelKeeper,

@@ -1,11 +1,11 @@
-package utils_test
+package types_test
 
 import (
 	"testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
+	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
@@ -80,7 +80,7 @@ func TestAccumulateChanges(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			changes := utils.AccumulateChanges(tc.changes1, tc.changes2)
+			changes := types.AccumulateChanges(tc.changes1, tc.changes2)
 			require.Equal(t, tc.expected, changes)
 		})
 	}

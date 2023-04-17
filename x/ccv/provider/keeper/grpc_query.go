@@ -8,7 +8,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -103,7 +102,7 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 		return &types.QueryValidatorConsumerAddrResponse{}, nil
 	}
 
-	consumerAddr, err := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+	consumerAddr, err := ccvtypes.TMCryptoPublicKeyToConsAddr(consumerKey)
 	if err != nil {
 		return nil, err
 	}
