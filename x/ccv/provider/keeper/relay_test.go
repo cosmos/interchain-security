@@ -431,7 +431,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		{
 			"unfound validator",
 			ccv.SlashPacketData{
-				Validator:      abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
+				Validator:      tmtypes.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				ValsetUpdateId: validVscID,
 				Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
 			},
@@ -452,7 +452,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		{
 			"found, but tombstoned validator",
 			ccv.SlashPacketData{
-				Validator:      abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
+				Validator:      tmtypes.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				ValsetUpdateId: validVscID,
 				Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
 			},
@@ -474,7 +474,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		{
 			"drop packet when infraction height not found",
 			ccv.SlashPacketData{
-				Validator:      abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
+				Validator:      tmtypes.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				ValsetUpdateId: 78, // Keeper doesn't have a height mapped to this vscID.
 				Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
 			},
@@ -497,7 +497,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		{
 			"full downtime packet handling, uses init chain height and non-jailed validator",
 			*ccv.NewSlashPacketData(
-				abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
+				tmtypes.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				0, // ValsetUpdateId = 0 uses init chain height.
 				stakingtypes.Infraction_INFRACTION_DOWNTIME),
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
@@ -514,7 +514,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		{
 			"full downtime packet handling, uses valid vscID and jailed validator",
 			*ccv.NewSlashPacketData(
-				abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
+				tmtypes.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				validVscID,
 				stakingtypes.Infraction_INFRACTION_DOWNTIME),
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
