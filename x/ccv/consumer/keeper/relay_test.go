@@ -18,7 +18,7 @@ import (
 	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -57,13 +57,13 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		},
 	}
 
-	pd := ccv.NewValidatorSetChangePacketData(
+	pd := types.NewValidatorSetChangePacketData(
 		changes1,
 		1,
 		nil,
 	)
 
-	pd2 := ccv.NewValidatorSetChangePacketData(
+	pd2 := types.NewValidatorSetChangePacketData(
 		changes2,
 		2,
 		nil,
@@ -72,29 +72,29 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	testCases := []struct {
 		name                   string
 		packet                 channeltypes.Packet
-		newChanges             ccv.ValidatorSetChangePacketData
-		expectedPendingChanges ccv.ValidatorSetChangePacketData
+		newChanges             types.ValidatorSetChangePacketData
+		expectedPendingChanges types.ValidatorSetChangePacketData
 	}{
 		{
 			"success on first packet",
 			channeltypes.NewPacket(pd.GetBytes(), 1, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
-			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
-			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 		},
 		{
 			"success on subsequent packet",
 			channeltypes.NewPacket(pd.GetBytes(), 2, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
-			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
-			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 		},
 		{
 			"success on packet with more changes",
 			channeltypes.NewPacket(pd2.GetBytes(), 3, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
-			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes2},
-			ccv.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
+			types.ValidatorSetChangePacketData{ValidatorUpdates: changes2},
+			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
 				{
 					PubKey: pk1,
 					Power:  30,
@@ -231,7 +231,7 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	// Set an established provider channel for later in test
 	consumerKeeper.SetProviderChannel(ctx, channelIDToProvider)
 
-	packetData := ccv.NewSlashPacketData(
+	packetData := types.NewSlashPacketData(
 		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Infraction_INFRACTION_DOWNTIME,
 	)
 
