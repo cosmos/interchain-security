@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
@@ -179,9 +180,9 @@ func TestSlashMeterReplenishment(t *testing.T) {
 	testCases := []struct {
 		replenishPeriod   time.Duration
 		replenishFraction string
-		totalPower        sdktypes.Int
+		totalPower        math.Int
 		// Replenish fraction * total power, also serves as max slash meter value
-		expectedAllowance sdktypes.Int
+		expectedAllowance math.Int
 	}{
 		{
 			replenishPeriod:   time.Minute,
@@ -451,11 +452,11 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 // voting power becomes lower from slashing.
 func TestNegativeSlashMeter(t *testing.T) {
 	testCases := []struct {
-		slashedPower           sdktypes.Int
-		totalPower             sdktypes.Int
+		slashedPower           math.Int
+		totalPower             math.Int
 		replenishFraction      string
 		numReplenishesTillFull int
-		finalMeterValue        sdktypes.Int
+		finalMeterValue        math.Int
 	}{
 		{
 			// Meter is initialized to a value of: 0.01*1000 = 10.
@@ -566,9 +567,9 @@ func TestNegativeSlashMeter(t *testing.T) {
 func TestGetSlashMeterAllowance(t *testing.T) {
 	testCases := []struct {
 		replenishFraction string
-		totalPower        sdktypes.Int
+		totalPower        math.Int
 		// Replenish fraction * total power
-		expectedAllowance sdktypes.Int
+		expectedAllowance math.Int
 	}{
 		{
 			replenishFraction: "0.00",
@@ -1200,7 +1201,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		// Queue packet data instances until we reach the max (some slash packets, some VSC matured packets)
 		reachedMax := false
 		for i := 0; i < int(tc.max); i++ {
-			randBool := rand.Intn(2) == 0 //nolint:gosec // not used for security purposes
+			randBool := rand.Intn(2) == 0
 			var data any
 			if randBool {
 				data = testkeeper.GetNewSlashPacketData()
@@ -1246,7 +1247,7 @@ func TestThrottledPacketDataSize(t *testing.T) {
 // TestSlashMeter tests the getter and setter for the slash gas meter
 func TestSlashMeter(t *testing.T) {
 	testCases := []struct {
-		meterValue  sdktypes.Int
+		meterValue  math.Int
 		shouldPanic bool
 	}{
 		{meterValue: sdktypes.NewInt(-7999999999999999999), shouldPanic: true},
@@ -1348,6 +1349,7 @@ func getOrderedInstances(instances []throttledPacketDataInstance, orderbyIdx []i
 func assertPendingPacketDataOrdering(t *testing.T, k *keeper.Keeper, ctx sdktypes.Context,
 	consumerChainID string, expectedInstances []throttledPacketDataInstance,
 ) {
+	t.Helper()
 	// Get all packet data for this chain
 	obtainedInstances := getAllThrottledPacketDataInstances(ctx, k, consumerChainID)
 	// No extra data should be present

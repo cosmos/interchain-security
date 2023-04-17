@@ -16,7 +16,7 @@ Sending and distributing rewards from consumer chains to provider chain is handl
 :::tip
 The following chain parameters dictate consumer chain distribution amount and frequency.
 They are set at consumer genesis and `blocks_per_distribution_transmission`, `consumer_redistribution_fraction`
-`transfer_timeout_period` must be provided in every `ConsumerChainAddition` propsal.
+`transfer_timeout_period` must be provided in every `ConsumerChainAddition` proposal.
 :::
 
 
@@ -26,7 +26,7 @@ The fraction of tokens sent from consumer to provider during distribution events
 :::tip
 Example:
 
-With `consumer_redistribution_fraction` set to `0.75` the consumer chain would send 75% percent of its block rewards and accumulated fees to the provider chain every `n` blocks where `n == blocks_per_distribution_transmission`.
+With `consumer_redistribution_fraction` set to `0.75` the consumer chain would send 75% of its block rewards and accumulated fees to the consumer chain and the remaining 25% to the provider chain every `n` blocks where `n == blocks_per_distribution_transmission`.
 :::
 
 ### `blocks_per_distribution_transmission`

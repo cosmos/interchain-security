@@ -11,6 +11,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -34,8 +35,8 @@ func TestInitGenesis(t *testing.T) {
 	blockHeight := uint64(0)
 
 	// create validator set
-	pubKey, err := testkeeper.GenPubKey()
-	require.NoError(t, err)
+	cId := crypto.NewCryptoIdentityFromIntSeed(234234)
+	pubKey := cId.TMCryptoPubKey()
 	validator := tmtypes.NewValidator(pubKey, 1)
 	abciValidator := abci.Validator{Address: pubKey.Address(), Power: int64(1)}
 	valset := []abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}
@@ -84,7 +85,7 @@ func TestInitGenesis(t *testing.T) {
 	defaultHeightValsetUpdateIDs := []consumertypes.HeightToValsetUpdateID{
 		{ValsetUpdateId: vscID, Height: blockHeight},
 	}
-	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs, //nolint:gocritic // we mean to append to another slice
+	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs,
 		consumertypes.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
 	)
 
@@ -201,8 +202,6 @@ func TestInitGenesis(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			keeperParams := testkeeper.NewInMemKeeperParams(t)
-			// explicitly register codec with public key interface
-			keeperParams.RegisterSdkCryptoCodecInterfaces()
 			consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 			defer ctrl.Finish()
 
@@ -264,7 +263,7 @@ func TestExportGenesis(t *testing.T) {
 	defaultHeightValsetUpdateIDs := []consumertypes.HeightToValsetUpdateID{
 		{ValsetUpdateId: vscID, Height: blockHeight},
 	}
-	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs, //nolint:gocritic // we mean to append to another slice
+	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs,
 		consumertypes.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
 	)
 	ltbh := consumertypes.LastTransmissionBlockHeight{Height: int64(1000)}
@@ -346,8 +345,6 @@ func TestExportGenesis(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			keeperParams := testkeeper.NewInMemKeeperParams(t)
-			// Explicitly register codec with public key interface
-			keeperParams.RegisterSdkCryptoCodecInterfaces()
 			consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 			defer ctrl.Finish()
 			consumerKeeper.SetConsumerParams(ctx, params)
@@ -366,12 +363,14 @@ func TestExportGenesis(t *testing.T) {
 
 // assert that the default CCV consumer port ID is stored and bounded
 func assertConsumerPortIsBound(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper) {
+	t.Helper()
 	require.Equal(t, ck.GetPort(ctx), string(ccv.ConsumerPortID))
 	require.True(t, ck.IsBound(ctx, ccv.ConsumerPortID))
 }
 
 // assert that the given client ID matches the provider client ID in the store
 func assertProviderClientID(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, clientID string) {
+	t.Helper()
 	cid, ok := ck.GetProviderClientID(ctx)
 	require.True(t, ok)
 	require.Equal(t, clientID, cid)
@@ -379,6 +378,7 @@ func assertProviderClientID(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Ke
 
 // assert that the given input match the height to valset update ID mappings in the store
 func assertHeightValsetUpdateIDs(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, heighValsetUpdateIDs []consumertypes.HeightToValsetUpdateID) {
+	t.Helper()
 	ctr := 0
 
 	for _, heightToValsetUpdateID := range ck.GetAllHeightToValsetUpdateIDs(ctx) {

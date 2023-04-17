@@ -65,6 +65,9 @@ const (
 	// LastStandaloneHeightByteKey is the byte that will store last standalone height
 	LastStandaloneHeightByteKey
 
+	// SmallestNonOptOutPowerByteKey is the byte that will store the smallest val power that cannot opt out
+	SmallestNonOptOutPowerByteKey
+
 	// HistoricalInfoKey is the byte prefix that will store the historical info for a given height
 	HistoricalInfoBytePrefix
 
@@ -134,6 +137,10 @@ func InitialValSetKey() []byte {
 
 func LastStandaloneHeightKey() []byte {
 	return []byte{LastStandaloneHeightByteKey}
+}
+
+func SmallestNonOptOutPowerKey() []byte {
+	return []byte{SmallestNonOptOutPowerByteKey}
 }
 
 // HistoricalInfoKey returns the key to historical info to a given block height

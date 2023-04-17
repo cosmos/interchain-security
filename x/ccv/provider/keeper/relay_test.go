@@ -313,6 +313,7 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
 	channelID string, ibcSeqNum uint64,
 ) exported.Acknowledgement {
+	t.Helper()
 	// Instantiate vsc matured packet data and bytes
 	data := testkeeper.GetNewVSCMaturedPacketData()
 	dataBz, err := data.Marshal()
@@ -328,6 +329,7 @@ func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, 
 func executeOnRecvSlashPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
 	channelID string, ibcSeqNum uint64, packetData ccv.SlashPacketData,
 ) exported.Acknowledgement {
+	t.Helper()
 	// Instantiate slash packet data and bytes
 	dataBz, err := packetData.Marshal()
 	require.NoError(t, err)

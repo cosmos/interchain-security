@@ -10,7 +10,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	tmdb "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -24,7 +23,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -44,17 +43,19 @@ type InMemKeeperParams struct {
 }
 
 // NewInMemKeeperParams instantiates in-memory keeper params with default values
-func NewInMemKeeperParams(t testing.TB) InMemKeeperParams {
-	storeKey := sdk.NewKVStoreKey(ccvtypes.StoreKey)
-	memStoreKey := storetypes.NewMemoryStoreKey(ccvtypes.MemStoreKey)
+func NewInMemKeeperParams(tb testing.TB) InMemKeeperParams {
+	tb.Helper()
+	storeKey := sdk.NewKVStoreKey(types.StoreKey)
+	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
 	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
-	require.NoError(t, stateStore.LoadLatestVersion())
+	require.NoError(tb, stateStore.LoadLatestVersion())
 
 	registry := codectypes.NewInterfaceRegistry()
+	cryptocodec.RegisterInterfaces(registry) // Public key implementation registered here
 	cdc := codec.NewProtoCodec(registry)
 
 	paramsSubspace := paramstypes.NewSubspace(cdc,
@@ -153,6 +154,7 @@ func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consu
 func GetProviderKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 	providerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers,
 ) {
+	t.Helper()
 	ctrl := gomock.NewController(t)
 	mocks := NewMockedKeepers(ctrl)
 	return NewInMemProviderKeeper(params, mocks), params.Ctx, ctrl, mocks
@@ -165,42 +167,25 @@ func GetProviderKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 	consumerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers,
 ) {
+	t.Helper()
 	ctrl := gomock.NewController(t)
 	mocks := NewMockedKeepers(ctrl)
 	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
-}
-
-// Registers proto interfaces for params.Cdc
-//
-// For now, we explicitly force certain unit tests to register sdk crypto interfaces.
-// TODO: This function will be executed automatically once https://github.com/cosmos/interchain-security/issues/273 is solved.
-func (params *InMemKeeperParams) RegisterSdkCryptoCodecInterfaces() {
-	ir := codectypes.NewInterfaceRegistry()
-	// Public key implementation registered here
-	cryptocodec.RegisterInterfaces(ir)
-	// Replace default cdc, with a custom (registered) codec
-	params.Cdc = codec.NewProtoCodec(ir)
 }
 
 type PrivateKey struct {
 	PrivKey cryptotypes.PrivKey
 }
 
-// Generates a public key for unit tests (abiding by tricky interface implementations from tm/sdk)
-func GenPubKey() (crypto.PubKey, error) {
-	privKey := PrivateKey{ed25519.GenPrivKey()}
-	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
-}
-
 // Obtains slash packet data with a newly generated key, and randomized field values
-func GetNewSlashPacketData() ccvtypes.SlashPacketData {
+func GetNewSlashPacketData() types.SlashPacketData {
 	b1 := make([]byte, 8)
 	_, _ = rand.Read(b1)
 	b2 := make([]byte, 8)
 	_, _ = rand.Read(b2)
 	b3 := make([]byte, 8)
 	_, _ = rand.Read(b3)
-	return ccvtypes.SlashPacketData{
+	return types.SlashPacketData{
 		Validator: abci.Validator{
 			Address: ed25519.GenPrivKey().PubKey().Address(),
 			Power:   int64(binary.BigEndian.Uint64(b1)),
@@ -211,10 +196,10 @@ func GetNewSlashPacketData() ccvtypes.SlashPacketData {
 }
 
 // Obtains vsc matured packet data with a newly generated key
-func GetNewVSCMaturedPacketData() ccvtypes.VSCMaturedPacketData {
+func GetNewVSCMaturedPacketData() types.VSCMaturedPacketData {
 	b := make([]byte, 8)
 	_, _ = rand.Read(b)
-	return ccvtypes.VSCMaturedPacketData{ValsetUpdateId: binary.BigEndian.Uint64(b)}
+	return types.VSCMaturedPacketData{ValsetUpdateId: binary.BigEndian.Uint64(b)}
 }
 
 // SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
@@ -222,6 +207,7 @@ func GetNewVSCMaturedPacketData() ccvtypes.VSCMaturedPacketData {
 func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers,
 ) {
+	t.Helper()
 	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
 		"chainID", clienttypes.NewHeight(4, 5))
 	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
@@ -258,6 +244,7 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 
 // Obtains a CrossChainValidator with a newly generated key, and randomized field values
 func GetNewCrossChainValidator(t *testing.T) consumertypes.CrossChainValidator {
+	t.Helper()
 	b1 := make([]byte, 8)
 	_, _ = rand.Read(b1)
 	power := int64(binary.BigEndian.Uint64(b1))

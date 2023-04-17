@@ -82,21 +82,21 @@ func TestPendingChanges(t *testing.T) {
 	require.Nil(t, gotPd, "got non-nil pending changes after Delete")
 }
 
-// TestLastSovereignHeight tests the getter and setter for the last standalone height
-func TestLastSovereignHeight(t *testing.T) {
+// TestLastSovereignHeight tests the getter and setter for the ccv init genesis height
+func TestInitGenesisHeight(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	// Default value should be 0 without any setter
-	require.Equal(t, int64(0), consumerKeeper.GetLastStandaloneHeight(ctx))
+	// Panics without setter
+	require.Panics(t, func() { consumerKeeper.GetInitGenesisHeight(ctx) })
 
-	// Set/get the last standalone height being 10
-	consumerKeeper.SetLastStandaloneHeight(ctx, 10)
-	require.Equal(t, int64(10), consumerKeeper.GetLastStandaloneHeight(ctx))
+	// Set/get the height being 10
+	consumerKeeper.SetInitGenesisHeight(ctx, 10)
+	require.Equal(t, int64(10), consumerKeeper.GetInitGenesisHeight(ctx))
 
-	// Set/get the last standalone height being 43234426
-	consumerKeeper.SetLastStandaloneHeight(ctx, 43234426)
-	require.Equal(t, int64(43234426), consumerKeeper.GetLastStandaloneHeight(ctx))
+	// Set/get the height being 43234426
+	consumerKeeper.SetInitGenesisHeight(ctx, 43234426)
+	require.Equal(t, int64(43234426), consumerKeeper.GetInitGenesisHeight(ctx))
 }
 
 // TestPreCCV tests the getter, setter and deletion methods for the pre-CCV state flag
@@ -158,7 +158,6 @@ func TestInitialValSet(t *testing.T) {
 			Power:  10978554,
 		},
 	}, consumerKeeper.GetInitialValSet(ctx))
-
 }
 
 // TestGetLastSovereignValidators tests the getter method for getting the last valset
@@ -250,8 +249,6 @@ func TestPacketMaturityTime(t *testing.T) {
 // TestCrossChainValidator tests the getter, setter, and deletion method for cross chain validator records
 func TestCrossChainValidator(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	// Explicitly register codec with public key interface
-	keeperParams.RegisterSdkCryptoCodecInterfaces()
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
@@ -291,8 +288,6 @@ func TestCrossChainValidator(t *testing.T) {
 // TestGetAllCCValidator tests GetAllCCValidator behaviour correctness
 func TestGetAllCCValidator(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	// Explicitly register codec with public key interface
-	keeperParams.RegisterSdkCryptoCodecInterfaces()
 	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 

@@ -29,9 +29,7 @@ type CryptoIdentity struct {
 }
 
 func NewCryptoIdentityFromBytesSeed(seed []byte) *CryptoIdentity {
-	//lint:ignore SA1019 We don't care because this is only a test.
-
-	consKey := &sdkcryptoEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)} //nolint:staticcheck // SA1019: crypto/ed25519 is deprecated: Use golang.org/x/crypto/ed25519 instead. (staticcheck)
+	consKey := &sdkcryptoEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)} //nolint:staticcheck //  SA1019: sdkcryptoEd25519.PrivKey is deprecated: PrivKey defines a ed25519 private key. NOTE: ed25519 keys must not be used in SDK apps except in a tendermint validator context.
 	opKey := sdkcryptoSecp256k1.GenPrivKeyFromSecret(seed)
 
 	return &CryptoIdentity{
@@ -45,6 +43,15 @@ func NewCryptoIdentityFromIntSeed(i int) *CryptoIdentity {
 	seed := []byte("AAAAAAAAabcdefghijklmnopqrstuvwx") // 8+24 bytes
 	binary.LittleEndian.PutUint64(seed[:8], iUint64)
 	return NewCryptoIdentityFromBytesSeed(seed)
+}
+
+// GenMultipleCryptoIds generates and returns multiple CryptoIdentities from a starting int seed.
+func GenMultipleCryptoIds(num int, fromIntSeed int) []*CryptoIdentity {
+	ids := make([]*CryptoIdentity, num)
+	for i := 0; i < num; i++ {
+		ids[i] = NewCryptoIdentityFromIntSeed(fromIntSeed + i)
+	}
+	return ids
 }
 
 func (v *CryptoIdentity) TMValidator(power int64) *tmtypes.Validator {

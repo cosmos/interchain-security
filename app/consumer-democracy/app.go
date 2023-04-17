@@ -21,7 +21,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 
-	store "github.com/cosmos/cosmos-sdk/store/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -79,7 +78,7 @@ import (
 	ibc "github.com/cosmos/ibc-go/v7/modules/core"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
-	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
@@ -155,7 +154,6 @@ var (
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		tendermint.AppModuleBasic{},
-		// router.AppModuleBasic{},
 		consumer.AppModuleBasic{},
 	)
 
@@ -260,7 +258,7 @@ func New(
 	keys := sdk.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey, crisistypes.StoreKey,
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
-		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
+		govtypes.StoreKey, paramstypes.StoreKey, ibcexported.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey, authzkeeper.StoreKey,
 		consumertypes.StoreKey,
@@ -296,7 +294,7 @@ func New(
 		keys[capabilitytypes.StoreKey],
 		memKeys[capabilitytypes.MemStoreKey],
 	)
-	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
+	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibcexported.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedIBCConsumerKeeper := app.CapabilityKeeper.ScopeToModule(consumertypes.ModuleName)
 	app.CapabilityKeeper.Seal()
@@ -418,8 +416,8 @@ func New(
 	)
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		appCodec,
-		keys[ibchost.StoreKey],
-		app.GetSubspace(ibchost.ModuleName),
+		keys[ibcexported.StoreKey],
+		app.GetSubspace(ibcexported.ModuleName),
 		&app.ConsumerKeeper,
 		app.UpgradeKeeper,
 		scopedIBCKeeper,
@@ -443,7 +441,7 @@ func New(
 		authtypes.FeeCollectorName,
 	)
 
-	// Setting the staking keeper is only needed for standalone to consumer changeover chains
+	// Setting the standalone staking keeper is only needed for standalone to consumer changeover chains
 	app.ConsumerKeeper.SetStandaloneStakingKeeper(app.StakingKeeper)
 
 	// consumer keeper satisfies the staking keeper interface
@@ -520,6 +518,7 @@ func New(
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
+	// NOTE: the soft opt-out requires that the consumer module's beginblocker comes after the slashing module's beginblocker
 	app.MM.SetOrderBeginBlockers(
 		// upgrades should be run first
 		upgradetypes.ModuleName,
@@ -538,7 +537,7 @@ func New(
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibctransfertypes.ModuleName,
-		ibchost.ModuleName,
+		ibcexported.ModuleName,
 		consumertypes.ModuleName,
 	)
 	app.MM.SetOrderEndBlockers(
@@ -558,7 +557,7 @@ func New(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibctransfertypes.ModuleName,
-		ibchost.ModuleName,
+		ibcexported.ModuleName,
 		consumertypes.ModuleName,
 	)
 
@@ -584,7 +583,7 @@ func New(
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
-		ibchost.ModuleName,
+		ibcexported.ModuleName,
 		ibctransfertypes.ModuleName,
 		consumertypes.ModuleName,
 	)
@@ -647,7 +646,6 @@ func New(
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
 		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
-
 			app.IBCKeeper.ConnectionKeeper.SetParams(ctx, ibcconnectiontypes.DefaultParams())
 
 			fromVM := make(map[string]uint64)
@@ -674,7 +672,7 @@ func New(
 				return fromVM, fmt.Errorf("failed to unmarshal genesis state: %w", err)
 			}
 
-			var consumerGenesis = consumertypes.GenesisState{}
+			consumerGenesis := consumertypes.GenesisState{}
 			appCodec.MustUnmarshalJSON(appState[consumertypes.ModuleName], &consumerGenesis)
 
 			consumerGenesis.PreCCV = true
@@ -699,7 +697,7 @@ func New(
 		// Chains may need to add a KV store to their application. The following code
 		// is needed for standalone chains that're changing over to a consumer chain, with a consumer ccv module.
 		// When a chain starts from height 0 (like for testing purposes in this repo), the following code is not needed.
-		storeUpgrades := store.StoreUpgrades{
+		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{consumertypes.ModuleName},
 		}
 
@@ -957,7 +955,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govv1.ParamKeyTable())
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
-	paramsKeeper.Subspace(ibchost.ModuleName)
+	paramsKeeper.Subspace(ibcexported.ModuleName)
 	paramsKeeper.Subspace(consumertypes.ModuleName)
 
 	return paramsKeeper

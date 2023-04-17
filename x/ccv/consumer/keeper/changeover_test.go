@@ -13,7 +13,6 @@ import (
 )
 
 func TestChangeoverToConsumer(t *testing.T) {
-
 	cIds := []crypto.CryptoIdentity{}
 	for i := 0; i < 10; i++ {
 		cIds = append(cIds, *crypto.NewCryptoIdentityFromIntSeed(i + 42834729))
@@ -89,7 +88,6 @@ func TestChangeoverToConsumer(t *testing.T) {
 	for _, tc := range testCases {
 
 		keeperParams := uthelpers.NewInMemKeeperParams(t)
-		keeperParams.RegisterSdkCryptoCodecInterfaces()
 		consumerKeeper, ctx, ctrl, mocks := uthelpers.GetConsumerKeeperAndCtx(t, keeperParams)
 		defer ctrl.Finish()
 
@@ -111,9 +109,6 @@ func TestChangeoverToConsumer(t *testing.T) {
 
 		// PreCCV should now be toggled false
 		require.False(t, consumerKeeper.IsPreCCV(ctx))
-
-		// Last standalone height should be set to current block height
-		require.Equal(t, ctx.BlockHeight(), consumerKeeper.GetLastStandaloneHeight(ctx))
 
 		// Cross chain validator states should be populated with initial valset
 		ccVals := consumerKeeper.GetAllCCValidator(ctx)

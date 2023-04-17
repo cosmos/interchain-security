@@ -63,8 +63,8 @@ type CCVTestSuite struct {
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
 func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
-	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string) *CCVTestSuite {
-
+	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string,
+) *CCVTestSuite {
 	ccvSuite := new(CCVTestSuite)
 
 	// Define callback to set up the provider chain
@@ -73,12 +73,13 @@ func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		*ibctesting.TestChain,
 		testutil.ProviderApp,
 	) {
+		t.Helper()
 		// Instantiate the test coordinator.
 		coordinator := ibctesting.NewCoordinator(t, 0)
 
 		// Add provider to coordinator, store returned test chain and app.
 		// Concrete provider app type is passed to the generic function here.
-		provider, providerApp := icstestingutils.AddProvider[Tp](coordinator, t, providerAppIniter)
+		provider, providerApp := icstestingutils.AddProvider[Tp](t, coordinator, providerAppIniter)
 
 		// Pass variables to suite.
 		return coordinator, provider, providerApp
@@ -286,7 +287,7 @@ func (s *CCVTestSuite) SetupTransferChannel() {
 	s.Require().NoError(err)
 }
 
-func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) {
+func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) { //nolint:govet // this is a test so we can copy locks
 	consumerKeeper := consumerBundle.GetKeeper()
 	providerStakingKeeper := s.providerApp.GetStakingKeeper()
 

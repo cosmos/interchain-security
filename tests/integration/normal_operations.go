@@ -50,7 +50,7 @@ func (s CCVTestSuite) TestHistoricalInfo() {
 	}
 
 	for _, ts := range testSetup {
-		ts(s)
+		ts(s) //nolint:govet // this is a test so we can copy locks
 	}
 
 	// test cases verify that historical info entries are pruned when their height

@@ -126,7 +126,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			// stop consumer chain and release unbonding
 			return k.StopConsumerChain(ctx, chainID, false)
 		}
-		return sdkerrors.Wrapf(providertypes.ErrUnknownConsumerChannelID, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
+		return sdkerrors.Wrapf(providertypes.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
 	}
 	return nil
 }

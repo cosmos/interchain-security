@@ -22,6 +22,7 @@ func (k Keeper) GetConsumerParams(ctx sdk.Context) types.Params {
 		k.GetConsumerRedistributionFrac(ctx),
 		k.GetHistoricalEntries(ctx),
 		k.GetUnbondingPeriod(ctx),
+		k.GetSoftOptOutThreshold(ctx),
 	)
 }
 
@@ -37,7 +38,6 @@ func (k Keeper) GetParams(ctx sdk.Context) stakingtypes.Params {
 
 // SetParams implement from staking keeper
 func (k Keeper) SetParams(ctx sdk.Context, params stakingtypes.Params) {
-
 }
 
 // GetEnabled returns the enabled flag for the consumer module
@@ -116,4 +116,12 @@ func (k Keeper) GetUnbondingPeriod(ctx sdk.Context) time.Duration {
 	var period time.Duration
 	k.paramStore.Get(ctx, types.KeyConsumerUnbondingPeriod, &period)
 	return period
+}
+
+// GetSoftOptOutThreshold returns the percentage of validators at the bottom of the set
+// that can opt out of running the consumer chain
+func (k Keeper) GetSoftOptOutThreshold(ctx sdk.Context) string {
+	var str string
+	k.paramStore.Get(ctx, types.KeySoftOptOutThreshold, &str)
+	return str
 }

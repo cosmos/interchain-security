@@ -32,8 +32,8 @@ type ConsumerDemocracyTestSuite struct {
 // NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite,
 // ready to be tested against using suite.Run().
 func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
-	democConsumerAppIniter ibctesting.AppIniter) *ConsumerDemocracyTestSuite {
-
+	democConsumerAppIniter ibctesting.AppIniter,
+) *ConsumerDemocracyTestSuite {
 	democSuite := new(ConsumerDemocracyTestSuite)
 
 	democSuite.setupCallback = func(t *testing.T) (
@@ -41,12 +41,13 @@ func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
 		*ibctesting.TestChain,
 		testutil.DemocConsumerApp,
 	) {
+		t.Helper()
 		// Instantiate the test coordinator
 		coordinator := ibctesting.NewCoordinator(t, 0)
 
 		// Add single democracy consumer to coordinator, store returned test chain and app.
 		democConsumer, democConsumerApp := icstestingutils.AddDemocracyConsumer[T](
-			coordinator, t, democConsumerAppIniter)
+			t, coordinator, democConsumerAppIniter)
 
 		// Pass variables to suite.
 		return coordinator, democConsumer, democConsumerApp
@@ -224,7 +225,8 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 }
 
 func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
-	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins) error {
+	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
+) error {
 	msgContent, err := govv1.NewLegacyContent(&paramChange, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	if err != nil {
 		return err

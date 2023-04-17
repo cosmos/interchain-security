@@ -16,7 +16,7 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	testutil "github.com/cosmos/interchain-security/testutil/keeper"
+	"github.com/cosmos/interchain-security/testutil/crypto"
 
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
@@ -38,8 +38,8 @@ var (
 // and its Validate() method over different genesis scenarios
 func TestValidateInitialGenesisState(t *testing.T) {
 	// generate validator public key
-	pubKey, err := testutil.GenPubKey()
-	require.NoError(t, err)
+	cId := crypto.NewCryptoIdentityFromIntSeed(238934)
+	pubKey := cId.TMCryptoPubKey()
 
 	// create validator set with single validator
 	validator := tmtypes.NewValidator(pubKey, 1)
@@ -222,6 +222,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 					types.DefaultConsumerRedistributeFrac,
 					types.DefaultHistoricalEntries,
 					types.DefaultConsumerUnbondingPeriod,
+					types.DefaultSoftOptOutThreshold,
 				)),
 			true,
 		},
@@ -241,8 +242,8 @@ func TestValidateInitialGenesisState(t *testing.T) {
 // and its Validate() method over different genesis scenarios
 func TestValidateRestartGenesisState(t *testing.T) {
 	// generate validator private/public key
-	pubKey, err := testutil.GenPubKey()
-	require.NoError(t, err)
+	cId := crypto.NewCryptoIdentityFromIntSeed(234234)
+	pubKey := cId.TMCryptoPubKey()
 
 	// create validator set with single validator
 	validator := tmtypes.NewValidator(pubKey, 1)
@@ -420,6 +421,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 					types.DefaultConsumerRedistributeFrac,
 					types.DefaultHistoricalEntries,
 					types.DefaultConsumerUnbondingPeriod,
+					types.DefaultSoftOptOutThreshold,
 				)),
 			true,
 		},

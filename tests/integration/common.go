@@ -181,8 +181,8 @@ func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 // Executes a BeginRedelegation (unbonding and redelegation) operation
 // on the provider chain using delegated funds from delAddr
 func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
-	ValDstAddr sdk.ValAddress, sharesAmount sdk.Dec) {
-
+	valDstAddr sdk.ValAddress, sharesAmount sdk.Dec,
+) {
 	stakingKeeper := s.providerApp.GetTestStakingKeeper()
 	ctx := s.providerCtx()
 
@@ -191,7 +191,7 @@ func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddre
 		ctx,
 		delAddr,
 		valSrcAddr,
-		ValDstAddr,
+		valDstAddr,
 		sharesAmount,
 	)
 	s.Require().NoError(err)
@@ -325,8 +325,8 @@ func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID strin
 // Checks that an expected amount of redelegations exist for a delegator
 // via the staking keeper, then returns those redelegations.
 func checkRedelegations(s *CCVTestSuite, delAddr sdk.AccAddress,
-	expect uint16) []stakingtypes.Redelegation {
-
+	expect uint16,
+) []stakingtypes.Redelegation {
 	redelegations := s.providerApp.GetTestStakingKeeper().GetRedelegations(s.providerCtx(), delAddr, 2)
 
 	s.Require().Len(redelegations, int(expect))

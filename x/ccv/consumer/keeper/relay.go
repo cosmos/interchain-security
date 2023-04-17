@@ -48,13 +48,12 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		)
 	}
 	// Set pending changes by accumulating changes from this packet with all prior changes
-	var pendingChanges []abci.ValidatorUpdate
+	currentValUpdates := []abci.ValidatorUpdate{}
 	currentChanges, exists := k.GetPendingChanges(ctx)
-	if !exists {
-		pendingChanges = newChanges.ValidatorUpdates
-	} else {
-		pendingChanges = utils.AccumulateChanges(currentChanges.ValidatorUpdates, newChanges.ValidatorUpdates)
+	if exists {
+		currentValUpdates = currentChanges.ValidatorUpdates
 	}
+	pendingChanges := utils.AccumulateChanges(currentValUpdates, newChanges.ValidatorUpdates)
 
 	k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{
 		ValidatorUpdates: pendingChanges,
