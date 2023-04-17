@@ -5,7 +5,12 @@ import (
 	"time"
 
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+<<<<<<< HEAD
 	"github.com/cosmos/interchain-security/x/ccv/types"
+=======
+	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+>>>>>>> 5b09e7c619c5a17021a5926214caa8d0b72e38e2
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,7 +40,7 @@ func TestParams(t *testing.T) {
 		"channel-2", "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
 		7*24*time.Hour, 25*time.Hour, "0.5", 500, 24*21*time.Hour, "0.05")
 	consumerKeeper.SetParams(ctx, newParams)
-	params = consumerKeeper.GetParams(ctx)
+	params = consumerKeeper.GetConsumerParams(ctx)
 	require.Equal(t, newParams, params)
 
 	consumerKeeper.SetBlocksPerDistributionTransmission(ctx, 10)
