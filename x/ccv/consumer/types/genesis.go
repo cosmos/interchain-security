@@ -1,7 +1,7 @@
 package types
 
 import (
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "cosmossdk.io/errors"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
