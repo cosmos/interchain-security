@@ -170,7 +170,8 @@ func TestSlash(t *testing.T) {
 
 	// If we call slash with infraction type empty, standalone staking keeper's slash will not be called
 	// (if it was called, test would panic without mocking the call)
-	consumerKeeper.Slash(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.InfractionEmpty)
+
+	consumerKeeper.Slash(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0))
 
 	// Now setup a mock for Slash, and confirm that it is called against
 	// standalone staking keeper with valid infraction type
@@ -246,8 +247,8 @@ func GenerateValidators(tb testing.TB) []*tmtypes.Validator {
 	numValidators := 4
 	validators := []*tmtypes.Validator{}
 	for i := 0; i < numValidators; i++ {
-		pubKey, err := testkeeper.GenPubKey()
-		require.NoError(tb, err)
+		cId := crypto.NewCryptoIdentityFromIntSeed(234 + i)
+		pubKey := cId.TMCryptoPubKey()
 
 		votingPower := int64(i + 1)
 		validator := tmtypes.NewValidator(pubKey, votingPower)

@@ -677,7 +677,8 @@ func (s *CCVTestSuite) TestCISBeforeCCVEstablished() {
 	s.Require().Len(pendingPackets.List, 0)
 
 	consumerKeeper.Slash(s.consumerCtx(), []byte{0x01, 0x02, 0x3},
-		66, 4324, sdk.MustNewDecFromStr("0.05"), slashingtypes.Infraction_INFRACTION_DOWNTIME)
+		66, 4324, sdk.MustNewDecFromStr("0.05"), 	stakingtypes.Infraction_INFRACTION_DOWNTIME
+	)
 
 	// Check slash packet was queued
 	pendingPackets = consumerKeeper.GetPendingPackets(s.consumerCtx())

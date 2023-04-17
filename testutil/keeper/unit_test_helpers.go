@@ -234,7 +234,7 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 		consumertypes.DefaultConsumerRedistributeFrac,
 		consumertypes.DefaultBlocksPerDistributionTransmission,
 		consumertypes.DefaultHistoricalEntries,
-		ccvtypes.DefaultCCVTimeoutPeriod,
+		consumertypes.DefaultCCVTimeoutPeriod,
 		consumertypes.DefaultTransferTimeoutPeriod,
 		consumertypes.DefaultConsumerUnbondingPeriod,
 	).(*providertypes.ConsumerAdditionProposal)
