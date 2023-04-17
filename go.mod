@@ -48,7 +48,7 @@ require (
 	cosmossdk.io/api v0.3.1 // indirect
 	cosmossdk.io/core v0.5.1 // indirect
 	cosmossdk.io/depinject v1.0.0-alpha.3 // indirect
-	cosmossdk.io/errors v1.0.0-beta.7 // indirect
+	cosmossdk.io/errors v1.0.0-beta.7
 	cosmossdk.io/tools/rosetta v0.2.1
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
@@ -179,7 +179,6 @@ require (
 )
 
 replace (
-	github.com/cosmos/cosmos-sdk => github.com/notional-labs/cosmos-sdk v0.47.2-0.20230414131805-781d3665d7a0
 	github.com/cosmos/ibc-go/v7 => github.com/notional-labs/ibc-go/v7 v7.0.0-rc0.0.20230417042817-8072b1e9aabc
 	github.com/stretchr/testify => github.com/stretchr/testify v1.7.1
 )
