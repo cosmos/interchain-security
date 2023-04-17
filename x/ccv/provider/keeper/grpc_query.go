@@ -28,7 +28,7 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 
 	gen, ok := k.GetConsumerGenesis(ctx, req.ChainId)
 	if !ok {
-		return nil, sdkerrors.Wrap(types.ErrUnknownConsumerChainID, req.ChainId)
+		return nil, sdkerrors.Wrap(types.ErrUnknownConsumerChainId, req.ChainId)
 	}
 
 	return &types.QueryConsumerGenesisResponse{GenesisState: gen}, nil
