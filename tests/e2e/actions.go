@@ -687,27 +687,6 @@ type addIbcChannelAction struct {
 	order       string
 }
 
-type startHermesAction struct{}
-
-func (tr TestRun) startHermes(
-	action startHermesAction,
-	verbose bool,
-) {
-	// hermes start is running in detached mode
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", "-d", tr.containerConfig.instanceName, "hermes",
-		"start",
-	)
-
-	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
-	}
-
-	if verbose {
-		fmt.Println("started Hermes")
-	}
-}
-
 func (tr TestRun) addIbcChannel(
 	action addIbcChannelAction,
 	verbose bool,
