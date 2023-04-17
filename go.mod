@@ -178,6 +178,8 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/cosmos/cosmos-sdk => github.com/notional-labs/cosmos-sdk v0.47.2-0.20230414120426-d02aaa4e2da1
-
-replace github.com/stretchr/testify => github.com/stretchr/testify v1.7.1
+replace (
+	github.com/cosmos/cosmos-sdk => github.com/notional-labs/cosmos-sdk v0.47.2-0.20230414120426-d02aaa4e2da1
+	github.com/cosmos/ibc-go/v7 => github.com/notional-labs/ibc-go/v7 v7.0.0-rc0.0.20230417042817-8072b1e9aabc
+	github.com/stretchr/testify => github.com/stretchr/testify v1.7.1
+)
