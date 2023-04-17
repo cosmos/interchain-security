@@ -308,8 +308,6 @@ func TestUpdateLargestSoftOptOutValidatorPower(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			keeperParams := testkeeper.NewInMemKeeperParams(t)
-			// Explicitly register cdc with public key interface
-			keeperParams.RegisterSdkCryptoCodecInterfaces()
 			consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 			consumerKeeper.SetParams(ctx, types.DefaultParams())
 			defer ctrl.Finish()
