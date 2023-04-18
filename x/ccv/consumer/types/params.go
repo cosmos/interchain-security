@@ -7,6 +7,7 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -88,7 +89,7 @@ func DefaultParams() Params {
 		DefaultBlocksPerDistributionTransmission,
 		"",
 		"",
-		DefaultConsumerUnbondingPeriod,
+		ccv.DefaultCCVTimeoutPeriod,
 		DefaultTransferTimeoutPeriod,
 		DefaultConsumerRedistributeFrac,
 		DefaultHistoricalEntries,
