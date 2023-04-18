@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cosmos/cosmos-sdk/runtime"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	appparams "github.com/cosmos/interchain-security/app/params"
 
@@ -223,6 +224,8 @@ type App struct { //nolint: golint
 	sm           *module.SimulationManager
 	configurator module.Configurator
 }
+
+var _ runtime.AppI = &App{}
 
 func init() {
 	userHomeDir, err := os.UserHomeDir()
