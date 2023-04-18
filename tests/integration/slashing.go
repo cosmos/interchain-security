@@ -559,7 +559,7 @@ func (s *CCVTestSuite) TestValidatorDoubleSigning() {
 	seq, ok := s.consumerApp.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, ccv.ConsumerPortID, channelID)
 	s.Require().True(ok)
 
-	// construct slash packet data and get the expcted commit hash
+	// construct slash packet data and get the expected commit hash
 	packetData := ccv.NewSlashPacketData(
 		abci.Validator{Address: consAddr.Bytes(), Power: power},
 		// get VSC ID mapping to the infraction height with the TM delay subtracted
