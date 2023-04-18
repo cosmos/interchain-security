@@ -1,10 +1,12 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -72,6 +74,16 @@ Where proposal.json contains:
 			proposal, err := ParseConsumerAdditionProposalJSON(args[0])
 			if err != nil {
 				return err
+			}
+
+			err = CheckPropUnbondingPeriod(clientCtx, proposal.UnbondingPeriod)
+			if err != nil {
+				// do not fail for errors regarding the unbonding period, but just log a warning
+				fmt.Fprintf(
+					os.Stderr,
+					"Warning: Could not assure that Proposal Unbonding Period is shorter than Provider Unbonding Period. Error message: %s",
+					err.Error(),
+				)
 			}
 
 			content := types.NewConsumerAdditionProposal(
@@ -367,6 +379,16 @@ func postConsumerAdditionProposalHandlerFn(clientCtx client.Context) http.Handle
 			return
 		}
 
+		err := CheckPropUnbondingPeriod(clientCtx, req.UnbondingPeriod)
+		if err != nil {
+			// do not fail for errors regarding the unbonding period, but just log a warning
+			fmt.Fprintf(
+				os.Stderr,
+				"Warning: Could not assure that Proposal Unbonding Period is shorter than Provider Unbonding Period. Error message: %s",
+				err.Error(),
+			)
+		}
+
 		content := types.NewConsumerAdditionProposal(
 			req.Title, req.Description, req.ChainId, req.InitialHeight,
 			req.GenesisHash, req.BinaryHash, req.SpawnTime,
@@ -440,4 +462,29 @@ func postEquivocationProposalHandlerFn(clientCtx client.Context) http.HandlerFun
 
 		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
 	}
+}
+
+func CheckPropUnbondingPeriod(clientCtx client.Context, propUnbondingPeriod time.Duration) error {
+	client, err := clientCtx.GetNode()
+
+	if err != nil {
+		return err
+	}
+
+	consensusParams, err := client.ConsensusParams(context.Background(), &clientCtx.Height)
+
+	if err != nil {
+		return err
+	}
+
+	providerUnbondingTime := consensusParams.ConsensusParams.Evidence.MaxAgeDuration
+
+	if providerUnbondingTime <= propUnbondingPeriod {
+		return fmt.Errorf(
+			"consumer unbonding period should be smaller than provider unbonding period, but is longer: \n consumer unbonding: %s \n provider unbonding: %s",
+			propUnbondingPeriod,
+			providerUnbondingTime)
+	}
+
+	return nil
 }
