@@ -5,8 +5,7 @@ import (
 	time "time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	utils "github.com/cosmos/interchain-security/x/ccv/utils"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 const (
@@ -171,7 +170,7 @@ func HistoricalInfoKey(height int64) []byte {
 // PacketMaturityTimeKey returns the key for storing the maturity time for a given received VSC packet id
 func PacketMaturityTimeKey(vscID uint64, maturityTime time.Time) []byte {
 	ts := uint64(maturityTime.UTC().UnixNano())
-	return utils.AppendMany(
+	return ccvtypes.AppendMany(
 		// Append the prefix
 		[]byte{PacketMaturityTimeBytePrefix},
 		// Append the time
