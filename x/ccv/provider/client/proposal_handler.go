@@ -466,13 +466,11 @@ func postEquivocationProposalHandlerFn(clientCtx client.Context) http.HandlerFun
 
 func CheckPropUnbondingPeriod(clientCtx client.Context, propUnbondingPeriod time.Duration) error {
 	client, err := clientCtx.GetNode()
-
 	if err != nil {
 		return err
 	}
 
 	consensusParams, err := client.ConsensusParams(context.Background(), &clientCtx.Height)
-
 	if err != nil {
 		return err
 	}
