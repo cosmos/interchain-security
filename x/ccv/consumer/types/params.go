@@ -8,7 +8,6 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 const (
@@ -100,10 +99,10 @@ func DefaultParams() Params {
 
 // Validate all ccv-consumer module parameters
 func (p Params) Validate() error {
-	if err := ccvtypes.ValidateBool(p.Enabled); err != nil {
+	if err := ccv.ValidateBool(p.Enabled); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidatePositiveInt64(p.BlocksPerDistributionTransmission); err != nil {
+	if err := ccv.ValidatePositiveInt64(p.BlocksPerDistributionTransmission); err != nil {
 		return err
 	}
 	if err := validateDistributionTransmissionChannel(p.DistributionTransmissionChannel); err != nil {
@@ -112,19 +111,19 @@ func (p Params) Validate() error {
 	if err := validateProviderFeePoolAddrStr(p.ProviderFeePoolAddrStr); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
+	if err := ccv.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateDuration(p.TransferTimeoutPeriod); err != nil {
+	if err := ccv.ValidateDuration(p.TransferTimeoutPeriod); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateStringFraction(p.ConsumerRedistributionFraction); err != nil {
+	if err := ccv.ValidateStringFraction(p.ConsumerRedistributionFraction); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidatePositiveInt64(p.HistoricalEntries); err != nil {
+	if err := ccv.ValidatePositiveInt64(p.HistoricalEntries); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateDuration(p.UnbondingPeriod); err != nil {
+	if err := ccv.ValidateDuration(p.UnbondingPeriod); err != nil {
 		return err
 	}
 	if err := validateSoftOptOutThreshold(p.SoftOptOutThreshold); err != nil {
@@ -136,23 +135,23 @@ func (p Params) Validate() error {
 // ParamSetPairs implements params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, ccvtypes.ValidateBool),
+		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, ccv.ValidateBool),
 		paramtypes.NewParamSetPair(KeyBlocksPerDistributionTransmission,
-			p.BlocksPerDistributionTransmission, ccvtypes.ValidatePositiveInt64),
+			p.BlocksPerDistributionTransmission, ccv.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyDistributionTransmissionChannel,
 			p.DistributionTransmissionChannel, validateDistributionTransmissionChannel),
 		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
 			p.ProviderFeePoolAddrStr, validateProviderFeePoolAddrStr),
-		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod,
-			p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(ccv.KeyCCVTimeoutPeriod,
+			p.CcvTimeoutPeriod, ccv.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyTransferTimeoutPeriod,
-			p.TransferTimeoutPeriod, ccvtypes.ValidateDuration),
+			p.TransferTimeoutPeriod, ccv.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyConsumerRedistributionFrac,
-			p.ConsumerRedistributionFraction, ccvtypes.ValidateStringFraction),
+			p.ConsumerRedistributionFraction, ccv.ValidateStringFraction),
 		paramtypes.NewParamSetPair(KeyHistoricalEntries,
-			p.HistoricalEntries, ccvtypes.ValidatePositiveInt64),
+			p.HistoricalEntries, ccv.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyConsumerUnbondingPeriod,
-			p.UnbondingPeriod, ccvtypes.ValidateDuration),
+			p.UnbondingPeriod, ccv.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySoftOptOutThreshold,
 			p.SoftOptOutThreshold, validateSoftOptOutThreshold),
 	}
@@ -164,7 +163,7 @@ func validateDistributionTransmissionChannel(i any) error {
 		return nil
 	}
 	// Otherwise validate as usual for a channelID
-	return ccvtypes.ValidateChannelIdentifier(i)
+	return ccv.ValidateChannelIdentifier(i)
 }
 
 func validateProviderFeePoolAddrStr(i any) error {
@@ -173,7 +172,7 @@ func validateProviderFeePoolAddrStr(i any) error {
 		return nil
 	}
 	// Otherwise validate as usual for a bech32 address
-	return ccvtypes.ValidateBech32(i)
+	return ccv.ValidateBech32(i)
 }
 
 func validateSoftOptOutThreshold(i interface{}) error {
