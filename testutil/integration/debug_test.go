@@ -141,6 +141,10 @@ func TestQueueAndSendSlashPacket(t *testing.T) {
 	runCCVTestByName(t, "TestQueueAndSendSlashPacket")
 }
 
+func TestCISBeforeCCVEstablished(t *testing.T) {
+	runCCVTestByName(t, "TestCISBeforeCCVEstablished")
+}
+
 //
 // Stop consumer tests
 //

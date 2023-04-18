@@ -27,6 +27,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		k.SetPreCCVTrue(ctx)
 		k.SetInitialValSet(ctx, state.InitialValSet)
 	}
+	k.SetInitGenesisHeight(ctx, ctx.BlockHeight()) // Usually 0, but not the case for changeover chains
 
 	k.SetParams(ctx, state.Params)
 	// TODO: Remove enabled flag and find a better way to setup integration tests
