@@ -31,7 +31,7 @@ I have...
 - [ ] Confirmed all author checklist items have been addressed 
 - [ ] Confirmed that this PR only changes documentation
 - [ ] Reviewed content for consistency
-- [ ] Reviewed content for thoroughness
 - [ ] Reviewed content for spelling and grammar
 - [ ] Tested instructions (if applicable)
+- [ ] Checked that the documentation website can be built and deployed successfully
 
