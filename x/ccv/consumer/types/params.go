@@ -88,7 +88,7 @@ func DefaultParams() Params {
 		DefaultBlocksPerDistributionTransmission,
 		"",
 		"",
-		ccvtypes.DefaultCCVTimeoutPeriod,
+		DefaultConsumerUnbondingPeriod,
 		DefaultTransferTimeoutPeriod,
 		DefaultConsumerRedistributeFrac,
 		DefaultHistoricalEntries,
