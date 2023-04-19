@@ -12,8 +12,8 @@ import "interchain_security/ccv/consumer/v1/genesis.proto";
 import "tendermint/crypto/keys.proto";
 
 
-// GenesisState defines the CCV provider chain genesis state
-message GenesisState {
+// ProviderGenesisState defines the CCV provider chain genesis state
+message ProviderGenesisState {
   // strictly positive and set to 1 (DefaultValsetUpdateID) for a new chain
   uint64 valset_update_id = 1; 
   // empty for a new chain
@@ -59,7 +59,7 @@ message ConsumerState {
   // InitalHeight defines the initial block height for the consumer chain
   uint64 initial_height = 4;
   // ConsumerGenesis defines the initial consumer chain genesis states
-  interchain_security.ccv.consumer.v1.GenesisState consumer_genesis = 5
+  interchain_security.ccv.consumer.v1.ConsumerGenesisState consumer_genesis = 5
   [ (gogoproto.nullable) = false ];
   // PendingValsetChanges defines the pending validator set changes for the consumer chain 
   repeated interchain_security.ccv.v1.ValidatorSetChangePacketData pending_valset_changes = 6

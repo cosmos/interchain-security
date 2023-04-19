@@ -12,8 +12,8 @@ import "ibc/core/channel/v1/channel.proto";
 import "google/protobuf/duration.proto";
 import "gogoproto/gogo.proto";
 
-// GenesisState defines the CCV consumer chain genesis state
-message GenesisState {
+// ConsumerGenesisState defines the CCV consumer chain genesis state
+message ConsumerGenesisState {
   ConsumerParams params = 1 [ (gogoproto.nullable) = false ];
   string provider_client_id = 2;  // empty for a new chain, filled in on restart.
   string provider_channel_id = 3; // empty for a new chain, filled in on restart.
