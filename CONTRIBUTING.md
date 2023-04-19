@@ -68,7 +68,7 @@ Architecture Decision Records (ADRs) may be proposed by any contributors or main
 ## Development Procedure
 
 * The latest state of development is on `main`.
-* `main` must never fail `make lint test`.
+* `main` must never fail `make lint` or `make test`.
 * No `--force` onto `main` (except when reverting a broken commit, which should seldom happen).
 * Create a branch to start work:
     * Fork the repo (core developers must create a branch directly in the ICS repo),
