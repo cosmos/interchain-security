@@ -13,7 +13,6 @@ import (
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 )
 
 // OnRecvVSCPacket sets the pending validator set changes that will be flushed to ABCI on Endblock
@@ -53,7 +52,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	if exists {
 		currentValUpdates = currentChanges.ValidatorUpdates
 	}
-	pendingChanges := utils.AccumulateChanges(currentValUpdates, newChanges.ValidatorUpdates)
+	pendingChanges := ccv.AccumulateChanges(currentValUpdates, newChanges.ValidatorUpdates)
 
 	k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{
 		ValidatorUpdates: pendingChanges,
@@ -186,7 +185,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 	// send packets in FIFO order
 	for _, p := range pending.GetList() {
 		// send packet over IBC
-		err := utils.SendIBCPacket(
+		err := ccv.SendIBCPacket(
 			ctx,
 			k.scopedKeeper,
 			k.channelKeeper,

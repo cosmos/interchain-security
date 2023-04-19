@@ -8,7 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ccvutils "github.com/cosmos/interchain-security/x/ccv/utils"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 type Status int
@@ -184,7 +184,7 @@ func InitTimeoutTimestampKey(chainID string) []byte {
 // The key has the following format: PendingCAPBytePrefix | timestamp.UnixNano() | chainID
 func PendingCAPKey(timestamp time.Time, chainID string) []byte {
 	ts := uint64(timestamp.UTC().UnixNano())
-	return ccvutils.AppendMany(
+	return ccvtypes.AppendMany(
 		// Append the prefix
 		[]byte{PendingCAPBytePrefix},
 		// Append the time
@@ -198,7 +198,7 @@ func PendingCAPKey(timestamp time.Time, chainID string) []byte {
 // The key has the following format: PendingCRPBytePrefix | timestamp.UnixNano() | chainID
 func PendingCRPKey(timestamp time.Time, chainID string) []byte {
 	ts := uint64(timestamp.UTC().UnixNano())
-	return ccvutils.AppendMany(
+	return ccvtypes.AppendMany(
 		// Append the prefix
 		[]byte{PendingCRPBytePrefix},
 		// Append the time
@@ -297,7 +297,7 @@ func ParseThrottledPacketDataKey(key []byte) (chainID string, ibcSeqNum uint64, 
 // GlobalSlashEntryKey returns the key for storing a global slash queue entry.
 func GlobalSlashEntryKey(entry GlobalSlashEntry) []byte {
 	recvTime := uint64(entry.RecvTime.UTC().UnixNano())
-	return ccvutils.AppendMany(
+	return ccvtypes.AppendMany(
 		// Append byte prefix
 		[]byte{GlobalSlashEntryBytePrefix},
 		// Append time bz
@@ -377,7 +377,7 @@ func SlashLogKey(providerAddr ProviderConsAddress) []byte {
 func ChainIDAndTSKey(prefix byte, chainID string, timestamp time.Time) []byte {
 	partialKey := ChainIDWithLenKey(prefix, chainID)
 	timeBz := sdk.FormatTimeBytes(timestamp)
-	return ccvutils.AppendMany(
+	return ccvtypes.AppendMany(
 		// Append the partialKey
 		partialKey,
 		// Append the time bytes
@@ -389,7 +389,7 @@ func ChainIDAndTSKey(prefix byte, chainID string, timestamp time.Time) []byte {
 // bytePrefix | len(chainID) | chainID
 func ChainIDWithLenKey(prefix byte, chainID string) []byte {
 	chainIDL := len(chainID)
-	return ccvutils.AppendMany(
+	return ccvtypes.AppendMany(
 		// Append the prefix
 		[]byte{prefix},
 		// Append the chainID length
@@ -419,7 +419,7 @@ func ParseChainIDAndTSKey(prefix byte, bz []byte) (string, time.Time, error) {
 // bytePrefix | len(chainID) | chainID | uint64(ID)
 func ChainIDAndUintIDKey(prefix byte, chainID string, uintID uint64) []byte {
 	partialKey := ChainIDWithLenKey(prefix, chainID)
-	return ccvutils.AppendMany(
+	return ccvtypes.AppendMany(
 		// Append the partialKey
 		partialKey,
 		// Append the uint id bytes
@@ -444,7 +444,7 @@ func ParseChainIDAndUintIDKey(prefix byte, bz []byte) (string, uint64, error) {
 // bytePrefix | len(chainID) | chainID | ConsAddress
 func ChainIDAndConsAddrKey(prefix byte, chainID string, addr sdk.ConsAddress) []byte {
 	partialKey := ChainIDWithLenKey(prefix, chainID)
-	return ccvutils.AppendMany(
+	return ccvtypes.AppendMany(
 		// Append the partialKey
 		partialKey,
 		// Append the addr bytes
