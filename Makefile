@@ -71,8 +71,11 @@ test-no-cache:
 ###                                Linting                                  ###
 ###############################################################################
 
+golangci_version=v1.46.2
+
 lint:
 	@echo "--> Running linter"
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(golangci_version)
 	golangci-lint run  ./... --config .golangci.yml
 
 format:
