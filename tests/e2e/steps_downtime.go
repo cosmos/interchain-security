@@ -202,9 +202,62 @@ func stepsDowntime(consumerName string) []Step {
 				},
 			},
 		},
+	}
+}
 
-		// TODO: Test full unbonding functionality, tracked as: https://github.com/cosmos/interchain-security/issues/311
-
+// stepsDowntimeWithOptOut returns steps validating that alice can incur downtime
+// and not be slashed/jailed, since her voting power is less than 5% of the total.
+//
+// Note: 60 / (60 + 500 + 950) ~= 0.04
+func stepsDowntimeWithOptOut(consumerName string) []Step {
+	return []Step{
+		{
+			action: downtimeSlashAction{
+				chain:     chainID(consumerName),
+				validator: validatorID("alice"),
+			},
+			state: State{
+				// powers not affected on either chain
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 60,
+						validatorID("bob"):   500,
+						validatorID("carol"): 950,
+					},
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 60,
+						validatorID("bob"):   500,
+						validatorID("carol"): 950,
+					},
+				},
+			},
+		},
+		{
+			action: relayPacketsAction{
+				chain:   chainID("provi"),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						// alice is not slashed or jailed due to soft opt out
+						validatorID("alice"): 60,
+						validatorID("bob"):   500,
+						validatorID("carol"): 950,
+					},
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 60,
+						validatorID("bob"):   500,
+						validatorID("carol"): 950,
+					},
+				},
+			},
+		},
 	}
 }
 
