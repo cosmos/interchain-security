@@ -111,7 +111,7 @@ func TestIsValidatorJailed(t *testing.T) {
 	defer ctrl.Finish()
 
 	// Consumer keeper from test setup should return false for IsPrevStandaloneChain()
-	require.False(t, consumerKeeper.IsPrevStandaloneChain())
+	require.False(t, consumerKeeper.IsPrevStandaloneChain(ctx))
 
 	// IsValidatorJailed should return false for an arbitrary consensus address
 	consAddr := []byte{0x01, 0x02, 0x03}
@@ -123,9 +123,11 @@ func TestIsValidatorJailed(t *testing.T) {
 	// Now confirm IsValidatorJailed returns true
 	require.True(t, consumerKeeper.IsValidatorJailed(ctx, consAddr))
 
-	// Next, we set a value for the standalone staking keeper so IsPrevStandaloneChain() returns true
+	// Next, we set a value for the standalone staking keeper,
+	// and mark the consumer keeper as being from a previous standalone chain
 	consumerKeeper.SetStandaloneStakingKeeper(mocks.MockStakingKeeper)
-	require.True(t, consumerKeeper.IsPrevStandaloneChain())
+	consumerKeeper.MarkAsPrevStandaloneChain(ctx)
+	require.True(t, consumerKeeper.IsPrevStandaloneChain(ctx))
 
 	// Set init genesis height to current block height so that ChangeoverIsComplete() is false
 	consumerKeeper.SetInitGenesisHeight(ctx, ctx.BlockHeight())
@@ -150,7 +152,7 @@ func TestSlash(t *testing.T) {
 	require.Len(t, pendingPackets.List, 0)
 
 	// Consumer keeper from test setup should return false for IsPrevStandaloneChain()
-	require.False(t, consumerKeeper.IsPrevStandaloneChain())
+	require.False(t, consumerKeeper.IsPrevStandaloneChain(ctx))
 
 	// Now setup a value for vscID mapped to infraction height
 	consumerKeeper.SetHeightValsetUpdateID(ctx, 5, 6)
@@ -160,9 +162,11 @@ func TestSlash(t *testing.T) {
 	pendingPackets = consumerKeeper.GetPendingPackets(ctx)
 	require.Len(t, pendingPackets.List, 1)
 
-	// Next, we set a value for the standalone staking keeper so IsPrevStandaloneChain() returns true
+	// Next, we set a value for the standalone staking keeper,
+	// and mark the consumer keeper as being from a previous standalone chain
 	consumerKeeper.SetStandaloneStakingKeeper(mocks.MockStakingKeeper)
-	require.True(t, consumerKeeper.IsPrevStandaloneChain())
+	consumerKeeper.MarkAsPrevStandaloneChain(ctx)
+	require.True(t, consumerKeeper.IsPrevStandaloneChain(ctx))
 
 	// At this point, the state of the consumer keeper is s.t.
 	// Slash() calls the standalone staking keeper's Slash()
