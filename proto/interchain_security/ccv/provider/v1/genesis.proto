@@ -35,7 +35,7 @@ message GenesisState {
   // empty for a new chain
   repeated ConsumerRemovalProposal consumer_removal_proposals = 7
   [ (gogoproto.nullable) = false ];
-  Params params = 8
+  ProviderParams params = 8
   [ (gogoproto.nullable) = false ];
   // empty for a new chain
   repeated ValidatorConsumerPubKey validator_consumer_pubkeys = 9

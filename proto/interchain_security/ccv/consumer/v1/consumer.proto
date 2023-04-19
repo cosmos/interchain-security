@@ -11,8 +11,8 @@ import "cosmos_proto/cosmos.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
-// Params defines the parameters for CCV consumer module
-message Params {
+// ConsumerParams defines the parameters for CCV consumer module
+message ConsumerParams {
   // TODO: Remove enabled flag and find a better way to setup integration tests
   // See: https://github.com/cosmos/interchain-security/issues/339
   bool enabled = 1;
