@@ -7,6 +7,7 @@
   - [Development Procedure](#development-procedure)
     - [Testing](#testing)
     - [Pull Requests](#pull-requests)
+      - [Large / complex contributions](#large--complex-contributions)
     - [Pull Request Templates](#pull-request-templates)
     - [Requesting Reviews](#requesting-reviews)
     - [Updating Documentation](#updating-documentation)
@@ -85,6 +86,11 @@ Appropriate tests should be written with a new feature, and all existing tests s
 
 ### Pull Requests
 
+In order for us to accept your contributions, you need to follow the guidelines in this document. 
+The reason for this is that while we are welcoming contributions, we are ultimately responsible 
+for maintaining the code that gets merged and eventually released.
+Therefore, we need as much context as possible on the nature of all of the changes being merged.
+
 Before submitting a pull request:
 
 * synchronize your branch with the latest main and resolve any arising conflicts, i.e.,
@@ -106,7 +112,21 @@ PRs must have a category prefix that is based on the type of changes being made 
 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
 Additionally, **each PR should only address a single issue**.
 
-NOTE: when merging, GitHub will squash commits and rebase on top of the main.
+**Note:** When merging, GitHub will squash commits and rebase on top of the main.
+
+#### Large / complex contributions
+
+For large/complex changes, it is **absolutely** required
+to have up-front discussion in issues/GitHub discussions. 
+In some cases, it would be preferable to even have 
+synchronous design sessions to socialize a collective understanding 
+of the nature of incoming changes prior to the work even starting.
+
+It needs to be feasible for our team to review large/complex changes.
+This means that changes either need to be submitted in multiple small PRs 
+(300-500 lines per PR max) that build on top of one another, or that large 
+PRs need to be structured such that they can be reviewed commit by commit 
+(300-500 lines per commit max), with each commit performing a single logical task.
 
 ### Pull Request Templates
 
