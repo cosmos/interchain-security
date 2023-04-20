@@ -6,10 +6,10 @@ package types
 import (
 	fmt "fmt"
 	types "github.com/cosmos/cosmos-sdk/codec/types"
+	proto "github.com/cosmos/gogoproto/proto"
+	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	_ "github.com/cosmos/interchain-security/x/ccv/types"
 	_ "github.com/gogo/protobuf/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
-	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
 	_ "github.com/regen-network/cosmos-proto"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
@@ -65,7 +65,7 @@ type Params struct {
 	UnbondingPeriod time.Duration `protobuf:"bytes,9,opt,name=unbonding_period,json=unbondingPeriod,proto3,stdduration" json:"unbonding_period"`
 	// The threshold for the percentage of validators at the bottom of the set who
 	// can opt out of running the consumer chain without being punished. For example, a
-	// value of 5% means that the validators in the smallest 5% of the set can opt out
+	// value of 0.05 means that the validators in the bottom 5% of the set can opt out
 	SoftOptOutThreshold string `protobuf:"bytes,10,opt,name=soft_opt_out_threshold,json=softOptOutThreshold,proto3" json:"soft_opt_out_threshold,omitempty"`
 }
 
@@ -422,7 +422,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x52
 	}
-	n1, err1 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.UnbondingPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.UnbondingPeriod):])
+	n1, err1 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.UnbondingPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.UnbondingPeriod):])
 	if err1 != nil {
 		return 0, err1
 	}
@@ -442,7 +442,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x3a
 	}
-	n2, err2 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.TransferTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.TransferTimeoutPeriod):])
+	n2, err2 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.TransferTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.TransferTimeoutPeriod):])
 	if err2 != nil {
 		return 0, err2
 	}
@@ -450,7 +450,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i = encodeVarintConsumer(dAtA, i, uint64(n2))
 	i--
 	dAtA[i] = 0x32
-	n3, err3 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
+	n3, err3 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
 	if err3 != nil {
 		return 0, err3
 	}
@@ -585,7 +585,7 @@ func (m *MaturingVSCPacket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	n5, err5 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.MaturityTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.MaturityTime):])
+	n5, err5 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.MaturityTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.MaturityTime):])
 	if err5 != nil {
 		return 0, err5
 	}
@@ -632,9 +632,9 @@ func (m *Params) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovConsumer(uint64(l))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.CcvTimeoutPeriod)
 	n += 1 + l + sovConsumer(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.TransferTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.TransferTimeoutPeriod)
 	n += 1 + l + sovConsumer(uint64(l))
 	l = len(m.ConsumerRedistributionFraction)
 	if l > 0 {
@@ -643,7 +643,7 @@ func (m *Params) Size() (n int) {
 	if m.HistoricalEntries != 0 {
 		n += 1 + sovConsumer(uint64(m.HistoricalEntries))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.UnbondingPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.UnbondingPeriod)
 	n += 1 + l + sovConsumer(uint64(l))
 	l = len(m.SoftOptOutThreshold)
 	if l > 0 {
@@ -693,7 +693,7 @@ func (m *MaturingVSCPacket) Size() (n int) {
 	if m.VscId != 0 {
 		n += 1 + sovConsumer(uint64(m.VscId))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.MaturityTime)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.MaturityTime)
 	n += 1 + l + sovConsumer(uint64(l))
 	return n
 }
@@ -865,7 +865,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.CcvTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.CcvTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -898,7 +898,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.TransferTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.TransferTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -982,7 +982,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.UnbondingPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.UnbondingPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1324,7 +1324,7 @@ func (m *MaturingVSCPacket) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.MaturityTime, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.MaturityTime, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

@@ -6,8 +6,8 @@ package types
 import (
 	fmt "fmt"
 	types1 "github.com/cosmos/cosmos-sdk/x/staking/types"
+	proto "github.com/cosmos/gogoproto/proto"
 	_ "github.com/gogo/protobuf/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
 	types "github.com/tendermint/tendermint/abci/types"
 	io "io"
 	math "math"

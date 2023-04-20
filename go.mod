@@ -31,6 +31,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
+require github.com/cosmos/gogoproto v1.4.3
+
 require (
 	cosmossdk.io/api v0.2.6 // indirect
 	cosmossdk.io/core v0.5.1 // indirect

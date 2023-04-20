@@ -6,11 +6,11 @@ package types
 import (
 	fmt "fmt"
 	types1 "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	proto "github.com/cosmos/gogoproto/proto"
+	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	types "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	types2 "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	_ "github.com/gogo/protobuf/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
-	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
@@ -1441,7 +1441,7 @@ func (m *ConsumerAdditionProposal) MarshalToSizedBuffer(dAtA []byte) (int, error
 		i--
 		dAtA[i] = 0x5a
 	}
-	n1, err1 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.TransferTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.TransferTimeoutPeriod):])
+	n1, err1 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.TransferTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.TransferTimeoutPeriod):])
 	if err1 != nil {
 		return 0, err1
 	}
@@ -1449,7 +1449,7 @@ func (m *ConsumerAdditionProposal) MarshalToSizedBuffer(dAtA []byte) (int, error
 	i = encodeVarintProvider(dAtA, i, uint64(n1))
 	i--
 	dAtA[i] = 0x52
-	n2, err2 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
+	n2, err2 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
 	if err2 != nil {
 		return 0, err2
 	}
@@ -1457,7 +1457,7 @@ func (m *ConsumerAdditionProposal) MarshalToSizedBuffer(dAtA []byte) (int, error
 	i = encodeVarintProvider(dAtA, i, uint64(n2))
 	i--
 	dAtA[i] = 0x4a
-	n3, err3 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.UnbondingPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.UnbondingPeriod):])
+	n3, err3 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.UnbondingPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.UnbondingPeriod):])
 	if err3 != nil {
 		return 0, err3
 	}
@@ -1465,7 +1465,7 @@ func (m *ConsumerAdditionProposal) MarshalToSizedBuffer(dAtA []byte) (int, error
 	i = encodeVarintProvider(dAtA, i, uint64(n3))
 	i--
 	dAtA[i] = 0x42
-	n4, err4 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.SpawnTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.SpawnTime):])
+	n4, err4 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.SpawnTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.SpawnTime):])
 	if err4 != nil {
 		return 0, err4
 	}
@@ -1541,7 +1541,7 @@ func (m *ConsumerRemovalProposal) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	_ = i
 	var l int
 	_ = l
-	n6, err6 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.StopTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.StopTime):])
+	n6, err6 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.StopTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.StopTime):])
 	if err6 != nil {
 		return 0, err6
 	}
@@ -1668,7 +1668,7 @@ func (m *GlobalSlashEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	n8, err8 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.RecvTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.RecvTime):])
+	n8, err8 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.RecvTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.RecvTime):])
 	if err8 != nil {
 		return 0, err8
 	}
@@ -1711,7 +1711,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x3a
 	}
-	n9, err9 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.SlashMeterReplenishPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.SlashMeterReplenishPeriod):])
+	n9, err9 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.SlashMeterReplenishPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.SlashMeterReplenishPeriod):])
 	if err9 != nil {
 		return 0, err9
 	}
@@ -1719,7 +1719,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i = encodeVarintProvider(dAtA, i, uint64(n9))
 	i--
 	dAtA[i] = 0x32
-	n10, err10 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.VscTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.VscTimeoutPeriod):])
+	n10, err10 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.VscTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.VscTimeoutPeriod):])
 	if err10 != nil {
 		return 0, err10
 	}
@@ -1727,7 +1727,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i = encodeVarintProvider(dAtA, i, uint64(n10))
 	i--
 	dAtA[i] = 0x2a
-	n11, err11 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.InitTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.InitTimeoutPeriod):])
+	n11, err11 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.InitTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.InitTimeoutPeriod):])
 	if err11 != nil {
 		return 0, err11
 	}
@@ -1735,7 +1735,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i = encodeVarintProvider(dAtA, i, uint64(n11))
 	i--
 	dAtA[i] = 0x22
-	n12, err12 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
+	n12, err12 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
 	if err12 != nil {
 		return 0, err12
 	}
@@ -2083,7 +2083,7 @@ func (m *VscSendTimestamp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	n16, err16 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.Timestamp, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.Timestamp):])
+	n16, err16 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.Timestamp, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Timestamp):])
 	if err16 != nil {
 		return 0, err16
 	}
@@ -2442,13 +2442,13 @@ func (m *ConsumerAdditionProposal) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.SpawnTime)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.SpawnTime)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.UnbondingPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.UnbondingPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.CcvTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.TransferTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.TransferTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
 	l = len(m.ConsumerRedistributionFraction)
 	if l > 0 {
@@ -2481,7 +2481,7 @@ func (m *ConsumerRemovalProposal) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.StopTime)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.StopTime)
 	n += 1 + l + sovProvider(uint64(l))
 	return n
 }
@@ -2515,7 +2515,7 @@ func (m *GlobalSlashEntry) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.RecvTime)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.RecvTime)
 	n += 1 + l + sovProvider(uint64(l))
 	l = len(m.ConsumerChainID)
 	if l > 0 {
@@ -2545,13 +2545,13 @@ func (m *Params) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.CcvTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.InitTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.InitTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.VscTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.VscTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.SlashMeterReplenishPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.SlashMeterReplenishPeriod)
 	n += 1 + l + sovProvider(uint64(l))
 	l = len(m.SlashMeterReplenishFraction)
 	if l > 0 {
@@ -2704,7 +2704,7 @@ func (m *VscSendTimestamp) Size() (n int) {
 	if m.VscId != 0 {
 		n += 1 + sovProvider(uint64(m.VscId))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.Timestamp)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Timestamp)
 	n += 1 + l + sovProvider(uint64(l))
 	return n
 }
@@ -3093,7 +3093,7 @@ func (m *ConsumerAdditionProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.SpawnTime, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.SpawnTime, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3126,7 +3126,7 @@ func (m *ConsumerAdditionProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.UnbondingPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.UnbondingPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3159,7 +3159,7 @@ func (m *ConsumerAdditionProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.CcvTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.CcvTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3192,7 +3192,7 @@ func (m *ConsumerAdditionProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.TransferTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.TransferTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3441,7 +3441,7 @@ func (m *ConsumerRemovalProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.StopTime, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.StopTime, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3672,7 +3672,7 @@ func (m *GlobalSlashEntry) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.RecvTime, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.RecvTime, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3910,7 +3910,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.CcvTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.CcvTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3943,7 +3943,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.InitTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.InitTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3976,7 +3976,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.VscTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.VscTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4009,7 +4009,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.SlashMeterReplenishPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.SlashMeterReplenishPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4987,7 +4987,7 @@ func (m *VscSendTimestamp) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.Timestamp, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.Timestamp, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
