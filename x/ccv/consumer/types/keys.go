@@ -5,8 +5,7 @@ import (
 	time "time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	utils "github.com/cosmos/interchain-security/x/ccv/utils"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 const (
@@ -62,11 +61,18 @@ const (
 	// InitialValSetByteKey is the byte to store the initial validator set for a consumer
 	InitialValSetByteKey
 
-	// LastStandaloneHeightByteKey is the byte that will store last standalone height
-	LastStandaloneHeightByteKey
+	// InitGenesisHeightByteKey is the byte that will store the init genesis height
+	InitGenesisHeightByteKey
 
 	// SmallestNonOptOutPowerByteKey is the byte that will store the smallest val power that cannot opt out
 	SmallestNonOptOutPowerByteKey
+
+	// StandaloneTransferChannelIDByteKey is the byte storing the channelID of transfer channel
+	// that existed from a standalone chain changing over to a consumer
+	StandaloneTransferChannelIDByteKey
+
+	// PrevStandaloneChainByteKey is the byte storing the flag marking whether this chain was previously standalone
+	PrevStandaloneChainByteKey
 
 	// HistoricalInfoKey is the byte prefix that will store the historical info for a given height
 	HistoricalInfoBytePrefix
@@ -135,12 +141,23 @@ func InitialValSetKey() []byte {
 	return []byte{InitialValSetByteKey}
 }
 
-func LastStandaloneHeightKey() []byte {
-	return []byte{LastStandaloneHeightByteKey}
+func InitGenesisHeightKey() []byte {
+	return []byte{InitGenesisHeightByteKey}
 }
 
 func SmallestNonOptOutPowerKey() []byte {
 	return []byte{SmallestNonOptOutPowerByteKey}
+}
+
+// StandaloneTransferChannelIDKey returns the key to the transfer channelID that existed from a standalone chain
+// changing over to a consumer
+func StandaloneTransferChannelIDKey() []byte {
+	return []byte{StandaloneTransferChannelIDByteKey}
+}
+
+// PrevStandaloneChainKey returns the key to the flag marking whether this chain was previously standalone
+func PrevStandaloneChainKey() []byte {
+	return []byte{PrevStandaloneChainByteKey}
 }
 
 // HistoricalInfoKey returns the key to historical info to a given block height
@@ -153,7 +170,7 @@ func HistoricalInfoKey(height int64) []byte {
 // PacketMaturityTimeKey returns the key for storing the maturity time for a given received VSC packet id
 func PacketMaturityTimeKey(vscID uint64, maturityTime time.Time) []byte {
 	ts := uint64(maturityTime.UTC().UnixNano())
-	return utils.AppendMany(
+	return ccvtypes.AppendMany(
 		// Append the prefix
 		[]byte{PacketMaturityTimeBytePrefix},
 		// Append the time

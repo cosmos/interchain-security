@@ -23,7 +23,6 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
 
 	"github.com/cometbft/cometbft/libs/log"
 )
@@ -87,19 +86,19 @@ func (k Keeper) mustValidateFields() {
 		panic("number of fields in provider keeper is not 13")
 	}
 
-	utils.PanicIfZeroOrNil(k.cdc, "cdc")                           // 1
-	utils.PanicIfZeroOrNil(k.storeKey, "storeKey")                 // 2
-	utils.PanicIfZeroOrNil(k.paramSpace, "paramSpace")             // 3
-	utils.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")         // 4
-	utils.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")       // 5
-	utils.PanicIfZeroOrNil(k.portKeeper, "portKeeper")             // 6
-	utils.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper") // 7
-	utils.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")       // 8
-	utils.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")         // 9
-	utils.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")       // 10
-	utils.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")     // 11
-	utils.PanicIfZeroOrNil(k.evidenceKeeper, "evidenceKeeper")     // 12
-	utils.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName") // 13
+	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                           // 1
+	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                 // 2
+	ccv.PanicIfZeroOrNil(k.paramSpace, "paramSpace")             // 3
+	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")         // 4
+	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")       // 5
+	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")             // 6
+	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper") // 7
+	ccv.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")       // 8
+	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")         // 9
+	ccv.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")       // 10
+	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")     // 11
+	ccv.PanicIfZeroOrNil(k.evidenceKeeper, "evidenceKeeper")     // 12
+	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName") // 13
 }
 
 // Logger returns a module-specific logger.

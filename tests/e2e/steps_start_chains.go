@@ -147,6 +147,12 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 					{id: validatorID("alice"), stake: 500000000, allocation: 10000000000},
 					{id: validatorID("carol"), stake: 500000000, allocation: 10000000000},
 				},
+				// For consumers that're launching with the provider being on an earlier version
+				// of ICS before the soft opt-out threshold was introduced, we need to set the
+				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
+				// consumer binary doesn't panic. Sdk requires that all params are set to valid
+				// values from the genesis file.
+				genesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
 			},
 			state: State{
 				chainID("provi"): ChainState{

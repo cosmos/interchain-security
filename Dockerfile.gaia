@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # build latest tagged gaia
-FROM golang:1.18-alpine AS gaia-builder 
+FROM golang:1.20-alpine AS gaia-builder 
 # WORKDIR is set to /go by default
 ARG USE_GAIA_TAG
 ENV GAIA_TAG=${USE_GAIA_TAG}
@@ -25,25 +25,25 @@ RUN git clone https://github.com/cosmos/gaia.git
 WORKDIR /go/gaia
 
 # fetch gaia from tag and build it
-    RUN if [ -n "${GAIA_TAG}" ]; \
-        then git checkout "${GAIA_TAG}"; \
+RUN if [ -n "${GAIA_TAG}" ]; \
+    then git checkout "${GAIA_TAG}"; \
     # if GAIA_TAG is not set, build the latest tagged version
     else \
-        git checkout $(git tag | tail -1); \
+    git checkout $(git tag | tail -1); \
     fi 
 
 # Also replace sdk version in the go.mod if specified
 RUN if [ -d "/interchain-security/cosmos-sdk" ]; then \
     go mod edit -replace github.com/cosmos/cosmos-sdk=/interchain-security/cosmos-sdk && \
     echo "local sdk version used in gaia build"; \
-fi
+    fi
 
 RUN go mod tidy
 # Print the version of the sdk used in the build
 RUN go list -m github.com/cosmos/cosmos-sdk 
 RUN make build
 
-FROM golang:1.18-alpine AS is-builder
+FROM golang:1.20-alpine AS is-builder
 
 ENV PACKAGES curl make git libc-dev bash gcc linux-headers
 RUN apk add --no-cache $PACKAGES

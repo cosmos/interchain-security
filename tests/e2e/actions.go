@@ -511,9 +511,10 @@ func (tr TestRun) voteGovProposal(
 }
 
 type startConsumerChainAction struct {
-	consumerChain chainID
-	providerChain chainID
-	validators    []StartChainValidator
+	consumerChain  chainID
+	providerChain  chainID
+	validators     []StartChainValidator
+	genesisChanges string
 }
 
 func (tr TestRun) startConsumerChain(
@@ -542,7 +543,7 @@ func (tr TestRun) startConsumerChain(
 	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
 	consumerGenesisChanges := tr.chainConfigs[action.consumerChain].genesisChanges
 	if consumerGenesisChanges != "" {
-		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges
+		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges + " | " + action.genesisChanges
 	}
 
 	tr.startChain(StartChainAction{
@@ -1199,7 +1200,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	valCfg := tr.validatorConfigs[action.validator]
 
 	assignKey := fmt.Sprintf(
-		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 900000 --keyring-backend test -b block -y -o json`,
+		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 900000 --keyring-backend test -b sync -y -o json`,
 		tr.chainConfigs[chainID("provi")].binaryName,
 		string(tr.chainConfigs[action.chain].chainID),
 		action.consumerPubkey,

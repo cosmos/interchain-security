@@ -10,7 +10,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	tmdb "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -176,12 +175,6 @@ func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 
 type PrivateKey struct {
 	PrivKey cryptotypes.PrivKey
-}
-
-// Generates a public key for unit tests (abiding by tricky interface implementations from tm/sdk)
-func GenPubKey() (crypto.PubKey, error) {
-	privKey := PrivateKey{ed25519.GenPrivKey()}
-	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
 }
 
 // Obtains slash packet data with a newly generated key, and randomized field values

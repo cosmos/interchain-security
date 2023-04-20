@@ -239,7 +239,10 @@ func (s *CCVTestSuite) SetupAllCCVChannels() {
 
 func (s *CCVTestSuite) SetupCCVChannel(path *ibctesting.Path) {
 	s.coordinator.CreateConnections(path)
+	s.ExecuteCCVChannelHandshake(path)
+}
 
+func (s *CCVTestSuite) ExecuteCCVChannelHandshake(path *ibctesting.Path) {
 	err := path.EndpointA.ChanOpenInit()
 	s.Require().NoError(err)
 

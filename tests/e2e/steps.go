@@ -17,7 +17,9 @@ var happyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
 	stepsAssignConsumerKeyOnStartedChain("consu", "bob"),
-	stepsUnbond(),
+	stepsUnbond("consu"),
+	stepsRedelegateForOptOut("consu"),
+	stepsDowntimeWithOptOut("consu"),
 	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
 	stepsRejectEquivocationProposal("consu", 2),   // prop to tombstone bob is rejected

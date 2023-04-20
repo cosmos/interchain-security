@@ -8,7 +8,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	utils "github.com/cosmos/interchain-security/x/ccv/utils"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
@@ -392,7 +392,7 @@ func (k Keeper) AssignConsumerKey(
 	validator stakingtypes.Validator,
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
-	consAddrTmp, err := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+	consAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(consumerKey)
 	if err != nil {
 		return err
 	}
@@ -440,7 +440,7 @@ func (k Keeper) AssignConsumerKey(
 			// mark this old consumer key as prunable once the VSCMaturedPacket
 			// for the current VSC ID is received;
 			// note: this state is removed on receiving the VSCMaturedPacket
-			oldConsumerAddrTmp, err := utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
+			oldConsumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
 			if err != nil {
 				return err
 			}
@@ -483,7 +483,7 @@ func (k Keeper) AssignConsumerKey(
 		// from the old consumer address to the provider address (if any)
 		// get the previous key assigned for this validator on this consumer chain
 		if oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
-			oldConsumerAddrTmp, err := utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
+			oldConsumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
 			if err != nil {
 				return err
 			}
@@ -514,7 +514,7 @@ func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 	valUpdates []abci.ValidatorUpdate,
 ) (newUpdates []abci.ValidatorUpdate) {
 	for _, valUpdate := range valUpdates {
-		providerAddrTmp, err := utils.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
+		providerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
 		if err != nil {
 			panic(fmt.Errorf("cannot get provider address from pub key: %s", err.Error()))
 		}

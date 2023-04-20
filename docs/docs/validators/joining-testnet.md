@@ -163,7 +163,7 @@ consumerd tendermint show-validator
 Then, let the provider know which key you will be using for the consumer chain:
 ```bash
 # machine running the provider chain
-gaiad tx provider assign-consensus-key consumer-1 '<consumer_pubkey>' --from <key_moniker> --home $NODE_HOME --gas 900000 -b block -y -o json
+gaiad tx provider assign-consensus-key consumer-1 '<consumer_pubkey>' --from <key_moniker> --home $NODE_HOME --gas 900000 -b sync -y -o json
 ```
 
 After this step, you are ready to copy the consumer genesis into your nodes's `/config` folder, start your consumer chain node and catch up to the network.

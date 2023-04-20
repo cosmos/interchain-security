@@ -80,8 +80,8 @@ func stepsDelegate(consumerName string) []Step {
 	}
 }
 
-// stepsDelegate tests unbonding and resulting validator power changes.
-func stepsUnbond() []Step {
+// stepsUnbond tests unbonding and resulting validator power changes.
+func stepsUnbond(consumerName string) []Step {
 	return []Step{
 		{
 			action: unbondTokensAction{
@@ -127,8 +127,10 @@ func stepsUnbond() []Step {
 	}
 }
 
-// stepsRedelegate tests redelegation and resulting validator power changes.
-func stepsRedelegate(consumerName string) []Step {
+// stepsRedelegateForOptOut tests redelegation, and sets up voting powers s.t
+// alice will have less than 5% of the total voting power. This is needed to
+// test opt-out functionality.
+func stepsRedelegateForOptOut(consumerName string) []Step {
 	return []Step{
 		{
 			action: redelegateTokensAction{
@@ -136,9 +138,58 @@ func stepsRedelegate(consumerName string) []Step {
 				src:      validatorID("alice"),
 				dst:      validatorID("carol"),
 				txSender: validatorID("alice"),
-				// Leave alice with majority stake so non-faulty validators maintain more than
+				amount:   450000000,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 60,
+						validatorID("bob"):   500,
+						validatorID("carol"): 950,
+					},
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						// Voting power changes not seen by consumer yet
+						validatorID("alice"): 510,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: relayPacketsAction{
+				chain:   chainID("provi"),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						// Now power changes are seen by consumer
+						validatorID("alice"): 60,
+						validatorID("bob"):   500,
+						validatorID("carol"): 950,
+					},
+				},
+			},
+		},
+	}
+}
+
+// stepsRedelegate tests redelegation and resulting validator power changes.
+func stepsRedelegate(consumerName string) []Step {
+	return []Step{
+		{
+			action: redelegateTokensAction{
+				chain:    chainID("provi"),
+				src:      validatorID("carol"),
+				dst:      validatorID("alice"),
+				txSender: validatorID("carol"),
+				// redelegate s.t. alice has majority stake so non-faulty validators maintain more than
 				// 2/3 voting power during downtime tests below, avoiding chain halt
-				amount: 1000000,
+				amount: 449000000,
 			},
 			state: State{
 				chainID("provi"): ChainState{
@@ -152,9 +203,9 @@ func stepsRedelegate(consumerName string) []Step {
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						// Voting power changes not seen by consumer yet
-						validatorID("alice"): 510,
+						validatorID("alice"): 60,
 						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+						validatorID("carol"): 950,
 					},
 				},
 			},

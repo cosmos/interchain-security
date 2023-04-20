@@ -1,4 +1,4 @@
-package utils
+package types
 
 import (
 	"reflect"
@@ -13,7 +13,6 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci.ValidatorUpdate {
@@ -59,8 +58,8 @@ func TMCryptoPublicKeyToConsAddr(k tmprotocrypto.PublicKey) (sdk.ConsAddress, er
 // over the source channelID and portID
 func SendIBCPacket(
 	ctx sdk.Context,
-	scopedKeeper ccv.ScopedKeeper,
-	channelKeeper ccv.ChannelKeeper,
+	scopedKeeper ScopedKeeper,
+	channelKeeper ChannelKeeper,
 	channelID string,
 	portID string,
 	packetData []byte,
