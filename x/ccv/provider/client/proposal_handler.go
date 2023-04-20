@@ -71,46 +71,42 @@ Where proposal.json contains:
 				return err
 			}
 
-			return ExecConsumerAdditionCmdWithClientCtx(cmd, args, clientCtx)
+			proposal, err := ParseConsumerAdditionProposalJSON(args[0])
+			if err != nil {
+				return err
+			}
+
+			// do not fail for errors regarding the unbonding period, but just log a warning
+			err = CheckPropUnbondingPeriod(clientCtx, proposal.UnbondingPeriod)
+			if err != nil {
+				fmt.Fprintf(
+					os.Stderr,
+					"Warning: Could not assure that Proposal Unbonding Period is shorter than Provider Unbonding Period. Error message: %s",
+					err.Error(),
+				)
+			}
+
+			content := types.NewConsumerAdditionProposal(
+				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
+				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime,
+				proposal.ConsumerRedistributionFraction, proposal.BlocksPerDistributionTransmission, proposal.HistoricalEntries,
+				proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod)
+
+			from := clientCtx.GetFromAddress()
+
+			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
+			if err != nil {
+				return err
+			}
+
+			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			if err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
-}
-
-func ExecConsumerAdditionCmdWithClientCtx(cmd *cobra.Command, args []string, clientCtx client.Context) error {
-	proposal, err := ParseConsumerAdditionProposalJSON(args[0])
-	if err != nil {
-		return err
-	}
-
-	// do not fail for errors regarding the unbonding period, but just log a warning
-	err = CheckPropUnbondingPeriod(clientCtx, proposal.UnbondingPeriod)
-	if err != nil {
-		fmt.Fprintf(
-			os.Stderr,
-			"Warning: Could not assure that Proposal Unbonding Period is shorter than Provider Unbonding Period. Error message: %s",
-			err.Error(),
-		)
-	}
-
-	content := types.NewConsumerAdditionProposal(
-		proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
-		proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime,
-		proposal.ConsumerRedistributionFraction, proposal.BlocksPerDistributionTransmission, proposal.HistoricalEntries,
-		proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod)
-
-	from := clientCtx.GetFromAddress()
-
-	deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
-	if err != nil {
-		return err
-	}
-
-	msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
-	if err != nil {
-		return err
-	}
-
-	return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 }
 
 // SubmitConsumerRemovalPropTxCmd returns a CLI command handler for submitting
@@ -381,16 +377,6 @@ func postConsumerAdditionProposalHandlerFn(clientCtx client.Context) http.Handle
 		req.BaseReq = req.BaseReq.Sanitize()
 		if !req.BaseReq.ValidateBasic(w) {
 			return
-		}
-
-		err := CheckPropUnbondingPeriod(clientCtx, req.UnbondingPeriod)
-		if err != nil {
-			// do not fail for errors regarding the unbonding period, but just log a warning
-			fmt.Fprintf(
-				os.Stderr,
-				"Warning: Could not assure that Proposal Unbonding Period is shorter than Provider Unbonding Period. Error message: %s",
-				err.Error(),
-			)
 		}
 
 		content := types.NewConsumerAdditionProposal(
