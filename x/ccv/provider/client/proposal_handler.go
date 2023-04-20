@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -264,7 +263,7 @@ type ConsumerAdditionProposalReq struct {
 func ParseConsumerAdditionProposalJSON(proposalFile string) (ConsumerAdditionProposalJSON, error) {
 	proposal := ConsumerAdditionProposalJSON{}
 
-	contents, err := ioutil.ReadFile(filepath.Clean(proposalFile))
+	contents, err := os.ReadFile(filepath.Clean(proposalFile))
 	if err != nil {
 		return proposal, err
 	}
@@ -316,7 +315,7 @@ type EquivocationProposalReq struct {
 func ParseEquivocationProposalJSON(proposalFile string) (EquivocationProposalJSON, error) {
 	proposal := EquivocationProposalJSON{}
 
-	contents, err := ioutil.ReadFile(filepath.Clean(proposalFile))
+	contents, err := os.ReadFile(filepath.Clean(proposalFile))
 	if err != nil {
 		return proposal, err
 	}
@@ -339,7 +338,7 @@ func EquivocationProposalRESTHandler(clientCtx client.Context) govrest.ProposalR
 func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalProposalJSON, error) {
 	proposal := ConsumerRemovalProposalJSON{}
 
-	contents, err := ioutil.ReadFile(filepath.Clean(proposalFile))
+	contents, err := os.ReadFile(filepath.Clean(proposalFile))
 	if err != nil {
 		return proposal, err
 	}

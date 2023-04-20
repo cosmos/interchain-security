@@ -17,7 +17,7 @@ import (
 
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 )
 
@@ -47,7 +47,7 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
 	chainIDs := []string{"consumer-1", "consumer-2", "consumer-3"}
 	numAssignments := 10
 	testAssignments := []types.ValidatorConsumerPubKey{}
@@ -124,7 +124,7 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
 	chainIDs := []string{"consumer-1", "consumer-2", "consumer-3"}
 	numAssignments := 10
 	testAssignments := []types.ValidatorByConsumerAddr{}
@@ -202,7 +202,7 @@ func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 
 	chainID := "consumer-1"
 
-	rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
 	numAssignments := 10
 	testAssignments := []types.KeyAssignmentReplacement{}
 	for i := 0; i < numAssignments; i++ {
@@ -259,7 +259,7 @@ func TestGetAllConsumerAddrsToPrune(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
 	chainIDs := []string{"consumer-1", "consumer-2", "consumer-3"}
 	numAssignments := 10
 	testAssignments := []types.ConsumerAddrsToPrune{}
@@ -337,7 +337,7 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 		// Try to find a validator who has this consumer address currently assigned
 		isCurrentlyAssigned := false
 		for _, valconsPubKey := range k.GetAllValidatorConsumerPubKeys(ctx, &valByConsAddr.ChainId) {
-			consumerAddr, _ := utils.TMCryptoPublicKeyToConsAddr(*valconsPubKey.ConsumerKey)
+			consumerAddr, _ := ccvtypes.TMCryptoPublicKeyToConsAddr(*valconsPubKey.ConsumerKey)
 			if consumerAddr.Equals(valByConsAddr.ConsumerAddr.ToSdkConsAddr()) {
 				isCurrentlyAssigned = true
 				break
@@ -653,7 +653,7 @@ func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 	for _, u := range updates {
 		for i, id := range vs.identities { // n2 looping but n is tiny
 			// cons := sdk.ConsAddress(utils.GetChangePubKeyAddress(u))
-			cons, _ := utils.TMCryptoPublicKeyToConsAddr(u.PubKey)
+			cons, _ := ccvtypes.TMCryptoPublicKeyToConsAddr(u.PubKey)
 			if id.SDKValConsAddress().Equals(cons) {
 				vs.power[i] = u.Power
 			}
@@ -852,7 +852,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 						// Use default if unassigned
 						ck = idP.TMProtoCryptoPublicKey()
 					}
-					consC, err := utils.TMCryptoPublicKeyToConsAddr(ck)
+					consC, err := ccvtypes.TMCryptoPublicKeyToConsAddr(ck)
 					require.NoError(t, err)
 					// Find the corresponding consumer validator (must always be found)
 					for j, idC := range consumerValset.identities {
