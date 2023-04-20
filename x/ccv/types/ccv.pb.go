@@ -278,7 +278,7 @@ func (m *SlashPacketData) GetInfraction() types1.Infraction {
 	if m != nil {
 		return m.Infraction
 	}
-	return types1.INFRACTION_UNSPECIFIED
+	return types1.Infraction_INFRACTION_UNSPECIFIED
 }
 
 // MaturedUnbondingOps defines a list of ids corresponding to ids of matured unbonding operations.
