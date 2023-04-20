@@ -12,7 +12,6 @@ import (
 	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
 	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -475,7 +474,7 @@ func TestGetAllHeightToValsetUpdateIDs(t *testing.T) {
 	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	cases := []types.HeightToValsetUpdateID{
+	cases := []ccv.HeightToValsetUpdateID{
 		{
 			ValsetUpdateId: 2,
 			Height:         22,
@@ -522,9 +521,9 @@ func TestGetAllOutstandingDowntimes(t *testing.T) {
 		sdk.ConsAddress([]byte("consAddress4")),
 		sdk.ConsAddress([]byte("consAddress3")),
 	}
-	expectedGetAllOrder := []types.OutstandingDowntime{}
+	expectedGetAllOrder := []ccv.OutstandingDowntime{}
 	for _, addr := range addresses {
-		expectedGetAllOrder = append(expectedGetAllOrder, types.OutstandingDowntime{ValidatorConsensusAddress: addr.String()})
+		expectedGetAllOrder = append(expectedGetAllOrder, ccv.OutstandingDowntime{ValidatorConsensusAddress: addr.String()})
 	}
 	// sorting by ConsAddress
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {

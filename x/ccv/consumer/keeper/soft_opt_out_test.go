@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -100,7 +100,7 @@ func TestUpdateSmallestNonOptOutPower(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-			moduleParams := types.DefaultParams()
+			moduleParams := ccvtypes.DefaultConsumerParams()
 			moduleParams.SoftOptOutThreshold = tc.optOutThresh
 			consumerKeeper.SetParams(ctx, moduleParams)
 			defer ctrl.Finish()

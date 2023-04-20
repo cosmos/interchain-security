@@ -8,7 +8,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
@@ -22,7 +22,7 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 	defer ctrl.Finish()
 
 	// utility functions
-	getCCVals := func() (vals []types.CrossChainValidator) {
+	getCCVals := func() (vals []ccvtypes.CrossChainValidator) {
 		vals = consumerKeeper.GetAllCCValidator(ctx)
 		return
 	}
@@ -34,7 +34,7 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 		}
 	}
 
-	sumCCValsPow := func(vals []types.CrossChainValidator) (power int64) {
+	sumCCValsPow := func(vals []ccvtypes.CrossChainValidator) (power int64) {
 		for _, v := range vals {
 			power += v.Power
 		}
@@ -263,7 +263,7 @@ func SetCCValidators(tb testing.TB, consumerKeeper keeper.Keeper,
 		publicKey, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
 		require.NoError(tb, err)
 
-		ccv, err := types.NewCCValidator(v.Address, v.VotingPower, publicKey)
+		ccv, err := ccvtypes.NewCCValidator(v.Address, v.VotingPower, publicKey)
 		require.NoError(tb, err)
 		consumerKeeper.SetCCValidator(ctx, ccv)
 	}

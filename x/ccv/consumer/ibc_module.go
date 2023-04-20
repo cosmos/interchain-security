@@ -14,7 +14,6 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -123,7 +122,7 @@ func (am AppModule) OnChanOpenAck(
 			"provider channel: %s already established", providerChannel)
 	}
 
-	var md providertypes.HandshakeMetadata
+	var md types.HandshakeMetadata
 	if err := (&md).Unmarshal([]byte(counterpartyMetadata)); err != nil {
 		return sdkerrors.Wrapf(types.ErrInvalidHandshakeMetadata,
 			"error unmarshalling ibc-ack metadata: \n%v; \nmetadata: %v", err, counterpartyMetadata)

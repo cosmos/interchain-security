@@ -23,6 +23,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 var (
@@ -52,12 +53,12 @@ func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) 
 // DefaultGenesis returns default genesis state as raw bytes for the ibc
 // consumer module.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(consumertypes.DefaultGenesisState())
+	return cdc.MustMarshalJSON(ccvtypes.DefaultConsumerGenesisState())
 }
 
 // ValidateGenesis performs genesis state validation for the ibc consumer module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
-	var data consumertypes.GenesisState
+	var data ccvtypes.ConsumerGenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", consumertypes.ModuleName, err)
 	}
@@ -71,7 +72,7 @@ func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Rout
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the ibc-consumer module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	err := consumertypes.RegisterQueryHandlerClient(context.Background(), mux, consumertypes.NewQueryClient(clientCtx))
+	err := ccvtypes.RegisterConsumerQueryHandlerClient(context.Background(), mux, ccvtypes.NewConsumerQueryClient(clientCtx))
 	if err != nil {
 		// same behavior as in cosmos-sdk
 		panic(err)
@@ -124,13 +125,13 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 // RegisterServices registers module services.
 // TODO
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	consumertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+	ccvtypes.RegisterConsumerQueryServer(cfg.QueryServer(), am.keeper)
 }
 
 // InitGenesis performs genesis initialization for the consumer module. It returns
 // no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState consumertypes.GenesisState
+	var genesisState ccvtypes.ConsumerGenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	return am.keeper.InitGenesis(ctx, &genesisState)
 }

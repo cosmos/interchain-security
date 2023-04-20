@@ -15,8 +15,8 @@ import (
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -118,7 +118,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	consumerKeeper.SetProviderChannel(ctx, consumerCCVChannelID)
 
 	// Set module params with custom unbonding period
-	moduleParams := consumertypes.DefaultParams()
+	moduleParams := ccvtypes.DefaultConsumerParams()
 	moduleParams.UnbondingPeriod = 100 * time.Hour
 	consumerKeeper.SetParams(ctx, moduleParams)
 
@@ -167,7 +167,7 @@ func TestOnRecvVSCPacketDuplicateUpdates(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	consumerKeeper.SetProviderChannel(ctx, consumerCCVChannelID)
-	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
+	consumerKeeper.SetParams(ctx, ccvtypes.DefaultConsumerParams())
 
 	// Construct packet/data with duplicate val updates for the same pub key
 	cId := crypto.NewCryptoIdentityFromIntSeed(43278947)
