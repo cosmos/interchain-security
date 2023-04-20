@@ -67,7 +67,6 @@ Architecture Decision Records (ADRs) may be proposed by any contributors or main
 
 * The latest state of development is on `main`.
 * `main` must never fail `make lint` or `make test`.
-* No `--force` onto `main` (except when reverting a broken commit, which should seldom happen).
 * Create a branch to start work:
     * Fork the repo (core developers must create a branch directly in the ICS repo),
     branch from the HEAD of `main`, make some commits, and submit a PR to `main`.
@@ -88,8 +87,10 @@ Appropriate tests should be written with a new feature, and all existing tests s
 
 Before submitting a pull request:
 
-* merge the latest main `git merge origin/main`,
-* run `make lint test` to ensure that all checks and tests pass.
+* synchronize your branch with the latest main and resolve any arising conflicts, i.e.,
+  - either `git fetch origin/main && git merge origin/main`
+  - or `git fetch origin/main && git rebase -i origin/main`
+* run `make lint` and `make test` to ensure that all checks and tests pass.
 
 Then:
 
