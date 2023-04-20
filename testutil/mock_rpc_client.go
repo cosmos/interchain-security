@@ -11,6 +11,14 @@ import (
 	"github.com/tendermint/tendermint/types"
 )
 
+// A mock client to be used in tests that want to mock out calls to the CometBFT CLI.
+// The client implements the interface "github.com/tendermint/tendermint/rpc/client".Client
+// Example Usage:
+//
+//	mockClient := new(testutil.MockClient)
+//	clientCtx := client.Context{}.WithClient(mockClient)
+//	mockClient.On("ConsensusParams", mock.Anything, mock.Anything).Return(&resConsensParams, nil)
+//	{code using clientCtx}
 type MockClient struct {
 	mock.Mock
 }
