@@ -141,6 +141,10 @@ func TestQueueAndSendSlashPacket(t *testing.T) {
 	runCCVTestByName(t, "TestQueueAndSendSlashPacket")
 }
 
+func TestCISBeforeCCVEstablished(t *testing.T) {
+	runCCVTestByName(t, "TestCISBeforeCCVEstablished")
+}
+
 //
 // Stop consumer tests
 //
@@ -239,4 +243,12 @@ func TestPacketRoundtrip(t *testing.T) {
 
 func TestQueueAndSendVSCMaturedPackets(t *testing.T) {
 	runCCVTestByName(t, "TestQueueAndSendVSCMaturedPackets")
+}
+
+//
+// Changeover tests
+//
+
+func TestRecycleTransferChannel(t *testing.T) {
+	runCCVTestByName(t, "TestRecycleTransferChannel")
 }

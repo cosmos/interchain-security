@@ -8,7 +8,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	utils "github.com/cosmos/interchain-security/x/ccv/utils"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
@@ -391,7 +391,7 @@ func (k Keeper) AssignConsumerKey(
 	validator stakingtypes.Validator,
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
-	consAddrTmp, err := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+	consAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(consumerKey)
 	if err != nil {
 		return err
 	}
@@ -413,6 +413,13 @@ func (k Keeper) AssignConsumerKey(
 				types.ErrConsumerKeyInUse, "a different validator already uses the consumer key",
 			)
 		}
+		_, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
+		if !found {
+			return sdkerrors.Wrapf(
+				types.ErrCannotAssignDefaultKeyAssignment,
+				"a validator cannot assign the default key assignment unless its key on that consumer has already been assigned",
+			)
+		}
 	}
 
 	if _, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
@@ -432,7 +439,7 @@ func (k Keeper) AssignConsumerKey(
 			// mark this old consumer key as prunable once the VSCMaturedPacket
 			// for the current VSC ID is received;
 			// note: this state is removed on receiving the VSCMaturedPacket
-			oldConsumerAddrTmp, err := utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
+			oldConsumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
 			if err != nil {
 				return err
 			}
@@ -475,7 +482,7 @@ func (k Keeper) AssignConsumerKey(
 		// from the old consumer address to the provider address (if any)
 		// get the previous key assigned for this validator on this consumer chain
 		if oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
-			oldConsumerAddrTmp, err := utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
+			oldConsumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
 			if err != nil {
 				return err
 			}
@@ -506,7 +513,7 @@ func (k Keeper) MustApplyKeyAssignmentToValUpdates(
 	valUpdates []abci.ValidatorUpdate,
 ) (newUpdates []abci.ValidatorUpdate) {
 	for _, valUpdate := range valUpdates {
-		providerAddrTmp, err := utils.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
+		providerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
 		if err != nil {
 			panic(fmt.Errorf("cannot get provider address from pub key: %s", err.Error()))
 		}

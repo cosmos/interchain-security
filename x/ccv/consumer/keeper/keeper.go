@@ -20,7 +20,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
 	tmtypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -87,6 +86,8 @@ func NewKeeper(
 	return k
 }
 
+// SetStandaloneStakingKeeper sets the standalone staking keeper for the consumer chain.
+// This method should only be called for previously standalone chains that are now consumers.
 func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
 	k.standaloneStakingKeeper = sk
 }
@@ -103,20 +104,20 @@ func (k Keeper) mustValidateFields() {
 	// hooks are explicitly set after the constructor,
 	// stakingKeeper is optionally set after the constructor,
 
-	utils.PanicIfZeroOrNil(k.storeKey, "storeKey")                   // 1
-	utils.PanicIfZeroOrNil(k.cdc, "cdc")                             // 2
-	utils.PanicIfZeroOrNil(k.paramStore, "paramStore")               // 3
-	utils.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")           // 4
-	utils.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")         // 5
-	utils.PanicIfZeroOrNil(k.portKeeper, "portKeeper")               // 6
-	utils.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")   // 7
-	utils.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")           // 8
-	utils.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")       // 9
-	utils.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")               // 10
-	utils.PanicIfZeroOrNil(k.authKeeper, "authKeeper")               // 11
-	utils.PanicIfZeroOrNil(k.ibcTransferKeeper, "ibcTransferKeeper") // 12
-	utils.PanicIfZeroOrNil(k.ibcCoreKeeper, "ibcCoreKeeper")         // 13
-	utils.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")   // 14
+	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                   // 1
+	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                             // 2
+	ccv.PanicIfZeroOrNil(k.paramStore, "paramStore")               // 3
+	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")           // 4
+	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")         // 5
+	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")               // 6
+	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")   // 7
+	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")           // 8
+	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")       // 9
+	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")               // 10
+	ccv.PanicIfZeroOrNil(k.authKeeper, "authKeeper")               // 11
+	ccv.PanicIfZeroOrNil(k.ibcTransferKeeper, "ibcTransferKeeper") // 12
+	ccv.PanicIfZeroOrNil(k.ibcCoreKeeper, "ibcCoreKeeper")         // 13
+	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")   // 14
 }
 
 // Logger returns a module-specific logger.
@@ -254,20 +255,20 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store.Delete(types.PendingChangesKey())
 }
 
-func (k Keeper) GetLastStandaloneHeight(ctx sdk.Context) int64 {
+func (k Keeper) GetInitGenesisHeight(ctx sdk.Context) int64 {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.LastStandaloneHeightKey())
+	bz := store.Get(types.InitGenesisHeightKey())
 	if bz == nil {
-		return 0
+		panic("last standalone height not set")
 	}
 	height := sdk.BigEndianToUint64(bz)
 	return int64(height)
 }
 
-func (k Keeper) SetLastStandaloneHeight(ctx sdk.Context, height int64) {
+func (k Keeper) SetInitGenesisHeight(ctx sdk.Context, height int64) {
 	bz := sdk.Uint64ToBigEndian(uint64(height))
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.LastStandaloneHeightKey(), bz)
+	store.Set(types.InitGenesisHeightKey(), bz)
 }
 
 func (k Keeper) IsPreCCV(ctx sdk.Context) bool {
@@ -600,4 +601,28 @@ func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...ccv.ConsumerPacke
 	pending := k.GetPendingPackets(ctx)
 	list := append(pending.GetList(), packet...)
 	k.SetPendingPackets(ctx, ccv.ConsumerPacketDataList{List: list})
+}
+
+func (k Keeper) MarkAsPrevStandaloneChain(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.PrevStandaloneChainKey(), []byte{})
+}
+
+func (k Keeper) IsPrevStandaloneChain(ctx sdk.Context) bool {
+	store := ctx.KVStore(k.storeKey)
+	return store.Has(types.PrevStandaloneChainKey())
+}
+
+// SetStandaloneTransferChannelID sets the channelID of an existing transfer channel,
+// for a chain which used to be a standalone chain.
+func (k Keeper) SetStandaloneTransferChannelID(ctx sdk.Context, channelID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.StandaloneTransferChannelIDKey(), []byte(channelID))
+}
+
+// GetStandaloneTransferChannelID returns the channelID of an existing transfer channel,
+// for a chain which used to be a standalone chain.
+func (k Keeper) GetStandaloneTransferChannelID(ctx sdk.Context) string {
+	store := ctx.KVStore(k.storeKey)
+	return string(store.Get(types.StandaloneTransferChannelIDKey()))
 }

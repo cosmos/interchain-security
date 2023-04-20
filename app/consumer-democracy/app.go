@@ -427,7 +427,7 @@ func New(
 		authtypes.FeeCollectorName,
 	)
 
-	// Setting the staking keeper is only needed for standalone to consumer changeover chains
+	// Setting the standalone staking keeper is only needed for standalone to consumer changeover chains
 	app.ConsumerKeeper.SetStandaloneStakingKeeper(app.StakingKeeper)
 
 	// consumer keeper satisfies the staking keeper interface
@@ -642,6 +642,12 @@ func New(
 			// For a new consumer chain, this code (together with the entire SetUpgradeHandler) is not needed at all,
 			// upgrade handler code is application specific. However, as an example, standalone to consumer
 			// changeover chains should utilize customized upgrade handler code similar to below.
+
+			// Setting the standalone transfer channel ID is only needed for standalone to consumer changeover chains
+			// who wish to preserve existing IBC transfer denoms. Here's an example.
+			//
+			// Note: This setter needs to execute before the ccv channel handshake is initiated.
+			app.ConsumerKeeper.SetStandaloneTransferChannelID(ctx, "hardcoded-existing-channel-id")
 
 			// TODO: should have a way to read from current node home
 			userHomeDir, err := os.UserHomeDir()

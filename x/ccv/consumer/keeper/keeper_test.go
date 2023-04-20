@@ -82,21 +82,21 @@ func TestPendingChanges(t *testing.T) {
 	require.Nil(t, gotPd, "got non-nil pending changes after Delete")
 }
 
-// TestLastSovereignHeight tests the getter and setter for the last standalone height
-func TestLastSovereignHeight(t *testing.T) {
+// TestLastSovereignHeight tests the getter and setter for the ccv init genesis height
+func TestInitGenesisHeight(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	// Default value should be 0 without any setter
-	require.Equal(t, int64(0), consumerKeeper.GetLastStandaloneHeight(ctx))
+	// Panics without setter
+	require.Panics(t, func() { consumerKeeper.GetInitGenesisHeight(ctx) })
 
-	// Set/get the last standalone height being 10
-	consumerKeeper.SetLastStandaloneHeight(ctx, 10)
-	require.Equal(t, int64(10), consumerKeeper.GetLastStandaloneHeight(ctx))
+	// Set/get the height being 10
+	consumerKeeper.SetInitGenesisHeight(ctx, 10)
+	require.Equal(t, int64(10), consumerKeeper.GetInitGenesisHeight(ctx))
 
-	// Set/get the last standalone height being 43234426
-	consumerKeeper.SetLastStandaloneHeight(ctx, 43234426)
-	require.Equal(t, int64(43234426), consumerKeeper.GetLastStandaloneHeight(ctx))
+	// Set/get the height being 43234426
+	consumerKeeper.SetInitGenesisHeight(ctx, 43234426)
+	require.Equal(t, int64(43234426), consumerKeeper.GetInitGenesisHeight(ctx))
 }
 
 // TestPreCCV tests the getter, setter and deletion methods for the pre-CCV state flag
@@ -539,4 +539,29 @@ func TestGetAllOutstandingDowntimes(t *testing.T) {
 	result := ck.GetAllOutstandingDowntimes(ctx)
 	require.Len(t, result, len(addresses))
 	require.Equal(t, result, expectedGetAllOrder)
+}
+
+// TestStandaloneTransferChannelID tests the getter and setter for the existing transfer channel id
+func TestStandaloneTransferChannelID(t *testing.T) {
+	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Test that the default value is empty
+	require.Equal(t, "", ck.GetStandaloneTransferChannelID(ctx))
+
+	// Test that the value can be set and retrieved
+	ck.SetStandaloneTransferChannelID(ctx, "channelID1234")
+	require.Equal(t, "channelID1234", ck.GetStandaloneTransferChannelID(ctx))
+}
+
+func TestPrevStandaloneChainFlag(t *testing.T) {
+	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Test that the default value is false
+	require.False(t, ck.IsPrevStandaloneChain(ctx))
+
+	// Test that the value can be set and retrieved
+	ck.MarkAsPrevStandaloneChain(ctx)
+	require.True(t, ck.IsPrevStandaloneChain(ctx))
 }
