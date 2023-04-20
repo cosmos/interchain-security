@@ -9,7 +9,6 @@ import (
 	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -25,7 +24,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	oneHourFromNow := time.Now().UTC().Add(time.Hour)
 	initHeight, vscID := uint64(5), uint64(1)
 	ubdIndex := []uint64{0, 1, 2}
-	params := providertypes.DefaultParams()
+	params := ccv.DefaultProviderParams()
 
 	// create validator keys and addresses for key assignment
 	providerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7896)
@@ -44,8 +43,8 @@ func TestInitAndExportGenesis(t *testing.T) {
 				expClientID,
 				"channel",
 				initHeight,
-				*consumertypes.DefaultGenesisState(),
-				[]providertypes.VscUnbondingOps{
+				*ccv.DefaultConsumerGenesisState(),
+				[]ccv.VscUnbondingOps{
 					{VscId: vscID, UnbondingOpIds: ubdIndex},
 				},
 				[]ccv.ValidatorSetChangePacketData{},
@@ -56,45 +55,45 @@ func TestInitAndExportGenesis(t *testing.T) {
 				expClientID,
 				"",
 				0,
-				*consumertypes.DefaultGenesisState(),
+				*ccv.DefaultConsumerGenesisState(),
 				nil,
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
 				nil,
 			),
 		},
-		[]providertypes.UnbondingOp{{
+		[]ccv.UnbondingOp{{
 			Id:                      vscID,
 			UnbondingConsumerChains: []string{cChainIDs[0]},
 		}},
 		&ccv.MaturedUnbondingOps{Ids: ubdIndex},
-		[]providertypes.ConsumerAdditionProposal{{
+		[]ccv.ConsumerAdditionProposal{{
 			ChainId:   cChainIDs[0],
 			SpawnTime: oneHourFromNow,
 		}},
-		[]providertypes.ConsumerRemovalProposal{{
+		[]ccv.ConsumerRemovalProposal{{
 			ChainId:  cChainIDs[0],
 			StopTime: oneHourFromNow,
 		}},
 		params,
-		[]providertypes.ValidatorConsumerPubKey{
+		[]ccv.ValidatorConsumerPubKey{
 			{
 				ChainId:      cChainIDs[0],
 				ProviderAddr: &provAddr,
 				ConsumerKey:  &consumerTmPubKey,
 			},
 		},
-		[]providertypes.ValidatorByConsumerAddr{
+		[]ccv.ValidatorByConsumerAddr{
 			{
 				ChainId:      cChainIDs[0],
 				ProviderAddr: &provAddr,
 				ConsumerAddr: &consumerConsAddr,
 			},
 		},
-		[]providertypes.ConsumerAddrsToPrune{
+		[]ccv.ConsumerAddrsToPrune{
 			{
 				ChainId:       cChainIDs[0],
 				VscId:         vscID,
-				ConsumerAddrs: &providertypes.ConsumerAddressList{Addresses: []*providertypes.ConsumerConsAddress{&consumerConsAddr}},
+				ConsumerAddrs: &ccv.ConsumerAddressList{Addresses: []*ccv.ConsumerConsAddress{&consumerConsAddr}},
 			},
 		},
 	)
@@ -155,7 +154,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 
 	addrs := pk.GetConsumerAddrsToPrune(ctx, cChainIDs[0], vscID)
 	// Expect same list as what was provided in provGenesis
-	expectedAddrList := providertypes.ConsumerAddressList{Addresses: []*providertypes.ConsumerConsAddress{&consumerConsAddr}}
+	expectedAddrList := ccv.ConsumerAddressList{Addresses: []*ccv.ConsumerConsAddress{&consumerConsAddr}}
 	require.Equal(t, expectedAddrList, addrs)
 
 	// check provider chain's consumer chain states
@@ -171,7 +170,7 @@ func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, 
 		chainID := cs.ChainId
 		gen, found := pk.GetConsumerGenesis(ctx, chainID)
 		require.True(t, found)
-		require.Equal(t, *consumertypes.DefaultGenesisState(), gen)
+		require.Equal(t, *ccv.DefaultConsumerGenesisState(), gen)
 
 		clientID, found := pk.GetConsumerClientId(ctx, chainID)
 		require.True(t, found)

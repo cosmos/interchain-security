@@ -13,14 +13,14 @@ func NewGenesisState(
 	vscID uint64,
 	vscIdToHeights []ValsetUpdateIdToHeight,
 	consumerStates []ConsumerState,
-	unbondingOps []UnbondingOp,
+	unbondingOps []ccv.UnbondingOp,
 	matureUbdOps *ccv.MaturedUnbondingOps,
-	additionProposals []ConsumerAdditionProposal,
-	removalProposals []ConsumerRemovalProposal,
-	params Params,
-	validatorConsumerPubkeys []ValidatorConsumerPubKey,
-	validatorsByConsumerAddr []ValidatorByConsumerAddr,
-	consumerAddrsToPrune []ConsumerAddrsToPrune,
+	additionProposals []ccv.ConsumerAdditionProposal,
+	removalProposals []ccv.ConsumerRemovalProposal,
+	params ccv.ProviderParams,
+	validatorConsumerPubkeys []ccv.ValidatorConsumerPubKey,
+	validatorsByConsumerAddr []ccv.ValidatorByConsumerAddr,
+	consumerAddrsToPrune []ccv.ConsumerAddrsToPrune,
 ) *GenesisState {
 	return &GenesisState{
 		ValsetUpdateId:            vscID,
@@ -41,7 +41,7 @@ func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
 		// ensure that VSCID is strictly positive
 		ValsetUpdateId: DefaultValsetUpdateID,
-		Params:         DefaultParams(),
+		Params:         ccv.DefaultConsumerParams(),
 	}
 }
 
@@ -85,7 +85,7 @@ func (gs GenesisState) Validate() error {
 		return err
 	}
 
-	if err := KeyAssignmentValidateBasic(gs.ValidatorConsumerPubkeys,
+	if err := ccv.KeyAssignmentValidateBasic(gs.ValidatorConsumerPubkeys,
 		gs.ValidatorsByConsumerAddr,
 		gs.ConsumerAddrsToPrune,
 	); err != nil {
@@ -95,7 +95,7 @@ func (gs GenesisState) Validate() error {
 	return nil
 }
 
-func (gs GenesisState) ValidateUnbondingOp(ubdOp UnbondingOp) error {
+func (gs GenesisState) ValidateUnbondingOp(ubdOp ccv.UnbondingOp) error {
 	if len(ubdOp.UnbondingConsumerChains) == 0 {
 		return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "unbonding operations cannot have an empty consumer chain list")
 	}

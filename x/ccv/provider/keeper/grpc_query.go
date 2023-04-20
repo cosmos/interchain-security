@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var _ ccvtypes.QueryServer = Keeper{}
+var _ ccvtypes.ProviderQueryServer = Keeper{}
 
 func (k Keeper) QueryConsumerGenesis(c context.Context, req *ccvtypes.QueryConsumerGenesisRequest) (*ccvtypes.QueryConsumerGenesisResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)

@@ -11,7 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // NewQueryCmd returns a root CLI command handler for all x/ccv/provider query commands.
@@ -48,7 +48,7 @@ func CmdConsumerGenesis() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := types.NewProviderQueryClient(clientCtx)
 
 			req := types.QueryConsumerGenesisRequest{ChainId: args[0]}
 			res, err := queryClient.QueryConsumerGenesis(cmd.Context(), &req)
@@ -75,7 +75,7 @@ func CmdConsumerChains() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := types.NewProviderQueryClient(clientCtx)
 
 			req := &types.QueryConsumerChainsRequest{}
 			res, err := queryClient.QueryConsumerChains(cmd.Context(), req)
@@ -106,7 +106,7 @@ func CmdConsumerStartProposals() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := types.NewProviderQueryClient(clientCtx)
 
 			req := &types.QueryConsumerChainStartProposalsRequest{}
 			res, err := queryClient.QueryConsumerChainStarts(cmd.Context(), req)
@@ -137,7 +137,7 @@ func CmdConsumerStopProposals() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := types.NewProviderQueryClient(clientCtx)
 
 			req := &types.QueryConsumerChainStopProposalsRequest{}
 			res, err := queryClient.QueryConsumerChainStops(cmd.Context(), req)
@@ -175,7 +175,7 @@ $ %s query provider validator-consumer-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := types.NewProviderQueryClient(clientCtx)
 
 			consumerChainID := args[0]
 
@@ -222,7 +222,7 @@ $ %s query provider validator-provider-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := types.NewProviderQueryClient(clientCtx)
 
 			consumerChainID := args[0]
 
@@ -268,7 +268,7 @@ $ %s query provider throttle-state
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := types.NewProviderQueryClient(clientCtx)
 
 			req := &types.QueryThrottleStateRequest{}
 			res, err := queryClient.QueryThrottleState(cmd.Context(), req)
@@ -304,7 +304,7 @@ $ %s query provider throttled-consumer-packet-data foochain
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := types.NewProviderQueryClient(clientCtx)
 
 			req := &types.QueryThrottledConsumerPacketDataRequest{ChainId: args[0]}
 			res, err := queryClient.QueryThrottledConsumerPacketData(cmd.Context(), req)

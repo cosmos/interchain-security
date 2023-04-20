@@ -126,7 +126,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			// stop consumer chain and release unbonding
 			return k.StopConsumerChain(ctx, chainID, false)
 		}
-		return sdkerrors.Wrapf(providertypes.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
+		return sdkerrors.Wrapf(ccv.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
 	}
 	return nil
 }
@@ -308,7 +308,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 	// The slash packet validator address may be known only on the consumer chain,
 	// in this case, it must be mapped back to the consensus address on the provider chain
-	consumerConsAddr := providertypes.NewConsumerConsAddress(data.Validator.Address)
+	consumerConsAddr := ccv.NewConsumerConsAddress(data.Validator.Address)
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
 	if data.Infraction == stakingtypes.DoubleSign {
@@ -330,7 +330,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	}
 
 	// Queue a slash entry to the global queue, which will be seen by the throttling logic
-	k.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
+	k.QueueGlobalSlashEntry(ctx, ccv.NewGlobalSlashEntry(
 		ctx.BlockTime(),   // recv time
 		chainID,           // consumer chain id that sent the packet
 		packet.Sequence,   // IBC sequence number of the packet
@@ -376,7 +376,7 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 // HandleSlashPacket potentially jails a misbehaving validator for a downtime infraction.
 // This method should NEVER be called with a double-sign infraction.
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
-	consumerConsAddr := providertypes.NewConsumerConsAddress(data.Validator.Address)
+	consumerConsAddr := ccv.NewConsumerConsAddress(data.Validator.Address)
 	// Obtain provider chain consensus address using the consumer chain consensus address
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 

@@ -7,14 +7,13 @@ import (
 
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // GetTemplateClient returns the template client for provider proposals
 func (k Keeper) GetTemplateClient(ctx sdk.Context) *ibctmtypes.ClientState {
 	var cs ibctmtypes.ClientState
-	k.paramSpace.Get(ctx, types.KeyTemplateClient, &cs)
+	k.paramSpace.Get(ctx, ccvtypes.KeyTemplateClient, &cs)
 	return &cs
 }
 
@@ -22,7 +21,7 @@ func (k Keeper) GetTemplateClient(ctx sdk.Context) *ibctmtypes.ClientState {
 // used to compute the provider IBC client's TrustingPeriod as UnbondingPeriod / TrustingPeriodFraction
 func (k Keeper) GetTrustingPeriodFraction(ctx sdk.Context) string {
 	var f string
-	k.paramSpace.Get(ctx, types.KeyTrustingPeriodFraction, &f)
+	k.paramSpace.Get(ctx, ccvtypes.KeyTrustingPeriodFraction, &f)
 	return f
 }
 
@@ -36,27 +35,27 @@ func (k Keeper) GetCCVTimeoutPeriod(ctx sdk.Context) time.Duration {
 // GetInitTimeoutPeriod returns the init timeout period
 func (k Keeper) GetInitTimeoutPeriod(ctx sdk.Context) time.Duration {
 	var p time.Duration
-	k.paramSpace.Get(ctx, types.KeyInitTimeoutPeriod, &p)
+	k.paramSpace.Get(ctx, ccvtypes.KeyInitTimeoutPeriod, &p)
 	return p
 }
 
 // GetVscTimeoutPeriod returns the vsc timeout period
 func (k Keeper) GetVscTimeoutPeriod(ctx sdk.Context) time.Duration {
 	var p time.Duration
-	k.paramSpace.Get(ctx, types.KeyVscTimeoutPeriod, &p)
+	k.paramSpace.Get(ctx, ccvtypes.KeyVscTimeoutPeriod, &p)
 	return p
 }
 
 // SetVscTimeoutPeriod sets the vsc timeout period
 func (k Keeper) SetVscTimeoutPeriod(ctx sdk.Context, period time.Duration) {
-	k.paramSpace.Set(ctx, types.KeyVscTimeoutPeriod, period)
+	k.paramSpace.Set(ctx, ccvtypes.KeyVscTimeoutPeriod, period)
 }
 
 // GetSlashMeterReplenishPeriod returns the period in which:
 // Once the slash meter becomes not-full, the slash meter is replenished after this period.
 func (k Keeper) GetSlashMeterReplenishPeriod(ctx sdk.Context) time.Duration {
 	var p time.Duration
-	k.paramSpace.Get(ctx, types.KeySlashMeterReplenishPeriod, &p)
+	k.paramSpace.Get(ctx, ccvtypes.KeySlashMeterReplenishPeriod, &p)
 	return p
 }
 
@@ -65,7 +64,7 @@ func (k Keeper) GetSlashMeterReplenishPeriod(ctx sdk.Context) time.Duration {
 // voting power that the slash meter can hold.
 func (k Keeper) GetSlashMeterReplenishFraction(ctx sdk.Context) string {
 	var f string
-	k.paramSpace.Get(ctx, types.KeySlashMeterReplenishFraction, &f)
+	k.paramSpace.Get(ctx, ccvtypes.KeySlashMeterReplenishFraction, &f)
 	return f
 }
 
@@ -73,13 +72,13 @@ func (k Keeper) GetSlashMeterReplenishFraction(ctx sdk.Context) string {
 // that can be queued for a single consumer before the provider chain halts.
 func (k Keeper) GetMaxThrottledPackets(ctx sdk.Context) int64 {
 	var p int64
-	k.paramSpace.Get(ctx, types.KeyMaxThrottledPackets, &p)
+	k.paramSpace.Get(ctx, ccvtypes.KeyMaxThrottledPackets, &p)
 	return p
 }
 
 // GetParams returns the paramset for the provider module
 func (k Keeper) GetParams(ctx sdk.Context) ccvtypes.ProviderParams {
-	return types.NewParams(
+	return ccvtypes.NewProviderParams(
 		k.GetTemplateClient(ctx),
 		k.GetTrustingPeriodFraction(ctx),
 		k.GetCCVTimeoutPeriod(ctx),

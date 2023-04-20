@@ -8,7 +8,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,12 +19,12 @@ func TestParams(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
-	defaultParams := providertypes.DefaultParams()
+	defaultParams := ccvtypes.DefaultProviderParams()
 	providerKeeper.SetParams(ctx, defaultParams)
 	params := providerKeeper.GetParams(ctx)
 	require.Equal(t, defaultParams, params)
 
-	newParams := providertypes.NewParams(
+	newParams := ccvtypes.NewProviderParams(
 		ibctmtypes.NewClientState(
 			"",
 			ibctmtypes.DefaultTrustLevel,
