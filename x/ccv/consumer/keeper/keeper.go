@@ -95,10 +95,6 @@ func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
 	k.standaloneStakingKeeper = sk
 }
 
-func (k Keeper) IsPrevStandaloneChain() bool {
-	return k.standaloneStakingKeeper != nil
-}
-
 // Validates that the consumer keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
@@ -264,7 +260,7 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 
 func (k Keeper) GetInitGenesisHeight(ctx sdk.Context) int64 {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.LastStandaloneHeightKey())
+	bz := store.Get(types.InitGenesisHeightKey())
 	if bz == nil {
 		panic("last standalone height not set")
 	}
@@ -275,7 +271,7 @@ func (k Keeper) GetInitGenesisHeight(ctx sdk.Context) int64 {
 func (k Keeper) SetInitGenesisHeight(ctx sdk.Context, height int64) {
 	bz := sdk.Uint64ToBigEndian(uint64(height))
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.LastStandaloneHeightKey(), bz)
+	store.Set(types.InitGenesisHeightKey(), bz)
 }
 
 func (k Keeper) IsPreCCV(ctx sdk.Context) bool {
@@ -622,4 +618,28 @@ func (k Keeper) GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Val
 	}
 
 	return validators
+}
+
+func (k Keeper) MarkAsPrevStandaloneChain(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.PrevStandaloneChainKey(), []byte{})
+}
+
+func (k Keeper) IsPrevStandaloneChain(ctx sdk.Context) bool {
+	store := ctx.KVStore(k.storeKey)
+	return store.Has(types.PrevStandaloneChainKey())
+}
+
+// SetStandaloneTransferChannelID sets the channelID of an existing transfer channel,
+// for a chain which used to be a standalone chain.
+func (k Keeper) SetStandaloneTransferChannelID(ctx sdk.Context, channelID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.StandaloneTransferChannelIDKey(), []byte(channelID))
+}
+
+// GetStandaloneTransferChannelID returns the channelID of an existing transfer channel,
+// for a chain which used to be a standalone chain.
+func (k Keeper) GetStandaloneTransferChannelID(ctx sdk.Context) string {
+	store := ctx.KVStore(k.storeKey)
+	return string(store.Get(types.StandaloneTransferChannelIDKey()))
 }

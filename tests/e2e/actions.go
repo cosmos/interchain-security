@@ -511,9 +511,10 @@ func (tr TestRun) voteGovProposal(
 }
 
 type startConsumerChainAction struct {
-	consumerChain chainID
-	providerChain chainID
-	validators    []StartChainValidator
+	consumerChain  chainID
+	providerChain  chainID
+	validators     []StartChainValidator
+	genesisChanges string
 }
 
 func (tr TestRun) startConsumerChain(
@@ -542,7 +543,7 @@ func (tr TestRun) startConsumerChain(
 	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
 	consumerGenesisChanges := tr.chainConfigs[action.consumerChain].genesisChanges
 	if consumerGenesisChanges != "" {
-		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges
+		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges + " | " + action.genesisChanges
 	}
 
 	tr.startChain(StartChainAction{
