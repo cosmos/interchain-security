@@ -47,7 +47,7 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
+	rand.Seed(time.Now().Unix()) 
 	chainIDs := []string{"consumer-1", "consumer-2", "consumer-3"}
 	numAssignments := 10
 	testAssignments := []types.ValidatorConsumerPubKey{}
@@ -124,7 +124,7 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
+	rand.Seed(time.Now().Unix()) 
 	chainIDs := []string{"consumer-1", "consumer-2", "consumer-3"}
 	numAssignments := 10
 	testAssignments := []types.ValidatorByConsumerAddr{}
@@ -202,7 +202,7 @@ func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 
 	chainID := "consumer-1"
 
-	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
+	rand.Seed(time.Now().Unix()) 
 	numAssignments := 10
 	testAssignments := []types.KeyAssignmentReplacement{}
 	for i := 0; i < numAssignments; i++ {
@@ -259,7 +259,7 @@ func TestGetAllConsumerAddrsToPrune(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
+	rand.Seed(time.Now().Unix()) 
 	chainIDs := []string{"consumer-1", "consumer-2", "consumer-3"}
 	numAssignments := 10
 	testAssignments := []types.ConsumerAddrsToPrune{}
