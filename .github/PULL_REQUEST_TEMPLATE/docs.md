@@ -33,5 +33,5 @@ I have...
 - [ ] Reviewed content for consistency
 - [ ] Reviewed content for spelling and grammar
 - [ ] Tested instructions (if applicable)
-- [ ] Checked that the documentation website can be built and deployed successfully
+- [ ] Checked that the documentation website can be built and deployed successfully (run `make build-docs`)
 
