@@ -6,10 +6,10 @@ package types
 import (
 	fmt "fmt"
 	_ "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	proto "github.com/cosmos/gogoproto/proto"
 	types1 "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	types "github.com/cosmos/interchain-security/x/ccv/types"
-	_ "github.com/cosmos/gogoproto/proto"
-	proto "github.com/cosmos/gogoproto/proto"
+	_ "github.com/gogo/protobuf/gogoproto"
 	io "io"
 	math "math"
 	math_bits "math/bits"

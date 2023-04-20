@@ -85,7 +85,7 @@ $(BUILDDIR)/:
 ###                                Protobuf                                 ###
 ###############################################################################
 
-containerProtoVer=0.9.0
+containerProtoVer=0.12.1
 containerProtoImage=ghcr.io/cosmos/proto-builder:$(containerProtoVer)
 containerProtoGen=cosmos-sdk-proto-gen-$(containerProtoVer)
 containerProtoGenSwagger=cosmos-sdk-proto-gen-swagger-$(containerProtoVer)
