@@ -80,7 +80,7 @@ func stepsDelegate(consumerName string) []Step {
 	}
 }
 
-// stepsDelegate tests unbonding and resulting validator power changes.
+// stepsUnbond tests unbonding and resulting validator power changes.
 func stepsUnbond(consumerName string) []Step {
 	return []Step{
 		{
