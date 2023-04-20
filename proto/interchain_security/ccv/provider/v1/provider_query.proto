@@ -7,11 +7,11 @@ import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 import "interchain_security/ccv/v1/ccv.proto";
-import "interchain_security/ccv/consumer/v1/genesis.proto";
+import "interchain_security/ccv/consumer/v1/consumer_genesis.proto";
 import "interchain_security/ccv/provider/v1/provider.proto";
 
 
-service Query {
+service ProviderQuery {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
   // whose proposal has been accepted
   rpc QueryConsumerGenesis(QueryConsumerGenesisRequest)

@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // NewQueryCmd returns a root CLI command handler for all x/ccv/provider query commands.
@@ -33,7 +33,7 @@ func CmdNextFeeDistribution() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := types.NewConsumerQueryClient(clientCtx)
 
 			req := &types.QueryNextFeeDistributionEstimateRequest{}
 			res, err := queryClient.QueryNextFeeDistribution(cmd.Context(), req)

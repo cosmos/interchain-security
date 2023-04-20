@@ -7,7 +7,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "interchain_security/ccv/consumer/v1/consumer.proto";
 
-service Query {
+service ConsumerQuery {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
   // whose proposal has been accepted
   rpc QueryNextFeeDistribution(QueryNextFeeDistributionEstimateRequest)

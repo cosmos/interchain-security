@@ -78,7 +78,7 @@ func (k Keeper) GetMaxThrottledPackets(ctx sdk.Context) int64 {
 }
 
 // GetParams returns the paramset for the provider module
-func (k Keeper) GetParams(ctx sdk.Context) types.Params {
+func (k Keeper) GetParams(ctx sdk.Context) ccvtypes.ProviderParams {
 	return types.NewParams(
 		k.GetTemplateClient(ctx),
 		k.GetTrustingPeriodFraction(ctx),
@@ -92,6 +92,6 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 }
 
 // SetParams sets the params for the provider module
-func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
+func (k Keeper) SetParams(ctx sdk.Context, params ccvtypes.ProviderParams) {
 	k.paramSpace.SetParamSet(ctx, &params)
 }

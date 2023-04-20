@@ -199,7 +199,7 @@ func TestPacketMaturityTime(t *testing.T) {
 	defer ctrl.Finish()
 
 	now := time.Now().UTC()
-	packets := []types.MaturingVSCPacket{
+	packets := []ccv.MaturingVSCPacket{
 		{
 			VscId:        2,
 			MaturityTime: now,
@@ -218,9 +218,9 @@ func TestPacketMaturityTime(t *testing.T) {
 		},
 	}
 	// sort by MaturityTime and not by VscId
-	expectedGetAllOrder := []types.MaturingVSCPacket{packets[2], packets[1], packets[0], packets[3]}
+	expectedGetAllOrder := []ccv.MaturingVSCPacket{packets[2], packets[1], packets[0], packets[3]}
 	// only packets with MaturityTime before or equal to now
-	expectedGetElapsedOrder := []types.MaturingVSCPacket{packets[2], packets[1], packets[0]}
+	expectedGetElapsedOrder := []ccv.MaturingVSCPacket{packets[2], packets[1], packets[0]}
 
 	// test SetPacketMaturityTime
 	for _, packet := range packets {
@@ -260,7 +260,7 @@ func TestCrossChainValidator(t *testing.T) {
 	privKey := ed25519.GenPrivKey()
 
 	// Set cross chain validator
-	ccVal, err := types.NewCCValidator(privKey.PubKey().Address(), 1000, privKey.PubKey())
+	ccVal, err := ccv.NewCCValidator(privKey.PubKey().Address(), 1000, privKey.PubKey())
 	require.NoError(t, err)
 	consumerKeeper.SetCCValidator(ctx, ccVal)
 
@@ -292,7 +292,7 @@ func TestGetAllCCValidator(t *testing.T) {
 	defer ctrl.Finish()
 
 	numValidators := 4
-	validators := []types.CrossChainValidator{}
+	validators := []ccv.CrossChainValidator{}
 	for i := 0; i < numValidators; i++ {
 		validators = append(validators, testkeeper.GetNewCrossChainValidator(t))
 	}

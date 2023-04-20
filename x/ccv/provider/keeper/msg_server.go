@@ -8,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	tmstrings "github.com/tendermint/tendermint/libs/strings"
 )
@@ -19,14 +18,14 @@ type msgServer struct {
 
 // NewMsgServerImpl returns an implementation of the bank MsgServer interface
 // for the provided Keeper.
-func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
+func NewMsgServerImpl(keeper *Keeper) ccvtypes.MsgServer {
 	return &msgServer{Keeper: keeper}
 }
 
-var _ types.MsgServer = msgServer{}
+var _ ccvtypes.MsgServer = msgServer{}
 
 // CreateValidator defines a method for creating a new validator
-func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssignConsumerKey) (*types.MsgAssignConsumerKeyResponse, error) {
+func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *ccvtypes.MsgAssignConsumerKey) (*ccvtypes.MsgAssignConsumerKeyResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// It is possible to assign keys for consumer chains that are not yet approved.
@@ -85,5 +84,5 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		),
 	})
 
-	return &types.MsgAssignConsumerKeyResponse{}, nil
+	return &ccvtypes.MsgAssignConsumerKeyResponse{}, nil
 }

@@ -8,7 +8,7 @@ import "gogoproto/gogo.proto";
 import "interchain_security/ccv/v1/ccv.proto";
 import "interchain_security/ccv/provider/v1/provider.proto";
 import "interchain_security/ccv/consumer/v1/consumer.proto";
-import "interchain_security/ccv/consumer/v1/genesis.proto";
+import "interchain_security/ccv/consumer/v1/consumer_genesis.proto";
 import "tendermint/crypto/keys.proto";
 
 

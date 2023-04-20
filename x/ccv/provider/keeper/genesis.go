@@ -128,7 +128,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	// ConsumerAddrsToPrune are added only for registered consumer chains
-	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
+	consumerAddrsToPrune := []ccv.ConsumerAddrsToPrune{}
 	for _, chain := range registeredChains {
 		consumerAddrsToPrune = append(consumerAddrsToPrune, k.GetAllConsumerAddrsToPrune(ctx, chain.ChainId)...)
 	}
