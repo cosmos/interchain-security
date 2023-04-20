@@ -20,20 +20,20 @@ import (
 func TestValidateProviderGenesisState(t *testing.T) {
 	testCases := []struct {
 		name     string
-		genState *types.ProviderGenesisState
+		genState *ccv.ProviderGenesisState
 		expPass  bool
 	}{
 		{
 			"valid initializing provider genesis with nil updates",
-			types.NewGenesisState(
-				types.DefaultValsetUpdateID,
+			ccv.NewProviderGenesisState(
+				ccv.DefaultValsetUpdateID,
 				nil,
-				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-1")}},
-				nil,
-				nil,
+				[]ccv.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-1")}},
 				nil,
 				nil,
-				types.DefaultParams(),
+				nil,
+				nil,
+				ccv.DefaultProviderParams(),
 				nil,
 				nil,
 				nil,

@@ -10,7 +10,6 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -35,10 +34,10 @@ func TestInitAndExportGenesis(t *testing.T) {
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
 
 	// create genesis struct
-	provGenesis := providertypes.NewGenesisState(vscID,
-		[]providertypes.ValsetUpdateIdToHeight{{ValsetUpdateId: vscID, Height: initHeight}},
-		[]providertypes.ConsumerState{
-			providertypes.NewConsumerStates(
+	provGenesis := ccv.NewGenesisState(vscID,
+		[]ccv.ValsetUpdateIdToHeight{{ValsetUpdateId: vscID, Height: initHeight}},
+		[]ccv.ConsumerState{
+			ccv.NewConsumerState(
 				cChainIDs[0],
 				expClientID,
 				"channel",
@@ -50,7 +49,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 				[]ccv.ValidatorSetChangePacketData{},
 				[]string{"slashedValidatorConsAddress"},
 			),
-			providertypes.NewConsumerStates(
+			ccv.NewConsumerState(
 				cChainIDs[1],
 				expClientID,
 				"",
@@ -164,7 +163,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, provGenesis, pk.ExportGenesis(ctx))
 }
 
-func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, consumerStates ...providertypes.ConsumerState) {
+func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, consumerStates ...ccv.ConsumerState) {
 	t.Helper()
 	for _, cs := range consumerStates {
 		chainID := cs.ChainId

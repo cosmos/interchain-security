@@ -217,7 +217,7 @@ func TestMarshalConsumerAdditionProposal(t *testing.T) {
 
 	// create codec
 	ir := codectypes.NewInterfaceRegistry()
-	types.RegisterInterfaces(ir)
+	types.RegisterProviderInterfaces(ir)
 	govtypes.RegisterInterfaces(ir)
 	clienttypes.RegisterInterfaces(ir)
 	ibctmtypes.RegisterInterfaces(ir)

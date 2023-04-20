@@ -4,12 +4,11 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // InitGenesis initializes the CCV provider state and binds to PortID.
-func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
+func (k Keeper) InitGenesis(ctx sdk.Context, genState *ccv.ProviderGenesisState) {
 	k.SetPort(ctx, ccv.ProviderPortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
@@ -91,12 +90,12 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 }
 
 // ExportGenesis returns the CCV provider module's exported genesis
-func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
+func (k Keeper) ExportGenesis(ctx sdk.Context) *ccv.ProviderGenesisState {
 	// get a list of all registered consumer chains
 	registeredChains := k.GetAllConsumerChains(ctx)
 
 	// export states for each consumer chains
-	var consumerStates []types.ConsumerState
+	var consumerStates []ccv.ConsumerState
 	for _, chain := range registeredChains {
 		gen, found := k.GetConsumerGenesis(ctx, chain.ChainId)
 		if !found {
@@ -104,7 +103,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		}
 
 		// initial consumer chain states
-		cs := types.ConsumerState{
+		cs := ccv.ConsumerState{
 			ChainId:           chain.ChainId,
 			ClientId:          chain.ClientId,
 			ConsumerGenesis:   gen,
@@ -135,7 +134,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	params := k.GetParams(ctx)
 
-	return types.NewGenesisState(
+	return ccv.NewProviderGenesisState(
 		k.GetValidatorSetUpdateId(ctx),
 		k.GetAllValsetUpdateBlockHeights(ctx),
 		consumerStates,

@@ -8,7 +8,12 @@ import (
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 )
 
-func NewGenesisState(
+const (
+	// Default validator set update ID on genesis
+	DefaultValsetUpdateID = 1
+)
+
+func NewProviderGenesisState(
 	vscID uint64,
 	vscIdToHeights []ValsetUpdateIdToHeight,
 	consumerStates []ConsumerState,
@@ -36,17 +41,17 @@ func NewGenesisState(
 	}
 }
 
-func DefaultGenesisState() *ProviderGenesisState {
+func DefaultProviderGenesisState() *ProviderGenesisState {
 	return &ProviderGenesisState{
 		// ensure that VSCID is strictly positive
 		ValsetUpdateId: DefaultValsetUpdateID,
-		Params:         DefaultConsumerParams(),
+		Params:         DefaultProviderParams(),
 	}
 }
 
-func (gs GenesisState) Validate() error {
+func (gs ProviderGenesisState) Validate() error {
 	if gs.ValsetUpdateId == 0 {
-		return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "valset update ID cannot be equal to zero")
+		return sdkerrors.Wrap(ErrInvalidGenesis, "valset update ID cannot be equal to zero")
 	}
 
 	for _, ubdOp := range gs.UnbondingOps {
@@ -57,26 +62,26 @@ func (gs GenesisState) Validate() error {
 
 	for _, prop := range gs.ConsumerAdditionProposals {
 		if err := prop.ValidateBasic(); err != nil {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, err.Error())
+			return sdkerrors.Wrap(ErrInvalidGenesis, err.Error())
 		}
 	}
 
 	for _, prop := range gs.ConsumerRemovalProposals {
 		if err := prop.ValidateBasic(); err != nil {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, err.Error())
+			return sdkerrors.Wrap(ErrInvalidGenesis, err.Error())
 		}
 	}
 
 	if len(gs.ValsetUpdateIdToHeight) > 0 {
 		// check only the first tuple of the list since it is ordered by VSC ID
 		if gs.ValsetUpdateIdToHeight[0].ValsetUpdateId == 0 {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "valset update ID cannot be equal to zero")
+			return sdkerrors.Wrap(ErrInvalidGenesis, "valset update ID cannot be equal to zero")
 		}
 	}
 
 	for _, cs := range gs.ConsumerStates {
 		if err := cs.Validate(); err != nil {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, fmt.Sprintf("%s: for consumer chain id: %s", err, cs.ChainId))
+			return sdkerrors.Wrap(ErrInvalidGenesis, fmt.Sprintf("%s: for consumer chain id: %s", err, cs.ChainId))
 		}
 	}
 
@@ -84,7 +89,7 @@ func (gs GenesisState) Validate() error {
 		return err
 	}
 
-	if err := ccv.KeyAssignmentValidateBasic(gs.ValidatorConsumerPubkeys,
+	if err := KeyAssignmentValidateBasic(gs.ValidatorConsumerPubkeys,
 		gs.ValidatorsByConsumerAddr,
 		gs.ConsumerAddrsToPrune,
 	); err != nil {
@@ -94,9 +99,9 @@ func (gs GenesisState) Validate() error {
 	return nil
 }
 
-func (gs GenesisState) ValidateUnbondingOp(ubdOp ccv.UnbondingOp) error {
+func (gs ProviderGenesisState) ValidateUnbondingOp(ubdOp UnbondingOp) error {
 	if len(ubdOp.UnbondingConsumerChains) == 0 {
-		return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "unbonding operations cannot have an empty consumer chain list")
+		return sdkerrors.Wrap(ErrInvalidGenesis, "unbonding operations cannot have an empty consumer chain list")
 	}
 
 	// Check that the ID is set correctly in the UnbondingOpsIndex
@@ -118,7 +123,7 @@ func (gs GenesisState) ValidateUnbondingOp(ubdOp ccv.UnbondingOp) error {
 			}
 		}
 		if !found {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis,
+			return sdkerrors.Wrap(ErrInvalidGenesis,
 				fmt.Sprintf("unbonding operation without UnbondingOpsIndex, opID=%d, chainID=%s", ubdOp.Id, chainID))
 		}
 	}
@@ -178,4 +183,28 @@ func validateSlashAcksAddress(acks []string) error {
 		}
 	}
 	return nil
+}
+
+// NewConsumerState creates a new ConsumerState instance. Note this is the provider's
+// view of the consumer state at genesis.
+func NewConsumerState(
+	chainID,
+	clientID,
+	channelID string,
+	initialHeight uint64,
+	genesis ConsumerGenesisState,
+	unbondingOpsIndexes []VscUnbondingOps,
+	pendingValsetChanges []ValidatorSetChangePacketData,
+	slashDowntimeAck []string,
+) ConsumerState {
+	return ConsumerState{
+		ChainId:              chainID,
+		ClientId:             clientID,
+		ChannelId:            channelID,
+		InitialHeight:        initialHeight,
+		UnbondingOpsIndex:    unbondingOpsIndexes,
+		PendingValsetChanges: pendingValsetChanges,
+		ConsumerGenesis:      genesis,
+		SlashDowntimeAck:     slashDowntimeAck,
+	}
 }

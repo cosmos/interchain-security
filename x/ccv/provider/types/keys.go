@@ -25,9 +25,6 @@ const (
 
 	// QuerierRoute is the querier route for IBC transfer
 	QuerierRoute = ModuleName
-
-	// Default validator set update ID
-	DefaultValsetUpdateID = 1
 )
 
 // Iota generated keys/byte prefixes (as a byte), supports 256 possible values
@@ -295,7 +292,7 @@ func ParseThrottledPacketDataKey(key []byte) (chainId string, ibcSeqNum uint64, 
 }
 
 // GlobalSlashEntryKey returns the key for storing a global slash queue entry.
-func GlobalSlashEntryKey(entry GlobalSlashEntry) []byte {
+func GlobalSlashEntryKey(entry ccvtypes.GlobalSlashEntry) []byte {
 	recvTime := uint64(entry.RecvTime.UTC().UnixNano())
 	return ccvtypes.AppendMany(
 		// Append byte prefix
@@ -335,19 +332,19 @@ func MustParseGlobalSlashEntryKey(bz []byte) (
 
 // ConsumerValidatorsKey returns the key under which the
 // validator assigned keys for every consumer chain are stored
-func ConsumerValidatorsKey(chainID string, addr ProviderConsAddress) []byte {
+func ConsumerValidatorsKey(chainID string, addr ccvtypes.ProviderConsAddress) []byte {
 	return ChainIdAndConsAddrKey(ConsumerValidatorsBytePrefix, chainID, addr.ToSdkConsAddr())
 }
 
 // ValidatorsByConsumerAddrKey returns the key under which the mapping from validator addresses
 // on consumer chains to validator addresses on the provider chain is stored
-func ValidatorsByConsumerAddrKey(chainID string, addr ConsumerConsAddress) []byte {
+func ValidatorsByConsumerAddrKey(chainID string, addr ccvtypes.ConsumerConsAddress) []byte {
 	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr.ToSdkConsAddr())
 }
 
 // KeyAssignmentReplacementsKey returns the key under which the
 // key assignments that need to be replaced in the current block are stored
-func KeyAssignmentReplacementsKey(chainID string, addr ProviderConsAddress) []byte {
+func KeyAssignmentReplacementsKey(chainID string, addr ccvtypes.ProviderConsAddress) []byte {
 	return ChainIdAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr.ToSdkConsAddr())
 }
 
@@ -358,7 +355,7 @@ func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
 }
 
 // SlashLogKey returns the key to a validator's slash log
-func SlashLogKey(providerAddr ProviderConsAddress) []byte {
+func SlashLogKey(providerAddr ccvtypes.ProviderConsAddress) []byte {
 	return append([]byte{SlashLogBytePrefix}, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
