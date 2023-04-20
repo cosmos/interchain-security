@@ -540,3 +540,28 @@ func TestGetAllOutstandingDowntimes(t *testing.T) {
 	require.Len(t, result, len(addresses))
 	require.Equal(t, result, expectedGetAllOrder)
 }
+
+// TestStandaloneTransferChannelID tests the getter and setter for the existing transfer channel id
+func TestStandaloneTransferChannelID(t *testing.T) {
+	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Test that the default value is empty
+	require.Equal(t, "", ck.GetStandaloneTransferChannelID(ctx))
+
+	// Test that the value can be set and retrieved
+	ck.SetStandaloneTransferChannelID(ctx, "channelID1234")
+	require.Equal(t, "channelID1234", ck.GetStandaloneTransferChannelID(ctx))
+}
+
+func TestPrevStandaloneChainFlag(t *testing.T) {
+	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Test that the default value is false
+	require.False(t, ck.IsPrevStandaloneChain(ctx))
+
+	// Test that the value can be set and retrieved
+	ck.MarkAsPrevStandaloneChain(ctx)
+	require.True(t, ck.IsPrevStandaloneChain(ctx))
+}
