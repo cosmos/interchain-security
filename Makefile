@@ -114,11 +114,11 @@ proto-lint:
 proto-check-breaking:
 	@$(DOCKER_BUF) breaking --against $(HTTPS_GIT)#branch=main
 
-TM_URL              = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.5/proto/tendermint
+TM_URL              = https://raw.githubusercontent.com/cometbft/cometbft/v0.34.27/proto/tendermint
 GOGO_PROTO_URL      = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
-CONFIO_URL          = https://raw.githubusercontent.com/confio/ics23/v0.7.1
+CONFIO_URL          = https://raw.githubusercontent.com/cosmos/ics23/v0.10.0
 COSMOS_PROTO_URL    = https://raw.githubusercontent.com/regen-network/cosmos-proto/master
-SDK_PROTO_URL 		= https://raw.githubusercontent.com/cosmos/cosmos-sdk/v0.45.13-ics/proto/cosmos
+SDK_PROTO_URL 		= https://raw.githubusercontent.com/cosmos/cosmos-sdk/v0.45.15-ics/proto/cosmos
 
 TM_CRYPTO_TYPES     = third_party/proto/tendermint/crypto
 TM_ABCI_TYPES       = third_party/proto/tendermint/abci

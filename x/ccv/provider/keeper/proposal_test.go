@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	_go "github.com/confio/ics23/go"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	_go "github.com/cosmos/ics23/go"
 	"github.com/golang/mock/gomock"
 	abci "github.com/tendermint/tendermint/abci/types"
 
