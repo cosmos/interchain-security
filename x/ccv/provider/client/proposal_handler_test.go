@@ -14,7 +14,7 @@ import (
 )
 
 func ConsumerAdditionProposalCLIDriver(providerUnbondingTime, consumerUnbondingTime time.Duration) error {
-	mockClient := new(testutil.MockClient)
+	mockClient := new(testutil.MockCometBFTRPCClient)
 
 	resConsensParams := coretypes.ResultConsensusParams{
 		BlockHeight: 5,
