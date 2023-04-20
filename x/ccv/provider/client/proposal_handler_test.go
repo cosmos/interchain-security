@@ -1,7 +1,6 @@
 package client_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -27,11 +26,6 @@ func ConsumerAdditionProposalCLIDriver(providerUnbondingTime, consumerUnbondingT
 	}
 	mockClient.On("ConsensusParams", mock.Anything, mock.Anything).Return(&resConsensParams, nil)
 	clientCtx := client.Context{}.WithClient(mockClient)
-	res, _ := mockClient.ConsensusParams(context.Background(), nil)
-
-	if res != &resConsensParams {
-		panic("What")
-	}
 
 	return providerClient.CheckPropUnbondingPeriod(clientCtx, consumerUnbondingTime)
 }
