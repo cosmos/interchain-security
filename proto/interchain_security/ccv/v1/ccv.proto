@@ -50,7 +50,7 @@ message SlashPacketData {
   // map to the infraction block height on the provider
   uint64 valset_update_id = 2;
   // tell if the slashing is for a downtime or a double-signing infraction
-  cosmos.staking.v1beta1.InfractionType infraction = 3;
+  cosmos.staking.v1beta1.Infraction infraction = 3;
 }
 
 // MaturedUnbondingOps defines a list of ids corresponding to ids of matured unbonding operations. 
