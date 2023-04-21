@@ -36,7 +36,7 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 	feeAmountCoins := sdk.Coins([]sdk.Coin{feeAmount})
 	feeAmountDec := sdk.NewDecCoinsFromCoins(feeAmountCoins...)
 	consumerTokens, _ := feeAmountDec.MulDec(fracDec).TruncateDecimal()
-	providerTokens := feeAmountCoins.Sub(consumerTokens)
+	providerTokens := feeAmountCoins.Sub(consumerTokens...)
 	mAcc := authTypes.NewModuleAccount(&authTypes.BaseAccount{}, "", "auth")
 
 	// Setup mock calls

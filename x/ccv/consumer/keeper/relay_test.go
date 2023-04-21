@@ -232,7 +232,7 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	consumerKeeper.SetProviderChannel(ctx, channelIDToProvider)
 
 	packetData := types.NewSlashPacketData(
-		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Downtime,
+		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Infraction_INFRACTION_DOWNTIME,
 	)
 
 	// AcknowledgePacket is in reference to a packet originally sent from this (consumer) module.

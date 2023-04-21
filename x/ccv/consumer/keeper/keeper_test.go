@@ -336,7 +336,7 @@ func TestSetPendingPackets(t *testing.T) {
 				SlashPacketData: ccv.NewSlashPacketData(
 					abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(), Power: int64(0)},
 					3,
-					stakingtypes.DoubleSign,
+					stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
 				),
 			},
 		},
@@ -359,7 +359,7 @@ func TestSetPendingPackets(t *testing.T) {
 			Power:   int64(2),
 		},
 		uint64(4),
-		stakingtypes.Downtime,
+		stakingtypes.Infraction_INFRACTION_DOWNTIME,
 	)
 	dataPackets = append(dataPackets, ccv.ConsumerPacketData{
 		Type: ccv.SlashPacket,
