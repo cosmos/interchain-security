@@ -79,9 +79,8 @@ Where proposal.json contains:
 			// do not fail for errors regarding the unbonding period, but just log a warning
 			err = CheckPropUnbondingPeriod(clientCtx, proposal.UnbondingPeriod)
 			if err != nil {
-				fmt.Fprintf(
+				fmt.Fprint(
 					os.Stderr,
-					"Warning: Could not assure that Proposal Unbonding Period is shorter than Provider Unbonding Period. Error message: %s",
 					err.Error(),
 				)
 			}
@@ -464,11 +463,13 @@ func CheckPropUnbondingPeriod(clientCtx client.Context, propUnbondingPeriod time
 
 	providerUnbondingTime := res.Params.UnbondingTime
 
-	if providerUnbondingTime <= propUnbondingPeriod {
+	if providerUnbondingTime < propUnbondingPeriod {
 		return fmt.Errorf(
-			"consumer unbonding period is advised to be smaller than provider unbonding period, but is longer.: \n"+
-				"This is not a security risk, but will effectively lengthen the unbonding period on the provider.\n"+
-				"consumer unbonding: %s \n provider unbonding: %s",
+			`consumer unbonding period is advised to be smaller than provider unbonding period, but is longer.
+This is not a security risk, but will effectively lengthen the unbonding period on the provider.
+consumer unbonding: %s
+provider unbonding: %s
+`,
 			propUnbondingPeriod,
 			providerUnbondingTime)
 	}
