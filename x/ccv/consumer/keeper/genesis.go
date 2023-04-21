@@ -7,7 +7,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 // InitGenesis initializes the CCV consumer state and binds to PortID.

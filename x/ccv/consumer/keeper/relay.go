@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -12,7 +13,6 @@ import (
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // OnRecvVSCPacket sets the pending validator set changes that will be flushed to ABCI on Endblock

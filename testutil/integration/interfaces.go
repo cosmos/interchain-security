@@ -3,6 +3,7 @@ package integration
 import (
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -17,7 +18,6 @@ import (
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // The interface that any provider app must implement to be compatible with ccv integration tests.

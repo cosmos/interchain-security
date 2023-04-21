@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 
+	tmstrings "github.com/cometbft/cometbft/libs/strings"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -10,7 +11,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
-	tmstrings "github.com/tendermint/tendermint/libs/strings"
 )
 
 type msgServer struct {

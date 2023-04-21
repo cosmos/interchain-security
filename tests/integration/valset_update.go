@@ -3,12 +3,12 @@ package integration
 import (
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // TestPacketRoundtrip tests a CCV packet roundtrip when tokens are bonded on provider

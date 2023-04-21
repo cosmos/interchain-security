@@ -1,6 +1,7 @@
 package simibc
 
 import (
+	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -10,7 +11,6 @@ import (
 	simapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	"github.com/stretchr/testify/require"
-	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // UpdateReceiverClient DELIVERs a header to the receiving endpoint

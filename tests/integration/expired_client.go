@@ -3,6 +3,7 @@ package integration
 import (
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -11,7 +12,6 @@ import (
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // TestVSCPacketSendWithExpiredClient tests queueing of VSCPackets when the consumer client is expired.

@@ -11,14 +11,14 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
+	tmtypes "github.com/cometbft/cometbft/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	keepertestutil "github.com/cosmos/interchain-security/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/ed25519"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 )
 
 // TestRelayAndApplyDowntimePacket tests that downtime slash packets can be properly relayed

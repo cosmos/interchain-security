@@ -20,7 +20,7 @@ import (
 	types7 "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
-	types8 "github.com/tendermint/tendermint/abci/types"
+	types8 "github.com/cometbft/cometbft/abci/types"
 )
 
 // MockStakingKeeper is a mock of StakingKeeper interface.

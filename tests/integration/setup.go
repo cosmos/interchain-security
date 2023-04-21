@@ -3,11 +3,11 @@ package integration
 import (
 	"testing"
 
+	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/ibc-go/v7/testing/mock"
 	testutil "github.com/cosmos/interchain-security/testutil/integration"
-	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
 
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"

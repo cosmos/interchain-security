@@ -130,7 +130,7 @@ proto-lint:
 proto-check-breaking:
 	@$(DOCKER_BUF) breaking --against $(HTTPS_GIT)#branch=main
 
-TM_URL              = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.5/proto/tendermint
+TM_URL              = https://raw.githubusercontent.com/cometbft/cometbft/v0.34.5/proto/tendermint
 GOGO_PROTO_URL      = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
 CONFIO_URL          = https://raw.githubusercontent.com/confio/ics23/v0.7.1
 COSMOS_PROTO_URL    = https://raw.githubusercontent.com/regen-network/cosmos-proto/master
@@ -175,7 +175,7 @@ proto-update-deps:
 ## Importing of tendermint protobuf definitions currently requires the
 ## use of `sed` in order to build properly with cosmos-sdk's proto file layout
 ## (which is the standard Buf.build FILE_LAYOUT)
-## Issue link: https://github.com/tendermint/tendermint/issues/5021
+## Issue link: https://github.com/cometbft/cometbft/issues/5021
 	@mkdir -p $(TM_TYPES)
 	@curl -sSL $(TM_URL)/types/types.proto > $(TM_TYPES)/types.proto
 	@curl -sSL $(TM_URL)/types/params.proto > $(TM_TYPES)/params.proto

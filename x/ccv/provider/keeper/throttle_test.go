@@ -10,11 +10,11 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 
+	tmtypes "github.com/cometbft/cometbft/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/stretchr/testify/require"
-	tmtypes "github.com/tendermint/tendermint/types"
 	"golang.org/x/exp/slices"
 )
 

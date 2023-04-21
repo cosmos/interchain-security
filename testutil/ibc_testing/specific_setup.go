@@ -7,12 +7,12 @@ package ibc_testing
 import (
 	"encoding/json"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
+	"cosmossdk.io/simapp"
 
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
-	"github.com/tendermint/tendermint/libs/log"
-	tmdb "github.com/tendermint/tm-db"
+	tmdb "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/libs/log"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"

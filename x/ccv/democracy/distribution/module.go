@@ -14,8 +14,8 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 var (

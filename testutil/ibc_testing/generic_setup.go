@@ -13,8 +13,8 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
-	tmtypes "github.com/tendermint/tendermint/types"
+	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
+	tmtypes "github.com/cometbft/cometbft/types"
 )
 
 // Contains generic setup code for running integration tests against a provider, consumer,

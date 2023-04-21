@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/bytes"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -19,8 +21,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/bytes"
 )
 
 // TestOnRecvVSCPacket tests the behavior of OnRecvVSCPacket over various packet scenarios
