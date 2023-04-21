@@ -468,8 +468,7 @@ func CheckPropUnbondingPeriod(clientCtx client.Context, propUnbondingPeriod time
 			`consumer unbonding period is advised to be smaller than provider unbonding period, but is longer.
 This is not a security risk, but will effectively lengthen the unbonding period on the provider.
 consumer unbonding: %s
-provider unbonding: %s
-`,
+provider unbonding: %s`,
 			propUnbondingPeriod,
 			providerUnbondingTime)
 	}
