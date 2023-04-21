@@ -1,13 +1,16 @@
 # Contributing
 
 - [Contributing](#contributing)
-  - [Team Organization](#team-organization)
+  - [Overview](#overview)
+    - [Core team responsibility](#core-team-responsibility)
+    - [Ease of reviewing](#ease-of-reviewing)
+    - [Workflow](#workflow)
+  - [Project Board](#project-board)
   - [Architecture Decision Records (ADR)](#architecture-decision-records-adr)
     - [ADR Proposals](#adr-proposals)
   - [Development Procedure](#development-procedure)
     - [Testing](#testing)
     - [Pull Requests](#pull-requests)
-      - [Large / complex contributions](#large--complex-contributions)
     - [Pull Request Templates](#pull-request-templates)
     - [Requesting Reviews](#requesting-reviews)
     - [Updating Documentation](#updating-documentation)
@@ -20,9 +23,57 @@
 
 Thank you for considering making contributions to the Interchain Security (ICS) repository! 🎉👍
 
+## Overview
+
 Contributing to this repo can mean many things such as participating in
-discussion or proposing code changes. To ensure a smooth workflow for all
-contributors, a general procedure for contributing has been established:
+discussion or proposing code changes. 
+Following the processes outlined in this document will lead to the best 
+chance of landing changes in a release.
+
+### Core team responsibility
+
+ICS has many stakeholders contributing and shaping the project. 
+The ICS core team is composed of Informal Systems developers and 
+is responsible for stewarding this project over time.
+This means that the core team needs to understand the nature of, 
+and agree to maintain, all of the changes that land on `main` or a backport branch. 
+It may cost a few days/weeks' worth of time to _submit_ a particular change, 
+but _maintaining_ that change over the years has a much higher cost that the core team will bear.
+
+### Ease of reviewing
+
+ The fact that the core team needs to be able to deeply understand the short-,
+ medium- and long-term consequences of incoming changes means that changes need
+ to be **easily reviewed**.
+
+ What makes a change easy to review, and more likely to land in an upcoming
+ release?
+
+ 1. **Each pull request must do _one thing_**. It must be very clear what that
+    one thing is when looking at the pull request title, description, and linked
+    issues. It must also be very clear what value it ultimately aims to deliver,
+    and to which user(s). A single pull request that does multiple things, or
+    without a clear articulation of the problem it attempts to solve, may be
+    rejected immediately.
+
+ 2. **Each pull request must be manageable in size**. 
+    Self-contained pull requests that are manageable in size may target `main` directly. 
+    Larger contributions though must be structured as a series of smaller pull requests 
+    each building upon the previous one, all ideally tracked in a tracking issue 
+    (i.e., [an EPIC](#project-board)). 
+    These pull requests must target a long-lived feature branch. 
+    For details, see the [development procedure guidelines](#development-procedure).
+    Poorly structured pull requests may be rejected immediately with a
+    request to restructure them.
+
+    **Note**: This does not necessarily apply to documentation-related changes or
+    automatically generated code (e.g. generated from Protobuf definitions). But
+    automatically generated code changes should occur within separate commits, so
+    they are easily distinguishable from manual code changes.
+
+### Workflow
+
+To ensure a smooth workflow for all contributors, a general workflow for contributing has been established. 
 
 1. Start by browsing [existing issues](https://github.com/cosmos/interchain-security/issues) and [discussions](https://github.com/cosmos/interchain-security/discussions). If you are looking for something interesting or if you have something in your mind, there is a chance it had been discussed.
    * Looking for a good place to start contributing? How about checking out some [good first issues](https://github.com/cosmos/interchain-security/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) or [bugs](https://github.com/cosmos/interchain-security/issues?q=is%3Aopen+is%3Aissue+label%3Abug)?
@@ -38,15 +89,16 @@ contributors, a general procedure for contributing has been established:
    3. If nobody has been assigned for the issue and you would like to work on it,
       make a comment on the issue to inform the community of your intentions
       to begin work.
-5. To submit your work as a contribution to the repository, follow standard GitHub best practices. See [pull request guideline](#pull-requests) below.
+5. To submit your work as a contribution to the repository, follow standard GitHub best practices. 
+   See [development procedure guidelines](#development-procedure) below.
 
 **Note:** For very small or trivial issues such as typos, you are not required to open an issue before submitting a PR. 
 For complex problems or features, please make sure to open an issue and provide context and problem description. 
 PRs opened before adequate design discussion has taken place in a GitHub issue have a high likelihood of being rejected without review.
 
-## Team Organization
+## Project Board
 
-ICS has many stakeholders contributing and shaping the project. The Core ICS team is composed of Informal Systems developers. Any long-term contributors and additional maintainers from other projects are welcome. We use self-organizing principles to coordinate and collaborate across organizations in structured "EPIC" that focus on specific problem domains or architectural components of ICS. For details, see the [GitHub Project board](https://github.com/orgs/cosmos/projects/28/views/11). 
+We use self-organizing principles to coordinate and collaborate across organizations in structured "EPIC" that focus on specific problem domains or architectural components of ICS. For details, see the [GitHub Project board](https://github.com/orgs/cosmos/projects/28/views/11). 
 
 The developers work in sprints, which are available in a [GitHub Project](https://github.com/orgs/cosmos/projects/28/views/2). 
 
@@ -66,19 +118,33 @@ Architecture Decision Records (ADRs) may be proposed by any contributors or main
 
 ## Development Procedure
 
-* The latest state of development is on `main`.
-* `main` must never fail `make lint` or `make test`.
-* Create a branch to start work:
-    * Fork the repo (core developers must create a branch directly in the ICS repo),
-    branch from the HEAD of `main`, make some commits, and submit a PR to `main`.
-    * For core developers working within the `interchain-security` repo, follow branch name conventions to ensure clear
-    ownership of branches: `{moniker}/{issue#}-branch-name`.
-    * See [Branching Model](#branching-model-and-release) for more details.
-* Be sure to run `make format` before every commit. The easiest way
-  to do this is have your editor run it for you upon saving a file (most of the editors
-  will do it anyway using a pre-configured setup of the programming language mode).
+`main` must be stable, include only completed features and never fail `make lint`, `make test`, or `make build/install`.
 
-Code is merged into main through pull request procedure.
+Depending on the scope of the work, we differentiate between self-contained pull requests and long-lived contributions (features).
+
+**Self-contained pull requests**:
+
+* Fork the repo (core developers must create a branch directly in the ICS repo),
+branch from the HEAD of `main`, make some commits, and submit a PR to `main`.
+* For core developers working within the `interchain-security` repo, follow branch name conventions to ensure clear
+ownership of branches: `{moniker}/{issue#}-branch-name`.
+* See [Branching Model](#branching-model-and-release) for more details.
+ 
+**Large contributions**:
+
+* Make sure that a feature branch in created in the repo. 
+  This will be created by the core team after design discussions. 
+  The name convention for the feature branch must be `feat/{issue#}-branch-name`.
+  Note that (similar to `main`) all feature branches have branch protection rules and they run the CI.
+  Unlike `main`, feature branch may intermittently fail to `make lint`, `make test`, `make build/install`.
+* Fork the repo (core developers must create a branch directly in the ICS repo),
+  branch from the HEAD of the feature branch, make some commits, and submit a PR to the feature branch.
+  All PRs targeting a feature branch should follow the same guidelines in this document.
+* Once the feature is completed, submit a PR from the feature branch targeting `main`. 
+  
+Be sure to run `make format` before every commit. The easiest way
+to do this is have your editor run it for you upon saving a file (most of the editors
+will do it anyway using a pre-configured setup of the programming language mode).
 
 ### Testing
 
@@ -86,17 +152,12 @@ Appropriate tests should be written with a new feature, and all existing tests s
 
 ### Pull Requests
 
-In order for us to accept your contributions, you need to follow the guidelines in this document. 
-The reason for this is that while we are welcoming contributions, we are ultimately responsible 
-for maintaining the code that gets merged and eventually released.
-Therefore, we need as much context as possible on the nature of all of the changes being merged.
-
 Before submitting a pull request:
 
-* synchronize your branch with the latest main and resolve any arising conflicts, i.e.,
+* synchronize your branch with the latest base branch (i.e., `main` or feature branch) and resolve any arising conflicts, e.g.,
   - either `git fetch origin/main && git merge origin/main`
   - or `git fetch origin/main && git rebase -i origin/main`
-* run `make lint` and `make test` to ensure that all checks and tests pass.
+* run `make lint`, `make test`, `make build/install` to ensure that all checks and tests pass.
 
 Then:
 
@@ -112,21 +173,7 @@ PRs must have a category prefix that is based on the type of changes being made 
 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
 Additionally, **each PR should only address a single issue**.
 
-**Note:** When merging, GitHub will squash commits and rebase on top of the main.
-
-#### Large / complex contributions
-
-For large/complex changes, it is **absolutely** required
-to have up-front discussion in issues/GitHub discussions. 
-In some cases, it would be preferable to even have 
-synchronous design sessions to socialize a collective understanding 
-of the nature of incoming changes prior to the work even starting.
-
-It needs to be feasible for our team to review large/complex changes.
-This means that changes either need to be submitted in multiple small PRs 
-(300-500 lines per PR max) that build on top of one another, or that large 
-PRs need to be structured such that they can be reviewed commit by commit 
-(300-500 lines per commit max), with each commit performing a single logical task.
+**Note:** When merging, GitHub will squash commits and rebase on top of the base branch.
 
 ### Pull Request Templates
 
@@ -212,9 +259,11 @@ A MAJOR version of ICS will always be backwards compatible with the previous MAJ
 
 ### PR Targeting
 
-Ensure that you base and target your PR on the `main` branch.
+Ensure that you base and target your PRs on either `main` or a feature branch.
 
-All feature additions and all bug fixes must be targeted against `main`. Exception is for bug fixes which are only related to a released version. In that case, the related bug fix PRs must target against the release branch.
+All complete features and all bug fixes must be targeted against `main`. 
+Exception is for bug fixes which are only related to a released version. 
+In that case, the related bug fix PRs must target against the release branch.
 
 If needed, we will backport a commit from `main` to a release branch with appropriate consideration of versioning.
 
