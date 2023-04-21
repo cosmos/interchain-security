@@ -466,10 +466,9 @@ func CheckPropUnbondingPeriod(clientCtx client.Context, propUnbondingPeriod time
 
 	if providerUnbondingTime <= propUnbondingPeriod {
 		return fmt.Errorf(
-			"consumer unbonding period should be smaller than provider unbonding period, but is longer: \n"+
-				"consumer unbonding: %s \n provider unbonding: %s \n"+
-				"See the Consumer onboarding documentation for more information:\n"+
-				"https://cosmos.github.io/interchain-security/consumer-development/onboarding#3-submit-a-governance-proposal",
+			"consumer unbonding period is advised to be smaller than provider unbonding period, but is longer.: \n"+
+				"This is not a security risk, but will effectively lengthen the unbonding period on the provider.\n"+
+				"consumer unbonding: %s \n provider unbonding: %s",
 			propUnbondingPeriod,
 			providerUnbondingTime)
 	}
