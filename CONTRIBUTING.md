@@ -2,7 +2,7 @@
 
 - [Contributing](#contributing)
   - [Overview](#overview)
-    - [Core team responsibility](#core-team-responsibility)
+    - [Stewarding team responsibility](#stewarding-team-responsibility)
     - [Ease of reviewing](#ease-of-reviewing)
     - [Workflow](#workflow)
   - [Project Board](#project-board)
@@ -30,19 +30,19 @@ discussion or proposing code changes.
 Following the processes outlined in this document will lead to the best 
 chance of landing changes in a release.
 
-### Core team responsibility
+### Stewarding team responsibility
 
 ICS has many stakeholders contributing and shaping the project. 
-The ICS core team is composed of Informal Systems developers and 
+The _ICS stewarding team_ is composed of Informal Systems developers and 
 is responsible for stewarding this project over time.
-This means that the core team needs to understand the nature of, 
+This means that the stewarding team needs to understand the nature of, 
 and agree to maintain, all of the changes that land on `main` or a backport branch. 
 It may cost a few days/weeks' worth of time to _submit_ a particular change, 
-but _maintaining_ that change over the years has a much higher cost that the core team will bear.
+but _maintaining_ that change over the years has a much higher cost that the stewarding team will bear.
 
 ### Ease of reviewing
 
- The fact that the core team needs to be able to deeply understand the short-,
+ The fact that the stewarding team needs to be able to deeply understand the short-,
  medium- and long-term consequences of incoming changes means that changes need
  to be **easily reviewed**.
 
@@ -98,7 +98,7 @@ PRs opened before adequate design discussion has taken place in a GitHub issue h
 
 ## Project Board
 
-We use self-organizing principles to coordinate and collaborate across organizations in structured "EPIC" that focus on specific problem domains or architectural components of ICS. For details, see the [GitHub Project board](https://github.com/orgs/cosmos/projects/28/views/11). 
+We use self-organizing principles to coordinate and collaborate across organizations in structured "EPIC" that focuses on specific problem domains or architectural components of ICS. For details, see the [GitHub Project board](https://github.com/orgs/cosmos/projects/28/views/11). 
 
 The developers work in sprints, which are available in a [GitHub Project](https://github.com/orgs/cosmos/projects/28/views/2). 
 
@@ -133,7 +133,7 @@ ownership of branches: `{moniker}/{issue#}-branch-name`.
 **Large contributions**:
 
 * Make sure that a feature branch in created in the repo. 
-  This will be created by the core team after design discussions. 
+  This will be created by the stewarding team after design discussions. 
   The name convention for the feature branch must be `feat/{issue#}-branch-name`.
   Note that (similar to `main`) all feature branches have branch protection rules and they run the CI.
   Unlike `main`, feature branch may intermittently fail to `make lint`, `make test`, `make build/install`.
@@ -146,7 +146,7 @@ Be sure to run `make format` before every commit. The easiest way
 to do this is have your editor run it for you upon saving a file (most of the editors
 will do it anyway using a pre-configured setup of the programming language mode).
 
-**Note:** Exceptions to the above guidelines are possible, but only after prior discussions with the core team. 
+**Note:** Exceptions to the above guidelines are possible, but only after prior discussions with the stewarding team. 
 
 ### Testing
 
@@ -164,7 +164,7 @@ Before submitting a pull request:
 Then:
 
 1. If you have something to show, **start with a `Draft` PR**. It's good to have early validation of your work and we highly recommend this practice. A Draft PR also indicates to the community that the work is in progress.
-   Draft PRs also help the core team provide early feedback and ensure the work is in the right direction.
+   Draft PRs also help the stewarding team provide early feedback and ensure the work is in the right direction.
 2. When the code is complete, change your PR from `Draft` to `Ready for Review`.
 3. Go through the actions for each checkbox present in the PR template description. The PR actions are automatically provided for each new PR.
 4. Be sure to include a relevant changelog entry in the `Unreleased` section of `CHANGELOG.md` (see file for log format). The entry should be on top of all others changes in the section.
