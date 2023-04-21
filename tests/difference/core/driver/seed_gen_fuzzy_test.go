@@ -9,7 +9,7 @@ import (
 	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	mock "github.com/cosmos/ibc-go/v4/testing/mock"
+	mock "github.com/cosmos/ibc-go/v7/testing/mock"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 

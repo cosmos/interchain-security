@@ -5,8 +5,8 @@ package types
 
 import (
 	fmt "fmt"
-	_ "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	types "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	_ "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	types "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
 	types2 "github.com/cosmos/interchain-security/x/ccv/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
