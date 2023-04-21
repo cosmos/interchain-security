@@ -9,7 +9,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
+	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )

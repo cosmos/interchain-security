@@ -7,7 +7,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	simapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	"github.com/stretchr/testify/require"

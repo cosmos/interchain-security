@@ -6,7 +6,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 )

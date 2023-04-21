@@ -9,7 +9,7 @@ import (
 	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"

@@ -12,7 +12,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/require"

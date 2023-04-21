@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"

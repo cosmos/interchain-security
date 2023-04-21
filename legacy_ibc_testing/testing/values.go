@@ -5,7 +5,7 @@ import (
 
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	connectiontypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/cosmos/ibc-go/v7/testing/mock"
 )
 

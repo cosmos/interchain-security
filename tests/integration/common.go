@@ -14,7 +14,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
+	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/testutil/integration"

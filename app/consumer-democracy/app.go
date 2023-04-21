@@ -86,7 +86,6 @@ import (
 
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 
-	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	testutil "github.com/cosmos/interchain-security/testutil/integration"
@@ -137,7 +136,7 @@ var (
 		ccvdistr.AppModuleBasic{},
 		gov.NewAppModuleBasic(
 			// TODO: eventually remove upgrade proposal handler and cancel proposal handler
-			paramsclient.ProposalHandler, distrclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
+			paramsclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},

@@ -22,7 +22,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
+	teststaking "github.com/cosmos/cosmos-sdk/x/staking/testutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 
@@ -32,7 +32,7 @@ import (
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	"github.com/cosmos/ibc-go/v7/modules/core/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/cosmos/ibc-go/v7/testing/mock"
 	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
 	"github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"

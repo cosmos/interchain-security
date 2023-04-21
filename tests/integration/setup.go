@@ -5,7 +5,7 @@ import (
 
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/cosmos/ibc-go/v7/testing/mock"
 	testutil "github.com/cosmos/interchain-security/testutil/integration"
 

@@ -9,7 +9,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
 

@@ -15,7 +15,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 

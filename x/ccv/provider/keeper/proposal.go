@@ -14,7 +14,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
