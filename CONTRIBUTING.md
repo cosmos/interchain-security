@@ -146,6 +146,8 @@ Be sure to run `make format` before every commit. The easiest way
 to do this is have your editor run it for you upon saving a file (most of the editors
 will do it anyway using a pre-configured setup of the programming language mode).
 
+**Note:** Exceptions to the above guidelines are possible, but only after prior discussions with the core team. 
+
 ### Testing
 
 Appropriate tests should be written with a new feature, and all existing tests should pass. See [docs/testing.md](./docs/old/testing.md) for more information.
