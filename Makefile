@@ -67,6 +67,22 @@ test-gaia-e2e-parallel-tagged:
 test-no-cache:
 	go test ./... -count=1 && go run ./tests/e2e/...
 
+###############################################################################
+###                                Linting                                  ###
+###############################################################################
+
+golangci_version=latest
+
+lint:
+	@echo "--> Running linter"
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(golangci_version)
+	golangci-lint run  ./... --config .golangci.yml
+
+format:
+	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" -not -path "./client/docs/statik/statik.go" -not -path "./tests/mocks/*" -not -name "*.pb.go" -not -name "*.pb.gw.go" -not -name "*.pulsar.go" -not -path "./crypto/keys/secp256k1/*" | xargs gofumpt -w -l
+	golangci-lint run --fix --config .golangci.yml
+.PHONY: format
+
 mockgen_cmd=go run github.com/golang/mock/mockgen
 mocks:
 	$(mockgen_cmd) -package=keeper -destination=testutil/keeper/mocks.go -source=x/ccv/types/expected_keepers.go
