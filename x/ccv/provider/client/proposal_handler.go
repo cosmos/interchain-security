@@ -16,6 +16,7 @@ import (
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govrest "github.com/cosmos/cosmos-sdk/x/gov/client/rest"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/spf13/cobra"
@@ -454,17 +455,14 @@ func postEquivocationProposalHandlerFn(clientCtx client.Context) http.HandlerFun
 }
 
 func CheckPropUnbondingPeriod(clientCtx client.Context, propUnbondingPeriod time.Duration) error {
-	client, err := clientCtx.GetNode()
+	queryClient := stakingtypes.NewQueryClient(clientCtx)
+
+	res, err := queryClient.Params(context.Background(), &stakingtypes.QueryParamsRequest{})
 	if err != nil {
 		return err
 	}
 
-	consensusParams, err := client.ConsensusParams(context.Background(), nil)
-	if err != nil {
-		return err
-	}
-
-	providerUnbondingTime := consensusParams.ConsensusParams.Evidence.MaxAgeDuration
+	providerUnbondingTime := res.Params.UnbondingTime
 
 	if providerUnbondingTime <= propUnbondingPeriod {
 		return fmt.Errorf(
