@@ -11,7 +11,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/rest"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -227,7 +226,6 @@ type ConsumerAdditionProposalJSON struct {
 }
 
 type ConsumerAdditionProposalReq struct {
-	BaseReq  rest.BaseReq   `json:"base_req"`
 	Proposer sdk.AccAddress `json:"proposer"`
 
 	Title         string             `json:"title"`
@@ -272,7 +270,6 @@ type ConsumerRemovalProposalJSON struct {
 }
 
 type ConsumerRemovalProposalReq struct {
-	BaseReq  rest.BaseReq   `json:"base_req"`
 	Proposer sdk.AccAddress `json:"proposer"`
 
 	Title       string `json:"title"`
@@ -291,7 +288,6 @@ type EquivocationProposalJSON struct {
 }
 
 type EquivocationProposalReq struct {
-	BaseReq  rest.BaseReq   `json:"base_req"`
 	Proposer sdk.AccAddress `json:"proposer"`
 
 	// evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
@@ -321,10 +317,10 @@ func postConsumerRemovalProposalHandlerFn(clientCtx client.Context) http.Handler
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req ConsumerRemovalProposalReq
 
-		req.BaseReq = req.BaseReq.Sanitize()
-		if !req.BaseReq.ValidateBasic(w) {
-			return
-		}
+		///		req.BaseReq = req.BaseReq.Sanitize()
+		//		if !req.BaseReq.ValidateBasic(w) {
+		//			return
+		//		}
 
 		content := types.NewConsumerRemovalProposal(
 			req.Title, req.Description, req.ChainId, req.StopTime,
@@ -339,7 +335,7 @@ func postConsumerRemovalProposalHandlerFn(clientCtx client.Context) http.Handler
 		//			return
 		//		}
 
-		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
+		//		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
 	}
 }
 
