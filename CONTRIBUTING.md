@@ -88,7 +88,7 @@ To ensure a smooth workflow for all contributors, a general workflow for contrib
       make sure to contact them to collaborate.
    3. If nobody has been assigned for the issue and you would like to work on it,
       make a comment on the issue to inform the community of your intentions
-      to begin work.
+      to begin work and please wait for an acknowledgement from the stewarding team.
 5. To submit your work as a contribution to the repository, follow standard GitHub best practices. 
    See [development procedure guidelines](#development-procedure) below.
 
