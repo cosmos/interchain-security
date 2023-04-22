@@ -104,15 +104,15 @@ func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.V
 
 // Slash queues a slashing request for the the provider chain
 // All queued slashing requests will be cleared in EndBlock
-func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec, infraction stakingtypes.InfractionType) {
-	if infraction == stakingtypes.InfractionEmpty {
+func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec, infraction stakingtypes.Infraction) {
+	if infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
 		return
 	}
 
 	// If this is a previously standalone chain and infraction happened before the changeover was completed,
 	// slash only on the standalone staking keeper.
 	if k.IsPrevStandaloneChain(ctx) && infractionHeight < k.FirstConsumerHeight(ctx) {
-		k.standaloneStakingKeeper.Slash(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.InfractionEmpty)
+		k.standaloneStakingKeeper.Slash(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
 		return
 	}
 
@@ -120,7 +120,7 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 
 	// if this is a downtime infraction and the validator is allowed to
 	// soft opt out, do not queue a slash packet
-	if infraction == stakingtypes.Downtime {
+	if infraction == stakingtypes.Infraction_INFRACTION_DOWNTIME {
 		if power < k.GetSmallestNonOptOutPower(ctx) {
 			// soft opt out
 			k.Logger(ctx).Debug("soft opt out",
