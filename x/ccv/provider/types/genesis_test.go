@@ -678,8 +678,7 @@ func getInitialConsumerGenesis(t *testing.T, chainID string) consumertypes.Genes
 		time.Duration(1),
 		clienttypes.Height{RevisionNumber: clienttypes.ParseChainID(chainID), RevisionHeight: 1},
 		commitmenttypes.GetSDKSpecs(),
-		[]string{"upgrade", "upgradedIBCState"},
-	)
+		[]string{"upgrade", "upgradedIBCState"})
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
 
 	params := consumertypes.DefaultParams()

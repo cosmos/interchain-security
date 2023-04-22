@@ -47,9 +47,9 @@ type AppModule struct {
 // AppModule constructor.
 func NewAppModule(
 	cdc codec.Codec, keeper keeper.Keeper, ak distrtypes.AccountKeeper,
-	bk distrtypes.BankKeeper, sk stakingkeeper.Keeper, feeCollectorName string, ss exported.Subspace,
+	bk distrtypes.BankKeeper, sk stakingkeeper.Keeper, feeCollectorName string, subspace exported.Subspace,
 ) AppModule {
-	distrAppMod := distr.NewAppModule(cdc, keeper, ak, bk, sk, ss)
+	distrAppMod := distr.NewAppModule(cdc, keeper, ak, bk, sk, subspace)
 	return AppModule{
 		AppModule:        distrAppMod,
 		keeper:           keeper,
