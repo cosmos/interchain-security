@@ -196,13 +196,17 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 		)
 		if err != nil {
 			if clienttypes.ErrClientNotActive.Is(err) {
-				k.Logger(ctx).Debug("IBC client is inactive, packet remains in queue", "type", p.Type.String())
+				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
+				k.Logger(ctx).Debug("IBC client is expired, cannot send IBC packet; leaving packet data stored:", "type", p.Type.String())
 				return
 			}
-			// something went wrong when sending the packet
-			// TODO do not panic if the send fails
-			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
+			// Not able to send packet over IBC!
+			// Leave the packet data stored for the sent to be retried in the next block.
+			// Note that if VSCMaturedPackets are not sent for long enough, the provider
+			// will remove the consumer anyway.
+			k.Logger(ctx).Error("cannot send IBC packet; leaving packet data stored:", "type", p.Type.String(), "err", err.Error())
+			return
 		}
 	}
 
