@@ -11,6 +11,8 @@ import (
 	gov "github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 )
 
 const (
@@ -28,12 +30,12 @@ type AppModule struct {
 	gov.AppModule
 
 	keeper                keeper.Keeper
-	isProposalWhitelisted func(govtypes.Content) bool
+	isProposalWhitelisted func(v1beta1.Content) bool
 }
 
 // NewAppModule creates a new AppModule object using the native x/governance module AppModule constructor.
-func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak govtypes.AccountKeeper, bk govtypes.BankKeeper, isProposalWhitelisted func(govtypes.Content) bool) AppModule {
-	govAppModule := gov.NewAppModule(cdc, keeper, ak, bk)
+func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak govtypes.AccountKeeper, bk govtypes.BankKeeper, isProposalWhitelisted func(v1beta1.Content) bool, ss govtypes.ParamSubspace) AppModule {
+	govAppModule := gov.NewAppModule(cdc, &keeper, ak, bk, ss)
 	return AppModule{
 		AppModule:             govAppModule,
 		keeper:                keeper,
@@ -42,7 +44,7 @@ func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak govtypes.AccountKeep
 }
 
 func (am AppModule) EndBlock(ctx sdk.Context, request abci.RequestEndBlock) []abci.ValidatorUpdate {
-	am.keeper.IterateActiveProposalsQueue(ctx, ctx.BlockHeader().Time, func(proposal govtypes.Proposal) bool {
+	am.keeper.IterateActiveProposalsQueue(ctx, ctx.BlockHeader().Time, func(proposal v1.Proposal) bool {
 		// if there are forbidden proposals in active proposals queue, refund deposit, delete votes for that proposal
 		// and delete proposal from all storages
 		deleteForbiddenProposal(ctx, am, proposal)
@@ -52,19 +54,18 @@ func (am AppModule) EndBlock(ctx sdk.Context, request abci.RequestEndBlock) []ab
 	return am.AppModule.EndBlock(ctx, request)
 }
 
-func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govtypes.Proposal) {
-	if am.isProposalWhitelisted(proposal.GetContent()) {
+func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal v1.Proposal) {
+	if am.isProposalWhitelisted(proposal.Messages) {
 		return
 	}
-
 	// delete the votes related to the proposal calling Tally
 	// Tally's return result won't be used in decision if the tokens will be burned or refunded (they are always refunded), but
 	// this function needs to be called to delete the votes related to the given proposal, since the deleteVote function is
 	// private and cannot be called directly from the overridden app module
 	am.keeper.Tally(ctx, proposal)
 
-	am.keeper.DeleteProposal(ctx, proposal.ProposalId)
-	am.keeper.RefundDeposits(ctx, proposal.ProposalId)
+	am.keeper.DeleteAndBurnDeposits(ctx, proposal.Id)
+	am.keeper.RefundAndDeleteDeposits(ctx, proposal.Id)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -77,7 +78,7 @@ func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govtypes.Pr
 	logger := am.keeper.Logger(ctx)
 	logger.Info(
 		"proposal is not whitelisted; deleted",
-		"proposal", proposal.ProposalId,
+		"proposal", proposal.Id,
 		"title", proposal.GetTitle(),
-		"total_deposit", proposal.TotalDeposit.String())
+		"total_deposit", proposal.TotalDeposit)
 }
