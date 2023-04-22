@@ -56,20 +56,23 @@ func (am AppModule) EndBlock(ctx sdk.Context, request abci.RequestEndBlock) []ab
 }
 
 func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govv1.Proposal) {
-	message := proposal.GetMessages()[0]
+	messages := proposal.GetMessages()
 
-	sdkMsg := &govv1.MsgExecLegacyContent{
-		Content:   message,
-		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	for _, message := range messages {
+		sdkMsg := &govv1.MsgExecLegacyContent{
+			Content:   message,
+			Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		}
+
+		content, err := govv1.LegacyContentFromMessage(sdkMsg)
+		if err != nil {
+			continue
+		}
+		if am.isProposalWhitelisted(content) {
+			return
+		}
 	}
 
-	content, err := govv1.LegacyContentFromMessage(sdkMsg)
-	if err != nil {
-		return
-	}
-	if am.isProposalWhitelisted(content) {
-		return
-	}
 	// delete the votes related to the proposal calling Tally
 	// Tally's return result won't be used in decision if the tokens will be burned or refunded (they are always refunded), but
 	// this function needs to be called to delete the votes related to the given proposal, since the deleteVote function is
