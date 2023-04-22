@@ -12,7 +12,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -28,7 +28,7 @@ func TestProviderProposalHandler(t *testing.T) {
 
 	testCases := []struct {
 		name                     string
-		content                  govtypes.Content
+		content                  govv1beta1.Content
 		blockTime                time.Time
 		expValidConsumerAddition bool
 		expValidConsumerRemoval  bool
