@@ -50,8 +50,8 @@ func NewInMemKeeperParams(tb testing.TB) InMemKeeperParams {
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
-	stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
+	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
 	require.NoError(tb, stateStore.LoadLatestVersion())
 
 	registry := codectypes.NewInterfaceRegistry()
@@ -191,7 +191,7 @@ func GetNewSlashPacketData() types.SlashPacketData {
 			Power:   int64(binary.BigEndian.Uint64(b1)),
 		},
 		ValsetUpdateId: binary.BigEndian.Uint64(b2),
-		Infraction:     stakingtypes.InfractionType(binary.BigEndian.Uint64(b2) % 3),
+		Infraction:     stakingtypes.Infraction(binary.BigEndian.Uint64(b2) % 3),
 	}
 }
 

@@ -152,7 +152,8 @@ func (s *CoreSuite) delegatorBalance() int64 {
 
 // delegate delegates amt tokens to validator val
 func (s *CoreSuite) delegate(val int64, amt int64) {
-	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
+	providerStaking := s.providerStakingKeeper()
+	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
@@ -164,7 +165,8 @@ func (s *CoreSuite) delegate(val int64, amt int64) {
 
 // undelegate undelegates amt tokens from validator val
 func (s *CoreSuite) undelegate(val int64, amt int64) {
-	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
+	providerStaking := s.providerStakingKeeper()
+	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
@@ -177,9 +179,9 @@ func (s *CoreSuite) undelegate(val int64, amt int64) {
 // consumerSlash simulates a slash event occurring on the consumer chain.
 // It can be for a downtime or doublesign.
 func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
-	kind := stakingtypes.DoubleSign
+	kind := stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 	if isDowntime {
-		kind = stakingtypes.Downtime
+		kind = stakingtypes.Infraction_INFRACTION_DOWNTIME
 	}
 	ctx := s.ctx(C)
 	before := len(ctx.EventManager().Events())

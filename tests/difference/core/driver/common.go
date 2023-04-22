@@ -3,7 +3,6 @@ package core
 import (
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -36,7 +35,7 @@ type InitState struct {
 	Trusting               time.Duration
 	MaxClockDrift          time.Duration
 	BlockInterval          time.Duration
-	ConsensusParams        *abci.ConsensusParams
+	ConsensusParams        *tmproto.ConsensusParams
 	ValStates              ValStates
 	MaxEntries             int
 }
@@ -76,8 +75,8 @@ func init() {
 			},
 		},
 		MaxEntries: 1000000,
-		ConsensusParams: &abci.ConsensusParams{
-			Block: &abci.BlockParams{
+		ConsensusParams: &tmproto.ConsensusParams{
+			Block: &tmproto.BlockParams{
 				MaxBytes: 9223372036854775807,
 				MaxGas:   9223372036854775807,
 			},
