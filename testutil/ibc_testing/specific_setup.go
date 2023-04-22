@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 
 	"cosmossdk.io/simapp"
-
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 
 	tmdb "github.com/cometbft/cometbft-db"
@@ -23,7 +23,7 @@ import (
 func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	encoding := appProvider.MakeTestEncodingConfig()
 	testApp := appProvider.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
+		simapp.DefaultNodeHome, 5, encoding, simtestutil.EmptyAppOptions{})
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
 }
 
@@ -31,7 +31,7 @@ func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 func ConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	encoding := appConsumer.MakeTestEncodingConfig()
 	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
+		simapp.DefaultNodeHome, 5, encoding, simtestutil.EmptyAppOptions{})
 	return testApp, appConsumer.NewDefaultGenesisState(encoding.Marshaler)
 }
 
@@ -39,6 +39,6 @@ func ConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 func DemocracyConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	encoding := appConsumerDemocracy.MakeTestEncodingConfig()
 	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
+		simapp.DefaultNodeHome, 5, encoding, simtestutil.EmptyAppOptions{})
 	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Marshaler)
 }

@@ -239,7 +239,7 @@ func (mr *MockStakingKeeperMockRecorder) PutUnbondingOnHold(ctx, id interface{})
 }
 
 // Slash mocks base method.
-func (m *MockStakingKeeper) Slash(arg0 types.Context, arg1 types.ConsAddress, arg2, arg3 int64, arg4 types.Dec, arg5 types4.InfractionType) {
+func (m *MockStakingKeeper) Slash(arg0 types.Context, arg1 types.ConsAddress, arg2, arg3 int64, arg4 types.Dec, arg5 types4.Infraction) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Slash", arg0, arg1, arg2, arg3, arg4, arg5)
 }

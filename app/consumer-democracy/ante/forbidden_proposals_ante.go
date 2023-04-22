@@ -4,14 +4,17 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 )
 
 type ForbiddenProposalsDecorator struct {
-	IsProposalWhitelisted func(govtypes.Content) bool
+	IsProposalWhitelisted func(govv1beta1.Content) bool
 }
 
-func NewForbiddenProposalsDecorator(whiteListFn func(govtypes.Content) bool) ForbiddenProposalsDecorator {
+func NewForbiddenProposalsDecorator(whiteListFn func(govv1beta1.Content) bool) ForbiddenProposalsDecorator {
 	return ForbiddenProposalsDecorator{IsProposalWhitelisted: whiteListFn}
 }
 
@@ -19,10 +22,22 @@ func (decorator ForbiddenProposalsDecorator) AnteHandle(ctx sdk.Context, tx sdk.
 	currHeight := ctx.BlockHeight()
 
 	for _, msg := range tx.GetMsgs() {
-		submitProposalMgs, ok := msg.(*govtypes.MsgSubmitProposal)
+		submitProposalMgs, ok := msg.(*govv1.MsgSubmitProposal)
 		// if the message is MsgSubmitProposal, check if proposal is whitelisted
 		if ok {
-			if !decorator.IsProposalWhitelisted(submitProposalMgs.GetContent()) {
+			message := submitProposalMgs.GetMessages()[0]
+
+			sdkMsg, ok := message.GetCachedValue().(*govv1.MsgExecLegacyContent)
+
+			if !ok {
+				return ctx, sdkerrors.ErrInvalidType.Wrapf("expected %T, got %T", (*govv1.MsgExecLegacyContent)(nil), message.GetCachedValue())
+			}
+
+			content, err := govv1.LegacyContentFromMessage(sdkMsg)
+			if err != nil {
+				return ctx, err
+			}
+			if !decorator.IsProposalWhitelisted(content) {
 				return ctx, fmt.Errorf("tx contains unsupported proposal message types at height %d", currHeight)
 			}
 		}

@@ -44,7 +44,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	frac, err := sdk.NewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
 	s.Require().NoError(err)
 	consumerExpectedRewards, _ := sdk.NewDecCoinsFromCoins(feePoolTokens...).MulDec(frac).TruncateDecimal()
-	providerExpectedRewards := feePoolTokens.Sub(consumerExpectedRewards)
+	providerExpectedRewards := feePoolTokens.Sub(consumerExpectedRewards...)
 	s.consumerChain.NextBlock()
 
 	// amount from the fee pool is divided between consumer redistribute address and address reserved for provider chain

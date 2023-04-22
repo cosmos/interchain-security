@@ -7,6 +7,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	app "github.com/cosmos/interchain-security/app/consumer-democracy"
 	"github.com/cosmos/interchain-security/app/consumer-democracy/ante"
@@ -89,8 +90,12 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 	}
 }
 
-func newParamChangeProposalMsg(changes []proposal.ParamChange) *govtypes.MsgSubmitProposal {
+func newParamChangeProposalMsg(changes []proposal.ParamChange) *govv1.MsgSubmitProposal {
 	paramChange := proposal.ParameterChangeProposal{Changes: changes}
-	msg, _ := govtypes.NewMsgSubmitProposal(&paramChange, sdk.NewCoins(), sdk.AccAddress{})
+	msgContent, err := govv1.NewLegacyContent(&paramChange, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	if err != nil {
+		return nil
+	}
+	msg, _ := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, sdk.NewCoins(), sdk.AccAddress{}.String(), "", "", "")
 	return msg
 }

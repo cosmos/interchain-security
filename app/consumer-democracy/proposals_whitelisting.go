@@ -4,13 +4,14 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 )
 
-func IsProposalWhitelisted(content govtypes.Content) bool {
+func IsProposalWhitelisted(content govv1beta1.Content) bool {
 	switch c := content.(type) {
 	case *proposal.ParameterChangeProposal:
 		return isParamChangeWhitelisted(c.Changes)
@@ -48,9 +49,9 @@ var WhitelistedParams = map[paramChangeKey]struct{}{
 	{Subspace: stakingtypes.ModuleName, Key: "HistoricalEntries"}: {},
 	{Subspace: stakingtypes.ModuleName, Key: "BondDenom"}:         {},
 	// distribution
-	{Subspace: distrtypes.ModuleName, Key: "communitytax"}:        {},
-	{Subspace: distrtypes.ModuleName, Key: "baseproposerreward"}:  {},
-	{Subspace: distrtypes.ModuleName, Key: "bonusproposerreward"}: {},
+	{Subspace: distrtypes.ModuleName, Key: "communitytax"}: {},
+	// {Subspace: distrtypes.ModuleName, Key: "baseproposerreward"}:  {},   depricated key
+	// {Subspace: distrtypes.ModuleName, Key: "bonusproposerreward"}: {},   depricated key
 	{Subspace: distrtypes.ModuleName, Key: "withdrawaddrenabled"}: {},
 	// mint
 	{Subspace: minttypes.ModuleName, Key: "MintDenom"}:           {},
