@@ -57,8 +57,6 @@ func TestInitGenesis(t *testing.T) {
 		clienttypes.Height{},
 		commitmenttypes.GetSDKSpecs(),
 		[]string{"upgrade", "upgradedIBCState"},
-		true,
-		true,
 	)
 
 	matPackets := []consumertypes.MaturingVSCPacket{
@@ -72,7 +70,7 @@ func TestInitGenesis(t *testing.T) {
 			{
 				Type: ccv.SlashPacket,
 				Data: &ccv.ConsumerPacketData_SlashPacketData{
-					SlashPacketData: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Downtime),
+					SlashPacketData: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Infraction_INFRACTION_DOWNTIME),
 				},
 			},
 			{
@@ -250,7 +248,7 @@ func TestExportGenesis(t *testing.T) {
 			{
 				Type: ccv.SlashPacket,
 				Data: &ccv.ConsumerPacketData_SlashPacketData{
-					SlashPacketData: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Downtime),
+					SlashPacketData: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Infraction_INFRACTION_DOWNTIME),
 				},
 			},
 			{
