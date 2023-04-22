@@ -17,7 +17,7 @@ import (
 	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -103,7 +103,7 @@ func (k Keeper) mustValidateFields() {
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", "x/"+host.ModuleName+"-"+types.ModuleName)
+	return ctx.Logger().With("module", "x/"+ibchost.ModuleName+"-"+types.ModuleName)
 }
 
 // IsBound checks if the CCV module is already bound to the desired port
@@ -616,7 +616,7 @@ func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (
 	tmClient, ok = clientState.(*ibctmtypes.ClientState)
 	if !ok {
 		return "", nil, sdkerrors.Wrapf(clienttypes.ErrInvalidClientType,
-			"invalid client type. expected %s, got %s", ibcexported.Tendermint, clientState.ClientType())
+			"invalid client type. expected %s, got %s", ibchost.Tendermint, clientState.ClientType())
 	}
 	return clientID, tmClient, nil
 }

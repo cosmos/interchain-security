@@ -89,7 +89,8 @@ func SendIBCPacket(
 		clienttypes.Height{}, uint64(ctx.BlockTime().Add(timeoutPeriod).UnixNano()),
 	)
 
-	return channelKeeper.SendPacket(ctx, channelCap, packet)
+	_, err := channelKeeper.SendPacket(ctx, channelCap, packet.SourcePort, packet.SourceChannel, packet.TimeoutHeight, packet.TimeoutTimestamp, packet.Data)
+	return err
 }
 
 // AppendMany appends a variable number of byte slices together

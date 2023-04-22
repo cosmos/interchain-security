@@ -560,6 +560,21 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 	return validators
 }
 
+// Implement from stakingkeeper interface
+func (k Keeper) GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Validator) {
+	store := ctx.KVStore(k.storeKey)
+
+	iterator := sdk.KVStorePrefixIterator(store, stakingtypes.ValidatorsKey)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		validator := stakingtypes.MustUnmarshalValidator(k.cdc, iterator.Value())
+		validators = append(validators, validator)
+	}
+
+	return validators
+}
+
 // SetPendingPackets sets the pending CCV packets
 func (k Keeper) SetPendingPackets(ctx sdk.Context, packets ccv.ConsumerPacketDataList) {
 	store := ctx.KVStore(k.storeKey)

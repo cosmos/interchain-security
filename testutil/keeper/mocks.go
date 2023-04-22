@@ -9,8 +9,10 @@ import (
 	reflect "reflect"
 	time "time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
 	types0 "github.com/cosmos/cosmos-sdk/x/auth/types"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/capability/types"
 	types2 "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	types3 "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -21,6 +23,7 @@ import (
 	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
 	types8 "github.com/cometbft/cometbft/abci/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 )
 
 // MockStakingKeeper is a mock of StakingKeeper interface.
@@ -539,11 +542,19 @@ func (mr *MockChannelKeeperMockRecorder) GetNextSequenceSend(ctx, portID, channe
 }
 
 // SendPacket mocks base method.
-func (m *MockChannelKeeper) SendPacket(ctx types.Context, channelCap *types1.Capability, packet exported.PacketI) error {
+func (m *MockChannelKeeper) SendPacket(
+	ctx sdk.Context,
+	chanCap *capabilitytypes.Capability,
+	sourcePort string,
+	sourceChannel string,
+	timeoutHeight clienttypes.Height,
+	timeoutTimestamp uint64,
+	data []byte,
+) (sequence uint64, err error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendPacket", ctx, channelCap, packet)
+	ret := m.ctrl.Call(m, "SendPacket", ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 	ret0, _ := ret[0].(error)
-	return ret0
+	return 0, ret0
 }
 
 // SendPacket indicates an expected call of SendPacket.

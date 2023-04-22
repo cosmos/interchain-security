@@ -93,8 +93,6 @@ func DefaultParams() Params {
 			clienttypes.Height{}, // latest(initial) height
 			commitmenttypes.GetSDKSpecs(),
 			[]string{"upgrade", "upgradedIBCState"},
-			true,
-			true,
 		),
 		DefaultTrustingPeriodFraction,
 		ccvtypes.DefaultCCVTimeoutPeriod,

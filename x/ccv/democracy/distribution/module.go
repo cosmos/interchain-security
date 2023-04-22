@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
+	"github.com/cosmos/cosmos-sdk/x/distribution/exported"
 	"github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -46,9 +47,9 @@ type AppModule struct {
 // AppModule constructor.
 func NewAppModule(
 	cdc codec.Codec, keeper keeper.Keeper, ak distrtypes.AccountKeeper,
-	bk distrtypes.BankKeeper, sk stakingkeeper.Keeper, feeCollectorName string,
+	bk distrtypes.BankKeeper, sk stakingkeeper.Keeper, feeCollectorName string, ss exported.Subspace,
 ) AppModule {
-	distrAppMod := distr.NewAppModule(cdc, keeper, ak, bk, sk)
+	distrAppMod := distr.NewAppModule(cdc, keeper, ak, bk, sk, ss)
 	return AppModule{
 		AppModule:        distrAppMod,
 		keeper:           keeper,

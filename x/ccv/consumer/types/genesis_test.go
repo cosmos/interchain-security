@@ -47,7 +47,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 	valHash := valSet.Hash()
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(valSet)
 
-	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath, false, false)
+	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath)
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
 
 	params := types.DefaultParams()
@@ -264,7 +264,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 			SlashPacketData: ccv.NewSlashPacketData(
 				abci.Validator{Address: pubKey.Address(), Power: int64(1)},
 				1,
-				stakingtypes.Downtime),
+				stakingtypes.Infraction_INFRACTION_DOWNTIME),
 		},
 	}
 
@@ -273,7 +273,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		{Height: 0, ValsetUpdateId: 0},
 	}
 
-	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath, false, false)
+	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath)
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
 
 	params := types.DefaultParams()

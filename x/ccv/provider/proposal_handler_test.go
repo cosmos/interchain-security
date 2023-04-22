@@ -78,9 +78,12 @@ func TestProviderProposalHandler(t *testing.T) {
 		},
 		{
 			name: "unsupported proposal type",
-			content: distributiontypes.NewCommunityPoolSpendProposal(
-				"title", "desc", []byte{},
-				sdk.NewCoins(sdk.NewCoin("communityfunds", sdk.NewInt(10)))),
+			content: &distributiontypes.CommunityPoolSpendProposal{ //nolint:staticcheck // we're testing that it is not supported
+				Title:       "title",
+				Description: "desc",
+				Recipient:   "",
+				Amount:      sdk.NewCoins(sdk.NewCoin("communityfunds", sdk.NewInt(10))),
+			},
 		},
 	}
 

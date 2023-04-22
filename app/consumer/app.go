@@ -70,7 +70,7 @@ import (
 	ibc "github.com/cosmos/ibc-go/v7/modules/core"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
-	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 	appparams "github.com/cosmos/interchain-security/app/params"
 	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
@@ -217,7 +217,7 @@ func New(
 
 	keys := sdk.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey, slashingtypes.StoreKey, crisistypes.StoreKey,
-		paramstypes.StoreKey, exported.StoreKey, upgradetypes.StoreKey,
+		paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
 		ibcconsumertypes.StoreKey,
@@ -253,7 +253,7 @@ func New(
 		keys[capabilitytypes.StoreKey],
 		memKeys[capabilitytypes.MemStoreKey],
 	)
-	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(exported.ModuleName)
+	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedIBCConsumerKeeper := app.CapabilityKeeper.ScopeToModule(ibcconsumertypes.ModuleName)
 	app.CapabilityKeeper.Seal()
@@ -321,8 +321,8 @@ func New(
 	)
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		appCodec,
-		keys[exported.StoreKey],
-		app.GetSubspace(exported.ModuleName),
+		keys[ibchost.StoreKey],
+		app.GetSubspace(ibchost.ModuleName),
 		&app.ConsumerKeeper,
 		app.UpgradeKeeper,
 		scopedIBCKeeper,
@@ -412,7 +412,7 @@ func New(
 		capabilitytypes.ModuleName,
 		crisistypes.ModuleName,
 		ibctransfertypes.ModuleName,
-		exported.ModuleName,
+		ibchost.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		slashingtypes.ModuleName,
@@ -426,7 +426,7 @@ func New(
 	app.MM.SetOrderEndBlockers(
 		crisistypes.ModuleName,
 		ibctransfertypes.ModuleName,
-		exported.ModuleName,
+		ibchost.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
 		capabilitytypes.ModuleName,
@@ -453,7 +453,7 @@ func New(
 		banktypes.ModuleName,
 		slashingtypes.ModuleName,
 		crisistypes.ModuleName,
-		exported.ModuleName,
+		ibchost.ModuleName,
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		feegrant.ModuleName,
@@ -768,7 +768,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
-	paramsKeeper.Subspace(exported.ModuleName)
+	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(ibcconsumertypes.ModuleName)
 
 	return paramsKeeper
