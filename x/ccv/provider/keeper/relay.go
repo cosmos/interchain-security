@@ -197,9 +197,14 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 				k.Logger(ctx).Debug("IBC client is expired, cannot send VSC, leaving packet data stored:", "chainID", chainID, "vscid", data.ValsetUpdateId)
 				return
 			}
-			// TODO do not panic if the send fails
-			// https://github.com/cosmos/interchain-security/issues/649
-			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
+			// Not able to send packet over IBC!
+			k.Logger(ctx).Error("cannot send VSC, removing consumer:", "chainID", chainID, "vscid", data.ValsetUpdateId, "err", err.Error())
+			// If this happens, most likely the consumer is malicious; remove it
+			err := k.StopConsumerChain(ctx, chainID, true)
+			if err != nil {
+				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+			}
+			return
 		}
 		// set the VSC send timestamp for this packet;
 		// note that the VSC send timestamp are set when the packets
