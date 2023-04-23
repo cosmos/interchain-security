@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmrand "github.com/cometbft/cometbft/libs/rand"
 	tmtypes "github.com/cometbft/cometbft/types"
@@ -233,7 +234,7 @@ func TestHistoricalInfo(t *testing.T) {
 }
 
 // IsValSetSorted reports whether valset is sorted.
-func IsValSetSorted(data []stakingtypes.Validator, powerReduction sdk.Int) bool {
+func IsValSetSorted(data []stakingtypes.Validator, powerReduction math.Int) bool {
 	n := len(data)
 	for i := n - 1; i > 0; i-- {
 		if stakingtypes.ValidatorsByVotingPower(data).Less(i, i-1, powerReduction) {
