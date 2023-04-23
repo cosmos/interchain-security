@@ -30,8 +30,7 @@ func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 // ConsumerAppIniter implements ibctesting.AppIniter for a consumer app
 func ConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	encoding := appConsumer.MakeTestEncodingConfig()
-	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, 5, encoding, simtestutil.EmptyAppOptions{})
+	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, simtestutil.EmptyAppOptions{})
 	return testApp, appConsumer.NewDefaultGenesisState(encoding.Marshaler)
 }
 
