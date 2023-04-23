@@ -3,7 +3,7 @@ module github.com/cosmos/interchain-security
 go 1.19
 
 require (
-	cosmossdk.io/math v1.0.0 // indirect
+	cosmossdk.io/math v1.0.0
 	cosmossdk.io/simapp v0.0.0-20230224204036-a6adb0821462
 	github.com/cometbft/cometbft v0.37.0
 	github.com/cometbft/cometbft-db v0.7.0
