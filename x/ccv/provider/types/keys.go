@@ -15,7 +15,7 @@ type Status int
 
 const (
 	// ModuleName defines the CCV provider module name
-	ModuleName = "provider"
+	ModuleName = ccvtypes.ProviderModuleName
 
 	// StoreKey is the store key string for IBC transfer
 	StoreKey = ModuleName
