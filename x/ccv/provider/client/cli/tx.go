@@ -11,14 +11,15 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // GetTxCmd returns the transaction commands for this module
 func GetTxCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                        types.ModuleName,
-		Short:                      fmt.Sprintf("%s transactions subcommands", types.ModuleName),
+		Use:                        providertypes.ModuleName,
+		Short:                      fmt.Sprintf("%s transactions subcommands", providertypes.ModuleName),
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
@@ -49,7 +50,7 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 				return err
 			}
 
-			msg, err := types.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), consumerPubKey)
+			msg, err := ccvtypes.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), consumerPubKey)
 			if err != nil {
 				return err
 			}
