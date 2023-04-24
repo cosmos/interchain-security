@@ -1,9 +1,9 @@
 package provider
 
 import (
-	errorsmod "cosmossdk.io/errors"
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrorstypes "github.com/cosmos/cosmos-sdk/types/errors"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -22,7 +22,7 @@ func NewProviderProposalHandler(k keeper.Keeper) govv1beta1.Handler {
 		case *types.EquivocationProposal:
 			return k.HandleEquivocationProposal(ctx, c)
 		default:
-			return errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized ccv proposal content type: %T", c)
+			return sdkerrors.Wrapf(sdkerrorstypes.ErrUnknownRequest, "unrecognized ccv proposal content type: %T", c)
 		}
 	}
 }

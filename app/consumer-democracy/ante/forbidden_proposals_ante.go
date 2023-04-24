@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrorstypes "github.com/cosmos/cosmos-sdk/types/errors"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
@@ -30,7 +30,7 @@ func (decorator ForbiddenProposalsDecorator) AnteHandle(ctx sdk.Context, tx sdk.
 			sdkMsg, ok := message.GetCachedValue().(*govv1.MsgExecLegacyContent)
 
 			if !ok {
-				return ctx, sdkerrors.ErrInvalidType.Wrapf("expected %T, got %T", (*govv1.MsgExecLegacyContent)(nil), message.GetCachedValue())
+				return ctx, sdkerrorstypes.ErrInvalidType.Wrapf("expected %T, got %T", (*govv1.MsgExecLegacyContent)(nil), message.GetCachedValue())
 			}
 
 			content, err := govv1.LegacyContentFromMessage(sdkMsg)
