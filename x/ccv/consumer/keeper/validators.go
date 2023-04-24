@@ -3,6 +3,7 @@ package keeper
 import (
 	"time"
 
+	"cosmossdk.io/math"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -147,6 +148,13 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		vscID,
 		infraction,
 	)
+}
+
+// implement for stakingkeeper Interface
+func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, consAddr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec, infractionType stakingtypes.Infraction) math.Int {
+	k.Slash(ctx, consAddr, infractionHeight, power, slashFactor, infractionType)
+	// Only return to comply with the interface restriction
+	return math.ZeroInt()
 }
 
 // Jail - unimplemented on CCV keeper

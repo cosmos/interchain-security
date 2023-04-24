@@ -4,13 +4,14 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // GetParams returns the params for the consumer ccv module
-func (k Keeper) GetParams(ctx sdk.Context) types.Params {
+func (k Keeper) GetConsumerParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.GetEnabled(ctx),
 		k.GetBlocksPerDistributionTransmission(ctx),
@@ -28,6 +29,11 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 // SetParams sets the paramset for the consumer module
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramStore.SetParamSet(ctx, &params)
+}
+
+// GetParams implement from staking keeper
+func (k Keeper) GetParams(ctx sdk.Context) stakingtypes.Params {
+	return stakingtypes.DefaultParams()
 }
 
 // GetEnabled returns the enabled flag for the consumer module
