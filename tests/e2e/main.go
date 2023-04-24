@@ -198,8 +198,8 @@ func (tr *TestRun) startDocker() {
 	}
 	scriptStr := fmt.Sprintf(
 		"tests/e2e/testnet-scripts/start-docker.sh %s %s %s %s %s",
-		tr.containerConfig.containerName,
-		tr.containerConfig.instanceName,
+		tr.containerConfig.ContainerName,
+		tr.containerConfig.InstanceName,
 		localSdk,
 		useGaia,
 		gaiaTag,
@@ -242,7 +242,7 @@ func (tr *TestRun) startDocker() {
 func (tr *TestRun) teardownDocker() {
 	fmt.Printf("===============  tearing down %s testRun ===============\n", tr.name)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "kill", tr.containerConfig.instanceName)
+	cmd := exec.Command("docker", "kill", tr.containerConfig.InstanceName)
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {

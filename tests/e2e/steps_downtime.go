@@ -16,47 +16,47 @@ func stepsDowntime(consumerName string) []Step {
 	return []Step{
 		{
 			Action: downtimeSlashAction{
-				chain:     chainID(consumerName),
-				validator: validatorID("bob"),
+				Chain:     ChainID(consumerName),
+				Validator: ValidatorID("bob"),
 			},
 			State: State{
 				// validator should be slashed on consumer, powers not affected on either chain yet
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
 		},
 		{
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0,
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
 						// Downtime jailing and corresponding voting power change are processed by provider
-						validatorID("bob"):   0,
-						validatorID("carol"): 501,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 501,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -65,59 +65,59 @@ func stepsDowntime(consumerName string) []Step {
 		// and can now be relayed as packet to consumer
 		{
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0,
 			},
 			State: State{
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
 						// VSC now seen on consumer
-						validatorID("bob"):   0,
-						validatorID("carol"): 501,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
 		},
 		{
 			Action: unjailValidatorAction{
-				provider:  chainID("provi"),
-				validator: validatorID("bob"),
+				Provider:  ChainID("provi"),
+				Validator: ValidatorID("bob"),
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
 						// bob's stake should not be slashed
 						// since the slash was initiated from consumer
-						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   0,
-						validatorID("carol"): 501,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
 		},
 		{
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0,
 			},
 			State: State{
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
 						// bob's stake should not be slashed
 						// since the slash was initiated from consumer
-						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -125,79 +125,79 @@ func stepsDowntime(consumerName string) []Step {
 		// Now we test provider initiated downtime/slashing
 		{
 			Action: downtimeSlashAction{
-				chain:     chainID("provi"),
-				validator: validatorID("carol"),
+				Chain:     ChainID("provi"),
+				Validator: ValidatorID("carol"),
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
 						// Non faulty validators still maintain just above 2/3 power here
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
 						// Carol's stake should be slashed and jailed
 						// downtime slash was initiated from provider
-						validatorID("carol"): 0,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
 		},
 		{
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0,
 			},
 			State: State{
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
 		},
 		{
 			Action: unjailValidatorAction{
-				provider:  chainID("provi"),
-				validator: validatorID("carol"),
+				Provider:  ChainID("provi"),
+				Validator: ValidatorID("carol"),
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 495,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 495,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
 		},
 		{
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0,
 			},
 			State: State{
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 495,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 495,
 					},
 				},
 			},
@@ -213,47 +213,47 @@ func stepsDowntimeWithOptOut(consumerName string) []Step {
 	return []Step{
 		{
 			Action: downtimeSlashAction{
-				chain:     chainID(consumerName),
-				validator: validatorID("alice"),
+				Chain:     ChainID(consumerName),
+				Validator: ValidatorID("alice"),
 			},
 			State: State{
 				// powers not affected on either chain
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 60,
-						validatorID("bob"):   500,
-						validatorID("carol"): 950,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 60,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 950,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 60,
-						validatorID("bob"):   500,
-						validatorID("carol"): 950,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 60,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 950,
 					},
 				},
 			},
 		},
 		{
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0,
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
 						// alice is not slashed or jailed due to soft opt out
-						validatorID("alice"): 60,
-						validatorID("bob"):   500,
-						validatorID("carol"): 950,
+						ValidatorID("alice"): 60,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 950,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 60,
-						validatorID("bob"):   500,
-						validatorID("carol"): 950,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 60,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 950,
 					},
 				},
 			},
@@ -268,106 +268,106 @@ func stepsThrottledDowntime(consumerName string) []Step {
 	return []Step{
 		{
 			Action: downtimeSlashAction{
-				chain:     chainID(consumerName),
-				validator: validatorID("bob"),
+				Chain:     ChainID(consumerName),
+				Validator: ValidatorID("bob"),
 			},
 			State: State{
 				// powers not affected on either chain yet
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
 			},
 		},
 		{
 			Action: downtimeSlashAction{
-				chain:     chainID(consumerName),
-				validator: validatorID("carol"),
+				Chain:     ChainID(consumerName),
+				Validator: ValidatorID("carol"),
 			},
 			State: State{
 				// powers not affected on either chain yet
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
 			},
 		},
 		{
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0,
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   0,
-						validatorID("carol"): 500, // not slashed due to throttling
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 500, // not slashed due to throttling
 					},
 					GlobalSlashQueueSize: uintPointer(1), // carol's slash request is throttled
-					ConsumerChainQueueSizes: &map[chainID]uint{
-						chainID(consumerName): uint(1),
+					ConsumerChainQueueSizes: &map[ChainID]uint{
+						ChainID(consumerName): uint(1),
 					},
 				},
-				chainID(consumerName): ChainState{
+				ChainID(consumerName): ChainState{
 					// no updates received on consumer
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
 			},
 		},
 		{
 			Action: slashThrottleDequeue{
-				chain:            chainID(consumerName),
-				currentQueueSize: 1,
-				nextQueueSize:    0,
+				Chain:            ChainID(consumerName),
+				CurrentQueueSize: 1,
+				NextQueueSize:    0,
 				// Slash meter replenish fraction is set to 10%, replenish period is 20 seconds, see config.go
 				// Meter is initially at 10%, decremented to -23% from bob being jailed. It'll then take three replenishments
 				// for meter to become positive again. 3*20 = 60 seconds + buffer = 80 seconds
-				timeout: 80 * time.Second,
+				Timeout: 80 * time.Second,
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   0,
-						validatorID("carol"): 0, // Carol is jailed upon packet being handled on provider
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 0, // Carol is jailed upon packet being handled on provider
 					},
 					GlobalSlashQueueSize: uintPointer(0), // slash packets dequeued
-					ConsumerChainQueueSizes: &map[chainID]uint{
-						chainID(consumerName): 0,
+					ConsumerChainQueueSizes: &map[ChainID]uint{
+						ChainID(consumerName): 0,
 					},
 				},
-				chainID(consumerName): ChainState{
+				ChainID(consumerName): ChainState{
 					// no updates received on consumer
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
 			},
@@ -376,28 +376,28 @@ func stepsThrottledDowntime(consumerName string) []Step {
 		// and can now be relayed as packet to consumer
 		{
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0,
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   0,
-						validatorID("carol"): 0,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 0,
 					},
 					GlobalSlashQueueSize: uintPointer(0),
-					ConsumerChainQueueSizes: &map[chainID]uint{
-						chainID(consumerName): 0,
+					ConsumerChainQueueSizes: &map[ChainID]uint{
+						ChainID(consumerName): 0,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
 						// throttled update gets to consumer
-						validatorID("bob"):   0,
-						validatorID("carol"): 0,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 0,
 					},
 				},
 			},

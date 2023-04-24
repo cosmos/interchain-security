@@ -14,30 +14,30 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		{
 			// provider double sign
 			Action: doublesignSlashAction{
-				chain:     chainID("provi"),
-				validator: validatorID("carol"),
+				Chain:     ChainID("provi"),
+				Validator: ValidatorID("carol"),
 			},
 			State: State{
 				// slash on provider
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0, // from 500 to 0
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0, // from 500 to 0
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 495, // not tombstoned on consumer1 yet
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 495, // not tombstoned on consumer1 yet
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 495, // not tombstoned on consumer2 yet
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 495, // not tombstoned on consumer2 yet
 					},
 				},
 			},
@@ -45,30 +45,30 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		{
 			// relay power change to consumer1
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0, // consumer1 channel
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0, // consumer1 channel
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0, // tombstoning visible on consumer1
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0, // tombstoning visible on consumer1
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 495, // tombstoning NOT YET visible on consumer2
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 495, // tombstoning NOT YET visible on consumer2
 					},
 				},
 			},
@@ -76,30 +76,30 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		{
 			// relay power change to consumer2
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 1, // consumer2 channel
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 1, // consumer2 channel
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0, // tombstoned on consumer2
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0, // tombstoned on consumer2
 					},
 				},
 			},
@@ -108,59 +108,59 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 			// consumer double sign
 			// nothing should happen - double sign from consumer is dropped
 			Action: doublesignSlashAction{
-				chain:     chainID("consu"),
-				validator: validatorID("bob"),
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("bob"),
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
 		},
 		{
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0, // consumer1 channel
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0, // consumer1 channel
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500, // not tombstoned
-						validatorID("carol"): 0,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500, // not tombstoned
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500, // not tombstoned
-						validatorID("carol"): 0,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500, // not tombstoned
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500, // not tombstoned
-						validatorID("carol"): 0,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500, // not tombstoned
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
@@ -168,30 +168,30 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		{
 			// consumer1 learns about the double sign
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0, // consumer1 channel
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0, // consumer1 channel
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500, // not tombstoned
-						validatorID("carol"): 0,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500, // not tombstoned
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500, // not tombstoned
-						validatorID("carol"): 0,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500, // not tombstoned
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
@@ -199,23 +199,23 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		{
 			// consumer2 learns about the double sign
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 1, // consumer2 channel
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 1, // consumer2 channel
 			},
 			State: State{
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
 			},

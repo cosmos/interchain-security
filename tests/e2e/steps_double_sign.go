@@ -6,23 +6,23 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 		{
 			// provider double sign
 			Action: doublesignSlashAction{
-				chain:     chainID("provi"),
-				validator: validatorID("carol"),
+				Chain:     ChainID("provi"),
+				Validator: ValidatorID("carol"),
 			},
 			State: State{
 				// slash on provider
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0, // from 500 to 0
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0, // from 500 to 0
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 495, // not tombstoned on consumerName yet
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 495, // not tombstoned on consumerName yet
 					},
 				},
 			},
@@ -30,23 +30,23 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 		{
 			// relay power change to consumerName
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0, // consumerName channel
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0, // consumerName channel
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0, // tombstoning visible on consumerName
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0, // tombstoning visible on consumerName
 					},
 				},
 			},
@@ -56,45 +56,45 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 			// provider will only log the double sign slash
 			// stepsSubmitEquivocationProposal will cause the double sign slash to be executed
 			Action: doublesignSlashAction{
-				chain:     chainID("consu"),
-				validator: validatorID("bob"),
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("bob"),
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
 		},
 		{
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0,
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500, // not tombstoned
-						validatorID("carol"): 0,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500, // not tombstoned
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500, // not tombstoned
-						validatorID("carol"): 0,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500, // not tombstoned
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
@@ -102,23 +102,23 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 		{
 			// consumer learns about the double sign
 			Action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0,
 			},
 			State: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500, // not tombstoned
-						validatorID("carol"): 0,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500, // not tombstoned
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
