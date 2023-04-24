@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	sdkerrors "cosmossdk.io/errors"
+	sdkerrorstypes "github.com/cosmos/cosmos-sdk/types/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -207,7 +209,7 @@ func (am AppModule) OnChanCloseInit(
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok && providerChannel != channelID {
 		return nil
 	}
-	return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
+	return sdkerrors.Wrap(sdkerrorstypes.ErrInvalidRequest, "user cannot close channel")
 }
 
 // OnChanCloseConfirm implements the IBCModule interface
@@ -258,7 +260,7 @@ func (am AppModule) OnAcknowledgementPacket(
 ) error {
 	var ack channeltypes.Acknowledgement
 	if err := types.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal consumer packet acknowledgement: %v", err)
+		return sdkerrors.Wrapf(sdkerrorstypes.ErrUnknownRequest, "cannot unmarshal consumer packet acknowledgement: %v", err)
 	}
 
 	if err := am.keeper.OnAcknowledgementPacket(ctx, packet, ack); err != nil {

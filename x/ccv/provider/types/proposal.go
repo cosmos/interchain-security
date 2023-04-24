@@ -6,7 +6,7 @@ import (
 	"strings"
 	time "time"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "cosmossdk.io/errors"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"

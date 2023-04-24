@@ -3,8 +3,8 @@ package types
 import (
 	"fmt"
 
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )

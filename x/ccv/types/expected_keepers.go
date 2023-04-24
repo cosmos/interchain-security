@@ -4,6 +4,7 @@ import (
 	context "context"
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -34,7 +35,7 @@ type StakingKeeper interface {
 	Unjail(ctx sdk.Context, addr sdk.ConsAddress)
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
-	PowerReduction(ctx sdk.Context) sdk.Int
+	PowerReduction(ctx sdk.Context) math.Int
 	PutUnbondingOnHold(ctx sdk.Context, id uint64) error
 	IterateValidators(ctx sdk.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool))
 	Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.ValidatorI
@@ -42,7 +43,7 @@ type StakingKeeper interface {
 	ValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) stakingtypes.ValidatorI
 	Delegation(ctx sdk.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) stakingtypes.DelegationI
 	MaxValidators(ctx sdk.Context) uint32
-	GetLastTotalPower(ctx sdk.Context) sdk.Int
+	GetLastTotalPower(ctx sdk.Context) math.Int
 	GetLastValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
 }
 
