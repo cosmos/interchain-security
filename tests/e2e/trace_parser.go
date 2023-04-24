@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
 	"os"
 )
 
@@ -15,24 +15,32 @@ type TraceParser interface {
 type JSONParser struct{}
 
 func (parser JSONParser) ReadTraceFromFile(filepath string) ([]Step, error) {
-	// Open the JSON file
-	jsonFile, err := os.Open(filepath)
-	if err != nil {
-		return nil, err
-	}
-	defer jsonFile.Close()
-
-	// Read the file into a byte array
-	jsonData, err := ioutil.ReadAll(jsonFile)
+	// Open the JSON file and read into a bite array
+	jsonData, err := os.ReadFile(filepath)
 	if err != nil {
 		return nil, err
 	}
 
 	// Unmarshal the JSON into a slice of Step structs
-	var steps []Step
-	err = json.Unmarshal(jsonData, &steps)
+	var stepsWithActionTypes []StepWithActionType
+	err = json.Unmarshal(jsonData, &stepsWithActionTypes)
 	if err != nil {
 		return nil, err
+	}
+
+	steps := make([]Step, len(stepsWithActionTypes))
+
+	// Unmarshal the actions inside the steps from map[string]any to the corresponding action type
+	for i, step := range stepsWithActionTypes {
+		action, err := UnmarshalMapToActionType(step.Action.(map[string]any), step.ActionType)
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Println(action)
+
+		steps[i] = Step{action, step.State}
+
 	}
 
 	return steps, nil

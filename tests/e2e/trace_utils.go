@@ -6,11 +6,13 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+// StepWithActionType is a utility class that wraps a Step together with its action type. Used to marshal/unmarshal
 type StepWithActionType struct {
 	Step
 	ActionType string `json:"ActionType"`
 }
 
+// UnmarshalMapToActionType takes a JSON object and an action type and marshals into an object of the corresponding action.
 func UnmarshalMapToActionType(inputMap map[string]any, actionType string) (interface{}, error) {
 	switch actionType {
 	case "main.StartChainAction":
