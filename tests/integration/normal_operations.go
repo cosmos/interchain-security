@@ -2,7 +2,7 @@ package integration
 
 import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
@@ -21,7 +21,7 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 	createVal := func(k CCVTestSuite) { //nolint:govet // this is a test so we can copy locks
 		// add new validator to consumer states
 		pk := ed25519.GenPrivKey().PubKey()
-		cVal, err := consumertypes.NewCCValidator(pk.Address(), int64(1), pk)
+		cVal, err := ccvtypes.NewCCValidator(pk.Address(), int64(1), pk)
 		k.Require().NoError(err)
 
 		consumerKeeper.SetCCValidator(k.consumerChain.GetContext(), cVal)
@@ -71,7 +71,7 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 			expLen: 0,
 		},
 		{
-			height: initHeight + consumertypes.DefaultHistoricalEntries + 2,
+			height: initHeight + ccvtypes.DefaultHistoricalEntries + 2,
 			found:  true,
 			expLen: initValsetLen + 2,
 		},

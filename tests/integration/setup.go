@@ -10,7 +10,6 @@ import (
 	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
 
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
@@ -152,7 +151,7 @@ func (suite *CCVTestSuite) SetupTest() {
 func initConsumerChain(
 	s *CCVTestSuite,
 	chainID string,
-	genesisState *consumertypes.GenesisState,
+	genesisState *ccv.ConsumerGenesisState,
 ) {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	bundle := s.consumerBundles[chainID]

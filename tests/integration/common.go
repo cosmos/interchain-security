@@ -16,7 +16,6 @@ import (
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/testutil/integration"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -548,7 +547,7 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	require.True(endpoint.Chain.T, ok)
 	tmConfig.UnbondingPeriod = unbondingPeriod
 
-	trustPeriod, err := ccv.CalculateTrustPeriod(unbondingPeriod, providertypes.DefaultTrustingPeriodFraction)
+	trustPeriod, err := ccv.CalculateTrustPeriod(unbondingPeriod, ccv.DefaultTrustingPeriodFraction)
 	require.NoError(endpoint.Chain.T, err)
 	tmConfig.TrustingPeriod = trustPeriod
 
