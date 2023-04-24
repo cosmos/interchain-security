@@ -1,0 +1,13 @@
+.git/
+tests/
+testutil/
+docs/
+Dockerfile
+*.md
+.gitignore
+.gitattributes
+scripts/
+.vscode/
+.github/
+proto/
+legacy_ibc_testing/
