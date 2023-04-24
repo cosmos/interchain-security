@@ -22,7 +22,6 @@ import (
 	types8 "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	types9 "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
-	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	gomock "github.com/golang/mock/gomock"
 )
 
