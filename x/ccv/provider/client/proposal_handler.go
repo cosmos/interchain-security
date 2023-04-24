@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -11,8 +10,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/spf13/cobra"
@@ -85,7 +86,12 @@ Where proposal.json contains:
 				return err
 			}
 
-			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+			if err != nil {
+				return err
+			}
+
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), "")
 			if err != nil {
 				return err
 			}
@@ -133,12 +139,17 @@ Where proposal.json contains:
 
 			from := clientCtx.GetFromAddress()
 
+			msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+			if err != nil {
+				return err
+			}
+
 			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
 			if err != nil {
 				return err
 			}
 
-			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), "")
 			if err != nil {
 				return err
 			}
@@ -191,12 +202,17 @@ Where proposal.json contains:
 
 			from := clientCtx.GetFromAddress()
 
+			msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+			if err != nil {
+				return err
+			}
+
 			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
 			if err != nil {
 				return err
 			}
 
-			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), "")
 			if err != nil {
 				return err
 			}
@@ -311,57 +327,17 @@ func ParseEquivocationProposalJSON(proposalFile string) (EquivocationProposalJSO
 	return proposal, nil
 }
 
-// TODO: this file will need to be changed to make sure that it does not need to use rest.
+func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalProposalJSON, error) {
+	proposal := ConsumerRemovalProposalJSON{}
 
-func postConsumerRemovalProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var req ConsumerRemovalProposalReq
-
-		///		req.BaseReq = req.BaseReq.Sanitize()
-		//		if !req.BaseReq.ValidateBasic(w) {
-		//			return
-		//		}
-
-		content := types.NewConsumerRemovalProposal(
-			req.Title, req.Description, req.ChainId, req.StopTime,
-		)
-
-		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
-		//		if rest.CheckBadRequestError(w, err) {
-		//			return
-		//		}
-
-		//		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
-		//			return
-		//		}
-
-		//		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
+	contents, err := os.ReadFile(filepath.Clean(proposalFile))
+	if err != nil {
+		return proposal, err
 	}
-}
 
-func postEquivocationProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var req EquivocationProposalReq
-		//		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
-		//			return
-		//		}
-
-		req.BaseReq = req.BaseReq.Sanitize()
-		if !req.BaseReq.ValidateBasic(w) {
-			return
-		}
-
-		content := types.NewEquivocationProposal(req.Title, req.Description, req.Equivocations)
-
-		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
-		//		if rest.CheckBadRequestError(w, err) {
-		//			return
-		//		}
-
-		//		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
-		//			return
-		//		}
-
-		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
+	if err := json.Unmarshal(contents, &proposal); err != nil {
+		return proposal, err
 	}
+
+	return proposal, nil
 }
