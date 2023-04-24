@@ -9,6 +9,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtypes "github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -243,6 +244,8 @@ func (b *Builder) newChain(
 	signers map[string]tmtypes.PrivValidator,
 ) *ibctesting.TestChain {
 	app, genesis := appInit()
+
+	baseapp.SetChainID(chainID)(app.GetBaseApp())
 
 	stateBytes, senderAccounts := b.getAppBytesAndSenders(chainID, app, genesis, validators)
 

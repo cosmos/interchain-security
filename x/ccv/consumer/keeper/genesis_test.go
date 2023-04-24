@@ -123,7 +123,7 @@ func TestInitGenesis(t *testing.T) {
 				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 
 				require.Equal(t, validator.Address.Bytes(), ck.GetAllCCValidator(ctx)[0].Address)
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		}, {
 			"restart a chain without an established CCV channel",
@@ -150,7 +150,7 @@ func TestInitGenesis(t *testing.T) {
 				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
 				require.Equal(t, validator.Address.Bytes(), ck.GetAllCCValidator(ctx)[0].Address)
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		}, {
 			"restart a chain with an established CCV channel",
@@ -194,7 +194,7 @@ func TestInitGenesis(t *testing.T) {
 				assertHeightValsetUpdateIDs(t, ctx, &ck, updatedHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
 
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		},
 	}

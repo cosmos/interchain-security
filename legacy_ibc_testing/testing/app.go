@@ -65,6 +65,8 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 	t.Helper()
 	app, genesisState := appIniter()
 
+	baseapp.SetChainID(chainID)(app.GetBaseApp())
+
 	// set genesis accounts
 	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
 	genesisState[authtypes.ModuleName] = app.AppCodec().MustMarshalJSON(authGenesis)
