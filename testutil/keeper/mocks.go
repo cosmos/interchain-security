@@ -21,6 +21,7 @@ import (
 	types6 "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	types7 "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	gomock "github.com/golang/mock/gomock"
 	types8 "github.com/cometbft/cometbft/abci/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -901,6 +902,14 @@ func (m *MockIBCTransferKeeper) SendTransfer(ctx types.Context, sourcePort, sour
 	ret := m.ctrl.Call(m, "SendTransfer", ctx, sourcePort, sourceChannel, token, sender, receiver, timeoutHeight, timeoutTimestamp)
 	ret0, _ := ret[0].(error)
 	return ret0
+}
+
+// Transfer mocks base method.
+func (m *MockIBCTransferKeeper) Transfer(ctx context.Context, msgTransfer *transfertypes.MsgTransfer) (*transfertypes.MsgTransferResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Transfer", ctx, msgTransfer)
+	ret0, _ := ret[0].(error)
+	return nil, ret0
 }
 
 // SendTransfer indicates an expected call of SendTransfer.
