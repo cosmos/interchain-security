@@ -12,6 +12,10 @@ install: go.sum
 test: 
 	go test ./... && go run ./tests/e2e/... 
 
+# run all unit tests
+test-unit:
+	go test ./...
+
 # run unit and integration tests
 test-short:
 	go test ./x/... ./app/... ./tests/integration/...
