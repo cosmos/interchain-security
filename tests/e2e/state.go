@@ -337,13 +337,7 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 		`-o`, `json`,
 	).CombinedOutput()
 
-	prop := TextProposal{}
-
 	if err != nil {
-		if noProposalRegex.Match(bz) {
-			return prop
-		}
-
 		log.Fatal(err, "\n", string(bz))
 	}
 
