@@ -1,0 +1,23 @@
+{
+    "#meta": {
+      "source": "manual testcase",
+      "varTypes": { 
+        "bank_of_boat": "Str", 
+        "who_is_on_bank": "Str -> Set(PERSON)" 
+      }
+    },
+    "vars": [ "bank_of_boat", "who_is_on_bank" ],
+    "states": [
+      {
+        "#meta": { "index": 0 },
+        "bank_of_boat": "E",
+        "who_is_on_bank": {
+          "#map": [
+            [ "E", { "#set": [ "c1_OF_PERSON", "c2_OF_PERSON",
+                               "m1_OF_PERSON", "m2_OF_PERSON" ] } ],
+            [ "W", { "#set": [] } ]
+          ]  
+        }
+      }
+    ]
+  }
