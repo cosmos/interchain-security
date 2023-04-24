@@ -1,7 +1,4 @@
 .git/
-tests/
-testutil/
-docs/
 Dockerfile
 *.md
 .gitignore
@@ -10,4 +7,3 @@ scripts/
 .vscode/
 .github/
 proto/
-legacy_ibc_testing/
