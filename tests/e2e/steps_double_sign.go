@@ -5,11 +5,11 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 	return []Step{
 		{
 			// provider double sign
-			action: doublesignSlashAction{
+			Action: doublesignSlashAction{
 				chain:     chainID("provi"),
 				validator: validatorID("carol"),
 			},
-			state: State{
+			State: State{
 				// slash on provider
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
@@ -29,12 +29,12 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 		},
 		{
 			// relay power change to consumerName
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0, // consumerName channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -55,11 +55,11 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 			// consumer double sign
 			// provider will only log the double sign slash
 			// stepsSubmitEquivocationProposal will cause the double sign slash to be executed
-			action: doublesignSlashAction{
+			Action: doublesignSlashAction{
 				chain:     chainID("consu"),
 				validator: validatorID("bob"),
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -77,12 +77,12 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -101,12 +101,12 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 		},
 		{
 			// consumer learns about the double sign
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,

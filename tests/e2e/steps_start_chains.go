@@ -7,7 +7,7 @@ import (
 func stepStartProviderChain() []Step {
 	return []Step{
 		{
-			action: StartChainAction{
+			Action: StartChainAction{
 				chain: chainID("provi"),
 				validators: []StartChainValidator{
 					{id: validatorID("bob"), stake: 500000000, allocation: 10000000000},
@@ -15,7 +15,7 @@ func stepStartProviderChain() []Step {
 					{id: validatorID("carol"), stake: 500000000, allocation: 10000000000},
 				},
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValBalances: &map[validatorID]uint{
 						validatorID("alice"): 9500000000,
@@ -31,7 +31,7 @@ func stepStartProviderChain() []Step {
 func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint, setupTransferChans bool) []Step {
 	s := []Step{
 		{
-			action: submitConsumerAdditionProposalAction{
+			Action: submitConsumerAdditionProposalAction{
 				chain:         chainID("provi"),
 				from:          validatorID("alice"),
 				deposit:       10000001,
@@ -39,7 +39,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				spawnTime:     0,
 				initialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValBalances: &map[validatorID]uint{
 						validatorID("alice"): 9489999999,
@@ -60,7 +60,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 		// add a consumer key before the chain starts
 		// the key will be present in consumer genesis initial_val_set
 		{
-			action: assignConsumerPubKeyAction{
+			Action: assignConsumerPubKeyAction{
 				chain:          chainID(consumerName),
 				validator:      validatorID("carol"),
 				consumerPubkey: `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
@@ -69,7 +69,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				// since it will start with consumer key
 				reconfigureNode: false,
 			},
-			state: State{
+			State: State{
 				chainID(consumerName): ChainState{
 					AssignedKeys: &map[validatorID]string{
 						validatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
@@ -82,18 +82,18 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 		},
 		{
 			// op should fail - key already assigned by the same validator
-			action: assignConsumerPubKeyAction{
+			Action: assignConsumerPubKeyAction{
 				chain:           chainID(consumerName),
 				validator:       validatorID("carol"),
 				consumerPubkey:  `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
 				reconfigureNode: false,
 				expectError:     true,
 			},
-			state: State{},
+			State: State{},
 		},
 		{
 			// op should fail - key already assigned by another validator
-			action: assignConsumerPubKeyAction{
+			Action: assignConsumerPubKeyAction{
 				chain:     chainID(consumerName),
 				validator: validatorID("bob"),
 				// same pub key as carol
@@ -101,7 +101,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				reconfigureNode: false,
 				expectError:     true,
 			},
-			state: State{
+			State: State{
 				chainID(consumerName): ChainState{
 					AssignedKeys: &map[validatorID]string{
 						validatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
@@ -114,13 +114,13 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 			},
 		},
 		{
-			action: voteGovProposalAction{
+			Action: voteGovProposalAction{
 				chain:      chainID("provi"),
 				from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
 				vote:       []string{"yes", "yes", "yes"},
 				propNumber: proposalIndex,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					Proposals: &map[uint]Proposal{
 						proposalIndex: ConsumerAdditionProposal{
@@ -139,7 +139,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 			},
 		},
 		{
-			action: startConsumerChainAction{
+			Action: startConsumerChainAction{
 				consumerChain: chainID(consumerName),
 				providerChain: chainID("provi"),
 				validators: []StartChainValidator{
@@ -154,7 +154,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				// values from the genesis file.
 				genesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValBalances: &map[validatorID]uint{
 						validatorID("alice"): 9500000000,
@@ -172,16 +172,16 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 			},
 		},
 		{
-			action: addIbcConnectionAction{
+			Action: addIbcConnectionAction{
 				chainA:  chainID(consumerName),
 				chainB:  chainID("provi"),
 				clientA: 0,
 				clientB: chainIndex,
 			},
-			state: State{},
+			State: State{},
 		},
 		{
-			action: addIbcChannelAction{
+			Action: addIbcChannelAction{
 				chainA:      chainID(consumerName),
 				chainB:      chainID("provi"),
 				connectionA: 0,
@@ -189,14 +189,14 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				portB:       "provider",
 				order:       "ordered",
 			},
-			state: State{},
+			State: State{},
 		},
 	}
 
 	// currently only used in democracy tests
 	if setupTransferChans {
 		s = append(s, Step{
-			action: transferChannelCompleteAction{
+			Action: transferChannelCompleteAction{
 				chainA:      chainID(consumerName),
 				chainB:      chainID("provi"),
 				connectionA: 0,
@@ -206,7 +206,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				channelA:    1,
 				channelB:    1,
 			},
-			state: State{},
+			State: State{},
 		})
 	}
 	return s
@@ -226,7 +226,7 @@ func stepsStartChains(consumerNames []string, setupTransferChans bool) []Step {
 func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step {
 	return []Step{
 		{
-			action: assignConsumerPubKeyAction{
+			Action: assignConsumerPubKeyAction{
 				chain:     chainID(consumerName),
 				validator: validatorID("bob"),
 				// reconfigure the node -> validator was using provider key
@@ -234,7 +234,7 @@ func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step
 				consumerPubkey:  `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="}`,
 				reconfigureNode: true,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						// this happens after some delegations
@@ -264,12 +264,12 @@ func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						// this happens after some delegations

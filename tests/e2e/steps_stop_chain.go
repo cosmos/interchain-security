@@ -6,8 +6,8 @@ import "time"
 func stepsStartHermes() []Step {
 	return []Step{
 		{
-			action: startHermesAction{},
-			state:  State{},
+			Action: startHermesAction{},
+			State:  State{},
 		},
 	}
 }
@@ -16,14 +16,14 @@ func stepsStartHermes() []Step {
 func stepsStopChain(consumerName string, propNumber uint) []Step {
 	s := []Step{
 		{
-			action: submitConsumerRemovalProposalAction{
+			Action: submitConsumerRemovalProposalAction{
 				chain:          chainID("provi"),
 				from:           validatorID("bob"),
 				deposit:        10000001,
 				consumerChain:  chainID(consumerName),
 				stopTimeOffset: 0 * time.Millisecond,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValBalances: &map[validatorID]uint{
 						validatorID("bob"): 9489999999,
@@ -41,13 +41,13 @@ func stepsStopChain(consumerName string, propNumber uint) []Step {
 			},
 		},
 		{
-			action: voteGovProposalAction{
+			Action: voteGovProposalAction{
 				chain:      chainID("provi"),
 				from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
 				vote:       []string{"yes", "yes", "yes"},
 				propNumber: propNumber,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					Proposals: &map[uint]Proposal{
 						propNumber: ConsumerRemovalProposal{
@@ -74,14 +74,14 @@ func stepsStopChain(consumerName string, propNumber uint) []Step {
 func stepsConsumerRemovalPropNotPassing(consumerName string, propNumber uint) []Step {
 	s := []Step{
 		{
-			action: submitConsumerRemovalProposalAction{
+			Action: submitConsumerRemovalProposalAction{
 				chain:          chainID("provi"),
 				from:           validatorID("bob"),
 				deposit:        10000001,
 				consumerChain:  chainID(consumerName),
 				stopTimeOffset: 0 * time.Millisecond,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValBalances: &map[validatorID]uint{
 						validatorID("bob"): 9489999999,
@@ -99,13 +99,13 @@ func stepsConsumerRemovalPropNotPassing(consumerName string, propNumber uint) []
 			},
 		},
 		{
-			action: voteGovProposalAction{
+			Action: voteGovProposalAction{
 				chain:      chainID("provi"),
 				from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
 				vote:       []string{"no", "no", "no"},
 				propNumber: propNumber,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					Proposals: &map[uint]Proposal{
 						propNumber: ConsumerRemovalProposal{

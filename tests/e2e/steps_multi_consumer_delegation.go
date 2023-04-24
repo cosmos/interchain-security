@@ -5,13 +5,13 @@ func stepsMultiConsumerDelegate(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
 			// changes not visible on any consumer
-			action: delegateTokensAction{
+			Action: delegateTokensAction{
 				chain:  chainID("provi"),
 				from:   validatorID("alice"),
 				to:     validatorID("alice"),
 				amount: 11000000,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511, // this changes from 500
@@ -37,12 +37,12 @@ func stepsMultiConsumerDelegate(consumer1, consumer2 string) []Step {
 		},
 		{
 			// relay changes to consumer1
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0, // consumer1 channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
@@ -68,12 +68,12 @@ func stepsMultiConsumerDelegate(consumer1, consumer2 string) []Step {
 		},
 		{
 			// relay changes to consumer2
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 1, // consumer2 channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
@@ -105,13 +105,13 @@ func stepsMultiConsumerDelegate(consumer1, consumer2 string) []Step {
 func stepsMultiConsumerUnbond(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
-			action: unbondTokensAction{
+			Action: unbondTokensAction{
 				chain:      chainID("provi"),
 				unbondFrom: validatorID("alice"),
 				sender:     validatorID("alice"),
 				amount:     1000000,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 510, // change from 511
@@ -137,12 +137,12 @@ func stepsMultiConsumerUnbond(consumer1, consumer2 string) []Step {
 		},
 		{
 			// relay to consumer1
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0, // consumer1 channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 510,
@@ -168,12 +168,12 @@ func stepsMultiConsumerUnbond(consumer1, consumer2 string) []Step {
 		},
 		{
 			// relay to consumer2
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 1, // consumer2 channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 510,
@@ -205,7 +205,7 @@ func stepsMultiConsumerUnbond(consumer1, consumer2 string) []Step {
 func stepsMultiConsumerRedelegate(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
-			action: redelegateTokensAction{
+			Action: redelegateTokensAction{
 				chain:    chainID("provi"),
 				src:      validatorID("alice"),
 				dst:      validatorID("carol"),
@@ -214,7 +214,7 @@ func stepsMultiConsumerRedelegate(consumer1, consumer2 string) []Step {
 				// 2/3 voting power during downtime tests below, avoiding chain halt
 				amount: 1000000,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -241,12 +241,12 @@ func stepsMultiConsumerRedelegate(consumer1, consumer2 string) []Step {
 
 		{
 			// relay to consumer1
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0, // consumer1 channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -272,12 +272,12 @@ func stepsMultiConsumerRedelegate(consumer1, consumer2 string) []Step {
 		},
 		{
 			// relay to consumer2
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 1, // consumer1 channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,

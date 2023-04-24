@@ -1,8 +1,8 @@
 package main
 
 type Step struct {
-	action interface{}
-	state  State
+	Action interface{}
+	State  State
 }
 
 func concatSteps(steps ...[]Step) []Step {

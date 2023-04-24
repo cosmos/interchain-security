@@ -7,7 +7,7 @@ func stepsRejectEquivocationProposal(consumerName string, propNumber uint) []Ste
 	return []Step{
 		{
 			// bob submits a proposal to slash himself
-			action: submitEquivocationProposalAction{
+			Action: submitEquivocationProposalAction{
 				chain:     chainID("consu"),
 				from:      validatorID("bob"),
 				deposit:   10000001,
@@ -16,7 +16,7 @@ func stepsRejectEquivocationProposal(consumerName string, propNumber uint) []Ste
 				power:     500,
 				validator: validatorID("bob"),
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -48,7 +48,7 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 	s := []Step{
 		{
 			// bob submits a proposal to slash himself
-			action: submitEquivocationProposalAction{
+			Action: submitEquivocationProposalAction{
 				chain:     chainID("consu"),
 				from:      validatorID("bob"),
 				deposit:   10000001,
@@ -57,7 +57,7 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 				power:     500,
 				validator: validatorID("bob"),
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -87,13 +87,13 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 			},
 		},
 		{
-			action: voteGovProposalAction{
+			Action: voteGovProposalAction{
 				chain:      chainID("provi"),
 				from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
 				vote:       []string{"yes", "yes", "yes"},
 				propNumber: propNumber,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -121,12 +121,12 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 		},
 		{
 			// relay power change to consumer1
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,

@@ -15,11 +15,11 @@ import "time"
 func stepsDowntime(consumerName string) []Step {
 	return []Step{
 		{
-			action: downtimeSlashAction{
+			Action: downtimeSlashAction{
 				chain:     chainID(consumerName),
 				validator: validatorID("bob"),
 			},
-			state: State{
+			State: State{
 				// validator should be slashed on consumer, powers not affected on either chain yet
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
@@ -38,12 +38,12 @@ func stepsDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -64,12 +64,12 @@ func stepsDowntime(consumerName string) []Step {
 		// A block is incremented each action, hence why VSC is committed on provider,
 		// and can now be relayed as packet to consumer
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -81,11 +81,11 @@ func stepsDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			action: unjailValidatorAction{
+			Action: unjailValidatorAction{
 				provider:  chainID("provi"),
 				validator: validatorID("bob"),
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -105,12 +105,12 @@ func stepsDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -124,11 +124,11 @@ func stepsDowntime(consumerName string) []Step {
 		},
 		// Now we test provider initiated downtime/slashing
 		{
-			action: downtimeSlashAction{
+			Action: downtimeSlashAction{
 				chain:     chainID("provi"),
 				validator: validatorID("carol"),
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						// Non faulty validators still maintain just above 2/3 power here
@@ -149,12 +149,12 @@ func stepsDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -165,11 +165,11 @@ func stepsDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			action: unjailValidatorAction{
+			Action: unjailValidatorAction{
 				provider:  chainID("provi"),
 				validator: validatorID("carol"),
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -187,12 +187,12 @@ func stepsDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -212,11 +212,11 @@ func stepsDowntime(consumerName string) []Step {
 func stepsDowntimeWithOptOut(consumerName string) []Step {
 	return []Step{
 		{
-			action: downtimeSlashAction{
+			Action: downtimeSlashAction{
 				chain:     chainID(consumerName),
 				validator: validatorID("alice"),
 			},
-			state: State{
+			State: State{
 				// powers not affected on either chain
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
@@ -235,12 +235,12 @@ func stepsDowntimeWithOptOut(consumerName string) []Step {
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						// alice is not slashed or jailed due to soft opt out
@@ -267,11 +267,11 @@ func stepsDowntimeWithOptOut(consumerName string) []Step {
 func stepsThrottledDowntime(consumerName string) []Step {
 	return []Step{
 		{
-			action: downtimeSlashAction{
+			Action: downtimeSlashAction{
 				chain:     chainID(consumerName),
 				validator: validatorID("bob"),
 			},
-			state: State{
+			State: State{
 				// powers not affected on either chain yet
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
@@ -290,11 +290,11 @@ func stepsThrottledDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			action: downtimeSlashAction{
+			Action: downtimeSlashAction{
 				chain:     chainID(consumerName),
 				validator: validatorID("carol"),
 			},
-			state: State{
+			State: State{
 				// powers not affected on either chain yet
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
@@ -313,12 +313,12 @@ func stepsThrottledDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
@@ -341,7 +341,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			action: slashThrottleDequeue{
+			Action: slashThrottleDequeue{
 				chain:            chainID(consumerName),
 				currentQueueSize: 1,
 				nextQueueSize:    0,
@@ -350,7 +350,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				// for meter to become positive again. 3*20 = 60 seconds + buffer = 80 seconds
 				timeout: 80 * time.Second,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
@@ -375,12 +375,12 @@ func stepsThrottledDowntime(consumerName string) []Step {
 		// A block is incremented each action, hence why VSC is committed on provider,
 		// and can now be relayed as packet to consumer
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,

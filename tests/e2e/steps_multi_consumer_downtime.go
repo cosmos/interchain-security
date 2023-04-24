@@ -7,11 +7,11 @@ package main
 func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
-			action: downtimeSlashAction{
+			Action: downtimeSlashAction{
 				chain:     chainID(consumer1),
 				validator: validatorID("bob"),
 			},
-			state: State{
+			State: State{
 				// validator should be slashed on consumer, powers not affected on either chain yet
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
@@ -39,12 +39,12 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 		{
 			// Downtime jailing and corresponding voting power change are processed by provider
 			// Validator powers are unchanged on consumer chains
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -72,12 +72,12 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 			// A block is incremented each action, hence why VSC is committed on provider,
 			// and can now be relayed as packet to consumer
 			// consumer1 will now see the validator power changes - consumer2 will not (had not been relayed)
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0, // consumer1 chan
 			},
-			state: State{
+			State: State{
 				// change propagated to consumer1
 				chainID(consumer1): ChainState{
 					ValPowers: &map[validatorID]uint{
@@ -99,12 +99,12 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 		},
 		{
 			// both consumer1 and consumer will now see the validator power changes
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 1, // consumer2 chan
 			},
-			state: State{
+			State: State{
 				chainID(consumer1): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -122,11 +122,11 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 			},
 		},
 		{
-			action: unjailValidatorAction{
+			Action: unjailValidatorAction{
 				provider:  chainID("provi"),
 				validator: validatorID("bob"),
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -155,12 +155,12 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 		},
 		{
 			// relay to consumer 1
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -186,12 +186,12 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 		},
 		{
 			// relay to consumer2
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 1, // consumer2 chan
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -224,11 +224,11 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 	return []Step{
 		// Now we test provider initiated downtime/slashing
 		{
-			action: downtimeSlashAction{
+			Action: downtimeSlashAction{
 				chain:     chainID("provi"),
 				validator: validatorID("carol"),
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						// Non faulty validators still maintain just above 2/3 power here
@@ -254,12 +254,12 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0, // consumer 1 channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						// Non faulty validators still maintain just above 2/3 power here
@@ -287,12 +287,12 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 1, // consumer2 channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						// Non faulty validators still maintain just above 2/3 power here
@@ -319,11 +319,11 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 			},
 		},
 		{
-			action: unjailValidatorAction{
+			Action: unjailValidatorAction{
 				provider:  chainID("provi"),
 				validator: validatorID("carol"),
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -348,12 +348,12 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0, // consumer1 channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -379,12 +379,12 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 1, // consumer2 channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,

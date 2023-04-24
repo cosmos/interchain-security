@@ -4,13 +4,13 @@ package main
 func stepsDelegate(consumerName string) []Step {
 	return []Step{
 		{
-			action: delegateTokensAction{
+			Action: delegateTokensAction{
 				chain:  chainID("provi"),
 				from:   validatorID("alice"),
 				to:     validatorID("alice"),
 				amount: 11000000,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
@@ -28,13 +28,13 @@ func stepsDelegate(consumerName string) []Step {
 			},
 		},
 		{
-			action: SendTokensAction{
+			Action: SendTokensAction{
 				chain:  chainID(consumerName),
 				from:   validatorID("alice"),
 				to:     validatorID("bob"),
 				amount: 1,
 			},
-			state: State{
+			State: State{
 				chainID(consumerName): ChainState{
 					// Tx should not go through, ICS channel is not setup until first VSC packet has been relayed to consumer
 					ValBalances: &map[validatorID]uint{
@@ -45,12 +45,12 @@ func stepsDelegate(consumerName string) []Step {
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
@@ -61,13 +61,13 @@ func stepsDelegate(consumerName string) []Step {
 			},
 		},
 		{
-			action: SendTokensAction{
+			Action: SendTokensAction{
 				chain:  chainID(consumerName),
 				from:   validatorID("alice"),
 				to:     validatorID("bob"),
 				amount: 1,
 			},
-			state: State{
+			State: State{
 				chainID(consumerName): ChainState{
 					// Now tx should execute
 					ValBalances: &map[validatorID]uint{
@@ -84,13 +84,13 @@ func stepsDelegate(consumerName string) []Step {
 func stepsUnbond(consumerName string) []Step {
 	return []Step{
 		{
-			action: unbondTokensAction{
+			Action: unbondTokensAction{
 				chain:      chainID("provi"),
 				unbondFrom: validatorID("alice"),
 				sender:     validatorID("alice"),
 				amount:     1000000,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 510,
@@ -109,12 +109,12 @@ func stepsUnbond(consumerName string) []Step {
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID("consu"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 510,
@@ -133,14 +133,14 @@ func stepsUnbond(consumerName string) []Step {
 func stepsRedelegateForOptOut(consumerName string) []Step {
 	return []Step{
 		{
-			action: redelegateTokensAction{
+			Action: redelegateTokensAction{
 				chain:    chainID("provi"),
 				src:      validatorID("alice"),
 				dst:      validatorID("carol"),
 				txSender: validatorID("alice"),
 				amount:   450000000,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 60,
@@ -159,12 +159,12 @@ func stepsRedelegateForOptOut(consumerName string) []Step {
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						// Now power changes are seen by consumer
@@ -182,7 +182,7 @@ func stepsRedelegateForOptOut(consumerName string) []Step {
 func stepsRedelegate(consumerName string) []Step {
 	return []Step{
 		{
-			action: redelegateTokensAction{
+			Action: redelegateTokensAction{
 				chain:    chainID("provi"),
 				src:      validatorID("carol"),
 				dst:      validatorID("alice"),
@@ -191,7 +191,7 @@ func stepsRedelegate(consumerName string) []Step {
 				// 2/3 voting power during downtime tests below, avoiding chain halt
 				amount: 449000000,
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -211,12 +211,12 @@ func stepsRedelegate(consumerName string) []Step {
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0,
 			},
-			state: State{
+			State: State{
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						// Now power changes are seen by consumer

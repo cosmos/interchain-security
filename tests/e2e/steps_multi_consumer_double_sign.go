@@ -13,11 +13,11 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
 			// provider double sign
-			action: doublesignSlashAction{
+			Action: doublesignSlashAction{
 				chain:     chainID("provi"),
 				validator: validatorID("carol"),
 			},
-			state: State{
+			State: State{
 				// slash on provider
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
@@ -44,12 +44,12 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		},
 		{
 			// relay power change to consumer1
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0, // consumer1 channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -75,12 +75,12 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		},
 		{
 			// relay power change to consumer2
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 1, // consumer2 channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -107,11 +107,11 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		{
 			// consumer double sign
 			// nothing should happen - double sign from consumer is dropped
-			action: doublesignSlashAction{
+			Action: doublesignSlashAction{
 				chain:     chainID("consu"),
 				validator: validatorID("bob"),
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -136,12 +136,12 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 			},
 		},
 		{
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0, // consumer1 channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -167,12 +167,12 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		},
 		{
 			// consumer1 learns about the double sign
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 0, // consumer1 channel
 			},
-			state: State{
+			State: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -198,12 +198,12 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		},
 		{
 			// consumer2 learns about the double sign
-			action: relayPacketsAction{
+			Action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
 				channel: 1, // consumer2 channel
 			},
-			state: State{
+			State: State{
 				chainID(consumer1): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
