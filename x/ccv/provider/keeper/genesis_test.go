@@ -34,7 +34,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
 
 	// create genesis struct
-	provGenesis := ccv.NewGenesisState(vscID,
+	provGenesis := ccv.NewProviderGenesisState(vscID,
 		[]ccv.ValsetUpdateIdToHeight{{ValsetUpdateId: vscID, Height: initHeight}},
 		[]ccv.ConsumerState{
 			ccv.NewConsumerState(
