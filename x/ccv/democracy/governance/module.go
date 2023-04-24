@@ -56,6 +56,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, request abci.RequestEndBlock) []ab
 }
 
 func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govv1.Proposal) {
+	fmt.Println(proposal)
 	messages := proposal.GetMessages()
 
 	for _, message := range messages {
@@ -79,7 +80,7 @@ func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govv1.Propo
 	// private and cannot be called directly from the overridden app module
 	am.keeper.Tally(ctx, proposal)
 
-	am.keeper.DeleteAndBurnDeposits(ctx, proposal.Id)
+	am.keeper.DeleteProposal(ctx, proposal.Id)
 	am.keeper.RefundAndDeleteDeposits(ctx, proposal.Id)
 
 	ctx.EventManager().EmitEvent(
