@@ -38,7 +38,11 @@ func TestWriterThenParser(t *testing.T) {
 				t.Fatalf("error writing trace to file: %v", err)
 			}
 
-			got, _ := parser.ReadTraceFromFile(filename)
+			got, err := parser.ReadTraceFromFile(filename)
+			if err != nil {
+				t.Fatalf("error reading trace from file: %v", err)
+			}
+
 			diff := cmp.Diff(tc.trace, got, cmp.AllowUnexported(Step{}))
 			if diff != "" {
 				t.Fatalf(diff)
