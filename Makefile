@@ -9,12 +9,13 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cdd
 
 # run all tests: unit, integration, diff, and E2E
+# Note: provider and consumer directories must be passed as separate args since they have their own go.mods 
 test: 
-	go test ./... && go run ./tests/e2e/... 
+	go test ./... ./x/ccv/provider/... ./x/ccv/consumer/... && go run ./tests/e2e/... 
 
 # run unit and integration tests
 test-short:
-	go test ./x/... ./app/... ./tests/integration/...
+	go test ./x/... ./app/... ./tests/integration/... ./x/ccv/provider/... ./x/ccv/consumer/...
 
 # run E2E tests
 test-e2e:
