@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/types"
 )
 
 // Tests the validation of consumer params that happens at genesis
