@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
@@ -79,7 +80,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 
 	currentRepresentativesRewards := map[string]sdk.Dec{}
 	nextRepresentativesRewards := map[string]sdk.Dec{}
-	representativesTokens := map[string]sdk.Int{}
+	representativesTokens := map[string]math.Int{}
 
 	for _, representative := range stakingKeeper.GetAllValidators(s.consumerCtx()) {
 		currentRepresentativesRewards[representative.OperatorAddress] = sdk.NewDec(0)
@@ -247,8 +248,8 @@ func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.
 	return nil
 }
 
-func getAccountsBalances(ctx sdk.Context, bankKeeper testutil.TestBankKeeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]sdk.Int {
-	accountsBalances := map[string]sdk.Int{}
+func getAccountsBalances(ctx sdk.Context, bankKeeper testutil.TestBankKeeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]math.Int {
+	accountsBalances := map[string]math.Int{}
 	for _, acc := range accounts {
 		accountsBalances[string(acc.SenderAccount.GetAddress())] = bankKeeper.GetBalance(ctx, acc.SenderAccount.GetAddress(), bondDenom).Amount
 	}

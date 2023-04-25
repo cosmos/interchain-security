@@ -209,7 +209,6 @@ func New(
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
-
 	encodingConfig := makeEncodingConfig()
 
 	appCodec := encodingConfig.Codec
