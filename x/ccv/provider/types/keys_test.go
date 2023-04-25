@@ -6,6 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
@@ -205,14 +206,12 @@ func TestGlobalSlashEntryKeyAndParse(t *testing.T) {
 
 // Tests the construction and parsing of ChainIdAndConsAddr keys
 func TestChainIdAndConsAddrAndParse(t *testing.T) {
-	cIds := []*cryptoutil.CryptoIdentity{
-		cryptoutil.NewCryptoIdentityFromIntSeed(99998),
-		cryptoutil.NewCryptoIdentityFromIntSeed(99999),
-		cryptoutil.NewCryptoIdentityFromIntSeed(100000),
-	}
-	pubKey1 := cIds[0].TMCryptoPubKey()
-	pubKey2 := cIds[1].TMCryptoPubKey()
-	pubKey3 := cIds[2].TMCryptoPubKey()
+	pubKey1, err := testkeeper.GenPubKey()
+	require.NoError(t, err)
+	pubKey2, err := testkeeper.GenPubKey()
+	require.NoError(t, err)
+	pubKey3, err := testkeeper.GenPubKey()
+	require.NoError(t, err)
 
 	tests := []struct {
 		prefix  byte

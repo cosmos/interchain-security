@@ -9,7 +9,6 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -34,8 +33,8 @@ func TestInitGenesis(t *testing.T) {
 	blockHeight := uint64(0)
 
 	// create validator set
-	cId := crypto.NewCryptoIdentityFromIntSeed(234234)
-	pubKey := cId.TMCryptoPubKey()
+	pubKey, err := testkeeper.GenPubKey()
+	require.NoError(t, err)
 	validator := tmtypes.NewValidator(pubKey, 1)
 	abciValidator := abci.Validator{Address: pubKey.Address(), Power: int64(1)}
 	valset := []abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}

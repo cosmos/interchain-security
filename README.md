@@ -21,7 +21,7 @@ The code for CCV is housed under [x/ccv](./x/ccv). The `types` folder contains t
 ## For OSX or Linux
 
 # go 1.18 (https://formulae.brew.sh/formula/go)
-brew install go@1.20
+brew install go@1.18
 # jq (optional, for testnet) (https://formulae.brew.sh/formula/jq)
 brew install jq
 # docker (optional, for integration tests, testnet) (https://docs.docker.com/get-docker/)

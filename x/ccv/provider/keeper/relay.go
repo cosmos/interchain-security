@@ -12,6 +12,7 @@ import (
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // OnRecvVSCMaturedPacket handles a VSCMatured packet
@@ -180,7 +181,7 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 	pendingPackets := k.GetPendingVSCPackets(ctx, chainID)
 	for _, data := range pendingPackets {
 		// send packet over IBC
-		err := ccv.SendIBCPacket(
+		err := ccvtypes.SendIBCPacket(
 			ctx,
 			k.scopedKeeper,
 			k.channelKeeper,

@@ -1,49 +1,43 @@
-<!--
-The default pull request template is for types feat, fix, or refactor.
-For other templates, add one of the following parameters to the url:
-- template=docs.md
-- template=other.md
--->
+# Description
 
-## Description
+Please include a summary of the changes and the related issue. If the issue was ambiguous try to clarify it in this section.
 
-Closes: #XXXX
+## Linked issues
 
-<!-- Add a description of the changes that this PR introduces and the files that
-are the most critical to review. -->
+Closes: `#<issue>`
 
----
+## Type of change
 
-### Author Checklist
+If you've checked more than one of the first three boxes, consider splitting this PR into multiple PRs!
 
-*All items are required. Please add a note to the item if the item is not applicable and
-please add links to any relevant follow up issues.*
+- [ ] `Feature`: Changes and/or adds code behavior, irrelevant to bug fixes
+- [ ] `Fix`: Changes and/or adds code behavior, specifically to fix a bug
+- [ ] `Refactor`: Changes existing code style, naming, structure, etc.
+- [ ] `Testing`: Adds testing
+- [ ] `Docs`: Adds documentation
 
-I have...
+## Regression tests
 
-* [ ] Included the correct [type prefix](https://github.com/commitizen/conventional-commit-types/blob/v3.0.0/index.json) in the PR title
-* [ ] Added `!` to the type prefix if API or client breaking change
-* [ ] Targeted the correct branch (see [PR Targeting](https://github.com/cosmos/interchain-security/blob/main/CONTRIBUTING.md#pr-targeting))
-* [ ] Provided a link to the relevant issue or specification
-* [ ] Followed the guidelines for [building SDK modules](https://github.com/cosmos/cosmos-sdk/blob/main/docs/docs/building-modules)
-* [ ] Included the necessary unit and integration [tests](https://github.com/cosmos/interchain-security/blob/main/CONTRIBUTING.md#testing)
-* [ ] Added a changelog entry to `CHANGELOG.md`
-* [ ] Included comments for [documenting Go code](https://blog.golang.org/godoc)
-* [ ] Updated the relevant documentation or specification
-* [ ] Reviewed "Files changed" and left comments if necessary <!-- relevant if the changes are not obvious  -->
-* [ ] Confirmed all CI checks have passed
+If `Refactor`, describe the new or existing tests that verify no behavior was changed or added where refactors were introduced.
 
-### Reviewers Checklist
+## New behavior tests
 
-*All items are required. Please add a note if the item is not applicable and please add
-your handle next to the items reviewed if you only reviewed selected items.*
+If `Feature` or `Fix`, describe the new or existing tests that verify the new behavior is correct and expected.
 
-I have...
+## Versioning Implications
 
-* [ ] confirmed the correct [type prefix](https://github.com/commitizen/conventional-commit-types/blob/v3.0.0/index.json) in the PR title
-* [ ] confirmed `!` in the type prefix if API or client breaking change
-* [ ] confirmed all author checklist items have been addressed 
-* [ ] reviewed state machine logic
-* [ ] reviewed API design and naming
-* [ ] reviewed documentation is accurate
-* [ ] reviewed tests and test coverage
+- [ ] This PR will affect [semantic versioning as defined for ICS](../CONTRIBUTING.md#semantic-versioning)
+
+If the above box is checked, which version should be bumped?
+
+- [ ] `MAJOR`: Consensus breaking changes to both the provider and consumers(s), including updates/breaking changes to IBC communication between provider and consumer(s)
+- [ ] `MINOR`: Consensus breaking changes which affect either only the provider or only the consumer(s)
+- [ ] `PATCH`: Non consensus breaking changes
+
+## Targeting
+
+Please select one of the following:
+
+- [ ] This PR is only relevant to main
+- [ ] This PR is relevant to main, and should also be back-ported to ____ (ex: v1.0.0 and v1.1.0)
+- [ ] This PR is only relevant to ____ (ex: v1.0.0, v1.1.0, and v1.2.0)

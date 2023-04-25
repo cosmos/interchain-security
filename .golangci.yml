@@ -3,9 +3,7 @@ run:
   timeout: 10m
   sort-results: true
   allow-parallel-runners: true
-  skip-dirs: 
-    - "legacy_ibc_testing"
-    - "testutil" 
+  exclude-dir: testutil/testdata
 
 linters:
   disable-all: true

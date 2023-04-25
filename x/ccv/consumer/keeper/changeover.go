@@ -7,7 +7,7 @@ import (
 
 // ChangeoverIsComplete returns whether the standalone to consumer changeover process is complete.
 func (k Keeper) ChangeoverIsComplete(ctx sdk.Context) bool {
-	if !k.IsPrevStandaloneChain(ctx) {
+	if !k.IsPrevStandaloneChain() {
 		panic("ChangeoverIsComplete should only be called on previously standalone consumers")
 	}
 	return ctx.BlockHeight() >= k.FirstConsumerHeight(ctx)
