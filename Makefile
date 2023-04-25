@@ -11,11 +11,15 @@ install: go.sum
 # run all tests: unit, integration, diff, and E2E
 # Note: provider and consumer directories must be passed as separate args since they have their own go.mods 
 test: 
-	go test ./... ./x/ccv/provider/... ./x/ccv/consumer/... && go run ./tests/e2e/... 
+	go test ./... && go run ./tests/e2e/... && \
+	cd ./x/ccv/provider; go test ./... && \
+	cd ../consumer; go test ./...
 
 # run unit and integration tests
 test-short:
-	go test ./x/... ./app/... ./tests/integration/... ./x/ccv/provider/... ./x/ccv/consumer/...
+	go test ./x/... ./app/... ./tests/integration/... && \ 
+	cd ./x/ccv/provider; go test ./... && \
+	cd ../consumer; go test ./... 
 
 # run E2E tests
 test-e2e:
