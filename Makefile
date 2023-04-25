@@ -11,7 +11,7 @@ install: go.sum
 # run all tests: unit, integration, diff, and E2E
 # Note: sub directories in /x must be passed as separate args since they have their own go.mods 
 test: 
-	go test ./... && go run ./tests/e2e/... && \
+	go test ./... && go run ./tests/e2e/... && \ # TODO: double check this works
 	cd ./x/ccv/provider; go test ./... && \
 	cd ../consumer; go test ./... && \
 	cd ../types; go test ./...
