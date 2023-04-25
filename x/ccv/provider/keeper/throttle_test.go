@@ -780,8 +780,9 @@ func TestGlobalSlashEntryDeletion(t *testing.T) {
 
 	// Instantiate shuffled copy of above slice
 	shuffledEntries := append([]ccvtypes.GlobalSlashEntry{}, entries...)
-	rand.Seed(now.UnixNano())
-	rand.Shuffle(len(shuffledEntries), func(i, j int) {
+	randSrc := rand.NewSource(now.UnixNano())
+	randGen := rand.New(randSrc)
+	randGen.Shuffle(len(shuffledEntries), func(i, j int) {
 		shuffledEntries[i], shuffledEntries[j] = shuffledEntries[j], shuffledEntries[i]
 	})
 
