@@ -1189,7 +1189,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		defaultParams.MaxThrottledPackets = tc.max
 		providerKeeper.SetParams(ctx, defaultParams)
 
-		rand.Seed(time.Now().UnixNano())
+		rand.Seed(time.Now().UnixNano()) // nolint:staticcheck // ignore SA1019 for tests
 
 		// Queuing up a couple data instances for another chain shouldn't matter
 		err := providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 0, testkeeper.GetNewSlashPacketData())

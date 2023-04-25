@@ -7,7 +7,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	testutil "github.com/cosmos/interchain-security/testutil/keeper"
+	"github.com/cosmos/interchain-security/testutil/crypto"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -659,8 +659,8 @@ func TestValidateProviderGenesisState(t *testing.T) {
 func getInitialConsumerGenesis(t *testing.T, chainID string) ccv.ConsumerGenesisState {
 	t.Helper()
 	// generate validator public key
-	pubKey, err := testutil.GenPubKey()
-	require.NoError(t, err)
+	cId := crypto.NewCryptoIdentityFromIntSeed(239668)
+	pubKey := cId.TMCryptoPubKey()
 
 	// create validator set with single validator
 	validator := tmtypes.NewValidator(pubKey, 1)

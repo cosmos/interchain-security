@@ -21,7 +21,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
@@ -174,12 +173,6 @@ func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 
 type PrivateKey struct {
 	PrivKey cryptotypes.PrivKey
-}
-
-// Generates a public key for unit tests (abiding by tricky interface implementations from tm/sdk)
-func GenPubKey() (crypto.PubKey, error) {
-	privKey := PrivateKey{ed25519.GenPrivKey()}
-	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
 }
 
 // Obtains slash packet data with a newly generated key, and randomized field values
