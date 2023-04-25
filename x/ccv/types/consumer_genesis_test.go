@@ -16,7 +16,6 @@ import (
 
 	"github.com/cosmos/interchain-security/testutil/crypto"
 
-	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
@@ -409,18 +408,18 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		},
 		{
 			"invalid restart consumer genesis state: invalid params",
-			ccvtypes.NewRestartConsumerGenesisState("ccvclient", "ccvchannel", nil, valUpdates, nil, ccvtypes.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{},
+			ccvtypes.NewRestartConsumerGenesisState("ccvclient", "ccvchannel", nil, valUpdates, nil, ccvtypes.ConsumerPacketDataList{}, nil, ccvtypes.LastTransmissionBlockHeight{},
 				ccvtypes.NewConsumerParams(
 					true,
 					ccvtypes.DefaultBlocksPerDistributionTransmission,
 					"",
 					"",
 					0, // CCV timeout period cannot be 0
-					types.DefaultTransferTimeoutPeriod,
-					types.DefaultConsumerRedistributeFrac,
-					types.DefaultHistoricalEntries,
-					types.DefaultConsumerUnbondingPeriod,
-					types.DefaultSoftOptOutThreshold,
+					ccvtypes.DefaultTransferTimeoutPeriod,
+					ccvtypes.DefaultConsumerRedistributeFrac,
+					ccvtypes.DefaultHistoricalEntries,
+					ccvtypes.DefaultConsumerUnbondingPeriod,
+					ccvtypes.DefaultSoftOptOutThreshold,
 				)),
 			true,
 		},
