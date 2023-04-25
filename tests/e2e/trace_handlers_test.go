@@ -18,6 +18,10 @@ func TestWriterThenParser(t *testing.T) {
 		trace []Step
 	}{
 		"start_provider_chain": {stepStartProviderChain()},
+		"happyPath":            {happyPathSteps},
+		"democracy":            {democracySteps},
+		"slashThrottleSteps":   {slashThrottleSteps},
+		"multipleConsumers":    {multipleConsumers},
 	}
 
 	dir, err := os.MkdirTemp("", "example")
