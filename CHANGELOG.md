@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## v1.1.1
+
+Date: April 25th, 2023
+
+This is a minor release of Interchain Security (ICS), also known as _Replicated Security_ (RS), which backports spm module removal and key assignment type safety refactors. 
+
+Thanks [@faddat](https://github.com/faddat)!
+
+Changes included:
+
+* backport [Remove spm](https://github.com/cosmos/interchain-security/pull/812)
+* backport [Key assignment type safety](https://github.com/cosmos/interchain-security/pull/725)
+
 ## v1.1.0
 
 Date: March 24th, 2023
