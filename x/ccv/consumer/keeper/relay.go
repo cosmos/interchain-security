@@ -198,7 +198,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			if clienttypes.ErrClientNotActive.Is(err) {
 				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
-				k.Logger(ctx).Debug("IBC client is expired, cannot send IBC packet; leaving packet data stored:", "type", p.Type.String())
+				k.Logger(ctx).Info("IBC client is expired, cannot send IBC packet; leaving packet data stored:", "type", p.Type.String())
 				return
 			}
 			// Not able to send packet over IBC!
