@@ -14,7 +14,7 @@ import (
 
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/interchain-security/testutil/crypto"
+	"github.com/cosmos/interchain-security/v2/testutil/crypto"
 
 	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	"github.com/stretchr/testify/require"
