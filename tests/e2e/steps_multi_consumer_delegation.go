@@ -5,94 +5,94 @@ func stepsMultiConsumerDelegate(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
 			// changes not visible on any consumer
-			action: delegateTokensAction{
-				chain:  chainID("provi"),
-				from:   validatorID("alice"),
-				to:     validatorID("alice"),
-				amount: 11000000,
+			Action: delegateTokensAction{
+				Chain:  ChainID("provi"),
+				From:   ValidatorID("alice"),
+				To:     ValidatorID("alice"),
+				Amount: 11000000,
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511, // this changes from 500
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511, // this changes from 500
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 500,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 500,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 500,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 500,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
 			},
 		},
 		{
 			// relay changes to consumer1
-			action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0, // consumer1 channel
+			Action: relayPacketsAction{
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0, // consumer1 channel
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511, // changed
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511, // changed
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 500, // unchanged
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 500, // unchanged
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
 			},
 		},
 		{
 			// relay changes to consumer2
-			action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 1, // consumer2 channel
+			Action: relayPacketsAction{
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 1, // consumer2 channel
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511, // changed
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511, // changed
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
 			},
@@ -105,94 +105,94 @@ func stepsMultiConsumerDelegate(consumer1, consumer2 string) []Step {
 func stepsMultiConsumerUnbond(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
-			action: unbondTokensAction{
-				chain:      chainID("provi"),
-				unbondFrom: validatorID("alice"),
-				sender:     validatorID("alice"),
-				amount:     1000000,
+			Action: unbondTokensAction{
+				Chain:      ChainID("provi"),
+				UnbondFrom: ValidatorID("alice"),
+				Sender:     ValidatorID("alice"),
+				Amount:     1000000,
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 510, // change from 511
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 510, // change from 511
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511, // no change
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511, // no change
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511, // no change
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511, // no change
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
 			},
 		},
 		{
 			// relay to consumer1
-			action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0, // consumer1 channel
+			Action: relayPacketsAction{
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0, // consumer1 channel
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 510,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 510,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 510, // change from 511
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 510, // change from 511
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511, // no change
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511, // no change
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
 			},
 		},
 		{
 			// relay to consumer2
-			action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 1, // consumer2 channel
+			Action: relayPacketsAction{
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 1, // consumer2 channel
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 510,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 510,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 510,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 510,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 510, // change from 511
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 510, // change from 511
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
 			},
@@ -205,35 +205,35 @@ func stepsMultiConsumerUnbond(consumer1, consumer2 string) []Step {
 func stepsMultiConsumerRedelegate(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
-			action: redelegateTokensAction{
-				chain:    chainID("provi"),
-				src:      validatorID("alice"),
-				dst:      validatorID("carol"),
-				txSender: validatorID("alice"),
+			Action: redelegateTokensAction{
+				Chain:    ChainID("provi"),
+				Src:      ValidatorID("alice"),
+				Dst:      ValidatorID("carol"),
+				TxSender: ValidatorID("alice"),
 				// Leave alice with majority stake so non-faulty validators maintain more than
 				// 2/3 voting power during downtime tests below, avoiding chain halt
-				amount: 1000000,
+				Amount: 1000000,
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 510, // no change
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 510, // no change
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 510, // no change
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 510, // no change
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
 			},
@@ -241,62 +241,62 @@ func stepsMultiConsumerRedelegate(consumer1, consumer2 string) []Step {
 
 		{
 			// relay to consumer1
-			action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0, // consumer1 channel
+			Action: relayPacketsAction{
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 0, // consumer1 channel
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509, // change from 510
-						validatorID("bob"):   500,
-						validatorID("carol"): 501, // change from 500
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509, // change from 510
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501, // change from 500
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 510, // no change
-						validatorID("bob"):   500,
-						validatorID("carol"): 500, // no change
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 510, // no change
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500, // no change
 					},
 				},
 			},
 		},
 		{
 			// relay to consumer2
-			action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 1, // consumer1 channel
+			Action: relayPacketsAction{
+				Chain:   ChainID("provi"),
+				Port:    "provider",
+				Channel: 1, // consumer1 channel
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509, // change from 510
-						validatorID("bob"):   500,
-						validatorID("carol"): 501, // change from 500
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509, // change from 510
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 501, // change from 500
 					},
 				},
 			},

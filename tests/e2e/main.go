@@ -92,7 +92,7 @@ type testRunWithSteps struct {
 }
 
 func (tr *TestRun) runStep(step Step, verbose bool) {
-	switch action := step.action.(type) {
+	switch action := step.Action.(type) {
 	case StartChainAction:
 		tr.startChain(action, verbose)
 	case SendTokensAction:
@@ -147,13 +147,13 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		log.Fatalf("unknown action in testRun %s: %#v", tr.name, action)
 	}
 
-	modelState := step.state
-	actualState := tr.getState(step.state)
+	modelState := step.State
+	actualState := tr.getState(step.State)
 
 	// Check state
 	if !reflect.DeepEqual(actualState, modelState) {
 		fmt.Printf("=============== %s FAILED ===============\n", tr.name)
-		fmt.Println("FAILED action", reflect.TypeOf(step.action).Name())
+		fmt.Println("FAILED action", reflect.TypeOf(step.Action).Name())
 		pretty.Print("actual state", actualState)
 		pretty.Print("model state", modelState)
 		log.Fatal(`actual state (-) not equal to model state (+): ` + pretty.Compare(actualState, modelState))
@@ -168,7 +168,7 @@ func (tr *TestRun) executeSteps(steps []Step) {
 	for i, step := range steps {
 		// print something the show the test is alive
 		fmt.Printf("running %s: step %d == %s \n",
-			tr.name, i+1, reflect.TypeOf(step.action).Name())
+			tr.name, i+1, reflect.TypeOf(step.Action).Name())
 		tr.runStep(step, *verbose)
 	}
 
@@ -198,8 +198,8 @@ func (tr *TestRun) startDocker() {
 	}
 	scriptStr := fmt.Sprintf(
 		"tests/e2e/testnet-scripts/start-docker.sh %s %s %s %s %s",
-		tr.containerConfig.containerName,
-		tr.containerConfig.instanceName,
+		tr.containerConfig.ContainerName,
+		tr.containerConfig.InstanceName,
 		localSdk,
 		useGaia,
 		gaiaTag,
@@ -242,7 +242,7 @@ func (tr *TestRun) startDocker() {
 func (tr *TestRun) teardownDocker() {
 	fmt.Printf("===============  tearing down %s testRun ===============\n", tr.name)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "kill", tr.containerConfig.instanceName)
+	cmd := exec.Command("docker", "kill", tr.containerConfig.InstanceName)
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
