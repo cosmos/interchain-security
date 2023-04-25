@@ -162,8 +162,8 @@ github.com/cosmos/ibc-go/v4 v4.3.0 h1:yOzVsyZzsv4XPBux8gq+D0LhZn45yGWKjvT+6Vyo5n
 github.com/cosmos/ibc-go/v4 v4.3.0/go.mod h1:CcLvIoi9NNtIbNsxs4KjBGjYhlwqtsmXy1AKARKiMzQ=
 github.com/cosmos/interchain-security v1.2.1 h1:8IawF74ep/eHRvY637Z1siw2gTBKPp4dU2khrL1P1U0=
 github.com/cosmos/interchain-security v1.2.1/go.mod h1:yiJ9NBWvCW7M04BNDL5mWGEK1gsfK1w1IzKG49jnZm0=
-github.com/cosmos/interchain-security/v2 v2.0.0-20230425223718-8cfa6f8fa1b7 h1:7tP3iuWAU23QZ4khWyUlCD1poCX2MdeKbY4zdNKLzzU=
-github.com/cosmos/interchain-security/v2 v2.0.0-20230425223718-8cfa6f8fa1b7/go.mod h1:pHKqgLsXgrUlSFHikP98xF7IZVDHsCAmVOggdlig4qk=
+github.com/cosmos/interchain-security/v2 v2.0.0-20230425230548-7274879e46e1 h1:alb+1V7dt0ZJONOstgi8YVYOu9IUPHSZ5ogeeSqoJ14=
+github.com/cosmos/interchain-security/v2 v2.0.0-20230425230548-7274879e46e1/go.mod h1:9W7zNGFTevPJT7PD+6248mSMIdJ1yEkU+ilDAiJG53Q=
 github.com/cosmos/ledger-cosmos-go v0.12.2 h1:/XYaBlE2BJxtvpkHiBm97gFGSGmYGKunKyF3nNqAXZA=
 github.com/cosmos/ledger-cosmos-go v0.12.2/go.mod h1:ZcqYgnfNJ6lAXe4HPtWgarNEY+B74i+2/8MhZw4ziiI=
 github.com/cpuguy83/go-md2man v1.0.10/go.mod h1:SmD6nW6nTyfqj6ABTjUi3V3JVMnlJmwcJI5acqYI6dE=

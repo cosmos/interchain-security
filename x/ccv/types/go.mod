@@ -126,7 +126,7 @@ require (
 
 replace (
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.15-ics
-	github.com/cosmos/interchain-security/v2 => github.com/cosmos/interchain-security/v2 v2.0.0-20230425223718-8cfa6f8fa1b7
+	github.com/cosmos/interchain-security/v2 => github.com/cosmos/interchain-security/v2 v2.0.0-20230425230548-7274879e46e1
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.27
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
