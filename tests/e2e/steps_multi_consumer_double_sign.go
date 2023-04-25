@@ -6,102 +6,102 @@ package main
 // consumer-initiated slash steps are executed after consumer-initiated downtime
 // slashes have already occurred. However slash packet throttling is
 // pseudo-disabled in this test by setting the slash meter replenish
-// fraction to 1.0 in the config file.
+// frAction to 1.0 in the config file.
 //
 // only double sign on provider chain will cause slashing and tombstoning
 func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
 			// provider double sign
-			action: doublesignSlashAction{
-				chain:     chainID("provi"),
-				validator: validatorID("carol"),
+			Action: doublesignSlashAction{
+				Chain:     ChainID("provi"),
+				Validator: ValidatorID("carol"),
 			},
-			state: State{
+			State: State{
 				// slash on provider
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0, // from 500 to 0
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0, // from 500 to 0
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 495, // not tombstoned on consumer1 yet
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 495, // not tombstoned on consumer1 yet
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 495, // not tombstoned on consumer2 yet
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 495, // not tombstoned on consumer2 yet
 					},
 				},
 			},
 		},
 		{
 			// relay power change to consumer1
-			action: relayPacketsAction{
-				chainA:  chainID("provi"),
-				chainB:  chainID(consumer1),
-				port:    "provider",
-				channel: 0, // consumer1 channel
+			Action: relayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID(consumer1),
+				Port:    "provider",
+				Channel: 0, // consumer1 Channel
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0, // tombstoning visible on consumer1
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0, // tombstoning visible on consumer1
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 495, // tombstoning NOT YET visible on consumer2
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 495, // tombstoning NOT YET visible on consumer2
 					},
 				},
 			},
 		},
 		{
 			// relay power change to consumer2
-			action: relayPacketsAction{
-				chainA:  chainID("provi"),
-				chainB:  chainID(consumer2),
-				port:    "provider",
-				channel: 1, // consumer2 channel
+			Action: relayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID(consumer2),
+				Port:    "provider",
+				Channel: 1, // consumer2 Channel
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0, // tombstoned on consumer2
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0, // tombstoned on consumer2
 					},
 				},
 			},
@@ -109,118 +109,118 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		{
 			// consumer double sign
 			// nothing should happen - double sign from consumer is dropped
-			action: doublesignSlashAction{
-				chain:     chainID("consu"),
-				validator: validatorID("bob"),
+			Action: doublesignSlashAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("bob"),
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
 		},
 		{
-			action: relayPacketsAction{
-				chainA:  chainID("provi"),
-				chainB:  chainID(consumer1),
-				port:    "provider",
-				channel: 0, // consumer1 channel
+			Action: relayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID(consumer1),
+				Port:    "provider",
+				Channel: 0, // consumer1 Channel
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500, // not tombstoned
-						validatorID("carol"): 0,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500, // not tombstoned
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500, // not tombstoned
-						validatorID("carol"): 0,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500, // not tombstoned
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500, // not tombstoned
-						validatorID("carol"): 0,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500, // not tombstoned
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
 		},
 		{
 			// consumer1 learns about the double sign
-			action: relayPacketsAction{
-				chainA:  chainID("provi"),
-				chainB:  chainID(consumer1),
-				port:    "provider",
-				channel: 0, // consumer1 channel
+			Action: relayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID(consumer1),
+				Port:    "provider",
+				Channel: 0, // consumer1 Channel
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500, // not tombstoned
-						validatorID("carol"): 0,
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500, // not tombstoned
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500, // not tombstoned
-						validatorID("carol"): 0,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500, // not tombstoned
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
 		},
 		{
 			// consumer2 learns about the double sign
-			action: relayPacketsAction{
-				chainA:  chainID("provi"),
-				chainB:  chainID(consumer2),
-				port:    "provider",
-				channel: 1, // consumer2 channel
+			Action: relayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID(consumer2),
+				Port:    "provider",
+				Channel: 1, // consumer2 Channel
 			},
-			state: State{
-				chainID(consumer1): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+			State: State{
+				ChainID(consumer1): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumer2): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID(consumer2): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
