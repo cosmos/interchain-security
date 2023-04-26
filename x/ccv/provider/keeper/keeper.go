@@ -4,7 +4,11 @@ import (
 	"encoding/binary"
 	"fmt"
 	"reflect"
+	"testing"
 	"time"
+
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/golang/mock/gomock"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -18,6 +22,7 @@ import (
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	testutils "github.com/cosmos/interchain-security/v2/testutil/keeper"
 
 	"github.com/cosmos/interchain-security/x/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/types"
@@ -97,6 +102,41 @@ func (k Keeper) mustValidateFields() {
 	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")     // 11
 	ccv.PanicIfZeroOrNil(k.evidenceKeeper, "evidenceKeeper")     // 12
 	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName") // 13
+}
+
+// NewInMemProviderKeeper instantiates an in-mem provider keeper from params and mocked keepers
+//
+// Note: This is used for testing purposes only
+func NewInMemProviderKeeper(params testutils.InMemKeeperParams,
+	mocks testutils.MockedKeepers) Keeper {
+	return NewKeeper(
+		params.Cdc,
+		params.StoreKey,
+		*params.ParamsSubspace,
+		mocks.MockScopedKeeper,
+		mocks.MockChannelKeeper,
+		mocks.MockPortKeeper,
+		mocks.MockConnectionKeeper,
+		mocks.MockClientKeeper,
+		mocks.MockStakingKeeper,
+		mocks.MockSlashingKeeper,
+		mocks.MockAccountKeeper,
+		mocks.MockEvidenceKeeper,
+		authtypes.FeeCollectorName,
+	)
+}
+
+// Returns an in-memory provider keeper, context, controller, and mocks, given a test instance and parameters.
+//
+// Note: Calling ctrl.Finish() at the end of a test function ensures that
+// no unexpected calls to external keepers are made.
+func GetProviderKeeperAndCtx(t *testing.T, params testutils.InMemKeeperParams) (
+	Keeper, sdk.Context, *gomock.Controller, testutils.MockedKeepers,
+) {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	mocks := testutils.NewMockedKeepers(ctrl)
+	return NewInMemProviderKeeper(params, mocks), params.Ctx, ctrl, mocks
 }
 
 // Logger returns a module-specific logger.

@@ -57,7 +57,7 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		k, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		k, ctx, _, mocks := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().GetValidator(ctx,

@@ -7,6 +7,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/v2/testutil/crypto"
 	uthelpers "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -88,7 +89,7 @@ func TestChangeoverToConsumer(t *testing.T) {
 	for _, tc := range testCases {
 
 		keeperParams := uthelpers.NewInMemKeeperParams(t)
-		consumerKeeper, ctx, ctrl, mocks := uthelpers.GetConsumerKeeperAndCtx(t, keeperParams)
+		consumerKeeper, ctx, ctrl, mocks := consumerkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 		defer ctrl.Finish()
 
 		// Set PRECCV to true, as would be done in InitGenesis

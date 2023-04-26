@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/interchain-security/v2/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/consumer/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
 	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -19,7 +20,7 @@ import (
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper
 func TestApplyCCValidatorChanges(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
 	// utility functions
@@ -107,7 +108,7 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 
 // TestIsValidatorJailed tests the IsValidatorJailed method for a consumer keeper
 func TestIsValidatorJailed(t *testing.T) {
-	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, mocks := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Consumer keeper from test setup should return false for IsPrevStandaloneChain()
@@ -143,7 +144,7 @@ func TestIsValidatorJailed(t *testing.T) {
 }
 
 func TestSlash(t *testing.T) {
-	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, mocks := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// If we call slash with infraction type empty, no slash packet will be queued
@@ -193,7 +194,7 @@ func TestSlash(t *testing.T) {
 // Tests the getter and setter behavior for historical info
 func TestHistoricalInfo(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockHeight(15)
 

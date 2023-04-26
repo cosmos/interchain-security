@@ -8,6 +8,7 @@ import (
 
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
 	"github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 )
@@ -22,7 +23,7 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 	mocks := testkeeper.NewMockedKeepers(ctrl)
 	mockAccountKeeper := mocks.MockAccountKeeper
 	mockBankKeeper := mocks.MockBankKeeper
-	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
+	consumerKeeper := consumerkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
 	consumerKeeper.SetParams(ctx, types.DefaultConsumerParams())
 
 	// Setup mock account balance

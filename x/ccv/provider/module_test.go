@@ -8,6 +8,7 @@ import (
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/provider"
+	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
 	ccv "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -90,7 +91,7 @@ func TestInitGenesis(t *testing.T) {
 		// Setup
 		//
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 
 		appModule := provider.NewAppModule(&providerKeeper)
 		genState := ccv.NewProviderGenesisState(

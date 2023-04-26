@@ -4,13 +4,17 @@ import (
 	"encoding/binary"
 	"fmt"
 	"reflect"
+	"testing"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	testutils "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	"github.com/golang/mock/gomock"
 
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
@@ -118,6 +122,41 @@ func (k Keeper) mustValidateFields() {
 	ccv.PanicIfZeroOrNil(k.ibcTransferKeeper, "ibcTransferKeeper") // 12
 	ccv.PanicIfZeroOrNil(k.ibcCoreKeeper, "ibcCoreKeeper")         // 13
 	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")   // 14
+}
+
+// NewInMemConsumerKeeper instantiates an in-mem consumer keeper from params and mocked keepers
+//
+// Note: This is used for testing purposes only
+func NewInMemConsumerKeeper(params testutils.InMemKeeperParams, mocks testutils.MockedKeepers) Keeper {
+	return NewKeeper(
+		params.Cdc,
+		params.StoreKey,
+		*params.ParamsSubspace,
+		mocks.MockScopedKeeper,
+		mocks.MockChannelKeeper,
+		mocks.MockPortKeeper,
+		mocks.MockConnectionKeeper,
+		mocks.MockClientKeeper,
+		mocks.MockSlashingKeeper,
+		mocks.MockBankKeeper,
+		mocks.MockAccountKeeper,
+		mocks.MockIBCTransferKeeper,
+		mocks.MockIBCCoreKeeper,
+		authtypes.FeeCollectorName,
+	)
+}
+
+// Return an in-memory consumer keeper, context, controller, and mocks, given a test instance and parameters.
+//
+// Note: Calling ctrl.Finish() at the end of a test function ensures that
+// no unexpected calls to external keepers are made.
+func GetConsumerKeeperAndCtx(t *testing.T, params testutils.InMemKeeperParams) (
+	Keeper, sdk.Context, *gomock.Controller, testutils.MockedKeepers,
+) {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	mocks := testutils.NewMockedKeepers(ctrl)
+	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
 }
 
 // Logger returns a module-specific logger.

@@ -19,7 +19,7 @@ import (
 )
 
 func TestInvalidMsg(t *testing.T) {
-	k, _, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	k, _, _, _ := keeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	handler := provider.NewHandler(&k)
 	res, err := handler(sdk.NewContext(nil, tmproto.Header{}, false, nil), testdata.NewTestMsg())
 	require.Error(t, err)
@@ -100,7 +100,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+			k, ctx, ctrl, mocks := keeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 			tc.setup(ctx, k, mocks)
 

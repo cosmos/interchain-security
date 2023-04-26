@@ -9,7 +9,7 @@ import (
 	"github.com/cosmos/interchain-security/v2/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 
-	"github.com/cosmos/interchain-security/x/provider/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
 	ccv "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -98,7 +98,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	)
 
 	// Instantiate in-mem provider keeper with mocks
-	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	gomock.InOrder(
@@ -163,7 +163,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, provGenesis, pk.ExportGenesis(ctx))
 }
 
-func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, consumerStates ...ccv.ConsumerState) {
+func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk providerkeeper.Keeper, consumerStates ...ccv.ConsumerState) {
 	t.Helper()
 	for _, cs := range consumerStates {
 		chainID := cs.ChainId

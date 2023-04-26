@@ -203,7 +203,7 @@ func TestInitGenesis(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			keeperParams := testkeeper.NewInMemKeeperParams(t)
-			consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+			consumerKeeper, ctx, ctrl, mocks := consumerkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 			defer ctrl.Finish()
 
 			// test setup
@@ -346,7 +346,7 @@ func TestExportGenesis(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			keeperParams := testkeeper.NewInMemKeeperParams(t)
-			consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+			consumerKeeper, ctx, ctrl, mocks := consumerkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 			defer ctrl.Finish()
 			consumerKeeper.SetParams(ctx, params)
 

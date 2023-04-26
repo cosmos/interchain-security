@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -16,8 +15,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
 	"github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -106,71 +103,6 @@ func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 	}
 }
 
-// NewInMemProviderKeeper instantiates an in-mem provider keeper from params and mocked keepers
-func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) providerkeeper.Keeper {
-	return providerkeeper.NewKeeper(
-		params.Cdc,
-		params.StoreKey,
-		*params.ParamsSubspace,
-		mocks.MockScopedKeeper,
-		mocks.MockChannelKeeper,
-		mocks.MockPortKeeper,
-		mocks.MockConnectionKeeper,
-		mocks.MockClientKeeper,
-		mocks.MockStakingKeeper,
-		mocks.MockSlashingKeeper,
-		mocks.MockAccountKeeper,
-		mocks.MockEvidenceKeeper,
-		authtypes.FeeCollectorName,
-	)
-}
-
-// NewInMemConsumerKeeper instantiates an in-mem consumer keeper from params and mocked keepers
-func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consumerkeeper.Keeper {
-	return consumerkeeper.NewKeeper(
-		params.Cdc,
-		params.StoreKey,
-		*params.ParamsSubspace,
-		mocks.MockScopedKeeper,
-		mocks.MockChannelKeeper,
-		mocks.MockPortKeeper,
-		mocks.MockConnectionKeeper,
-		mocks.MockClientKeeper,
-		mocks.MockSlashingKeeper,
-		mocks.MockBankKeeper,
-		mocks.MockAccountKeeper,
-		mocks.MockIBCTransferKeeper,
-		mocks.MockIBCCoreKeeper,
-		authtypes.FeeCollectorName,
-	)
-}
-
-// Returns an in-memory provider keeper, context, controller, and mocks, given a test instance and parameters.
-//
-// Note: Calling ctrl.Finish() at the end of a test function ensures that
-// no unexpected calls to external keepers are made.
-func GetProviderKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
-	providerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers,
-) {
-	t.Helper()
-	ctrl := gomock.NewController(t)
-	mocks := NewMockedKeepers(ctrl)
-	return NewInMemProviderKeeper(params, mocks), params.Ctx, ctrl, mocks
-}
-
-// Return an in-memory consumer keeper, context, controller, and mocks, given a test instance and parameters.
-//
-// Note: Calling ctrl.Finish() at the end of a test function ensures that
-// no unexpected calls to external keepers are made.
-func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
-	consumerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers,
-) {
-	t.Helper()
-	ctrl := gomock.NewController(t)
-	mocks := NewMockedKeepers(ctrl)
-	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
-}
-
 type PrivateKey struct {
 	PrivKey cryptotypes.PrivKey
 }
@@ -202,9 +134,7 @@ func GetNewVSCMaturedPacketData() types.VSCMaturedPacketData {
 
 // SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
 // which asserts that a consumer chain was properly stopped from StopConsumerChain().
-func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
-	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers,
-) {
+func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context, mocks MockedKeepers) {
 	t.Helper()
 	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
 		"chainID", clienttypes.NewHeight(4, 5))
@@ -213,11 +143,6 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 
 	gomock.InOrder(expectations...)
 
-	prop := GetTestConsumerAdditionProp()
-	err := providerKeeper.CreateConsumerClient(ctx, prop)
-	require.NoError(t, err)
-	err = providerKeeper.SetConsumerChain(ctx, "channelID")
-	require.NoError(t, err)
 }
 
 func GetTestConsumerAdditionProp() *types.ConsumerAdditionProposal {

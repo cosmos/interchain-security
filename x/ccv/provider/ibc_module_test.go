@@ -23,7 +23,7 @@ import (
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coinit1
 // Spec Tag: [CCV-PCF-COINIT.1]
 func TestOnChanOpenInit(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(
 		t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerModule := provider.NewAppModule(&providerKeeper)
@@ -111,7 +111,7 @@ func TestOnChanOpenTry(t *testing.T) {
 	for _, tc := range testCases {
 
 		// Setup
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		providerModule := provider.NewAppModule(&providerKeeper)
 
@@ -180,7 +180,7 @@ func TestOnChanOpenTry(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coack1
 // Spec tag: [CCV-PCF-COACK.1]
 func TestOnChanOpenAck(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(
 		t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerModule := provider.NewAppModule(&providerKeeper)
@@ -295,7 +295,7 @@ func TestOnChanOpenConfirm(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 
 		gomock.InOrder(tc.mockExpectations(ctx, mocks)...)
