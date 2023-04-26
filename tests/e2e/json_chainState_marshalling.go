@@ -158,6 +158,6 @@ func UnmarshalMapToProposalType(inputMap map[string]any, proposalType string) (P
 		}
 		return proposal, nil
 	default:
-		return nil, fmt.Errorf("%s is not a known action type", proposalType)
+		return nil, fmt.Errorf("%s is not a known proposal type", proposalType)
 	}
 }
