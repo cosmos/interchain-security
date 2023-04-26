@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 	"path/filepath"
 	"testing"
 
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -73,6 +75,48 @@ func TestWriteExamples(t *testing.T) {
 			err := writer.WriteTraceToFile(filename, tc.trace)
 			if err != nil {
 				t.Fatalf("error writing trace to file: %v", err)
+			}
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalChainState(t *testing.T) {
+	tests := map[string]struct {
+		chainState ChainState
+	}{
+		"start_provider_chain": {ChainState{
+			ValBalances: &map[ValidatorID]uint{
+				ValidatorID("alice"): 9489999999,
+				ValidatorID("bob"):   9500000000,
+			},
+			Proposals: &map[uint]Proposal{
+				2: ConsumerAdditionProposal{
+					Deposit:       10000001,
+					Chain:         ChainID("test"),
+					SpawnTime:     0,
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
+				},
+			},
+		}},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			jsonobj, err := json.Marshal(tc.chainState)
+			if err != nil {
+				t.Fatalf("error marshalling chain state: %v", err)
+			}
+
+			var got *ChainState
+			err = json.Unmarshal(jsonobj, &got)
+			if err != nil {
+				t.Fatalf("error unmarshalling chain state: %v", err)
+			}
+
+			diff := cmp.Diff(tc.chainState, *got)
+			if diff != "" {
+				t.Fatalf(diff)
 			}
 		})
 	}
