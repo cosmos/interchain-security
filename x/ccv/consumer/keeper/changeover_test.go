@@ -5,8 +5,7 @@ import (
 
 	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/v2/testutil/crypto"
-	uthelpers "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	core "github.com/cosmos/interchain-security/core"
 	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -14,9 +13,9 @@ import (
 )
 
 func TestChangeoverToConsumer(t *testing.T) {
-	cIds := []crypto.CryptoIdentity{}
+	cIds := []core.CryptoIdentity{}
 	for i := 0; i < 10; i++ {
-		cIds = append(cIds, *crypto.NewCryptoIdentityFromIntSeed(i + 42834729))
+		cIds = append(cIds, *core.NewCryptoIdentityFromIntSeed(i + 42834729))
 	}
 
 	// Instantiate 5 sov validators for use in test
@@ -88,7 +87,7 @@ func TestChangeoverToConsumer(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		keeperParams := uthelpers.NewInMemKeeperParams(t)
+		keeperParams := core.NewInMemKeeperParams(t)
 		consumerKeeper, ctx, ctrl, mocks := consumerkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 		defer ctrl.Finish()
 

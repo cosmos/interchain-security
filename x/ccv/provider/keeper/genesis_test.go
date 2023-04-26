@@ -6,8 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	"github.com/cosmos/interchain-security/v2/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 
 	ccv "github.com/cosmos/interchain-security/core"
 	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
@@ -26,10 +24,10 @@ func TestInitAndExportGenesis(t *testing.T) {
 	params := ccv.DefaultProviderParams()
 
 	// create validator keys and addresses for key assignment
-	providerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7896)
+	providerCryptoId := ccv.NewCryptoIdentityFromIntSeed(7896)
 	provAddr := providerCryptoId.ProviderConsAddress()
 
-	consumerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7897)
+	consumerCryptoId := ccv.NewCryptoIdentityFromIntSeed(7897)
 	consumerTmPubKey := consumerCryptoId.TMProtoCryptoPublicKey()
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
 
@@ -98,7 +96,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	)
 
 	// Instantiate in-mem provider keeper with mocks
-	pk, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	gomock.InOrder(

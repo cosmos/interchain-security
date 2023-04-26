@@ -13,7 +13,6 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	testutils "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	"github.com/golang/mock/gomock"
 
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
@@ -127,7 +126,7 @@ func (k Keeper) mustValidateFields() {
 // NewInMemConsumerKeeper instantiates an in-mem consumer keeper from params and mocked keepers
 //
 // Note: This is used for testing purposes only
-func NewInMemConsumerKeeper(params testutils.InMemKeeperParams, mocks testutils.MockedKeepers) Keeper {
+func NewInMemConsumerKeeper(params ccv.InMemKeeperParams, mocks ccv.MockedKeepers) Keeper {
 	return NewKeeper(
 		params.Cdc,
 		params.StoreKey,
@@ -150,12 +149,12 @@ func NewInMemConsumerKeeper(params testutils.InMemKeeperParams, mocks testutils.
 //
 // Note: Calling ctrl.Finish() at the end of a test function ensures that
 // no unexpected calls to external keepers are made.
-func GetConsumerKeeperAndCtx(t *testing.T, params testutils.InMemKeeperParams) (
-	Keeper, sdk.Context, *gomock.Controller, testutils.MockedKeepers,
+func GetConsumerKeeperAndCtx(t *testing.T, params ccv.InMemKeeperParams) (
+	Keeper, sdk.Context, *gomock.Controller, ccv.MockedKeepers,
 ) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
-	mocks := testutils.NewMockedKeepers(ctrl)
+	mocks := ccv.NewMockedKeepers(ctrl)
 	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
 }
 

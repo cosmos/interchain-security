@@ -14,8 +14,6 @@ import (
 
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/interchain-security/v2/testutil/crypto"
-
 	ccvtypes "github.com/cosmos/interchain-security/core"
 	"github.com/stretchr/testify/require"
 )
@@ -36,7 +34,7 @@ var (
 // and its Validate() method over different genesis scenarios
 func TestValidateInitialGenesisState(t *testing.T) {
 	// generate validator public key
-	cId := crypto.NewCryptoIdentityFromIntSeed(238934)
+	cId := ccvtypes.NewCryptoIdentityFromIntSeed(238934)
 	pubKey := cId.TMCryptoPubKey()
 
 	// create validator set with single validator
@@ -240,7 +238,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 // and its Validate() method over different genesis scenarios
 func TestValidateRestartGenesisState(t *testing.T) {
 	// generate validator private/public key
-	cId := crypto.NewCryptoIdentityFromIntSeed(234234)
+	cId := ccvtypes.NewCryptoIdentityFromIntSeed(234234)
 	pubKey := cId.TMCryptoPubKey()
 
 	// create validator set with single validator

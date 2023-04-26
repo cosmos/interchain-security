@@ -1,12 +1,7 @@
-package keeper
+package types
 
 import (
-	"crypto/rand"
-	"encoding/binary"
 	"testing"
-	"time"
-
-	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -14,8 +9,6 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	types "github.com/cosmos/interchain-security/core"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
@@ -23,10 +16,7 @@ import (
 	tmdb "github.com/tendermint/tm-db"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 )
 
 // Parameters needed to instantiate an in-memory keeper
@@ -40,8 +30,8 @@ type InMemKeeperParams struct {
 // NewInMemKeeperParams instantiates in-memory keeper params with default values
 func NewInMemKeeperParams(tb testing.TB) InMemKeeperParams {
 	tb.Helper()
-	storeKey := sdk.NewKVStoreKey(types.StoreKey)
-	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
+	storeKey := sdk.NewKVStoreKey(StoreKey)
+	memStoreKey := storetypes.NewMemoryStoreKey(MemStoreKey)
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
@@ -103,76 +93,7 @@ func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 	}
 }
 
+// TODO: can be removed?
 type PrivateKey struct {
 	PrivKey cryptotypes.PrivKey
-}
-
-// Obtains slash packet data with a newly generated key, and randomized field values
-func GetNewSlashPacketData() types.SlashPacketData {
-	b1 := make([]byte, 8)
-	_, _ = rand.Read(b1)
-	b2 := make([]byte, 8)
-	_, _ = rand.Read(b2)
-	b3 := make([]byte, 8)
-	_, _ = rand.Read(b3)
-	return types.SlashPacketData{
-		Validator: abci.Validator{
-			Address: ed25519.GenPrivKey().PubKey().Address(),
-			Power:   int64(binary.BigEndian.Uint64(b1)),
-		},
-		ValsetUpdateId: binary.BigEndian.Uint64(b2),
-		Infraction:     stakingtypes.InfractionType(binary.BigEndian.Uint64(b2) % 3),
-	}
-}
-
-// Obtains vsc matured packet data with a newly generated key
-func GetNewVSCMaturedPacketData() types.VSCMaturedPacketData {
-	b := make([]byte, 8)
-	_, _ = rand.Read(b)
-	return types.VSCMaturedPacketData{ValsetUpdateId: binary.BigEndian.Uint64(b)}
-}
-
-// SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
-// which asserts that a consumer chain was properly stopped from StopConsumerChain().
-func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context, mocks MockedKeepers) {
-	t.Helper()
-	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
-		"chainID", clienttypes.NewHeight(4, 5))
-	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
-	expectations = append(expectations, GetMocksForStopConsumerChain(ctx, &mocks)...)
-
-	gomock.InOrder(expectations...)
-
-}
-
-func GetTestConsumerAdditionProp() *types.ConsumerAdditionProposal {
-	prop := types.NewConsumerAdditionProposal(
-		"chainID",
-		"description",
-		"chainID",
-		clienttypes.NewHeight(4, 5),
-		[]byte("gen_hash"),
-		[]byte("bin_hash"),
-		time.Now(),
-		types.DefaultConsumerRedistributeFrac,
-		types.DefaultBlocksPerDistributionTransmission,
-		types.DefaultHistoricalEntries,
-		types.DefaultCCVTimeoutPeriod,
-		types.DefaultTransferTimeoutPeriod,
-		types.DefaultConsumerUnbondingPeriod,
-	).(*types.ConsumerAdditionProposal)
-
-	return prop
-}
-
-// Obtains a CrossChainValidator with a newly generated key, and randomized field values
-func GetNewCrossChainValidator(t *testing.T) types.CrossChainValidator {
-	t.Helper()
-	b1 := make([]byte, 8)
-	_, _ = rand.Read(b1)
-	power := int64(binary.BigEndian.Uint64(b1))
-	privKey := ed25519.GenPrivKey()
-	validator, err := types.NewCCValidator(privKey.PubKey().Address(), power, privKey.PubKey())
-	require.NoError(t, err)
-	return validator
 }

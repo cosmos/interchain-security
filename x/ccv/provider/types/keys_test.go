@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ccvtypes "github.com/cosmos/interchain-security/core"
-	cryptoutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
 	providertypes "github.com/cosmos/interchain-security/x/provider/types"
 	"github.com/stretchr/testify/require"
 )
@@ -181,9 +180,9 @@ func TestGlobalSlashEntryKeyAndParse(t *testing.T) {
 	now := time.Now()
 
 	providerConsAddrs := []ccvtypes.ProviderConsAddress{
-		cryptoutil.NewCryptoIdentityFromIntSeed(0).ProviderConsAddress(),
-		cryptoutil.NewCryptoIdentityFromIntSeed(1).ProviderConsAddress(),
-		cryptoutil.NewCryptoIdentityFromIntSeed(2).ProviderConsAddress(),
+		ccvtypes.NewCryptoIdentityFromIntSeed(0).ProviderConsAddress(),
+		ccvtypes.NewCryptoIdentityFromIntSeed(1).ProviderConsAddress(),
+		ccvtypes.NewCryptoIdentityFromIntSeed(2).ProviderConsAddress(),
 	}
 
 	entries := []ccvtypes.GlobalSlashEntry{}
@@ -205,10 +204,10 @@ func TestGlobalSlashEntryKeyAndParse(t *testing.T) {
 
 // Tests the construction and parsing of ChainIdAndConsAddr keys
 func TestChainIdAndConsAddrAndParse(t *testing.T) {
-	cIds := []*cryptoutil.CryptoIdentity{
-		cryptoutil.NewCryptoIdentityFromIntSeed(99998),
-		cryptoutil.NewCryptoIdentityFromIntSeed(99999),
-		cryptoutil.NewCryptoIdentityFromIntSeed(100000),
+	cIds := []*ccvtypes.CryptoIdentity{
+		ccvtypes.NewCryptoIdentityFromIntSeed(99998),
+		ccvtypes.NewCryptoIdentityFromIntSeed(99999),
+		ccvtypes.NewCryptoIdentityFromIntSeed(100000),
 	}
 	pubKey1 := cIds[0].TMCryptoPubKey()
 	pubKey2 := cIds[1].TMCryptoPubKey()

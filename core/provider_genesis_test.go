@@ -8,7 +8,6 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	ccv "github.com/cosmos/interchain-security/core"
-	"github.com/cosmos/interchain-security/v2/testutil/crypto"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -659,7 +658,7 @@ func TestValidateProviderGenesisState(t *testing.T) {
 func getInitialConsumerGenesis(t *testing.T, chainID string) ccv.ConsumerGenesisState {
 	t.Helper()
 	// generate validator public key
-	cId := crypto.NewCryptoIdentityFromIntSeed(239668)
+	cId := ccv.NewCryptoIdentityFromIntSeed(239668)
 	pubKey := cId.TMCryptoPubKey()
 
 	// create validator set with single validator

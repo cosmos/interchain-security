@@ -13,7 +13,6 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	keepertestutil "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -249,7 +248,7 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, 0)
 
 	ack := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet,
-		keepertestutil.GetNewSlashPacketData())
+		ccv.GetNewSlashPacketData())
 	s.Require().NotNil(ack)
 
 	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))

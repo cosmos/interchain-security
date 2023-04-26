@@ -18,8 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	ccvtypes "github.com/cosmos/interchain-security/core"
-	cryptoutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
 )
 
@@ -95,7 +93,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 
 	for _, tc := range tests {
 		// Common setup
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		keeperParams := ccvtypes.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
@@ -103,7 +101,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 		if tc.expAppendProp {
 			// Mock calls are only asserted if we expect a client to be created.
 			gomock.InOrder(
-				testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, tc.prop.ChainId, clienttypes.NewHeight(2, 3))...,
+				ccvtypes.GetMocksForCreateConsumerClient(ctx, &mocks, tc.prop.ChainId, clienttypes.NewHeight(2, 3))...,
 			)
 		}
 
@@ -136,24 +134,24 @@ func TestCreateConsumerClient(t *testing.T) {
 	type testCase struct {
 		description string
 		// Any state-mutating setup on keeper and expected mock calls, specific to this test case
-		setup func(*providerkeeper.Keeper, sdk.Context, *testkeeper.MockedKeepers)
+		setup func(*providerkeeper.Keeper, sdk.Context, *ccvtypes.MockedKeepers)
 		// Whether a client should be created
 		expClientCreated bool
 	}
 	tests := []testCase{
 		{
 			description: "No state mutation, new client should be created",
-			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
+			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *ccvtypes.MockedKeepers) {
 				// Valid client creation is asserted with mock expectations here
 				gomock.InOrder(
-					testkeeper.GetMocksForCreateConsumerClient(ctx, mocks, "chainID", clienttypes.NewHeight(4, 5))...,
+					ccvtypes.GetMocksForCreateConsumerClient(ctx, mocks, "chainID", clienttypes.NewHeight(4, 5))...,
 				)
 			},
 			expClientCreated: true,
 		},
 		{
 			description: "client for this chain already exists, new one is not created",
-			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
+			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *ccvtypes.MockedKeepers) {
 				providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
 
 				// Expect none of the client creation related calls to happen
@@ -168,7 +166,7 @@ func TestCreateConsumerClient(t *testing.T) {
 
 	for _, tc := range tests {
 		// Common setup
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		keeperParams := ccvtypes.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 
@@ -176,7 +174,7 @@ func TestCreateConsumerClient(t *testing.T) {
 		tc.setup(&providerKeeper, ctx, &mocks)
 
 		// Call method with same arbitrary values as defined above in mock expectations.
-		err := providerKeeper.CreateConsumerClient(ctx, testkeeper.GetTestConsumerAdditionProp())
+		err := providerKeeper.CreateConsumerClient(ctx, ccvtypes.GetTestConsumerAdditionProp())
 
 		if tc.expClientCreated {
 			require.NoError(t, err)
@@ -224,7 +222,7 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 			ExpDeleted:               false,
 		},
 	}
-	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, ccvtypes.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	for _, tc := range testCases {
@@ -312,7 +310,7 @@ func TestGetConsumerAdditionPropsToExecute(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, ccvtypes.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
 		expectedOrderedProps := getExpectedOrder(tc.propSubmitOrder, tc.accessTime)
@@ -328,7 +326,7 @@ func TestGetConsumerAdditionPropsToExecute(t *testing.T) {
 
 // Test getting both matured and pending consumer addition proposals
 func TestGetAllConsumerAdditionProps(t *testing.T) {
-	pk, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, ccvtypes.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	now := time.Now().UTC()
@@ -458,7 +456,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 	for _, tc := range tests {
 
 		// Common setup
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		keeperParams := ccvtypes.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
@@ -467,8 +465,8 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		// Note: when expAppendProp is false, no mocks are setup,
 		// meaning no external keeper methods are allowed to be called.
 		if tc.expAppendProp {
-			testkeeper.SetupForStoppingConsumerChain(t, ctx, mocks)
-			prop := testkeeper.GetTestConsumerAdditionProp()
+			ccvtypes.SetupForStoppingConsumerChain(t, ctx, mocks)
+			prop := ccvtypes.GetTestConsumerAdditionProp()
 			err := providerKeeper.CreateConsumerClient(ctx, prop)
 			require.NoError(t, err)
 			err = providerKeeper.SetConsumerChain(ctx, "channelID")
@@ -510,7 +508,7 @@ func TestStopConsumerChain(t *testing.T) {
 	type testCase struct {
 		description string
 		// State-mutating setup specific to this test case
-		setup func(sdk.Context, *providerkeeper.Keeper, testkeeper.MockedKeepers)
+		setup func(sdk.Context, *providerkeeper.Keeper, ccvtypes.MockedKeepers)
 		// Whether we should expect the method to return an error
 		expErr bool
 	}
@@ -518,29 +516,29 @@ func TestStopConsumerChain(t *testing.T) {
 	tests := []testCase{
 		{
 			description: "proposal dropped, client doesn't exist",
-			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks ccvtypes.MockedKeepers) {
 				// No mocks, meaning no external keeper methods are allowed to be called.
 			},
 			expErr: true,
 		},
 		{
 			description: "valid stop of consumer chain, throttle related queues are cleaned",
-			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-				testkeeper.SetupForStoppingConsumerChain(t, ctx, mocks)
-				prop := testkeeper.GetTestConsumerAdditionProp()
+			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks ccvtypes.MockedKeepers) {
+				ccvtypes.SetupForStoppingConsumerChain(t, ctx, mocks)
+				prop := ccvtypes.GetTestConsumerAdditionProp()
 				err := providerKeeper.CreateConsumerClient(ctx, prop)
 				require.NoError(t, err)
 				err = providerKeeper.SetConsumerChain(ctx, "channelID")
 				require.NoError(t, err)
 
 				providerKeeper.QueueGlobalSlashEntry(ctx, ccvtypes.NewGlobalSlashEntry(
-					ctx.BlockTime(), "chainID", 1, cryptoutil.NewCryptoIdentityFromIntSeed(90).ProviderConsAddress()))
+					ctx.BlockTime(), "chainID", 1, ccvtypes.NewCryptoIdentityFromIntSeed(90).ProviderConsAddress()))
 
-				err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chainID", 1, testkeeper.GetNewSlashPacketData())
+				err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chainID", 1, ccvtypes.GetNewSlashPacketData())
 				if err != nil {
 					t.Fatal(err)
 				}
-				err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chainID", 2, testkeeper.GetNewVSCMaturedPacketData())
+				err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chainID", 2, ccvtypes.GetNewVSCMaturedPacketData())
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -549,9 +547,9 @@ func TestStopConsumerChain(t *testing.T) {
 		},
 		{
 			description: "valid stop of consumer chain, all mock calls hit",
-			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-				testkeeper.SetupForStoppingConsumerChain(t, ctx, mocks)
-				prop := testkeeper.GetTestConsumerAdditionProp()
+			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks ccvtypes.MockedKeepers) {
+				ccvtypes.SetupForStoppingConsumerChain(t, ctx, mocks)
+				prop := ccvtypes.GetTestConsumerAdditionProp()
 				err := providerKeeper.CreateConsumerClient(ctx, prop)
 				require.NoError(t, err)
 				err = providerKeeper.SetConsumerChain(ctx, "channelID")
@@ -564,7 +562,7 @@ func TestStopConsumerChain(t *testing.T) {
 	for _, tc := range tests {
 
 		// Common setup
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		keeperParams := ccvtypes.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 
@@ -637,7 +635,7 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 			ExpDeleted:              false,
 		},
 	}
-	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, ccvtypes.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	for _, tc := range testCases {
@@ -721,7 +719,7 @@ func TestGetConsumerRemovalPropsToExecute(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, ccvtypes.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
 		expectedOrderedProps := getExpectedOrder(tc.propSubmitOrder, tc.accessTime)
@@ -737,7 +735,7 @@ func TestGetConsumerRemovalPropsToExecute(t *testing.T) {
 
 // Test getting both matured and pending consumer removal proposals
 func TestGetAllConsumerRemovalProps(t *testing.T) {
-	pk, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, ccvtypes.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	now := time.Now().UTC()
@@ -776,7 +774,7 @@ func TestGetAllConsumerRemovalProps(t *testing.T) {
 // An expected genesis state is hardcoded in json, unmarshaled, and compared
 // against an actual consumer genesis state constructed by a provider keeper.
 func TestMakeConsumerGenesis(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	keeperParams := ccvtypes.NewInMemKeeperParams(t)
 	providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	moduleParams := ccvtypes.ProviderParams{
 		TemplateClient: &ibctmtypes.ClientState{
@@ -841,7 +839,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	//
 	ctx = ctx.WithChainID("testchain1") // chainID is obtained from ctx
 	ctx = ctx.WithBlockHeight(5)        // RevisionHeight obtained from ctx
-	gomock.InOrder(testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, 1814400000000000)...)
+	gomock.InOrder(ccvtypes.GetMocksForMakeConsumerGenesis(ctx, &mocks, 1814400000000000)...)
 
 	// matches params from jsonString
 	prop := ccvtypes.ConsumerAdditionProposal{
@@ -880,7 +878,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 func TestBeginBlockInit(t *testing.T) {
 	now := time.Now().UTC()
 
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	keeperParams := ccvtypes.NewInMemKeeperParams(t)
 	providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 	defer ctrl.Finish()
@@ -931,8 +929,8 @@ func TestBeginBlockInit(t *testing.T) {
 
 	// Expect client creation for only for the 1st and second proposals (spawn time already passed and valid)
 	gomock.InOrder(
-		append(testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4)),
-			testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4))...)...,
+		append(ccvtypes.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4)),
+			ccvtypes.GetMocksForCreateConsumerClient(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4))...)...,
 	)
 
 	for _, prop := range pendingProps {
@@ -967,7 +965,7 @@ func TestBeginBlockInit(t *testing.T) {
 func TestBeginBlockCCR(t *testing.T) {
 	now := time.Now().UTC()
 
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	keeperParams := ccvtypes.NewInMemKeeperParams(t)
 	providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 	defer ctrl.Finish()
@@ -991,13 +989,13 @@ func TestBeginBlockCCR(t *testing.T) {
 	expectations := []*gomock.Call{}
 	for _, prop := range pendingProps {
 		// A consumer chain is setup corresponding to each prop, making these mocks necessary
-		expectations = append(expectations, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks,
+		expectations = append(expectations, ccvtypes.GetMocksForCreateConsumerClient(ctx, &mocks,
 			prop.ChainId, clienttypes.NewHeight(2, 3))...)
-		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, prop.ChainId)...)
+		expectations = append(expectations, ccvtypes.GetMocksForSetConsumerChain(ctx, &mocks, prop.ChainId)...)
 	}
 	// Only first two consumer chains should be stopped
-	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
-	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
+	expectations = append(expectations, ccvtypes.GetMocksForStopConsumerChain(ctx, &mocks)...)
+	expectations = append(expectations, ccvtypes.GetMocksForStopConsumerChain(ctx, &mocks)...)
 
 	gomock.InOrder(expectations...)
 
@@ -1006,7 +1004,7 @@ func TestBeginBlockCCR(t *testing.T) {
 	//
 	for _, prop := range pendingProps {
 		// Setup a valid consumer chain for each prop
-		additionProp := testkeeper.GetTestConsumerAdditionProp()
+		additionProp := ccvtypes.GetTestConsumerAdditionProp()
 		additionProp.ChainId = prop.ChainId
 		additionProp.InitialHeight = clienttypes.NewHeight(2, 3)
 		err := providerKeeper.CreateConsumerClient(ctx, additionProp)
@@ -1075,7 +1073,7 @@ func TestHandleEquivocationProposal(t *testing.T) {
 	}
 	for _, tc := range testCases {
 
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		keeperParams := ccvtypes.NewInMemKeeperParams(t)
 		keeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 
 		if tc.setSlashLogs {

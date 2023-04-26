@@ -3,18 +3,15 @@ package types_test
 import (
 	"testing"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/interchain-security/core"
-	ibcsimapp "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp"
+	core "github.com/cosmos/interchain-security/core"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 func TestAccumulateChanges(t *testing.T) {
-	testKeys := ibcsimapp.CreateTestPubKeys(2)
 
-	tmPubKey, _ := cryptocodec.ToTmProtoPublicKey(testKeys[0])
-	tmPubKey2, _ := cryptocodec.ToTmProtoPublicKey(testKeys[1])
+	tmPubKey := core.NewCryptoIdentityFromIntSeed(73489243).TMProtoCryptoPublicKey()
+	tmPubKey2 := core.NewCryptoIdentityFromIntSeed(73489244).TMProtoCryptoPublicKey()
 
 	testCases := []struct {
 		name     string
@@ -80,7 +77,7 @@ func TestAccumulateChanges(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			changes := types.AccumulateChanges(tc.changes1, tc.changes2)
+			changes := core.AccumulateChanges(tc.changes1, tc.changes2)
 			require.Equal(t, tc.expected, changes)
 		})
 	}
