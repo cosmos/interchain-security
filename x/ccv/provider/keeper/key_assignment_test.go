@@ -9,14 +9,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	cryptotestutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 )
 

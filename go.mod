@@ -6,7 +6,8 @@ require (
 	github.com/confio/ics23/go v0.9.0 // indirect
 	github.com/cosmos/cosmos-sdk v0.45.15
 	github.com/cosmos/ibc-go/v4 v4.3.0
-	github.com/cosmos/interchain-security v1.2.1
+	github.com/cosmos/interchain-security/x/consumer v1.0.0
+	github.com/cosmos/interchain-security/x/provider v1.0.0
 	github.com/cosmos/interchain-security/x/types v1.0.0
 	github.com/gogo/protobuf v1.3.3 // indirect
 	github.com/golang/mock v1.6.0
@@ -113,7 +114,6 @@ require (
 	github.com/minio/highwayhash v1.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
-	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
@@ -151,7 +151,8 @@ require (
 
 replace (
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.15-ics
-	github.com/cosmos/interchain-security => github.com/cosmos/interchain-security v0.0.0-20230425190451-2bc20ce77acc
+	github.com/cosmos/interchain-security/x/consumer => ./x/ccv/consumer
+	github.com/cosmos/interchain-security/x/provider => ./x/ccv/provider
 	github.com/cosmos/interchain-security/x/types => ./x/ccv/types
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.27

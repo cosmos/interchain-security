@@ -10,8 +10,8 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/consumer/types"
+	ccv "github.com/cosmos/interchain-security/x/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 

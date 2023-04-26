@@ -5,8 +5,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
+	ccv "github.com/cosmos/interchain-security/x/types"
 )
 
 // TestUndelegationNormalOperation tests that undelegations complete after

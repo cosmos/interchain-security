@@ -18,7 +18,7 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -32,14 +32,14 @@ import (
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	simibc "github.com/cosmos/interchain-security/testutil/simibc"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	appConsumer "github.com/cosmos/interchain-security/v2/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v2/app/provider"
+	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
+	simibc "github.com/cosmos/interchain-security/v2/testutil/simibc"
+	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
 
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/x/types"
 )
 
 type Builder struct {

@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	cryptoutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	"github.com/stretchr/testify/require"
 	tmtypes "github.com/tendermint/tendermint/types"
 	"golang.org/x/exp/slices"

@@ -8,11 +8,11 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
-	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
+	ibcsimapp "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp"
 
-	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 

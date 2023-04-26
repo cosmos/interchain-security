@@ -8,13 +8,13 @@ import (
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	"github.com/cosmos/interchain-security/x/provider"
 )
 
 // TestProviderProposalHandler tests the highest level handler for proposals
