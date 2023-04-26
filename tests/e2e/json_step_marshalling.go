@@ -8,6 +8,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+// MarshalJSON marshals a step into JSON while including the type of the action.
 func (step Step) MarshalJSON() ([]byte, error) {
 	actionType := reflect.TypeOf(step.Action).String()
 
@@ -24,6 +25,7 @@ func (step Step) MarshalJSON() ([]byte, error) {
 	return json.Marshal(result)
 }
 
+// UnmarshalJSON unmarshals a step from JSON while including the type of the action.
 func (step *Step) UnmarshalJSON(data []byte) error {
 	var tmp struct {
 		ActionType string
