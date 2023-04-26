@@ -17,8 +17,6 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
-
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 )
 
 // HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
@@ -27,7 +25,7 @@ import (
 // Note: This method implements SpawnConsumerChainProposalHandler in spec.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcaprop1
 // Spec tag: [CCV-PCF-HCAPROP.1]
-func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
+func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *ccv.ConsumerAdditionProposal) error {
 	// verify the consumer addition proposal execution
 	// in cached context and discard the cached writes
 	if _, _, err := k.CreateConsumerClientInCachedCtx(ctx, *p); err != nil {
@@ -50,7 +48,7 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 //
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
 // Spec tag: [CCV-PCF-CRCLIENT.1]
-func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditionProposal) error {
+func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *ccv.ConsumerAdditionProposal) error {
 	chainID := prop.ChainId
 	// check that a client for this chain does not exist
 	if _, found := k.GetConsumerClientId(ctx, chainID); found {
@@ -126,7 +124,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 // This method implements StopConsumerChainProposalHandler from spec.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcrprop1
 // Spec tag: [CCV-PCF-HCRPROP.1]
-func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.ConsumerRemovalProposal) error {
+func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *ccv.ConsumerRemovalProposal) error {
 	// verify the consumer removal proposal execution
 	// in cached context and discard the cached writes
 	if _, _, err := k.StopConsumerChainInCachedCtx(ctx, *p); err != nil {
@@ -235,8 +233,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 // MakeConsumerGenesis constructs the consumer CCV module part of the genesis state.
 func (k Keeper) MakeConsumerGenesis(
 	ctx sdk.Context,
-	prop *types.ConsumerAdditionProposal,
-) (gen consumertypes.GenesisState, nextValidatorsHash []byte, err error) {
+	prop *ccv.ConsumerAdditionProposal,
+) (gen ccv.ConsumerGenesisState, nextValidatorsHash []byte, err error) {
 	chainID := prop.ChainId
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
@@ -299,7 +297,7 @@ func (k Keeper) MakeConsumerGenesis(
 	}
 	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
 
-	consumerGenesisParams := consumertypes.NewParams(
+	consumerGenesisParams := ccv.NewConsumerParams(
 		true,
 		prop.BlocksPerDistributionTransmission,
 		"", // distributionTransmissionChannel
@@ -312,7 +310,7 @@ func (k Keeper) MakeConsumerGenesis(
 		"0.05",
 	)
 
-	gen = *consumertypes.NewInitialGenesisState(
+	gen = *ccv.NewInitialConsumerGenesisState(
 		clientState,
 		consState.(*ibctmtypes.ConsensusState),
 		initialUpdatesWithConsumerKeys,
@@ -327,7 +325,7 @@ func (k Keeper) MakeConsumerGenesis(
 // the following format: PendingCAPBytePrefix | spawnTime | chainID
 // Thus, if multiple consumer addition proposal for the same chain will pass at
 // the same time, then only the last one will be stored.
-func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, prop *types.ConsumerAdditionProposal) {
+func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, prop *ccv.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := prop.Marshal()
 	if err != nil {
@@ -343,7 +341,7 @@ func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, prop *types.Cons
 // Note: this method is only used in testing
 func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.Time,
 	chainID string,
-) (prop types.ConsumerAdditionProposal, found bool) {
+) (prop ccv.ConsumerAdditionProposal, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingCAPKey(spawnTime, chainID))
 	if bz == nil {
@@ -396,13 +394,13 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 // A prop is included in the returned list if its proposed spawn time has passed.
 //
 // Note: this method is split out from BeginBlockInit to be easily unit tested.
-func (k Keeper) GetConsumerAdditionPropsToExecute(ctx sdk.Context) (propsToExecute []types.ConsumerAdditionProposal) {
+func (k Keeper) GetConsumerAdditionPropsToExecute(ctx sdk.Context) (propsToExecute []ccv.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		var prop types.ConsumerAdditionProposal
+		var prop ccv.ConsumerAdditionProposal
 		err := prop.Unmarshal(iterator.Value())
 		if err != nil {
 			// An error here would indicate something is very wrong,
@@ -426,13 +424,13 @@ func (k Keeper) GetConsumerAdditionPropsToExecute(ctx sdk.Context) (propsToExecu
 // PendingCAPBytePrefix | spawnTime.UnixNano() | chainID
 // Thus, the returned array is in spawnTime order. If two proposals have the same spawnTime,
 // then they are ordered by chainID.
-func (k Keeper) GetAllPendingConsumerAdditionProps(ctx sdk.Context) (props []types.ConsumerAdditionProposal) {
+func (k Keeper) GetAllPendingConsumerAdditionProps(ctx sdk.Context) (props []ccv.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		var prop types.ConsumerAdditionProposal
+		var prop ccv.ConsumerAdditionProposal
 		err := prop.Unmarshal(iterator.Value())
 		if err != nil {
 			// An error here would indicate something is very wrong,
@@ -447,7 +445,7 @@ func (k Keeper) GetAllPendingConsumerAdditionProps(ctx sdk.Context) (props []typ
 }
 
 // DeletePendingConsumerAdditionProps deletes the given consumer addition proposals
-func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ...types.ConsumerAdditionProposal) {
+func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ...ccv.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
 
 	for _, p := range proposals {
@@ -461,7 +459,7 @@ func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ..
 // the following format: PendingCRPBytePrefix | stopTime | chainID
 // Thus, if multiple removal addition proposal for the same chain will pass at
 // the same time, then only the last one will be stored.
-func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, prop *types.ConsumerRemovalProposal) {
+func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, prop *ccv.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := prop.Marshal()
 	if err != nil {
@@ -484,7 +482,7 @@ func (k Keeper) PendingConsumerRemovalPropExists(ctx sdk.Context, chainID string
 
 // DeletePendingConsumerRemovalProps deletes the given pending consumer removal proposals.
 // This method should be called once the proposal has been acted upon.
-func (k Keeper) DeletePendingConsumerRemovalProps(ctx sdk.Context, proposals ...types.ConsumerRemovalProposal) {
+func (k Keeper) DeletePendingConsumerRemovalProps(ctx sdk.Context, proposals ...ccv.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)
 
 	for _, p := range proposals {
@@ -531,16 +529,16 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 // A prop is included in the returned list if its proposed stop time has passed.
 //
 // Note: this method is split out from BeginBlockCCR to be easily unit tested.
-func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerRemovalProposal {
+func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []ccv.ConsumerRemovalProposal {
 	// store the (to be) executed consumer removal proposals in order
-	propsToExecute := []types.ConsumerRemovalProposal{}
+	propsToExecute := []ccv.ConsumerRemovalProposal{}
 
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		var prop types.ConsumerRemovalProposal
+		var prop ccv.ConsumerRemovalProposal
 		err := prop.Unmarshal(iterator.Value())
 		if err != nil {
 			// An error here would indicate something is very wrong,
@@ -565,13 +563,13 @@ func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.Consum
 // Note that the pending consumer removal proposals are stored under keys with the following format:
 // PendingCRPBytePrefix | stopTime.UnixNano() | chainID
 // Thus, the returned array is in stopTime order.
-func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []types.ConsumerRemovalProposal) {
+func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []ccv.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		var prop types.ConsumerRemovalProposal
+		var prop ccv.ConsumerRemovalProposal
 		err := prop.Unmarshal(iterator.Value())
 		if err != nil {
 			// An error here would indicate something is very wrong,
@@ -587,7 +585,7 @@ func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []type
 
 // CreateConsumerClientInCachedCtx creates a consumer client
 // from a given consumer addition proposal in a cached context
-func (k Keeper) CreateConsumerClientInCachedCtx(ctx sdk.Context, p types.ConsumerAdditionProposal) (cc sdk.Context, writeCache func(), err error) {
+func (k Keeper) CreateConsumerClientInCachedCtx(ctx sdk.Context, p ccv.ConsumerAdditionProposal) (cc sdk.Context, writeCache func(), err error) {
 	cc, writeCache = ctx.CacheContext()
 	err = k.CreateConsumerClient(cc, &p)
 	return
@@ -595,7 +593,7 @@ func (k Keeper) CreateConsumerClientInCachedCtx(ctx sdk.Context, p types.Consume
 
 // StopConsumerChainInCachedCtx stop a consumer chain
 // from a given consumer removal proposal in a cached context
-func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRemovalProposal) (cc sdk.Context, writeCache func(), err error) {
+func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p ccv.ConsumerRemovalProposal) (cc sdk.Context, writeCache func(), err error) {
 	cc, writeCache = ctx.CacheContext()
 	err = k.StopConsumerChain(cc, p.ChainId, true)
 	return
@@ -603,9 +601,9 @@ func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRe
 
 // HandleEquivocationProposal handles an equivocation proposal.
 // Proposal will be accepted if a record in the SlashLog exists for a given validator address.
-func (k Keeper) HandleEquivocationProposal(ctx sdk.Context, p *types.EquivocationProposal) error {
+func (k Keeper) HandleEquivocationProposal(ctx sdk.Context, p *ccv.EquivocationProposal) error {
 	for _, ev := range p.Equivocations {
-		if !k.GetSlashLog(ctx, types.NewProviderConsAddress(ev.GetConsensusAddress())) {
+		if !k.GetSlashLog(ctx, ccv.NewProviderConsAddress(ev.GetConsensusAddress())) {
 			return fmt.Errorf("no equivocation record found for validator %s", ev.GetConsensusAddress().String())
 		}
 		k.evidenceKeeper.HandleEquivocationEvidence(ctx, ev)

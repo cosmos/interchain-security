@@ -6,7 +6,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -35,7 +34,7 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
 		return nil
 	}
 	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
-	unbondingOp := providertypes.UnbondingOp{
+	unbondingOp := ccvtypes.UnbondingOp{
 		Id:                      id,
 		UnbondingConsumerChains: consumerChainIDS,
 	}
@@ -109,7 +108,7 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddres
 				// An error here would indicate something is very wrong
 				panic("cannot get address of consumer key")
 			}
-			consumerAddr := providertypes.NewConsumerConsAddress(consumerAddrTmp)
+			consumerAddr := ccvtypes.NewConsumerConsAddress(consumerAddrTmp)
 			h.k.DeleteValidatorByConsumerAddr(ctx, validatorConsumerPubKey.ChainId, consumerAddr)
 			h.k.DeleteValidatorConsumerPubKey(ctx, validatorConsumerPubKey.ChainId, *validatorConsumerPubKey.ProviderAddr)
 		}

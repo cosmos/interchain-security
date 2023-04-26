@@ -7,15 +7,14 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
 // TestProviderProposalHandler tests the highest level handler for proposals
@@ -36,7 +35,7 @@ func TestProviderProposalHandler(t *testing.T) {
 	}{
 		{
 			name: "valid consumer addition proposal",
-			content: providertypes.NewConsumerAdditionProposal(
+			content: ccvtypes.NewConsumerAdditionProposal(
 				"title", "description", "chainID",
 				clienttypes.NewHeight(2, 3), []byte("gen_hash"), []byte("bin_hash"), now,
 				"0.75",
@@ -51,7 +50,7 @@ func TestProviderProposalHandler(t *testing.T) {
 		},
 		{
 			name: "valid consumer removal proposal",
-			content: providertypes.NewConsumerRemovalProposal(
+			content: ccvtypes.NewConsumerRemovalProposal(
 				"title", "description", "chainID", now),
 			blockTime:               hourFromNow,
 			expValidConsumerRemoval: true,
@@ -59,14 +58,14 @@ func TestProviderProposalHandler(t *testing.T) {
 		{
 			// no slash log for equivocation
 			name: "invalid equivocation posal",
-			content: providertypes.NewEquivocationProposal(
+			content: ccvtypes.NewEquivocationProposal(
 				"title", "description", []*evidencetypes.Equivocation{equivocation}),
 			blockTime:            hourFromNow,
 			expValidEquivocation: false,
 		},
 		{
 			name: "valid equivocation posal",
-			content: providertypes.NewEquivocationProposal(
+			content: ccvtypes.NewEquivocationProposal(
 				"title", "description", []*evidencetypes.Equivocation{equivocation}),
 			blockTime:            hourFromNow,
 			expValidEquivocation: true,
@@ -89,7 +88,7 @@ func TestProviderProposalHandler(t *testing.T) {
 		// Setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+		providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		// Mock expectations depending on expected outcome
@@ -103,7 +102,7 @@ func TestProviderProposalHandler(t *testing.T) {
 			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
 
 		case tc.expValidEquivocation:
-			providerKeeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(equivocation.GetConsensusAddress()))
+			providerKeeper.SetSlashLog(ctx, ccvtypes.NewProviderConsAddress(equivocation.GetConsensusAddress()))
 			mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocation)
 		}
 

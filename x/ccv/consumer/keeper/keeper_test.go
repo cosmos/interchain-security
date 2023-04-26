@@ -12,7 +12,6 @@ import (
 	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
 	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -199,7 +198,7 @@ func TestPacketMaturityTime(t *testing.T) {
 	defer ctrl.Finish()
 
 	now := time.Now().UTC()
-	packets := []types.MaturingVSCPacket{
+	packets := []ccv.MaturingVSCPacket{
 		{
 			VscId:        2,
 			MaturityTime: now,
@@ -218,9 +217,9 @@ func TestPacketMaturityTime(t *testing.T) {
 		},
 	}
 	// sort by MaturityTime and not by VscId
-	expectedGetAllOrder := []types.MaturingVSCPacket{packets[2], packets[1], packets[0], packets[3]}
+	expectedGetAllOrder := []ccv.MaturingVSCPacket{packets[2], packets[1], packets[0], packets[3]}
 	// only packets with MaturityTime before or equal to now
-	expectedGetElapsedOrder := []types.MaturingVSCPacket{packets[2], packets[1], packets[0]}
+	expectedGetElapsedOrder := []ccv.MaturingVSCPacket{packets[2], packets[1], packets[0]}
 
 	// test SetPacketMaturityTime
 	for _, packet := range packets {
@@ -260,7 +259,7 @@ func TestCrossChainValidator(t *testing.T) {
 	privKey := ed25519.GenPrivKey()
 
 	// Set cross chain validator
-	ccVal, err := types.NewCCValidator(privKey.PubKey().Address(), 1000, privKey.PubKey())
+	ccVal, err := ccv.NewCCValidator(privKey.PubKey().Address(), 1000, privKey.PubKey())
 	require.NoError(t, err)
 	consumerKeeper.SetCCValidator(ctx, ccVal)
 
@@ -292,7 +291,7 @@ func TestGetAllCCValidator(t *testing.T) {
 	defer ctrl.Finish()
 
 	numValidators := 4
-	validators := []types.CrossChainValidator{}
+	validators := []ccv.CrossChainValidator{}
 	for i := 0; i < numValidators; i++ {
 		validators = append(validators, testkeeper.GetNewCrossChainValidator(t))
 	}
@@ -475,7 +474,7 @@ func TestGetAllHeightToValsetUpdateIDs(t *testing.T) {
 	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	cases := []types.HeightToValsetUpdateID{
+	cases := []ccv.HeightToValsetUpdateID{
 		{
 			ValsetUpdateId: 2,
 			Height:         22,
@@ -522,9 +521,9 @@ func TestGetAllOutstandingDowntimes(t *testing.T) {
 		sdk.ConsAddress([]byte("consAddress4")),
 		sdk.ConsAddress([]byte("consAddress3")),
 	}
-	expectedGetAllOrder := []types.OutstandingDowntime{}
+	expectedGetAllOrder := []ccv.OutstandingDowntime{}
 	for _, addr := range addresses {
-		expectedGetAllOrder = append(expectedGetAllOrder, types.OutstandingDowntime{ValidatorConsensusAddress: addr.String()})
+		expectedGetAllOrder = append(expectedGetAllOrder, ccv.OutstandingDowntime{ValidatorConsensusAddress: addr.String()})
 	}
 	// sorting by ConsAddress
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {

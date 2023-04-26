@@ -25,7 +25,7 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 	// Obtain all global slash entries, where only some of them may be handled in this method,
 	// depending on the value of the slash meter.
 	allEntries := k.GetAllGlobalSlashEntries(ctx)
-	handledEntries := []providertypes.GlobalSlashEntry{}
+	handledEntries := []ccvtypes.GlobalSlashEntry{}
 
 	for _, globalEntry := range allEntries {
 		// Subtract voting power that will be jailed/tombstoned from the slash meter
@@ -57,7 +57,7 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 // Obtains the effective validator power relevant to a validator consensus address.
 func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
-	valConsAddr providertypes.ProviderConsAddress,
+	valConsAddr ccvtypes.ProviderConsAddress,
 ) sdktypes.Int {
 	// Obtain staking module val object from the provider's consensus address.
 	// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
@@ -187,7 +187,7 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 // related to jailing/tombstoning over time. This "global" queue is used to coordinate the order of slash packet handling
 // between chains, whereas the chain-specific queue is used to coordinate the order of slash and vsc matured packets
 // relevant to each chain.
-func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context, entry providertypes.GlobalSlashEntry) {
+func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context, entry ccvtypes.GlobalSlashEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.GlobalSlashEntryKey(entry)
 	bz, err := entry.ProviderValConsAddr.Marshal()
@@ -202,7 +202,7 @@ func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context, entry providertypes.
 // only relevant to a single consumer.
 func (k Keeper) DeleteGlobalSlashEntriesForConsumer(ctx sdktypes.Context, consumerChainID string) {
 	allEntries := k.GetAllGlobalSlashEntries(ctx)
-	entriesToDel := []providertypes.GlobalSlashEntry{}
+	entriesToDel := []ccvtypes.GlobalSlashEntry{}
 
 	for _, entry := range allEntries {
 		if entry.ConsumerChainID == consumerChainID {
@@ -217,31 +217,31 @@ func (k Keeper) DeleteGlobalSlashEntriesForConsumer(ctx sdktypes.Context, consum
 // Note global slash entries are stored under keys with the following format:
 // GlobalSlashEntryBytePrefix | uint64 recv time | ibc seq num | consumer chain id
 // Thus, the returned array is ordered by recv time, then ibc seq num.
-func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.GlobalSlashEntry {
+func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []ccvtypes.GlobalSlashEntry {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdktypes.KVStorePrefixIterator(store, []byte{providertypes.GlobalSlashEntryBytePrefix})
 	defer iterator.Close()
 
-	entries := []providertypes.GlobalSlashEntry{}
+	entries := []ccvtypes.GlobalSlashEntry{}
 
 	for ; iterator.Valid(); iterator.Next() {
 		// MustParseGlobalSlashEntryKey should not panic, since we should be iterating over keys that're
 		// assumed to be correctly serialized in QueueGlobalSlashEntry.
 		recvTime, chainID, ibcSeqNum := providertypes.MustParseGlobalSlashEntryKey(iterator.Key())
-		valAddr := providertypes.ProviderConsAddress{}
+		valAddr := ccvtypes.ProviderConsAddress{}
 		err := valAddr.Unmarshal(iterator.Value())
 		if err != nil {
 			// This should never happen, provider cons address is assumed to be correctly serialized in QueueGlobalSlashEntry
 			panic(fmt.Sprintf("failed to unmarshal validator consensus address: %s", err.Error()))
 		}
-		entry := providertypes.NewGlobalSlashEntry(recvTime, chainID, ibcSeqNum, valAddr)
+		entry := ccvtypes.NewGlobalSlashEntry(recvTime, chainID, ibcSeqNum, valAddr)
 		entries = append(entries, entry)
 	}
 	return entries
 }
 
 // DeleteGlobalSlashEntries deletes the given global entries from the global slash queue
-func (k Keeper) DeleteGlobalSlashEntries(ctx sdktypes.Context, entries ...providertypes.GlobalSlashEntry) {
+func (k Keeper) DeleteGlobalSlashEntries(ctx sdktypes.Context, entries ...ccvtypes.GlobalSlashEntry) {
 	store := ctx.KVStore(k.storeKey)
 	for _, entry := range entries {
 		store.Delete(providertypes.GlobalSlashEntryKey(entry))

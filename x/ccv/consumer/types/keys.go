@@ -10,13 +10,10 @@ import (
 
 const (
 	// ModuleName defines the CCV consumer module name
-	ModuleName = "ccvconsumer"
+	ModuleName = ccvtypes.ConsumerModuleName
 
 	// StoreKey is the store key string for IBC consumer
 	StoreKey = ModuleName
-
-	// RouterKey is the message route for IBC consumer
-	RouterKey = ModuleName
 
 	// QuerierRoute is the querier route for IBC consumer
 	QuerierRoute = ModuleName

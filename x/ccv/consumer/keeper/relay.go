@@ -232,7 +232,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		// check if there is an established CCV channel to provider
 		channelID, found := k.GetProviderChannel(ctx)
 		if !found {
-			return sdkerrors.Wrapf(types.ErrNoProposerChannelId, "recv ErrorAcknowledgement on non-established channel %s", packet.SourceChannel)
+			return sdkerrors.Wrapf(ccv.ErrNoProposerChannelId, "recv ErrorAcknowledgement on non-established channel %s", packet.SourceChannel)
 		}
 		if channelID != packet.SourceChannel {
 			// Close the established CCV channel as well

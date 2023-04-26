@@ -6,15 +6,15 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-var _ types.QueryServer = Keeper{}
+var _ ccvtypes.ProviderQueryServer = Keeper{}
 
-func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumerGenesisRequest) (*types.QueryConsumerGenesisResponse, error) {
+func (k Keeper) QueryConsumerGenesis(c context.Context, req *ccvtypes.QueryConsumerGenesisRequest) (*ccvtypes.QueryConsumerGenesisResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
 	if req == nil {
@@ -27,13 +27,13 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 
 	gen, ok := k.GetConsumerGenesis(ctx, req.ChainId)
 	if !ok {
-		return nil, sdkerrors.Wrap(types.ErrUnknownConsumerChainId, req.ChainId)
+		return nil, sdkerrors.Wrap(ccvtypes.ErrUnknownConsumerChainId, req.ChainId)
 	}
 
-	return &types.QueryConsumerGenesisResponse{GenesisState: gen}, nil
+	return &ccvtypes.QueryConsumerGenesisResponse{GenesisState: gen}, nil
 }
 
-func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsumerChainsRequest) (*types.QueryConsumerChainsResponse, error) {
+func (k Keeper) QueryConsumerChains(goCtx context.Context, req *ccvtypes.QueryConsumerChainsRequest) (*ccvtypes.QueryConsumerChainsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -41,23 +41,23 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// convert to array of pointers
-	chains := []*types.Chain{}
+	chains := []*ccvtypes.Chain{}
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		// prevent implicit memory aliasing
 		c := chain
 		chains = append(chains, &c)
 	}
 
-	return &types.QueryConsumerChainsResponse{Chains: chains}, nil
+	return &ccvtypes.QueryConsumerChainsResponse{Chains: chains}, nil
 }
 
-func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.QueryConsumerChainStartProposalsRequest) (*types.QueryConsumerChainStartProposalsResponse, error) {
+func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *ccvtypes.QueryConsumerChainStartProposalsRequest) (*ccvtypes.QueryConsumerChainStartProposalsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	var props []*types.ConsumerAdditionProposal
+	var props []*ccvtypes.ConsumerAdditionProposal
 
 	for _, prop := range k.GetAllPendingConsumerAdditionProps(ctx) {
 		// prevent implicit memory aliasing
@@ -65,26 +65,26 @@ func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.Query
 		props = append(props, &p)
 	}
 
-	return &types.QueryConsumerChainStartProposalsResponse{Proposals: &types.ConsumerAdditionProposals{Pending: props}}, nil
+	return &ccvtypes.QueryConsumerChainStartProposalsResponse{Proposals: &ccvtypes.ConsumerAdditionProposals{Pending: props}}, nil
 }
 
-func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryConsumerChainStopProposalsRequest) (*types.QueryConsumerChainStopProposalsResponse, error) {
+func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *ccvtypes.QueryConsumerChainStopProposalsRequest) (*ccvtypes.QueryConsumerChainStopProposalsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	var props []*types.ConsumerRemovalProposal
+	var props []*ccvtypes.ConsumerRemovalProposal
 	for _, prop := range k.GetAllPendingConsumerRemovalProps(ctx) {
 		// prevent implicit memory aliasing
 		p := prop
 		props = append(props, &p)
 	}
 
-	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &types.ConsumerRemovalProposals{Pending: props}}, nil
+	return &ccvtypes.QueryConsumerChainStopProposalsResponse{Proposals: &ccvtypes.ConsumerRemovalProposals{Pending: props}}, nil
 }
 
-func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.QueryValidatorConsumerAddrRequest) (*types.QueryValidatorConsumerAddrResponse, error) {
+func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *ccvtypes.QueryValidatorConsumerAddrRequest) (*ccvtypes.QueryValidatorConsumerAddrResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -95,11 +95,11 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 	if err != nil {
 		return nil, err
 	}
-	providerAddr := types.NewProviderConsAddress(providerAddrTmp)
+	providerAddr := ccvtypes.NewProviderConsAddress(providerAddrTmp)
 
 	consumerKey, found := k.GetValidatorConsumerPubKey(ctx, req.ChainId, providerAddr)
 	if !found {
-		return &types.QueryValidatorConsumerAddrResponse{}, nil
+		return &ccvtypes.QueryValidatorConsumerAddrResponse{}, nil
 	}
 
 	consumerAddr, err := ccvtypes.TMCryptoPublicKeyToConsAddr(consumerKey)
@@ -107,12 +107,12 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 		return nil, err
 	}
 
-	return &types.QueryValidatorConsumerAddrResponse{
+	return &ccvtypes.QueryValidatorConsumerAddrResponse{
 		ConsumerAddress: consumerAddr.String(),
 	}, nil
 }
 
-func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.QueryValidatorProviderAddrRequest) (*types.QueryValidatorProviderAddrResponse, error) {
+func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *ccvtypes.QueryValidatorProviderAddrRequest) (*ccvtypes.QueryValidatorProviderAddrResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -123,19 +123,19 @@ func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.Que
 	if err != nil {
 		return nil, err
 	}
-	consumerAddr := types.NewConsumerConsAddress(consumerAddrTmp)
+	consumerAddr := ccvtypes.NewConsumerConsAddress(consumerAddrTmp)
 
 	providerAddr, found := k.GetValidatorByConsumerAddr(ctx, req.ChainId, consumerAddr)
 	if !found {
-		return &types.QueryValidatorProviderAddrResponse{}, nil
+		return &ccvtypes.QueryValidatorProviderAddrResponse{}, nil
 	}
 
-	return &types.QueryValidatorProviderAddrResponse{
+	return &ccvtypes.QueryValidatorProviderAddrResponse{
 		ProviderAddress: providerAddr.String(),
 	}, nil
 }
 
-func (k Keeper) QueryThrottleState(goCtx context.Context, req *types.QueryThrottleStateRequest) (*types.QueryThrottleStateResponse, error) {
+func (k Keeper) QueryThrottleState(goCtx context.Context, req *ccvtypes.QueryThrottleStateRequest) (*ccvtypes.QueryThrottleStateResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -145,7 +145,7 @@ func (k Keeper) QueryThrottleState(goCtx context.Context, req *types.QueryThrott
 	meter := k.GetSlashMeter(ctx)
 	allowance := k.GetSlashMeterAllowance(ctx)
 	candidate := k.GetSlashMeterReplenishTimeCandidate(ctx) // always UTC
-	packets := []*types.ThrottledSlashPacket{}
+	packets := []*ccvtypes.ThrottledSlashPacket{}
 
 	// iterate global slash entries from all consumer chains
 	// and fetch corresponding SlashPacketData from the per-chain throttled packet data queue
@@ -159,13 +159,13 @@ func (k Keeper) QueryThrottleState(goCtx context.Context, req *types.QueryThrott
 			continue
 		}
 
-		packets = append(packets, &types.ThrottledSlashPacket{
+		packets = append(packets, &ccvtypes.ThrottledSlashPacket{
 			GlobalEntry: entry,
 			Data:        slashData,
 		})
 	}
 
-	return &types.QueryThrottleStateResponse{
+	return &ccvtypes.QueryThrottleStateResponse{
 		SlashMeter:             meter.Int64(),
 		SlashMeterAllowance:    allowance.Int64(),
 		NextReplenishCandidate: candidate,
@@ -173,7 +173,7 @@ func (k Keeper) QueryThrottleState(goCtx context.Context, req *types.QueryThrott
 	}, nil
 }
 
-func (k Keeper) QueryThrottledConsumerPacketData(goCtx context.Context, req *types.QueryThrottledConsumerPacketDataRequest) (*types.QueryThrottledConsumerPacketDataResponse, error) {
+func (k Keeper) QueryThrottledConsumerPacketData(goCtx context.Context, req *ccvtypes.QueryThrottledConsumerPacketDataRequest) (*ccvtypes.QueryThrottledConsumerPacketDataResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -187,19 +187,19 @@ func (k Keeper) QueryThrottledConsumerPacketData(goCtx context.Context, req *typ
 		return nil, status.Error(codes.InvalidArgument, "invalid chain-id")
 	}
 
-	packetDataInstances := []types.ThrottledPacketDataWrapper{}
+	packetDataInstances := []ccvtypes.ThrottledPacketDataWrapper{}
 	_, _, rawOrderedData, _ := k.GetAllThrottledPacketData(ctx, req.ChainId)
 
 	for _, raw := range rawOrderedData {
 		switch data := raw.(type) {
 		case ccvtypes.SlashPacketData:
-			w := &types.ThrottledPacketDataWrapper_SlashPacket{SlashPacket: &data}
-			packetDataInstances = append(packetDataInstances, types.ThrottledPacketDataWrapper{
+			w := &ccvtypes.ThrottledPacketDataWrapper_SlashPacket{SlashPacket: &data}
+			packetDataInstances = append(packetDataInstances, ccvtypes.ThrottledPacketDataWrapper{
 				Data: w,
 			})
 		case ccvtypes.VSCMaturedPacketData:
-			w := &types.ThrottledPacketDataWrapper_VscMaturedPacket{VscMaturedPacket: &data}
-			packetDataInstances = append(packetDataInstances, types.ThrottledPacketDataWrapper{
+			w := &ccvtypes.ThrottledPacketDataWrapper_VscMaturedPacket{VscMaturedPacket: &data}
+			packetDataInstances = append(packetDataInstances, ccvtypes.ThrottledPacketDataWrapper{
 				Data: w,
 			})
 		default:
@@ -207,7 +207,7 @@ func (k Keeper) QueryThrottledConsumerPacketData(goCtx context.Context, req *typ
 		}
 	}
 
-	return &types.QueryThrottledConsumerPacketDataResponse{
+	return &ccvtypes.QueryThrottledConsumerPacketDataResponse{
 		ChainId:             req.ChainId,
 		Size_:               k.GetThrottledPacketDataSize(ctx, req.ChainId),
 		PacketDataInstances: packetDataInstances,
@@ -218,7 +218,7 @@ func (k Keeper) QueryThrottledConsumerPacketData(goCtx context.Context, req *typ
 // If the returned bytes do not unmarshal to SlashPacketData, the data is considered not found.
 func (k Keeper) getSlashPacketData(ctx sdk.Context, consumerChainID string, ibcSeqNum uint64) (ccvtypes.SlashPacketData, bool) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ThrottledPacketDataKey(consumerChainID, ibcSeqNum))
+	bz := store.Get(providertypes.ThrottledPacketDataKey(consumerChainID, ibcSeqNum))
 	if len(bz) == 0 {
 		return ccvtypes.SlashPacketData{}, false
 	}

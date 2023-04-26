@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package interchain_security.ccv.provider.v1;
 
-option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types";
+option go_package = "github.com/cosmos/interchain-security/x/ccv/types";
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
@@ -107,8 +107,8 @@ message GlobalSlashEntry {
   ProviderConsAddress provider_val_cons_addr = 4;
 }
  
-// Params defines the parameters for CCV Provider module
-message Params {
+// ProviderParams defines the parameters for CCV Provider module
+message ProviderParams {
   ibc.lightclients.tendermint.v1.ClientState template_client = 1;
   // TrustingPeriodFraction is used to compute the consumer and provider IBC client's TrustingPeriod from the chain defined UnbondingPeriod
   string trusting_period_fraction = 2;

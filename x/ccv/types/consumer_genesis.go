@@ -3,16 +3,15 @@ package types
 import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // NewInitialGenesisState returns a consumer GenesisState for a completely new consumer chain.
-func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
-	initValSet []abci.ValidatorUpdate, params Params,
-) *GenesisState {
-	return &GenesisState{
+func NewInitialConsumerGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
+	initValSet []abci.ValidatorUpdate, params ConsumerParams,
+) *ConsumerGenesisState {
+	return &ConsumerGenesisState{
 		Params:                 params,
 		NewChain:               true,
 		ProviderClientState:    cs,
@@ -22,17 +21,17 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 }
 
 // NewRestartGenesisState returns a consumer GenesisState that has already been established.
-func NewRestartGenesisState(
+func NewRestartConsumerGenesisState(
 	clientID, channelID string,
 	maturingPackets []MaturingVSCPacket,
 	initValSet []abci.ValidatorUpdate,
 	heightToValsetUpdateIDs []HeightToValsetUpdateID,
-	pendingConsumerPackets ccv.ConsumerPacketDataList,
+	pendingConsumerPackets ConsumerPacketDataList,
 	outstandingDowntimes []OutstandingDowntime,
 	lastTransBlockHeight LastTransmissionBlockHeight,
-	params Params,
-) *GenesisState {
-	return &GenesisState{
+	params ConsumerParams,
+) *ConsumerGenesisState {
+	return &ConsumerGenesisState{
 		Params:                      params,
 		ProviderClientId:            clientID,
 		ProviderChannelId:           channelID,
@@ -48,9 +47,9 @@ func NewRestartGenesisState(
 
 // DefaultGenesisState returns a default disabled consumer chain genesis state. This allows the module to be hooked up to app without getting use
 // unless explicitly specified in genesis.
-func DefaultGenesisState() *GenesisState {
-	return &GenesisState{
-		Params: DefaultParams(),
+func DefaultConsumerGenesisState() *ConsumerGenesisState {
+	return &ConsumerGenesisState{
+		Params: DefaultConsumerParams(),
 	}
 }
 
@@ -71,12 +70,12 @@ func DefaultGenesisState() *GenesisState {
 //   - MaturingVSCPackets, OutstandingDowntime, PendingConsumerPacket, LastTransmissionBlockHeight // optional
 //
 
-func (gs GenesisState) Validate() error {
+func (gs ConsumerGenesisState) Validate() error {
 	if !gs.Params.Enabled {
 		return nil
 	}
 	if len(gs.InitialValSet) == 0 {
-		return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "initial validator set is empty")
+		return sdkerrors.Wrap(ErrInvalidGenesis, "initial validator set is empty")
 	}
 	if err := gs.Params.Validate(); err != nil {
 		return err
@@ -84,68 +83,68 @@ func (gs GenesisState) Validate() error {
 
 	if gs.NewChain {
 		if gs.ProviderClientState == nil {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client state cannot be nil for new chain")
+			return sdkerrors.Wrap(ErrInvalidGenesis, "provider client state cannot be nil for new chain")
 		}
 		if err := gs.ProviderClientState.Validate(); err != nil {
-			return sdkerrors.Wrapf(ccv.ErrInvalidGenesis, "provider client state invalid for new chain %s", err.Error())
+			return sdkerrors.Wrapf(ErrInvalidGenesis, "provider client state invalid for new chain %s", err.Error())
 		}
 		if gs.ProviderConsensusState == nil {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider consensus state cannot be nil for new chain")
+			return sdkerrors.Wrap(ErrInvalidGenesis, "provider consensus state cannot be nil for new chain")
 		}
 		if err := gs.ProviderConsensusState.ValidateBasic(); err != nil {
-			return sdkerrors.Wrapf(ccv.ErrInvalidGenesis, "provider consensus state invalid for new chain %s", err.Error())
+			return sdkerrors.Wrapf(ErrInvalidGenesis, "provider consensus state invalid for new chain %s", err.Error())
 		}
 		if gs.ProviderClientId != "" {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client id cannot be set for new chain. It must be established on handshake")
+			return sdkerrors.Wrap(ErrInvalidGenesis, "provider client id cannot be set for new chain. It must be established on handshake")
 		}
 		if gs.ProviderChannelId != "" {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider channel id cannot be set for new chain. It must be established on handshake")
+			return sdkerrors.Wrap(ErrInvalidGenesis, "provider channel id cannot be set for new chain. It must be established on handshake")
 		}
 		if len(gs.MaturingPackets) != 0 {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "maturing packets must be empty for new chain")
+			return sdkerrors.Wrap(ErrInvalidGenesis, "maturing packets must be empty for new chain")
 		}
 		if len(gs.PendingConsumerPackets.List) != 0 {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "pending consumer packets must be empty for new chain")
+			return sdkerrors.Wrap(ErrInvalidGenesis, "pending consumer packets must be empty for new chain")
 		}
 		if gs.LastTransmissionBlockHeight.Height != 0 {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "last transmission block height must be empty for new chain")
+			return sdkerrors.Wrap(ErrInvalidGenesis, "last transmission block height must be empty for new chain")
 		}
 	} else {
 		// NOTE: For restart genesis, we will verify initial validator set in InitGenesis.
 		if gs.ProviderClientId == "" {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client id must be set for a restarting consumer genesis state")
+			return sdkerrors.Wrap(ErrInvalidGenesis, "provider client id must be set for a restarting consumer genesis state")
 		}
 		// handshake is still in progress
 		handshakeInProgress := gs.ProviderChannelId == ""
 		if handshakeInProgress {
 			if len(gs.MaturingPackets) != 0 {
 				return sdkerrors.Wrap(
-					ccv.ErrInvalidGenesis, "maturing packets must be empty when handshake isn't completed")
+					ErrInvalidGenesis, "maturing packets must be empty when handshake isn't completed")
 			}
 			if len(gs.OutstandingDowntimeSlashing) != 0 {
 				return sdkerrors.Wrap(
-					ccv.ErrInvalidGenesis, "outstanding downtime must be empty when handshake isn't completed")
+					ErrInvalidGenesis, "outstanding downtime must be empty when handshake isn't completed")
 			}
 			if gs.LastTransmissionBlockHeight.Height != 0 {
 				return sdkerrors.Wrap(
-					ccv.ErrInvalidGenesis, "last transmission block height must be zero when handshake isn't completed")
+					ErrInvalidGenesis, "last transmission block height must be zero when handshake isn't completed")
 			}
 			if len(gs.PendingConsumerPackets.List) != 0 {
 				for _, packet := range gs.PendingConsumerPackets.List {
-					if packet.Type == ccv.VscMaturedPacket {
-						return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "pending maturing packets must be empty when handshake isn't completed")
+					if packet.Type == VscMaturedPacket {
+						return sdkerrors.Wrap(ErrInvalidGenesis, "pending maturing packets must be empty when handshake isn't completed")
 					}
 				}
 			}
 		}
 		if gs.HeightToValsetUpdateId == nil {
 			return sdkerrors.Wrap(
-				ccv.ErrInvalidGenesis,
+				ErrInvalidGenesis,
 				"empty height to validator set update id mapping",
 			)
 		}
 		if gs.ProviderClientState != nil || gs.ProviderConsensusState != nil {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client state and consensus state must be nil for a restarting genesis state")
+			return sdkerrors.Wrap(ErrInvalidGenesis, "provider client state and consensus state must be nil for a restarting genesis state")
 		}
 		for _, mat := range gs.MaturingPackets {
 			if err := mat.Validate(); err != nil {
@@ -158,10 +157,10 @@ func (gs GenesisState) Validate() error {
 
 func (mat MaturingVSCPacket) Validate() error {
 	if mat.MaturityTime.IsZero() {
-		return sdkerrors.Wrap(ccv.ErrInvalidVSCMaturedTime, "cannot have 0 maturity time")
+		return sdkerrors.Wrap(ErrInvalidVSCMaturedTime, "cannot have 0 maturity time")
 	}
 	if mat.VscId == 0 {
-		return sdkerrors.Wrap(ccv.ErrInvalidVSCMaturedId, "cannot have 0 maturity time")
+		return sdkerrors.Wrap(ErrInvalidVSCMaturedId, "cannot have 0 maturity time")
 	}
 	return nil
 }

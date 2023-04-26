@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -88,12 +89,12 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.VscSendingTimestampKey("chainID", 8),
 		providertypes.ThrottledPacketDataSizeKey("chainID"),
 		providertypes.ThrottledPacketDataKey("chainID", 88),
-		providertypes.GlobalSlashEntryKey(providertypes.GlobalSlashEntry{}),
-		providertypes.ConsumerValidatorsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
-		providertypes.ValidatorsByConsumerAddrKey("chainID", providertypes.NewConsumerConsAddress([]byte{0x05})),
-		providertypes.KeyAssignmentReplacementsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.GlobalSlashEntryKey(ccvtypes.GlobalSlashEntry{}),
+		providertypes.ConsumerValidatorsKey("chainID", ccvtypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.ValidatorsByConsumerAddrKey("chainID", ccvtypes.NewConsumerConsAddress([]byte{0x05})),
+		providertypes.KeyAssignmentReplacementsKey("chainID", ccvtypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ConsumerAddrsToPruneKey("chainID", 88),
-		providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.SlashLogKey(ccvtypes.NewProviderConsAddress([]byte{0x05})),
 	}
 }
 
@@ -179,16 +180,16 @@ func TestThrottledPacketDataKeyAndParse(t *testing.T) {
 func TestGlobalSlashEntryKeyAndParse(t *testing.T) {
 	now := time.Now()
 
-	providerConsAddrs := []providertypes.ProviderConsAddress{
+	providerConsAddrs := []ccvtypes.ProviderConsAddress{
 		cryptoutil.NewCryptoIdentityFromIntSeed(0).ProviderConsAddress(),
 		cryptoutil.NewCryptoIdentityFromIntSeed(1).ProviderConsAddress(),
 		cryptoutil.NewCryptoIdentityFromIntSeed(2).ProviderConsAddress(),
 	}
 
-	entries := []providertypes.GlobalSlashEntry{}
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now, "chain-0", 2, providerConsAddrs[0]))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour), "chain-7896978", 3, providerConsAddrs[1]))
-	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(3*time.Hour), "chain-1", 4723894, providerConsAddrs[2]))
+	entries := []ccvtypes.GlobalSlashEntry{}
+	entries = append(entries, ccvtypes.NewGlobalSlashEntry(now, "chain-0", 2, providerConsAddrs[0]))
+	entries = append(entries, ccvtypes.NewGlobalSlashEntry(now.Add(2*time.Hour), "chain-7896978", 3, providerConsAddrs[1]))
+	entries = append(entries, ccvtypes.NewGlobalSlashEntry(now.Add(3*time.Hour), "chain-1", 4723894, providerConsAddrs[2]))
 
 	for _, entry := range entries {
 		key := providertypes.GlobalSlashEntryKey(entry)

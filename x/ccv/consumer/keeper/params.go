@@ -5,13 +5,12 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // GetParams returns the params for the consumer ccv module
-func (k Keeper) GetParams(ctx sdk.Context) types.Params {
-	return types.NewParams(
+func (k Keeper) GetConsumerParams(ctx sdk.Context) ccvtypes.ConsumerParams {
+	return ccvtypes.NewConsumerParams(
 		k.GetEnabled(ctx),
 		k.GetBlocksPerDistributionTransmission(ctx),
 		k.GetDistributionTransmissionChannel(ctx),
@@ -26,45 +25,45 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 }
 
 // SetParams sets the paramset for the consumer module
-func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
+func (k Keeper) SetParams(ctx sdk.Context, params ccvtypes.ConsumerParams) {
 	k.paramStore.SetParamSet(ctx, &params)
 }
 
 // GetEnabled returns the enabled flag for the consumer module
 func (k Keeper) GetEnabled(ctx sdk.Context) bool {
 	var enabled bool
-	k.paramStore.Get(ctx, types.KeyEnabled, &enabled)
+	k.paramStore.Get(ctx, ccvtypes.KeyEnabled, &enabled)
 	return enabled
 }
 
 func (k Keeper) GetBlocksPerDistributionTransmission(ctx sdk.Context) int64 {
 	var bpdt int64
-	k.paramStore.Get(ctx, types.KeyBlocksPerDistributionTransmission, &bpdt)
+	k.paramStore.Get(ctx, ccvtypes.KeyBlocksPerDistributionTransmission, &bpdt)
 	return bpdt
 }
 
 func (k Keeper) SetBlocksPerDistributionTransmission(ctx sdk.Context, bpdt int64) {
-	k.paramStore.Set(ctx, types.KeyBlocksPerDistributionTransmission, bpdt)
+	k.paramStore.Set(ctx, ccvtypes.KeyBlocksPerDistributionTransmission, bpdt)
 }
 
 func (k Keeper) GetDistributionTransmissionChannel(ctx sdk.Context) string {
 	var s string
-	k.paramStore.Get(ctx, types.KeyDistributionTransmissionChannel, &s)
+	k.paramStore.Get(ctx, ccvtypes.KeyDistributionTransmissionChannel, &s)
 	return s
 }
 
 func (k Keeper) SetDistributionTransmissionChannel(ctx sdk.Context, channel string) {
-	k.paramStore.Set(ctx, types.KeyDistributionTransmissionChannel, channel)
+	k.paramStore.Set(ctx, ccvtypes.KeyDistributionTransmissionChannel, channel)
 }
 
 func (k Keeper) GetProviderFeePoolAddrStr(ctx sdk.Context) string {
 	var s string
-	k.paramStore.Get(ctx, types.KeyProviderFeePoolAddrStr, &s)
+	k.paramStore.Get(ctx, ccvtypes.KeyProviderFeePoolAddrStr, &s)
 	return s
 }
 
 func (k Keeper) SetProviderFeePoolAddrStr(ctx sdk.Context, addr string) {
-	k.paramStore.Set(ctx, types.KeyProviderFeePoolAddrStr, addr)
+	k.paramStore.Set(ctx, ccvtypes.KeyProviderFeePoolAddrStr, addr)
 }
 
 // GetCCVTimeoutPeriod returns the timeout period for sent ccv related ibc packets
@@ -77,7 +76,7 @@ func (k Keeper) GetCCVTimeoutPeriod(ctx sdk.Context) time.Duration {
 // GetTransferTimeoutPeriod returns the timeout period for sent transfer related ibc packets
 func (k Keeper) GetTransferTimeoutPeriod(ctx sdk.Context) time.Duration {
 	var p time.Duration
-	k.paramStore.Get(ctx, types.KeyTransferTimeoutPeriod, &p)
+	k.paramStore.Get(ctx, ccvtypes.KeyTransferTimeoutPeriod, &p)
 	return p
 }
 
@@ -86,25 +85,25 @@ func (k Keeper) GetTransferTimeoutPeriod(ctx sdk.Context) time.Duration {
 // decimal number. For example "0.75" would represent 75%.
 func (k Keeper) GetConsumerRedistributionFrac(ctx sdk.Context) string {
 	var str string
-	k.paramStore.Get(ctx, types.KeyConsumerRedistributionFrac, &str)
+	k.paramStore.Get(ctx, ccvtypes.KeyConsumerRedistributionFrac, &str)
 	return str
 }
 
 // GetHistoricalEntries returns the number of historical info entries to persist in store
 func (k Keeper) GetHistoricalEntries(ctx sdk.Context) int64 {
 	var n int64
-	k.paramStore.Get(ctx, types.KeyHistoricalEntries, &n)
+	k.paramStore.Get(ctx, ccvtypes.KeyHistoricalEntries, &n)
 	return n
 }
 
 // Only used to set an unbonding period in diff tests
 func (k Keeper) SetUnbondingPeriod(ctx sdk.Context, period time.Duration) {
-	k.paramStore.Set(ctx, types.KeyConsumerUnbondingPeriod, period)
+	k.paramStore.Set(ctx, ccvtypes.KeyConsumerUnbondingPeriod, period)
 }
 
 func (k Keeper) GetUnbondingPeriod(ctx sdk.Context) time.Duration {
 	var period time.Duration
-	k.paramStore.Get(ctx, types.KeyConsumerUnbondingPeriod, &period)
+	k.paramStore.Get(ctx, ccvtypes.KeyConsumerUnbondingPeriod, &period)
 	return period
 }
 
@@ -112,6 +111,6 @@ func (k Keeper) GetUnbondingPeriod(ctx sdk.Context) time.Duration {
 // that can opt out of running the consumer chain
 func (k Keeper) GetSoftOptOutThreshold(ctx sdk.Context) string {
 	var str string
-	k.paramStore.Get(ctx, types.KeySoftOptOutThreshold, &str)
+	k.paramStore.Get(ctx, ccvtypes.KeySoftOptOutThreshold, &str)
 	return str
 }

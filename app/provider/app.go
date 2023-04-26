@@ -86,6 +86,7 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
 	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
 	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
@@ -422,7 +423,7 @@ func New(
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(providertypes.RouterKey, ibcprovider.NewProviderProposalHandler(app.ProviderKeeper)).
+		AddRoute(ccvtypes.RouterKey, ibcprovider.NewProviderProposalHandler(app.ProviderKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 
 	app.GovKeeper = govkeeper.NewKeeper(

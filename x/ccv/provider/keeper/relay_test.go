@@ -14,7 +14,6 @@ import (
 	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -97,7 +96,7 @@ func TestQueueVSCPackets(t *testing.T) {
 func TestOnRecvVSCMaturedPacket(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
-	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+	providerKeeper.SetParams(ctx, ccv.DefaultProviderParams())
 
 	// Set channel to chain (faking multiple established channels)
 	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
@@ -140,7 +139,7 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
-	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+	providerKeeper.SetParams(ctx, ccv.DefaultProviderParams())
 
 	vscData := getTenSampleVSCMaturedPacketData()
 
@@ -231,7 +230,7 @@ func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
 func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
-	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+	providerKeeper.SetParams(ctx, ccv.DefaultProviderParams())
 
 	// Set channel to chain (faking multiple established channels)
 	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
@@ -253,7 +252,7 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
 	require.Equal(t, 0, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
 	require.True(t, providerKeeper.GetSlashLog(ctx,
-		providertypes.NewProviderConsAddress(packetData.Validator.Address)))
+		ccv.NewProviderConsAddress(packetData.Validator.Address)))
 
 	// slash log should be empty for a random validator address in this testcase
 	randomAddress := cryptotestutil.NewCryptoIdentityFromIntSeed(100).ProviderConsAddress()
@@ -265,7 +264,7 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
-	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+	providerKeeper.SetParams(ctx, ccv.DefaultProviderParams())
 
 	// Set channel to chain (faking multiple established channels)
 	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")

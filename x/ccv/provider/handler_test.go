@@ -15,7 +15,7 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider"
 	keeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 func TestInvalidMsg(t *testing.T) {
@@ -104,7 +104,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 			tc.setup(ctx, k, mocks)
 
-			msg, err := providertypes.NewMsgAssignConsumerKey(tc.chainID,
+			msg, err := ccvtypes.NewMsgAssignConsumerKey(tc.chainID,
 				providerCryptoId.SDKValOpAddress(), consumerKey,
 			)
 

@@ -10,7 +10,6 @@ import (
 	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
 
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
@@ -94,7 +93,7 @@ func GetMocksForStopConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomo
 }
 
 func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
-	expectedProviderValConsAddr providertypes.ProviderConsAddress,
+	expectedProviderValConsAddr ccv.ProviderConsAddress,
 	valToReturn stakingtypes.Validator, expectJailing bool,
 ) []*gomock.Call {
 	// These first two calls are always made.
