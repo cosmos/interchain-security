@@ -10,9 +10,9 @@ ENV GOOS=linux
 ENV GOFLAGS="-buildvcs=false"
 
 # cache go modules - done before the files are copied to allow docker to better cache
-COPY go.mod /go.mod
-COPY go.sum /go.sum
-RUN go mod download
+# COPY go.mod /go.mod
+# COPY go.sum /go.sum
+# RUN go mod download
 
 
 # Copy in the repo under test
