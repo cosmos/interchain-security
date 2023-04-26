@@ -12,7 +12,6 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -253,7 +252,7 @@ func TestOnChanOpenAck(t *testing.T) {
 		{
 			"invalid: mismatched serialized version",
 			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
-				md := providertypes.HandshakeMetadata{
+				md := ccv.HandshakeMetadata{
 					ProviderFeePoolAddr: "", // dummy address used
 					Version:             "bunkVersion",
 				}
@@ -278,7 +277,7 @@ func TestOnChanOpenAck(t *testing.T) {
 			counterpartyChannelID: "providerCCVChannelID",
 		}
 
-		metadata := providertypes.HandshakeMetadata{
+		metadata := ccv.HandshakeMetadata{
 			ProviderFeePoolAddr: "someAcct",
 			Version:             ccv.Version,
 		}

@@ -16,14 +16,13 @@ import (
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 )
 
 func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
 	chainID := consumer
-	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
+	providerAddr := ccvtypes.NewProviderConsAddress([]byte("providerAddr"))
 	consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -50,12 +49,12 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
 	chainIDs := []string{"consumer-1", "consumer-2", "consumer-3"}
 	numAssignments := 10
-	testAssignments := []types.ValidatorConsumerPubKey{}
+	testAssignments := []ccvtypes.ValidatorConsumerPubKey{}
 	for i := 0; i < numAssignments; i++ {
 		consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(i).TMProtoCryptoPublicKey()
 		providerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(numAssignments + i).ProviderConsAddress()
 		testAssignments = append(testAssignments,
-			types.ValidatorConsumerPubKey{
+			ccvtypes.ValidatorConsumerPubKey{
 				ChainId:      chainIDs[rand.Intn(len(chainIDs))],
 				ProviderAddr: &providerAddr,
 				ConsumerKey:  &consumerKey,
@@ -76,7 +75,7 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 			break
 		}
 	}
-	expectedGetAllOneConsumerOrder := []types.ValidatorConsumerPubKey{}
+	expectedGetAllOneConsumerOrder := []ccvtypes.ValidatorConsumerPubKey{}
 	for _, assignment := range testAssignments {
 		if assignment.ChainId == chainID {
 			expectedGetAllOneConsumerOrder = append(expectedGetAllOneConsumerOrder, assignment)
@@ -100,8 +99,8 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 
 func TestValidatorByConsumerAddrCRUD(t *testing.T) {
 	chainID := consumer
-	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
-	consumerAddr := types.NewConsumerConsAddress([]byte("consumerAddr"))
+	providerAddr := ccvtypes.NewProviderConsAddress([]byte("providerAddr"))
+	consumerAddr := ccvtypes.NewConsumerConsAddress([]byte("consumerAddr"))
 
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -127,12 +126,12 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
 	chainIDs := []string{"consumer-1", "consumer-2", "consumer-3"}
 	numAssignments := 10
-	testAssignments := []types.ValidatorByConsumerAddr{}
+	testAssignments := []ccvtypes.ValidatorByConsumerAddr{}
 	for i := 0; i < numAssignments; i++ {
 		consumerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(i).ConsumerConsAddress()
 		providerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(numAssignments + i).ProviderConsAddress()
 		testAssignments = append(testAssignments,
-			types.ValidatorByConsumerAddr{
+			ccvtypes.ValidatorByConsumerAddr{
 				ChainId:      chainIDs[rand.Intn(len(chainIDs))],
 				ConsumerAddr: &consumerAddr,
 				ProviderAddr: &providerAddr,
@@ -153,7 +152,7 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 			break
 		}
 	}
-	expectedGetAllOneConsumerOrder := []types.ValidatorByConsumerAddr{}
+	expectedGetAllOneConsumerOrder := []ccvtypes.ValidatorByConsumerAddr{}
 	for _, assignment := range testAssignments {
 		if assignment.ChainId == chainID {
 			expectedGetAllOneConsumerOrder = append(expectedGetAllOneConsumerOrder, assignment)
@@ -177,7 +176,7 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 
 func TestKeyAssignmentReplacementCRUD(t *testing.T) {
 	chainID := consumer
-	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
+	providerAddr := ccvtypes.NewProviderConsAddress([]byte("providerAddr"))
 	expCPubKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	var expPower int64 = 100
 
@@ -204,12 +203,12 @@ func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 
 	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
 	numAssignments := 10
-	testAssignments := []types.KeyAssignmentReplacement{}
+	testAssignments := []ccvtypes.KeyAssignmentReplacement{}
 	for i := 0; i < numAssignments; i++ {
 		consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(i).TMProtoCryptoPublicKey()
 		providerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(numAssignments + i).ProviderConsAddress()
 		testAssignments = append(testAssignments,
-			types.KeyAssignmentReplacement{
+			ccvtypes.KeyAssignmentReplacement{
 				ProviderAddr: &providerAddr,
 				PrevCKey:     &consumerKey,
 				Power:        rand.Int63(),
@@ -234,7 +233,7 @@ func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 
 func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 	chainID := consumer
-	consumerAddr := types.NewConsumerConsAddress([]byte("consumerAddr1"))
+	consumerAddr := ccvtypes.NewConsumerConsAddress([]byte("consumerAddr1"))
 	vscID := uint64(1)
 
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -262,15 +261,15 @@ func TestGetAllConsumerAddrsToPrune(t *testing.T) {
 	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
 	chainIDs := []string{"consumer-1", "consumer-2", "consumer-3"}
 	numAssignments := 10
-	testAssignments := []types.ConsumerAddrsToPrune{}
+	testAssignments := []ccvtypes.ConsumerAddrsToPrune{}
 	for i := 0; i < numAssignments; i++ {
-		consumerAddresses := types.ConsumerAddressList{}
+		consumerAddresses := ccvtypes.ConsumerAddressList{}
 		for j := 0; j < 2*(i+1); j++ {
 			addr := cryptotestutil.NewCryptoIdentityFromIntSeed(i * j).ConsumerConsAddress()
 			consumerAddresses.Addresses = append(consumerAddresses.Addresses, &addr)
 		}
 		testAssignments = append(testAssignments,
-			types.ConsumerAddrsToPrune{
+			ccvtypes.ConsumerAddrsToPrune{
 				ChainId:       chainIDs[rand.Intn(len(chainIDs))],
 				VscId:         rand.Uint64(),
 				ConsumerAddrs: &consumerAddresses,
@@ -291,7 +290,7 @@ func TestGetAllConsumerAddrsToPrune(t *testing.T) {
 			break
 		}
 	}
-	expectedGetAllOrder := []types.ConsumerAddrsToPrune{}
+	expectedGetAllOrder := []ccvtypes.ConsumerAddrsToPrune{}
 	for _, assignment := range testAssignments {
 		if assignment.ChainId == chainID {
 			expectedGetAllOrder = append(expectedGetAllOrder, assignment)

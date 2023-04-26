@@ -13,7 +13,6 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -163,7 +162,7 @@ func TestOnChanOpenTry(t *testing.T) {
 
 		if tc.expPass {
 			require.NoError(t, err)
-			md := &providertypes.HandshakeMetadata{}
+			md := &ccv.HandshakeMetadata{}
 			err = md.Unmarshal([]byte(metadata))
 			require.NoError(t, err)
 			require.Equal(t, moduleAcct.BaseAccount.Address, md.ProviderFeePoolAddr,

@@ -37,7 +37,6 @@ import (
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -499,23 +498,23 @@ func (b *Builder) createConsumersLocalClientGenesis() *ibctmtypes.ClientState {
 	)
 }
 
-func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consumertypes.GenesisState {
+func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *ccv.ConsumerGenesisState {
 	providerConsState := b.provider().LastHeader.ConsensusState()
 
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.provider().Vals)
-	params := consumertypes.NewParams(
+	params := ccv.NewConsumerParams(
 		true,
 		1000, // ignore distribution
 		"",   // ignore distribution
 		"",   // ignore distribution
 		ccv.DefaultCCVTimeoutPeriod,
-		consumertypes.DefaultTransferTimeoutPeriod,
-		consumertypes.DefaultConsumerRedistributeFrac,
-		consumertypes.DefaultHistoricalEntries,
+		ccv.DefaultTransferTimeoutPeriod,
+		ccv.DefaultConsumerRedistributeFrac,
+		ccv.DefaultHistoricalEntries,
 		b.initState.UnbondingC,
 		"0", // disable soft opt-out
 	)
-	return consumertypes.NewInitialGenesisState(client, providerConsState, valUpdates, params)
+	return ccv.NewInitialConsumerGenesisState(client, providerConsState, valUpdates, params)
 }
 
 // The state of the data returned is equivalent to the state of two chains

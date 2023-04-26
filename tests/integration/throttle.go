@@ -7,7 +7,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -39,7 +38,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 		// Use default params (incl replenish period), but set replenish fraction to tc value.
-		params := providertypes.DefaultParams()
+		params := ccvtypes.DefaultProviderParams()
 		params.SlashMeterReplenishFraction = tc.replenishFraction
 		s.providerApp.GetProviderKeeper().SetParams(s.providerCtx(), params)
 
@@ -403,10 +402,10 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 		// 4th validator should have no slash log, all the others do
 		if val != s.providerChain.Vals.Validators[3] {
 			s.Require().True(providerKeeper.GetSlashLog(s.providerCtx(),
-				providertypes.NewProviderConsAddress([]byte(val.Address))))
+				ccvtypes.NewProviderConsAddress([]byte(val.Address))))
 		} else {
 			s.Require().False(providerKeeper.GetSlashLog(s.providerCtx(),
-				providertypes.NewProviderConsAddress([]byte(val.Address))))
+				ccvtypes.NewProviderConsAddress([]byte(val.Address))))
 		}
 	}
 }

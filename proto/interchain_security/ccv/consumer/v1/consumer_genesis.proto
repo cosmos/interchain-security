@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package interchain_security.ccv.consumer.v1;
 
-option go_package = "github.com/cosmos/interchain-security/x/ccv/consumer/types";
+option go_package = "github.com/cosmos/interchain-security/x/ccv/types";
 
 import "interchain_security/ccv/v1/ccv.proto";
 import "interchain_security/ccv/consumer/v1/consumer.proto";
@@ -12,9 +12,9 @@ import "ibc/core/channel/v1/channel.proto";
 import "google/protobuf/duration.proto";
 import "gogoproto/gogo.proto";
 
-// GenesisState defines the CCV consumer chain genesis state
-message GenesisState {
-  Params params = 1 [ (gogoproto.nullable) = false ];
+// ConsumerGenesisState defines the CCV consumer chain genesis state
+message ConsumerGenesisState {
+  ConsumerParams params = 1 [ (gogoproto.nullable) = false ];
   string provider_client_id = 2;  // empty for a new chain, filled in on restart.
   string provider_channel_id = 3; // empty for a new chain, filled in on restart.
   bool new_chain = 4; // true for new chain GenesisState, false for chain restart.

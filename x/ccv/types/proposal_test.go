@@ -16,7 +16,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
@@ -217,7 +217,7 @@ func TestMarshalConsumerAdditionProposal(t *testing.T) {
 
 	// create codec
 	ir := codectypes.NewInterfaceRegistry()
-	types.RegisterInterfaces(ir)
+	types.RegisterProviderInterfaces(ir)
 	govtypes.RegisterInterfaces(ir)
 	clienttypes.RegisterInterfaces(ir)
 	ibctmtypes.RegisterInterfaces(ir)

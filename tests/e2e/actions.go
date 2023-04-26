@@ -13,10 +13,9 @@ import (
 
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/provider/client"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/tidwall/gjson"
 )
 
@@ -214,7 +213,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	verbose bool,
 ) {
 	spawnTime := tr.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
-	params := consumertypes.DefaultParams()
+	params := ccvtypes.DefaultConsumerParams()
 	prop := client.ConsumerAdditionProposalJSON{
 		Title:                             "Propose the addition of a new chain",
 		Description:                       "Gonna be a great chain",
@@ -417,7 +416,7 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	providerChain := tr.chainConfigs[chainID("provi")]
 
 	prop := client.EquivocationProposalJSON{
-		EquivocationProposal: types.EquivocationProposal{
+		EquivocationProposal: ccvtypes.EquivocationProposal{
 			Title:       "Validator equivocation!",
 			Description: fmt.Sprintf("Validator: %s has committed an equivocation infraction on chainID: %s", action.validator, action.chain),
 			Equivocations: []*evidencetypes.Equivocation{

@@ -1,13 +1,13 @@
 syntax = "proto3";
 
 package interchain_security.ccv.consumer.v1;
-option go_package = "github.com/cosmos/interchain-security/x/ccv/consumer/types";
+option go_package = "github.com/cosmos/interchain-security/x/ccv/types";
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "interchain_security/ccv/consumer/v1/consumer.proto";
 
-service Query {
+service ConsumerQuery {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
   // whose proposal has been accepted
   rpc QueryNextFeeDistribution(QueryNextFeeDistributionEstimateRequest)
@@ -50,5 +50,5 @@ message QueryParamsRequest {}
 // QueryParamsResponse is response type for the Query/Params RPC method.
 message QueryParamsResponse {
   // params holds all the parameters of this module.
-  Params params = 1 [(gogoproto.nullable) = false];
+  ConsumerParams params = 1 [(gogoproto.nullable) = false];
 }

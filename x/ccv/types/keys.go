@@ -4,6 +4,10 @@ const (
 	// ModuleName defines the CCV module name
 	ModuleName = "CCV"
 
+	// Note the following constants remain unchanged in the go.mod split PR
+	ProviderModuleName = "provider"
+	ConsumerModuleName = "ccvconsumer"
+
 	// Version defines the current version the IBC CCV provider and consumer
 	// module supports
 	Version = "1"

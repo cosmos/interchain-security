@@ -7,7 +7,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -43,7 +44,7 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 			// create a new validator
 			consAddr := sdk.ConsAddress(addr)
 
-			ccVal, err := types.NewCCValidator(addr, change.Power, pubkey)
+			ccVal, err := ccvtypes.NewCCValidator(addr, change.Power, pubkey)
 			if err != nil {
 				// An error here would indicate that the validator updates
 				// received from the provider are invalid.
@@ -181,7 +182,7 @@ func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
 // GetHistoricalInfo gets the historical info at a given height
 func (k Keeper) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.HistoricalInfoKey(height)
+	key := consumertypes.HistoricalInfoKey(height)
 
 	value := store.Get(key)
 	if value == nil {
@@ -194,7 +195,7 @@ func (k Keeper) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.H
 // SetHistoricalInfo sets the historical info at a given height
 func (k Keeper) SetHistoricalInfo(ctx sdk.Context, height int64, hi *stakingtypes.HistoricalInfo) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.HistoricalInfoKey(height)
+	key := consumertypes.HistoricalInfoKey(height)
 	value := k.cdc.MustMarshal(hi)
 
 	store.Set(key, value)
@@ -203,7 +204,7 @@ func (k Keeper) SetHistoricalInfo(ctx sdk.Context, height int64, hi *stakingtype
 // DeleteHistoricalInfo deletes the historical info at a given height
 func (k Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.HistoricalInfoKey(height)
+	key := consumertypes.HistoricalInfoKey(height)
 
 	store.Delete(key)
 }

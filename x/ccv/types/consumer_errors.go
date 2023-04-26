@@ -6,5 +6,5 @@ import (
 
 // Consumer sentinel errors
 var (
-	ErrNoProposerChannelId = sdkerrors.Register(ModuleName, 1, "no established CCV channel")
+	ErrNoProposerChannelId = sdkerrors.Register(ConsumerModuleName, 1, "no established CCV channel")
 )

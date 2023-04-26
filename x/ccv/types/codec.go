@@ -3,6 +3,9 @@ package types
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
 // RegisterLegacyAminoCodec registers the necessary x/ibc transfer interfaces and concrete types
@@ -10,9 +13,30 @@ import (
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 }
 
+// RegisterProviderInterfaces registers the provider proposal structs to the interface registry
+func RegisterProviderInterfaces(registry codectypes.InterfaceRegistry) {
+	registry.RegisterImplementations(
+		(*govtypes.Content)(nil),
+		&ConsumerAdditionProposal{},
+	)
+	registry.RegisterImplementations(
+		(*govtypes.Content)(nil),
+		&ConsumerRemovalProposal{},
+	)
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&MsgAssignConsumerKey{},
+	)
+	registry.RegisterImplementations(
+		(*govtypes.Content)(nil),
+		&EquivocationProposal{},
+	)
+	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
+}
+
 // RegisterInterfaces register the ibc transfer module interfaces to protobuf
 // Any.
-func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func RegisterConsumerInterfaces(registry codectypes.InterfaceRegistry) {
 }
 
 var (

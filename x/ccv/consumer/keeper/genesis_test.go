@@ -20,7 +20,6 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 )
 
 // TestInitGenesis tests that a consumer chain is correctly initialised from genesis.
@@ -61,7 +60,7 @@ func TestInitGenesis(t *testing.T) {
 		true,
 	)
 
-	matPackets := []consumertypes.MaturingVSCPacket{
+	matPackets := []ccv.MaturingVSCPacket{
 		{
 			VscId:        1,
 			MaturityTime: time.Now().UTC(),
@@ -84,15 +83,15 @@ func TestInitGenesis(t *testing.T) {
 		},
 	}
 	// mock height to valset update ID values
-	defaultHeightValsetUpdateIDs := []consumertypes.HeightToValsetUpdateID{
+	defaultHeightValsetUpdateIDs := []ccv.HeightToValsetUpdateID{
 		{ValsetUpdateId: vscID, Height: blockHeight},
 	}
 	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs,
-		consumertypes.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
+		ccv.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
 	)
 
 	// create default parameters for a new chain
-	params := consumertypes.DefaultParams()
+	params := ccv.DefaultConsumerParams()
 	params.Enabled = true
 
 	// define three test cases which respectively create a genesis struct, use it to call InitGenesis
@@ -100,8 +99,8 @@ func TestInitGenesis(t *testing.T) {
 	testCases := []struct {
 		name         string
 		malleate     func(sdk.Context, testkeeper.MockedKeepers)
-		genesis      *consumertypes.GenesisState
-		assertStates func(sdk.Context, consumerkeeper.Keeper, *consumertypes.GenesisState)
+		genesis      *ccv.ConsumerGenesisState
+		assertStates func(sdk.Context, consumerkeeper.Keeper, *ccv.ConsumerGenesisState)
 	}{
 		{
 			"start a new chain",
@@ -112,20 +111,20 @@ func TestInitGenesis(t *testing.T) {
 					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 1),
 				)
 			},
-			consumertypes.NewInitialGenesisState(
+			ccv.NewInitialConsumerGenesisState(
 				provClientState,
 				provConsState,
 				valset,
 				params,
 			),
-			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
+			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *ccv.ConsumerGenesisState) {
 				assertConsumerPortIsBound(t, ctx, &ck)
 
 				assertProviderClientID(t, ctx, &ck, provClientID)
 				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 
 				require.Equal(t, validator.Address.Bytes(), ck.GetAllCCValidator(ctx)[0].Address)
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		}, {
 			"restart a chain without an established CCV channel",
@@ -134,7 +133,7 @@ func TestInitGenesis(t *testing.T) {
 					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 2),
 				)
 			},
-			consumertypes.NewRestartGenesisState(
+			ccv.NewRestartConsumerGenesisState(
 				provClientID,
 				"",
 				matPackets,
@@ -142,17 +141,17 @@ func TestInitGenesis(t *testing.T) {
 				defaultHeightValsetUpdateIDs,
 				pendingDataPackets,
 				nil,
-				consumertypes.LastTransmissionBlockHeight{},
+				ccv.LastTransmissionBlockHeight{},
 				params,
 			),
-			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
+			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *ccv.ConsumerGenesisState) {
 				assertConsumerPortIsBound(t, ctx, &ck)
 
 				require.Equal(t, pendingDataPackets, ck.GetPendingPackets(ctx))
 				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
 				require.Equal(t, validator.Address.Bytes(), ck.GetAllCCValidator(ctx)[0].Address)
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		}, {
 			"restart a chain with an established CCV channel",
@@ -165,20 +164,20 @@ func TestInitGenesis(t *testing.T) {
 				)
 			},
 			// create a genesis for a restarted chain
-			consumertypes.NewRestartGenesisState(
+			ccv.NewRestartConsumerGenesisState(
 				provClientID,
 				provChannelID,
 				matPackets,
 				valset,
 				updatedHeightValsetUpdateIDs,
 				pendingDataPackets,
-				[]consumertypes.OutstandingDowntime{
+				[]ccv.OutstandingDowntime{
 					{ValidatorConsensusAddress: sdk.ConsAddress(validator.Bytes()).String()},
 				},
-				consumertypes.LastTransmissionBlockHeight{Height: int64(100)},
+				ccv.LastTransmissionBlockHeight{Height: int64(100)},
 				params,
 			),
-			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
+			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *ccv.ConsumerGenesisState) {
 				assertConsumerPortIsBound(t, ctx, &ck)
 
 				gotChannelID, ok := ck.GetProviderChannel(ctx)
@@ -196,7 +195,7 @@ func TestInitGenesis(t *testing.T) {
 				assertHeightValsetUpdateIDs(t, ctx, &ck, updatedHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
 
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		},
 	}
@@ -229,7 +228,7 @@ func TestExportGenesis(t *testing.T) {
 	vscID := uint64(0)
 	blockHeight := uint64(0)
 
-	matPackets := []consumertypes.MaturingVSCPacket{
+	matPackets := []ccv.MaturingVSCPacket{
 		{
 			VscId:        1,
 			MaturityTime: time.Now().UTC(),
@@ -262,15 +261,15 @@ func TestExportGenesis(t *testing.T) {
 		},
 	}
 	// mock height to valset update ID values
-	defaultHeightValsetUpdateIDs := []consumertypes.HeightToValsetUpdateID{
+	defaultHeightValsetUpdateIDs := []ccv.HeightToValsetUpdateID{
 		{ValsetUpdateId: vscID, Height: blockHeight},
 	}
 	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs,
-		consumertypes.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
+		ccv.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
 	)
-	ltbh := consumertypes.LastTransmissionBlockHeight{Height: int64(1000)}
+	ltbh := ccv.LastTransmissionBlockHeight{Height: int64(1000)}
 	// create default parameters for a new chain
-	params := consumertypes.DefaultParams()
+	params := ccv.DefaultConsumerParams()
 	params.Enabled = true
 
 	// define two test cases which respectively populate the consumer chain store
@@ -279,14 +278,14 @@ func TestExportGenesis(t *testing.T) {
 	testCases := []struct {
 		name       string
 		malleate   func(sdk.Context, consumerkeeper.Keeper, testkeeper.MockedKeepers)
-		expGenesis *consumertypes.GenesisState
+		expGenesis *ccv.ConsumerGenesisState
 	}{
 		{
 			"export a chain without an established CCV channel",
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				// populate the states allowed before a CCV channel is established
 				ck.SetProviderClientID(ctx, provClientID)
-				cVal, err := consumertypes.NewCCValidator(validator.Address.Bytes(), 1, pubKey)
+				cVal, err := ccv.NewCCValidator(validator.Address.Bytes(), 1, pubKey)
 				require.NoError(t, err)
 				ck.SetCCValidator(ctx, cVal)
 				ck.SetParams(ctx, params)
@@ -294,7 +293,7 @@ func TestExportGenesis(t *testing.T) {
 				ck.AppendPendingPacket(ctx, consPackets.List...)
 				ck.SetHeightValsetUpdateID(ctx, defaultHeightValsetUpdateIDs[0].Height, defaultHeightValsetUpdateIDs[0].ValsetUpdateId)
 			},
-			consumertypes.NewRestartGenesisState(
+			ccv.NewRestartConsumerGenesisState(
 				provClientID,
 				"",
 				nil,
@@ -302,7 +301,7 @@ func TestExportGenesis(t *testing.T) {
 				defaultHeightValsetUpdateIDs,
 				consPackets,
 				nil,
-				consumertypes.LastTransmissionBlockHeight{},
+				ccv.LastTransmissionBlockHeight{},
 				params,
 			),
 		},
@@ -312,7 +311,7 @@ func TestExportGenesis(t *testing.T) {
 				ck.SetProviderClientID(ctx, provClientID)
 				ck.SetProviderChannel(ctx, provChannelID)
 
-				cVal, err := consumertypes.NewCCValidator(validator.Address.Bytes(), 1, pubKey)
+				cVal, err := ccv.NewCCValidator(validator.Address.Bytes(), 1, pubKey)
 				require.NoError(t, err)
 				ck.SetCCValidator(ctx, cVal)
 
@@ -328,14 +327,14 @@ func TestExportGenesis(t *testing.T) {
 				ck.SetOutstandingDowntime(ctx, sdk.ConsAddress(validator.Address.Bytes()))
 				ck.SetLastTransmissionBlockHeight(ctx, ltbh)
 			},
-			consumertypes.NewRestartGenesisState(
+			ccv.NewRestartConsumerGenesisState(
 				provClientID,
 				provChannelID,
 				matPackets,
 				valset,
 				updatedHeightValsetUpdateIDs,
 				consPackets,
-				[]consumertypes.OutstandingDowntime{
+				[]ccv.OutstandingDowntime{
 					{ValidatorConsensusAddress: sdk.ConsAddress(validator.Address.Bytes()).String()},
 				},
 				ltbh,
@@ -379,7 +378,7 @@ func assertProviderClientID(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Ke
 }
 
 // assert that the given input match the height to valset update ID mappings in the store
-func assertHeightValsetUpdateIDs(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, heighValsetUpdateIDs []consumertypes.HeightToValsetUpdateID) {
+func assertHeightValsetUpdateIDs(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, heighValsetUpdateIDs []ccv.HeightToValsetUpdateID) {
 	t.Helper()
 	ctr := 0
 

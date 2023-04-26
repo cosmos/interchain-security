@@ -11,13 +11,14 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // NewQueryCmd returns a root CLI command handler for all x/ccv/provider query commands.
 func NewQueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                        types.ModuleName,
+		Use:                        providertypes.ModuleName,
 		Short:                      "Querying commands for the ccv provider module",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
@@ -48,9 +49,9 @@ func CmdConsumerGenesis() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := ccvtypes.NewProviderQueryClient(clientCtx)
 
-			req := types.QueryConsumerGenesisRequest{ChainId: args[0]}
+			req := ccvtypes.QueryConsumerGenesisRequest{ChainId: args[0]}
 			res, err := queryClient.QueryConsumerGenesis(cmd.Context(), &req)
 			if err != nil {
 				return err
@@ -75,9 +76,9 @@ func CmdConsumerChains() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := ccvtypes.NewProviderQueryClient(clientCtx)
 
-			req := &types.QueryConsumerChainsRequest{}
+			req := &ccvtypes.QueryConsumerChainsRequest{}
 			res, err := queryClient.QueryConsumerChains(cmd.Context(), req)
 			if err != nil {
 				return err
@@ -106,9 +107,9 @@ func CmdConsumerStartProposals() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := ccvtypes.NewProviderQueryClient(clientCtx)
 
-			req := &types.QueryConsumerChainStartProposalsRequest{}
+			req := &ccvtypes.QueryConsumerChainStartProposalsRequest{}
 			res, err := queryClient.QueryConsumerChainStarts(cmd.Context(), req)
 			if err != nil {
 				return err
@@ -137,9 +138,9 @@ func CmdConsumerStopProposals() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := ccvtypes.NewProviderQueryClient(clientCtx)
 
-			req := &types.QueryConsumerChainStopProposalsRequest{}
+			req := &ccvtypes.QueryConsumerChainStopProposalsRequest{}
 			res, err := queryClient.QueryConsumerChainStops(cmd.Context(), req)
 			if err != nil {
 				return err
@@ -175,7 +176,7 @@ $ %s query provider validator-consumer-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := ccvtypes.NewProviderQueryClient(clientCtx)
 
 			consumerChainID := args[0]
 
@@ -184,7 +185,7 @@ $ %s query provider validator-consumer-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 				return err
 			}
 
-			req := &types.QueryValidatorConsumerAddrRequest{
+			req := &ccvtypes.QueryValidatorConsumerAddrRequest{
 				ChainId:         consumerChainID,
 				ProviderAddress: addr.String(),
 			}
@@ -222,7 +223,7 @@ $ %s query provider validator-provider-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := ccvtypes.NewProviderQueryClient(clientCtx)
 
 			consumerChainID := args[0]
 
@@ -231,7 +232,7 @@ $ %s query provider validator-provider-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 				return err
 			}
 
-			req := &types.QueryValidatorProviderAddrRequest{
+			req := &ccvtypes.QueryValidatorProviderAddrRequest{
 				ChainId:         consumerChainID,
 				ConsumerAddress: addr.String(),
 			}
@@ -268,9 +269,9 @@ $ %s query provider throttle-state
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := ccvtypes.NewProviderQueryClient(clientCtx)
 
-			req := &types.QueryThrottleStateRequest{}
+			req := &ccvtypes.QueryThrottleStateRequest{}
 			res, err := queryClient.QueryThrottleState(cmd.Context(), req)
 			if err != nil {
 				return err
@@ -304,9 +305,9 @@ $ %s query provider throttled-consumer-packet-data foochain
 			if err != nil {
 				return err
 			}
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := ccvtypes.NewProviderQueryClient(clientCtx)
 
-			req := &types.QueryThrottledConsumerPacketDataRequest{ChainId: args[0]}
+			req := &ccvtypes.QueryThrottledConsumerPacketDataRequest{ChainId: args[0]}
 			res, err := queryClient.QueryThrottledConsumerPacketData(cmd.Context(), req)
 			if err != nil {
 				return err

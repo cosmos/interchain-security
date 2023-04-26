@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/client/cli"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
@@ -38,23 +39,23 @@ func (AppModuleBasic) Name() string {
 
 // RegisterLegacyAminoCodec implements AppModuleBasic interface
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	providertypes.RegisterLegacyAminoCodec(cdc)
+	ccvtypes.RegisterLegacyAminoCodec(cdc)
 }
 
 // RegisterInterfaces registers module concrete types into protobuf Any.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	providertypes.RegisterInterfaces(registry)
+	ccvtypes.RegisterProviderInterfaces(registry)
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the ibc
 // provider module.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(providertypes.DefaultGenesisState())
+	return cdc.MustMarshalJSON(ccvtypes.DefaultProviderGenesisState())
 }
 
 // ValidateGenesis performs genesis state validation for the ibc provider module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
-	var data providertypes.GenesisState
+	var data ccvtypes.ProviderGenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", providertypes.ModuleName, err)
 	}
@@ -68,7 +69,7 @@ func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Rout
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the ibc-provider module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	err := providertypes.RegisterQueryHandlerClient(context.Background(), mux, providertypes.NewQueryClient(clientCtx))
+	err := ccvtypes.RegisterProviderQueryHandlerClient(context.Background(), mux, ccvtypes.NewProviderQueryClient(clientCtx))
 	if err != nil {
 		// same behavior as in cosmos-sdk
 		panic(err)
@@ -120,15 +121,15 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	providertypes.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
-	providertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+	ccvtypes.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
+	ccvtypes.RegisterProviderQueryServer(cfg.QueryServer(), am.keeper)
 }
 
 // InitGenesis performs genesis initialization for the provider module. It returns no validator updates.
 // Note: This method along with ValidateGenesis satisfies the CCV spec:
 // https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-initg1
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState providertypes.GenesisState
+	var genesisState ccvtypes.ProviderGenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 
 	am.keeper.InitGenesis(ctx, &genesisState)

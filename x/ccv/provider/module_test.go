@@ -8,12 +8,10 @@ import (
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/golang/mock/gomock"
 )
 
 // Tests the provider's InitGenesis implementation against the spec.
@@ -27,7 +25,7 @@ func TestInitGenesis(t *testing.T) {
 		// Whether port capability is already bound to the CCV provider module
 		isBound bool
 		// Provider's storage of consumer state to test against
-		consumerStates []types.ConsumerState
+		consumerStates []ccv.ConsumerState
 		// Error returned from ClaimCapability during port binding, default: nil
 		errFromClaimCap error
 		// Whether method call should panic, default: false
@@ -38,17 +36,17 @@ func TestInitGenesis(t *testing.T) {
 		{
 			name:           "already bound port, no consumer states",
 			isBound:        true,
-			consumerStates: []types.ConsumerState{},
+			consumerStates: []ccv.ConsumerState{},
 		},
 		{
 			name:           "no bound port, no consumer states",
 			isBound:        false,
-			consumerStates: []types.ConsumerState{},
+			consumerStates: []ccv.ConsumerState{},
 		},
 		{
 			name:    "no bound port, multiple consumer states",
 			isBound: false,
-			consumerStates: []types.ConsumerState{
+			consumerStates: []ccv.ConsumerState{
 				{
 					ChainId:   "chainId1",
 					ChannelId: "channelIdToChain1",
@@ -66,7 +64,7 @@ func TestInitGenesis(t *testing.T) {
 		{
 			name:    "already bound port, one consumer state",
 			isBound: true,
-			consumerStates: []types.ConsumerState{
+			consumerStates: []ccv.ConsumerState{
 				{
 					ChainId:   "chainId77",
 					ChannelId: "channelIdToChain77",
@@ -76,7 +74,7 @@ func TestInitGenesis(t *testing.T) {
 		{
 			name:    "capability not owned, method should panic",
 			isBound: false,
-			consumerStates: []types.ConsumerState{
+			consumerStates: []ccv.ConsumerState{
 				{
 					ChainId:   "chainId77",
 					ChannelId: "channelIdToChain77",
@@ -95,7 +93,7 @@ func TestInitGenesis(t *testing.T) {
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 
 		appModule := provider.NewAppModule(&providerKeeper)
-		genState := types.NewGenesisState(
+		genState := ccv.NewProviderGenesisState(
 			providerKeeper.GetValidatorSetUpdateId(ctx),
 			nil,
 			tc.consumerStates,
@@ -103,7 +101,7 @@ func TestInitGenesis(t *testing.T) {
 			nil,
 			nil,
 			nil,
-			types.DefaultParams(),
+			ccv.DefaultProviderParams(),
 			nil,
 			nil,
 			nil,

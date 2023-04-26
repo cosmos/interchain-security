@@ -11,7 +11,7 @@ import (
 	sdkcryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkstakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 
 	tmcrypto "github.com/tendermint/tendermint/crypto"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
@@ -103,13 +103,13 @@ func (v *CryptoIdentity) SDKValConsAddress() sdktypes.ConsAddress {
 // Returns the cons address of the crypto identity as a ProviderConsAddress.
 // In most cases, one crypto identity should NOT be casted to both a ProviderConsAddress and ConsumerConsAddress.
 // However, test intention is left to the caller.
-func (v *CryptoIdentity) ProviderConsAddress() providertypes.ProviderConsAddress {
-	return providertypes.NewProviderConsAddress(v.SDKValConsAddress())
+func (v *CryptoIdentity) ProviderConsAddress() ccvtypes.ProviderConsAddress {
+	return ccvtypes.NewProviderConsAddress(v.SDKValConsAddress())
 }
 
 // Returns the cons address of the crypto identity as a ConsumerConsAddress.
 // In most cases, one crypto identity should NOT be casted to both a ProviderConsAddress and ConsumerConsAddress.
 // However, test intention is left to the caller.
-func (v *CryptoIdentity) ConsumerConsAddress() providertypes.ConsumerConsAddress {
-	return providertypes.NewConsumerConsAddress(v.SDKValConsAddress())
+func (v *CryptoIdentity) ConsumerConsAddress() ccvtypes.ConsumerConsAddress {
+	return ccvtypes.NewConsumerConsAddress(v.SDKValConsAddress())
 }

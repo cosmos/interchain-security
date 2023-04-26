@@ -15,8 +15,7 @@ import (
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -57,13 +56,13 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		},
 	}
 
-	pd := types.NewValidatorSetChangePacketData(
+	pd := ccvtypes.NewValidatorSetChangePacketData(
 		changes1,
 		1,
 		nil,
 	)
 
-	pd2 := types.NewValidatorSetChangePacketData(
+	pd2 := ccvtypes.NewValidatorSetChangePacketData(
 		changes2,
 		2,
 		nil,
@@ -72,29 +71,29 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	testCases := []struct {
 		name                   string
 		packet                 channeltypes.Packet
-		newChanges             types.ValidatorSetChangePacketData
-		expectedPendingChanges types.ValidatorSetChangePacketData
+		newChanges             ccvtypes.ValidatorSetChangePacketData
+		expectedPendingChanges ccvtypes.ValidatorSetChangePacketData
 	}{
 		{
 			"success on first packet",
-			channeltypes.NewPacket(pd.GetBytes(), 1, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
+			channeltypes.NewPacket(pd.GetBytes(), 1, ccvtypes.ProviderPortID, providerCCVChannelID, ccvtypes.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
-			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
-			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			ccvtypes.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			ccvtypes.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 		},
 		{
 			"success on subsequent packet",
-			channeltypes.NewPacket(pd.GetBytes(), 2, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
+			channeltypes.NewPacket(pd.GetBytes(), 2, ccvtypes.ProviderPortID, providerCCVChannelID, ccvtypes.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
-			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
-			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			ccvtypes.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			ccvtypes.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 		},
 		{
 			"success on packet with more changes",
-			channeltypes.NewPacket(pd2.GetBytes(), 3, types.ProviderPortID, providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID,
+			channeltypes.NewPacket(pd2.GetBytes(), 3, ccvtypes.ProviderPortID, providerCCVChannelID, ccvtypes.ConsumerPortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
-			types.ValidatorSetChangePacketData{ValidatorUpdates: changes2},
-			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
+			ccvtypes.ValidatorSetChangePacketData{ValidatorUpdates: changes2},
+			ccvtypes.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
 				{
 					PubKey: pk1,
 					Power:  30,
@@ -118,7 +117,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	consumerKeeper.SetProviderChannel(ctx, consumerCCVChannelID)
 
 	// Set module params with custom unbonding period
-	moduleParams := consumertypes.DefaultParams()
+	moduleParams := ccvtypes.DefaultConsumerParams()
 	moduleParams.UnbondingPeriod = 100 * time.Hour
 	consumerKeeper.SetParams(ctx, moduleParams)
 
@@ -167,7 +166,7 @@ func TestOnRecvVSCPacketDuplicateUpdates(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	consumerKeeper.SetProviderChannel(ctx, consumerCCVChannelID)
-	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
+	consumerKeeper.SetParams(ctx, ccvtypes.DefaultConsumerParams())
 
 	// Construct packet/data with duplicate val updates for the same pub key
 	cId := crypto.NewCryptoIdentityFromIntSeed(43278947)
@@ -181,13 +180,13 @@ func TestOnRecvVSCPacketDuplicateUpdates(t *testing.T) {
 			Power:  473289,
 		},
 	}
-	vscData := types.NewValidatorSetChangePacketData(
+	vscData := ccvtypes.NewValidatorSetChangePacketData(
 		valUpdates,
 		1,
 		nil,
 	)
-	packet := channeltypes.NewPacket(vscData.GetBytes(), 2, types.ProviderPortID,
-		providerCCVChannelID, types.ConsumerPortID, consumerCCVChannelID, clienttypes.NewHeight(1, 0), 0)
+	packet := channeltypes.NewPacket(vscData.GetBytes(), 2, ccvtypes.ProviderPortID,
+		providerCCVChannelID, ccvtypes.ConsumerPortID, consumerCCVChannelID, clienttypes.NewHeight(1, 0), 0)
 
 	// Confirm no pending changes exist before OnRecvVSCPacket
 	_, ok := consumerKeeper.GetPendingChanges(ctx)
@@ -231,7 +230,7 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	// Set an established provider channel for later in test
 	consumerKeeper.SetProviderChannel(ctx, channelIDToProvider)
 
-	packetData := types.NewSlashPacketData(
+	packetData := ccvtypes.NewSlashPacketData(
 		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Downtime,
 	)
 
@@ -239,10 +238,10 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	packet := channeltypes.NewPacket(
 		packetData.GetBytes(),
 		1,
-		types.ConsumerPortID, // Source port
-		channelIDToDestChain, // Source channel
-		types.ProviderPortID, // Dest (counter party) port
-		channelIDOnDest,      // Dest (counter party) channel
+		ccvtypes.ConsumerPortID, // Source port
+		channelIDToDestChain,    // Source channel
+		ccvtypes.ProviderPortID, // Dest (counter party) port
+		channelIDOnDest,         // Dest (counter party) channel
 		clienttypes.Height{},
 		uint64(time.Now().Add(60*time.Second).UnixNano()),
 	)
@@ -259,20 +258,20 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	gomock.InOrder(
 
 		mocks.MockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.ChannelCapabilityPath(types.ConsumerPortID, channelIDToDestChain),
+			ctx, host.ChannelCapabilityPath(ccvtypes.ConsumerPortID, channelIDToDestChain),
 		).Return(dummyCap, true).Times(1),
 		// Due to input error ack, ChanCloseInit is called on channel to destination chain
 		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
-			ctx, types.ConsumerPortID, channelIDToDestChain, dummyCap,
+			ctx, ccvtypes.ConsumerPortID, channelIDToDestChain, dummyCap,
 		).Return(nil).Times(1),
 
 		mocks.MockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.ChannelCapabilityPath(types.ConsumerPortID, channelIDToProvider),
+			ctx, host.ChannelCapabilityPath(ccvtypes.ConsumerPortID, channelIDToProvider),
 		).Return(dummyCap, true).Times(1),
 		// Due to input error ack and existence of established channel to provider,
 		// ChanCloseInit is called on channel to provider
 		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
-			ctx, types.ConsumerPortID, channelIDToProvider, dummyCap,
+			ctx, ccvtypes.ConsumerPortID, channelIDToProvider, dummyCap,
 		).Return(nil).Times(1),
 	)
 

@@ -8,8 +8,6 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 const (
@@ -51,13 +49,13 @@ var (
 	KeyMaxThrottledPackets         = []byte("MaxThrottledPackets")
 )
 
-// ParamKeyTable returns a key table with the necessary registered provider params
-func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
+// ProviderParamKeyTable returns a key table with the necessary registered provider params
+func ProviderParamKeyTable() paramtypes.KeyTable {
+	return paramtypes.NewKeyTable().RegisterParamSet(&ProviderParams{})
 }
 
 // NewParams creates new provider parameters with provided arguments
-func NewParams(
+func NewProviderParams(
 	cs *ibctmtypes.ClientState,
 	trustingPeriodFraction string,
 	ccvTimeoutPeriod time.Duration,
@@ -66,8 +64,8 @@ func NewParams(
 	slashMeterReplenishPeriod time.Duration,
 	slashMeterReplenishFraction string,
 	maxThrottledPackets int64,
-) Params {
-	return Params{
+) ProviderParams {
+	return ProviderParams{
 		TemplateClient:              cs,
 		TrustingPeriodFraction:      trustingPeriodFraction,
 		CcvTimeoutPeriod:            ccvTimeoutPeriod,
@@ -79,11 +77,11 @@ func NewParams(
 	}
 }
 
-// DefaultParams is the default params for the provider module
-func DefaultParams() Params {
+// DefaultProviderParams is the default params for the provider module
+func DefaultProviderParams() ProviderParams {
 	// create default client state with chainID, trusting period, unbonding period, and initial height zeroed out.
 	// these fields will be populated during proposal handler.
-	return NewParams(
+	return NewProviderParams(
 		ibctmtypes.NewClientState(
 			"", // chainID
 			ibctmtypes.DefaultTrustLevel,
@@ -97,7 +95,7 @@ func DefaultParams() Params {
 			true,
 		),
 		DefaultTrustingPeriodFraction,
-		ccvtypes.DefaultCCVTimeoutPeriod,
+		DefaultCCVTimeoutPeriod,
 		DefaultInitTimeoutPeriod,
 		DefaultVscTimeoutPeriod,
 		DefaultSlashMeterReplenishPeriod,
@@ -107,48 +105,48 @@ func DefaultParams() Params {
 }
 
 // Validate all ccv-provider module parameters
-func (p Params) Validate() error {
+func (p ProviderParams) Validate() error {
 	if p.TemplateClient == nil {
 		return fmt.Errorf("template client is nil")
 	}
 	if err := validateTemplateClient(*p.TemplateClient); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateStringFraction(p.TrustingPeriodFraction); err != nil {
+	if err := ValidateStringFraction(p.TrustingPeriodFraction); err != nil {
 		return fmt.Errorf("trusting period fraction is invalid: %s", err)
 	}
-	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
+	if err := ValidateDuration(p.CcvTimeoutPeriod); err != nil {
 		return fmt.Errorf("ccv timeout period is invalid: %s", err)
 	}
-	if err := ccvtypes.ValidateDuration(p.InitTimeoutPeriod); err != nil {
+	if err := ValidateDuration(p.InitTimeoutPeriod); err != nil {
 		return fmt.Errorf("init timeout period is invalid: %s", err)
 	}
-	if err := ccvtypes.ValidateDuration(p.VscTimeoutPeriod); err != nil {
+	if err := ValidateDuration(p.VscTimeoutPeriod); err != nil {
 		return fmt.Errorf("vsc timeout period is invalid: %s", err)
 	}
-	if err := ccvtypes.ValidateDuration(p.SlashMeterReplenishPeriod); err != nil {
+	if err := ValidateDuration(p.SlashMeterReplenishPeriod); err != nil {
 		return fmt.Errorf("slash meter replenish period is invalid: %s", err)
 	}
-	if err := ccvtypes.ValidateStringFraction(p.SlashMeterReplenishFraction); err != nil {
+	if err := ValidateStringFraction(p.SlashMeterReplenishFraction); err != nil {
 		return fmt.Errorf("slash meter replenish fraction is invalid: %s", err)
 	}
-	if err := ccvtypes.ValidatePositiveInt64(p.MaxThrottledPackets); err != nil {
+	if err := ValidatePositiveInt64(p.MaxThrottledPackets); err != nil {
 		return fmt.Errorf("max throttled packets is invalid: %s", err)
 	}
 	return nil
 }
 
 // ParamSetPairs implements params.ParamSet
-func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
+func (p *ProviderParams) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyTemplateClient, p.TemplateClient, validateTemplateClient),
-		paramtypes.NewParamSetPair(KeyTrustingPeriodFraction, p.TrustingPeriodFraction, ccvtypes.ValidateStringFraction),
-		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
-		paramtypes.NewParamSetPair(KeyInitTimeoutPeriod, p.InitTimeoutPeriod, ccvtypes.ValidateDuration),
-		paramtypes.NewParamSetPair(KeyVscTimeoutPeriod, p.VscTimeoutPeriod, ccvtypes.ValidateDuration),
-		paramtypes.NewParamSetPair(KeySlashMeterReplenishPeriod, p.SlashMeterReplenishPeriod, ccvtypes.ValidateDuration),
-		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ccvtypes.ValidateStringFraction),
-		paramtypes.NewParamSetPair(KeyMaxThrottledPackets, p.MaxThrottledPackets, ccvtypes.ValidatePositiveInt64),
+		paramtypes.NewParamSetPair(KeyTrustingPeriodFraction, p.TrustingPeriodFraction, ValidateStringFraction),
+		paramtypes.NewParamSetPair(KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ValidateDuration),
+		paramtypes.NewParamSetPair(KeyInitTimeoutPeriod, p.InitTimeoutPeriod, ValidateDuration),
+		paramtypes.NewParamSetPair(KeyVscTimeoutPeriod, p.VscTimeoutPeriod, ValidateDuration),
+		paramtypes.NewParamSetPair(KeySlashMeterReplenishPeriod, p.SlashMeterReplenishPeriod, ValidateDuration),
+		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ValidateStringFraction),
+		paramtypes.NewParamSetPair(KeyMaxThrottledPackets, p.MaxThrottledPackets, ValidatePositiveInt64),
 	}
 }
 
@@ -164,13 +162,13 @@ func validateTemplateClient(i interface{}) error {
 	// populate zeroed fields with valid fields
 	copiedClient.ChainId = "chainid"
 
-	trustPeriod, err := ccvtypes.CalculateTrustPeriod(consumertypes.DefaultConsumerUnbondingPeriod, DefaultTrustingPeriodFraction)
+	trustPeriod, err := CalculateTrustPeriod(DefaultConsumerUnbondingPeriod, DefaultTrustingPeriodFraction)
 	if err != nil {
 		return fmt.Errorf("invalid TrustPeriodFraction: %T", err)
 	}
 	copiedClient.TrustingPeriod = trustPeriod
 
-	copiedClient.UnbondingPeriod = consumertypes.DefaultConsumerUnbondingPeriod
+	copiedClient.UnbondingPeriod = DefaultConsumerUnbondingPeriod
 	copiedClient.LatestHeight = clienttypes.NewHeight(0, 1)
 
 	if err := copiedClient.Validate(); err != nil {

@@ -11,8 +11,8 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // EndBlockRD executes EndBlock logic for the Reward Distribution sub-protocol.
@@ -41,7 +41,7 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 	}
 
 	// Update LastTransmissionBlockHeight
-	newLtbh := types.LastTransmissionBlockHeight{
+	newLtbh := ccvtypes.LastTransmissionBlockHeight{
 		Height: ctx.BlockHeight(),
 	}
 	k.SetLastTransmissionBlockHeight(ctx, newLtbh)
@@ -64,7 +64,7 @@ func (k Keeper) DistributeRewardsInternally(ctx sdk.Context) {
 	// NOTE the truncated decimal remainder will be sent to the provider fee pool
 	consRedistrTokens, _ := decFPTokens.MulDec(frac).TruncateDecimal()
 	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
-		types.ConsumerRedistributeName, consRedistrTokens)
+		consumertypes.ConsumerRedistributeName, consRedistrTokens)
 	if err != nil {
 		// SendCoinsFromModuleToModule will panic if either module account does not exist,
 		// while SendCoins (called inside) returns an error upon failure.
@@ -80,7 +80,7 @@ func (k Keeper) DistributeRewardsInternally(ctx sdk.Context) {
 	// chain.
 	remainingTokens := fpTokens.Sub(consRedistrTokens)
 	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
-		types.ConsumerToSendToProviderName, remainingTokens)
+		consumertypes.ConsumerToSendToProviderName, remainingTokens)
 	if err != nil {
 		// SendCoinsFromModuleToModule will panic if either module account does not exist,
 		// while SendCoins (called inside) returns an error upon failure.
@@ -106,7 +106,7 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 	transferChannel, found := k.channelKeeper.GetChannel(ctx, transfertypes.PortID, ch)
 	if found && transferChannel.State == channeltypes.OPEN {
 		tstProviderAddr := k.authKeeper.GetModuleAccount(ctx,
-			types.ConsumerToSendToProviderName).GetAddress()
+			consumertypes.ConsumerToSendToProviderName).GetAddress()
 		tstProviderTokens := k.bankKeeper.GetAllBalances(ctx, tstProviderAddr)
 		providerAddr := k.GetProviderFeePoolAddrStr(ctx)
 		timeoutHeight := clienttypes.ZeroHeight()
@@ -137,13 +137,13 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 		currentHeight := ctx.BlockHeight()
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
-				ccv.EventTypeFeeDistribution,
-				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-				sdk.NewAttribute(ccv.AttributeDistributionCurrentHeight, strconv.Itoa(int(currentHeight))),
-				sdk.NewAttribute(ccv.AttributeDistributionNextHeight, strconv.Itoa(int(currentHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
-				sdk.NewAttribute(ccv.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
-				sdk.NewAttribute(ccv.AttributeDistributionTotal, fpTokens.String()),
-				sdk.NewAttribute(ccv.AttributeDistributionToProvider, tstProviderTokens.String()),
+				ccvtypes.EventTypeFeeDistribution,
+				sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
+				sdk.NewAttribute(ccvtypes.AttributeDistributionCurrentHeight, strconv.Itoa(int(currentHeight))),
+				sdk.NewAttribute(ccvtypes.AttributeDistributionNextHeight, strconv.Itoa(int(currentHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
+				sdk.NewAttribute(ccvtypes.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
+				sdk.NewAttribute(ccvtypes.AttributeDistributionTotal, fpTokens.String()),
+				sdk.NewAttribute(ccvtypes.AttributeDistributionToProvider, tstProviderTokens.String()),
 			),
 		)
 	}
@@ -151,10 +151,10 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 	return nil
 }
 
-func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) types.LastTransmissionBlockHeight {
+func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) ccvtypes.LastTransmissionBlockHeight {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.LastDistributionTransmissionKey())
-	ltbh := types.LastTransmissionBlockHeight{}
+	bz := store.Get(consumertypes.LastDistributionTransmissionKey())
+	ltbh := ccvtypes.LastTransmissionBlockHeight{}
 	if bz != nil {
 		if err := ltbh.Unmarshal(bz); err != nil {
 			panic(fmt.Errorf("failed to unmarshal LastTransmissionBlockHeight: %w", err))
@@ -163,13 +163,13 @@ func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) types.LastTransm
 	return ltbh
 }
 
-func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context, ltbh types.LastTransmissionBlockHeight) {
+func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context, ltbh ccvtypes.LastTransmissionBlockHeight) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := ltbh.Marshal()
 	if err != nil {
 		panic(fmt.Errorf("failed to marshal LastTransmissionBlockHeight: %w", err))
 	}
-	store.Set(types.LastDistributionTransmissionKey(), bz)
+	store.Set(consumertypes.LastDistributionTransmissionKey(), bz)
 }
 
 func (k Keeper) ChannelOpenInit(ctx sdk.Context, msg *channeltypes.MsgChannelOpenInit) (
@@ -186,7 +186,7 @@ func (k Keeper) TransferChannelExists(ctx sdk.Context, channelID string) bool {
 func (k Keeper) GetConnectionHops(ctx sdk.Context, srcPort, srcChan string) ([]string, error) {
 	ch, found := k.channelKeeper.GetChannel(ctx, srcPort, srcChan)
 	if !found {
-		return []string{}, sdkerrors.Wrapf(ccv.ErrChannelNotFound,
+		return []string{}, sdkerrors.Wrapf(ccvtypes.ErrChannelNotFound,
 			"cannot get connection hops from non-existent channel")
 	}
 	return ch.ConnectionHops, nil
@@ -194,7 +194,7 @@ func (k Keeper) GetConnectionHops(ctx sdk.Context, srcPort, srcChan string) ([]s
 
 // GetEstimatedNextFeeDistribution returns data about next fee distribution. Data represents an estimation of
 // accumulated fees at the current block height.
-func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) types.NextFeeDistributionEstimate {
+func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) ccvtypes.NextFeeDistributionEstimate {
 	lastH := k.GetLastTransmissionBlockHeight(ctx)
 	nextH := lastH.GetHeight() + k.GetBlocksPerDistributionTransmission(ctx)
 
@@ -213,7 +213,7 @@ func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) types.NextFeeDi
 	consumerTokens, _ := totalTokens.MulDec(frac).TruncateDecimal()
 	providerTokens := total.Sub(consumerTokens)
 
-	return types.NextFeeDistributionEstimate{
+	return ccvtypes.NextFeeDistributionEstimate{
 		CurrentHeight:        ctx.BlockHeight(),
 		LastHeight:           lastH.GetHeight(),
 		NextHeight:           nextH,

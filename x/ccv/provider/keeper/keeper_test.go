@@ -12,8 +12,7 @@ import (
 
 	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
@@ -53,7 +52,7 @@ func TestGetAllValsetUpdateBlockHeights(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	cases := []types.ValsetUpdateIdToHeight{
+	cases := []ccvtypes.ValsetUpdateIdToHeight{
 		{
 			ValsetUpdateId: 2,
 			Height:         22,
@@ -162,7 +161,7 @@ func TestPendingVSCs(t *testing.T) {
 		ppks[i], _ = cryptocodec.ToTmProtoPublicKey(pk)
 	}
 
-	packetList := []ccv.ValidatorSetChangePacketData{
+	packetList := []ccvtypes.ValidatorSetChangePacketData{
 		{
 			ValidatorUpdates: []abci.ValidatorUpdate{
 				{PubKey: ppks[0], Power: 1},
@@ -182,7 +181,7 @@ func TestPendingVSCs(t *testing.T) {
 	packets := providerKeeper.GetPendingVSCPackets(ctx, chainID)
 	require.Len(t, packets, 2)
 
-	newPacket := ccv.ValidatorSetChangePacketData{
+	newPacket := ccvtypes.ValidatorSetChangePacketData{
 		ValidatorUpdates: []abci.ValidatorUpdate{
 			{PubKey: ppks[3], Power: 4},
 		},
@@ -227,7 +226,7 @@ func TestGetAllUnbondingOpIndexes(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	ops := []types.VscUnbondingOps{
+	ops := []ccvtypes.VscUnbondingOps{
 		{
 			VscId:          2,
 			UnbondingOpIds: []uint64{4, 5, 6, 7},
@@ -285,7 +284,7 @@ func TestInitTimeoutTimestamp(t *testing.T) {
 
 	now := time.Now().UTC()
 	nsNow := uint64(now.UnixNano())
-	timeoutTimestamps := []types.InitTimeoutTimestamp{
+	timeoutTimestamps := []ccvtypes.InitTimeoutTimestamp{
 		{
 			ChainId:   "chain-2",
 			Timestamp: nsNow,
@@ -355,10 +354,10 @@ func TestVscSendTimestamp(t *testing.T) {
 		{chainID: "chain2", ts: now.Add(time.Hour), vscID: 1},
 	}
 	chainID := testCases[0].chainID
-	expectedGetAllOrder := []types.VscSendTimestamp{}
+	expectedGetAllOrder := []ccvtypes.VscSendTimestamp{}
 	for _, tc := range testCases {
 		if tc.chainID == chainID {
-			expectedGetAllOrder = append(expectedGetAllOrder, types.VscSendTimestamp{VscId: tc.vscID, Timestamp: tc.ts})
+			expectedGetAllOrder = append(expectedGetAllOrder, ccvtypes.VscSendTimestamp{VscId: tc.vscID, Timestamp: tc.ts})
 		}
 	}
 	// sorting by vscID
@@ -397,11 +396,11 @@ func TestGetAllConsumerChains(t *testing.T) {
 	defer ctrl.Finish()
 
 	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
-	expectedGetAllOrder := []types.Chain{}
+	expectedGetAllOrder := []ccvtypes.Chain{}
 	for i, chainID := range chainIDs {
 		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
 		pk.SetConsumerClientId(ctx, chainID, clientID)
-		expectedGetAllOrder = append(expectedGetAllOrder, types.Chain{ChainId: chainID, ClientId: clientID})
+		expectedGetAllOrder = append(expectedGetAllOrder, ccvtypes.Chain{ChainId: chainID, ClientId: clientID})
 	}
 	// sorting by chainID
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
@@ -419,11 +418,11 @@ func TestGetAllChannelToChains(t *testing.T) {
 	defer ctrl.Finish()
 
 	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
-	expectedGetAllOrder := []types.ChannelToChain{}
+	expectedGetAllOrder := []ccvtypes.ChannelToChain{}
 	for i, chainID := range chainIDs {
 		channelID := fmt.Sprintf("client-%d", len(chainIDs)-i)
 		pk.SetChannelToChain(ctx, channelID, chainID)
-		expectedGetAllOrder = append(expectedGetAllOrder, types.ChannelToChain{ChainId: chainID, ChannelId: channelID})
+		expectedGetAllOrder = append(expectedGetAllOrder, ccvtypes.ChannelToChain{ChainId: chainID, ChannelId: channelID})
 	}
 	// sorting by channelID
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
@@ -440,7 +439,7 @@ func TestGetAllUnbondingOps(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	ops := []types.UnbondingOp{
+	ops := []ccvtypes.UnbondingOp{
 		{
 			Id:                      2,
 			UnbondingConsumerChains: []string{"chain-2", "chain-1"},
@@ -480,7 +479,7 @@ func TestRemoveConsumerFromUnbondingOp(t *testing.T) {
 	defer ctrl.Finish()
 
 	var expectedID uint64 = 1
-	expectedUnbondingOp := types.UnbondingOp{
+	expectedUnbondingOp := ccvtypes.UnbondingOp{
 		Id:                      expectedID,
 		UnbondingConsumerChains: []string{"chain-3", "chain-1", "chain-2"},
 	}

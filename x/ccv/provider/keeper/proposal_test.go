@@ -19,9 +19,7 @@ import (
 
 	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -36,7 +34,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 	type testCase struct {
 		description string
 		malleate    func(ctx sdk.Context, k providerkeeper.Keeper, chainID string)
-		prop        *providertypes.ConsumerAdditionProposal
+		prop        *ccvtypes.ConsumerAdditionProposal
 		// Time when prop is handled
 		blockTime time.Time
 		// Whether it's expected that the proposal is successfully verified
@@ -51,7 +49,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 		{
 			description: "expect to append valid proposal",
 			malleate:    func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {},
-			prop: providertypes.NewConsumerAdditionProposal(
+			prop: ccvtypes.NewConsumerAdditionProposal(
 				"title",
 				"description",
 				"chainID",
@@ -65,7 +63,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				100000000000,
 				100000000000,
 				100000000000,
-			).(*providertypes.ConsumerAdditionProposal),
+			).(*ccvtypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: true,
 		},
@@ -75,7 +73,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				k.SetConsumerClientId(ctx, chainID, "anyClientId")
 			},
 
-			prop: providertypes.NewConsumerAdditionProposal(
+			prop: ccvtypes.NewConsumerAdditionProposal(
 				"title",
 				"description",
 				"chainID",
@@ -89,7 +87,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				100000000000,
 				100000000000,
 				100000000000,
-			).(*providertypes.ConsumerAdditionProposal),
+			).(*ccvtypes.ConsumerAdditionProposal),
 			blockTime:     now,
 			expAppendProp: false,
 		},
@@ -99,7 +97,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+		providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		if tc.expAppendProp {
@@ -172,7 +170,7 @@ func TestCreateConsumerClient(t *testing.T) {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+		providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 
 		// Test specific setup
 		tc.setup(&providerKeeper, ctx, &mocks)
@@ -214,15 +212,15 @@ func testCreatedConsumerClient(t *testing.T,
 // and deletion keeper methods for pending consumer addition props
 func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 	testCases := []struct {
-		providertypes.ConsumerAdditionProposal
+		ccvtypes.ConsumerAdditionProposal
 		ExpDeleted bool
 	}{
 		{
-			ConsumerAdditionProposal: providertypes.ConsumerAdditionProposal{ChainId: "0", SpawnTime: time.Now().UTC()},
+			ConsumerAdditionProposal: ccvtypes.ConsumerAdditionProposal{ChainId: "0", SpawnTime: time.Now().UTC()},
 			ExpDeleted:               true,
 		},
 		{
-			ConsumerAdditionProposal: providertypes.ConsumerAdditionProposal{ChainId: "1", SpawnTime: time.Now().UTC().Add(time.Hour)},
+			ConsumerAdditionProposal: ccvtypes.ConsumerAdditionProposal{ChainId: "1", SpawnTime: time.Now().UTC().Add(time.Hour)},
 			ExpDeleted:               false,
 		},
 	}
@@ -256,14 +254,14 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 // that are ready to execute are accessed in order by timestamp via the iterator
 func TestGetConsumerAdditionPropsToExecute(t *testing.T) {
 	now := time.Now().UTC()
-	sampleProp1 := providertypes.ConsumerAdditionProposal{ChainId: "chain-2", SpawnTime: now}
-	sampleProp2 := providertypes.ConsumerAdditionProposal{ChainId: "chain-1", SpawnTime: now.Add(time.Hour)}
-	sampleProp3 := providertypes.ConsumerAdditionProposal{ChainId: "chain-4", SpawnTime: now.Add(-time.Hour)}
-	sampleProp4 := providertypes.ConsumerAdditionProposal{ChainId: "chain-3", SpawnTime: now}
-	sampleProp5 := providertypes.ConsumerAdditionProposal{ChainId: "chain-1", SpawnTime: now.Add(2 * time.Hour)}
+	sampleProp1 := ccvtypes.ConsumerAdditionProposal{ChainId: "chain-2", SpawnTime: now}
+	sampleProp2 := ccvtypes.ConsumerAdditionProposal{ChainId: "chain-1", SpawnTime: now.Add(time.Hour)}
+	sampleProp3 := ccvtypes.ConsumerAdditionProposal{ChainId: "chain-4", SpawnTime: now.Add(-time.Hour)}
+	sampleProp4 := ccvtypes.ConsumerAdditionProposal{ChainId: "chain-3", SpawnTime: now}
+	sampleProp5 := ccvtypes.ConsumerAdditionProposal{ChainId: "chain-1", SpawnTime: now.Add(2 * time.Hour)}
 
-	getExpectedOrder := func(props []providertypes.ConsumerAdditionProposal, accessTime time.Time) []providertypes.ConsumerAdditionProposal {
-		expectedOrder := []providertypes.ConsumerAdditionProposal{}
+	getExpectedOrder := func(props []ccvtypes.ConsumerAdditionProposal, accessTime time.Time) []ccvtypes.ConsumerAdditionProposal {
+		expectedOrder := []ccvtypes.ConsumerAdditionProposal{}
 		for _, prop := range props {
 			if !accessTime.Before(prop.SpawnTime) {
 				expectedOrder = append(expectedOrder, prop)
@@ -284,29 +282,29 @@ func TestGetConsumerAdditionPropsToExecute(t *testing.T) {
 	}
 
 	testCases := []struct {
-		propSubmitOrder []providertypes.ConsumerAdditionProposal
+		propSubmitOrder []ccvtypes.ConsumerAdditionProposal
 		accessTime      time.Time
 	}{
 		{
-			propSubmitOrder: []providertypes.ConsumerAdditionProposal{
+			propSubmitOrder: []ccvtypes.ConsumerAdditionProposal{
 				sampleProp1, sampleProp2, sampleProp3, sampleProp4, sampleProp5,
 			},
 			accessTime: now,
 		},
 		{
-			propSubmitOrder: []providertypes.ConsumerAdditionProposal{
+			propSubmitOrder: []ccvtypes.ConsumerAdditionProposal{
 				sampleProp3, sampleProp2, sampleProp1, sampleProp5, sampleProp4,
 			},
 			accessTime: now.Add(time.Hour),
 		},
 		{
-			propSubmitOrder: []providertypes.ConsumerAdditionProposal{
+			propSubmitOrder: []ccvtypes.ConsumerAdditionProposal{
 				sampleProp5, sampleProp4, sampleProp3, sampleProp2, sampleProp1,
 			},
 			accessTime: now.Add(-2 * time.Hour),
 		},
 		{
-			propSubmitOrder: []providertypes.ConsumerAdditionProposal{
+			propSubmitOrder: []ccvtypes.ConsumerAdditionProposal{
 				sampleProp5, sampleProp4, sampleProp3, sampleProp2, sampleProp1,
 			},
 			accessTime: now.Add(3 * time.Hour),
@@ -334,7 +332,7 @@ func TestGetAllConsumerAdditionProps(t *testing.T) {
 	defer ctrl.Finish()
 
 	now := time.Now().UTC()
-	props := []providertypes.ConsumerAdditionProposal{
+	props := []ccvtypes.ConsumerAdditionProposal{
 		{ChainId: "chain-2", SpawnTime: now},
 		{ChainId: "chain-1", SpawnTime: now.Add(2 * time.Hour)},
 		{ChainId: "chain-4", SpawnTime: now.Add(-time.Hour)},
@@ -379,7 +377,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		setupMocks  func(ctx sdk.Context, k providerkeeper.Keeper, chainID string)
 
 		// Consumer removal proposal to handle
-		prop *providertypes.ConsumerRemovalProposal
+		prop *ccvtypes.ConsumerRemovalProposal
 		// Time when prop is handled
 		blockTime time.Time
 		// Whether it's expected that the proposal is successfully verified
@@ -402,12 +400,12 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			setupMocks: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
 				k.SetConsumerClientId(ctx, chainID, "ClientID")
 			},
-			prop: providertypes.NewConsumerRemovalProposal(
+			prop: ccvtypes.NewConsumerRemovalProposal(
 				"title",
 				"description",
 				"chainID",
 				now,
-			).(*providertypes.ConsumerRemovalProposal),
+			).(*ccvtypes.ConsumerRemovalProposal),
 			blockTime:     hourAfterNow, // After stop time.
 			expAppendProp: true,
 			chainId:       "chainID",
@@ -417,12 +415,12 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			setupMocks: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
 				k.SetConsumerClientId(ctx, chainID, "ClientID")
 			},
-			prop: providertypes.NewConsumerRemovalProposal(
+			prop: ccvtypes.NewConsumerRemovalProposal(
 				"title",
 				"description",
 				"chainID",
 				hourBeforeNow,
-			).(*providertypes.ConsumerRemovalProposal),
+			).(*ccvtypes.ConsumerRemovalProposal),
 			blockTime:     hourAfterNow, // After stop time.
 			expAppendProp: true,
 			chainId:       "chainID",
@@ -432,12 +430,12 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			setupMocks: func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {
 				k.SetConsumerClientId(ctx, chainID, "ClientID")
 			},
-			prop: providertypes.NewConsumerRemovalProposal(
+			prop: ccvtypes.NewConsumerRemovalProposal(
 				"title",
 				"description",
 				"chainID",
 				hourAfterNow,
-			).(*providertypes.ConsumerRemovalProposal),
+			).(*ccvtypes.ConsumerRemovalProposal),
 			blockTime:     now,
 			expAppendProp: true,
 			chainId:       "chainID",
@@ -445,12 +443,12 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		{
 			description: "rejected valid proposal - consumer chain does not exist",
 			setupMocks:  func(ctx sdk.Context, k providerkeeper.Keeper, chainID string) {},
-			prop: providertypes.NewConsumerRemovalProposal(
+			prop: ccvtypes.NewConsumerRemovalProposal(
 				"title",
 				"description",
 				"chainID-2",
 				hourAfterNow,
-			).(*providertypes.ConsumerRemovalProposal),
+			).(*ccvtypes.ConsumerRemovalProposal),
 			blockTime:     hourAfterNow, // After stop time.
 			expAppendProp: false,
 			chainId:       "chainID-2",
@@ -462,7 +460,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+		providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		// Mock expectations and setup for stopping the consumer chain, if applicable
@@ -525,7 +523,7 @@ func TestStopConsumerChain(t *testing.T) {
 			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
 
-				providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
+				providerKeeper.QueueGlobalSlashEntry(ctx, ccvtypes.NewGlobalSlashEntry(
 					ctx.BlockTime(), "chainID", 1, cryptoutil.NewCryptoIdentityFromIntSeed(90).ProviderConsAddress()))
 
 				err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chainID", 1, testkeeper.GetNewSlashPacketData())
@@ -553,7 +551,7 @@ func TestStopConsumerChain(t *testing.T) {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+		providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 
 		// Setup specific to test case
 		tc.setup(ctx, &providerKeeper, mocks)
@@ -612,15 +610,15 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 // and deletion methods for pending consumer removal props
 func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 	testCases := []struct {
-		providertypes.ConsumerRemovalProposal
+		ccvtypes.ConsumerRemovalProposal
 		ExpDeleted bool
 	}{
 		{
-			ConsumerRemovalProposal: providertypes.ConsumerRemovalProposal{ChainId: "8", StopTime: time.Now().UTC()},
+			ConsumerRemovalProposal: ccvtypes.ConsumerRemovalProposal{ChainId: "8", StopTime: time.Now().UTC()},
 			ExpDeleted:              true,
 		},
 		{
-			ConsumerRemovalProposal: providertypes.ConsumerRemovalProposal{ChainId: "9", StopTime: time.Now().UTC().Add(time.Hour)},
+			ConsumerRemovalProposal: ccvtypes.ConsumerRemovalProposal{ChainId: "9", StopTime: time.Now().UTC().Add(time.Hour)},
 			ExpDeleted:              false,
 		},
 	}
@@ -653,14 +651,14 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 // that are ready to execute are accessed in order by timestamp via the iterator
 func TestGetConsumerRemovalPropsToExecute(t *testing.T) {
 	now := time.Now().UTC()
-	sampleProp1 := providertypes.ConsumerRemovalProposal{ChainId: "chain-2", StopTime: now}
-	sampleProp2 := providertypes.ConsumerRemovalProposal{ChainId: "chain-1", StopTime: now.Add(time.Hour)}
-	sampleProp3 := providertypes.ConsumerRemovalProposal{ChainId: "chain-4", StopTime: now.Add(-time.Hour)}
-	sampleProp4 := providertypes.ConsumerRemovalProposal{ChainId: "chain-3", StopTime: now}
-	sampleProp5 := providertypes.ConsumerRemovalProposal{ChainId: "chain-1", StopTime: now.Add(2 * time.Hour)}
+	sampleProp1 := ccvtypes.ConsumerRemovalProposal{ChainId: "chain-2", StopTime: now}
+	sampleProp2 := ccvtypes.ConsumerRemovalProposal{ChainId: "chain-1", StopTime: now.Add(time.Hour)}
+	sampleProp3 := ccvtypes.ConsumerRemovalProposal{ChainId: "chain-4", StopTime: now.Add(-time.Hour)}
+	sampleProp4 := ccvtypes.ConsumerRemovalProposal{ChainId: "chain-3", StopTime: now}
+	sampleProp5 := ccvtypes.ConsumerRemovalProposal{ChainId: "chain-1", StopTime: now.Add(2 * time.Hour)}
 
-	getExpectedOrder := func(props []providertypes.ConsumerRemovalProposal, accessTime time.Time) []providertypes.ConsumerRemovalProposal {
-		expectedOrder := []providertypes.ConsumerRemovalProposal{}
+	getExpectedOrder := func(props []ccvtypes.ConsumerRemovalProposal, accessTime time.Time) []ccvtypes.ConsumerRemovalProposal {
+		expectedOrder := []ccvtypes.ConsumerRemovalProposal{}
 		for _, prop := range props {
 			if !accessTime.Before(prop.StopTime) {
 				expectedOrder = append(expectedOrder, prop)
@@ -678,29 +676,29 @@ func TestGetConsumerRemovalPropsToExecute(t *testing.T) {
 	}
 
 	testCases := []struct {
-		propSubmitOrder []providertypes.ConsumerRemovalProposal
+		propSubmitOrder []ccvtypes.ConsumerRemovalProposal
 		accessTime      time.Time
 	}{
 		{
-			propSubmitOrder: []providertypes.ConsumerRemovalProposal{
+			propSubmitOrder: []ccvtypes.ConsumerRemovalProposal{
 				sampleProp1, sampleProp2, sampleProp3, sampleProp4, sampleProp5,
 			},
 			accessTime: now,
 		},
 		{
-			propSubmitOrder: []providertypes.ConsumerRemovalProposal{
+			propSubmitOrder: []ccvtypes.ConsumerRemovalProposal{
 				sampleProp3, sampleProp2, sampleProp1, sampleProp5, sampleProp4,
 			},
 			accessTime: now.Add(time.Hour),
 		},
 		{
-			propSubmitOrder: []providertypes.ConsumerRemovalProposal{
+			propSubmitOrder: []ccvtypes.ConsumerRemovalProposal{
 				sampleProp5, sampleProp4, sampleProp3, sampleProp2, sampleProp1,
 			},
 			accessTime: now.Add(-2 * time.Hour),
 		},
 		{
-			propSubmitOrder: []providertypes.ConsumerRemovalProposal{
+			propSubmitOrder: []ccvtypes.ConsumerRemovalProposal{
 				sampleProp5, sampleProp4, sampleProp3, sampleProp2, sampleProp1,
 			},
 			accessTime: now.Add(3 * time.Hour),
@@ -728,7 +726,7 @@ func TestGetAllConsumerRemovalProps(t *testing.T) {
 	defer ctrl.Finish()
 
 	now := time.Now().UTC()
-	props := []providertypes.ConsumerRemovalProposal{
+	props := []ccvtypes.ConsumerRemovalProposal{
 		{ChainId: "chain-2", StopTime: now},
 		{ChainId: "chain-1", StopTime: now.Add(2 * time.Hour)},
 		{ChainId: "chain-4", StopTime: now.Add(-time.Hour)},
@@ -765,7 +763,7 @@ func TestGetAllConsumerRemovalProps(t *testing.T) {
 func TestMakeConsumerGenesis(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-	moduleParams := providertypes.Params{
+	moduleParams := ccvtypes.ProviderParams{
 		TemplateClient: &ibctmtypes.ClientState{
 			TrustLevel:    ibctmtypes.DefaultTrustLevel,
 			MaxClockDrift: 10000000000,
@@ -812,13 +810,13 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		},
 		// Note these are unused provider parameters for this test, and not actually asserted against
 		// They must be populated with reasonable values to satisfy SetParams though.
-		TrustingPeriodFraction:      providertypes.DefaultTrustingPeriodFraction,
+		TrustingPeriodFraction:      ccvtypes.DefaultTrustingPeriodFraction,
 		CcvTimeoutPeriod:            ccvtypes.DefaultCCVTimeoutPeriod,
-		InitTimeoutPeriod:           providertypes.DefaultInitTimeoutPeriod,
-		VscTimeoutPeriod:            providertypes.DefaultVscTimeoutPeriod,
-		SlashMeterReplenishPeriod:   providertypes.DefaultSlashMeterReplenishPeriod,
-		SlashMeterReplenishFraction: providertypes.DefaultSlashMeterReplenishFraction,
-		MaxThrottledPackets:         providertypes.DefaultMaxThrottledPackets,
+		InitTimeoutPeriod:           ccvtypes.DefaultInitTimeoutPeriod,
+		VscTimeoutPeriod:            ccvtypes.DefaultVscTimeoutPeriod,
+		SlashMeterReplenishPeriod:   ccvtypes.DefaultSlashMeterReplenishPeriod,
+		SlashMeterReplenishFraction: ccvtypes.DefaultSlashMeterReplenishFraction,
+		MaxThrottledPackets:         ccvtypes.DefaultMaxThrottledPackets,
 	}
 	providerKeeper.SetParams(ctx, moduleParams)
 	defer ctrl.Finish()
@@ -831,7 +829,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	gomock.InOrder(testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, 1814400000000000)...)
 
 	// matches params from jsonString
-	prop := providertypes.ConsumerAdditionProposal{
+	prop := ccvtypes.ConsumerAdditionProposal{
 		Title:                             "title",
 		Description:                       "desc",
 		ChainId:                           "testchain1",
@@ -847,7 +845,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 
 	jsonString := `{"params":{"enabled":true, "blocks_per_distribution_transmission":1000, "ccv_timeout_period":2419200000000000, "transfer_timeout_period": 3600000000000, "consumer_redistribution_fraction":"0.75", "historical_entries":10000, "unbonding_period": 1728000000000000, "soft_opt_out_threshold": "0.05"},"new_chain":true,"provider_client_state":{"chain_id":"testchain1","trust_level":{"numerator":1,"denominator":3},"trusting_period":1197504000000000,"unbonding_period":1814400000000000,"max_clock_drift":10000000000,"frozen_height":{},"latest_height":{"revision_height":5},"proof_specs":[{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":33,"min_prefix_length":4,"max_prefix_length":12,"hash":1}},{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":32,"min_prefix_length":1,"max_prefix_length":1,"hash":1}}],"upgrade_path":["upgrade","upgradedIBCState"],"allow_update_after_expiry":true,"allow_update_after_misbehaviour":true},"provider_consensus_state":{"timestamp":"2020-01-02T00:00:10Z","root":{"hash":"LpGpeyQVLUo9HpdsgJr12NP2eCICspcULiWa5u9udOA="},"next_validators_hash":"E30CE736441FB9101FADDAF7E578ABBE6DFDB67207112350A9A904D554E1F5BE"},"unbonding_sequences":null,"initial_val_set":[{"pub_key":{"type":"tendermint/PubKeyEd25519","value":"dcASx5/LIKZqagJWN0frOlFtcvz91frYmj/zmoZRWro="},"power":1}]}`
 
-	var expectedGenesis consumertypes.GenesisState
+	var expectedGenesis ccvtypes.ConsumerGenesisState
 	err = json.Unmarshal([]byte(jsonString), &expectedGenesis)
 	require.NoError(t, err)
 
@@ -869,12 +867,12 @@ func TestBeginBlockInit(t *testing.T) {
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+	providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockTime(now)
 
-	pendingProps := []*providertypes.ConsumerAdditionProposal{
-		providertypes.NewConsumerAdditionProposal(
+	pendingProps := []*ccvtypes.ConsumerAdditionProposal{
+		ccvtypes.NewConsumerAdditionProposal(
 			"title", "spawn time passed", "chain1", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
 			now.Add(-time.Hour*2).UTC(),
 			"0.75",
@@ -883,8 +881,8 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
-		).(*providertypes.ConsumerAdditionProposal),
-		providertypes.NewConsumerAdditionProposal(
+		).(*ccvtypes.ConsumerAdditionProposal),
+		ccvtypes.NewConsumerAdditionProposal(
 			"title", "spawn time passed", "chain2", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
 			now.Add(-time.Hour*1).UTC(),
 			"0.75",
@@ -893,8 +891,8 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
-		).(*providertypes.ConsumerAdditionProposal),
-		providertypes.NewConsumerAdditionProposal(
+		).(*ccvtypes.ConsumerAdditionProposal),
+		ccvtypes.NewConsumerAdditionProposal(
 			"title", "spawn time not passed", "chain3", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
 			now.Add(time.Hour).UTC(),
 			"0.75",
@@ -903,8 +901,8 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
-		).(*providertypes.ConsumerAdditionProposal),
-		providertypes.NewConsumerAdditionProposal(
+		).(*ccvtypes.ConsumerAdditionProposal),
+		ccvtypes.NewConsumerAdditionProposal(
 			"title", "invalid proposal: chain id already exists", "chain2", clienttypes.NewHeight(4, 5), []byte{}, []byte{},
 			now.UTC(),
 			"0.75",
@@ -913,7 +911,7 @@ func TestBeginBlockInit(t *testing.T) {
 			100000000000,
 			100000000000,
 			100000000000,
-		).(*providertypes.ConsumerAdditionProposal),
+		).(*ccvtypes.ConsumerAdditionProposal),
 	}
 
 	// Expect client creation for only for the 1st and second proposals (spawn time already passed and valid)
@@ -956,20 +954,20 @@ func TestBeginBlockCCR(t *testing.T) {
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+	providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockTime(now)
 
-	pendingProps := []*providertypes.ConsumerRemovalProposal{
-		providertypes.NewConsumerRemovalProposal(
+	pendingProps := []*ccvtypes.ConsumerRemovalProposal{
+		ccvtypes.NewConsumerRemovalProposal(
 			"title", "description", "chain1", now.Add(-time.Hour).UTC(),
-		).(*providertypes.ConsumerRemovalProposal),
-		providertypes.NewConsumerRemovalProposal(
+		).(*ccvtypes.ConsumerRemovalProposal),
+		ccvtypes.NewConsumerRemovalProposal(
 			"title", "description", "chain2", now,
-		).(*providertypes.ConsumerRemovalProposal),
-		providertypes.NewConsumerRemovalProposal(
+		).(*ccvtypes.ConsumerRemovalProposal),
+		ccvtypes.NewConsumerRemovalProposal(
 			"title", "description", "chain3", now.Add(time.Hour).UTC(),
-		).(*providertypes.ConsumerRemovalProposal),
+		).(*ccvtypes.ConsumerRemovalProposal),
 	}
 
 	//
@@ -1006,9 +1004,9 @@ func TestBeginBlockCCR(t *testing.T) {
 	}
 
 	// Add an invalid prop to the store with an non-existing chain id
-	invalidProp := providertypes.NewConsumerRemovalProposal(
+	invalidProp := ccvtypes.NewConsumerRemovalProposal(
 		"title", "description", "chain4", now.Add(-time.Hour).UTC(),
-	).(*providertypes.ConsumerRemovalProposal)
+	).(*ccvtypes.ConsumerRemovalProposal)
 	providerKeeper.SetPendingConsumerRemovalProp(ctx, invalidProp)
 
 	//
@@ -1047,7 +1045,7 @@ func TestHandleEquivocationProposal(t *testing.T) {
 		},
 	}
 
-	prop := &providertypes.EquivocationProposal{
+	prop := &ccvtypes.EquivocationProposal{
 		Equivocations: []*evidencetypes.Equivocation{equivocations[0], equivocations[1]},
 	}
 
@@ -1069,10 +1067,10 @@ func TestHandleEquivocationProposal(t *testing.T) {
 			// Set slash logs according to cons addrs in equivocations
 			consAddr := equivocations[0].GetConsensusAddress()
 			require.NotNil(t, consAddr, "consensus address could not be parsed")
-			keeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(consAddr))
+			keeper.SetSlashLog(ctx, ccvtypes.NewProviderConsAddress(consAddr))
 			consAddr = equivocations[1].GetConsensusAddress()
 			require.NotNil(t, consAddr, "consensus address could not be parsed")
-			keeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(consAddr))
+			keeper.SetSlashLog(ctx, ccvtypes.NewProviderConsAddress(consAddr))
 		}
 
 		if tc.expectEquivsHandled {

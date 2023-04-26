@@ -17,9 +17,7 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -222,8 +220,8 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	require.NoError(t, err)
 }
 
-func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
-	prop := providertypes.NewConsumerAdditionProposal(
+func GetTestConsumerAdditionProp() *types.ConsumerAdditionProposal {
+	prop := types.NewConsumerAdditionProposal(
 		"chainID",
 		"description",
 		"chainID",
@@ -231,25 +229,25 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 		[]byte("gen_hash"),
 		[]byte("bin_hash"),
 		time.Now(),
-		consumertypes.DefaultConsumerRedistributeFrac,
-		consumertypes.DefaultBlocksPerDistributionTransmission,
-		consumertypes.DefaultHistoricalEntries,
+		types.DefaultConsumerRedistributeFrac,
+		types.DefaultBlocksPerDistributionTransmission,
+		types.DefaultHistoricalEntries,
 		types.DefaultCCVTimeoutPeriod,
-		consumertypes.DefaultTransferTimeoutPeriod,
-		consumertypes.DefaultConsumerUnbondingPeriod,
-	).(*providertypes.ConsumerAdditionProposal)
+		types.DefaultTransferTimeoutPeriod,
+		types.DefaultConsumerUnbondingPeriod,
+	).(*types.ConsumerAdditionProposal)
 
 	return prop
 }
 
 // Obtains a CrossChainValidator with a newly generated key, and randomized field values
-func GetNewCrossChainValidator(t *testing.T) consumertypes.CrossChainValidator {
+func GetNewCrossChainValidator(t *testing.T) types.CrossChainValidator {
 	t.Helper()
 	b1 := make([]byte, 8)
 	_, _ = rand.Read(b1)
 	power := int64(binary.BigEndian.Uint64(b1))
 	privKey := ed25519.GenPrivKey()
-	validator, err := consumertypes.NewCCValidator(privKey.PubKey().Address(), power, privKey.PubKey())
+	validator, err := types.NewCCValidator(privKey.PubKey().Address(), power, privKey.PubKey())
 	require.NoError(t, err)
 	return validator
 }
