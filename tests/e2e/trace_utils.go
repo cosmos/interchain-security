@@ -1,15 +1,47 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/mitchellh/mapstructure"
 )
 
-// StepWithActionType is a utility class that wraps a Step together with its action type. Used to marshal/unmarshal
-type StepWithActionType struct {
-	Step
-	ActionType string `json:"ActionType"`
+func (step Step) MarshalJSON() ([]byte, error) {
+	actionType := reflect.TypeOf(step.Action).String()
+
+	result := struct {
+		ActionType string
+		Action     interface{}
+		State      State
+	}{
+		ActionType: actionType,
+		Action:     step.Action,
+		State:      step.State,
+	}
+
+	return json.Marshal(result)
+}
+
+func (step *Step) UnmarshalJSON(data []byte) error {
+	var tmp struct {
+		ActionType string
+		Action     map[string]any
+		State      State
+	}
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	action, err := UnmarshalMapToActionType(tmp.Action, tmp.ActionType)
+	if err != nil {
+		return err
+	}
+
+	step.Action = action
+	step.State = tmp.State
+	return nil
 }
 
 // UnmarshalMapToActionType takes a JSON object and an action type and marshals into an object of the corresponding action.
