@@ -26,7 +26,7 @@ func (chainState ChainState) MarshalJSON() ([]byte, error) {
 			}
 		}
 	} else {
-		proposalsWithTypes = make(map[uint]ProposalWithType, 0)
+		proposalsWithTypes = nil
 	}
 
 	result := struct {
@@ -60,39 +60,44 @@ func (chainState ChainState) MarshalJSON() ([]byte, error) {
 
 func (state *ChainState) UnmarshalJSON(data []byte) error {
 	var tmp struct {
-		ValBalances             map[ValidatorID]uint
-		Proposals               map[uint]json.RawMessage
-		ValPowers               map[ValidatorID]uint
-		RepresentativePowers    map[ValidatorID]uint
-		Params                  []Param
-		Rewards                 Rewards
-		ConsumerChains          map[ChainID]bool
-		AssignedKeys            map[ValidatorID]string
-		ProviderKeys            map[ValidatorID]string // validatorID: validator provider key
-		ConsumerChainQueueSizes map[ChainID]uint
-		GlobalSlashQueueSize    uint
+		ValBalances             *map[ValidatorID]uint
+		Proposals               *map[uint]json.RawMessage
+		ValPowers               *map[ValidatorID]uint
+		RepresentativePowers    *map[ValidatorID]uint
+		Params                  *[]Param
+		Rewards                 *Rewards
+		ConsumerChains          *map[ChainID]bool
+		AssignedKeys            *map[ValidatorID]string
+		ProviderKeys            *map[ValidatorID]string // validatorID: validator provider key
+		ConsumerChainQueueSizes *map[ChainID]uint
+		GlobalSlashQueueSize    *uint
 	}
 
-	if err := json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-
-	proposals, err := UnmarshalProposals(tmp.Proposals)
+	err := json.Unmarshal(data, &tmp)
 	if err != nil {
 		return err
 	}
+
+	var proposals *map[uint]Proposal
+	if tmp.Proposals != nil {
+		proposals, err = UnmarshalProposals(*tmp.Proposals)
+		if err != nil {
+			return err
+		}
+	}
+
 	state.Proposals = proposals
 
-	state.ValBalances = &tmp.ValBalances
-	state.ValPowers = &tmp.ValPowers
-	state.RepresentativePowers = &tmp.RepresentativePowers
-	state.Params = &tmp.Params
-	state.Rewards = &tmp.Rewards
-	state.ConsumerChains = &tmp.ConsumerChains
-	state.AssignedKeys = &tmp.AssignedKeys
-	state.ProviderKeys = &tmp.ProviderKeys
-	state.ConsumerChainQueueSizes = &tmp.ConsumerChainQueueSizes
-	state.GlobalSlashQueueSize = &tmp.GlobalSlashQueueSize
+	state.ValBalances = tmp.ValBalances
+	state.ValPowers = tmp.ValPowers
+	state.RepresentativePowers = tmp.RepresentativePowers
+	state.Params = tmp.Params
+	state.Rewards = tmp.Rewards
+	state.ConsumerChains = tmp.ConsumerChains
+	state.AssignedKeys = tmp.AssignedKeys
+	state.ProviderKeys = tmp.ProviderKeys
+	state.ConsumerChainQueueSizes = tmp.ConsumerChainQueueSizes
+	state.GlobalSlashQueueSize = tmp.GlobalSlashQueueSize
 
 	return nil
 }
