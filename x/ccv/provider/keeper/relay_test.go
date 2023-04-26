@@ -10,11 +10,12 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v4/modules/core/exported"
-	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
-	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	ibcsimapp "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp"
+	cryptotestutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	"github.com/cosmos/interchain-security/x/provider/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
+	ccv "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -73,7 +74,7 @@ func TestQueueVSCPackets(t *testing.T) {
 			mockStakingKeeper.EXPECT().GetValidatorUpdates(gomock.Eq(ctx)).Return(mockUpdates),
 		)
 
-		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
+		pk := providerkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 		// no-op if tc.packets is empty
 		pk.AppendPendingVSCPackets(ctx, chainID, tc.packets...)
 
@@ -94,7 +95,7 @@ func TestQueueVSCPackets(t *testing.T) {
 //
 // Note: Handling logic itself is not testing in here, just queueing behavior.
 func TestOnRecvVSCMaturedPacket(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, ccv.DefaultProviderParams())
 
@@ -137,7 +138,7 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 }
 
 func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, ccv.DefaultProviderParams())
 
@@ -228,7 +229,7 @@ func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
 
 // TestOnRecvSlashPacket tests the OnRecvSlashPacket method specifically for double-sign slash packets.
 func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, ccv.DefaultProviderParams())
 
@@ -262,7 +263,7 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 // TestOnRecvSlashPacket tests the OnRecvSlashPacket method specifically for downtime slash packets,
 // and how the method interacts with the parent and per-chain slash packet queues.
 func TestOnRecvDowntimeSlashPacket(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, ccv.DefaultProviderParams())
 
@@ -387,7 +388,7 @@ func TestValidateSlashPacket(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
@@ -532,7 +533,7 @@ func TestHandleSlashPacket(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 
 		// Setup expected mock calls
@@ -565,7 +566,7 @@ func TestHandleSlashPacket(t *testing.T) {
 // TestHandleVSCMaturedPacket tests the handling of VSCMatured packets.
 // Note that this method also tests the behaviour of AfterUnbondingInitiated.
 func TestHandleVSCMaturedPacket(t *testing.T) {
-	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Init vscID

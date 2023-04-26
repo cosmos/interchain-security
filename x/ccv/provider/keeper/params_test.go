@@ -7,8 +7,9 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,7 +17,7 @@ import (
 func TestParams(t *testing.T) {
 	// Construct an in-mem keeper with registered key table
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
 	defaultParams := ccvtypes.DefaultProviderParams()

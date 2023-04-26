@@ -8,13 +8,14 @@ import (
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	"github.com/cosmos/interchain-security/x/provider"
+	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
 )
 
 // TestProviderProposalHandler tests the highest level handler for proposals
@@ -87,7 +88,7 @@ func TestProviderProposalHandler(t *testing.T) {
 
 		// Setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		providerKeeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper, ctx, _, mocks := providerkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
@@ -99,7 +100,12 @@ func TestProviderProposalHandler(t *testing.T) {
 			)...)
 
 		case tc.expValidConsumerRemoval:
-			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+			testkeeper.SetupForStoppingConsumerChain(t, ctx, mocks)
+			prop := testkeeper.GetTestConsumerAdditionProp()
+			err := providerKeeper.CreateConsumerClient(ctx, prop)
+			require.NoError(t, err)
+			err = providerKeeper.SetConsumerChain(ctx, "channelID")
+			require.NoError(t, err)
 
 		case tc.expValidEquivocation:
 			providerKeeper.SetSlashLog(ctx, ccvtypes.NewProviderConsAddress(equivocation.GetConsensusAddress()))

@@ -4,14 +4,15 @@ import (
 	"testing"
 	"time"
 
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
+	ccv "github.com/cosmos/interchain-security/x/types"
 	"github.com/stretchr/testify/require"
 )
 
 // TestParams tests getters/setters for consumer params
 func TestParams(t *testing.T) {
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	consumerKeeper.SetParams(ctx, ccv.DefaultConsumerParams())
 

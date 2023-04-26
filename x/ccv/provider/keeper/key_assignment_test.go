@@ -9,14 +9,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	cryptotestutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 )
 
@@ -25,7 +25,7 @@ func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
 	providerAddr := ccvtypes.NewProviderConsAddress([]byte("providerAddr"))
 	consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 
-	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	keeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	keeper.SetValidatorConsumerPubKey(ctx, chainID, providerAddr, consumerKey)
@@ -43,7 +43,7 @@ func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
 }
 
 func TestGetAllValidatorConsumerPubKey(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
@@ -102,7 +102,7 @@ func TestValidatorByConsumerAddrCRUD(t *testing.T) {
 	providerAddr := ccvtypes.NewProviderConsAddress([]byte("providerAddr"))
 	consumerAddr := ccvtypes.NewConsumerConsAddress([]byte("consumerAddr"))
 
-	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	keeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	keeper.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
@@ -120,7 +120,7 @@ func TestValidatorByConsumerAddrCRUD(t *testing.T) {
 }
 
 func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
@@ -180,7 +180,7 @@ func TestKeyAssignmentReplacementCRUD(t *testing.T) {
 	expCPubKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	var expPower int64 = 100
 
-	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	keeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	keeper.SetKeyAssignmentReplacement(ctx, chainID, providerAddr, expCPubKey, expPower)
@@ -196,7 +196,7 @@ func TestKeyAssignmentReplacementCRUD(t *testing.T) {
 }
 
 func TestGetAllKeyAssignmentReplacements(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	chainID := "consumer-1"
@@ -236,7 +236,7 @@ func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 	consumerAddr := ccvtypes.NewConsumerConsAddress([]byte("consumerAddr1"))
 	vscID := uint64(1)
 
-	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	keeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	addrsToPrune := keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
@@ -255,7 +255,7 @@ func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 }
 
 func TestGetAllConsumerAddrsToPrune(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	rand.Seed(time.Now().Unix()) // nolint:staticcheck // ignore SA1019 for tests
@@ -592,7 +592,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+			k, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 			tc.mockSetup(ctx, k, mocks)
 			tc.doActions(ctx, k)
@@ -613,7 +613,7 @@ func TestCannotReassignDefaultKeyAssignment(t *testing.T) {
 	// We only need one identity, a single validator / single key
 	cId := cryptotestutil.NewCryptoIdentityFromIntSeed(49827489)
 
-	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Mock that the validator is validating with the single key, as confirmed by provider's staking keeper
@@ -733,7 +733,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 	// and key assignments tx's. For each simulated 'block', the validator set replication
 	// properties and the pruning property are checked.
 	runRandomExecution := func() {
-		k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		k, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 		// Create validator sets for the provider and consumer. These are used to check the validator set
 		// replication property.

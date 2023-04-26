@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	cryptotestutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
 	"github.com/golang/mock/gomock"
 )
 
@@ -57,7 +57,7 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		k, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		k, ctx, _, mocks := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().GetValidator(ctx,

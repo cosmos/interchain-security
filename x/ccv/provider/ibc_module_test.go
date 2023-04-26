@@ -10,10 +10,10 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	"github.com/cosmos/interchain-security/x/provider"
+	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
+	ccv "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +23,7 @@ import (
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coinit1
 // Spec Tag: [CCV-PCF-COINIT.1]
 func TestOnChanOpenInit(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(
 		t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerModule := provider.NewAppModule(&providerKeeper)
@@ -111,7 +111,7 @@ func TestOnChanOpenTry(t *testing.T) {
 	for _, tc := range testCases {
 
 		// Setup
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		providerModule := provider.NewAppModule(&providerKeeper)
 
@@ -180,7 +180,7 @@ func TestOnChanOpenTry(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coack1
 // Spec tag: [CCV-PCF-COACK.1]
 func TestOnChanOpenAck(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(
 		t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerModule := provider.NewAppModule(&providerKeeper)
@@ -295,7 +295,7 @@ func TestOnChanOpenConfirm(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 
 		gomock.InOrder(tc.mockExpectations(ctx, mocks)...)

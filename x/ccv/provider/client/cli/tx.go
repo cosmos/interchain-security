@@ -11,8 +11,8 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/x/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/types"
 )
 
 // GetTxCmd returns the transaction commands for this module

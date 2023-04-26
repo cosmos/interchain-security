@@ -5,13 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	cryptoutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
 	"github.com/stretchr/testify/require"
 	tmtypes "github.com/tendermint/tendermint/types"
 	"golang.org/x/exp/slices"
@@ -114,7 +115,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 		providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 
@@ -203,7 +204,7 @@ func TestSlashMeterReplenishment(t *testing.T) {
 	}
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
@@ -284,7 +285,7 @@ func TestSlashMeterReplenishment(t *testing.T) {
 // Tests that the slash meter exhibits desired behavior when multiple replenishments are needed
 // to restore it to a full value.
 func TestConsecutiveReplenishments(t *testing.T) {
-	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+	providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(
 		t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -359,7 +360,7 @@ func TestConsecutiveReplenishments(t *testing.T) {
 // TestSlashMeterAllowanceChanges tests the behavior of a full slash meter
 // when total voting power becomes higher and lower.
 func TestTotalVotingPowerChanges(t *testing.T) {
-	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	now := time.Now()
@@ -492,7 +493,7 @@ func TestNegativeSlashMeter(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
@@ -602,7 +603,7 @@ func TestGetSlashMeterAllowance(t *testing.T) {
 	}
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
@@ -625,7 +626,7 @@ func TestGetSlashMeterAllowance(t *testing.T) {
 // TestGlobalSlashEntries tests the queue and iteration functions for global slash entries,
 // with assertion of FIFO ordering
 func TestGlobalSlashEntries(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Consistent time for "now"
@@ -718,7 +719,7 @@ func TestGlobalSlashEntries(t *testing.T) {
 
 // Tests DeleteGlobalSlashEntriesForConsumer.
 func TestDeleteGlobalSlashEntriesForConsumer(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(
 		t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -750,7 +751,7 @@ func TestDeleteGlobalSlashEntriesForConsumer(t *testing.T) {
 // TestGlobalSlashEntryDeletion tests the deletion function for
 // global slash entries with assertion of FIFO ordering.
 func TestGlobalSlashEntryDeletion(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	now := time.Now()
@@ -822,7 +823,7 @@ func TestGlobalSlashEntryDeletion(t *testing.T) {
 // TestThrottledPacketData tests chain-specific throttled packet data queuing,
 // iteration and deletion functionality.
 func TestThrottledPacketData(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 
@@ -991,7 +992,7 @@ func TestGetLeadingVSCMaturedData(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 		providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 
@@ -1096,7 +1097,7 @@ func TestGetSlashAndTrailingData(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 		providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 
@@ -1124,7 +1125,7 @@ func TestGetSlashAndTrailingData(t *testing.T) {
 
 // TestDeleteThrottledPacketDataForConsumer tests the DeleteThrottledPacketDataForConsumer method.
 func TestDeleteThrottledPacketDataForConsumer(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 
@@ -1181,7 +1182,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
 		// Set max throttled packets param
@@ -1224,7 +1225,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 
 // TestThrottledPacketDataSize tests the getter, setter and incrementer for throttled packet data size.
 func TestThrottledPacketDataSize(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Set params so we can use the default max throttled packet data size
@@ -1264,7 +1265,7 @@ func TestSlashMeter(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
@@ -1298,7 +1299,7 @@ func TestSlashMeterReplenishTimeCandidate(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 

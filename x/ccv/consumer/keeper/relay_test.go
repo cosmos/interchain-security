@@ -13,9 +13,10 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	"github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -110,7 +111,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		},
 	}
 
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Set channel to provider, still in context of consumer chain
@@ -163,7 +164,7 @@ func TestOnRecvVSCPacketDuplicateUpdates(t *testing.T) {
 	providerCCVChannelID := "providerCCVChannelID"
 
 	// Keeper setup
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	consumerKeeper.SetProviderChannel(ctx, consumerCCVChannelID)
 	consumerKeeper.SetParams(ctx, ccvtypes.DefaultConsumerParams())
@@ -224,7 +225,7 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	defer ctrl.Finish()
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	mocks := testkeeper.NewMockedKeepers(ctrl)
-	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
+	consumerKeeper := consumerkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
 	ctx := keeperParams.Ctx
 
 	// Set an established provider channel for later in test

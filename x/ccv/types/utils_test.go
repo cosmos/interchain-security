@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
-	"github.com/cosmos/interchain-security/x/ccv/types"
+	ibcsimapp "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp"
+	"github.com/cosmos/interchain-security/x/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
