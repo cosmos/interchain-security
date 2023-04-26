@@ -6,8 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
+	ccv "github.com/cosmos/interchain-security/core"
 	consumertypes "github.com/cosmos/interchain-security/x/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/types"
 )
 
 // This test is valid for minimal viable consumer chain

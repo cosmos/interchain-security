@@ -8,7 +8,7 @@ import (
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/types"
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 

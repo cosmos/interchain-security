@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/types"
+	types "github.com/cosmos/interchain-security/core"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

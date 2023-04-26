@@ -11,8 +11,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	providertypes "github.com/cosmos/interchain-security/x/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/types"
 )
 
 // NewQueryCmd returns a root CLI command handler for all x/ccv/provider query commands.

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	"github.com/cosmos/interchain-security/x/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"

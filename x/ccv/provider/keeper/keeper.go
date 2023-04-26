@@ -24,8 +24,8 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	testutils "github.com/cosmos/interchain-security/v2/testutil/keeper"
 
+	ccv "github.com/cosmos/interchain-security/core"
 	"github.com/cosmos/interchain-security/x/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/types"
 
 	"github.com/tendermint/tendermint/libs/log"
 )

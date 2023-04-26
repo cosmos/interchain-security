@@ -9,8 +9,8 @@ import (
 	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
 	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
 
+	ccv "github.com/cosmos/interchain-security/core"
 	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
-	ccv "github.com/cosmos/interchain-security/x/types"
 
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"

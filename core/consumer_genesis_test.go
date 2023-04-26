@@ -16,7 +16,7 @@ import (
 
 	"github.com/cosmos/interchain-security/v2/testutil/crypto"
 
-	ccvtypes "github.com/cosmos/interchain-security/x/types"
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	"github.com/stretchr/testify/require"
 )
 

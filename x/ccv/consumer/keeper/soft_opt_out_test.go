@@ -3,10 +3,10 @@ package keeper_test
 import (
 	"testing"
 
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	"github.com/cosmos/interchain-security/v2/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	"github.com/stretchr/testify/require"
 	tmtypes "github.com/tendermint/tendermint/types"
 )

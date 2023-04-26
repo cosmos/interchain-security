@@ -30,7 +30,7 @@ require (
 
 require github.com/cosmos/interchain-security/v2 v2.0.0-20230426010305-861a45c9b9df // only needed for testutils
 
-require github.com/cosmos/interchain-security/x/types v1.0.0
+require github.com/cosmos/interchain-security/core v1.0.0
 
 require (
 	cosmossdk.io/api v0.2.6 // indirect
@@ -130,8 +130,8 @@ require (
 
 replace (
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.15-ics
+	github.com/cosmos/interchain-security/core => ../../../core
 	github.com/cosmos/interchain-security/v2 => ../../../
-	github.com/cosmos/interchain-security/x/types => ../types
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.27
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2

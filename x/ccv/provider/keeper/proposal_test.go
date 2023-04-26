@@ -17,10 +17,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	cryptoutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/types"
 )
 
 //

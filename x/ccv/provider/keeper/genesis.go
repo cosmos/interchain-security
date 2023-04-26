@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ccv "github.com/cosmos/interchain-security/x/types"
+	ccv "github.com/cosmos/interchain-security/core"
 )
 
 // InitGenesis initializes the CCV provider state and binds to PortID.

@@ -84,9 +84,9 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	ibctestingcore "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/core"
 	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
-	ccvtypes "github.com/cosmos/interchain-security/x/types"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"

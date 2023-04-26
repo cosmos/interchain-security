@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	types "github.com/cosmos/interchain-security/core"
 	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
-	"github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 )
 

@@ -13,7 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ccv "github.com/cosmos/interchain-security/x/types"
+	ccv "github.com/cosmos/interchain-security/core"
 
 	extra "github.com/oxyno-zeta/gomock-extra-matcher"
 )
