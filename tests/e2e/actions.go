@@ -514,10 +514,10 @@ func (tr TestRun) voteGovProposal(
 }
 
 type startConsumerChainAction struct {
-	consumerChain  ChainID
-	providerChain  ChainID
-	validators     []StartChainValidator
-	genesisChanges string
+	ConsumerChain  ChainID
+	ProviderChain  ChainID
+	Validators     []StartChainValidator
+	GenesisChanges string
 }
 
 func (tr TestRun) startConsumerChain(
@@ -525,12 +525,12 @@ func (tr TestRun) startConsumerChain(
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.providerChain].BinaryName,
+	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.ProviderChain].BinaryName,
 
 		"query", "provider", "consumer-genesis",
-		string(tr.chainConfigs[action.consumerChain].ChainId),
+		string(tr.chainConfigs[action.ConsumerChain].ChainId),
 
-		`--node`, tr.getQueryNode(action.providerChain),
+		`--node`, tr.getQueryNode(action.ProviderChain),
 		`-o`, `json`,
 	)
 
@@ -544,14 +544,14 @@ func (tr TestRun) startConsumerChain(
 	}
 
 	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
-	consumerGenesisChanges := tr.chainConfigs[action.consumerChain].GenesisChanges
+	consumerGenesisChanges := tr.chainConfigs[action.ConsumerChain].GenesisChanges
 	if consumerGenesisChanges != "" {
-		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges + " | " + action.genesisChanges
+		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges + " | " + action.GenesisChanges
 	}
 
 	tr.startChain(StartChainAction{
-		Chain:          action.consumerChain,
-		Validators:     action.validators,
+		Chain:          action.ConsumerChain,
+		Validators:     action.Validators,
 		GenesisChanges: consumerGenesis,
 		SkipGentx:      true,
 	}, verbose)

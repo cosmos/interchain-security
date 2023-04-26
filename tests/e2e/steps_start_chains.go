@@ -140,9 +140,9 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 		},
 		{
 			Action: startConsumerChainAction{
-				consumerChain: ChainID(consumerName),
-				providerChain: ChainID("provi"),
-				validators: []StartChainValidator{
+				ConsumerChain: ChainID(consumerName),
+				ProviderChain: ChainID("provi"),
+				Validators: []StartChainValidator{
 					{Id: ValidatorID("bob"), Stake: 500000000, Allocation: 10000000000},
 					{Id: ValidatorID("alice"), Stake: 500000000, Allocation: 10000000000},
 					{Id: ValidatorID("carol"), Stake: 500000000, Allocation: 10000000000},
@@ -152,7 +152,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
 				// consumer binary doesn't panic. Sdk requires that all params are set to valid
 				// values from the genesis file.
-				genesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
+				GenesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
 			},
 			State: State{
 				ChainID("provi"): ChainState{
