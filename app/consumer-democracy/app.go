@@ -91,16 +91,16 @@ import (
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	testutil "github.com/cosmos/interchain-security/testutil/integration"
-	ccvdistr "github.com/cosmos/interchain-security/x/ccv/democracy/distribution"
+	ccvdistr "github.com/cosmos/interchain-security/x/ccv/consumer/democracy/distribution"
 
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ccvstaking "github.com/cosmos/interchain-security/x/ccv/democracy/staking"
+	ccvstaking "github.com/cosmos/interchain-security/x/ccv/consumer/democracy/staking"
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	ccvgov "github.com/cosmos/interchain-security/x/ccv/democracy/governance"
+	ccvgov "github.com/cosmos/interchain-security/x/ccv/consumer/democracy/governance"
 
 	// add mint
 	mint "github.com/cosmos/cosmos-sdk/x/mint"
