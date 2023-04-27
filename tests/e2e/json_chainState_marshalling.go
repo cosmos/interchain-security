@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-
-	"github.com/mitchellh/mapstructure"
 )
 
 type ProposalWithType struct {
@@ -107,7 +105,7 @@ func UnmarshalProposals(proposals map[uint]json.RawMessage) (*map[uint]Proposal,
 
 	for k, v := range proposals {
 		var tmp struct {
-			Proposal     map[string]any
+			Proposal     json.RawMessage
 			ProposalType string
 		}
 
@@ -125,26 +123,26 @@ func UnmarshalProposals(proposals map[uint]json.RawMessage) (*map[uint]Proposal,
 	return &result, nil
 }
 
-// UnmarshalMapToActionType takes a JSON object and an action type and marshals into an object of the corresponding action.
-func UnmarshalMapToProposalType(inputMap map[string]any, proposalType string) (Proposal, error) {
+// UnmarshalMapToProposalType takes a JSON message and a proposal type and marshals into an object of the corresponding proposal.
+func UnmarshalMapToProposalType(input json.RawMessage, proposalType string) (Proposal, error) {
 	switch proposalType {
 	case "main.ConsumerAdditionProposal":
 		var proposal ConsumerAdditionProposal
-		err := mapstructure.Decode(inputMap, &proposal)
+		err := json.Unmarshal(input, &proposal)
 		if err != nil {
 			return nil, err
 		}
 		return proposal, nil
 	case "main.ConsumerRemovalProposal":
 		var proposal ConsumerRemovalProposal
-		err := mapstructure.Decode(inputMap, &proposal)
+		err := json.Unmarshal(input, &proposal)
 		if err != nil {
 			return nil, err
 		}
 		return proposal, nil
 	case "main.EquivocationProposal":
 		var proposal EquivocationProposal
-		err := mapstructure.Decode(inputMap, &proposal)
+		err := json.Unmarshal(input, &proposal)
 		if err != nil {
 			return nil, err
 		}
@@ -152,7 +150,7 @@ func UnmarshalMapToProposalType(inputMap map[string]any, proposalType string) (P
 
 	case "main.TextProposal":
 		var proposal TextProposal
-		err := mapstructure.Decode(inputMap, &proposal)
+		err := json.Unmarshal(input, &proposal)
 		if err != nil {
 			return nil, err
 		}
