@@ -94,10 +94,39 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 					Deposit:       10000001,
 					Chain:         ChainID("test"),
 					SpawnTime:     0,
-					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					InitialHeight: clienttypes.Height{RevisionNumber: 5, RevisionHeight: 5},
 					Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
 				},
 			},
+		}},
+		"democracy": {ChainState{
+			ValBalances: &map[ValidatorID]uint{
+				ValidatorID("alice"): 9889999998,
+				ValidatorID("bob"):   9960000001,
+			},
+			Proposals: &map[uint]Proposal{
+				1: ParamsProposal{
+					Deposit:  10000001,
+					Status:   "PROPOSAL_STATUS_VOTING_PERIOD",
+					Subspace: "staking",
+					Key:      "MaxValidators",
+					Value:    "105",
+				},
+			},
+		}},
+		"consuemr-removal": {ChainState{
+			Proposals: &map[uint]Proposal{
+				5: ConsumerRemovalProposal{
+					Deposit:  10000001,
+					Chain:    ChainID("test123"),
+					StopTime: 5000000000,
+					Status:   "PROPOSAL_STATUS_PASSED",
+				},
+			},
+			ValBalances: &map[ValidatorID]uint{
+				ValidatorID("bob"): 9500000000,
+			},
+			ConsumerChains: &map[ChainID]bool{}, // Consumer chain is now removed
 		}},
 	}
 
