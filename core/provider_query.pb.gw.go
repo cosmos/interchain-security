@@ -2,7 +2,7 @@
 // source: interchain_security/ccv/provider/v1/provider_query.proto
 
 /*
-Package types is a reverse proxy.
+Package core is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
