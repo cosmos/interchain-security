@@ -84,7 +84,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 	tests := map[string]struct {
 		chainState ChainState
 	}{
-		"start_provider_chain": {ChainState{
+		"consumer addition proposal": {ChainState{
 			ValBalances: &map[ValidatorID]uint{
 				ValidatorID("alice"): 9489999999,
 				ValidatorID("bob"):   9500000000,
@@ -99,7 +99,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 				},
 			},
 		}},
-		"democracy": {ChainState{
+		"params-proposal": {ChainState{
 			ValBalances: &map[ValidatorID]uint{
 				ValidatorID("alice"): 9889999998,
 				ValidatorID("bob"):   9960000001,
@@ -114,7 +114,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 				},
 			},
 		}},
-		"consuemr-removal": {ChainState{
+		"consuemr removal proposal": {ChainState{
 			Proposals: &map[uint]Proposal{
 				5: ConsumerRemovalProposal{
 					Deposit:  10000001,
@@ -127,6 +127,39 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 				ValidatorID("bob"): 9500000000,
 			},
 			ConsumerChains: &map[ChainID]bool{}, // Consumer chain is now removed
+		}},
+		"text-proposal": {ChainState{
+			ValPowers: &map[ValidatorID]uint{
+				ValidatorID("alice"): 509,
+				ValidatorID("bob"):   500,
+				ValidatorID("carol"): 495,
+			},
+			ValBalances: &map[ValidatorID]uint{
+				ValidatorID("bob"): 9500000000,
+			},
+			Proposals: &map[uint]Proposal{
+				// proposal does not exist
+				10: TextProposal{},
+			},
+		}},
+		"equivocation-proposal": {ChainState{
+			ValPowers: &map[ValidatorID]uint{
+				ValidatorID("alice"): 509,
+				ValidatorID("bob"):   500,
+				ValidatorID("carol"): 0,
+			},
+			ValBalances: &map[ValidatorID]uint{
+				ValidatorID("bob"): 9489999999,
+			},
+			Proposals: &map[uint]Proposal{
+				5: EquivocationProposal{
+					Deposit:          10000001,
+					Status:           "PROPOSAL_STATUS_VOTING_PERIOD",
+					ConsensusAddress: "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
+					Power:            500,
+					Height:           10,
+				},
+			},
 		}},
 	}
 
