@@ -3,10 +3,8 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/cosmos/interchain-security/v2/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	"github.com/stretchr/testify/require"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -15,7 +13,7 @@ import (
 // Soft opt out allows the bottom [SoftOptOutThreshold] portion of validators in the set to opt out.
 // UpdateSmallestNonOptOutPower should update the smallest validator power that cannot opt out.
 func TestUpdateSmallestNonOptOutPower(t *testing.T) {
-	cIds := crypto.GenMultipleCryptoIds(7, 682934679238)
+	cIds := ccvtypes.GenMultipleCryptoIds(7, 682934679238)
 
 	testCases := []struct {
 		name string
@@ -100,7 +98,7 @@ func TestUpdateSmallestNonOptOutPower(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+			consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, ccvtypes.NewInMemKeeperParams(t))
 			moduleParams := ccvtypes.DefaultConsumerParams()
 			moduleParams.SoftOptOutThreshold = tc.optOutThresh
 			consumerKeeper.SetParams(ctx, moduleParams)

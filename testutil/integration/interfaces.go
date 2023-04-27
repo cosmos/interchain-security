@@ -13,10 +13,10 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
 	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 

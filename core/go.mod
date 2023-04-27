@@ -1,4 +1,4 @@
-module github.com/cosmos/interchain-security/x/types
+module github.com/cosmos/interchain-security/core
 
 go 1.20
 
@@ -15,7 +15,7 @@ require (
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/stretchr/testify v1.8.2
 	github.com/tendermint/tendermint v0.34.27
-	github.com/tendermint/tm-db v0.6.7 // indirect
+	github.com/tendermint/tm-db v0.6.7
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/exp v0.0.0-20221019170559-20944726eadf // indirect
 	golang.org/x/net v0.7.0 // indirect
@@ -26,7 +26,10 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-require github.com/cosmos/interchain-security/v2 v2.0.0-20230425230548-7274879e46e1 // only needed for testutils
+require (
+	github.com/golang/mock v1.6.0
+	github.com/oxyno-zeta/gomock-extra-matcher v1.1.0
+)
 
 require (
 	cosmossdk.io/api v0.2.6 // indirect
@@ -42,6 +45,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/speakeasy v0.1.1-0.20220910012023-760eaf8b6816 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
+	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cockroachdb/errors v1.9.1 // indirect
@@ -63,6 +67,7 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
+	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/getsentry/sentry-go v0.17.0 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
@@ -83,6 +88,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hdevalence/ed25519consensus v0.0.0-20220222234857-c00d1f31bab3 // indirect
+	github.com/improbable-eng/grpc-web v0.15.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
@@ -129,7 +135,6 @@ require (
 
 replace (
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.15-ics
-	github.com/cosmos/interchain-security/v2 => ../../../
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.27
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2

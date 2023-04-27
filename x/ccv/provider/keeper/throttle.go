@@ -5,8 +5,8 @@ import (
 	"time"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	providertypes "github.com/cosmos/interchain-security/x/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 

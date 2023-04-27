@@ -4,8 +4,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	types "github.com/cosmos/interchain-security/core"
 	"github.com/cosmos/interchain-security/x/provider/keeper"
-	"github.com/cosmos/interchain-security/x/types"
 )
 
 // NewProviderProposalHandler defines the handler for consumer addition,

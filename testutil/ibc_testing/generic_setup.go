@@ -8,11 +8,11 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
 	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
 
 	"github.com/stretchr/testify/suite"
 
+	core "github.com/cosmos/interchain-security/core"
 	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -98,7 +98,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	providerApp := providerChain.App.(Tp)
 	providerKeeper := providerApp.GetProviderKeeper()
 
-	prop := testkeeper.GetTestConsumerAdditionProp()
+	prop := core.GetTestConsumerAdditionProp()
 	prop.ChainId = chainID
 	// NOTE: the initial height passed to CreateConsumerClient
 	// must be the height on the consumer when InitGenesis is called

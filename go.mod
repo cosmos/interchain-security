@@ -6,9 +6,9 @@ require (
 	github.com/confio/ics23/go v0.9.0 // indirect
 	github.com/cosmos/cosmos-sdk v0.45.15
 	github.com/cosmos/ibc-go/v4 v4.3.0
+	github.com/cosmos/interchain-security/core v1.0.0
 	github.com/cosmos/interchain-security/x/consumer v1.0.0
 	github.com/cosmos/interchain-security/x/provider v1.0.0
-	github.com/cosmos/interchain-security/x/types v1.0.0
 	github.com/gogo/protobuf v1.3.3 // indirect
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -151,9 +151,9 @@ require (
 
 replace (
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.15-ics
+	github.com/cosmos/interchain-security/core => ./core
 	github.com/cosmos/interchain-security/x/consumer => ./x/ccv/consumer
 	github.com/cosmos/interchain-security/x/provider => ./x/ccv/provider
-	github.com/cosmos/interchain-security/x/types => ./x/ccv/types
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.27
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2

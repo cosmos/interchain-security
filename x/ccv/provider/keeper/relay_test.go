@@ -4,18 +4,14 @@ import (
 	"testing"
 	"time"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v4/modules/core/exported"
-	ibcsimapp "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp"
-	cryptotestutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	ccv "github.com/cosmos/interchain-security/core"
 	"github.com/cosmos/interchain-security/x/provider/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
-	ccv "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -24,8 +20,8 @@ import (
 
 // TestQueueVSCPackets tests queueing validator set updates.
 func TestQueueVSCPackets(t *testing.T) {
-	key := ibcsimapp.CreateTestPubKeys(1)[0]
-	tmPubKey, _ := cryptocodec.ToTmProtoPublicKey(key)
+
+	tmPubKey := ccv.NewCryptoIdentityFromIntSeed(73489243).TMProtoCryptoPublicKey()
 
 	testCases := []struct {
 		name                     string
@@ -57,12 +53,12 @@ func TestQueueVSCPackets(t *testing.T) {
 	chainID := "consumer"
 
 	for _, tc := range testCases {
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		keeperParams := ccv.NewInMemKeeperParams(t)
 		ctx := keeperParams.Ctx
 
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		mocks := testkeeper.NewMockedKeepers(ctrl)
+		mocks := ccv.NewMockedKeepers(ctrl)
 		mockStakingKeeper := mocks.MockStakingKeeper
 
 		mockUpdates := []abci.ValidatorUpdate{}
@@ -95,7 +91,7 @@ func TestQueueVSCPackets(t *testing.T) {
 //
 // Note: Handling logic itself is not testing in here, just queueing behavior.
 func TestOnRecvVSCMaturedPacket(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, ccv.DefaultProviderParams())
 
@@ -115,7 +111,7 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 
 	// Now queue a slash packet data instance for chain-2, then confirm the on recv method
 	// queues the vsc matured behind the slash packet data
-	err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 1, testkeeper.GetNewSlashPacketData())
+	err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 1, ccv.GetNewSlashPacketData())
 	require.NoError(t, err)
 	ack = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", 2)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
@@ -138,7 +134,7 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 }
 
 func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, ccv.DefaultProviderParams())
 
@@ -160,9 +156,9 @@ func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
 	require.NoError(t, err)
 
 	// Queue some trailing slash packet data (and a couple more vsc matured)
-	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 4, testkeeper.GetNewSlashPacketData())
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 4, ccv.GetNewSlashPacketData())
 	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 5, testkeeper.GetNewSlashPacketData())
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 5, ccv.GetNewSlashPacketData())
 	require.NoError(t, err)
 	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 6, vscData[3])
 	require.NoError(t, err)
@@ -176,9 +172,9 @@ func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
 	require.NoError(t, err)
 
 	// And trailing slash packet data for chain-2
-	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 3, testkeeper.GetNewSlashPacketData())
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 3, ccv.GetNewSlashPacketData())
 	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 4, testkeeper.GetNewSlashPacketData())
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 4, ccv.GetNewSlashPacketData())
 	require.NoError(t, err)
 
 	// And one more trailing vsc matured packet for chain-2
@@ -229,7 +225,7 @@ func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
 
 // TestOnRecvSlashPacket tests the OnRecvSlashPacket method specifically for double-sign slash packets.
 func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, ccv.DefaultProviderParams())
 
@@ -238,7 +234,7 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
 
 	// Generate a new slash packet data instance with double sign infraction type
-	packetData := testkeeper.GetNewSlashPacketData()
+	packetData := ccv.GetNewSlashPacketData()
 	packetData.Infraction = stakingtypes.DoubleSign
 
 	// Set a block height for the valset update id in the generated packet data
@@ -256,14 +252,14 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 		ccv.NewProviderConsAddress(packetData.Validator.Address)))
 
 	// slash log should be empty for a random validator address in this testcase
-	randomAddress := cryptotestutil.NewCryptoIdentityFromIntSeed(100).ProviderConsAddress()
+	randomAddress := ccv.NewCryptoIdentityFromIntSeed(100).ProviderConsAddress()
 	require.False(t, providerKeeper.GetSlashLog(ctx, randomAddress))
 }
 
 // TestOnRecvSlashPacket tests the OnRecvSlashPacket method specifically for downtime slash packets,
 // and how the method interacts with the parent and per-chain slash packet queues.
 func TestOnRecvDowntimeSlashPacket(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, ccv.DefaultProviderParams())
 
@@ -272,7 +268,7 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
 
 	// Generate a new slash packet data instance with downtime infraction type
-	packetData := testkeeper.GetNewSlashPacketData()
+	packetData := ccv.GetNewSlashPacketData()
 	packetData.Infraction = stakingtypes.Downtime
 
 	// Set a block height for the valset update id in the generated packet data
@@ -290,7 +286,7 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	require.Equal(t, uint64(1), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1")) // per chain queue
 
 	// Generate a new downtime packet data instance with downtime infraction type
-	packetData = testkeeper.GetNewSlashPacketData()
+	packetData = ccv.GetNewSlashPacketData()
 	packetData.Infraction = stakingtypes.Downtime
 
 	// Set a block height for the valset update id in the generated packet data
@@ -315,7 +311,7 @@ func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, 
 ) exported.Acknowledgement {
 	t.Helper()
 	// Instantiate vsc matured packet data and bytes
-	data := testkeeper.GetNewVSCMaturedPacketData()
+	data := ccv.GetNewVSCMaturedPacketData()
 	dataBz, err := data.Marshal()
 	require.NoError(t, err)
 
@@ -389,7 +385,7 @@ func TestValidateSlashPacket(t *testing.T) {
 
 	for _, tc := range testCases {
 		providerKeeper, ctx, ctrl, _ := providerkeeper.GetProviderKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
+			t, ccv.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
 		packet := channeltypes.Packet{DestinationChannel: "channel-9"}
@@ -418,14 +414,14 @@ func TestValidateSlashPacket(t *testing.T) {
 func TestHandleSlashPacket(t *testing.T) {
 	chainId := "consumer-id"
 	validVscID := uint64(234)
-	providerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(7842334).ProviderConsAddress()
-	consumerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(784987634).ConsumerConsAddress()
+	providerConsAddr := ccv.NewCryptoIdentityFromIntSeed(7842334).ProviderConsAddress()
+	consumerConsAddr := ccv.NewCryptoIdentityFromIntSeed(784987634).ConsumerConsAddress()
 
 	testCases := []struct {
 		name       string
 		packetData ccv.SlashPacketData
 		// The mocks that we expect to be called for the specified packet data.
-		expectedCalls        func(sdk.Context, testkeeper.MockedKeepers, ccv.SlashPacketData) []*gomock.Call
+		expectedCalls        func(sdk.Context, ccv.MockedKeepers, ccv.SlashPacketData) []*gomock.Call
 		expectedSlashAcksLen int
 	}{
 		{
@@ -435,7 +431,7 @@ func TestHandleSlashPacket(t *testing.T) {
 				ValsetUpdateId: validVscID,
 				Infraction:     stakingtypes.Downtime,
 			},
-			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
+			func(ctx sdk.Context, mocks ccv.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
 				return []*gomock.Call{
@@ -456,7 +452,7 @@ func TestHandleSlashPacket(t *testing.T) {
 				ValsetUpdateId: validVscID,
 				Infraction:     stakingtypes.Downtime,
 			},
-			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
+			func(ctx sdk.Context, mocks ccv.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
 				return []*gomock.Call{
@@ -479,7 +475,7 @@ func TestHandleSlashPacket(t *testing.T) {
 				Infraction:     stakingtypes.Downtime,
 			},
 
-			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
+			func(ctx sdk.Context, mocks ccv.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
 				return []*gomock.Call{
@@ -500,10 +496,10 @@ func TestHandleSlashPacket(t *testing.T) {
 				abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				0, // ValsetUpdateId = 0 uses init chain height.
 				stakingtypes.Downtime),
-			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
+			func(ctx sdk.Context, mocks ccv.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
-				return testkeeper.GetMocksForHandleSlashPacket(
+				return ccv.GetMocksForHandleSlashPacket(
 					ctx, mocks,
 					providerConsAddr,                      // expected provider cons addr returned from GetProviderAddrFromConsumerAddr
 					stakingtypes.Validator{Jailed: false}, // staking keeper val to return
@@ -517,10 +513,10 @@ func TestHandleSlashPacket(t *testing.T) {
 				abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				validVscID,
 				stakingtypes.Downtime),
-			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
+			func(ctx sdk.Context, mocks ccv.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
-				return testkeeper.GetMocksForHandleSlashPacket(
+				return ccv.GetMocksForHandleSlashPacket(
 					ctx, mocks,
 					providerConsAddr,                     // expected provider cons addr returned from GetProviderAddrFromConsumerAddr
 					stakingtypes.Validator{Jailed: true}, // staking keeper val to return
@@ -534,7 +530,7 @@ func TestHandleSlashPacket(t *testing.T) {
 	for _, tc := range testCases {
 
 		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
+			t, ccv.NewInMemKeeperParams(t))
 
 		// Setup expected mock calls
 		gomock.InOrder(tc.expectedCalls(ctx, mocks, tc.packetData)...)
@@ -566,7 +562,7 @@ func TestHandleSlashPacket(t *testing.T) {
 // TestHandleVSCMaturedPacket tests the handling of VSCMatured packets.
 // Note that this method also tests the behaviour of AfterUnbondingInitiated.
 func TestHandleVSCMaturedPacket(t *testing.T) {
-	pk, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Init vscID

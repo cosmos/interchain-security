@@ -6,10 +6,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	ccv "github.com/cosmos/interchain-security/core"
 	"github.com/cosmos/interchain-security/x/provider"
 	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
-	ccv "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -90,7 +89,7 @@ func TestInitGenesis(t *testing.T) {
 		//
 		// Setup
 		//
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		keeperParams := ccv.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := providerkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 
 		appModule := provider.NewAppModule(&providerKeeper)

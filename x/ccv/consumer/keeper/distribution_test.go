@@ -7,20 +7,19 @@ import (
 	"github.com/stretchr/testify/require"
 
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	types "github.com/cosmos/interchain-security/core"
 	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
-	"github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 )
 
 // TestGetEstimatedNextFeeDistribution tests next fee distribution parameters.
 func TestGetEstimatedNextFeeDistribution(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	keeperParams := types.NewInMemKeeperParams(t)
 	ctx := keeperParams.Ctx
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mocks := testkeeper.NewMockedKeepers(ctrl)
+	mocks := types.NewMockedKeepers(ctrl)
 	mockAccountKeeper := mocks.MockAccountKeeper
 	mockBankKeeper := mocks.MockBankKeeper
 	consumerKeeper := consumerkeeper.NewInMemConsumerKeeper(keeperParams, mocks)

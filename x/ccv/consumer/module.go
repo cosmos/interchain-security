@@ -22,8 +22,8 @@ import (
 	"github.com/cosmos/interchain-security/x/consumer/client/cli"
 	"github.com/cosmos/interchain-security/x/consumer/keeper"
 
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	consumertypes "github.com/cosmos/interchain-security/x/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/types"
 )
 
 var (

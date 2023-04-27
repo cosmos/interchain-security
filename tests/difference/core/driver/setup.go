@@ -39,7 +39,7 @@ import (
 	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
 
-	ccv "github.com/cosmos/interchain-security/x/types"
+	ccv "github.com/cosmos/interchain-security/core"
 )
 
 type Builder struct {

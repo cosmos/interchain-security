@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ccv "github.com/cosmos/interchain-security/x/types"
+	ccv "github.com/cosmos/interchain-security/core"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 )

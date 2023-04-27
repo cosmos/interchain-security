@@ -9,7 +9,7 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/interchain-security/x/types"
+	"github.com/cosmos/interchain-security/core"
 )
 
 func TestValidateProviderParams(t *testing.T) {

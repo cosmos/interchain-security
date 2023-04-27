@@ -14,14 +14,14 @@ test:
 	go test ./... && go run ./tests/e2e/... && \ # TODO: double check this works
 	cd ./x/ccv/provider; go test ./... && \
 	cd ../consumer; go test ./... && \
-	cd ../types; go test ./...
+	cd ../../../core; go test ./...
 
 # run unit and integration tests
 test-short:
 	go test ./app/... ./tests/integration/... && \
 	cd ./x/ccv/provider; go test ./... && \
 	cd ../consumer; go test ./... && \
-	cd ../types; go test ./...
+	cd ../../../core; go test ./...
 
 # run E2E tests
 test-e2e:

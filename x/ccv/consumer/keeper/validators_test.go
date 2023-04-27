@@ -6,11 +6,9 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/v2/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	"github.com/cosmos/interchain-security/x/consumer/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
@@ -19,7 +17,7 @@ import (
 
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper
 func TestApplyCCValidatorChanges(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	keeperParams := ccvtypes.NewInMemKeeperParams(t)
 	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
@@ -108,7 +106,7 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 
 // TestIsValidatorJailed tests the IsValidatorJailed method for a consumer keeper
 func TestIsValidatorJailed(t *testing.T) {
-	consumerKeeper, ctx, ctrl, mocks := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, mocks := consumerkeeper.GetConsumerKeeperAndCtx(t, ccvtypes.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Consumer keeper from test setup should return false for IsPrevStandaloneChain()
@@ -144,7 +142,7 @@ func TestIsValidatorJailed(t *testing.T) {
 }
 
 func TestSlash(t *testing.T) {
-	consumerKeeper, ctx, ctrl, mocks := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, mocks := consumerkeeper.GetConsumerKeeperAndCtx(t, ccvtypes.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// If we call slash with infraction type empty, no slash packet will be queued
@@ -193,7 +191,7 @@ func TestSlash(t *testing.T) {
 
 // Tests the getter and setter behavior for historical info
 func TestHistoricalInfo(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	keeperParams := ccvtypes.NewInMemKeeperParams(t)
 	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockHeight(15)
@@ -250,7 +248,7 @@ func GenerateValidators(tb testing.TB) []*tmtypes.Validator {
 	numValidators := 4
 	validators := []*tmtypes.Validator{}
 	for i := 0; i < numValidators; i++ {
-		cId := crypto.NewCryptoIdentityFromIntSeed(234 + i)
+		cId := ccvtypes.NewCryptoIdentityFromIntSeed(234 + i)
 		pubKey := cId.TMCryptoPubKey()
 
 		votingPower := int64(i + 1)

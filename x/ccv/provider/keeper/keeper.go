@@ -22,10 +22,9 @@ import (
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	testutils "github.com/cosmos/interchain-security/v2/testutil/keeper"
 
+	ccv "github.com/cosmos/interchain-security/core"
 	"github.com/cosmos/interchain-security/x/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/types"
 
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -107,8 +106,8 @@ func (k Keeper) mustValidateFields() {
 // NewInMemProviderKeeper instantiates an in-mem provider keeper from params and mocked keepers
 //
 // Note: This is used for testing purposes only
-func NewInMemProviderKeeper(params testutils.InMemKeeperParams,
-	mocks testutils.MockedKeepers) Keeper {
+func NewInMemProviderKeeper(params ccv.InMemKeeperParams,
+	mocks ccv.MockedKeepers) Keeper {
 	return NewKeeper(
 		params.Cdc,
 		params.StoreKey,
@@ -130,12 +129,12 @@ func NewInMemProviderKeeper(params testutils.InMemKeeperParams,
 //
 // Note: Calling ctrl.Finish() at the end of a test function ensures that
 // no unexpected calls to external keepers are made.
-func GetProviderKeeperAndCtx(t *testing.T, params testutils.InMemKeeperParams) (
-	Keeper, sdk.Context, *gomock.Controller, testutils.MockedKeepers,
+func GetProviderKeeperAndCtx(t *testing.T, params ccv.InMemKeeperParams) (
+	Keeper, sdk.Context, *gomock.Controller, ccv.MockedKeepers,
 ) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
-	mocks := testutils.NewMockedKeepers(ctrl)
+	mocks := ccv.NewMockedKeepers(ctrl)
 	return NewInMemProviderKeeper(params, mocks), params.Ctx, ctrl, mocks
 }
 

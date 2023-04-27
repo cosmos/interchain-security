@@ -8,12 +8,11 @@ import (
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/types"
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/provider"
 	providerkeeper "github.com/cosmos/interchain-security/x/provider/keeper"
 )
@@ -87,7 +86,7 @@ func TestProviderProposalHandler(t *testing.T) {
 	for _, tc := range testCases {
 
 		// Setup
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		keeperParams := ccvtypes.NewInMemKeeperParams(t)
 		providerKeeper, ctx, _, mocks := providerkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, ccvtypes.DefaultProviderParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
@@ -95,13 +94,13 @@ func TestProviderProposalHandler(t *testing.T) {
 		// Mock expectations depending on expected outcome
 		switch {
 		case tc.expValidConsumerAddition:
-			gomock.InOrder(testkeeper.GetMocksForCreateConsumerClient(
+			gomock.InOrder(ccvtypes.GetMocksForCreateConsumerClient(
 				ctx, &mocks, "chainID", clienttypes.NewHeight(2, 3),
 			)...)
 
 		case tc.expValidConsumerRemoval:
-			testkeeper.SetupForStoppingConsumerChain(t, ctx, mocks)
-			prop := testkeeper.GetTestConsumerAdditionProp()
+			ccvtypes.SetupForStoppingConsumerChain(t, ctx, mocks)
+			prop := ccvtypes.GetTestConsumerAdditionProp()
 			err := providerKeeper.CreateConsumerClient(ctx, prop)
 			require.NoError(t, err)
 			err = providerKeeper.SetConsumerChain(ctx, "channelID")

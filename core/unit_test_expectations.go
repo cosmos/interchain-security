@@ -1,6 +1,7 @@
-package keeper
+package types
 
 import (
+	"testing"
 	time "time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,7 +14,6 @@ import (
 	"github.com/golang/mock/gomock"
 
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ccv "github.com/cosmos/interchain-security/x/types"
 
 	extra "github.com/oxyno-zeta/gomock-extra-matcher"
 )
@@ -23,6 +23,18 @@ import (
 // Note: Each group of mock expectations is associated with a single method
 // that may be called during unit tests.
 //
+
+// SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
+// which asserts that a consumer chain was properly stopped from StopConsumerChain().
+func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context, mocks MockedKeepers) {
+	t.Helper()
+	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
+		"chainID", clienttypes.NewHeight(4, 5))
+	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
+	expectations = append(expectations, GetMocksForStopConsumerChain(ctx, &mocks)...)
+
+	gomock.InOrder(expectations...)
+}
 
 // GetMocksForCreateConsumerClient returns mock expectations needed to call CreateConsumerClient().
 func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
@@ -64,7 +76,7 @@ func GetMocksForSetConsumerChain(ctx sdk.Context, mocks *MockedKeepers,
 	chainIDToInject string,
 ) []*gomock.Call {
 	return []*gomock.Call{
-		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, gomock.Any()).Return(
+		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ProviderPortID, gomock.Any()).Return(
 			channeltypes.Channel{
 				State:          channeltypes.OPEN,
 				ConnectionHops: []string{"connectionID"},
@@ -84,16 +96,16 @@ func GetMocksForSetConsumerChain(ctx sdk.Context, mocks *MockedKeepers,
 func GetMocksForStopConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomock.Call {
 	dummyCap := &capabilitytypes.Capability{}
 	return []*gomock.Call{
-		mocks.MockChannelKeeper.EXPECT().GetChannel(gomock.Any(), ccv.ProviderPortID, "channelID").Return(
+		mocks.MockChannelKeeper.EXPECT().GetChannel(gomock.Any(), ProviderPortID, "channelID").Return(
 			channeltypes.Channel{State: channeltypes.OPEN}, true,
 		).Times(1),
 		mocks.MockScopedKeeper.EXPECT().GetCapability(gomock.Any(), gomock.Any()).Return(dummyCap, true).Times(1),
-		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(gomock.Any(), ccv.ProviderPortID, "channelID", dummyCap).Times(1),
+		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(gomock.Any(), ProviderPortID, "channelID", dummyCap).Times(1),
 	}
 }
 
 func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
-	expectedProviderValConsAddr ccv.ProviderConsAddress,
+	expectedProviderValConsAddr ProviderConsAddress,
 	valToReturn stakingtypes.Validator, expectJailing bool,
 ) []*gomock.Call {
 	// These first two calls are always made.
@@ -133,6 +145,6 @@ func ExpectCreateClientMock(ctx sdk.Context, mocks MockedKeepers, clientID strin
 
 func ExpectGetCapabilityMock(ctx sdk.Context, mocks MockedKeepers, times int) *gomock.Call {
 	return mocks.MockScopedKeeper.EXPECT().GetCapability(
-		ctx, host.PortPath(ccv.ConsumerPortID),
+		ctx, host.PortPath(ConsumerPortID),
 	).Return(nil, true).Times(times)
 }

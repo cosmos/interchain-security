@@ -10,10 +10,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	"github.com/cosmos/interchain-security/v2/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	ccv "github.com/cosmos/interchain-security/core"
 	consumerkeeper "github.com/cosmos/interchain-security/x/consumer/keeper"
-	ccv "github.com/cosmos/interchain-security/x/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -23,7 +21,7 @@ import (
 
 // TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper
 func TestProviderClientID(t *testing.T) {
-	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	_, ok := consumerKeeper.GetProviderClientID(ctx)
@@ -36,7 +34,7 @@ func TestProviderClientID(t *testing.T) {
 
 // TestProviderChannel tests getter and setter functionality for the channel ID stored on consumer keeper
 func TestProviderChannel(t *testing.T) {
-	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	_, ok := consumerKeeper.GetProviderChannel(ctx)
@@ -69,7 +67,7 @@ func TestPendingChanges(t *testing.T) {
 		nil,
 	)
 
-	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	consumerKeeper.SetPendingChanges(ctx, pd)
@@ -84,7 +82,7 @@ func TestPendingChanges(t *testing.T) {
 
 // TestLastSovereignHeight tests the getter and setter for the ccv init genesis height
 func TestInitGenesisHeight(t *testing.T) {
-	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Panics without setter
@@ -101,7 +99,7 @@ func TestInitGenesisHeight(t *testing.T) {
 
 // TestPreCCV tests the getter, setter and deletion methods for the pre-CCV state flag
 func TestPreCCV(t *testing.T) {
-	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Default value is false without any setter
@@ -118,16 +116,16 @@ func TestPreCCV(t *testing.T) {
 
 // TestInitialValSet tests the getter and setter methods for storing the initial validator set for a consumer
 func TestInitialValSet(t *testing.T) {
-	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Default value is empty val update list
 	require.Empty(t, consumerKeeper.GetInitialValSet(ctx))
 
 	// Set/get the initial validator set
-	cId1 := crypto.NewCryptoIdentityFromIntSeed(7896)
-	cId2 := crypto.NewCryptoIdentityFromIntSeed(7897)
-	cId3 := crypto.NewCryptoIdentityFromIntSeed(7898)
+	cId1 := ccv.NewCryptoIdentityFromIntSeed(7896)
+	cId2 := ccv.NewCryptoIdentityFromIntSeed(7897)
+	cId3 := ccv.NewCryptoIdentityFromIntSeed(7898)
 	valUpdates := []abci.ValidatorUpdate{
 		{
 			PubKey: cId1.TMProtoCryptoPublicKey(),
@@ -163,7 +161,7 @@ func TestInitialValSet(t *testing.T) {
 // TestGetLastSovereignValidators tests the getter method for getting the last valset
 // from the standalone staking keeper
 func TestGetLastSovereignValidators(t *testing.T) {
-	ck, ctx, ctrl, mocks := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	ck, ctx, ctrl, mocks := consumerkeeper.GetConsumerKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Should panic if pre-CCV is true but staking keeper is not set
@@ -179,7 +177,7 @@ func TestGetLastSovereignValidators(t *testing.T) {
 	// Set the pre-CCV state to true and get the last standalone validators from mock
 	ck.SetPreCCVTrue(ctx)
 	require.True(t, ck.IsPreCCV(ctx))
-	cId1 := crypto.NewCryptoIdentityFromIntSeed(11)
+	cId1 := ccv.NewCryptoIdentityFromIntSeed(11)
 	val := cId1.SDKStakingValidator()
 	val.Description.Moniker = "sanity check this is the correctly serialized val"
 	gomock.InOrder(
@@ -195,7 +193,7 @@ func TestGetLastSovereignValidators(t *testing.T) {
 
 // TestPacketMaturityTime tests getter, setter, and iterator functionality for the packet maturity time of a received VSC packet
 func TestPacketMaturityTime(t *testing.T) {
-	ck, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	ck, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	now := time.Now().UTC()
@@ -248,7 +246,7 @@ func TestPacketMaturityTime(t *testing.T) {
 
 // TestCrossChainValidator tests the getter, setter, and deletion method for cross chain validator records
 func TestCrossChainValidator(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	keeperParams := ccv.NewInMemKeeperParams(t)
 	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
@@ -287,14 +285,14 @@ func TestCrossChainValidator(t *testing.T) {
 
 // TestGetAllCCValidator tests GetAllCCValidator behaviour correctness
 func TestGetAllCCValidator(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	keeperParams := ccv.NewInMemKeeperParams(t)
 	ck, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
 	numValidators := 4
 	validators := []ccv.CrossChainValidator{}
 	for i := 0; i < numValidators; i++ {
-		validators = append(validators, testkeeper.GetNewCrossChainValidator(t))
+		validators = append(validators, ccv.GetNewCrossChainValidator(t))
 	}
 	// sorting by CrossChainValidator.Address
 	expectedGetAllOrder := validators
@@ -313,7 +311,7 @@ func TestGetAllCCValidator(t *testing.T) {
 }
 
 func TestSetPendingPackets(t *testing.T) {
-	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// prepare test setup
@@ -393,13 +391,13 @@ func TestVerifyProviderChain(t *testing.T) {
 	testCases := []struct {
 		name string
 		// State-mutating setup specific to this test case
-		mockSetup      func(sdk.Context, testkeeper.MockedKeepers)
+		mockSetup      func(sdk.Context, ccv.MockedKeepers)
 		connectionHops []string
 		expError       bool
 	}{
 		{
 			name: "success",
-			mockSetup: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+			mockSetup: func(ctx sdk.Context, mocks ccv.MockedKeepers) {
 				gomock.InOrder(
 					mocks.MockConnectionKeeper.EXPECT().GetConnection(
 						ctx, "connectionID",
@@ -411,7 +409,7 @@ func TestVerifyProviderChain(t *testing.T) {
 		},
 		{
 			name: "connection hops is not length 1",
-			mockSetup: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+			mockSetup: func(ctx sdk.Context, mocks ccv.MockedKeepers) {
 				// Expect no calls to GetConnection(), VerifyProviderChain will return from first step.
 				gomock.InAnyOrder(
 					mocks.MockConnectionKeeper.EXPECT().GetConnection(gomock.Any(), gomock.Any()).Times(0),
@@ -422,7 +420,7 @@ func TestVerifyProviderChain(t *testing.T) {
 		},
 		{
 			name: "connection does not exist",
-			mockSetup: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+			mockSetup: func(ctx sdk.Context, mocks ccv.MockedKeepers) {
 				gomock.InOrder(
 					mocks.MockConnectionKeeper.EXPECT().GetConnection(
 						ctx, "connectionID").Return(conntypes.ConnectionEnd{},
@@ -435,7 +433,7 @@ func TestVerifyProviderChain(t *testing.T) {
 		},
 		{
 			name: "found clientID does not match expectation",
-			mockSetup: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+			mockSetup: func(ctx sdk.Context, mocks ccv.MockedKeepers) {
 				gomock.InOrder(
 					mocks.MockConnectionKeeper.EXPECT().GetConnection(
 						ctx, "connectionID").Return(
@@ -450,7 +448,7 @@ func TestVerifyProviderChain(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		keeperParams := ccv.NewInMemKeeperParams(t)
 		consumerKeeper, ctx, ctrl, mocks := consumerkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 
 		// Common setup
@@ -472,7 +470,7 @@ func TestVerifyProviderChain(t *testing.T) {
 
 // TestGetAllHeightToValsetUpdateIDs tests GetAllHeightToValsetUpdateIDs behaviour correctness
 func TestGetAllHeightToValsetUpdateIDs(t *testing.T) {
-	ck, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	ck, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	cases := []ccv.HeightToValsetUpdateID{
@@ -513,7 +511,7 @@ func TestGetAllHeightToValsetUpdateIDs(t *testing.T) {
 
 // TestGetAllOutstandingDowntimes tests GetAllOutstandingDowntimes behaviour correctness
 func TestGetAllOutstandingDowntimes(t *testing.T) {
-	ck, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	ck, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	addresses := []sdk.ConsAddress{
@@ -543,7 +541,7 @@ func TestGetAllOutstandingDowntimes(t *testing.T) {
 
 // TestStandaloneTransferChannelID tests the getter and setter for the existing transfer channel id
 func TestStandaloneTransferChannelID(t *testing.T) {
-	ck, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	ck, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Test that the default value is empty
@@ -555,7 +553,7 @@ func TestStandaloneTransferChannelID(t *testing.T) {
 }
 
 func TestPrevStandaloneChainFlag(t *testing.T) {
-	ck, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	ck, ctx, ctrl, _ := consumerkeeper.GetConsumerKeeperAndCtx(t, ccv.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Test that the default value is false
