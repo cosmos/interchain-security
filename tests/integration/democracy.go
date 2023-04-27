@@ -193,8 +193,15 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 
 	// submit proposal with allowed changes
+	mintParams := mintKeeper.GetParams(s.consumerCtx())
+	mintParams.InflationMax = newMintParamValue
+	msg := &minttypes.MsgUpdateParams{
+		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		Params:    mintParams,
+	}
 	paramChange = proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{allowedChange}}
-	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, proposer.GetAddress(), depositAmount)
+	// err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, proposer.GetAddress(), depositAmount)
+	err = test(govKeeper, s.consumerCtx(), msg, votingAccounts, proposer.GetAddress(), depositAmount)
 	s.Assert().NoError(err)
 	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*params.VotingPeriod)
 	s.consumerChain.NextBlock()
@@ -230,7 +237,28 @@ func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.
 	if err != nil {
 		return err
 	}
-	proposal, err := govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "", paramChange.Title, paramChange.Description, proposer)
+	proposal, err := govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "", "title", "sumary", proposer)
+	if err != nil {
+		return err
+	}
+	_, err = govKeeper.AddDeposit(ctx, proposal.Id, accounts[0].SenderAccount.GetAddress(), depositAmount) // proposal becomes active
+	if err != nil {
+		return err
+	}
+
+	for _, account := range accounts {
+		err = govKeeper.AddVote(ctx, proposal.Id, account.SenderAccount.GetAddress(), govv1.NewNonSplitVoteOption(govv1.OptionYes), "")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func test(govKeeper testutil.TestGovKeeper, ctx sdk.Context, msg sdk.Msg,
+	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
+) error {
+	proposal, err := govKeeper.SubmitProposal(ctx, []sdk.Msg{msg}, "", "title", "sumary", proposer)
 	if err != nil {
 		return err
 	}
