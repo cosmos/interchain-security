@@ -1,6 +1,6 @@
 module github.com/cosmos/interchain-security
 
-go 1.20
+go 1.19
 
 require (
 	github.com/confio/ics23/go v0.9.0
