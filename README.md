@@ -43,6 +43,35 @@ export PATH=$PATH:$(go env GOPATH)/bin
 
 Inspect the [Makefile](./Makefile) if curious.
 
+**Running a local testnet**
+    
+```bash
+# start a local testnet
+./scripts/local-testnet.sh
+```
+You can see the ports and home directories of the validators by checking the commands that started
+the validator processes, e.g. by checking processes with htop:
+
+```bash
+# check processes
+htop --filter interchain-security
+```
+
+The local testnet script has slightly non-deterministic behaviour due to non-determinism in
+network communication, so if you run into issues during the script run, try running the script again.
+
+To check that both chains are producing blocks, you can run:
+
+```bash
+# check that both chains are producing blocks
+interchain-security-cd query block --node http://127.0.0.1:29175
+interchain-security-pd query block --node http://127.0.0.1:29170
+```
+
+The argument to `--node` should be the `--rpc.laddr` of a node on the provider or consumer.
+You can search for `last_commit.height` in the output json to see the latest block height,
+and check that the height is increasing.
+
 ## Testing
 
 See [testing docs](./docs/testing.md).
