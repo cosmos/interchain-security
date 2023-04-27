@@ -8,7 +8,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	gov "github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -56,13 +55,12 @@ func (am AppModule) EndBlock(ctx sdk.Context, request abci.RequestEndBlock) []ab
 }
 
 func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govv1.Proposal) {
-	fmt.Println(proposal)
 	messages := proposal.GetMessages()
 
 	for _, message := range messages {
-		sdkMsg := &govv1.MsgExecLegacyContent{
-			Content:   message,
-			Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		sdkMsg, ok := message.GetCachedValue().(*govv1.MsgExecLegacyContent)
+		if !ok {
+			continue
 		}
 
 		content, err := govv1.LegacyContentFromMessage(sdkMsg)
