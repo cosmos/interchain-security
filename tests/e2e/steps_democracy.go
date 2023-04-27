@@ -107,10 +107,10 @@ func stepsDemocracy(consumerName string) []Step {
 		},
 		{
 			Action: relayRewardPacketsToProviderAction{
-				consumerChain: ChainID(consumerName),
-				providerChain: ChainID("provi"),
-				port:          "transfer",
-				channel:       1,
+				ConsumerChain: ChainID(consumerName),
+				ProviderChain: ChainID("provi"),
+				Port:          "transfer",
+				Channel:       1,
 			},
 			State: State{
 				ChainID("provi"): ChainState{

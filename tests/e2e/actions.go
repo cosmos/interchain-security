@@ -867,24 +867,24 @@ func (tr TestRun) relayPackets(
 }
 
 type relayRewardPacketsToProviderAction struct {
-	consumerChain ChainID
-	providerChain ChainID
-	port          string
-	channel       uint
+	ConsumerChain ChainID
+	ProviderChain ChainID
+	Port          string
+	Channel       uint
 }
 
 func (tr TestRun) relayRewardPacketsToProvider(
 	action relayRewardPacketsToProviderAction,
 	verbose bool,
 ) {
-	blockPerDistribution, _ := strconv.ParseUint(strings.Trim(tr.getParam(action.consumerChain, Param{Subspace: "ccvconsumer", Key: "BlocksPerDistributionTransmission"}), "\""), 10, 64)
-	currentBlock := uint64(tr.getBlockHeight(action.consumerChain))
+	blockPerDistribution, _ := strconv.ParseUint(strings.Trim(tr.getParam(action.ConsumerChain, Param{Subspace: "ccvconsumer", Key: "BlocksPerDistributionTransmission"}), "\""), 10, 64)
+	currentBlock := uint64(tr.getBlockHeight(action.ConsumerChain))
 	if currentBlock <= blockPerDistribution {
-		tr.waitBlocks(action.consumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
+		tr.waitBlocks(action.ConsumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
 	}
 
-	tr.relayPackets(relayPacketsAction{Chain: action.consumerChain, Port: action.port, Channel: action.channel}, verbose)
-	tr.waitBlocks(action.providerChain, 1, 10*time.Second)
+	tr.relayPackets(relayPacketsAction{Chain: action.ConsumerChain, Port: action.Port, Channel: action.Channel}, verbose)
+	tr.waitBlocks(action.ProviderChain, 1, 10*time.Second)
 }
 
 type delegateTokensAction struct {
