@@ -116,6 +116,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 
 			diff := cmp.Diff(tc.chainState, *got)
 			if diff != "" {
+				log.Print(string(jsonobj))
 				t.Fatalf(diff)
 			}
 		})
