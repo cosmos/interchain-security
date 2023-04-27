@@ -147,6 +147,13 @@ func UnmarshalMapToProposalType(input json.RawMessage, proposalType string) (Pro
 			return nil, err
 		}
 		return proposal, nil
+	case "main.ParamsProposal":
+		var proposal ParamsProposal
+		err := json.Unmarshal(input, &proposal)
+		if err != nil {
+			return nil, err
+		}
+		return proposal, nil
 
 	case "main.TextProposal":
 		var proposal TextProposal
