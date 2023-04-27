@@ -66,7 +66,7 @@ func stepsDemocracy(consumerName string) []Step {
 				Deposit:  10000001,
 				Subspace: "staking",
 				Key:      "MaxValidators",
-				Value:    105,
+				Value:    "105",
 			},
 			State: State{
 				ChainID(consumerName): ChainState{
