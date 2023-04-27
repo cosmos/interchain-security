@@ -6,8 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 

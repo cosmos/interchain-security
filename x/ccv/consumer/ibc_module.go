@@ -12,9 +12,9 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
+	types "github.com/cosmos/interchain-security/core"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // OnChanOpenInit implements the IBCModule interface

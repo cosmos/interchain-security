@@ -9,8 +9,8 @@ import (
 	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 
+	ccv "github.com/cosmos/interchain-security/core"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )

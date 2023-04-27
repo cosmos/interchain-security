@@ -10,9 +10,9 @@ import (
 
 	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
 
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 

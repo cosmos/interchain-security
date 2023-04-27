@@ -2,7 +2,7 @@ package integration
 
 import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 

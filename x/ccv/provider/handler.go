@@ -3,9 +3,9 @@ package provider
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 func NewHandler(k *keeper.Keeper) sdk.Handler {

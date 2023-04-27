@@ -7,8 +7,8 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 

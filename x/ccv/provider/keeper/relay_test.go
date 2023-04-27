@@ -10,11 +10,11 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v4/modules/core/exported"
+	ccv "github.com/cosmos/interchain-security/core"
 	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
 	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	abci "github.com/tendermint/tendermint/abci/types"
 

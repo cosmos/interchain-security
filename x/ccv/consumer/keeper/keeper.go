@@ -18,8 +18,8 @@ import (
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	ccv "github.com/cosmos/interchain-security/core"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 )

@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/interchain-security/core"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 )
 
@@ -23,7 +23,7 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 	mockAccountKeeper := mocks.MockAccountKeeper
 	mockBankKeeper := mocks.MockBankKeeper
 	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
-	consumerKeeper.SetParams(ctx, types.DefaultConsumerParams())
+	consumerKeeper.SetParams(ctx, core.DefaultConsumerParams())
 
 	// Setup mock account balance
 	fracParam := consumerKeeper.GetConsumerRedistributionFrac(ctx)
@@ -51,7 +51,7 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 
 	// set next height to be 10 blocks from current
 	consumerKeeper.SetBlocksPerDistributionTransmission(ctx, 10)
-	expect := types.NextFeeDistributionEstimate{
+	expect := core.NextFeeDistributionEstimate{
 		NextHeight:           10,
 		LastHeight:           0,
 		CurrentHeight:        0,

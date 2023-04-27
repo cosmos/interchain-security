@@ -13,7 +13,7 @@ import (
 
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/core"
 
 	"github.com/cosmos/interchain-security/x/ccv/provider/client"
 	"github.com/tidwall/gjson"

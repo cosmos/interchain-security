@@ -16,9 +16,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	core "github.com/cosmos/interchain-security/core"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
@@ -43,8 +43,8 @@ type InMemKeeperParams struct {
 // NewInMemKeeperParams instantiates in-memory keeper params with default values
 func NewInMemKeeperParams(tb testing.TB) InMemKeeperParams {
 	tb.Helper()
-	storeKey := sdk.NewKVStoreKey(types.StoreKey)
-	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
+	storeKey := sdk.NewKVStoreKey(core.StoreKey)
+	memStoreKey := storetypes.NewMemoryStoreKey(core.MemStoreKey)
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
@@ -176,14 +176,14 @@ type PrivateKey struct {
 }
 
 // Obtains slash packet data with a newly generated key, and randomized field values
-func GetNewSlashPacketData() types.SlashPacketData {
+func GetNewSlashPacketData() core.SlashPacketData {
 	b1 := make([]byte, 8)
 	_, _ = rand.Read(b1)
 	b2 := make([]byte, 8)
 	_, _ = rand.Read(b2)
 	b3 := make([]byte, 8)
 	_, _ = rand.Read(b3)
-	return types.SlashPacketData{
+	return core.SlashPacketData{
 		Validator: abci.Validator{
 			Address: ed25519.GenPrivKey().PubKey().Address(),
 			Power:   int64(binary.BigEndian.Uint64(b1)),
@@ -194,10 +194,10 @@ func GetNewSlashPacketData() types.SlashPacketData {
 }
 
 // Obtains vsc matured packet data with a newly generated key
-func GetNewVSCMaturedPacketData() types.VSCMaturedPacketData {
+func GetNewVSCMaturedPacketData() core.VSCMaturedPacketData {
 	b := make([]byte, 8)
 	_, _ = rand.Read(b)
-	return types.VSCMaturedPacketData{ValsetUpdateId: binary.BigEndian.Uint64(b)}
+	return core.VSCMaturedPacketData{ValsetUpdateId: binary.BigEndian.Uint64(b)}
 }
 
 // SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
@@ -220,8 +220,8 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	require.NoError(t, err)
 }
 
-func GetTestConsumerAdditionProp() *types.ConsumerAdditionProposal {
-	prop := types.NewConsumerAdditionProposal(
+func GetTestConsumerAdditionProp() *core.ConsumerAdditionProposal {
+	prop := core.NewConsumerAdditionProposal(
 		"chainID",
 		"description",
 		"chainID",
@@ -229,25 +229,25 @@ func GetTestConsumerAdditionProp() *types.ConsumerAdditionProposal {
 		[]byte("gen_hash"),
 		[]byte("bin_hash"),
 		time.Now(),
-		types.DefaultConsumerRedistributeFrac,
-		types.DefaultBlocksPerDistributionTransmission,
-		types.DefaultHistoricalEntries,
-		types.DefaultCCVTimeoutPeriod,
-		types.DefaultTransferTimeoutPeriod,
-		types.DefaultConsumerUnbondingPeriod,
-	).(*types.ConsumerAdditionProposal)
+		core.DefaultConsumerRedistributeFrac,
+		core.DefaultBlocksPerDistributionTransmission,
+		core.DefaultHistoricalEntries,
+		core.DefaultCCVTimeoutPeriod,
+		core.DefaultTransferTimeoutPeriod,
+		core.DefaultConsumerUnbondingPeriod,
+	).(*core.ConsumerAdditionProposal)
 
 	return prop
 }
 
 // Obtains a CrossChainValidator with a newly generated key, and randomized field values
-func GetNewCrossChainValidator(t *testing.T) types.CrossChainValidator {
+func GetNewCrossChainValidator(t *testing.T) core.CrossChainValidator {
 	t.Helper()
 	b1 := make([]byte, 8)
 	_, _ = rand.Read(b1)
 	power := int64(binary.BigEndian.Uint64(b1))
 	privKey := ed25519.GenPrivKey()
-	validator, err := types.NewCCValidator(privKey.PubKey().Address(), power, privKey.PubKey())
+	validator, err := core.NewCCValidator(privKey.PubKey().Address(), power, privKey.PubKey())
 	require.NoError(t, err)
 	return validator
 }

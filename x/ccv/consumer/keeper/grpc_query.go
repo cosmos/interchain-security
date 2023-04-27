@@ -4,16 +4,16 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/core"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-var _ types.ConsumerQueryServer = Keeper{}
+var _ core.ConsumerQueryServer = Keeper{}
 
 func (k Keeper) QueryNextFeeDistribution(c context.Context,
-	req *types.QueryNextFeeDistributionEstimateRequest,
-) (*types.QueryNextFeeDistributionEstimateResponse, error) {
+	req *core.QueryNextFeeDistributionEstimateRequest,
+) (*core.QueryNextFeeDistributionEstimateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
 	if req == nil {
@@ -22,12 +22,12 @@ func (k Keeper) QueryNextFeeDistribution(c context.Context,
 
 	nextDist := k.GetEstimatedNextFeeDistribution(ctx)
 
-	return &types.QueryNextFeeDistributionEstimateResponse{Data: &nextDist}, nil
+	return &core.QueryNextFeeDistributionEstimateResponse{Data: &nextDist}, nil
 }
 
 func (k Keeper) QueryParams(c context.Context,
-	req *types.QueryParamsRequest,
-) (*types.QueryParamsResponse, error) {
+	req *core.QueryParamsRequest,
+) (*core.QueryParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
 	if req == nil {
@@ -36,5 +36,5 @@ func (k Keeper) QueryParams(c context.Context,
 
 	p := k.GetConsumerParams(ctx)
 
-	return &types.QueryParamsResponse{Params: p}, nil
+	return &core.QueryParamsResponse{Params: p}, nil
 }

@@ -16,7 +16,7 @@ import (
 	govrest "github.com/cosmos/cosmos-sdk/x/gov/client/rest"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
+	types "github.com/cosmos/interchain-security/core"
 	"github.com/spf13/cobra"
 )
 

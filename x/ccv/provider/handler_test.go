@@ -11,11 +11,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ccvtypes "github.com/cosmos/interchain-security/core"
 	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider"
 	keeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 func TestInvalidMsg(t *testing.T) {
