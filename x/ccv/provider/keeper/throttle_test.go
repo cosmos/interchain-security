@@ -780,9 +780,8 @@ func TestGlobalSlashEntryDeletion(t *testing.T) {
 
 	// Instantiate shuffled copy of above slice
 	shuffledEntries := append([]ccvtypes.GlobalSlashEntry{}, entries...)
-	randSrc := rand.NewSource(now.UnixNano())
-	randGen := rand.New(randSrc)
-	randGen.Shuffle(len(shuffledEntries), func(i, j int) {
+	rand.Seed(now.UnixNano())
+	rand.Shuffle(len(shuffledEntries), func(i, j int) {
 		shuffledEntries[i], shuffledEntries[j] = shuffledEntries[j], shuffledEntries[i]
 	})
 
@@ -1189,7 +1188,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		defaultParams.MaxThrottledPackets = tc.max
 		providerKeeper.SetParams(ctx, defaultParams)
 
-		rand.Seed(time.Now().UnixNano()) // nolint:staticcheck // ignore SA1019 for tests
+		rand.Seed(time.Now().UnixNano())
 
 		// Queuing up a couple data instances for another chain shouldn't matter
 		err := providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 0, testkeeper.GetNewSlashPacketData())
