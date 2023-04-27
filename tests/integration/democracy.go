@@ -199,8 +199,10 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		Params:    mintParams,
 	}
-	paramChange = proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{allowedChange}}
+	_ = proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{allowedChange}}
 	// err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, proposer.GetAddress(), depositAmount)
+	// s.Assert().NoError(err)
+
 	err = test(govKeeper, s.consumerCtx(), msg, votingAccounts, proposer.GetAddress(), depositAmount)
 	s.Assert().NoError(err)
 	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*params.VotingPeriod)
@@ -237,7 +239,7 @@ func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.
 	if err != nil {
 		return err
 	}
-	proposal, err := govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "", "title", "sumary", proposer)
+	proposal, err := govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "", "title", "summary", proposer)
 	if err != nil {
 		return err
 	}
@@ -258,7 +260,7 @@ func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.
 func test(govKeeper testutil.TestGovKeeper, ctx sdk.Context, msg sdk.Msg,
 	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
 ) error {
-	proposal, err := govKeeper.SubmitProposal(ctx, []sdk.Msg{msg}, "", "title", "sumary", proposer)
+	proposal, err := govKeeper.SubmitProposal(ctx, []sdk.Msg{msg}, "", "title", "summary", proposer)
 	if err != nil {
 		return err
 	}
