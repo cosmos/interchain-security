@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -14,6 +15,7 @@ import (
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/spf13/cobra"
@@ -72,6 +74,9 @@ Where proposal.json contains:
 			if err != nil {
 				return err
 			}
+
+			// do not fail for errors regarding the unbonding period, but just log a warning
+			CheckPropUnbondingPeriod(clientCtx, proposal.UnbondingPeriod)
 
 			content := types.NewConsumerAdditionProposal(
 				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
@@ -341,3 +346,134 @@ func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalPropo
 
 	return proposal, nil
 }
+
+func CheckPropUnbondingPeriod(clientCtx client.Context, propUnbondingPeriod time.Duration) {
+	queryClient := stakingtypes.NewQueryClient(clientCtx)
+
+	res, err := queryClient.Params(context.Background(), &stakingtypes.QueryParamsRequest{})
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	providerUnbondingTime := res.Params.UnbondingTime
+
+	if providerUnbondingTime < propUnbondingPeriod {
+		fmt.Printf(
+			`consumer unbonding period is advised to be smaller than provider unbonding period, but is longer.
+This is not a security risk, but will effectively lengthen the unbonding period on the provider.
+consumer unbonding: %s
+provider unbonding: %s`,
+			propUnbondingPeriod,
+			providerUnbondingTime)
+	}
+}
+
+/* Proposal REST handlers: NOT NEEDED POST 47, BUT PLEASE CHECK THAT ALL FUNCTIONALITY EXISTS IN THE 47 VERSION.
+
+// ConsumerAdditionProposalRESTHandler returns a ProposalRESTHandler that exposes the consumer addition rest handler.
+func ConsumerAdditionProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
+	return govrest.ProposalRESTHandler{
+		SubRoute: "consumer_addition",
+		Handler:  postConsumerAdditionProposalHandlerFn(clientCtx),
+	}
+}
+
+// ConsumerRemovalProposalRESTHandler returns a ProposalRESTHandler that exposes the consumer removal rest handler.
+func ConsumerRemovalProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
+	return govrest.ProposalRESTHandler{
+		SubRoute: "consumer_removal",
+		Handler:  postConsumerRemovalProposalHandlerFn(clientCtx),
+	}
+}
+
+func postConsumerAdditionProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req ConsumerAdditionProposalReq
+		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
+			return
+		}
+
+		req.BaseReq = req.BaseReq.Sanitize()
+		if !req.BaseReq.ValidateBasic(w) {
+			return
+		}
+
+		content := types.NewConsumerAdditionProposal(
+			req.Title, req.Description, req.ChainId, req.InitialHeight,
+			req.GenesisHash, req.BinaryHash, req.SpawnTime,
+			req.ConsumerRedistributionFraction, req.BlocksPerDistributionTransmission, req.HistoricalEntries,
+			req.CcvTimeoutPeriod, req.TransferTimeoutPeriod, req.UnbondingPeriod)
+
+		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
+
+		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
+			return
+		}
+
+		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
+	}
+}
+
+func postConsumerRemovalProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req ConsumerRemovalProposalReq
+		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
+			return
+		}
+
+		req.BaseReq = req.BaseReq.Sanitize()
+		if !req.BaseReq.ValidateBasic(w) {
+			return
+		}
+
+		content := types.NewConsumerRemovalProposal(
+			req.Title, req.Description, req.ChainId, req.StopTime,
+		)
+
+		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
+
+		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
+			return
+		}
+
+		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
+	}
+}
+
+func postEquivocationProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req EquivocationProposalReq
+		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
+			return
+		}
+
+		req.BaseReq = req.BaseReq.Sanitize()
+		if !req.BaseReq.ValidateBasic(w) {
+			return
+		}
+
+		content := types.NewEquivocationProposal(req.Title, req.Description, req.Equivocations)
+
+		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
+
+		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
+			return
+		}
+
+		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
+	}
+}
+
+
+
+*/
