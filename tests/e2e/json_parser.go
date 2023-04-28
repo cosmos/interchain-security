@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -24,28 +23,18 @@ func (parser JSONParser) ReadTraceFromFile(path string) ([]Step, error) {
 	}
 
 	// Unmarshal the JSON into a slice of Step structs
+<<<<<<< HEAD:tests/e2e/trace_parser.go
 	var stepsWithActionTypes []StepWithActionType
 
 	decoder := json.NewDecoder(bytes.NewReader(jsonData))
 	decoder.DisallowUnknownFields() // To avoid silent errors. Will cause an error if the JSON contains unknown fields
 	err = decoder.Decode(&stepsWithActionTypes)
+=======
+	var steps []Step
+	err = json.Unmarshal(jsonData, &steps)
+>>>>>>> 24b0ef1b (fix: e2e trace format fails on slashthrottlesteps (#903)):tests/e2e/json_parser.go
 	if err != nil {
 		return nil, err
-	}
-
-	steps := make([]Step, len(stepsWithActionTypes))
-
-	// Unmarshal the actions inside the steps from map[string]any to the corresponding action type
-	for i, step := range stepsWithActionTypes {
-		action, err := UnmarshalMapToActionType(step.Action.(map[string]any), step.ActionType)
-		if err != nil {
-			return nil, err
-		}
-
-		fmt.Println(action)
-
-		steps[i] = Step{action, step.State}
-
 	}
 
 	return steps, nil

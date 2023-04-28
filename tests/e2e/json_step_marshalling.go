@@ -4,14 +4,49 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+<<<<<<< HEAD:tests/e2e/trace_utils.go
 
 	"github.com/mitchellh/mapstructure"
+=======
+>>>>>>> 24b0ef1b (fix: e2e trace format fails on slashthrottlesteps (#903)):tests/e2e/json_step_marshalling.go
 )
 
-// StepWithActionType is a utility class that wraps a Step together with its action type. Used to marshal/unmarshal
-type StepWithActionType struct {
-	Step
-	ActionType string `json:"ActionType"`
+// MarshalJSON marshals a step into JSON while including the type of the action.
+func (step Step) MarshalJSON() ([]byte, error) {
+	actionType := reflect.TypeOf(step.Action).String()
+
+	result := struct {
+		ActionType string
+		Action     interface{}
+		State      State
+	}{
+		ActionType: actionType,
+		Action:     step.Action,
+		State:      step.State,
+	}
+
+	return json.Marshal(result)
+}
+
+// UnmarshalJSON unmarshals a step from JSON while including the type of the action.
+func (step *Step) UnmarshalJSON(data []byte) error {
+	var tmp struct {
+		ActionType string
+		Action     json.RawMessage
+		State      State
+	}
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	action, err := UnmarshalMapToActionType(tmp.Action, tmp.ActionType)
+	if err != nil {
+		return err
+	}
+
+	step.Action = action
+	step.State = tmp.State
+	return nil
 }
 
 // has to be manually kept in sync with the available action types.

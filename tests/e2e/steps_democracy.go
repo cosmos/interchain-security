@@ -67,9 +67,15 @@ func stepsDemocracy(consumerName string) []Step {
 				Chain:    ChainID(consumerName),
 				From:     ValidatorID("alice"),
 				Deposit:  10000001,
+<<<<<<< HEAD
 				Subspace: "transfer",
 				Key:      "SendEnabled",
 				Value:    true,
+=======
+				Subspace: "staking",
+				Key:      "MaxValidators",
+				Value:    "105",
+>>>>>>> 24b0ef1b (fix: e2e trace format fails on slashthrottlesteps (#903))
 			},
 			State: State{
 				ChainID(consumerName): ChainState{
