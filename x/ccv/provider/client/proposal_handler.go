@@ -77,13 +77,7 @@ Where proposal.json contains:
 			}
 
 			// do not fail for errors regarding the unbonding period, but just log a warning
-			err = CheckPropUnbondingPeriod(clientCtx, proposal.UnbondingPeriod)
-			if err != nil {
-				fmt.Fprint(
-					os.Stderr,
-					err.Error(),
-				)
-			}
+			CheckPropUnbondingPeriod(clientCtx, proposal.UnbondingPeriod)
 
 			content := types.NewConsumerAdditionProposal(
 				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
@@ -453,18 +447,19 @@ func postEquivocationProposalHandlerFn(clientCtx client.Context) http.HandlerFun
 	}
 }
 
-func CheckPropUnbondingPeriod(clientCtx client.Context, propUnbondingPeriod time.Duration) error {
+func CheckPropUnbondingPeriod(clientCtx client.Context, propUnbondingPeriod time.Duration) {
 	queryClient := stakingtypes.NewQueryClient(clientCtx)
 
 	res, err := queryClient.Params(context.Background(), &stakingtypes.QueryParamsRequest{})
 	if err != nil {
-		return err
+		fmt.Println(err.Error())
+		return
 	}
 
 	providerUnbondingTime := res.Params.UnbondingTime
 
 	if providerUnbondingTime < propUnbondingPeriod {
-		return fmt.Errorf(
+		fmt.Printf(
 			`consumer unbonding period is advised to be smaller than provider unbonding period, but is longer.
 This is not a security risk, but will effectively lengthen the unbonding period on the provider.
 consumer unbonding: %s
@@ -472,6 +467,4 @@ provider unbonding: %s`,
 			propUnbondingPeriod,
 			providerUnbondingTime)
 	}
-
-	return nil
 }
