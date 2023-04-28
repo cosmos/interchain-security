@@ -5,7 +5,9 @@ title: Separating consumer and provider libraries
 # ADR 004: Separating consumer and provider libraries
 
 ## Changelog
+
 * 2023-04-27: Initial draft
+* 2023-04-28: Changed content to reflect new approach
 
 ## Status
 
@@ -14,10 +16,12 @@ title: Separating consumer and provider libraries
 {Deprecated|Proposed|Accepted}
 
 ## Context
+
 The main deliverable for interchain-security are consumer and provider libraries that are currently located in `x/ccv/provider` and `x/ccv/consumer`.
 Any blockchain applications available in the interchain-security repository are used for testing purposes only and should be viewed as examples for building chains implementing ICS.
 
 By cosmos-sdk terminology and conventions, all applications in the interchain-security repos are just `simapp`s:
+
 * `interchain-security-pd` is a `simapp` for testing the provider ICS library 
 * `interchain-security-cd` is a `simapp` for testing the consumer ICS library
 
@@ -28,6 +32,7 @@ Versioning library code shared between the consumer and provider arises as an in
 By versioning the shared provider and consumer code we benefit from not having to lock the provider and consumer to the same dependencies at all times.
 
 ## Handling shared functionality
+
 At present provider and consumer libraries share some functionality, type, interfaces and constants.
 
 Most of the shared funcionality comes from the fact that the provider chain has to communicate the initial validator set to the consumer so that the consumer can include it in its genesis.json (consumer has to know the state of the provider's validator set when the first consumer block is produced). The remainder of shared functionality comprises ICS messaging types and their validation.
@@ -36,7 +41,9 @@ It is important to notice that most of the shared types originate from .proto fi
 
 
 ### Build tooling incompatibility prevents rapid development
+
 cosmos-sdk v0.45 and v0.47 use different build tools:
+
 * https://docs.cosmos.network/v0.47/tooling/protobuf
 * https://docs.cosmos.network/v0.47/migrations/upgrading#protobuf
 
@@ -45,12 +52,14 @@ cosmos-sdk v0.45 and v0.47 use different build tools:
 Besides that, ICS relies on older build tool images (ghcr.io/cosmos/proto-builder). To be compatible with `cosmos-sdk v0.47` ICS needs to upgrade the proto build image to `ghcr.io/cosmos/proto-builder >= 0.11.5`.
 
 ### Versioning shared dependencies
+
 To enable smooth upgrade from cosmos-sdk `v0.45` to `v0.47` the proto build tooling must be upgraded. The proto build tooling cannot be upgraded incrementally, it has to be upgraded all at once.
 To mitigate issues and preserve the QA for both provider and consumer the shared dependencies should be versioned (tagged).
 
 Shared dependencies will be moved to a separate `core` module that will be built using the proto tooling intended for its corresponding `cosmos-sdk` version.
 
 Initially, we create two `core` module tags:
+
 * `core-45/0.1.0` -> uses legacy build tooling and `cosmos-sdk v0.45` (tag name is subject to change)
 * `core-47/0.1.0` -> uses new build tooling and `cosmos-sdk v0.47` (tag name is subject to change)
 
@@ -59,16 +68,19 @@ With these changes we will make the shared dependencies available for cosmos-sdk
 Any work using `cosmos-sdk v0.47` will be uninterrupted by emergency upgrades to older versions.
 
 ### QA considerations
+
 We rely on the QA process to assure that provider and consumer are compatible. Breaking the QA will essentially leave us in the dark for a prolonged period of time. We would be doing lots of changes without having a way to reliably ensure that we are not introducing regressions and breaking the core protocol.
 
 Besides that, we cannot allow for `main` to be in a broken state for prolonged periods of time because an emergency release would be very difficult to execute. Since emergency releases do happen (as has been shown with dragonberry and changes in ICS regarding consumer chain removals) we cannot simply ignore the systemic risk they introduce. Our workflows must be adapted in a way that accounts for emergency scenarios, to the best of our ability.
 
 ### Future prospects
+
 In the future, it is likely that P&C will be locked to the same dependency versions for 90% of the time. However, having the option to remain compatible while performing dependency upgrades will significantly speed up development on both sides.
 
 Changes in build tooling without versioning the `core` module would affect both C and P which would preclude the split.
 
 ## Steps to perform
+
 The proto build tooling has changed significantly between cosmos-sdk `v0.45` and cosmos-sdk `v0.47`. Due to the fact that `main` currently uses a legacy version of the proto build tool chain, simply upgrading the toolchain breaks both provider and consumer.
 
 The changes to proto build system cannot go unaddressed, and they should be addressed first in order to allow smoother development of both provider and consumer.
@@ -78,7 +90,6 @@ The changes to proto build system cannot go unaddressed, and they should be addr
 3. version (tag) the `core-v47` module using latest protobuild tooling (`cosmos-sdk v0.47`, `cosmos/gogoproto`, `ghcr.io/cosmos/proto-builder >= 0.11.5`)
 4. use `core-v45` in the current implementations of provider and consumer libraries
 5. use `core-v47` in the future implementation provider and consumer libraries
-
 
 ## Decision
 
@@ -92,11 +103,15 @@ If the proposed change will be large, please also indicate a way to do the chang
 > This section describes the consequences, after applying the decision. All consequences should be summarized here, not just the "positive" ones.
 
 ### Positive
+
 TODO
+
 ### Negative
+
 TODO
 
 ### Neutral
+
 TODO
 
 ## References
