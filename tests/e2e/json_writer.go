@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"os"
-	"reflect"
 )
 
 // TraceWriter is an interface for writers that write steps to files.
@@ -16,12 +15,7 @@ type TraceWriter interface {
 type JSONWriter struct{}
 
 func (writer JSONWriter) WriteTraceToFile(filepath string, trace []Step) error {
-	traceWithMarshalledActions := make([]StepWithActionType, 0)
-	for _, step := range trace {
-		actionType := reflect.TypeOf(step.Action).String()
-		traceWithMarshalledActions = append(traceWithMarshalledActions, StepWithActionType{step, actionType})
-	}
-	jsonobj, err := json.Marshal(traceWithMarshalledActions)
+	jsonobj, err := json.Marshal(trace)
 	if err != nil {
 		return err
 	}

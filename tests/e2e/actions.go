@@ -514,10 +514,10 @@ func (tr TestRun) voteGovProposal(
 }
 
 type startConsumerChainAction struct {
-	consumerChain  ChainID
-	providerChain  ChainID
-	validators     []StartChainValidator
-	genesisChanges string
+	ConsumerChain  ChainID
+	ProviderChain  ChainID
+	Validators     []StartChainValidator
+	GenesisChanges string
 }
 
 func (tr TestRun) startConsumerChain(
@@ -525,12 +525,12 @@ func (tr TestRun) startConsumerChain(
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.providerChain].BinaryName,
+	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.ProviderChain].BinaryName,
 
 		"query", "provider", "consumer-genesis",
-		string(tr.chainConfigs[action.consumerChain].ChainId),
+		string(tr.chainConfigs[action.ConsumerChain].ChainId),
 
-		`--node`, tr.getQueryNode(action.providerChain),
+		`--node`, tr.getQueryNode(action.ProviderChain),
 		`-o`, `json`,
 	)
 
@@ -544,14 +544,14 @@ func (tr TestRun) startConsumerChain(
 	}
 
 	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
-	consumerGenesisChanges := tr.chainConfigs[action.consumerChain].GenesisChanges
+	consumerGenesisChanges := tr.chainConfigs[action.ConsumerChain].GenesisChanges
 	if consumerGenesisChanges != "" {
-		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges + " | " + action.genesisChanges
+		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges + " | " + action.GenesisChanges
 	}
 
 	tr.startChain(StartChainAction{
-		Chain:          action.consumerChain,
-		Validators:     action.validators,
+		Chain:          action.ConsumerChain,
+		Validators:     action.Validators,
 		GenesisChanges: consumerGenesis,
 		SkipGentx:      true,
 	}, verbose)
@@ -867,24 +867,24 @@ func (tr TestRun) relayPackets(
 }
 
 type relayRewardPacketsToProviderAction struct {
-	consumerChain ChainID
-	providerChain ChainID
-	port          string
-	channel       uint
+	ConsumerChain ChainID
+	ProviderChain ChainID
+	Port          string
+	Channel       uint
 }
 
 func (tr TestRun) relayRewardPacketsToProvider(
 	action relayRewardPacketsToProviderAction,
 	verbose bool,
 ) {
-	blockPerDistribution, _ := strconv.ParseUint(strings.Trim(tr.getParam(action.consumerChain, Param{Subspace: "ccvconsumer", Key: "BlocksPerDistributionTransmission"}), "\""), 10, 64)
-	currentBlock := uint64(tr.getBlockHeight(action.consumerChain))
+	blockPerDistribution, _ := strconv.ParseUint(strings.Trim(tr.getParam(action.ConsumerChain, Param{Subspace: "ccvconsumer", Key: "BlocksPerDistributionTransmission"}), "\""), 10, 64)
+	currentBlock := uint64(tr.getBlockHeight(action.ConsumerChain))
 	if currentBlock <= blockPerDistribution {
-		tr.waitBlocks(action.consumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
+		tr.waitBlocks(action.ConsumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
 	}
 
-	tr.relayPackets(relayPacketsAction{Chain: action.consumerChain, Port: action.port, Channel: action.channel}, verbose)
-	tr.waitBlocks(action.providerChain, 1, 10*time.Second)
+	tr.relayPackets(relayPacketsAction{Chain: action.ConsumerChain, Port: action.Port, Channel: action.Channel}, verbose)
+	tr.waitBlocks(action.ProviderChain, 1, 10*time.Second)
 }
 
 type delegateTokensAction struct {

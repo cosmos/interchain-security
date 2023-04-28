@@ -66,7 +66,7 @@ func stepsDemocracy(consumerName string) []Step {
 				Deposit:  10000001,
 				Subspace: "staking",
 				Key:      "MaxValidators",
-				Value:    105,
+				Value:    "105",
 			},
 			State: State{
 				ChainID(consumerName): ChainState{
@@ -107,10 +107,10 @@ func stepsDemocracy(consumerName string) []Step {
 		},
 		{
 			Action: relayRewardPacketsToProviderAction{
-				consumerChain: ChainID(consumerName),
-				providerChain: ChainID("provi"),
-				port:          "transfer",
-				channel:       1,
+				ConsumerChain: ChainID(consumerName),
+				ProviderChain: ChainID("provi"),
+				Port:          "transfer",
+				Channel:       1,
 			},
 			State: State{
 				ChainID("provi"): ChainState{
