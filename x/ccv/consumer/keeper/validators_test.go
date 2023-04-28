@@ -148,7 +148,7 @@ func TestSlash(t *testing.T) {
 	defer ctrl.Finish()
 
 	// If we call slash with infraction type empty, no slash packet will be queued
-	consumerKeeper.Slash(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
+	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
 	pendingPackets := consumerKeeper.GetPendingPackets(ctx)
 	require.Len(t, pendingPackets.List, 0)
 
@@ -159,7 +159,7 @@ func TestSlash(t *testing.T) {
 	consumerKeeper.SetHeightValsetUpdateID(ctx, 5, 6)
 
 	// Call slash with valid infraction type and confirm 1 slash packet is queued
-	consumerKeeper.Slash(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.Infraction_INFRACTION_DOWNTIME)
+	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.Infraction_INFRACTION_DOWNTIME)
 	pendingPackets = consumerKeeper.GetPendingPackets(ctx)
 	require.Len(t, pendingPackets.List, 1)
 
@@ -174,12 +174,12 @@ func TestSlash(t *testing.T) {
 
 	// If we call slash with infraction type empty, standalone staking keeper's slash will not be called
 	// (if it was called, test would panic without mocking the call)
-	consumerKeeper.Slash(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
+	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
 
 	// Now setup a mock for Slash, and confirm that it is called against
 	// standalone staking keeper with valid infraction type
 	infractionHeight := int64(5)
-	mocks.MockStakingKeeper.EXPECT().Slash(
+	mocks.MockStakingKeeper.EXPECT().SlashWithInfractionReason(
 		ctx, []byte{0x01, 0x02, 0x03}, infractionHeight, int64(6),
 		sdk.MustNewDecFromStr("0.05"), stakingtypes.Infraction_INFRACTION_UNSPECIFIED).Times(1) // We pass empty infraction to standalone staking keeper since it's not used
 
@@ -187,7 +187,7 @@ func TestSlash(t *testing.T) {
 	consumerKeeper.SetInitGenesisHeight(ctx, 4)
 	require.Equal(t, consumerKeeper.FirstConsumerHeight(ctx), int64(6))
 
-	consumerKeeper.Slash(ctx, []byte{0x01, 0x02, 0x03}, infractionHeight, 6,
+	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, infractionHeight, 6,
 		sdk.MustNewDecFromStr("0.05"), stakingtypes.Infraction_INFRACTION_DOWNTIME)
 }
 

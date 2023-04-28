@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"time"
 
 	"cosmossdk.io/math"
@@ -103,18 +104,29 @@ func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.V
 	return stakingtypes.Validator{}
 }
 
+// Calls SlashWithInfractionReason with Infraction_INFRACTION_UNSPECIFIED.
+// ConsumerKeeper must implement StakingKeeper interface.
+// This function should not be called anywhere
+func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec) math.Int {
+	return k.SlashWithInfractionReason(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
+}
+
 // Slash queues a slashing request for the the provider chain
 // All queued slashing requests will be cleared in EndBlock
-func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec, infraction stakingtypes.Infraction) {
+// Called by Slashing keeper in SlashWithInfractionReason
+func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec, infraction stakingtypes.Infraction) math.Int {
+	fmt.Println("SLASHING", infraction)
 	if infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
-		return
+		return math.NewInt(0)
 	}
 
 	// If this is a previously standalone chain and infraction happened before the changeover was completed,
 	// slash only on the standalone staking keeper.
 	if k.IsPrevStandaloneChain(ctx) && infractionHeight < k.FirstConsumerHeight(ctx) {
-		k.standaloneStakingKeeper.Slash(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
-		return
+		fmt.Println("HAVE STANDALONE WITH INFRACTION", infraction)
+		// NOTE: I'm not sure this code is 100% correct and it's relatively newly implemented
+		// That is bothering me is that we call SlashWithInfractionReason without an infraction reason every time
+		return k.standaloneStakingKeeper.SlashWithInfractionReason(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
 	}
 
 	// Otherwise infraction happened after the changeover was completed.
@@ -128,7 +140,7 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 				"validator", addr,
 				"power", power,
 			)
-			return
+			return math.NewInt(0)
 		}
 	}
 	// get VSC ID for infraction height
@@ -139,6 +151,9 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		"vscID", vscID,
 	)
 
+	// this is the most important step in the function
+	// everything else is just here to implement StakingKeeper interface
+	// IBC packets are created from slash data and sent to the provider during EndBlock
 	k.QueueSlashPacket(
 		ctx,
 		abci.Validator{
@@ -148,11 +163,7 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		vscID,
 		infraction,
 	)
-}
 
-// implement for stakingkeeper Interface
-func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, consAddr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec, infractionType stakingtypes.Infraction) math.Int {
-	k.Slash(ctx, consAddr, infractionHeight, power, slashFactor, infractionType)
 	// Only return to comply with the interface restriction
 	return math.ZeroInt()
 }

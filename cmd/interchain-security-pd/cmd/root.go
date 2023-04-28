@@ -55,8 +55,8 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		WithViper("") // In simapp, we don't use any prefix for env variables.
 
 	rootCmd := &cobra.Command{
-		Use:   "simd",
-		Short: "simulation app",
+		Use:   "interchain-security-pd",
+		Short: "Interchain security provider app",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// set the default command outputs
 			cmd.SetOut(cmd.OutOrStdout())
