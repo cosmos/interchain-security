@@ -2,17 +2,27 @@ package governance
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	gov "github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/cosmos/cosmos-sdk/x/gov/keeper"
+	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 const (
@@ -29,17 +39,36 @@ type AppModule struct {
 	// embed the Cosmos SDK's x/governance AppModule
 	gov.AppModule
 
-	keeper                keeper.Keeper
-	isProposalWhitelisted func(govv1beta1.Content) bool
+	keeper                      keeper.Keeper
+	keeperMap                   map[string]interface{}
+	isLegacyProposalWhitelisted func(govv1beta1.Content) bool
+	isParamChangeWhitelisted    func(map[ParamChangeKey]struct{}) bool
+	isModuleWhiteList           func(string) bool
+}
+
+type ParamChangeKey struct {
+	MsgType, Key string
 }
 
 // NewAppModule creates a new AppModule object using the native x/governance module AppModule constructor.
-func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak govtypes.AccountKeeper, bk govtypes.BankKeeper, isProposalWhitelisted func(govv1beta1.Content) bool, ss govtypes.ParamSubspace) AppModule {
+func NewAppModule(cdc codec.Codec,
+	keeper keeper.Keeper,
+	ak govtypes.AccountKeeper,
+	bk govtypes.BankKeeper,
+	isProposalWhitelisted func(govv1beta1.Content) bool,
+	IsParamChangeWhitelisted func(map[ParamChangeKey]struct{}) bool,
+	ss govtypes.ParamSubspace,
+	keeperMap map[string]interface{},
+	isModuleWhiteList func(string) bool,
+) AppModule {
 	govAppModule := gov.NewAppModule(cdc, &keeper, ak, bk, ss)
 	return AppModule{
-		AppModule:             govAppModule,
-		keeper:                keeper,
-		isProposalWhitelisted: isProposalWhitelisted,
+		AppModule:                   govAppModule,
+		keeper:                      keeper,
+		isLegacyProposalWhitelisted: isProposalWhitelisted,
+		isParamChangeWhitelisted:    IsParamChangeWhitelisted,
+		keeperMap:                   keeperMap,
+		isModuleWhiteList:           isModuleWhiteList,
 	}
 }
 
@@ -54,22 +83,92 @@ func (am AppModule) EndBlock(ctx sdk.Context, request abci.RequestEndBlock) []ab
 	return am.AppModule.EndBlock(ctx, request)
 }
 
+func GetChangeParamsKey(currentParams, newParams any, typeUrl string) map[ParamChangeKey]struct{} {
+	keys := map[ParamChangeKey]struct{}{}
+
+	currentValues := reflect.ValueOf(currentParams)
+	currentTypes := currentValues.Type()
+
+	newValues := reflect.ValueOf(newParams)
+
+	for i := 0; i < currentValues.NumField(); i++ {
+		if !reflect.DeepEqual(currentValues.Field(i).Interface(), newValues.Field(i).Interface()) {
+			keys[ParamChangeKey{MsgType: typeUrl, Key: currentTypes.Field(i).Name}] = struct{}{}
+		}
+	}
+
+	return keys
+}
+
 func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govv1.Proposal) {
 	messages := proposal.GetMessages()
+	var breakFlag bool = true
 
 	for _, message := range messages {
 		sdkMsg, ok := message.GetCachedValue().(*govv1.MsgExecLegacyContent)
 		if !ok {
-			continue
+			if am.isModuleWhiteList(message.TypeUrl) {
+				m := message.GetCachedValue()
+				switch m.(type) {
+				case *minttypes.MsgUpdateParams:
+					p := m.(*minttypes.MsgUpdateParams).Params
+					keeper := am.keeperMap[message.TypeUrl]
+					param := keeper.(mintkeeper.Keeper).GetParams(ctx)
+					keys := GetChangeParamsKey(p, param, message.TypeUrl)
+					if !am.isParamChangeWhitelisted(keys) {
+						breakFlag = false
+					}
+				case *banktypes.MsgUpdateParams:
+					p := m.(*banktypes.MsgUpdateParams).Params
+					keeper := am.keeperMap[message.TypeUrl]
+					param := keeper.(bankkeeper.Keeper).GetParams(ctx)
+					keys := GetChangeParamsKey(p, param, message.TypeUrl)
+					if !am.isParamChangeWhitelisted(keys) {
+						breakFlag = false
+					}
+				case *distrtypes.MsgUpdateParams:
+					p := m.(*distrtypes.MsgUpdateParams).Params
+					keeper := am.keeperMap[message.TypeUrl]
+					param := keeper.(distrkeeper.Keeper).GetParams(ctx)
+					keys := GetChangeParamsKey(p, param, message.TypeUrl)
+					if !am.isParamChangeWhitelisted(keys) {
+						breakFlag = false
+					}
+				case *stakingtypes.MsgUpdateParams:
+					p := m.(*stakingtypes.MsgUpdateParams).Params
+					keeper := am.keeperMap[message.TypeUrl]
+					param := keeper.(stakingkeeper.Keeper).GetParams(ctx)
+					keys := GetChangeParamsKey(p, param, message.TypeUrl)
+					if !am.isParamChangeWhitelisted(keys) {
+						breakFlag = false
+					}
+				case *govv1.MsgUpdateParams:
+					p := m.(*govv1.MsgUpdateParams).Params
+					keeper := am.keeperMap[message.TypeUrl]
+					param := keeper.(govkeeper.Keeper).GetParams(ctx)
+					keys := GetChangeParamsKey(p, param, message.TypeUrl)
+					if !am.isParamChangeWhitelisted(keys) {
+						breakFlag = false
+					}
+				default:
+					breakFlag = false
+				}
+			} else {
+				breakFlag = false
+			}
+		} else {
+			content, err := govv1.LegacyContentFromMessage(sdkMsg)
+			if err != nil {
+				continue
+			}
+			if !am.isLegacyProposalWhitelisted(content) {
+				breakFlag = false
+			}
 		}
+	}
 
-		content, err := govv1.LegacyContentFromMessage(sdkMsg)
-		if err != nil {
-			continue
-		}
-		if am.isProposalWhitelisted(content) {
-			return
-		}
+	if breakFlag {
+		return
 	}
 
 	// delete the votes related to the proposal calling Tally
