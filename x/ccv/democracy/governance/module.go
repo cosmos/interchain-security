@@ -14,7 +14,6 @@ import (
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	gov "github.com/cosmos/cosmos-sdk/x/gov"
-	"github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
@@ -39,7 +38,7 @@ type AppModule struct {
 	// embed the Cosmos SDK's x/governance AppModule
 	gov.AppModule
 
-	keeper                      keeper.Keeper
+	keeper                      govkeeper.Keeper
 	keeperMap                   map[string]interface{}
 	isLegacyProposalWhitelisted func(govv1beta1.Content) bool
 	isParamChangeWhitelisted    func(map[ParamChangeKey]struct{}) bool
@@ -52,11 +51,11 @@ type ParamChangeKey struct {
 
 // NewAppModule creates a new AppModule object using the native x/governance module AppModule constructor.
 func NewAppModule(cdc codec.Codec,
-	keeper keeper.Keeper,
+	keeper govkeeper.Keeper,
 	ak govtypes.AccountKeeper,
 	bk govtypes.BankKeeper,
 	isProposalWhitelisted func(govv1beta1.Content) bool,
-	IsParamChangeWhitelisted func(map[ParamChangeKey]struct{}) bool,
+	isParamChangeWhitelisted func(map[ParamChangeKey]struct{}) bool,
 	ss govtypes.ParamSubspace,
 	keeperMap map[string]interface{},
 	isModuleWhiteList func(string) bool,
@@ -66,7 +65,7 @@ func NewAppModule(cdc codec.Codec,
 		AppModule:                   govAppModule,
 		keeper:                      keeper,
 		isLegacyProposalWhitelisted: isProposalWhitelisted,
-		isParamChangeWhitelisted:    IsParamChangeWhitelisted,
+		isParamChangeWhitelisted:    isParamChangeWhitelisted,
 		keeperMap:                   keeperMap,
 		isModuleWhiteList:           isModuleWhiteList,
 	}
@@ -109,40 +108,55 @@ func CheckIfParamKeyIsWhitelisted(flag *bool, typeUrl string, currentParam, newP
 
 func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govv1.Proposal) {
 	messages := proposal.GetMessages()
-	var breakFlag bool = true
+	breakFlag := true
 
 	for _, message := range messages {
-		//Check if msg is Legacy paramchange proposal
+
 		sdkMsg, ok := message.GetCachedValue().(*govv1.MsgExecLegacyContent)
 		if !ok {
 			if am.isModuleWhiteList(message.TypeUrl) {
 				m := message.GetCachedValue()
-				switch m.(type) {
+				switch m := m.(type) {
 				case *minttypes.MsgUpdateParams:
-					newParam := m.(*minttypes.MsgUpdateParams).Params
-					keeper := am.keeperMap[message.TypeUrl]
-					currentParam := keeper.(mintkeeper.Keeper).GetParams(ctx)
-					CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
+					if keeper, ok := am.keeperMap[message.TypeUrl].(mintkeeper.Keeper); ok {
+						newParam := m.Params
+						currentParam := keeper.GetParams(ctx)
+						CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
+					} else {
+						breakFlag = false
+					}
 				case *banktypes.MsgUpdateParams:
-					newParam := m.(*banktypes.MsgUpdateParams).Params
-					keeper := am.keeperMap[message.TypeUrl]
-					currentParam := keeper.(bankkeeper.Keeper).GetParams(ctx)
-					CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
+					if keeper, ok := am.keeperMap[message.TypeUrl].(bankkeeper.Keeper); ok {
+						newParam := m.Params
+						currentParam := keeper.GetParams(ctx)
+						CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
+					} else {
+						breakFlag = false
+					}
 				case *distrtypes.MsgUpdateParams:
-					newParam := m.(*distrtypes.MsgUpdateParams).Params
-					keeper := am.keeperMap[message.TypeUrl]
-					currentParam := keeper.(distrkeeper.Keeper).GetParams(ctx)
-					CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
+					if keeper, ok := am.keeperMap[message.TypeUrl].(distrkeeper.Keeper); ok {
+						newParam := m.Params
+						currentParam := keeper.GetParams(ctx)
+						CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
+					} else {
+						breakFlag = false
+					}
 				case *stakingtypes.MsgUpdateParams:
-					newParam := m.(*stakingtypes.MsgUpdateParams).Params
-					keeper := am.keeperMap[message.TypeUrl]
-					currentParam := keeper.(stakingkeeper.Keeper).GetParams(ctx)
-					CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
+					if keeper, ok := am.keeperMap[message.TypeUrl].(stakingkeeper.Keeper); ok {
+						newParam := m.Params
+						currentParam := keeper.GetParams(ctx)
+						CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
+					} else {
+						breakFlag = false
+					}
 				case *govv1.MsgUpdateParams:
-					newParam := m.(*govv1.MsgUpdateParams).Params
-					keeper := am.keeperMap[message.TypeUrl]
-					currentParam := keeper.(govkeeper.Keeper).GetParams(ctx)
-					CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
+					if keeper, ok := am.keeperMap[message.TypeUrl].(govkeeper.Keeper); ok {
+						newParam := m.Params
+						currentParam := keeper.GetParams(ctx)
+						CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
+					} else {
+						breakFlag = false
+					}
 				default:
 					breakFlag = false
 				}

@@ -21,7 +21,7 @@ import (
 	testutil "github.com/cosmos/interchain-security/testutil/integration"
 )
 
-// Setup is copy from intergration test setup, to re-use the consumerApp in testing.
+// Setup is copy from integration test setup, to re-use the consumerApp in testing.
 // ConsumerApp is need to get the keeper in order to query the module params since params
 // are no longer being store in params module subspace. Also, ConsumerApp is needed to get
 // keeperMap for ante checking logic.

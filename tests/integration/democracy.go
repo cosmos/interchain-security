@@ -13,7 +13,6 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	testutil "github.com/cosmos/interchain-security/testutil/integration"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/stretchr/testify/suite"
@@ -229,35 +228,10 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
-func submitLegacyProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
-	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
-) error {
-	msgContent, err := govv1.NewLegacyContent(&paramChange, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-	if err != nil {
-		return err
-	}
-	proposal, err := govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "", "title", "summary", proposer)
-	if err != nil {
-		return err
-	}
-	_, err = govKeeper.AddDeposit(ctx, proposal.Id, accounts[0].SenderAccount.GetAddress(), depositAmount) // proposal becomes active
-	if err != nil {
-		return err
-	}
-
-	for _, account := range accounts {
-		err = govKeeper.AddVote(ctx, proposal.Id, account.SenderAccount.GetAddress(), govv1.NewNonSplitVoteOption(govv1.OptionYes), "")
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.Context, msgs []sdk.Msg,
 	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
 ) error {
-	proposal, err := govKeeper.SubmitProposal(ctx, msgs, "", "title", "sumary", proposer)
+	proposal, err := govKeeper.SubmitProposal(ctx, msgs, "", "title", "summary", proposer)
 	if err != nil {
 		return err
 	}

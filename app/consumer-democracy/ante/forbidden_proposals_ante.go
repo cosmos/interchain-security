@@ -48,40 +48,55 @@ func (decorator ForbiddenProposalsDecorator) AnteHandle(ctx sdk.Context, tx sdk.
 		// if the message is MsgSubmitProposal, check if proposal is whitelisted
 		if ok {
 			messages := submitProposalMgs.GetMessages()
-			var checkFlag bool = true
+			checkFlag := true
 
 			for _, message := range messages {
-				//Check if msg is Legacy paramchange proposal
+
 				sdkMsg, ok := message.GetCachedValue().(*govv1.MsgExecLegacyContent)
 				if !ok {
 					if decorator.isModuleWhiteList(message.TypeUrl) {
 						m := message.GetCachedValue()
-						switch m.(type) {
+						switch m := m.(type) {
 						case *minttypes.MsgUpdateParams:
-							newParam := m.(*minttypes.MsgUpdateParams).Params
-							keeper := decorator.keeperMap[message.TypeUrl]
-							currentParam := keeper.(mintkeeper.Keeper).GetParams(ctx)
-							ccvgov.CheckIfParamKeyIsWhitelisted(&checkFlag, message.TypeUrl, currentParam, newParam, decorator.isParamChangeWhitelisted)
+							if keeper, ok := decorator.keeperMap[message.TypeUrl].(mintkeeper.Keeper); ok {
+								newParam := m.Params
+								currentParam := keeper.GetParams(ctx)
+								ccvgov.CheckIfParamKeyIsWhitelisted(&checkFlag, message.TypeUrl, currentParam, newParam, decorator.isParamChangeWhitelisted)
+							} else {
+								checkFlag = false
+							}
 						case *banktypes.MsgUpdateParams:
-							newParam := m.(*banktypes.MsgUpdateParams).Params
-							keeper := decorator.keeperMap[message.TypeUrl]
-							currentParam := keeper.(bankkeeper.Keeper).GetParams(ctx)
-							ccvgov.CheckIfParamKeyIsWhitelisted(&checkFlag, message.TypeUrl, currentParam, newParam, decorator.isParamChangeWhitelisted)
+							if keeper, ok := decorator.keeperMap[message.TypeUrl].(bankkeeper.Keeper); ok {
+								newParam := m.Params
+								currentParam := keeper.GetParams(ctx)
+								ccvgov.CheckIfParamKeyIsWhitelisted(&checkFlag, message.TypeUrl, currentParam, newParam, decorator.isParamChangeWhitelisted)
+							} else {
+								checkFlag = false
+							}
 						case *distrtypes.MsgUpdateParams:
-							newParam := m.(*distrtypes.MsgUpdateParams).Params
-							keeper := decorator.keeperMap[message.TypeUrl]
-							currentParam := keeper.(distrkeeper.Keeper).GetParams(ctx)
-							ccvgov.CheckIfParamKeyIsWhitelisted(&checkFlag, message.TypeUrl, currentParam, newParam, decorator.isParamChangeWhitelisted)
+							if keeper, ok := decorator.keeperMap[message.TypeUrl].(distrkeeper.Keeper); ok {
+								newParam := m.Params
+								currentParam := keeper.GetParams(ctx)
+								ccvgov.CheckIfParamKeyIsWhitelisted(&checkFlag, message.TypeUrl, currentParam, newParam, decorator.isParamChangeWhitelisted)
+							} else {
+								checkFlag = false
+							}
 						case *stakingtypes.MsgUpdateParams:
-							newParam := m.(*stakingtypes.MsgUpdateParams).Params
-							keeper := decorator.keeperMap[message.TypeUrl]
-							currentParam := keeper.(stakingkeeper.Keeper).GetParams(ctx)
-							ccvgov.CheckIfParamKeyIsWhitelisted(&checkFlag, message.TypeUrl, currentParam, newParam, decorator.isParamChangeWhitelisted)
+							if keeper, ok := decorator.keeperMap[message.TypeUrl].(stakingkeeper.Keeper); ok {
+								newParam := m.Params
+								currentParam := keeper.GetParams(ctx)
+								ccvgov.CheckIfParamKeyIsWhitelisted(&checkFlag, message.TypeUrl, currentParam, newParam, decorator.isParamChangeWhitelisted)
+							} else {
+								checkFlag = false
+							}
 						case *govv1.MsgUpdateParams:
-							newParam := m.(*govv1.MsgUpdateParams).Params
-							keeper := decorator.keeperMap[message.TypeUrl]
-							currentParam := keeper.(govkeeper.Keeper).GetParams(ctx)
-							ccvgov.CheckIfParamKeyIsWhitelisted(&checkFlag, message.TypeUrl, currentParam, newParam, decorator.isParamChangeWhitelisted)
+							if keeper, ok := decorator.keeperMap[message.TypeUrl].(govkeeper.Keeper); ok {
+								newParam := m.Params
+								currentParam := keeper.GetParams(ctx)
+								ccvgov.CheckIfParamKeyIsWhitelisted(&checkFlag, message.TypeUrl, currentParam, newParam, decorator.isParamChangeWhitelisted)
+							} else {
+								checkFlag = false
+							}
 						default:
 							checkFlag = false
 						}
