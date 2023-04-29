@@ -236,7 +236,7 @@ func submitLegacyProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ct
 	if err != nil {
 		return err
 	}
-	proposal, err := govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "", "title", "sumary", proposer)
+	proposal, err := govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "", "title", "summary", proposer)
 	if err != nil {
 		return err
 	}
