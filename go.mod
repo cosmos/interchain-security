@@ -177,7 +177,7 @@ require (
 )
 
 replace (
-	github.com/cosmos/cosmos-sdk => github.com/notional-labs/cosmos-sdk v0.47.2-0.20230424022356-49c2e39f3fe6
+	github.com/cosmos/cosmos-sdk => github.com/notional-labs/cosmos-sdk v0.47.2-0.20230425054220-5bf69f0ad387
 	github.com/cosmos/ibc-go/v7 => github.com/notional-labs/ibc-go/v7 v7.0.0-rc0.0.20230417042817-8072b1e9aabc
 
 	// following versions might cause unexpected behavior
