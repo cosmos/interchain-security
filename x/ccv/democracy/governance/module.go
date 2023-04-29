@@ -92,7 +92,6 @@ func GetChangeParamsKeys(currentParams, newParams any, typeUrl string) map[Param
 	newValues := reflect.ValueOf(newParams)
 
 	for i := 0; i < currentValues.NumField(); i++ {
-		fmt.Println("hello1")
 		if !reflect.DeepEqual(currentValues.Field(i).Interface(), newValues.Field(i).Interface()) {
 			keys[ParamChangeKey{MsgType: typeUrl, Key: currentTypes.Field(i).Name}] = struct{}{}
 		}
