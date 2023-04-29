@@ -1,8 +1,6 @@
 package integration
 
 import (
-	"fmt"
-	"strconv"
 	"testing"
 	"time"
 
@@ -157,8 +155,6 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	mintKeeper := s.consumerApp.GetTestMintKeeper()
 	newAuthParamValue := uint64(128)
 	newMintParamValue := sdk.NewDecWithPrec(1, 1) // "0.100000000000000000"
-	allowedChange := proposaltypes.ParamChange{Subspace: minttypes.ModuleName, Key: "InflationMax", Value: fmt.Sprintf("\"%s\"", newMintParamValue)}
-	forbiddenChange := proposaltypes.ParamChange{Subspace: authtypes.ModuleName, Key: "MaxMemoCharacters", Value: fmt.Sprintf("\"%s\"", strconv.FormatUint(newAuthParamValue, 10))}
 	votingAccounts := s.consumerChain.SenderAccounts
 	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
 	depositAmount := params.MinDeposit
@@ -170,8 +166,19 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	votersOldBalances := getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts)
 
 	// submit proposal with forbidden and allowed changes
-	paramChange := proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{allowedChange, forbiddenChange}}
-	err := submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, proposer.GetAddress(), depositAmount)
+	mintParams := mintKeeper.GetParams(s.consumerCtx())
+	mintParams.InflationMax = newMintParamValue
+	msg_1 := &minttypes.MsgUpdateParams{
+		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		Params:    mintParams,
+	}
+	authParams := accountKeeper.GetParams(s.consumerCtx())
+	authParams.MaxMemoCharacters = newAuthParamValue
+	msg_2 := &authtypes.MsgUpdateParams{
+		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		Params:    authParams,
+	}
+	err := submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), []sdk.Msg{msg_1, msg_2}, votingAccounts, proposer.GetAddress(), depositAmount)
 	s.Assert().NoError(err)
 	// set current header time to be equal or later than voting end time in order to process proposal from active queue,
 	// once the proposal is added to the chain
@@ -193,17 +200,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 
 	// submit proposal with allowed changes
-	mintParams := mintKeeper.GetParams(s.consumerCtx())
-	mintParams.InflationMax = newMintParamValue
-	msg := &minttypes.MsgUpdateParams{
-		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		Params:    mintParams,
-	}
-	_ = proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{allowedChange}}
-	// err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, proposer.GetAddress(), depositAmount)
-	// s.Assert().NoError(err)
-
-	err = test(govKeeper, s.consumerCtx(), msg, votingAccounts, proposer.GetAddress(), depositAmount)
+	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), []sdk.Msg{msg_1}, votingAccounts, proposer.GetAddress(), depositAmount)
 	s.Assert().NoError(err)
 	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*params.VotingPeriod)
 	s.consumerChain.NextBlock()
@@ -217,8 +214,8 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 
 	// submit proposal with forbidden changes
-	paramChange = proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{forbiddenChange}}
-	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, proposer.GetAddress(), depositAmount)
+
+	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), []sdk.Msg{msg_2}, votingAccounts, proposer.GetAddress(), depositAmount)
 	s.Assert().NoError(err)
 	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*params.VotingPeriod)
 	s.consumerChain.NextBlock()
@@ -232,7 +229,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
-func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
+func submitLegacyProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
 	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
 ) error {
 	msgContent, err := govv1.NewLegacyContent(&paramChange, authtypes.NewModuleAddress(govtypes.ModuleName).String())
@@ -257,10 +254,10 @@ func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.
 	return nil
 }
 
-func test(govKeeper testutil.TestGovKeeper, ctx sdk.Context, msg sdk.Msg,
+func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.Context, msgs []sdk.Msg,
 	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
 ) error {
-	proposal, err := govKeeper.SubmitProposal(ctx, []sdk.Msg{msg}, "", "title", "summary", proposer)
+	proposal, err := govKeeper.SubmitProposal(ctx, msgs, "", "title", "sumary", proposer)
 	if err != nil {
 		return err
 	}
