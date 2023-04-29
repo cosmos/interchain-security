@@ -153,7 +153,6 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	bankKeeper := s.consumerApp.GetTestBankKeeper()
 	accountKeeper := s.consumerApp.GetTestAccountKeeper()
 	mintKeeper := s.consumerApp.GetTestMintKeeper()
-	authKeeper := s.consumerApp.GetTestAuthKeeper()
 	newAuthParamValue := uint64(128)
 	newMintParamValue := sdk.NewDecWithPrec(1, 1) // "0.100000000000000000"
 	votingAccounts := s.consumerChain.SenderAccounts
@@ -173,7 +172,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		Params:    mintParams,
 	}
-	authParams := authKeeper.GetParams(s.consumerCtx())
+	authParams := accountKeeper.GetParams(s.consumerCtx())
 	authParams.MaxMemoCharacters = newAuthParamValue
 	msg_2 := &authtypes.MsgUpdateParams{
 		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),

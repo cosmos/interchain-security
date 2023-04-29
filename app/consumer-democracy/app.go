@@ -229,6 +229,9 @@ type App struct { // nolint: golint
 	// simulation manager
 	sm           *module.SimulationManager
 	configurator module.Configurator
+
+	// whitelist module's keeper map
+	KeeperMap map[string]interface{}
 }
 
 func init() {
@@ -512,6 +515,8 @@ func New(
 		"/cosmos.mint.v1beta1.MsgUpdateParams":         app.MintKeeper,
 	}
 
+	app.KeeperMap = keeperMap
+
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 	app.MM = module.NewManager(
@@ -653,6 +658,7 @@ func New(
 			IBCKeeper:      app.IBCKeeper,
 			ConsumerKeeper: app.ConsumerKeeper,
 		},
+		keeperMap,
 	)
 	if err != nil {
 		panic(fmt.Errorf("failed to create AnteHandler: %s", err))
@@ -893,11 +899,6 @@ func (app *App) GetTestGovKeeper() testutil.TestGovKeeper {
 	return app.GovKeeper
 }
 
-// GetTestAuthKeeper implements the ConsumerApp interface.
-func (app *App) GetTestAuthKeeper() testutil.TestAccountKeeper {
-	return app.AccountKeeper
-}
-
 // TestingApp functions
 
 // GetBaseApp implements the TestingApp interface.
@@ -923,6 +924,11 @@ func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 // GetTxConfig implements the TestingApp interface.
 func (app *App) GetTxConfig() client.TxConfig {
 	return MakeTestEncodingConfig().TxConfig
+}
+
+// GetKeeperMap return keeper map
+func (app *App) GetKeeperMap() map[string]interface{} {
+	return app.KeeperMap
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided
