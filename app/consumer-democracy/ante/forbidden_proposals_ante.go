@@ -54,7 +54,6 @@ func (decorator ForbiddenProposalsDecorator) AnteHandle(ctx sdk.Context, tx sdk.
 				//Check if msg is Legacy paramchange proposal
 				sdkMsg, ok := message.GetCachedValue().(*govv1.MsgExecLegacyContent)
 				if !ok {
-					fmt.Println(message.TypeUrl)
 					if decorator.isModuleWhiteList(message.TypeUrl) {
 						m := message.GetCachedValue()
 						switch m.(type) {

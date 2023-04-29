@@ -21,13 +21,17 @@ import (
 	testutil "github.com/cosmos/interchain-security/testutil/integration"
 )
 
+// Setup is copy from intergration test setup, to re-use the consumerApp in testing.
+// ConsumerApp is need to get the keeper in order to query the module params since params
+// are no longer being store in params module subspace. Also, ConsumerApp is needed to get
+// keeperMap for ante checking logic.
 type DemocSetupCallback func(t *testing.T) (
 	coord *ibctesting.Coordinator,
 	consumerChain *ibctesting.TestChain,
 	consumerApp testutil.DemocConsumerApp,
 )
 
-type ConsumerDemocracyTestSuite struct {
+type AnteTestSuite struct {
 	suite.Suite
 	coordinator   *ibctesting.Coordinator
 	consumerChain *ibctesting.TestChain
@@ -35,12 +39,11 @@ type ConsumerDemocracyTestSuite struct {
 	setupCallback DemocSetupCallback
 }
 
-// NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite,
-// ready to be tested against using suite.Run().
-func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
+// NewCCVTestSuite returns a new instance of AnteTestSuite,
+func NewAnteTestSuite[T testutil.DemocConsumerApp](
 	democConsumerAppIniter ibctesting.AppIniter,
-) *ConsumerDemocracyTestSuite {
-	democSuite := new(ConsumerDemocracyTestSuite)
+) *AnteTestSuite {
+	democSuite := new(AnteTestSuite)
 
 	democSuite.setupCallback = func(t *testing.T) (
 		*ibctesting.Coordinator,
@@ -61,15 +64,15 @@ func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
 	return democSuite
 }
 
-func (suite *ConsumerDemocracyTestSuite) SetupTest() {
+func (suite *AnteTestSuite) SetupTest() {
 	// Instantiate new test utils using callback
 	suite.coordinator, suite.consumerChain,
 		suite.consumerApp = suite.setupCallback(suite.T())
 }
 
-func setup(t *testing.T) *ConsumerDemocracyTestSuite {
+func setup(t *testing.T) *AnteTestSuite {
 	t.Helper()
-	suite := NewConsumerDemocracyTestSuite[*app.App](
+	suite := NewAnteTestSuite[*app.App](
 		icstestingutils.DemocracyConsumerAppIniter)
 	suite.SetT(t)
 	suite.SetupTest()
@@ -80,8 +83,10 @@ func setup(t *testing.T) *ConsumerDemocracyTestSuite {
 func TestForbiddenProposalsDecorator(t *testing.T) {
 	txCfg := app.MakeTestEncodingConfig().TxConfig
 
+	// Setup a tetstuite to fetch testConsumerApp
 	suite := setup(t)
 
+	// Get keeper to query params
 	accountKeeper := suite.consumerApp.GetTestAccountKeeper()
 	mintKeeper := suite.consumerApp.GetTestMintKeeper()
 
@@ -209,6 +214,7 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 	}
 }
 
+// Use ParamChangeProposal
 func newLegacyParamChangeProposalMsg(changes []proposal.ParamChange) *govv1.MsgSubmitProposal {
 	paramChange := proposal.ParameterChangeProposal{Changes: changes}
 	msgContent, err := govv1.NewLegacyContent(&paramChange, authtypes.NewModuleAddress(govtypes.ModuleName).String())
