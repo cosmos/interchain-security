@@ -19,4 +19,4 @@ cd ..
 cp -r github.com/cosmos/interchain-security/* ./
 rm -rf github.com
 
-go mod tidy -compat=1.20
+go mod tidy -compat=1.19
