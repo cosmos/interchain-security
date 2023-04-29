@@ -1,8 +1,13 @@
 package app
 
 import (
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	ccvgov "github.com/cosmos/interchain-security/x/ccv/democracy/governance"
 )
@@ -42,6 +47,29 @@ type legacyParamChangeKey struct {
 }
 
 var LegacyWhitelistedParams = map[legacyParamChangeKey]struct{}{
+	{Subspace: banktypes.ModuleName, Key: "SendEnabled"}: {},
+	// governance
+	{Subspace: govtypes.ModuleName, Key: "depositparams"}: {}, // min_deposit, max_deposit_period
+	{Subspace: govtypes.ModuleName, Key: "votingparams"}:  {}, // voting_period
+	{Subspace: govtypes.ModuleName, Key: "tallyparams"}:   {}, // quorum,threshold,veto_threshold
+	// staking
+	{Subspace: stakingtypes.ModuleName, Key: "UnbondingTime"}:     {},
+	{Subspace: stakingtypes.ModuleName, Key: "MaxValidators"}:     {},
+	{Subspace: stakingtypes.ModuleName, Key: "MaxEntries"}:        {},
+	{Subspace: stakingtypes.ModuleName, Key: "HistoricalEntries"}: {},
+	{Subspace: stakingtypes.ModuleName, Key: "BondDenom"}:         {},
+	// distribution
+	{Subspace: distrtypes.ModuleName, Key: "communitytax"}: {},
+	// {Subspace: distrtypes.ModuleName, Key: "baseproposerreward"}:  {},   depricated key
+	// {Subspace: distrtypes.ModuleName, Key: "bonusproposerreward"}: {},   depricated key
+	{Subspace: distrtypes.ModuleName, Key: "withdrawaddrenabled"}: {},
+	// mint
+	{Subspace: minttypes.ModuleName, Key: "MintDenom"}:           {},
+	{Subspace: minttypes.ModuleName, Key: "InflationRateChange"}: {},
+	{Subspace: minttypes.ModuleName, Key: "InflationMax"}:        {},
+	{Subspace: minttypes.ModuleName, Key: "InflationMin"}:        {},
+	{Subspace: minttypes.ModuleName, Key: "GoalBonded"}:          {},
+	{Subspace: minttypes.ModuleName, Key: "BlocksPerYear"}:       {},
 	// ibc transfer
 	{Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled"}:    {},
 	{Subspace: ibctransfertypes.ModuleName, Key: "ReceiveEnabled"}: {},
@@ -62,9 +90,7 @@ var WhitelistedParams = map[ccvgov.ParamChangeKey]struct{}{
 	{MsgType: "/cosmos.staking.v1beta1.MsgUpdateParams", Key: "HistoricalEntries"}: {},
 	{MsgType: "/cosmos.staking.v1beta1.MsgUpdateParams", Key: "BondDenom"}:         {},
 	// distribution
-	{MsgType: "/cosmos.distribution.v1beta1.MsgUpdateParams", Key: "communitytax"}: {},
-	// {Subspace: distrtypes.ModuleName, Key: "baseproposerreward"}:  {},   depricated key
-	// {Subspace: distrtypes.ModuleName, Key: "bonusproposerreward"}: {},   depricated key
+	{MsgType: "/cosmos.distribution.v1beta1.MsgUpdateParams", Key: "communitytax"}:        {},
 	{MsgType: "/cosmos.distribution.v1beta1.MsgUpdateParams", Key: "withdrawaddrenabled"}: {},
 	// mint
 	{MsgType: "/cosmos.mint.v1beta1.MsgUpdateParams", Key: "MintDenom"}:           {},

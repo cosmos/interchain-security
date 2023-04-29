@@ -74,6 +74,8 @@ type DemocConsumerApp interface {
 	GetTestMintKeeper() TestMintKeeper
 	// Tests a gov keeper interface with more capabilities than the expected_keepers interface
 	GetTestGovKeeper() TestGovKeeper
+	// Tests a auth keeper interface with more capabilities than the expected_keepers interface
+	GetTestAuthKeeper() TestAccountKeeper
 }
 
 //
