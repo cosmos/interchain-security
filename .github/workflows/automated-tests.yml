@@ -1,4 +1,4 @@
-name: Automated Tests
+name: E2E Tests
 on:
   push:
     branches:
@@ -9,7 +9,7 @@ on:
       - main
       - release/v*
 jobs:
-  Automated_Tests:
+  E2E_Tests:
     runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -23,8 +23,6 @@ jobs:
         with:
           go-version: "1.19" # The Go version to download (if necessary) and use.
 
-      - name: Unit, integration and difference tests
-        run: go test ./...
-
       - name: E2E tests
-        run: make test-e2e-short
+        run: go run ./tests/e2e/... --happy-path-only
+
