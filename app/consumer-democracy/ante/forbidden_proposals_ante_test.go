@@ -115,7 +115,7 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 		expectErr bool
 	}{
 		{
-			name: "Allowed legacy param change",
+			name: "legacy param change",
 			ctx:  suite.consumerChain.GetContext(),
 			msgs: []sdk.Msg{
 				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
@@ -123,7 +123,8 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 					{Subspace: banktypes.ModuleName, Key: "SendEnabled", Value: ""},
 				}),
 			},
-			expectErr: false,
+			// legacy param change proposals are forbidden
+			expectErr: true,
 		},
 		{
 			name: "Allowed param change",
