@@ -62,7 +62,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	var genesisState types.GenesisState
 
 	cdc.MustUnmarshalJSON(data, &genesisState)
-	_ = InitGenesis(ctx, am.keeper, am.accKeeper, am.bankKeeper, &genesisState)
+	_ = am.keeper.InitGenesis(ctx, &genesisState)
 
 	return []abci.ValidatorUpdate{}
 }
