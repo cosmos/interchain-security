@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 2
 title: ADR Template
 ---
 # ADR {ADR-NUMBER}: {TITLE}
