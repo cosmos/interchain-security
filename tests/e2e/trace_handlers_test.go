@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -165,22 +166,31 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			jsonobj, err := json.Marshal(tc.chainState)
+			err := MarshalAndUnmarshalChainState(tc.chainState)
 			if err != nil {
-				t.Fatalf("error marshalling chain state: %v", err)
-			}
-
-			var got *ChainState
-			err = json.Unmarshal(jsonobj, &got)
-			if err != nil {
-				t.Fatalf("error unmarshalling chain state: %v", err)
-			}
-
-			diff := cmp.Diff(tc.chainState, *got)
-			if diff != "" {
-				log.Print(string(jsonobj))
-				t.Fatalf(diff)
+				t.Fatalf(err.Error())
 			}
 		})
 	}
+}
+
+func MarshalAndUnmarshalChainState(chainState ChainState) error {
+	jsonobj, err := json.Marshal(chainState)
+	if err != nil {
+		return fmt.Errorf("error marshalling chain state: %v", err)
+	}
+
+	var got *ChainState
+	err = json.Unmarshal(jsonobj, &got)
+	if err != nil {
+		return fmt.Errorf("error unmarshalling chain state: %v", err)
+	}
+
+	diff := cmp.Diff(chainState, *got)
+	if diff != "" {
+		log.Print(string(jsonobj))
+		return fmt.Errorf(diff)
+	}
+
+	return nil
 }
