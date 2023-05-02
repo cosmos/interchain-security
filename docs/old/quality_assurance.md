@@ -59,11 +59,11 @@ IBC packets:
 
 ### Integration with Cosmos SDK
 
-- [x] A prerequisite of the code review is to open a PR with all the [SDK changes](https://github.com/cosmos/cosmos-sdk/tree/interchain-security-rebase) needed by Interchain Security.
+- [x] A prerequisite of the code review is to open a PR with all the SDK changes needed by Interchain Security.
 
 | ID | Concern | Code Review | Unit Testing | Integration Testing | Diff. Testing | Testnet |
 | -- | ------- | ----------- | ------------ | ----------- | ------------- | ------- |
-| 3.01 | Changes to staking module | `Done` | `Done` [unbonding_test.go](https://github.com/cosmos/cosmos-sdk/blob/interchain-security-rebase.0.45.6/x/staking/keeper/unbonding_test.go) | `Partial coverage` <br> [unbonding_test.go](../../tests/integration/unbonding.go) <br> redelegation could be expanded, validator unbonding missing | `Partial coverage` | `Scheduled` |
+| 3.01 | Changes to staking module | `Done` | `Done` [unbonding_test.go](https://github.com/cosmos/cosmos-sdk/blob/main/x/staking/keeper/unbonding_test.go) | `Partial coverage` <br> [unbonding_test.go](../../tests/integration/unbonding.go) <br> redelegation could be expanded, validator unbonding missing | `Partial coverage` | `Scheduled` |
 | 3.02 | Changes to slashing module | `Done` | `NA` | `Done` <br> [TestValidatorDowntime](../../tests/integration/slashing.go) <br>  | `Partial coverage` | `Scheduled` |
 | 3.03 | Changes to evidence module | `Done` | `NA` | `Done` <br> [TestValidatorDoubleSigning](../../tests/integration/slashing.go) <br>  | `NA` | `Scheduled` |
 
