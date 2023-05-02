@@ -93,7 +93,7 @@ while meter.IsPositiveOrZero() && entriesExist() {
 
 All CCV system properties should be maintained by implementing this feature, see: [CCV spec - Consumer Initiated Slashing](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#consumer-initiated-slashing).
 
-One implementation-specific property introduced is that if any of the chain-specific packet data queues become larger than `MaxThrottledPackets (param)`, then the provider binary will panic, and the provider chain will halt. Therefore this param should be set carefully. See [SetThrottledPacketDataSize](../x/ccv/provider/keeper/throttle.go#L269). This behavior ensures that if the provider binaries are queuing up more packet data than machines can handle, the provider chain halts deterministically between validators.
+One implementation-specific property introduced is that if any of the chain-specific packet data queues become larger than `MaxThrottledPackets (param)`, then the provider binary will panic, and the provider chain will halt. Therefore this param should be set carefully. See `SetThrottledPacketDataSize`. This behavior ensures that if the provider binaries are queuing up more packet data than machines can handle, the provider chain halts deterministically between validators.
 
 ### Main Throttling Property
 
