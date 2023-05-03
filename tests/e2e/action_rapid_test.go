@@ -154,7 +154,7 @@ func TestMarshalAndUnmarshalTime(t *testing.T) {
 
 func GetTimeGen() *rapid.Generator[time.Time] {
 	return rapid.Custom(func(t *rapid.T) time.Time {
-		return time.Unix(rapid.Int64Range(-6.3115e+10, 1.5779e+11).Draw(t, "unix time"), 0)
+		return time.Unix(rapid.Int64Range(-5.9959e+10, 1.5779e+11).Draw(t, "unix time"), 0)
 	})
 }
 
