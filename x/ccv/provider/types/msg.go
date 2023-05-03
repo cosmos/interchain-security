@@ -1,10 +1,9 @@
 package types
 
 import (
+	"encoding/json"
 	"strings"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -14,26 +13,18 @@ const (
 )
 
 var (
-	_ sdk.Msg                            = &MsgAssignConsumerKey{}
-	_ codectypes.UnpackInterfacesMessage = (*MsgAssignConsumerKey)(nil)
+	_ sdk.Msg = &MsgAssignConsumerKey{}
 )
 
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
 // Delegator address and validator address are the same.
 func NewMsgAssignConsumerKey(chainID string, providerValidatorAddress sdk.ValAddress,
-	consumerConsensusPubKey cryptotypes.PubKey,
+	consumerConsensusPubKey string,
 ) (*MsgAssignConsumerKey, error) {
-	var keyAsAny *codectypes.Any
-	if consumerConsensusPubKey != nil {
-		var err error
-		if keyAsAny, err = codectypes.NewAnyWithValue(consumerConsensusPubKey); err != nil {
-			return nil, err
-		}
-	}
 	return &MsgAssignConsumerKey{
 		ChainId:      chainID,
 		ProviderAddr: providerValidatorAddress.String(),
-		ConsumerKey:  keyAsAny,
+		ConsumerKey:  consumerConsensusPubKey,
 	}, nil
 }
 
@@ -81,14 +72,26 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 	if err != nil {
 		return ErrInvalidProviderAddress
 	}
-	if msg.ConsumerKey == nil {
+	if msg.ConsumerKey == "" {
+		return ErrInvalidConsumerConsensusPubKey
+	}
+	if _, _, err := ParseConsumerKeyFromJson(msg.ConsumerKey); err != nil {
 		return ErrInvalidConsumerConsensusPubKey
 	}
 	return nil
 }
 
-// UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (msg MsgAssignConsumerKey) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
-	var pubKey cryptotypes.PubKey
-	return unpacker.UnpackAny(msg.ConsumerKey, &pubKey)
+// ParseConsumerKeyFromJson parses the consumer key from a JSON string,
+// this replaces deserializing a protobuf any.
+func ParseConsumerKeyFromJson(jsonStr string) (pkType string, key string, err error) {
+	type PubKey struct {
+		Type string `json:"@type"`
+		Key  string `json:"key"`
+	}
+	var pubKey PubKey
+	err = json.Unmarshal([]byte(jsonStr), &pubKey)
+	if err != nil {
+		return "", "", err
+	}
+	return pubKey.Type, pubKey.Key, nil
 }
