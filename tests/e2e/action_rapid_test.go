@@ -148,13 +148,13 @@ func TestMarshalAndUnmarshalTime(t *testing.T) {
 		var time2 time.Time
 		err = time2.UnmarshalJSON(data)
 		require.NoError(t, err)
-		require.Equal(t, time1, time2)
+		require.True(t, time1.Equal(time2))
 	})
 }
 
 func GetTimeGen() *rapid.Generator[time.Time] {
 	return rapid.Custom(func(t *rapid.T) time.Time {
-		return time.Unix(rapid.Int64Range(-5.9959e+10, 1.5779e+11).Draw(t, "unix time"), 0)
+		return time.Unix(rapid.Int64Range(-5.9959e+10, 1.5779e+11).Draw(t, "unix time"), 0).UTC()
 	})
 }
 
