@@ -33,11 +33,7 @@ linters:
 
 
 
-linters-settings:
-  gofumpt:
-    # Choose whether to use the extra rules.
-    # Default: false
-    extra-rules: true
+
 
 issues:
   exclude-rules:
@@ -64,6 +60,10 @@ issues:
   max-same-issues: 10000
 
 linters-settings:
+  gofumpt:
+    # Choose whether to use the extra rules.
+    # Default: false
+    extra-rules: true
   gocritic:
     disabled-checks:
       - appendAssign
