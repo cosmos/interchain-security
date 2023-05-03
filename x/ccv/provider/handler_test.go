@@ -1,6 +1,7 @@
 package provider_test
 
 import (
+	"encoding/base64"
 	"strings"
 	"testing"
 
@@ -34,7 +35,8 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 	consumerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(1)
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
-	consumerKey := consumerCryptoId.ConsensusSDKPubKey()
+	consumerKeyBz := base64.StdEncoding.EncodeToString(consumerCryptoId.ConsensusSDKPubKey().Bytes())
+	consumerKey := `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"` + consumerKeyBz + `"}`
 
 	testCases := []struct {
 		name string
