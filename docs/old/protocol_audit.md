@@ -6,7 +6,7 @@ For a general overview of the quality assurance process necessary for the releas
 
 ## Reading / onboarding materials
 
-- Interchain Security [specification](https://github.com/cosmos/ibc/blob/marius/ccv/spec/app/ics-028-cross-chain-validation/README.md)
+- Interchain Security [specification](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/README.md)
 - Quality Assurance [overview](./quality_assurance.md)
 
 ## Plan
@@ -16,11 +16,11 @@ Priority of concerns:
 2. The correctness (safety and liveness) of the Interchain Security protocol, see [QA overview](./quality_assurance.md#interchain-security-protocol-correctness).
 
 Sub-protocols to focus on:
-- [Channel Initialization](https://github.com/cosmos/ibc/blob/marius/ccv/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#channel-initialization)
+- [Channel Initialization](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#channel-initialization)
 
-- [Validator Set Update](https://github.com/cosmos/ibc/blob/marius/ccv/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#validator-set-update) with a focus on [Completion of Unbonding Operations](https://github.com/cosmos/ibc/blob/marius/ccv/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#completion-of-unbonding-operations) (**good starting point**)
+- [Validator Set Update](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#validator-set-update) with a focus on [Completion of Unbonding Operations](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#completion-of-unbonding-operations) (**good starting point**)
   
-- [Consumer Initiated Slashing](https://github.com/cosmos/ibc/blob/marius/ccv/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#consumer-initiated-slashing)
+- [Consumer Initiated Slashing](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#consumer-initiated-slashing)
 
 
 

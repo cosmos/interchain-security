@@ -45,7 +45,7 @@ Minimal example:
     "binary_hash": "376cdbd3a222a3d5c730c9637454cd4dd925e2f9e2e0d0f3702fc922928583f1"
 }
 ```
-More examples can be found in the replicated security testnet repository [here](https://github.com/cosmos/testnets/blob/master/replicated-security/baryon-1/proposal-baryon-1.json) and [here](https://github.com/cosmos/testnets/blob/master/replicated-security/noble-1/proposal-noble-1.json).
+More examples can be found in the replicated security testnet repository [here](https://github.com/cosmos/testnets/blob/master/replicated-security/baryon-1/proposal-baryon-1.json) and [here](https://github.com/cosmos/testnets/blob/master/replicated-security/noble-1/start-proposal-noble-1.json).
 
 ## `ConsumerRemovalProposal`
 Proposal type used to suggest removing an existing consumer chain.
