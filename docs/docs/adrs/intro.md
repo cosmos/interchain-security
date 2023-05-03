@@ -1,3 +1,8 @@
+---
+sidebar_position: 1
+title: ADRs
+---
+
 # Architecture Decision Records (ADR)
 
 This is a location to record all high-level architecture decisions in the Interchain Security project.
