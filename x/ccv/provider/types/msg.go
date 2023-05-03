@@ -3,7 +3,6 @@ package types
 import (
 	"strings"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -14,8 +13,7 @@ const (
 )
 
 var (
-	_ sdk.Msg                            = &MsgAssignConsumerKey{}
-	_ codectypes.UnpackInterfacesMessage = (*MsgAssignConsumerKey)(nil)
+	_ sdk.Msg = &MsgAssignConsumerKey{}
 )
 
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
@@ -23,17 +21,10 @@ var (
 func NewMsgAssignConsumerKey(chainID string, providerValidatorAddress sdk.ValAddress,
 	consumerConsensusPubKey cryptotypes.PubKey,
 ) (*MsgAssignConsumerKey, error) {
-	var keyAsAny *codectypes.Any
-	if consumerConsensusPubKey != nil {
-		var err error
-		if keyAsAny, err = codectypes.NewAnyWithValue(consumerConsensusPubKey); err != nil {
-			return nil, err
-		}
-	}
 	return &MsgAssignConsumerKey{
 		ChainId:      chainID,
 		ProviderAddr: providerValidatorAddress.String(),
-		ConsumerKey:  keyAsAny,
+		ConsumerKey:  consumerConsensusPubKey.Bytes(),
 	}, nil
 }
 
@@ -85,10 +76,4 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 		return ErrInvalidConsumerConsensusPubKey
 	}
 	return nil
-}
-
-// UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (msg MsgAssignConsumerKey) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
-	var pubKey cryptotypes.PubKey
-	return unpacker.UnpackAny(msg.ConsumerKey, &pubKey)
 }

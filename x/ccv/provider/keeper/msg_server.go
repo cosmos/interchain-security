@@ -2,15 +2,14 @@ package keeper
 
 import (
 	"context"
+	"crypto/ed25519"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
-	tmstrings "github.com/tendermint/tendermint/libs/strings"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 type msgServer struct {
@@ -46,26 +45,29 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		return nil, stakingtypes.ErrNoValidatorFound
 	}
 
-	// make sure the consumer key is in the correct format
-	consumerSDKPublicKey, ok := msg.ConsumerKey.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "Expecting cryptotypes.PubKey, got %T", consumerSDKPublicKey)
+	// make sure consumer key is correct ed25519 size
+	if len(msg.ConsumerKey) != ed25519.PublicKeySize {
+		return nil, sdkerrors.Wrapf(
+			sdkerrors.ErrInvalidPubKey,
+			"invalid consumer pub key len, got: %d, expected: %d", len(msg.ConsumerKey), ed25519.PublicKeySize,
+		)
 	}
 
 	// make sure the consumer key type is supported
-	cp := ctx.ConsensusParams()
-	if cp != nil && cp.Validator != nil {
-		if !tmstrings.StringInSlice(consumerSDKPublicKey.Type(), cp.Validator.PubKeyTypes) {
-			return nil, sdkerrors.Wrapf(
-				stakingtypes.ErrValidatorPubKeyTypeNotSupported,
-				"got: %s, expected: %s", consumerSDKPublicKey.Type(), cp.Validator.PubKeyTypes,
-			)
-		}
-	}
+	// cp := ctx.ConsensusParams()
+	// if cp != nil && cp.Validator != nil {
+	// 	if !tmstrings.StringInSlice(consumerSDKPublicKey.Type(), cp.Validator.PubKeyTypes) {
+	// 		return nil, sdkerrors.Wrapf(
+	// 			stakingtypes.ErrValidatorPubKeyTypeNotSupported,
+	// 			"got: %s, expected: %s", consumerSDKPublicKey.Type(), cp.Validator.PubKeyTypes,
+	// 		)
+	// 	}
+	// }
 
-	consumerTMPublicKey, err := cryptocodec.ToTmProtoPublicKey(consumerSDKPublicKey)
-	if err != nil {
-		return nil, err
+	consumerTMPublicKey := tmprotocrypto.PublicKey{
+		Sum: &tmprotocrypto.PublicKey_Ed25519{
+			Ed25519: msg.ConsumerKey,
+		},
 	}
 
 	if err := k.Keeper.AssignConsumerKey(ctx, msg.ChainId, validator, consumerTMPublicKey); err != nil {
@@ -74,14 +76,14 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	k.Logger(ctx).Info("assigned consumer key",
 		"consumer chainID", msg.ChainId,
 		"validator operator addr", msg.ProviderAddr,
-		"consumer pubkey", consumerSDKPublicKey.String(),
+		"consumer tm pubkey", consumerTMPublicKey.String(),
 	)
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			ccvtypes.EventTypeAssignConsumerKey,
 			sdk.NewAttribute(ccvtypes.AttributeProviderValidatorAddress, msg.ProviderAddr),
-			sdk.NewAttribute(ccvtypes.AttributeConsumerConsensusPubKey, consumerSDKPublicKey.String()),
+			sdk.NewAttribute(ccvtypes.AttributeConsumerConsensusPubKey, consumerTMPublicKey.String()),
 		),
 	})
 
