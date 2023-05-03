@@ -8,7 +8,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -44,10 +43,6 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 				WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
 			providerValAddr := clientCtx.GetFromAddress()
-			var consumerPubKey cryptotypes.PubKey
-			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[1]), &consumerPubKey); err != nil {
-				return err
-			}
 
 			msg, err := types.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), args[1])
 			if err != nil {
