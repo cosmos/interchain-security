@@ -9,6 +9,12 @@ import (
 	"pgregory.net/rapid"
 )
 
+// TestReadAndWriteTrace uses rapid to do property based testing
+// of reading and writing traces.
+// It generates a random trace, writes it to a file, then reads it back.
+// It then compares the original trace to the read trace.
+// If the traces are not equal, rapid will generate a minimal example
+// that causes the test to fail.
 func TestReadAndWriteTrace(t *testing.T) {
 	parser := JSONParser{}
 	writer := JSONWriter{}
