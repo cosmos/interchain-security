@@ -31,14 +31,15 @@ linters:
     - unconvert
     - unused
 
-issues:
+
+
+linters-settings:
   gofumpt:
-    # Module path which contains the source code being formatted.
-    # Default: ""
-    module-path: github.com/cosmos/interchain-security
     # Choose whether to use the extra rules.
     # Default: false
     extra-rules: true
+
+issues:
   exclude-rules:
     - text: "Use of weak random number generator"
       linters:
