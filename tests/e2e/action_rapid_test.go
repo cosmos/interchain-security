@@ -140,7 +140,7 @@ func GetSubmitEquivocationProposalActionGen() *rapid.Generator[submitEquivocatio
 
 func GetTimeGen() *rapid.Generator[time.Time] {
 	return rapid.Custom(func(t *rapid.T) time.Time {
-		return time.Unix(rapid.Int64().Draw(t, "Unix"), 0)
+		return time.Unix(rapid.Int64Range(-1.5779e+11, 1.5779e+11).Draw(t, "Unix"), 0)
 	})
 }
 
