@@ -37,13 +37,14 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/interchain-security/app/params"
-	simapp "github.com/cosmos/interchain-security/app/provider"
+
+	providerApp "github.com/cosmos/interchain-security/app/provider"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
 func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
-	encodingConfig := simapp.MakeTestEncodingConfig()
+	encodingConfig := providerApp.MakeTestEncodingConfig()
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Codec).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
@@ -51,7 +52,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
-		WithHomeDir(simapp.DefaultNodeHome).
+		WithHomeDir(providerApp.DefaultNodeHome).
 		WithViper("") // In simapp, we don't use any prefix for env variables.
 
 	rootCmd := &cobra.Command{
@@ -149,34 +150,45 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	cfg := sdk.GetConfig()
 	cfg.Seal()
 
-	gentxModule := simapp.ModuleBasics[genutiltypes.ModuleName].(genutil.AppModuleBasic)
+	gentxModule := providerApp.ModuleBasics[genutiltypes.ModuleName].(genutil.AppModuleBasic)
 
 	a := appCreator{encodingConfig}
 	rootCmd.AddCommand(
-		genutilcli.InitCmd(simapp.ModuleBasics, simapp.DefaultNodeHome),
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, simapp.DefaultNodeHome, gentxModule.GenTxValidator),
+		genutilcli.InitCmd(providerApp.ModuleBasics, providerApp.DefaultNodeHome),
+		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, providerApp.DefaultNodeHome, gentxModule.GenTxValidator),
 		genutilcli.MigrateGenesisCmd(),
-		genutilcli.GenTxCmd(simapp.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, simapp.DefaultNodeHome),
-		genutilcli.ValidateGenesisCmd(simapp.ModuleBasics),
-		AddGenesisAccountCmd(simapp.DefaultNodeHome),
+		genutilcli.GenTxCmd(providerApp.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, providerApp.DefaultNodeHome),
+		genutilcli.ValidateGenesisCmd(providerApp.ModuleBasics),
+		AddGenesisAccountCmd(providerApp.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
 		debug.Cmd(),
 		config.Cmd(),
 		pruning.PruningCmd(a.newApp),
 	)
 
-	server.AddCommands(rootCmd, simapp.DefaultNodeHome, a.newApp, a.appExport, addModuleInitFlags)
+	server.AddCommands(rootCmd, providerApp.DefaultNodeHome, a.newApp, a.appExport, addModuleInitFlags)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
 		rpc.StatusCommand(),
 		queryCommand(),
 		txCommand(),
-		keys.Commands(simapp.DefaultNodeHome),
+		keys.Commands(providerApp.DefaultNodeHome),
 	)
 
 	// add rosetta
 	rootCmd.AddCommand(rosettaCmd.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Codec))
+}
+
+// from: https://github.com/cosmos/cosmos-sdk/blob/8f6a94cd1f9f1c6bf1ad83a751da86270db92e02/simapp/simd/cmd/root.go#L195
+// genesisCommand builds genesis-related `simd genesis` command. Users may provide application specific commands as a parameter
+func genesisCommand(encodingConfig params.EncodingConfig, cmds ...*cobra.Command) *cobra.Command {
+	cmd := genutilcli.GenesisCoreCommand(encodingConfig.TxConfig, providerApp.ModuleBasics, providerApp.DefaultNodeHome)
+
+	for _, sub_cmd := range cmds {
+		cmd.AddCommand(sub_cmd)
+	}
+	return cmd
 }
 
 func addModuleInitFlags(startCmd *cobra.Command) {
@@ -201,7 +213,7 @@ func queryCommand() *cobra.Command {
 		authcmd.QueryTxCmd(),
 	)
 
-	simapp.ModuleBasics.AddQueryCommands(cmd)
+	providerApp.ModuleBasics.AddQueryCommands(cmd)
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
@@ -227,7 +239,7 @@ func txCommand() *cobra.Command {
 		authcmd.GetDecodeCommand(),
 	)
 
-	simapp.ModuleBasics.AddTxCommands(cmd)
+	providerApp.ModuleBasics.AddTxCommands(cmd)
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
@@ -270,7 +282,7 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 		KeepRecent: cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent)),
 	}
 
-	return simapp.New(
+	return providerApp.New(
 		logger, db, traceStore, true,
 		appOpts,
 		baseapp.SetPruning(pruningOpts),
@@ -293,21 +305,21 @@ func (a appCreator) appExport(
 	logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool, jailAllowedAddrs []string,
 	appOpts servertypes.AppOptions, modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
-	var simApp *simapp.App
+	var appInstance *providerApp.App
 	homePath, ok := appOpts.Get(flags.FlagHome).(string)
 	if !ok || homePath == "" {
 		return servertypes.ExportedApp{}, errors.New("application home not set")
 	}
 
 	if height != -1 {
-		simApp = simapp.New(logger, db, traceStore, false, appOpts)
+		appInstance = providerApp.New(logger, db, traceStore, false, appOpts)
 
-		if err := simApp.LoadHeight(height); err != nil {
+		if err := appInstance.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		simApp = simapp.New(logger, db, traceStore, true, appOpts)
+		appInstance = providerApp.New(logger, db, traceStore, true, appOpts)
 	}
 
-	return simApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)
+	return appInstance.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)
 }
