@@ -5,29 +5,68 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, misbeaviour ibctmtypes.Misbehaviour) error {
-	clientID := misbeaviour.GetClientID()
+func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
+	if err := k.CheckConsumerMisbehaviour(ctx, misbehaviour); err != nil {
+		return err
+	}
+
+	byzantineValidators, err := k.GetByzantineValidators(ctx, misbehaviour)
+	if err != nil {
+		return err
+	}
+
+	// Since the misbehaviour packet was received within the trusting period
+	// w.r.t to the last trusted consensus it entails that the infraction age
+	// isn't too old. see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
+	for _, v := range byzantineValidators {
+		// convert address to key assigned
+		consAddr := sdk.ConsAddress(v.Address.Bytes())
+		validator := k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr)
+		if validator == nil || validator.IsUnbonded() {
+			// Defensive: Simulation doesn't take unbonding periods into account, and
+			// Tendermint might break this assumption at some point.
+			k.Logger(ctx).Error("validator not found or is unbonded", consAddr)
+		}
+		k.slashingKeeper.JailUntil(ctx, consAddr, evidencetypes.DoubleSignJailEndTime)
+		k.slashingKeeper.Tombstone(ctx, consAddr)
+		// store misbehaviour?
+	}
+
+	logger := ctx.Logger()
+	logger.Info(
+		"confirmed equivocation",
+		"byzantine validators", byzantineValidators,
+	)
+
+	return nil
+}
+
+func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
+
+	clientID := misbehaviour.GetClientID()
+
 	clientState, found := k.clientKeeper.GetClientState(ctx, clientID)
 	if !found {
 		return fmt.Errorf("types.ErrClientNotFound cannot check misbehaviour for client with ID %s", clientID)
 	}
 
-	clientStore := k.clientKeeper.ClientStore(ctx, misbeaviour.GetClientID())
+	clientStore := k.clientKeeper.ClientStore(ctx, misbehaviour.GetClientID())
 
 	if status := clientState.Status(ctx, clientStore, k.cdc); status != exported.Active {
 		return fmt.Errorf("types.ErrClientNotActive cannot process misbehaviour for client (%s) with status %s", clientID, status)
 	}
 
-	if err := misbeaviour.ValidateBasic(); err != nil {
+	if err := misbehaviour.ValidateBasic(); err != nil {
 		return err
 	}
 
-	clientState, err := clientState.CheckMisbehaviourAndUpdateState(ctx, k.cdc, clientStore, &misbeaviour)
+	clientState, err := clientState.CheckMisbehaviourAndUpdateState(ctx, k.cdc, clientStore, &misbehaviour)
 	if err != nil {
 		return err
 	}
@@ -36,12 +75,12 @@ func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, misbeaviour ibctmtype
 	k.Logger(ctx).Info("client frozen due to misbehaviour", "client-id", clientID)
 
 	// get byzantine validators
-	sh, err := tmtypes.SignedHeaderFromProto(misbeaviour.Header1.SignedHeader)
+	sh, err := tmtypes.SignedHeaderFromProto(misbehaviour.Header1.SignedHeader)
 	if err != nil {
 		return err
 	}
 
-	vs, err := tmtypes.ValidatorSetFromProto(misbeaviour.Header1.ValidatorSet)
+	vs, err := tmtypes.ValidatorSetFromProto(misbehaviour.Header1.ValidatorSet)
 	if err != nil {
 		return err
 	}
@@ -49,7 +88,7 @@ func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, misbeaviour ibctmtype
 		ConflictingBlock: &tmtypes.LightBlock{SignedHeader: sh, ValidatorSet: vs},
 	}
 
-	h2, err := tmtypes.HeaderFromProto(misbeaviour.Header2.Header)
+	h2, err := tmtypes.HeaderFromProto(misbehaviour.Header2.Header)
 	if err != nil {
 		return err
 	}
@@ -60,13 +99,13 @@ func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, misbeaviour ibctmtype
 	// return the height of the conflicting block else if it is a lunatic attack and the validator sets
 	// are not the same then we send the height of the common header.
 	if ev.ConflictingHeaderIsInvalid(&h2) {
-		ev.CommonHeight = misbeaviour.Header2.Header.Height
-		ev.Timestamp = misbeaviour.Header2.Header.Time
-		ev.TotalVotingPower = misbeaviour.Header2.ValidatorSet.TotalVotingPower
+		ev.CommonHeight = misbehaviour.Header2.Header.Height
+		ev.Timestamp = misbehaviour.Header2.Header.Time
+		ev.TotalVotingPower = misbehaviour.Header2.ValidatorSet.TotalVotingPower
 	} else {
-		ev.CommonHeight = misbeaviour.Header1.Header.Height
-		ev.Timestamp = misbeaviour.Header1.Header.Time
-		ev.TotalVotingPower = misbeaviour.Header1.ValidatorSet.TotalVotingPower
+		ev.CommonHeight = misbehaviour.Header1.Header.Height
+		ev.Timestamp = misbehaviour.Header1.Header.Time
+		ev.TotalVotingPower = misbehaviour.Header1.ValidatorSet.TotalVotingPower
 	}
 	ev.ByzantineValidators = ev.GetByzantineValidators(vs, sh)
 
