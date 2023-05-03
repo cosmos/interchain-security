@@ -35,6 +35,7 @@ type StakingKeeper interface {
 	PowerReduction(ctx sdk.Context) sdk.Int
 	PutUnbondingOnHold(ctx sdk.Context, id uint64) error
 	GetLastTotalPower(ctx sdk.Context) sdk.Int
+	ValidatorByConsAddr(ctx sdk.Context, addr sdk.ConsAddress) stakingtypes.ValidatorI
 }
 
 type EvidenceKeeper interface {

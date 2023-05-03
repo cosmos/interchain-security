@@ -5,6 +5,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -18,6 +19,23 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	byzantineValidators, err := k.GetByzantineValidators(ctx, misbehaviour)
 	if err != nil {
 		return err
+	}
+
+	// Since the misbehaviour packet was received within the trusting period
+	// w.r.t to the last trusted consensus it entails that the infraction age
+	// isn't too old. see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
+	for _, v := range byzantineValidators {
+		// convert address to key assigned
+		consAddr := sdk.ConsAddress(v.Address.Bytes())
+		validator := k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr)
+		if validator == nil || validator.IsUnbonded() {
+			// Defensive: Simulation doesn't take unbonding periods into account, and
+			// Tendermint might break this assumption at some point.
+			k.Logger(ctx).Error("validator not found or is unbonded", consAddr)
+		}
+		k.slashingKeeper.JailUntil(ctx, consAddr, evidencetypes.DoubleSignJailEndTime)
+		k.slashingKeeper.Tombstone(ctx, consAddr)
+		// store misbehaviour?
 	}
 
 	logger := ctx.Logger()
@@ -81,7 +99,6 @@ func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtyp
 
 func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) ([]*tmtypes.Validator, error) {
 
-	//
 	trusted, err := HeaderToLightBlock(*misbehaviour.Header1)
 	if err != nil {
 		return nil, err

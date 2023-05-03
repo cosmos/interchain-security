@@ -104,3 +104,7 @@ func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.
 
 	return &types.MsgSubmitConsumerMisbehaviourResponse{}, nil
 }
+
+func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.MsgSubmitConsumerDoubleVoting) (*types.MsgSubmitConsumerDoubleVotingResponse, error) {
+	return nil, nil
+}
