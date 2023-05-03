@@ -12,9 +12,7 @@ const (
 	TypeMsgAssignConsumerKey = "assign_consumer_key"
 )
 
-var (
-	_ sdk.Msg = &MsgAssignConsumerKey{}
-)
+var _ sdk.Msg = &MsgAssignConsumerKey{}
 
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
 // Delegator address and validator address are the same.
