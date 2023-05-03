@@ -1,8 +1,10 @@
 package main
 
 import (
+	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"pgregory.net/rapid"
 )
 
@@ -135,6 +137,18 @@ func GetSubmitEquivocationProposalActionGen() *rapid.Generator[submitEquivocatio
 			Time:    GetTimeGen().Draw(t, "Time"),
 			Power:   rapid.Int64().Draw(t, "Power"),
 		}
+	})
+}
+
+func TestMarshalAndUnmarshalTime(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		time1 := GetTimeGen().Draw(t, "time")
+		data, err := time1.MarshalJSON()
+		require.NoError(t, err)
+		var time2 time.Time
+		err = time2.UnmarshalJSON(data)
+		require.NoError(t, err)
+		require.Equal(t, time1, time2)
 	})
 }
 
