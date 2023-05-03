@@ -17,6 +17,12 @@ func TestChainStateMarshalling(t *testing.T) {
 	})
 }
 
+func GetStateGen() *rapid.Generator[State] {
+	return rapid.Custom(func(t *rapid.T) State {
+		return rapid.MapOf(GetChainIDGen(), GetChainStateGen()).Draw(t, "State")
+	})
+}
+
 func GetChainStateGen() *rapid.Generator[ChainState] {
 	return rapid.Custom(
 		func(t *rapid.T) ChainState {
