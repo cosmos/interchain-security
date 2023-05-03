@@ -1,3 +1,8 @@
+---
+sidebar_position: 3
+title: Jail Throttling
+---
+
 # ADR 002: Jail Throttling
 
 ## Changelog

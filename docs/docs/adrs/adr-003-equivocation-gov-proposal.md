@@ -1,3 +1,7 @@
+---
+sidebar_position: 4
+title: Equivocation governance proposal
+---
 # ADR 003: Equivocation governance proposal
 
 ## Changelog
