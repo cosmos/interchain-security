@@ -65,7 +65,7 @@ type Params struct {
 	UnbondingPeriod time.Duration `protobuf:"bytes,9,opt,name=unbonding_period,json=unbondingPeriod,proto3,stdduration" json:"unbonding_period"`
 	// The threshold for the percentage of validators at the bottom of the set who
 	// can opt out of running the consumer chain without being punished. For example, a
-	// value of 5% means that the validators in the smallest 5% of the set can opt out
+	// value of 0.05 means that the validators in the bottom 5% of the set can opt out
 	SoftOptOutThreshold string `protobuf:"bytes,10,opt,name=soft_opt_out_threshold,json=softOptOutThreshold,proto3" json:"soft_opt_out_threshold,omitempty"`
 }
 
