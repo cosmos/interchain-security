@@ -101,5 +101,5 @@ For more information check our the [Key assignment overview and guide](../featur
 ## References:
 - [Cosmos Hub Validators FAQ](https://hub.cosmos.network/main/validators/validator-faq.html)
 - [Cosmos Hub Running a validator](https://hub.cosmos.network/main/validators/validator-setup.html)
-- [Startup Sequence](https://github.com/cosmos/ics-testnets/blob/main/docs/Consumer-Chain-Start-Process.md)
+- [Startup Sequence](https://github.com/cosmos/testnets/blob/master/replicated-security/CONSUMER_LAUNCH_GUIDE.md#chain-launch)
 - [Submit Unjailing Transaction](https://hub.cosmos.network/main/validators/validator-setup.html#unjail-validator)

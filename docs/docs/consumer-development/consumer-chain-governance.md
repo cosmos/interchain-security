@@ -22,4 +22,4 @@ For an example, see [Neutron](https://github.com/neutron-org/neutron/).
 
 ## The Whitelist
 
-Not everything on a consumer chain can be changed by the consumer's governance. Some settings having to do with consensus etc. can only be changed by the provider chain. Consumer chains include a whitelist of parameters that are allowed to be changed by the consumer chain governance. For an example whitelist, see [Neutron's](https://github.com/neutron-org/neutron/blob/main/app/proposals_whitelisting.go).
+Not everything on a consumer chain can be changed by the consumer's governance. Some settings having to do with consensus etc. can only be changed by the provider chain. Consumer chains include a whitelist of parameters that are allowed to be changed by the consumer chain governance. For an example, see [Neutron's](https://github.com/neutron-org/neutron/blob/main/app/proposals_allowlisting.go) whitelist.

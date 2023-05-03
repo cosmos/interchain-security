@@ -32,4 +32,5 @@ The offending validator will only be slashed (and tombstoned) if an `Equivocatio
 The offending validator will effectively get slashed and tombstoned on all consumer chains.
 :::
 
+<!-- markdown-link-check-disable-next-line -->
 You can find instructions on creating `EquivocationProposal`s [here](./proposals#equivocationproposal).
