@@ -35,20 +35,10 @@ func TestWriterThenParser(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			filename := filepath.Join(dir, name)
-			err := writer.WriteTraceToFile(filename, tc.trace)
+			filename := filepath.Join(dir, "trace.json")
+			err := WriteAndReadTrace(parser, writer, tc.trace, filename)
 			if err != nil {
-				t.Fatalf("error writing trace to file: %v", err)
-			}
-
-			got, err := parser.ReadTraceFromFile(filename)
-			if err != nil {
-				t.Fatalf("error reading trace from file: %v", err)
-			}
-
-			diff := cmp.Diff(tc.trace, got, cmp.AllowUnexported(Step{}))
-			if diff != "" {
-				t.Fatalf(diff)
+				t.Fatalf("error writing and reading trace: %v", err)
 			}
 		})
 	}
@@ -189,6 +179,25 @@ func MarshalAndUnmarshalChainState(chainState ChainState) error {
 	diff := cmp.Diff(chainState, *got)
 	if diff != "" {
 		log.Print(string(jsonobj))
+		return fmt.Errorf(diff)
+	}
+
+	return nil
+}
+
+func WriteAndReadTrace(parser TraceParser, writer TraceWriter, trace []Step, tmp_filepath string) error {
+	err := writer.WriteTraceToFile(tmp_filepath, trace)
+	if err != nil {
+		return fmt.Errorf("error writing trace to file: %v", err)
+	}
+
+	got, err := parser.ReadTraceFromFile(tmp_filepath)
+	if err != nil {
+		return fmt.Errorf("error reading trace from file: %v", err)
+	}
+
+	diff := cmp.Diff(trace, got, cmp.AllowUnexported(Step{}))
+	if diff != "" {
 		return fmt.Errorf(diff)
 	}
 
