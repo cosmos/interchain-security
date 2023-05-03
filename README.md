@@ -45,11 +45,11 @@ Inspect the [Makefile](./Makefile) if curious.
 
 ## Testing
 
-See [testing docs](./docs/testing.md).
+See [testing docs](./docs/old/testing.md).
 
 ## Learn more
 
-- [IBC Docs](https://docs.cosmos.network/master/ibc/)
+- [IBC Docs](https://ibc.cosmos.network/)
 - [IBC Protocol](https://ibcprotocol.org/)
 - [IBC Specs](https://github.com/cosmos/ibc)
 - [Cosmos SDK documentation](https://docs.cosmos.network)
