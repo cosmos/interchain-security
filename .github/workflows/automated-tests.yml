@@ -24,5 +24,5 @@ jobs:
           go-version: "1.19" # The Go version to download (if necessary) and use.
 
       - name: E2E tests
-        run: go run ./tests/e2e/... --happy-path-only
+        run: go run ./tests/e2e/... --happy-path-only --verbose
 
