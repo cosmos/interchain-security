@@ -49,7 +49,7 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 				return err
 			}
 
-			msg, err := types.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), consumerPubKey)
+			msg, err := types.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), args[1])
 			if err != nil {
 				return err
 			}

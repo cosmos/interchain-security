@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"crypto/ed25519"
+	"encoding/base64"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -45,28 +46,22 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		return nil, stakingtypes.ErrNoValidatorFound
 	}
 
+	pubKeyBytes, err := base64.StdEncoding.DecodeString(msg.ConsumerKey)
+	if err != nil {
+		return nil, err
+	}
+
 	// make sure consumer key is correct ed25519 size
-	if len(msg.ConsumerKey) != ed25519.PublicKeySize {
+	if len(pubKeyBytes) != ed25519.PublicKeySize {
 		return nil, sdkerrors.Wrapf(
 			sdkerrors.ErrInvalidPubKey,
 			"invalid consumer pub key len, got: %d, expected: %d", len(msg.ConsumerKey), ed25519.PublicKeySize,
 		)
 	}
 
-	// make sure the consumer key type is supported
-	// cp := ctx.ConsensusParams()
-	// if cp != nil && cp.Validator != nil {
-	// 	if !tmstrings.StringInSlice(consumerSDKPublicKey.Type(), cp.Validator.PubKeyTypes) {
-	// 		return nil, sdkerrors.Wrapf(
-	// 			stakingtypes.ErrValidatorPubKeyTypeNotSupported,
-	// 			"got: %s, expected: %s", consumerSDKPublicKey.Type(), cp.Validator.PubKeyTypes,
-	// 		)
-	// 	}
-	// }
-
 	consumerTMPublicKey := tmprotocrypto.PublicKey{
 		Sum: &tmprotocrypto.PublicKey_Ed25519{
-			Ed25519: msg.ConsumerKey,
+			Ed25519: pubKeyBytes,
 		},
 	}
 

@@ -22,7 +22,7 @@ message MsgAssignConsumerKey {
   string provider_addr = 2
       [ (gogoproto.moretags) = "yaml:\"address\"" ];
   // The consensus public key to use on the consumer
-  bytes consumer_key = 3;
+  string consumer_key = 3;
 }
 
 message MsgAssignConsumerKeyResponse {}

@@ -1,6 +1,7 @@
 package provider_test
 
 import (
+	"encoding/base64"
 	"strings"
 	"testing"
 
@@ -34,6 +35,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 	consumerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(1)
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
 	consumerKey := consumerCryptoId.ConsensusSDKPubKey()
+	consumerKeyAsString := base64.StdEncoding.EncodeToString(consumerKey.Bytes())
 
 	testCases := []struct {
 		name string
@@ -105,7 +107,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			tc.setup(ctx, k, mocks)
 
 			msg, err := providertypes.NewMsgAssignConsumerKey(tc.chainID,
-				providerCryptoId.SDKValOpAddress(), consumerKey,
+				providerCryptoId.SDKValOpAddress(), consumerKeyAsString,
 			)
 
 			require.NoError(t, err)

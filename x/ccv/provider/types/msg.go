@@ -1,9 +1,11 @@
 package types
 
 import (
+	"crypto/ed25519"
+	"encoding/base64"
+	"fmt"
 	"strings"
 
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -19,12 +21,12 @@ var (
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
 // Delegator address and validator address are the same.
 func NewMsgAssignConsumerKey(chainID string, providerValidatorAddress sdk.ValAddress,
-	consumerConsensusPubKey cryptotypes.PubKey,
+	consumerConsensusPubKey string,
 ) (*MsgAssignConsumerKey, error) {
 	return &MsgAssignConsumerKey{
 		ChainId:      chainID,
 		ProviderAddr: providerValidatorAddress.String(),
-		ConsumerKey:  consumerConsensusPubKey.Bytes(),
+		ConsumerKey:  consumerConsensusPubKey,
 	}, nil
 }
 
@@ -72,8 +74,21 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 	if err != nil {
 		return ErrInvalidProviderAddress
 	}
-	if msg.ConsumerKey == nil {
+
+	if msg.ConsumerKey == "" {
 		return ErrInvalidConsumerConsensusPubKey
+	}
+
+	pubKeyBytes, err := base64.StdEncoding.DecodeString(msg.ConsumerKey)
+	if err != nil {
+		return err
+	}
+
+	// make sure consumer key is correct ed25519 size
+	if len(pubKeyBytes) != ed25519.PublicKeySize {
+		return fmt.Errorf(
+			"invalid consumer pub key len, got: %d, expected: %d", len(msg.ConsumerKey), ed25519.PublicKeySize,
+		)
 	}
 	return nil
 }
