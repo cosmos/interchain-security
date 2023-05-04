@@ -11,7 +11,6 @@ import (
 )
 
 func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, misbeaviour ibctmtypes.Misbehaviour) error {
-
 	clientID := misbeaviour.GetClientID()
 	clientState, found := k.clientKeeper.GetClientState(ctx, clientID)
 	if !found {
@@ -55,7 +54,7 @@ func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, misbeaviour ibctmtype
 		return err
 	}
 
-	// WIP: return byzantine validators according to the light client commited
+	// WIP: return byzantine validators according to the light client committed
 
 	// if this is an equivocation or amnesia attack, i.e. the validator sets are the same, then we
 	// return the height of the conflicting block else if it is a lunatic attack and the validator sets
@@ -95,8 +94,6 @@ func (k Keeper) CheckConsumerMisbehaviour(ctx sdk.Context, misbeaviour ibctmtype
 }
 
 func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) ([]*tmtypes.Validator, error) {
-
-	//
 	trusted, err := HeaderToLightBlock(*misbehaviour.Header1)
 	if err != nil {
 		return nil, err
@@ -115,7 +112,7 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 	}
 
 	if ev.ConflictingHeaderIsInvalid(trusted.Header) {
-		ev.CommonHeight = int64(commonHeight)
+		ev.CommonHeight = commonHeight
 		ev.Timestamp = commonTs
 		ev.TotalVotingPower = commonValset.TotalVotingPower()
 	} else {
@@ -128,7 +125,6 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 }
 
 func (k Keeper) GetCommonFromMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) (int64, time.Time, *tmtypes.ValidatorSet, error) {
-
 	// A common trusted height is required
 	commonHeight := misbehaviour.Header1.TrustedHeight
 	if !commonHeight.EQ(misbehaviour.Header2.TrustedHeight) {
