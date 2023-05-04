@@ -51,6 +51,10 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		return nil, err
 	}
 
+	// Note: the correct way to decide if a key type is supported is to check the
+	// consensus params. However this functionality was disabled in https://github.com/cosmos/interchain-security/pull/916
+	// as a quick way to get ed25519 working, avoiding amino/proto-any marshalling issues.
+
 	// make sure the consumer key type is supported
 	// cp := ctx.ConsensusParams()
 	// if cp != nil && cp.Validator != nil {
