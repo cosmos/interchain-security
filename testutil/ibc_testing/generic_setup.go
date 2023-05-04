@@ -90,15 +90,19 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	index int,
 	appIniter ibctesting.AppIniter,
 ) *ConsumerBundle {
+	// fmt.Println("ADD_CONSU:// ### RUNNING ADD CONSUMER ###")
 	// consumer chain ID
 	chainID := ibctesting.GetChainID(index + 2)
+	// fmt.Println("AddConsumer WAS CALLED", chainID)
 
 	// create client to the consumer on the provider chain
 	providerChain := coordinator.Chains[provChainID]
 	providerApp := providerChain.App.(Tp)
 	providerKeeper := providerApp.GetProviderKeeper()
+	// fmt.Println("ADD_CONSU:// ### GOT PROVI ###")
 
 	prop := testkeeper.GetTestConsumerAdditionProp()
+	// fmt.Println("ADD_CONSU:// ### MADE PROP ###")
 	prop.ChainId = chainID
 	// NOTE: the initial height passed to CreateConsumerClient
 	// must be the height on the consumer when InitGenesis is called
@@ -108,7 +112,9 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		prop,
 	)
 	s.Require().NoError(err)
+	// fmt.Println("ADD_CONSU:// ### ADDED CLIENTS ###")
 
+	// fmt.Println("ADD_CONSU:// ### TRY GENESIS ###")
 	// commit the state on the provider chain
 	coordinator.CommitBlock(providerChain)
 
@@ -118,7 +124,9 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		chainID,
 	)
 	s.Require().True(found, "consumer genesis not found")
+	// fmt.Println("ADD_CONSU:// ### DONE GENESIS ###")
 
+	// fmt.Println("ADD_CONSU:// ### TRY LOOP VALIDATORS ###")
 	// use InitialValSet as the valset on the consumer
 	var valz []*tmtypes.Validator
 	for _, update := range consumerGenesisState.InitialValSet {
@@ -132,12 +140,17 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 			ProposerPriority: 0,
 		})
 	}
+	// fmt.Println("AddConsumer initial valset", len(valz))
+	// fmt.Println("ADD_CONSU:// ### DONE LOOP VALIDATORS ###", len(valz))
 
+	// fmt.Println("ADD_CONSU:// ### ABOUT TO RUN NewTestChainWithValSet ###")
 	// create and instantiate consumer chain
+	// fmt.Println("createConsu", len(valz))
 	testChain := ibctesting.NewTestChainWithValSet(s.T(), coordinator,
 		appIniter, chainID, tmtypes.NewValidatorSet(valz), providerChain.Signers)
 	coordinator.Chains[chainID] = testChain
 
+	// fmt.Println("ADD_CONSU:// ### NewTestChainWithValSet DONE ###")
 	consumerToReturn, ok := testChain.App.(Tc)
 	if !ok {
 		panic(fmt.Sprintf("consumer app type returned from app initer does not match app type passed in as type param: %T, %T",

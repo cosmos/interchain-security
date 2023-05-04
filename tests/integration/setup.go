@@ -121,7 +121,10 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.consumerBundles = make(map[string]*icstestingutils.ConsumerBundle)
 	for i := 0; i < numConsumers; i++ {
 		bundle := suite.setupConsumerCallback(&suite.Suite, suite.coordinator, i)
+		// fmt.Println("setupConsumerCallback done for bundle")
 		suite.consumerBundles[bundle.Chain.ChainID] = bundle
+		// TODO: remove break; this will make the tests initialize a single consumer to ease debugging
+		// break
 	}
 
 	// initialize each consumer chain with it's corresponding genesis state
@@ -154,17 +157,20 @@ func initConsumerChain(
 	chainID string,
 	genesisState *consumertypes.GenesisState,
 ) {
+	// fmt.Println("-----> initConsumerChain <-----")
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	bundle := s.consumerBundles[chainID]
 
 	// run CCV module init genesis
 	s.NotPanics(func() {
 		consumerKeeper := bundle.GetKeeper()
+		// this will set the initial valset on consumer
 		consumerKeeper.InitGenesis(bundle.GetCtx(), genesisState)
 	})
 
 	// confirm client and cons state for consumer were set correctly in InitGenesis;
 	// NOTE: on restart, both ProviderClientState and ProviderConsensusState are nil
+	// fmt.Println("?? new chain:", chainID, genesisState.NewChain, len(genesisState.InitialValSet))
 	if genesisState.NewChain {
 		consumerEndpointClientState,
 			consumerEndpointConsState := s.GetConsumerEndpointClientAndConsState(*bundle)

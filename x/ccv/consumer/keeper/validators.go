@@ -115,7 +115,7 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 // All queued slashing requests will be cleared in EndBlock
 // Called by Slashing keeper in SlashWithInfractionReason
 func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec, infraction stakingtypes.Infraction) math.Int {
-	fmt.Println("SLASHING", infraction)
+	// fmt.Println("SLASHING", infraction)
 	if infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
 		return math.NewInt(0)
 	}
@@ -304,4 +304,10 @@ func (k Keeper) MustGetCurrentValidatorsAsABCIUpdates(ctx sdk.Context) []abci.Va
 		valUpdates = append(valUpdates, abci.ValidatorUpdate{PubKey: tmPK, Power: v.Power})
 	}
 	return valUpdates
+}
+
+// implement interface metod needed for x/genutil in sdk v47
+// returns empty updates and err
+func (k Keeper) ApplyAndReturnValidatorSetUpdates(sdk.Context) (updates []abci.ValidatorUpdate, err error) {
+	return
 }

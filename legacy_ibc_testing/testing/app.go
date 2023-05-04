@@ -27,6 +27,7 @@ import (
 	"github.com/cosmos/ibc-go/v7/modules/core/keeper"
 
 	"github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 )
 
 /*
@@ -65,7 +66,13 @@ type TestingApp interface {
 func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction math.Int, balances ...banktypes.Balance) TestingApp {
 	t.Helper()
 	app, genesisState := appIniter()
-
+	// for k, _ := range genesisState {
+	// 	fmt.Println(k, "genesis")
+	// 	if k == "ccvconsumer" {
+	// 		fmt.Println(string(genesisState[k]))
+	// 	}
+	// }
+	// fmt.Println("AA::// EXECUTED APP INITER ###")
 	baseapp.SetChainID(chainID)(app.GetBaseApp())
 
 	// set genesis accounts
@@ -77,6 +84,7 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 
 	bondAmt := sdk.TokensFromConsensusPower(1, powerReduction)
 
+	initValPowers := []abci.ValidatorUpdate{}
 	for _, val := range valSet.Validators {
 		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
 		require.NoError(t, err)
@@ -98,14 +106,21 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 
 		validators = append(validators, validator)
 		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec()))
+
+		pub, _ := val.ToProto()
+		initValPowers = append(initValPowers, abci.ValidatorUpdate{
+			Power:  val.VotingPower,
+			PubKey: pub.PubKey,
+		})
 	}
+	// fmt.Println("DONE VALS", len(validators), len(delegations))
 
 	// set validators and delegations
 	var (
-		stakingGenesis stakingtypes.GenesisState
-		bondDenom      string
+		stakingGenesis  stakingtypes.GenesisState
+		consumerGenesis consumertypes.GenesisState
+		bondDenom       string
 	)
-
 	if genesisState[stakingtypes.ModuleName] != nil {
 		app.AppCodec().MustUnmarshalJSON(genesisState[stakingtypes.ModuleName], &stakingGenesis)
 		bondDenom = stakingGenesis.Params.BondDenom
@@ -113,11 +128,14 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 		bondDenom = sdk.DefaultBondDenom
 	}
 
+	// fmt.Println("DONE STAKING")
+
 	// add bonded amount to bonded pool module account
 	balances = append(balances, banktypes.Balance{
 		Address: authtypes.NewModuleAddress(stakingtypes.BondedPoolName).String(),
 		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, bondAmt.Mul(sdk.NewInt(int64(len(valSet.Validators)))))},
 	})
+	// fmt.Println("DONE balances", len(validators), len(delegations))
 
 	// set validators and delegations
 	stakingGenesis = *stakingtypes.NewGenesisState(stakingGenesis.Params, validators, delegations)
@@ -127,9 +145,22 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(), []banktypes.Metadata{}, []banktypes.SendEnabled{})
 	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
 
-	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
-	require.NoError(t, err)
+	if genesisState[consumertypes.ModuleName] != nil {
+		app.AppCodec().MustUnmarshalJSON(genesisState[consumertypes.ModuleName], &consumerGenesis)
+		consumerGenesis.InitialValSet = initValPowers
+		// consumerGenesis.NewChain = true
+		consumerGenesis.Params.Enabled = true
+		// fmt.Println("##", len(consumerGenesis.InitialValSet))
+		genesisState[consumertypes.ModuleName] = app.AppCodec().MustMarshalJSON(&consumerGenesis)
+	}
 
+	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
+	// fmt.Println(string(stateBytes))
+	require.NoError(t, err)
+	// fmt.Println("DONE STATE BYTES")
+
+	// fmt.Println("TRY INIT")
+	// // fmt.Println("## STATE ##\n\n", string(stateBytes))
 	// init chain will set the validator set and initialize the genesis accounts
 	app.InitChain(
 		abci.RequestInitChain{
@@ -139,9 +170,12 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 			AppStateBytes:   stateBytes,
 		},
 	)
+	// fmt.Println("DONE INIT")
 
 	// commit genesis changes
 	app.Commit()
+	// fmt.Println("DONE COMMIT")
+
 	app.BeginBlock(
 		abci.RequestBeginBlock{
 			Header: tmproto.Header{
@@ -153,6 +187,8 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 			},
 		},
 	)
+
+	// fmt.Printf("$$$$$$$$$$$$$$$$$$$ done on %v\n\n", chainID)
 
 	return app
 }

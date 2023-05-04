@@ -111,6 +111,9 @@ func NewTestChainWithValSet(t *testing.T, coord *Coordinator, appIniter AppInite
 	genBals := []banktypes.Balance{}
 	senderAccs := []SenderAccount{}
 
+	// fmt.Println("GGG://: INIT NewTestChainWithValSet")
+	// fmt.Println("NewTestChainWithValSet called", chainID)
+
 	// generate genesis accounts
 	for i := 0; i < MaxAccounts; i++ {
 		senderPrivKey := secp256k1.GenPrivKey()
@@ -133,8 +136,11 @@ func NewTestChainWithValSet(t *testing.T, coord *Coordinator, appIniter AppInite
 
 		senderAccs = append(senderAccs, senderAcc)
 	}
+	// fmt.Println("GGG://: GEN ACCS", len(genAccs), len(genBals), len(senderAccs))
+	// fmt.Println("GGG://: ABOUT TO RUN SetupWithGenesisValSet")
 
 	app := SetupWithGenesisValSet(t, appIniter, valSet, genAccs, chainID, sdk.DefaultPowerReduction, genBals...)
+	// fmt.Println("GGG://: DONE SetupWithGenesisValSet")
 
 	// create current header and call begin block
 	header := tmproto.Header{
@@ -142,8 +148,10 @@ func NewTestChainWithValSet(t *testing.T, coord *Coordinator, appIniter AppInite
 		Height:  1,
 		Time:    coord.CurrentTime.UTC(),
 	}
+	// fmt.Println("GGG://: WROTE HEADER")
 
 	txConfig := app.GetTxConfig()
+	// fmt.Println("GGG://: GOT TX CONFIG")
 
 	// create an account to send transactions from
 	chain := &TestChain{
@@ -163,8 +171,10 @@ func NewTestChainWithValSet(t *testing.T, coord *Coordinator, appIniter AppInite
 		SenderAccount:  senderAccs[0].SenderAccount,
 		SenderAccounts: senderAccs,
 	}
+	// fmt.Println("GGG://: HAVE TEST CHAIN")
 
 	coord.CommitBlock(chain)
+	// fmt.Println("GGG://: COMMITED BLOCK")
 
 	return chain
 }

@@ -83,8 +83,18 @@ func NewKeeper(
 		standaloneStakingKeeper: nil,
 	}
 
-	k.mustValidateFields()
+	// k.mustValidateFields()
 	return k
+}
+
+// Returns a keeper with cdc, key and paramSpace set it does not raise any panics during registration (eg with IBCKeeper).
+// Used only in testing.
+func NewNonZeroKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace) Keeper {
+	return Keeper{
+		storeKey:   key,
+		cdc:        cdc,
+		paramStore: paramSpace,
+	}
 }
 
 // SetStandaloneStakingKeeper sets the standalone staking keeper for the consumer chain.
