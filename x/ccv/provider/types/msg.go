@@ -140,8 +140,8 @@ func (msg MsgSubmitConsumerMisbehaviour) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{addr}
 }
 
-func NewMsgSubmitConsumerDoubleVoting(submitter sdk.AccAddress, ev *tmtypes.DuplicateVoteEvidence) (*MsgSubmitConsumerDoubleVoting, error) {
-	return &MsgSubmitConsumerDoubleVoting{Submitter: submitter.String(), DuplicateVoteEvidence: ev}, nil
+func NewMsgSubmitConsumerDoubleVoting(submitter sdk.AccAddress, ev *tmtypes.DuplicateVoteEvidence, header *ibctmtypes.Header) (*MsgSubmitConsumerDoubleVoting, error) {
+	return &MsgSubmitConsumerDoubleVoting{Submitter: submitter.String(), DuplicateVoteEvidence: ev, InfractionBlockHeader: header}, nil
 }
 
 // Route implements the sdk.Msg interface.
@@ -158,9 +158,14 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
 
 	}
-	if msg.DuplicateVoteEvidence != nil {
-		return fmt.Errorf("duplicate evidence cannot be empty")
+	if msg.DuplicateVoteEvidence == nil {
+		return fmt.Errorf("duplicate evidence cannot be nil")
 	}
+
+	if msg.InfractionBlockHeader.Header == nil {
+		return fmt.Errorf("double-vote evidence Header cannot be nil")
+	}
+
 	return nil
 }
 

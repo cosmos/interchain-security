@@ -55,6 +55,7 @@ message MsgSubmitConsumerDoubleVoting {
   // The Equivocation of the consumer chain wrapping 
   // an evidence of a validator signed two conflicting votes
   tendermint.types.DuplicateVoteEvidence duplicate_vote_evidence = 2;
+  ibc.lightclients.tendermint.v1.Header infraction_block_header = 3;
 }
 
 message MsgSubmitConsumerDoubleVotingResponse {}
