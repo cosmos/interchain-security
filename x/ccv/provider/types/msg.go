@@ -81,7 +81,7 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 
 // ParseConsumerKeyFromJson parses the consumer key from a JSON string,
 // this replaces deserializing a protobuf any.
-func ParseConsumerKeyFromJson(jsonStr string) (pkType string, key string, err error) {
+func ParseConsumerKeyFromJson(jsonStr string) (pkType, key string, err error) {
 	type PubKey struct {
 		Type string `json:"@type"`
 		Key  string `json:"key"`
