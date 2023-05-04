@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
@@ -27,6 +28,7 @@ func GetTxCmd() *cobra.Command {
 
 	cmd.AddCommand(NewAssignConsumerKeyCmd())
 	cmd.AddCommand(NewSubmitConsumerMisbehaviourCmd())
+	cmd.AddCommand(NewSubmitConsumerDoubleVotingCmd())
 
 	return cmd
 }
@@ -91,6 +93,45 @@ func NewSubmitConsumerMisbehaviourCmd() *cobra.Command {
 			}
 
 			msg, err := types.NewMsgSubmitConsumerMisbehaviour(submitter, &misbehavior)
+			if err != nil {
+				return err
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	_ = cmd.MarkFlagRequired(flags.FlagFrom)
+
+	return cmd
+}
+
+func NewSubmitConsumerDoubleVotingCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "submit-consumer-double-voting [evidence]",
+		Short: "submit a double-vote evidence for a consumer chain",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).
+				WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+
+			submitter := clientCtx.GetFromAddress()
+			var ev *tmproto.DuplicateVoteEvidence
+			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[1]), &ev); err != nil {
+				return err
+			}
+
+			msg, err := types.NewMsgSubmitConsumerDoubleVoting(submitter, ev)
 			if err != nil {
 				return err
 			}

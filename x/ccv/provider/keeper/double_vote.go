@@ -10,7 +10,7 @@ import (
 
 func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmproto.DuplicateVoteEvidence, header *ibctmtypes.Header) error {
 
-	// TODO check header against consumer chain client
+	// TODO: check header against consumer chain client
 
 	ev, err := tmtypes.DuplicateVoteEvidenceFromProto(evidence)
 	if err != nil {
@@ -26,8 +26,8 @@ func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmproto.Du
 		return err
 	}
 
-	// TODO convert misbehaving validator consumer pubkey
-	//TODO call k.evidenceKeeper.HandleEquivocationEvidence() using correct infraction height
+	// TODO: convert misbehaving validator consumer pubkey
+	// TODO: call k.evidenceKeeper.HandleEquivocationEvidence() using correct infraction height
 
 	logger := ctx.Logger()
 	logger.Info(
