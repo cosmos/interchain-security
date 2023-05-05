@@ -185,7 +185,7 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool)
 	}
 	ctx := s.ctx(C)
 	before := len(ctx.EventManager().Events())
-	s.consumerKeeper().Slash(ctx, val, h, 0, sdk.Dec{}, kind)
+	s.consumerKeeper().SlashWithInfractionReason(ctx, val, h, 0, sdk.Dec{}, kind)
 	// consumer module emits packets on slash, so these must be collected.
 	evts := ctx.EventManager().ABCIEvents()
 	for _, e := range evts[before:] {

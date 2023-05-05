@@ -157,6 +157,7 @@ func (b *Builder) getAppBytesAndSenders(
 
 	// Sum bonded is needed for BondedPool account
 	sumBonded := sdk.NewInt(0)
+	initValPowers := []abci.ValidatorUpdate{}
 
 	for i, val := range validators.Validators {
 		status := b.initState.ValStates.Status[i]
@@ -196,15 +197,30 @@ func (b *Builder) getAppBytesAndSenders(
 		delegations = append(delegations, stakingtypes.NewDelegation(accounts[0].GetAddress(), val.Address.Bytes(), delShares))
 		// Remaining delegation is from extra account
 		delegations = append(delegations, stakingtypes.NewDelegation(accounts[1].GetAddress(), val.Address.Bytes(), sumShares.Sub(delShares)))
+
+		// add initial validator powers so consumer InitGenesis runs correctly
+		pub, _ := val.ToProto()
+		initValPowers = append(initValPowers, abci.ValidatorUpdate{
+			Power:  val.VotingPower,
+			PubKey: pub.PubKey,
+		})
 	}
 
 	bondDenom := sdk.DefaultBondDenom
 	genesisStaking := stakingtypes.GenesisState{}
+	genesisConsumer := consumertypes.GenesisState{}
 
 	if genesis[stakingtypes.ModuleName] != nil {
 		// If staking module genesis already exists
 		app.AppCodec().MustUnmarshalJSON(genesis[stakingtypes.ModuleName], &genesisStaking)
 		bondDenom = genesisStaking.Params.BondDenom
+	}
+
+	if genesis[consumertypes.ModuleName] != nil {
+		app.AppCodec().MustUnmarshalJSON(genesis[consumertypes.ModuleName], &genesisConsumer)
+		genesisConsumer.InitialValSet = initValPowers
+		genesisConsumer.Params.Enabled = true
+		genesis[consumertypes.ModuleName] = app.AppCodec().MustMarshalJSON(&genesisConsumer)
 	}
 
 	// Set model parameters

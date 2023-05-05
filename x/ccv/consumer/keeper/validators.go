@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"fmt"
 	"time"
 
 	"cosmossdk.io/math"
@@ -115,7 +114,6 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 // All queued slashing requests will be cleared in EndBlock
 // Called by Slashing keeper in SlashWithInfractionReason
 func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec, infraction stakingtypes.Infraction) math.Int {
-	// fmt.Println("SLASHING", infraction)
 	if infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
 		return math.NewInt(0)
 	}
@@ -123,7 +121,6 @@ func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress,
 	// If this is a previously standalone chain and infraction happened before the changeover was completed,
 	// slash only on the standalone staking keeper.
 	if k.IsPrevStandaloneChain(ctx) && infractionHeight < k.FirstConsumerHeight(ctx) {
-		fmt.Println("HAVE STANDALONE WITH INFRACTION", infraction)
 		// NOTE: I'm not sure this code is 100% correct and it's relatively newly implemented
 		// That is bothering me is that we call SlashWithInfractionReason without an infraction reason every time
 		return k.standaloneStakingKeeper.SlashWithInfractionReason(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.Infraction_INFRACTION_UNSPECIFIED)

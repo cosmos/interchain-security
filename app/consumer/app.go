@@ -611,17 +611,11 @@ func (app *App) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.Respo
 func (app *App) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
 	var genesisState GenesisState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
-		// fmt.Println("CONSUGEN:// ERRD OND tmjsonUnmarshal genesis", err)
 		panic(err)
 	}
 
 	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.MM.GetVersionMap())
-	// // fmt.Println(string(req.AppStateBytes))
-	// fmt.Println("CONSUGEN:// EXEC INIT GENESIS ###")
-	// fmt.Println("## CALLING INIT GENESIS from app.go ###")
-	val := app.MM.InitGenesis(ctx, app.appCodec, genesisState)
-	// fmt.Println("CONSUGEN:// RAN GENESIS WITH NO ISSUES ###")
-	return val
+	return app.MM.InitGenesis(ctx, app.appCodec, genesisState)
 }
 
 // LoadHeight loads a particular height

@@ -17,14 +17,12 @@ import (
 //  2. A consumer chain restarts after a client to the provider was created, but the CCV channel handshake is still in progress
 //  3. A consumer chain restarts after the CCV channel handshake was completed.
 func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) []abci.ValidatorUpdate {
-	// fmt.Println("### MAIN CONSUMER GENESIS ###", state.PreCCV, state.NewChain, len(state.InitialValSet))
 	// PreCCV is true during the process of a standalone to consumer changeover.
 	// At the PreCCV point in the process, the standalone chain has just been upgraded to include
 	// the consumer ccv module, but the standalone staking keeper is still managing the validator set.
 	// Once the provider validator set starts validating blocks, the consumer CCV module
 	// will take over proof of stake capabilities, but the standalone staking keeper will
 	// stick around for slashing/jailing purposes.
-	// fmt.Println("Consumer.InitGenesis called", state.NewChain, len(state.InitialValSet))
 	if state.PreCCV {
 		k.SetPreCCVTrue(ctx)
 		k.MarkAsPrevStandaloneChain(ctx)
@@ -36,7 +34,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 	// TODO: Remove enabled flag and find a better way to setup integration tests
 	// See: https://github.com/cosmos/interchain-security/issues/339
 	if !state.Params.Enabled {
-		// fmt.Println("### SET PARAMS NOT ENABLED")
 		return nil
 	}
 
@@ -56,14 +53,10 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 
 	// initialValSet is checked in NewChain case by ValidateGenesis
 	// start a new chain
-	// fmt.Println("!!! new chain on first call:", state.NewChain, len(state.InitialValSet))
 	if state.NewChain {
-		// fmt.Println("## Before Create Client ")
 		// create the provider client in InitGenesis for new consumer chain. CCV Handshake must be established with this client id.
 		clientID, err := k.clientKeeper.CreateClient(ctx, state.ProviderClientState, state.ProviderConsensusState)
-		// fmt.Println("## After Create Client ")
 		if err != nil {
-			// fmt.Println("## PANIC IN InitGenesis ")
 			// If the client creation fails, the chain MUST NOT start
 			panic(err)
 		}
@@ -110,13 +103,11 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 	}
 
 	if state.PreCCV {
-		// fmt.Println("PRE CCV")
 		return []abci.ValidatorUpdate{}
 	}
 
 	// populate cross chain validators states with initial valset
 	k.ApplyCCValidatorChanges(ctx, state.InitialValSet)
-	// fmt.Println("## Consumer.InitGenesis INIT VALSET ###", len(state.InitialValSet))
 	return state.InitialValSet
 }
 

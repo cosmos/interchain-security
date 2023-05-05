@@ -5,7 +5,6 @@
 package keeper
 
 import (
-	"fmt"
 	context "context"
 	reflect "reflect"
 	time "time"
@@ -252,7 +251,6 @@ func (m *MockStakingKeeper) Slash(arg0 types0.Context, arg1 types0.ConsAddress, 
 // Slash indicates an expected call of Slash.
 func (mr *MockStakingKeeperMockRecorder) Slash(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	fmt.Println("Slash")
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Slash", reflect.TypeOf((*MockStakingKeeper)(nil).Slash), arg0, arg1, arg2, arg3, arg4)
 }
 
@@ -267,7 +265,6 @@ func (m *MockStakingKeeper) SlashWithInfractionReason(arg0 types0.Context, arg1 
 // SlashWithInfractionReason indicates an expected call of Slash.
 func (mr *MockStakingKeeperMockRecorder) SlashWithInfractionReason(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	fmt.Println("SlashWithInfractionReason")
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SlashWithInfractionReason", reflect.TypeOf((*MockStakingKeeper)(nil).Slash), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 

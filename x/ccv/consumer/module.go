@@ -116,7 +116,6 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState consumertypes.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
-	// fmt.Println("CCCCC:// CONSUMER GENESIS STATE", string(data))
 	return am.keeper.InitGenesis(ctx, &genesisState)
 }
 

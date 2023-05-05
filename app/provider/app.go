@@ -710,10 +710,7 @@ func (app *App) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.Res
 
 	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.MM.GetVersionMap())
 
-	vals := app.MM.InitGenesis(ctx, app.appCodec, genesisState)
-	// fmt.Println("PPPPL//:: REQ ABCI VALSET", req.Validators)
-	// fmt.Println("PPPPL//:: PROVIDER VALSET UPDATES ###", len(vals.Validators), "\n\n", vals.Validators)
-	return vals
+	return app.MM.InitGenesis(ctx, app.appCodec, genesisState)
 }
 
 // LoadHeight loads a particular height
