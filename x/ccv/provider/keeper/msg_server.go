@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
@@ -59,7 +59,7 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	// cp := ctx.ConsensusParams()
 	// if cp != nil && cp.Validator != nil {
 	// 	if !tmstrings.StringInSlice(pkType, cp.Validator.PubKeyTypes) {
-	// 		return nil, sdkerrors.Wrapf(
+	// 		return nil, errorsmod.Wrapf(
 	// 			stakingtypes.ErrValidatorPubKeyTypeNotSupported,
 	// 			"got: %s, expected one of: %s", pkType, cp.Validator.PubKeyTypes,
 	// 		)
@@ -69,7 +69,7 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	// For now, only accept ed25519.
 	// TODO: decide what types should be supported.
 	if pkType != "/cosmos.crypto.ed25519.PubKey" {
-		return nil, sdkerrors.Wrapf(
+		return nil, errorsmod.Wrapf(
 			stakingtypes.ErrValidatorPubKeyTypeNotSupported,
 			"got: %s, expected: %s", pkType, "/cosmos.crypto.ed25519.PubKey",
 		)
