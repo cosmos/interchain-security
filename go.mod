@@ -171,9 +171,6 @@ require (
 	nhooyr.io/websocket v1.8.6 // indirect
 	pgregory.net/rapid v0.5.5 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
-)
-
-require (
 	cosmossdk.io/log v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/rs/zerolog v1.29.1 // indirect
@@ -182,6 +179,8 @@ require (
 // THESE CHANGES PROVED TO BE NECESSARY, AS EVIDENCED BY: https://github.com/cosmos/cosmos-sdk/pull/16043
 // NOTIONAL ASKED INFORMAL SYSTEMS ABOUT THIS SINCE MARCH 23, 2023, BUT NO RESPONSE WAS GIVEN
 // github.com/cosmos/cosmos-sdk => ../cosmos-sdk
+
+// this replace statement is sdk v0.47.x with MSalopek's patches, and they're much appreciated.
 replace github.com/cosmos/cosmos-sdk => github.com/notional-labs/cosmos-sdk v0.47.2-0.20230506162857-37b06634eb97
 
 // github.com/cosmos/ibc-go/v7 => github.com/notional-labs/ibc-go/v7 v7.0.0-rc0.0.20230417042817-8072b1e9aabc
