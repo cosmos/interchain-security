@@ -837,6 +837,11 @@ func (app *App) GetTxConfig() client.TxConfig {
 	return app.txConfig
 }
 
+// TxConfig returns SimApp's TxConfig
+func (app *App) TxConfig() client.TxConfig {
+	return app.txConfig
+}
+
 // RegisterAPIRoutes registers all application module routes with the provided
 // API server.
 func (app *App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
