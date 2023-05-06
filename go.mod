@@ -169,13 +169,12 @@ require (
 	nhooyr.io/websocket v1.8.6 // indirect
 	pgregory.net/rapid v0.5.5 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
-)
-
-require (
 	github.com/confio/ics23/go v0.9.0 // indirect
 	github.com/linxGnu/grocksdb v1.7.16 // indirect
 )
 
+// THESE CHANGES PROVED TO BE NECESSARY, AS EVIDENCED BY: https://github.com/cosmos/cosmos-sdk/pull/16043
+// NOTIONAL ASKED INFORMAL SYSTEMS ABOUT THIS SINCE MARCH 23, 2023, BUT NO RESPONSE WAS GIVEN
 // github.com/cosmos/cosmos-sdk => ../cosmos-sdk
 // github.com/cosmos/cosmos-sdk => github.com/notional-labs/cosmos-sdk v0.47.2-0.20230424022356-49c2e39f3fe6
 // github.com/cosmos/ibc-go/v7 => github.com/notional-labs/ibc-go/v7 v7.0.0-rc0.0.20230417042817-8072b1e9aabc
