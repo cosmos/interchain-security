@@ -168,7 +168,7 @@ do
     # Make a gentx (this command also sets up validator state on disk even if we are not going to use the gentx for anything)
     if [ "$SKIP_GENTX" = "false" ] ; then 
         STAKE_AMOUNT=$(echo "$VALIDATORS" | jq -r ".[$i].stake")
-        $BIN gentx validator$VAL_ID "$STAKE_AMOUNT" \
+        $BIN genesis gentx validator$VAL_ID "$STAKE_AMOUNT" \
             --home /$CHAIN_ID/validator$VAL_ID \
             --keyring-backend test \
             --moniker validator$VAL_ID \
@@ -195,7 +195,7 @@ done
 
 if [ "$SKIP_GENTX" = "false" ] ; then
     # make the final genesis.json
-    $BIN collect-gentxs --home /$CHAIN_ID/validator$FIRST_VAL_ID
+    $BIN genesis collect-gentxs --home /$CHAIN_ID/validator$FIRST_VAL_ID
 
     # and copy it to the root 
     cp /$CHAIN_ID/validator$FIRST_VAL_ID/config/genesis.json /$CHAIN_ID/genesis.json
