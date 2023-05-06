@@ -27,6 +27,7 @@ import (
 	"github.com/cosmos/ibc-go/v7/modules/core/keeper"
 
 	"github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 )
 
 /*
@@ -65,7 +66,6 @@ type TestingApp interface {
 func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction math.Int, balances ...banktypes.Balance) TestingApp {
 	t.Helper()
 	app, genesisState := appIniter()
-
 	baseapp.SetChainID(chainID)(app.GetBaseApp())
 
 	// set genesis accounts
@@ -77,6 +77,7 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 
 	bondAmt := sdk.TokensFromConsensusPower(1, powerReduction)
 
+	initValPowers := []abci.ValidatorUpdate{}
 	for _, val := range valSet.Validators {
 		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
 		require.NoError(t, err)
@@ -98,14 +99,20 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 
 		validators = append(validators, validator)
 		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec()))
+
+		pub, _ := val.ToProto()
+		initValPowers = append(initValPowers, abci.ValidatorUpdate{
+			Power:  val.VotingPower,
+			PubKey: pub.PubKey,
+		})
 	}
 
 	// set validators and delegations
 	var (
-		stakingGenesis stakingtypes.GenesisState
-		bondDenom      string
+		stakingGenesis  stakingtypes.GenesisState
+		consumerGenesis consumertypes.GenesisState
+		bondDenom       string
 	)
-
 	if genesisState[stakingtypes.ModuleName] != nil {
 		app.AppCodec().MustUnmarshalJSON(genesisState[stakingtypes.ModuleName], &stakingGenesis)
 		bondDenom = stakingGenesis.Params.BondDenom
@@ -127,6 +134,13 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(), []banktypes.Metadata{}, []banktypes.SendEnabled{})
 	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
 
+	if genesisState[consumertypes.ModuleName] != nil {
+		app.AppCodec().MustUnmarshalJSON(genesisState[consumertypes.ModuleName], &consumerGenesis)
+		consumerGenesis.InitialValSet = initValPowers
+		consumerGenesis.Params.Enabled = true
+		genesisState[consumertypes.ModuleName] = app.AppCodec().MustMarshalJSON(&consumerGenesis)
+	}
+
 	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
 	require.NoError(t, err)
 
@@ -142,6 +156,7 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 
 	// commit genesis changes
 	app.Commit()
+
 	app.BeginBlock(
 		abci.RequestBeginBlock{
 			Header: tmproto.Header{

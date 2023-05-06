@@ -160,6 +160,7 @@ func initConsumerChain(
 	// run CCV module init genesis
 	s.NotPanics(func() {
 		consumerKeeper := bundle.GetKeeper()
+		// this will set the initial valset on consumer
 		consumerKeeper.InitGenesis(bundle.GetCtx(), genesisState)
 	})
 

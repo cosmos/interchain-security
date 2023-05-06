@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 	time "time"
 
-	math "cosmossdk.io/math"
+	"cosmossdk.io/math"
 	types "github.com/cometbft/cometbft/abci/types"
 	types0 "github.com/cosmos/cosmos-sdk/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -241,15 +241,31 @@ func (mr *MockStakingKeeperMockRecorder) PutUnbondingOnHold(ctx, id interface{})
 }
 
 // Slash mocks base method.
-func (m *MockStakingKeeper) Slash(arg0 types0.Context, arg1 types0.ConsAddress, arg2, arg3 int64, arg4 types0.Dec, arg5 types5.Infraction) {
+func (m *MockStakingKeeper) Slash(arg0 types0.Context, arg1 types0.ConsAddress, arg2, arg3 int64, arg4 types0.Dec) math.Int {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Slash", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret := m.ctrl.Call(m, "Slash", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].(math.Int)
+	return ret0
 }
 
 // Slash indicates an expected call of Slash.
-func (mr *MockStakingKeeperMockRecorder) Slash(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+func (mr *MockStakingKeeperMockRecorder) Slash(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Slash", reflect.TypeOf((*MockStakingKeeper)(nil).Slash), arg0, arg1, arg2, arg3, arg4, arg5)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Slash", reflect.TypeOf((*MockStakingKeeper)(nil).Slash), arg0, arg1, arg2, arg3, arg4)
+}
+
+// SlashWithInfractionReason mocks base method.
+func (m *MockStakingKeeper) SlashWithInfractionReason(arg0 types0.Context, arg1 types0.ConsAddress, arg2, arg3 int64, arg4 types0.Dec, arg5 types5.Infraction) math.Int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SlashWithInfractionReason", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret0, _ := ret[0].(math.Int)
+	return ret0
+}
+
+// SlashWithInfractionReason indicates an expected call of Slash.
+func (mr *MockStakingKeeperMockRecorder) SlashWithInfractionReason(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SlashWithInfractionReason", reflect.TypeOf((*MockStakingKeeper)(nil).Slash), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
 // UnbondingCanComplete mocks base method.

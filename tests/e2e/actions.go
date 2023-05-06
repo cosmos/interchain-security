@@ -1030,7 +1030,7 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 	// Bring validator down
 	tr.setValidatorDowntime(action.chain, action.validator, true, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
-	tr.waitBlocks(action.chain, 12, 2*time.Minute)
+	tr.waitBlocks(action.chain, 24, 3*time.Minute)
 	// Bring validator back up
 	tr.setValidatorDowntime(action.chain, action.validator, false, verbose)
 }
@@ -1074,7 +1074,7 @@ type unjailValidatorAction struct {
 // Sends an unjail transaction to the provider chain
 func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 	// wait a block to be sure downtime_jail_duration has elapsed
-	tr.waitBlocks(action.provider, 1, time.Minute)
+	tr.waitBlocks(action.provider, 40, time.Minute*3)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
@@ -1102,7 +1102,7 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 
 	// wait for 1 blocks to make sure that tx got included
 	// in a block and packets committed before proceeding
-	tr.waitBlocks(action.provider, 1, time.Minute)
+	tr.waitBlocks(action.provider, 2, time.Minute)
 }
 
 type registerRepresentativeAction struct {

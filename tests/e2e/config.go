@@ -199,9 +199,9 @@ func DefaultTestRun() TestRun {
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
 					".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
@@ -214,7 +214,7 @@ func DefaultTestRun() TestRun {
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},

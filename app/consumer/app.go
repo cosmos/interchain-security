@@ -10,7 +10,6 @@ import (
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
-	simappparams "cosmossdk.io/simapp/params"
 
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -24,6 +23,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
@@ -139,6 +139,7 @@ var (
 )
 
 var (
+	_ runtime.AppI            = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
 	_ ibctesting.TestingApp   = (*App)(nil)
 )
@@ -151,6 +152,7 @@ type App struct { // nolint: golint
 	legacyAmino       *codec.LegacyAmino
 	appCodec          codec.Codec
 	interfaceRegistry types.InterfaceRegistry
+	txConfig          client.TxConfig
 
 	// keys to access the substores
 	keys    map[string]*storetypes.KVStoreKey
@@ -238,6 +240,7 @@ func New(
 		keys:              keys,
 		tkeys:             tkeys,
 		memKeys:           memKeys,
+		txConfig:          encodingConfig.TxConfig,
 	}
 
 	app.ParamsKeeper = initParamsKeeper(
@@ -333,16 +336,27 @@ func New(
 		app.BaseApp,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+
+	// pre-initialize ConsumerKeeper to satsfy ibckeeper.NewKeeper
+	// which would panic on nil or zero keeper
+	// ConsumerKeeper implements StakingKeeper but all function calls result in no-ops so this is safe
+	// communication over IBC is not affected by these changes
+	app.ConsumerKeeper = ibcconsumerkeeper.NewNonZeroKeeper(
+		appCodec,
+		keys[ibcconsumertypes.StoreKey],
+		app.GetSubspace(ibcconsumertypes.ModuleName),
+	)
+
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		appCodec,
 		keys[ibchost.StoreKey],
 		app.GetSubspace(ibchost.ModuleName),
-		&app.ConsumerKeeper,
+		app.ConsumerKeeper,
 		app.UpgradeKeeper,
 		scopedIBCKeeper,
 	)
 
-	// Create CCV consumer and modules
+	// initialize the actual consumer keeper
 	app.ConsumerKeeper = ibcconsumerkeeper.NewKeeper(
 		appCodec,
 		keys[ibcconsumertypes.StoreKey],
@@ -725,7 +739,7 @@ func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 
 // GetTxConfig implements the TestingApp interface.
 func (app *App) GetTxConfig() client.TxConfig {
-	return MakeTestEncodingConfig().TxConfig
+	return app.txConfig
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided
@@ -800,6 +814,24 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 // should be used only in tests or when creating a new app instance (NewApp*()).
 // App user shouldn't create new codecs - use the app.AppCodec instead.
 // [DEPRECATED]
+// func MakeTestEncodingConfig() appparams.EncodingConfig {
+// 	encodingConfig := appparams.MakeTestEncodingConfig()
+// 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
+// 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+// 	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
+// 	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+// 	return encodingConfig
+// }
+
+// func makeEncodingConfig() simappparams.EncodingConfig {
+// 	encodingConfig := simappparams.MakeTestEncodingConfig()
+// 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
+// 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+// 	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
+// 	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+// 	return encodingConfig
+// }
+
 func MakeTestEncodingConfig() appparams.EncodingConfig {
 	encodingConfig := appparams.MakeTestEncodingConfig()
 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
@@ -809,8 +841,8 @@ func MakeTestEncodingConfig() appparams.EncodingConfig {
 	return encodingConfig
 }
 
-func makeEncodingConfig() simappparams.EncodingConfig {
-	encodingConfig := simappparams.MakeTestEncodingConfig()
+func makeEncodingConfig() appparams.EncodingConfig {
+	encodingConfig := appparams.MakeTestEncodingConfig()
 	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
 	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
