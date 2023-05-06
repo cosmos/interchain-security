@@ -124,7 +124,7 @@ do
     
     # give this validator some money
     ALLOCATION=$(echo "$VALIDATORS" | jq -r ".[$i].allocation")
-    $BIN add-genesis-account validator$VAL_ID $ALLOCATION \
+    $BIN genesis add-genesis-account validator$VAL_ID $ALLOCATION \
         --home /$CHAIN_ID/validator$VAL_ID \
         --keyring-backend test
 
