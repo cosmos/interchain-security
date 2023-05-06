@@ -151,7 +151,7 @@ func (s *CoreSuite) delegatorBalance() int64 {
 }
 
 // delegate delegates amt tokens to validator val
-func (s *CoreSuite) delegate(val int64, amt int64) {
+func (s *CoreSuite) delegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
@@ -164,7 +164,7 @@ func (s *CoreSuite) delegate(val int64, amt int64) {
 }
 
 // undelegate undelegates amt tokens from validator val
-func (s *CoreSuite) undelegate(val int64, amt int64) {
+func (s *CoreSuite) undelegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
