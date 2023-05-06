@@ -123,7 +123,7 @@ require (
 	github.com/linxGnu/grocksdb v1.7.16 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/manifoldco/promptui v0.9.0 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mimoo/StrobeGo v0.0.0-20210601165009-122bf33a46e0 // indirect
 	github.com/minio/highwayhash v1.0.2 // indirect
@@ -173,10 +173,17 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
+require (
+	cosmossdk.io/log v1.1.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/rs/zerolog v1.29.1 // indirect
+)
+
 // THESE CHANGES PROVED TO BE NECESSARY, AS EVIDENCED BY: https://github.com/cosmos/cosmos-sdk/pull/16043
 // NOTIONAL ASKED INFORMAL SYSTEMS ABOUT THIS SINCE MARCH 23, 2023, BUT NO RESPONSE WAS GIVEN
 // github.com/cosmos/cosmos-sdk => ../cosmos-sdk
-// github.com/cosmos/cosmos-sdk => github.com/notional-labs/cosmos-sdk v0.47.2-0.20230424022356-49c2e39f3fe6
+replace github.com/cosmos/cosmos-sdk => github.com/notional-labs/cosmos-sdk v0.47.2-0.20230506162857-37b06634eb97
+
 // github.com/cosmos/ibc-go/v7 => github.com/notional-labs/ibc-go/v7 v7.0.0-rc0.0.20230417042817-8072b1e9aabc
 
 // following versions might cause unexpected behavior
