@@ -476,8 +476,10 @@ func (b *Builder) setProviderParams() {
 	slash := b.providerSlashingKeeper().GetParams(b.providerCtx())
 	slash.SlashFractionDoubleSign = b.initState.SlashDoublesign
 	slash.SlashFractionDowntime = b.initState.SlashDowntime
-	b.providerSlashingKeeper().SetParams(b.providerCtx(), slash)
-
+	err := b.providerSlashingKeeper().SetParams(b.providerCtx(), slash)
+	if err != nil {
+		panic(err)
+	}
 	// Set the throttle factors
 	throttle := b.providerKeeper().GetParams(b.providerCtx())
 	throttle.SlashMeterReplenishFraction = "1.0"
