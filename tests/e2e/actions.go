@@ -181,13 +181,10 @@ func (tr TestRun) submitTextProposal(
 	// TEXT PROPOSAL
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-
 		"tx", "gov", "submit-legacy-proposal",
 		`--title`, action.title,
 		`--description`, action.description,
-		`--type`, action.propType,
 		`--deposit`, fmt.Sprint(action.deposit)+`stake`,
-
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
@@ -257,7 +254,6 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 		"tx", "gov", "submit-legacy-proposal", "consumer-addition", "/temp-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--type`, action.propType,
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--gas`, `900000`,
