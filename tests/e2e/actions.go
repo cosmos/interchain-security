@@ -569,7 +569,7 @@ websocket_addr = "%s"
 
 [chains.gas_price]
 	denom = "stake"
-	price = 0.00
+	price = 0.0001
 
 [chains.trust_threshold]
 	denominator = "3"
@@ -1192,9 +1192,10 @@ type assignConsumerPubKeyAction struct {
 
 func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbose bool) {
 	valCfg := tr.validatorConfigs[action.validator]
+	time.Sleep(10 * time.Second)
 
 	assignKey := fmt.Sprintf(
-		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 900000 --keyring-backend test -y -o json`,
+		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas auto --keyring-backend test -y -o json`,
 		tr.chainConfigs[chainID("provi")].binaryName,
 		string(tr.chainConfigs[action.chain].chainId),
 		action.consumerPubkey,
