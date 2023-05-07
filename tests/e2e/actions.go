@@ -46,7 +46,7 @@ func (tr TestRun) sendTokens(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `async`,
 		`-y`,
 	)
 	if verbose {
@@ -190,7 +190,7 @@ func (tr TestRun) submitTextProposal(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `async`,
 		`-y`,
 	).CombinedOutput()
 	if err != nil {
@@ -259,7 +259,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		`--gas`, `900000`,
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `async`,
 		`-y`,
 	).CombinedOutput()
 
@@ -318,7 +318,7 @@ func (tr TestRun) submitConsumerRemovalProposal(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `async`,
 		`-y`,
 	).CombinedOutput()
 
@@ -390,7 +390,7 @@ func (tr TestRun) submitParamChangeProposal(
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `async`,
 		`-y`,
 	).CombinedOutput()
 
@@ -459,7 +459,7 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 		`--node`, tr.getValidatorNode(providerChain.chainId, action.from),
 		`--gas`, "9000000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `async`,
 		`-y`,
 	).CombinedOutput()
 
@@ -497,7 +497,7 @@ func (tr TestRun) voteGovProposal(
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
 				`--gas`, "900000",
-				`-b`, `block`,
+				`-b`, `async`,
 				`-y`,
 			).CombinedOutput()
 			if err != nil {
@@ -912,7 +912,7 @@ func (tr TestRun) delegateTokens(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `async`,
 		`-y`,
 	)
 	if verbose {
@@ -954,7 +954,7 @@ func (tr TestRun) unbondTokens(
 		`--node`, tr.getValidatorNode(action.chain, action.sender),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `async`,
 		`-y`,
 	)
 	if verbose {
@@ -1004,7 +1004,7 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 		// Need to manually set gas limit past default (200000), since redelegate has a lot of operations
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `async`,
 		`-y`,
 	)
 
@@ -1085,7 +1085,7 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		`--node`, tr.getValidatorNode(action.provider, action.validator),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `async`,
 		`-y`,
 	)
 	if verbose {
@@ -1145,7 +1145,7 @@ func (tr TestRun) registerRepresentative(
 				`--home`, tr.getValidatorHome(action.chain, val),
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
-				`-b`, `block`,
+				`-b`, `async`,
 				`-y`,
 			).CombinedOutput()
 			if err != nil {
