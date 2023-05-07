@@ -178,6 +178,7 @@ func (tr TestRun) submitTextProposal(
 	action submitTextProposalAction,
 	verbose bool,
 ) {
+	// TEXT PROPOSAL
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
@@ -218,6 +219,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	prop := client.ConsumerAdditionProposalJSON{
 		Title:                             "Propose the addition of a new chain",
 		Summary:                           "Gonna be a great chain",
+		Type:                              "consumer-addition",
 		ChainId:                           string(tr.chainConfigs[action.consumerChain].chainId),
 		InitialHeight:                     action.initialHeight,
 		GenesisHash:                       []byte("gen_hash"),

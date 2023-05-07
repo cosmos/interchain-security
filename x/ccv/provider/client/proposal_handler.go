@@ -230,6 +230,7 @@ Where proposal.json contains:
 type ConsumerAdditionProposalJSON struct {
 	Title         string             `json:"title"`
 	Summary       string             `json:"summary"`
+	Type          string             `json:"type"`
 	ChainId       string             `json:"chain_id"`
 	InitialHeight clienttypes.Height `json:"initial_height"`
 	GenesisHash   []byte             `json:"genesis_hash"`
