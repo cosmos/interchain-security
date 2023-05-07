@@ -254,7 +254,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	// CONSUMER ADDITION PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-		"tx", "gov", "submit-proposal", "/temp-proposal.json",
+		"tx", "gov", "submit-legacy-proposal", "consumer-additon", "/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
@@ -314,7 +314,7 @@ func (tr TestRun) submitConsumerRemovalProposal(
 	// CONSUMER REMOVAL PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-		"tx", "gov", "submit-proposal", "/temp-proposal.json",
+		"tx", "gov", "submit-legacy-proposal", "consumer-removal", "/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
@@ -385,7 +385,7 @@ func (tr TestRun) submitParamChangeProposal(
 	// PARAM CHANGE PROPOSAL // we should be able to make these all one command which will be cool
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-		"tx", "gov", "submit-proposal", "param-change", "/params-proposal.json",
+		"tx", "gov", "submit-legacy-proposal", "param-change", "/params-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
@@ -454,7 +454,7 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	// EQUIVOCATION PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, providerChain.binaryName,
 
-		"tx", "gov", "submit-proposal", "/equivocation-proposal.json",
+		"tx", "gov", "submit-legacy-proposal", "equivocation-proposal", "/equivocation-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(providerChain.chainId),
