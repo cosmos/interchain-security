@@ -79,7 +79,7 @@ Where proposal.json contains:
 			CheckPropUnbondingPeriod(clientCtx, proposal.UnbondingPeriod)
 
 			content := types.NewConsumerAdditionProposal(
-				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
+				proposal.Title, proposal.Summary, proposal.ChainId, proposal.InitialHeight,
 				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime,
 				proposal.ConsumerRedistributionFraction, proposal.BlocksPerDistributionTransmission, proposal.HistoricalEntries,
 				proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod)
@@ -229,7 +229,7 @@ Where proposal.json contains:
 
 type ConsumerAdditionProposalJSON struct {
 	Title         string             `json:"title"`
-	Description   string             `json:"description"`
+	Summary       string             `json:"description"`
 	ChainId       string             `json:"chain_id"`
 	InitialHeight clienttypes.Height `json:"initial_height"`
 	GenesisHash   []byte             `json:"genesis_hash"`

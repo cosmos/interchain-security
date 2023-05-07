@@ -217,7 +217,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	params := consumertypes.DefaultParams()
 	prop := client.ConsumerAdditionProposalJSON{
 		Title:                             "Propose the addition of a new chain",
-		Description:                       "Gonna be a great chain",
+		Summary:                           "Gonna be a great chain",
 		ChainId:                           string(tr.chainConfigs[action.consumerChain].chainId),
 		InitialHeight:                     action.initialHeight,
 		GenesisHash:                       []byte("gen_hash"),
