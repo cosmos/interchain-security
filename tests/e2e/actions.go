@@ -1217,6 +1217,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		tr.getValidatorHome(chainID("provi"), action.validator),
 		tr.getValidatorNode(chainID("provi"), action.validator),
 	)
+	time.Sleep(10 * time.Second)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
 		tr.containerConfig.instanceName,
