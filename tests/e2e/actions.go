@@ -193,6 +193,7 @@ func (tr TestRun) submitTextProposal(
 		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -262,7 +263,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -321,6 +322,7 @@ func (tr TestRun) submitConsumerRemovalProposal(
 		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -392,7 +394,7 @@ func (tr TestRun) submitParamChangeProposal(
 		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -461,7 +463,7 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -792,6 +794,7 @@ func (tr TestRun) transferChannelComplete(
 		"--dst-channel", "channel-"+fmt.Sprint(action.channelA),
 		"--src-channel", "channel-"+fmt.Sprint(action.channelB),
 	)
+
 	executeCommand(chanOpenAckCmd, "transferChanOpenAck")
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenConfirmCmd arguments.
@@ -914,6 +917,7 @@ func (tr TestRun) delegateTokens(
 		`-b`, `sync`,
 		`-y`,
 	)
+	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("delegate cmd:", cmd.String())
 	}
@@ -956,6 +960,7 @@ func (tr TestRun) unbondTokens(
 		`-b`, `sync`,
 		`-y`,
 	)
+	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("unbond cmd:", cmd.String())
 	}
@@ -1006,7 +1011,7 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 		`-b`, `sync`,
 		`-y`,
 	)
-
+	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("redelegate cmd:", cmd.String())
 	}
@@ -1087,6 +1092,7 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		`-b`, `sync`,
 		`-y`,
 	)
+	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("unjail cmd:", cmd.String())
 	}
@@ -1150,6 +1156,7 @@ func (tr TestRun) registerRepresentative(
 			if err != nil {
 				log.Fatal(err, "\n", string(bz))
 			}
+			time.Sleep(10 * time.Second)
 		}(val, stake)
 	}
 
