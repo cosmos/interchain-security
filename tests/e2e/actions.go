@@ -341,7 +341,7 @@ type submitParamChangeProposalAction struct {
 
 type paramChangeProposalJSON struct {
 	Title   string            `json:"title"`
-	Summary string            `json:"description"`
+	Summary string            `json:"summary"`
 	Changes []paramChangeJSON `json:"changes"`
 	Deposit string            `json:"deposit"`
 }
