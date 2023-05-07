@@ -251,10 +251,10 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// CONSUMER ADDITION PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-		"tx", "gov", "submit-legacy-proposal", "consumer-addition",
-		"/temp-proposal.json",
+		"tx", "gov", "submit-proposal", "/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
@@ -311,10 +311,10 @@ func (tr TestRun) submitConsumerRemovalProposal(
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// CONSUMER REMOVAL PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-		"tx", "gov", "submit-legacy-proposal", "consumer-removal",
-		"/temp-proposal.json",
+		"tx", "gov", "submit-proposal", "/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
@@ -340,10 +340,10 @@ type submitParamChangeProposalAction struct {
 }
 
 type paramChangeProposalJSON struct {
-	Title       string            `json:"title"`
-	Description string            `json:"description"`
-	Changes     []paramChangeJSON `json:"changes"`
-	Deposit     string            `json:"deposit"`
+	Title   string            `json:"title"`
+	Summary string            `json:"description"`
+	Changes []paramChangeJSON `json:"changes"`
+	Deposit string            `json:"deposit"`
 }
 
 type paramChangeJSON struct {
@@ -357,10 +357,10 @@ func (tr TestRun) submitParamChangeProposal(
 	verbose bool,
 ) {
 	prop := paramChangeProposalJSON{
-		Title:       "Param change",
-		Description: "Changing module params",
-		Changes:     []paramChangeJSON{{Subspace: action.subspace, Key: action.key, Value: action.value}},
-		Deposit:     fmt.Sprint(action.deposit) + `stake`,
+		Title:   "Param change",
+		Summary: "Changing module params",
+		Changes: []paramChangeJSON{{Subspace: action.subspace, Key: action.key, Value: action.value}},
+		Deposit: fmt.Sprint(action.deposit) + `stake`,
 	}
 
 	bz, err := json.Marshal(prop)
@@ -382,10 +382,10 @@ func (tr TestRun) submitParamChangeProposal(
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// PARAM CHANGE PROPOSAL // we should be able to make these all one command which will be cool
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-		"tx", "gov", "submit-legacy-proposal", "param-change",
-		"/params-proposal.json",
+		"tx", "gov", "submit-proposal", "param-change", "/params-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
@@ -451,10 +451,10 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// EQUIVOCATION PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, providerChain.binaryName,
 
-		"tx", "gov", "submit-legacy-proposal", "equivocation",
-		"/equivocation-proposal.json",
+		"tx", "gov", "submit-proposal", "/equivocation-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(providerChain.chainId),
