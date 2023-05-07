@@ -144,7 +144,7 @@ type TestMintKeeper interface {
 type TestGovKeeper interface {
 	GetParams(ctx sdk.Context) govv1.Params
 	SetParams(ctx sdk.Context, params govv1.Params) error
-	SubmitProposal(ctx sdk.Context, messages []sdk.Msg, metadata, title, summary string, proposer sdk.AccAddress) (govv1.Proposal, error)
+	SubmitProposal(ctx sdk.Context, messages []sdk.Msg, metadata, title, description string, proposer sdk.AccAddress) (govv1.Proposal, error)
 	AddDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress, depositAmount sdk.Coins) (bool, error)
 	AddVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress, options govv1.WeightedVoteOptions, metadata string) error
 }
