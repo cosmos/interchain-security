@@ -181,7 +181,7 @@ func (tr TestRun) submitTextProposal(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-		"tx", "gov", "submit-proposal",
+		"tx", "gov", "submit-legacy-proposal",
 		`--title`, action.title,
 		`--description`, action.description,
 		`--type`, action.propType,
@@ -253,7 +253,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-		"tx", "gov", "submit-proposal", "consumer-addition",
+		"tx", "gov", "submit-legacy-proposal", "consumer-addition",
 		"/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
@@ -313,7 +313,7 @@ func (tr TestRun) submitConsumerRemovalProposal(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-		"tx", "gov", "submit-proposal", "consumer-removal",
+		"tx", "gov", "submit-legacy-proposal", "consumer-removal",
 		"/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
@@ -384,7 +384,7 @@ func (tr TestRun) submitParamChangeProposal(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-		"tx", "gov", "submit-proposal", "param-change",
+		"tx", "gov", "submit-legacy-proposal", "param-change",
 		"/params-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
@@ -453,7 +453,7 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, providerChain.binaryName,
 
-		"tx", "gov", "submit-proposal", "equivocation",
+		"tx", "gov", "submit-legacy-proposal", "equivocation",
 		"/equivocation-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
