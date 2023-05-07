@@ -169,7 +169,6 @@ type submitTextProposalAction struct {
 	chain       chainID
 	from        validatorID
 	deposit     uint
-	propType    string
 	title       string
 	description string
 }
@@ -202,7 +201,6 @@ func (tr TestRun) submitTextProposal(
 type submitConsumerAdditionProposalAction struct {
 	chain         chainID
 	from          validatorID
-	propType      string
 	deposit       uint
 	consumerChain chainID
 	spawnTime     uint
