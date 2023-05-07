@@ -255,7 +255,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 
 		"tx", "gov", "submit-legacy-proposal", "consumer-addition",
 		"/temp-proposal.json",
-
+		`--description`, "Gonna be a great chain",
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
