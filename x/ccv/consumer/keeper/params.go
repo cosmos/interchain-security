@@ -21,6 +21,8 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetConsumerRedistributionFrac(ctx),
 		k.GetHistoricalEntries(ctx),
 		k.GetUnbondingPeriod(ctx),
+		k.GetRewardDenoms(ctx),
+		k.GetProviderRewardDenoms(ctx),
 	)
 }
 
@@ -105,4 +107,16 @@ func (k Keeper) GetUnbondingPeriod(ctx sdk.Context) time.Duration {
 	var period time.Duration
 	k.paramStore.Get(ctx, types.KeyConsumerUnbondingPeriod, &period)
 	return period
+}
+
+func (k Keeper) GetRewardDenoms(ctx sdk.Context) []string {
+	var denoms []string
+	k.paramStore.Get(ctx, types.KeyRewardDenoms, &denoms)
+	return denoms
+}
+
+func (k Keeper) GetProviderRewardDenoms(ctx sdk.Context) []string {
+	var denoms []string
+	k.paramStore.Get(ctx, types.KeyProviderRewardDenoms, &denoms)
+	return denoms
 }

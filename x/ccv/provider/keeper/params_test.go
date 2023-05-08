@@ -9,6 +9,7 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,7 +18,9 @@ func TestParams(t *testing.T) {
 
 	// Construct an in-mem keeper with registered key table
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	gomock.InAnyOrder(mocks.MockStakingKeeper.EXPECT().BondDenom(
+		ctx).Return("stake").AnyTimes())
 	defer ctrl.Finish()
 
 	defaultParams := providertypes.DefaultParams()

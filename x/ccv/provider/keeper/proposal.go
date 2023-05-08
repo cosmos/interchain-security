@@ -311,6 +311,9 @@ func (k Keeper) MakeConsumerGenesis(
 		prop.ConsumerRedistributionFraction,
 		prop.HistoricalEntries,
 		prop.UnbondingPeriod,
+		// TODO: this is built on top of v1.1.x, but v1.2.x has another param here (the soft opt-out threshold)
+		[]string{},
+		[]string{},
 	)
 
 	gen = *consumertypes.NewInitialGenesisState(

@@ -50,6 +50,12 @@ func TestValidateParams(t *testing.T) {
 		{"negative max pending slash packets", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
 			"0.33", time.Hour, time.Hour, 24*time.Hour, time.Hour, "0.1", -100), false},
+		{"invalid consumer reward denom registration fee denom", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
+			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
+			"0.33", time.Hour, time.Hour, 24*time.Hour, time.Hour, "0.1", -100), false},
+		{"invalid consumer reward denom registration fee amount", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
+			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
+			"0.33", time.Hour, time.Hour, 24*time.Hour, time.Hour, "0.1", -100), false},
 	}
 
 	for _, tc := range testCases {

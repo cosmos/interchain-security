@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
@@ -42,13 +43,14 @@ const (
 
 // Reflection based keys for params subspace
 var (
-	KeyTemplateClient              = []byte("TemplateClient")
-	KeyTrustingPeriodFraction      = []byte("TrustingPeriodFraction")
-	KeyInitTimeoutPeriod           = []byte("InitTimeoutPeriod")
-	KeyVscTimeoutPeriod            = []byte("VscTimeoutPeriod")
-	KeySlashMeterReplenishPeriod   = []byte("SlashMeterReplenishPeriod")
-	KeySlashMeterReplenishFraction = []byte("SlashMeterReplenishFraction")
-	KeyMaxThrottledPackets         = []byte("MaxThrottledPackets")
+	KeyTemplateClient                     = []byte("TemplateClient")
+	KeyTrustingPeriodFraction             = []byte("TrustingPeriodFraction")
+	KeyInitTimeoutPeriod                  = []byte("InitTimeoutPeriod")
+	KeyVscTimeoutPeriod                   = []byte("VscTimeoutPeriod")
+	KeySlashMeterReplenishPeriod          = []byte("SlashMeterReplenishPeriod")
+	KeySlashMeterReplenishFraction        = []byte("SlashMeterReplenishFraction")
+	KeyMaxThrottledPackets                = []byte("MaxThrottledPackets")
+	KeyConsumerRewardDenomRegistrationFee = []byte("ConsumerRewardDenomRegistrationFee")
 )
 
 // ParamKeyTable returns a key table with the necessary registered provider params
@@ -176,5 +178,18 @@ func validateTemplateClient(i interface{}) error {
 	if err := copiedClient.Validate(); err != nil {
 		return err
 	}
+	return nil
+}
+
+func validateCoin(i interface{}) error {
+	v, ok := i.(sdk.Coin)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	if !v.IsValid() {
+		return fmt.Errorf("invalid consumer reward denom registration fee: %s", v)
+	}
+
 	return nil
 }

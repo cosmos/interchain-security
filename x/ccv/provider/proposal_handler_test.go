@@ -95,16 +95,20 @@ func TestProviderProposalHandler(t *testing.T) {
 		// Mock expectations depending on expected outcome
 		switch {
 		case tc.expValidConsumerAddition:
-			gomock.InOrder(testkeeper.GetMocksForCreateConsumerClient(
+			gomock.InAnyOrder(append(testkeeper.GetMocksForCreateConsumerClient(
 				ctx, &mocks, "chainID", clienttypes.NewHeight(2, 3),
-			)...)
+			), mocks.MockStakingKeeper.EXPECT().BondDenom(
+				gomock.Any()).Return("stake").AnyTimes()))
 
 		case tc.expValidConsumerRemoval:
 			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
 
 		case tc.expValidEquivocation:
 			providerKeeper.SetSlashLog(ctx, equivocation.GetConsensusAddress())
-			mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocation)
+			gomock.InAnyOrder([]*gomock.Call{
+				mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocation),
+				mocks.MockStakingKeeper.EXPECT().BondDenom(gomock.Any()).Return("stake").AnyTimes(),
+			})
 		}
 
 		// Execution

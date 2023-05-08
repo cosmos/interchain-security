@@ -18,4 +18,6 @@ var (
 	ErrConsumerKeyInUse                = sdkerrors.Register(ModuleName, 10, "consumer key is already in use by a validator")
 	ErrInvalidConsumerParams           = sdkerrors.Register(ModuleName, 11, "invalid consumer params")
 	ErrInvalidProviderAddress          = sdkerrors.Register(ModuleName, 12, "invalid provider address")
+	ErrInvalidConsumerRewardDenom      = sdkerrors.Register(ModuleName, 14, "invalid consumer reward denom")
+	ErrInvalidDepositorAddress         = sdkerrors.Register(ModuleName, 15, "invalid depositor address")
 )

@@ -1,8 +1,10 @@
 package types
 
 import (
+	fmt "fmt"
 	time "time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
@@ -47,6 +49,8 @@ var (
 	KeyConsumerRedistributionFrac        = []byte("ConsumerRedistributionFraction")
 	KeyHistoricalEntries                 = []byte("HistoricalEntries")
 	KeyConsumerUnbondingPeriod           = []byte("UnbondingPeriod")
+	KeyRewardDenoms                      = []byte("RewardDenoms")
+	KeyProviderRewardDenoms              = []byte("ProviderRewardDenoms")
 )
 
 // ParamKeyTable type declaration for parameters
@@ -59,7 +63,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
 	ccvTimeoutPeriod time.Duration, transferTimeoutPeriod time.Duration,
 	consumerRedistributionFraction string, historicalEntries int64,
-	consumerUnbondingPeriod time.Duration) Params {
+	consumerUnbondingPeriod time.Duration, rewardDenoms []string, providerRewardDenoms []string) Params {
 	return Params{
 		Enabled:                           enabled,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
@@ -70,11 +74,15 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		ConsumerRedistributionFraction:    consumerRedistributionFraction,
 		HistoricalEntries:                 historicalEntries,
 		UnbondingPeriod:                   consumerUnbondingPeriod,
+		RewardDenoms:                      rewardDenoms,
+		ProviderRewardDenoms:              providerRewardDenoms,
 	}
 }
 
 // DefaultParams is the default params for the consumer module
 func DefaultParams() Params {
+	var rewardDenoms []string
+	var provideRewardDenoms []string
 	return NewParams(
 		false,
 		DefaultBlocksPerDistributionTransmission,
@@ -85,6 +93,8 @@ func DefaultParams() Params {
 		DefaultConsumerRedistributeFrac,
 		DefaultHistoricalEntries,
 		DefaultConsumerUnbondingPeriod,
+		rewardDenoms,
+		provideRewardDenoms,
 	)
 }
 
@@ -117,6 +127,12 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidateDuration(p.UnbondingPeriod); err != nil {
 		return err
 	}
+	if err := validateDenoms(p.RewardDenoms); err != nil {
+		return err
+	}
+	if err := validateDenoms(p.ProviderRewardDenoms); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -140,6 +156,10 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.HistoricalEntries, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyConsumerUnbondingPeriod,
 			p.UnbondingPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(KeyRewardDenoms,
+			p.RewardDenoms, validateDenoms),
+		paramtypes.NewParamSetPair(KeyProviderRewardDenoms,
+			p.ProviderRewardDenoms, validateDenoms),
 	}
 }
 
@@ -159,4 +179,25 @@ func validateProviderFeePoolAddrStr(i interface{}) error {
 	}
 	// Otherwise validate as usual for a bech32 address
 	return ccvtypes.ValidateBech32(i)
+}
+
+func validateDenoms(i interface{}) error {
+	v, ok := i.([]string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	// iterate over the denoms, turning them into coins and validating them
+	for _, denom := range v {
+		coin := sdk.Coin{
+			Denom:  denom,
+			Amount: sdk.NewInt(0),
+		}
+
+		if err := coin.Validate(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

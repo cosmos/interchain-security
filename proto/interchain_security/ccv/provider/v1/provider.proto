@@ -11,6 +11,7 @@ import "ibc/core/client/v1/client.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "tendermint/crypto/keys.proto";
 import "cosmos/evidence/v1beta1/evidence.proto";
+import "cosmos/base/v1beta1/coin.proto";
 
 // ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
 // If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time

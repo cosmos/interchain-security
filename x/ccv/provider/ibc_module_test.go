@@ -135,7 +135,7 @@ func TestOnChanOpenTry(t *testing.T) {
 
 		// Expected mock calls
 		moduleAcct := authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{}}
-		moduleAcct.BaseAccount.Address = authtypes.NewModuleAddress(authtypes.FeeCollectorName).String()
+		moduleAcct.BaseAccount.Address = authtypes.NewModuleAddress(providertypes.ConsumerRewardsPool).String()
 
 		// Number of calls is not asserted, since not all code paths are hit for failures
 		gomock.InOrder(
@@ -147,7 +147,7 @@ func TestOnChanOpenTry(t *testing.T) {
 			mocks.MockClientKeeper.EXPECT().GetClientState(ctx, "clientIDToConsumer").Return(
 				&ibctmtypes.ClientState{ChainId: "consumerChainID"}, true,
 			).AnyTimes(),
-			mocks.MockAccountKeeper.EXPECT().GetModuleAccount(ctx, "").Return(&moduleAcct).AnyTimes(),
+			mocks.MockAccountKeeper.EXPECT().GetModuleAccount(ctx, providertypes.ConsumerRewardsPool).Return(&moduleAcct).AnyTimes(),
 		)
 
 		tc.mutateParams(&params, &providerKeeper)

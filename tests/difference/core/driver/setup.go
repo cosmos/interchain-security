@@ -520,6 +520,8 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 		consumertypes.DefaultConsumerRedistributeFrac,
 		consumertypes.DefaultHistoricalEntries,
 		b.initState.UnbondingC,
+		[]string{},
+		[]string{},
 	)
 	return consumertypes.NewInitialGenesisState(client, providerConsState, valUpdates, params)
 }

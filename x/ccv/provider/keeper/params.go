@@ -77,6 +77,13 @@ func (k Keeper) GetMaxThrottledPackets(ctx sdk.Context) int64 {
 	return p
 }
 
+func (k Keeper) GetConsumerRewardDenomRegistrationFee(ctx sdk.Context) sdk.Coin {
+	// This should be a param, but due to difficulties adding params in migrations during coordinated upgrades,
+	// we will hardcode the value for now. A future scheduled upgrade will change this to the above code and
+	// run migrations to add the param. This will allow us to change the fee by governance, but for now it is set at 10 Atoms.
+	return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.NewInt(10000000))
+}
+
 // GetParams returns the paramset for the provider module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(

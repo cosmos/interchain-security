@@ -17,6 +17,8 @@ func TestParams(t *testing.T) {
 	defer ctrl.Finish()
 	consumerKeeper.SetParams(ctx, types.DefaultParams())
 
+	var rewardDenoms []string
+	var provideRewardDenoms []string
 	expParams := types.NewParams(
 		false,
 		1000,
@@ -27,6 +29,8 @@ func TestParams(t *testing.T) {
 		consumertypes.DefaultConsumerRedistributeFrac,
 		consumertypes.DefaultHistoricalEntries,
 		consumertypes.DefaultConsumerUnbondingPeriod,
+		rewardDenoms,
+		provideRewardDenoms,
 	) // these are the default params, IBC suite independently sets enabled=true
 
 	params := consumerKeeper.GetParams(ctx)
@@ -34,7 +38,7 @@ func TestParams(t *testing.T) {
 
 	newParams := types.NewParams(false, 1000,
 		"channel-2", "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
-		7*24*time.Hour, 25*time.Hour, "0.5", 500, 24*21*time.Hour)
+		7*24*time.Hour, 25*time.Hour, "0.5", 500, 24*21*time.Hour, []string{"untrn"}, []string{"uatom"})
 	consumerKeeper.SetParams(ctx, newParams)
 	params = consumerKeeper.GetParams(ctx)
 	require.Equal(t, newParams, params)
