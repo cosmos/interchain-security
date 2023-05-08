@@ -24,6 +24,7 @@ import (
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ProviderApp interface {
 	ibctesting.TestingApp
+	GetSubspace(moduleName string) paramstypes.Subspace
 
 	//
 	// Keeper getters
@@ -38,6 +39,8 @@ type ProviderApp interface {
 	GetE2eSlashingKeeper() E2eSlashingKeeper
 	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
 	GetE2eDistributionKeeper() E2eDistributionKeeper
+	// Tests an account keeper interface with more capabilities than the expected_keepers interface
+	GetE2eAccountKeeper() E2eAccountKeeper
 }
 
 // The interface that any consumer app must implement to be compatible with e2e tests
@@ -104,6 +107,8 @@ type E2eBankKeeper interface {
 	ccvtypes.BankKeeper
 	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress,
 		recipientModule string, amt sdk.Coins) error
+	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string,
+		recipientAddr sdk.AccAddress, amt sdk.Coins) error
 }
 
 type E2eAccountKeeper interface {

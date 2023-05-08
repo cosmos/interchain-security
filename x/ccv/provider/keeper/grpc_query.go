@@ -236,3 +236,17 @@ func (k Keeper) getSlashPacketData(ctx sdk.Context, consumerChainID string, ibcS
 
 	return packet, true
 }
+
+func (k Keeper) QueryRegisteredConsumerRewardDenoms(goCtx context.Context, req *types.QueryRegisteredConsumerRewardDenomsRequest) (*types.QueryRegisteredConsumerRewardDenomsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	denoms := k.GetAllConsumerRewardDenoms(ctx)
+
+	return &types.QueryRegisteredConsumerRewardDenomsResponse{
+		Denoms: denoms,
+	}, nil
+}

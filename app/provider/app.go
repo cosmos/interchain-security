@@ -154,13 +154,14 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:     nil,
-		distrtypes.ModuleName:          nil,
-		minttypes.ModuleName:           {authtypes.Minter},
-		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:            {authtypes.Burner},
-		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
+		authtypes.FeeCollectorName:        nil,
+		distrtypes.ModuleName:             nil,
+		minttypes.ModuleName:              {authtypes.Minter},
+		stakingtypes.BondedPoolName:       {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:    {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:               {authtypes.Burner},
+		ibctransfertypes.ModuleName:       {authtypes.Minter, authtypes.Burner},
+		providertypes.ConsumerRewardsPool: nil,
 	}
 )
 
@@ -309,12 +310,14 @@ func New(
 		maccPerms,
 	)
 
-	// Remove the fee-pool from the group of blocked recipient addresses in bank
+	// Remove the ConsumerRewardsPool from the group of blocked recipient addresses in bank
 	// this is required for the provider chain to be able to receive tokens from
 	// the consumer chain
 	bankBlockedAddrs := app.ModuleAccountAddrs()
 	delete(bankBlockedAddrs, authtypes.NewModuleAddress(
-		authtypes.FeeCollectorName).String())
+		providertypes.ConsumerRewardsPool).String())
+
+	// bankBlockedAddrs := make(map[string]bool)
 
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec,
@@ -410,6 +413,8 @@ func New(
 		app.SlashingKeeper,
 		app.AccountKeeper,
 		app.EvidenceKeeper,
+		app.DistrKeeper,
+		app.BankKeeper,
 		authtypes.FeeCollectorName,
 	)
 
@@ -776,6 +781,11 @@ func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
 // GetE2eDistributionKeeper implements the ProviderApp interface.
 func (app *App) GetE2eDistributionKeeper() e2e.E2eDistributionKeeper {
 	return app.DistrKeeper
+}
+
+// GetTestAccountKeeper implements the ProviderApp interface.
+func (app *App) GetE2eAccountKeeper() e2e.E2eAccountKeeper {
+	return app.AccountKeeper
 }
 
 // TestingApp functions

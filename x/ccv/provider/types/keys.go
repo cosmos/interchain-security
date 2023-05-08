@@ -28,6 +28,9 @@ const (
 
 	// Default validator set update ID
 	DefaultValsetUpdateID = 1
+
+	// This address receives rewards from consumer chains
+	ConsumerRewardsPool = "consumer_rewards_pool"
 )
 
 // Iota generated keys/byte prefixes (as a byte), supports 256 possible values
@@ -127,6 +130,9 @@ const (
 	// SlashLogBytePrefix is the byte prefix that will store the mapping from provider address to boolean
 	// denoting whether the provider address has commited any double signign infractions
 	SlashLogBytePrefix
+
+	// ConsumerRewardDenomsBytePrefix is the byte prefix that will store a list of consumer reward denoms
+	ConsumerRewardDenomsBytePrefix
 )
 
 // PortKey returns the key to the port ID in the store
@@ -349,6 +355,11 @@ func MustParseGlobalSlashEntryKey(bz []byte) (
 	chainID := string(bz[17:])
 
 	return recvTime, chainID, ibcSeqNum
+}
+
+// ConsumerRewardDenomsKey returns the key under which consumer reward denoms are stored
+func ConsumerRewardDenomsKey(denom string) []byte {
+	return append([]byte{ConsumerRewardDenomsBytePrefix}, []byte(denom)...)
 }
 
 // ChainIdAndTsKey returns the key with the following format:

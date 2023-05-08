@@ -16,17 +16,18 @@ import (
 type State map[chainID]ChainState
 
 type ChainState struct {
-	ValBalances             *map[validatorID]uint
-	Proposals               *map[uint]Proposal
-	ValPowers               *map[validatorID]uint
-	RepresentativePowers    *map[validatorID]uint
-	Params                  *[]Param
-	Rewards                 *Rewards
-	ConsumerChains          *map[chainID]bool
-	AssignedKeys            *map[validatorID]string
-	ProviderKeys            *map[validatorID]string // validatorID: validator provider key
-	ConsumerChainQueueSizes *map[chainID]uint
-	GlobalSlashQueueSize    *uint
+	ValBalances                    *map[validatorID]uint
+	Proposals                      *map[uint]Proposal
+	ValPowers                      *map[validatorID]uint
+	RepresentativePowers           *map[validatorID]uint
+	Params                         *[]Param
+	Rewards                        *Rewards
+	ConsumerChains                 *map[chainID]bool
+	AssignedKeys                   *map[validatorID]string
+	ProviderKeys                   *map[validatorID]string // validatorID: validator provider key
+	ConsumerChainQueueSizes        *map[chainID]uint
+	GlobalSlashQueueSize           *uint
+	RegisteredConsumerRewardDenoms *[]string
 }
 
 type Proposal interface {
@@ -165,6 +166,11 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 			consumerChainQueueSizes[c] = tr.getConsumerChainPacketQueueSize(c)
 		}
 		chainState.ConsumerChainQueueSizes = &consumerChainQueueSizes
+	}
+
+	if modelState.RegisteredConsumerRewardDenoms != nil {
+		registeredConsumerRewardDenoms := tr.getRegisteredConsumerRewardDenoms(chain)
+		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
 	}
 
 	return chainState
@@ -645,6 +651,28 @@ func (tr TestRun) getConsumerChainPacketQueueSize(consumerChain chainID) uint {
 
 	size := gjson.Get(string(bz), "size").Uint()
 	return uint(size)
+}
+
+func (tr TestRun) getRegisteredConsumerRewardDenoms(chain chainID) []string {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+
+		"query", "provider", "registered-consumer-reward-denoms",
+		`--node`, tr.getQueryNode(chain),
+		`-o`, `json`,
+	)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	denoms := gjson.Get(string(bz), "denoms").Array()
+	rewardDenoms := make([]string, len(denoms))
+	for i, d := range denoms {
+		rewardDenoms[i] = d.String()
+	}
+
+	return rewardDenoms
 }
 
 func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {

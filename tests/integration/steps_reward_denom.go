@@ -1,6 +1,6 @@
 package main
 
-func stepsDemocracy(consumerName string) []Step {
+func stepsRewardDenomConsumer(consumerName string) []Step {
 	return []Step{
 		{
 			action: registerRepresentativeAction{
@@ -155,12 +155,12 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 			state: State{
 				chainID("provi"): ChainState{
-					//Check that tokens are minted and sent to provider chain and distributed to validators and their delegators on provider chain
+					//Check that tokens are not minted and sent to provider chain and distributed to validators and their delegators on provider chain
 					Rewards: &Rewards{
 						IsRewarded: map[validatorID]bool{
-							validatorID("alice"): true,
-							validatorID("bob"):   true,
-							validatorID("carol"): true,
+							validatorID("alice"): false,
+							validatorID("bob"):   false,
+							validatorID("carol"): false,
 						},
 						IsIncrementalReward: false,
 						IsNativeDenom:       false,

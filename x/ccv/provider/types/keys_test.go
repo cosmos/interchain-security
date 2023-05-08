@@ -66,6 +66,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{providertypes.ThrottledPacketDataSizeBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ThrottledPacketDataBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.GlobalSlashEntryBytePrefix}, i+1
+	keys[i], i = []byte{providertypes.ConsumerRewardDenomsBytePrefix}, i+1
 
 	return keys[:i]
 }

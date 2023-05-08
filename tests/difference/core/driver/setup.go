@@ -521,6 +521,8 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 		consumertypes.DefaultHistoricalEntries,
 		b.initState.UnbondingC,
 		"0", // disable soft opt-out
+		[]string{},
+		[]string{},
 	)
 	return consumertypes.NewInitialGenesisState(client, providerConsState, valUpdates, params)
 }
