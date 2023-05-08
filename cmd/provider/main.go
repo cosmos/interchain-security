@@ -6,7 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	app "github.com/cosmos/interchain-security/app/provider"
-	"github.com/cosmos/interchain-security/cmd/interchain-security-pd/cmd"
+	"github.com/cosmos/interchain-security/cmd/provider/cmd"
 )
 
 func main() {

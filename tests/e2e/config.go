@@ -150,7 +150,7 @@ func SlashThrottleTestRun() TestRun {
 		chainConfigs: map[chainID]ChainConfig{
 			chainID("provi"): {
 				chainId:        chainID("provi"),
-				binaryName:     "interchain-security-pd",
+				binaryName:     "iprovider",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
@@ -193,7 +193,7 @@ func DefaultTestRun() TestRun {
 		chainConfigs: map[chainID]ChainConfig{
 			chainID("provi"): {
 				chainId:        chainID("provi"),
-				binaryName:     "interchain-security-pd",
+				binaryName:     "iprovider",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
@@ -236,7 +236,7 @@ func DemocracyTestRun() TestRun {
 		chainConfigs: map[chainID]ChainConfig{
 			chainID("provi"): {
 				chainId:        chainID("provi"),
-				binaryName:     "interchain-security-pd",
+				binaryName:     "iprovider",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
@@ -279,7 +279,7 @@ func MultiConsumerTestRun() TestRun {
 		chainConfigs: map[chainID]ChainConfig{
 			chainID("provi"): {
 				chainId:        chainID("provi"),
-				binaryName:     "interchain-security-pd",
+				binaryName:     "iprovider",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
