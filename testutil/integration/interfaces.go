@@ -24,6 +24,7 @@ import (
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ProviderApp interface {
 	ibctesting.TestingApp
+	GetSubspace(moduleName string) paramstypes.Subspace
 
 	//
 	// Keeper getters
@@ -31,13 +32,15 @@ type ProviderApp interface {
 
 	GetProviderKeeper() providerkeeper.Keeper
 	// Returns a staking keeper interface with more capabilities than the expected_keepers interface
-	GetTestStakingKeeper() TestStakingKeeper
-	// Testurns a bank keeper interface with more capabilities than the expected_keepers interface
-	GetTestBankKeeper() TestBankKeeper
-	// Testurns a slashing keeper interface with more capabilities than the expected_keepers interface
-	GetTestSlashingKeeper() TestSlashingKeeper
-	// Integrurns a distribution keeper interface with more capabilities than the expected_keepers interface
-	GetTestDistributionKeeper() TestDistributionKeeper
+	GetE2eStakingKeeper() E2eStakingKeeper
+	// Returns a bank keeper interface with more capabilities than the expected_keepers interface
+	GetE2eBankKeeper() E2eBankKeeper
+	// Returns a slashing keeper interface with more capabilities than the expected_keepers interface
+	GetE2eSlashingKeeper() E2eSlashingKeeper
+	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
+	GetE2eDistributionKeeper() E2eDistributionKeeper
+	// Tests an account keeper interface with more capabilities than the expected_keepers interface
+	GetE2eAccountKeeper() E2eAccountKeeper
 }
 
 // The interface that any consumer app must implement to be compatible with integration tests
@@ -104,6 +107,8 @@ type TestBankKeeper interface {
 	ccvtypes.BankKeeper
 	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress,
 		recipientModule string, amt sdk.Coins) error
+	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string,
+		recipientAddr sdk.AccAddress, amt sdk.Coins) error
 }
 
 type TestAccountKeeper interface {

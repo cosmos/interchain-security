@@ -122,6 +122,8 @@ func TestInitGenesis(t *testing.T) {
 				&capabilitytypes.Capability{},
 				tc.isBound, // Capability is returned successfully if port capability is already bound to this module.
 			),
+			mocks.MockStakingKeeper.EXPECT().BondDenom(
+				ctx).Return("stake").AnyTimes(),
 		}
 
 		// If port capability is not already bound, port will be bound and capability claimed.
@@ -144,7 +146,7 @@ func TestInitGenesis(t *testing.T) {
 			)
 		}
 
-		gomock.InOrder(orderedCalls...)
+		gomock.InAnyOrder(orderedCalls)
 
 		//
 		// Execute method, then assert expected results

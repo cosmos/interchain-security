@@ -5,8 +5,10 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -20,6 +22,11 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	delegate(s, delAddr, bondAmt)
 	s.providerChain.NextBlock()
 
+	// register a consumer reward denom
+	params := s.consumerApp.GetConsumerKeeper().GetParams(s.consumerCtx())
+	params.RewardDenoms = []string{sdk.DefaultBondDenom}
+	s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
+
 	// relay VSC packets from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
@@ -28,8 +35,10 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(2))
 	s.consumerChain.NextBlock()
 
-	consumerAccountKeeper := s.consumerApp.GetTestAccountKeeper()
-	consumerBankKeeper := s.consumerApp.GetTestBankKeeper()
+	consumerAccountKeeper := s.consumerApp.GetE2eAccountKeeper()
+	providerAccountKeeper := s.providerApp.GetE2eAccountKeeper()
+	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
+	providerBankKeeper := s.providerApp.GetE2eBankKeeper()
 
 	// send coins to the fee pool which is used for reward distribution
 	consumerFeePoolAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), authtypes.FeeCollectorName).GetAddress()
@@ -65,14 +74,66 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 
 	relayAllCommittedPackets(s, s.consumerChain, s.transferPath, transfertypes.PortID, s.transferPath.EndpointA.ChannelID, 1)
 	s.providerChain.NextBlock()
-	communityCoins := s.providerApp.GetTestDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
+
+	// Since consumer reward denom is not yet registered, the coins never get into the fee pool, staying in the ConsumerRewardsPool
+	rewardPool := providerAccountKeeper.GetModuleAccount(s.providerCtx(), providertypes.ConsumerRewardsPool).GetAddress()
+	rewardCoins := providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
+
 	ibcCoinIndex := -1
-	for i, coin := range communityCoins {
+	for i, coin := range rewardCoins {
 		if strings.HasPrefix(coin.Denom, "ibc") {
 			ibcCoinIndex = i
 		}
 	}
+
+	// Check that we found an ibc denom in the reward pool
 	s.Require().Greater(ibcCoinIndex, -1)
+
+	// Check that the coins got into the ConsumerRewardsPool
+	s.Require().True(rewardCoins[ibcCoinIndex].Amount.Equal(providerExpectedRewards[0].Amount))
+
+	// Attempt to register the consumer reward denom, but fail because the account has no coins
+
+	// Get the balance of delAddr to send it out
+	senderCoins := providerBankKeeper.GetAllBalances(s.providerCtx(), delAddr)
+
+	// Send the coins to the governance module just to have a place to send them
+	providerBankKeeper.SendCoinsFromAccountToModule(s.providerCtx(), delAddr, govtypes.ModuleName, senderCoins)
+
+	// Attempt to register the consumer reward denom, but fail because the account has no coins
+	err = s.providerApp.GetProviderKeeper().RegisterConsumerRewardDenom(s.providerCtx(), rewardCoins[ibcCoinIndex].Denom, delAddr)
+	s.Require().Error(err)
+
+	// Advance a block and check that the coins are still in the ConsumerRewardsPool
+	s.providerChain.NextBlock()
+	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
+	s.Require().True(rewardCoins[ibcCoinIndex].Amount.Equal(providerExpectedRewards[0].Amount))
+
+	// Successfully register the consumer reward denom this time
+
+	// Send the coins back to the delAddr
+	providerBankKeeper.SendCoinsFromModuleToAccount(s.providerCtx(), govtypes.ModuleName, delAddr, senderCoins)
+
+	// log the sender's coins
+	senderCoins1 := providerBankKeeper.GetAllBalances(s.providerCtx(), delAddr)
+
+	// Register the consumer reward denom
+	err = s.providerApp.GetProviderKeeper().RegisterConsumerRewardDenom(s.providerCtx(), rewardCoins[ibcCoinIndex].Denom, delAddr)
+	s.Require().NoError(err)
+
+	// Check that the delAddr has the right amount less money in it after paying the fee
+	senderCoins2 := providerBankKeeper.GetAllBalances(s.providerCtx(), delAddr)
+	consumerRewardDenomRegistrationFee := s.providerApp.GetProviderKeeper().GetConsumerRewardDenomRegistrationFee(s.providerCtx())
+	s.Require().Equal(senderCoins1.Sub(senderCoins2), sdk.NewCoins(consumerRewardDenomRegistrationFee))
+
+	s.providerChain.NextBlock()
+
+	// Check that the reward pool has no more coins because they were transferred to the fee pool
+	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
+	s.Require().Equal(0, len(rewardCoins))
+
+	// check that the fee pool has the expected amount of coins
+	communityCoins := s.providerApp.GetE2eDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
 	s.Require().True(communityCoins[ibcCoinIndex].Amount.Equal(sdk.NewDecCoinFromCoin(providerExpectedRewards[0]).Amount))
 }
 
@@ -87,6 +148,11 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	delegate(s, delAddr, bondAmt)
 	s.providerChain.NextBlock()
+
+	// Register denom on consumer chain
+	params := s.consumerApp.GetConsumerKeeper().GetParams(s.consumerCtx())
+	params.RewardDenoms = []string{sdk.DefaultBondDenom}
+	s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
 
 	// relay VSC packets from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
@@ -156,12 +222,14 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		corruptTransChannel     bool
 		expLBThUpdated          bool
 		expEscrowBalanceChanged bool
+		denomRegistered         bool
 	}{
 		{
 			name:                    "should not update LBTH before blocks per dist trans block are passed",
 			prepareRewardDist:       false,
 			corruptTransChannel:     false,
 			expLBThUpdated:          false,
+			denomRegistered:         true,
 			expEscrowBalanceChanged: false,
 		},
 		{
@@ -169,6 +237,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 			prepareRewardDist:       true,
 			corruptTransChannel:     false,
 			expLBThUpdated:          true,
+			denomRegistered:         true,
 			expEscrowBalanceChanged: true,
 		},
 		{
@@ -176,7 +245,24 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 			prepareRewardDist:       true,
 			corruptTransChannel:     true,
 			expLBThUpdated:          true,
+			denomRegistered:         true,
 			expEscrowBalanceChanged: false,
+		},
+		{
+			name:                    "should not change escrow balance when denom is not registered",
+			prepareRewardDist:       true,
+			corruptTransChannel:     false,
+			expLBThUpdated:          true,
+			denomRegistered:         false,
+			expEscrowBalanceChanged: false,
+		},
+		{
+			name:                    "should change escrow balance when denom is registered",
+			prepareRewardDist:       true,
+			corruptTransChannel:     false,
+			expLBThUpdated:          true,
+			denomRegistered:         true,
+			expEscrowBalanceChanged: true,
 		},
 	}
 
@@ -191,6 +277,12 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		delAddr := s.providerChain.SenderAccount.GetAddress()
 		delegate(s, delAddr, bondAmt)
 		s.providerChain.NextBlock()
+
+		if tc.denomRegistered {
+			params := s.consumerApp.GetConsumerKeeper().GetParams(s.consumerCtx())
+			params.RewardDenoms = []string{sdk.DefaultBondDenom}
+			s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
+		}
 
 		// relay VSC packets from provider to consumer
 		relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)

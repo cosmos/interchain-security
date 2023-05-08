@@ -310,6 +310,8 @@ func (k Keeper) MakeConsumerGenesis(
 		prop.HistoricalEntries,
 		prop.UnbondingPeriod,
 		"0.05",
+		[]string{},
+		[]string{},
 	)
 
 	gen = *consumertypes.NewInitialGenesisState(

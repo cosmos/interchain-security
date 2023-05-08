@@ -57,6 +57,13 @@ message Params {
   // can opt out of running the consumer chain without being punished. For example, a
   // value of 0.05 means that the validators in the bottom 5% of the set can opt out
   string soft_opt_out_threshold = 10;
+
+  // Reward denoms. These are the denominations which are allowed to be sent to the provider as rewards.
+  repeated string reward_denoms = 11;
+
+  // Provider-originated reward denoms. These are denoms coming from the provider 
+  // which are allowed to be used as rewards. e.g. "uatom"
+  repeated string provider_reward_denoms = 12;
 }
 
 // LastTransmissionBlockHeight is the last time validator holding

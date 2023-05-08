@@ -28,19 +28,21 @@ import (
 
 // Keeper defines the Cross-Chain Validation Provider Keeper
 type Keeper struct {
-	storeKey         sdk.StoreKey
-	cdc              codec.BinaryCodec
-	paramSpace       paramtypes.Subspace
-	scopedKeeper     ccv.ScopedKeeper
-	channelKeeper    ccv.ChannelKeeper
-	portKeeper       ccv.PortKeeper
-	connectionKeeper ccv.ConnectionKeeper
-	accountKeeper    ccv.AccountKeeper
-	clientKeeper     ccv.ClientKeeper
-	stakingKeeper    ccv.StakingKeeper
-	slashingKeeper   ccv.SlashingKeeper
-	evidenceKeeper   ccv.EvidenceKeeper
-	feeCollectorName string
+	storeKey           sdk.StoreKey
+	cdc                codec.BinaryCodec
+	paramSpace         paramtypes.Subspace
+	scopedKeeper       ccv.ScopedKeeper
+	channelKeeper      ccv.ChannelKeeper
+	portKeeper         ccv.PortKeeper
+	connectionKeeper   ccv.ConnectionKeeper
+	accountKeeper      ccv.AccountKeeper
+	bankKeeper         ccv.BankKeeper
+	distributionKeeper ccv.DistributionKeeper
+	clientKeeper       ccv.ClientKeeper
+	stakingKeeper      ccv.StakingKeeper
+	slashingKeeper     ccv.SlashingKeeper
+	evidenceKeeper     ccv.EvidenceKeeper
+	feeCollectorName   string
 }
 
 // NewKeeper creates a new provider Keeper instance
@@ -50,6 +52,7 @@ func NewKeeper(
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
 	accountKeeper ccv.AccountKeeper, evidenceKeeper ccv.EvidenceKeeper,
+	distributionKeeper ccv.DistributionKeeper, bankKeeper ccv.BankKeeper,
 	feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set
@@ -57,20 +60,22 @@ func NewKeeper(
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
-	k := Keeper{
-		cdc:              cdc,
-		storeKey:         key,
-		paramSpace:       paramSpace,
-		scopedKeeper:     scopedKeeper,
-		channelKeeper:    channelKeeper,
-		portKeeper:       portKeeper,
-		connectionKeeper: connectionKeeper,
-		accountKeeper:    accountKeeper,
-		clientKeeper:     clientKeeper,
-		stakingKeeper:    stakingKeeper,
-		slashingKeeper:   slashingKeeper,
-		evidenceKeeper:   evidenceKeeper,
-		feeCollectorName: feeCollectorName,
+	return Keeper{
+		cdc:                cdc,
+		storeKey:           key,
+		paramSpace:         paramSpace,
+		scopedKeeper:       scopedKeeper,
+		channelKeeper:      channelKeeper,
+		portKeeper:         portKeeper,
+		connectionKeeper:   connectionKeeper,
+		accountKeeper:      accountKeeper,
+		clientKeeper:       clientKeeper,
+		stakingKeeper:      stakingKeeper,
+		slashingKeeper:     slashingKeeper,
+		evidenceKeeper:     evidenceKeeper,
+		distributionKeeper: distributionKeeper,
+		bankKeeper:         bankKeeper,
+		feeCollectorName:   feeCollectorName,
 	}
 
 	k.mustValidateFields()
