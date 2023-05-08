@@ -1,5 +1,40 @@
 # CHANGELOG
 
+
+## v1.1.0-multiden
+
+Date: May 8th, 2023
+
+**Note:** _This release is consensus breaking for the provider_.
+
+This release combines two fixes that we judged were urgent to get onto the Cosmos Hub before the launch of the first ICS consumer chain.
+
+The first fix is to enable the use of multisigs and Ledger devices when assigning keys for consumer chains. The second is to prevent a possible DOS vector involving the reward distribution system.
+
+### Multisig fix
+
+On April 25th (a week and a half ago), we began receiving reports that validators using multisigs and Ledger devices were getting errors reading `Error: unable to resolve type URL /interchain_security.ccv.provider.v1.MsgAssignConsumerKey: tx parse error when attempting to assign consensus keys for consumer chains`. 
+
+We quickly narrowed the problem down to issues having to do with using the `PubKey` type directly in the `MsgAssignConsumerKey` transaction, and Amino (a deprecated serialization library still used in Ledger devices and multisigs) not being able to handle this. We attempted to fix this with the assistance of the Cosmos-SDK team, but after making no headway for a few days, we decided to simply use a JSON representation of the `PubKey` in the transaction. This is how it is usually represented anyway. We have verified that this fixes the problem.
+
+### Distribution fix
+
+The ICS distribution system works by allowing consumer chains to send rewards to a module address on the provider called the `FeePoolAddress`. From here they are automatically distributed to all validators and delegators through the distribution system that already exists to distribute staking rewards. The `FeePoolAddress` is usually blocked so that no tokens can be sent to it, but to enable ICS distribution we had to unblock it.
+
+We recently realized that unblocking the `FeePoolAddress` could enable an attacker to send a huge number of different denoms into the distribution system. The distribution system would then attempt to distribute them all, leading to out of memory errors. Fixing a similar attack vector that existed in the distribution system before ICS led us to this realization.
+
+To fix this problem, we have re-blocked the `FeePoolAddress` and created a new address called the `ConsumerRewardsPool`. Consumer chains now send rewards to this new address. There is also a new transaction type called `RegisterConsumerRewardDenom`. This transaction allows people to register denoms to be used as rewards from consumer chains. It costs 10 Atoms to run this transaction.The Atoms are transferred to the community pool. Only denoms registered with this command are then transferred to the `FeePoolAddress` and distributed out to delegators and validators.
+
+## v1.1.0
+
+Date: March 24th, 2023
+
+This is a minor release of Interchain Security (ICS), also known as _Replicated Security_ (RS), which resolves a bug in the core protocol.
+
+Changes included:
+
+* [fix StopConsumerChain not running in cachedContext](https://github.com/cosmos/interchain-security/pull/802)
+
 ## v1.0.0
 
 Date: February 6th, 2023
