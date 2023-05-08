@@ -337,7 +337,7 @@ NODE_LISTEN_ADDR_STR=${NODE_LISTEN_ADDR_STR%?}
 
 sleep 8
 
-ip netns exec $QUERY_NET_NAMESPACE_NAME python3 tendermock/src/tendermock.py --tendermock-host $CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX --tendermock-port 26658 --app-addresses $NODE_LISTEN_ADDR_STR provi/validatoralice/config/genesis.json &> tendermock_out.log &
+ip netns exec $QUERY_NET_NAMESPACE_NAME cometmock $NODE_LISTEN_ADDR_STR provi/validatoralice/config/genesis.json tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658 &> cometmock_out.log &
 
 sleep 3
 # exit
