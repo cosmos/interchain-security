@@ -35,6 +35,8 @@ func TestReadAndWriteTrace(t *testing.T) {
 	})
 }
 
+// This can be used to test writing and parsing traces, but does not make much sense
+// for testing trace execution, since the generated traces are almost guaranteed to be nonsensical.
 func GetTraceGen() *rapid.Generator[[]Step] {
 	return rapid.SliceOf(GetStepGen())
 }
