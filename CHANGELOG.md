@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## v1.2.0-multiden
+
+Date: May 8th, 2023
+
+Note: This release is consensus breaking for the consumer.
+
+- (fix) Add a list of denoms that are allowed to be sent to the provider as rewards. As a result, a potential DOS attack is prevented.  
+
+## v1.2.0
+
+- (cli) [#746](https://github.com/cosmos/interchain-security/pull/746) Add a query endpoint for fetching consumer chain params.
+- (deps) [#805](https://github.com/cosmos/interchain-security/pull/805) Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to [v0.45.15-ics](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.45.15-ics) and migrate to [CometBFT](https://github.com/cometbft/cometbft).
+- (fix) [#846](https://github.com/cosmos/interchain-security/pull/846) Correctly handle VSC packet with duplicate val updates on consumer.
+- (feat) [#833](https://github.com/cosmos/interchain-security/pull/833) Soft opt-out: allows the bottom `x%` of the validator set by power to opt out of validating consumer chains without being jailed or otherwise punished for it.
+
 ## v1.0.0
 
 Date: February 6th, 2023
