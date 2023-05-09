@@ -316,8 +316,6 @@ func New(
 	delete(bankBlockedAddrs, authtypes.NewModuleAddress(
 		providertypes.ConsumerRewardsPool).String())
 
-	// bankBlockedAddrs := make(map[string]bool)
-
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec,
 		keys[banktypes.StoreKey],

@@ -39,7 +39,7 @@ type ProviderApp interface {
 	GetTestSlashingKeeper() TestSlashingKeeper
 	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
 	GetTestDistributionKeeper() TestDistributionKeeper
-	// Tests an account keeper interface with more capabilities than the expected_keepers interface
+	// Returns an account keeper interface with more capabilities than the expected_keepers interface
 	GetTestAccountKeeper() TestAccountKeeper
 }
 

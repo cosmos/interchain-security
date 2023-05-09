@@ -46,20 +46,6 @@ func (m *MockStakingKeeper) EXPECT() *MockStakingKeeperMockRecorder {
 	return m.recorder
 }
 
-// Delegation mocks base method.
-func (m *MockStakingKeeper) Delegation(ctx types.Context, addr types.AccAddress, valAddr types.ValAddress) types4.DelegationI {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delegation", ctx, addr, valAddr)
-	ret0, _ := ret[0].(types4.DelegationI)
-	return ret0
-}
-
-// Delegation indicates an expected call of Delegation.
-func (mr *MockStakingKeeperMockRecorder) Delegation(ctx, addr, valAddr interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delegation", reflect.TypeOf((*MockStakingKeeper)(nil).Delegation), ctx, addr, valAddr)
-}
-
 // BondDenom mocks base method.
 func (m *MockStakingKeeper) BondDenom(ctx types.Context) string {
 	m.ctrl.T.Helper()
@@ -72,6 +58,20 @@ func (m *MockStakingKeeper) BondDenom(ctx types.Context) string {
 func (mr *MockStakingKeeperMockRecorder) BondDenom(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BondDenom", reflect.TypeOf((*MockStakingKeeper)(nil).BondDenom), ctx)
+}
+
+// Delegation mocks base method.
+func (m *MockStakingKeeper) Delegation(ctx types.Context, addr types.AccAddress, valAddr types.ValAddress) types4.DelegationI {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delegation", ctx, addr, valAddr)
+	ret0, _ := ret[0].(types4.DelegationI)
+	return ret0
+}
+
+// Delegation indicates an expected call of Delegation.
+func (mr *MockStakingKeeperMockRecorder) Delegation(ctx, addr, valAddr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delegation", reflect.TypeOf((*MockStakingKeeper)(nil).Delegation), ctx, addr, valAddr)
 }
 
 // GetLastTotalPower mocks base method.
