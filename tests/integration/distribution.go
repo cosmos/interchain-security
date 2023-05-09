@@ -98,7 +98,8 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	senderCoins := providerBankKeeper.GetAllBalances(s.providerCtx(), delAddr)
 
 	// Send the coins to the governance module just to have a place to send them
-	providerBankKeeper.SendCoinsFromAccountToModule(s.providerCtx(), delAddr, govtypes.ModuleName, senderCoins)
+	err = providerBankKeeper.SendCoinsFromAccountToModule(s.providerCtx(), delAddr, govtypes.ModuleName, senderCoins)
+	s.Require().NoError(err)
 
 	// Attempt to register the consumer reward denom, but fail because the account has no coins
 	err = s.providerApp.GetProviderKeeper().RegisterConsumerRewardDenom(s.providerCtx(), rewardCoins[ibcCoinIndex].Denom, delAddr)
@@ -112,7 +113,8 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	// Successfully register the consumer reward denom this time
 
 	// Send the coins back to the delAddr
-	providerBankKeeper.SendCoinsFromModuleToAccount(s.providerCtx(), govtypes.ModuleName, delAddr, senderCoins)
+	err = providerBankKeeper.SendCoinsFromModuleToAccount(s.providerCtx(), govtypes.ModuleName, delAddr, senderCoins)
+	s.Require().NoError(err)
 
 	// log the sender's coins
 	senderCoins1 := providerBankKeeper.GetAllBalances(s.providerCtx(), delAddr)
