@@ -35,10 +35,10 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(2))
 	s.consumerChain.NextBlock()
 
-	consumerAccountKeeper := s.consumerApp.GetE2eAccountKeeper()
-	providerAccountKeeper := s.providerApp.GetE2eAccountKeeper()
-	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
-	providerBankKeeper := s.providerApp.GetE2eBankKeeper()
+	consumerAccountKeeper := s.consumerApp.GetTestAccountKeeper()
+	providerAccountKeeper := s.providerApp.GetTestAccountKeeper()
+	consumerBankKeeper := s.consumerApp.GetTestBankKeeper()
+	providerBankKeeper := s.providerApp.GetTestBankKeeper()
 
 	// send coins to the fee pool which is used for reward distribution
 	consumerFeePoolAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), authtypes.FeeCollectorName).GetAddress()
@@ -133,7 +133,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.Require().Equal(0, len(rewardCoins))
 
 	// check that the fee pool has the expected amount of coins
-	communityCoins := s.providerApp.GetE2eDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
+	communityCoins := s.providerApp.GetTestDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
 	s.Require().True(communityCoins[ibcCoinIndex].Amount.Equal(sdk.NewDecCoinFromCoin(providerExpectedRewards[0]).Amount))
 }
 

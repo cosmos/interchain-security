@@ -32,15 +32,15 @@ type ProviderApp interface {
 
 	GetProviderKeeper() providerkeeper.Keeper
 	// Returns a staking keeper interface with more capabilities than the expected_keepers interface
-	GetE2eStakingKeeper() E2eStakingKeeper
+	GetTestStakingKeeper() TestStakingKeeper
 	// Returns a bank keeper interface with more capabilities than the expected_keepers interface
-	GetE2eBankKeeper() E2eBankKeeper
+	GetTestBankKeeper() TestBankKeeper
 	// Returns a slashing keeper interface with more capabilities than the expected_keepers interface
-	GetE2eSlashingKeeper() E2eSlashingKeeper
+	GetTestSlashingKeeper() TestSlashingKeeper
 	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
-	GetE2eDistributionKeeper() E2eDistributionKeeper
+	GetTestDistributionKeeper() TestDistributionKeeper
 	// Tests an account keeper interface with more capabilities than the expected_keepers interface
-	GetE2eAccountKeeper() E2eAccountKeeper
+	GetTestAccountKeeper() TestAccountKeeper
 }
 
 // The interface that any consumer app must implement to be compatible with integration tests

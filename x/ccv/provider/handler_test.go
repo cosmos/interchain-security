@@ -32,11 +32,8 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 	providerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(0)
 	providerConsAddr := providerCryptoId.ProviderConsAddress()
 
-	providerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(0)
-	providerConsAddr := providerCryptoId.SDKValConsAddress()
-
 	consumerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(1)
-	consumerConsAddr := consumerCryptoId.SDKValConsAddress()
+	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
 	consumerKeyBz := base64.StdEncoding.EncodeToString(consumerCryptoId.ConsensusSDKPubKey().Bytes())
 	consumerKey := `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"` + consumerKeyBz + `"}`
 
@@ -58,7 +55,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 						// Return a valid validator, found!
 					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-						consumerConsAddr,
+						consumerConsAddr.ToSdkConsAddr(),
 					).Return(stakingtypes.Validator{}, false),
 				)
 			},
@@ -94,7 +91,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 						// Return a valid validator, found!
 					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
-						consumerConsAddr,
+						consumerConsAddr.ToSdkConsAddr(),
 					).Return(stakingtypes.Validator{}, false),
 				)
 			},

@@ -35,13 +35,13 @@ type Keeper struct {
 	channelKeeper      ccv.ChannelKeeper
 	portKeeper         ccv.PortKeeper
 	connectionKeeper   ccv.ConnectionKeeper
-	accountKeeper      ccv.AccountKeeper
-	bankKeeper         ccv.BankKeeper
-	distributionKeeper ccv.DistributionKeeper
 	clientKeeper       ccv.ClientKeeper
 	stakingKeeper      ccv.StakingKeeper
 	slashingKeeper     ccv.SlashingKeeper
+	accountKeeper      ccv.AccountKeeper
 	evidenceKeeper     ccv.EvidenceKeeper
+	distributionKeeper ccv.DistributionKeeper
+	bankKeeper         ccv.BankKeeper
 	feeCollectorName   string
 }
 
@@ -60,7 +60,7 @@ func NewKeeper(
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return Keeper{
+	k := Keeper{
 		cdc:                cdc,
 		storeKey:           key,
 		paramSpace:         paramSpace,
@@ -68,10 +68,10 @@ func NewKeeper(
 		channelKeeper:      channelKeeper,
 		portKeeper:         portKeeper,
 		connectionKeeper:   connectionKeeper,
-		accountKeeper:      accountKeeper,
 		clientKeeper:       clientKeeper,
 		stakingKeeper:      stakingKeeper,
 		slashingKeeper:     slashingKeeper,
+		accountKeeper:      accountKeeper,
 		evidenceKeeper:     evidenceKeeper,
 		distributionKeeper: distributionKeeper,
 		bankKeeper:         bankKeeper,
@@ -86,23 +86,25 @@ func NewKeeper(
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 13 {
-		panic("number of fields in provider keeper is not 13")
+	if reflect.ValueOf(k).NumField() != 15 {
+		panic("number of fields in provider keeper is not 15")
 	}
 
-	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                           // 1
-	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                 // 2
-	ccv.PanicIfZeroOrNil(k.paramSpace, "paramSpace")             // 3
-	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")         // 4
-	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")       // 5
-	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")             // 6
-	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper") // 7
-	ccv.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")       // 8
-	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")         // 9
-	ccv.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")       // 10
-	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")     // 11
-	ccv.PanicIfZeroOrNil(k.evidenceKeeper, "evidenceKeeper")     // 12
-	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName") // 13
+	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                               // 1
+	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                     // 2
+	ccv.PanicIfZeroOrNil(k.paramSpace, "paramSpace")                 // 3
+	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")             // 4
+	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")           // 5
+	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")                 // 6
+	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")     // 7
+	ccv.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")           // 8
+	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")             // 9
+	ccv.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")           // 10
+	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")         // 11
+	ccv.PanicIfZeroOrNil(k.evidenceKeeper, "evidenceKeeper")         // 12
+	ccv.PanicIfZeroOrNil(k.distributionKeeper, "distributionKeeper") // 13
+	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                 // 14
+	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")     // 15
 }
 
 // Logger returns a module-specific logger.

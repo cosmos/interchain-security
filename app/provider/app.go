@@ -783,7 +783,7 @@ func (app *App) GetTestDistributionKeeper() testutil.TestDistributionKeeper {
 }
 
 // GetTestAccountKeeper implements the ProviderApp interface.
-func (app *App) GetE2eAccountKeeper() e2e.E2eAccountKeeper {
+func (app *App) GetTestAccountKeeper() testutil.TestAccountKeeper {
 	return app.AccountKeeper
 }
 
