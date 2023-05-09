@@ -28,7 +28,7 @@ RUN go mod tidy
 RUN make install
 
 # Get Hermes build
-FROM informalsystems/hermes:1.4.1 AS hermes-builder
+FROM ghcr.io/informalsystems/hermes:1.4.1 AS hermes-builder
 
 FROM --platform=linux/amd64 fedora:36
 RUN dnf update -y
