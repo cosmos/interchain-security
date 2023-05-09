@@ -155,7 +155,7 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 			state: State{
 				chainID("provi"): ChainState{
-					//Check that tokens are minted and sent to provider chain and distributed to validators and their delegators on provider chain
+					// Check that tokens are minted and sent to provider chain and distributed to validators and their delegators on provider chain
 					Rewards: &Rewards{
 						IsRewarded: map[validatorID]bool{
 							validatorID("alice"): true,

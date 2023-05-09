@@ -67,7 +67,8 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
 	ccvTimeoutPeriod, transferTimeoutPeriod time.Duration,
 	consumerRedistributionFraction string, historicalEntries int64,
-	consumerUnbondingPeriod time.Duration, softOptOutThreshold string, rewardDenoms []string, providerRewardDenoms []string) Params {
+	consumerUnbondingPeriod time.Duration, softOptOutThreshold string, rewardDenoms, providerRewardDenoms []string,
+) Params {
 	return Params{
 		Enabled:                           enabled,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
