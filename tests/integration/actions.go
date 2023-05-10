@@ -503,7 +503,7 @@ func (tr TestRun) voteGovProposal(
 
 	time.Sleep(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second) // wait for voting period to end
 	// run empty blocks to end voting period, but dont change any state - just revote on the same proposal?
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
 		"tx", "gov", "vote",
 		fmt.Sprint(action.propNumber), action.vote[0],
@@ -516,7 +516,13 @@ func (tr TestRun) voteGovProposal(
 		`--gas`, "900000",
 		`-b`, `block`,
 		`-y`,
-	).CombinedOutput()
+	)
+
+	if verbose {
+		log.Println("voteGovProposal cmd: ", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
