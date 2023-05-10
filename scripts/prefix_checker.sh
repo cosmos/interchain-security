@@ -12,7 +12,7 @@ extract_prefixes() {
 }
 
 # Extract keys from the current and previous versions of the file
-current_prefixes=$(extract_prefixes $1)
+current_prefixes=$(extract_prefixes $filename)
 prev_prefixes=$(extract_prefixes <(git show $target_branch:$filename))
 
 echo $current_prefixes
