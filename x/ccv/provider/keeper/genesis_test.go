@@ -109,8 +109,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 		).Return(nil, true).Times(1),
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 			ctx).Return(sdk.NewInt(100)).Times(1), // Return total voting power as 100
-		mocks.MockStakingKeeper.EXPECT().BondDenom(
-			ctx).Return("stake").AnyTimes(), // Return bond denom as "stake"
 	)
 
 	// init provider chain

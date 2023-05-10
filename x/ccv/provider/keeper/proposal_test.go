@@ -104,9 +104,8 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 
 		if tc.expAppendProp {
 			// Mock calls are only asserted if we expect a client to be created.
-			gomock.InAnyOrder(
-				append(testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, tc.prop.ChainId, clienttypes.NewHeight(2, 3)),
-					mocks.MockStakingKeeper.EXPECT().BondDenom(gomock.Any()).Return("stake").AnyTimes()),
+			gomock.InOrder(
+				testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, tc.prop.ChainId, clienttypes.NewHeight(2, 3))...,
 			)
 		}
 
@@ -148,10 +147,9 @@ func TestCreateConsumerClient(t *testing.T) {
 			description: "No state mutation, new client should be created",
 			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
 				// Valid client creation is asserted with mock expectations here
-				gomock.InAnyOrder(append(
-					testkeeper.GetMocksForCreateConsumerClient(ctx, mocks, "chainID", clienttypes.NewHeight(4, 5)),
-					mocks.MockStakingKeeper.EXPECT().BondDenom(ctx).Return("stake").AnyTimes(),
-				))
+				gomock.InOrder(
+					testkeeper.GetMocksForCreateConsumerClient(ctx, mocks, "chainID", clienttypes.NewHeight(4, 5))...,
+				)
 			},
 			expClientCreated: true,
 		},
@@ -923,11 +921,9 @@ func TestBeginBlockInit(t *testing.T) {
 	}
 
 	// Expect client creation for only for the 1st and second proposals (spawn time already passed and valid)
-	gomock.InAnyOrder(
-		append(append(testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4)),
-			testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4))...),
-			mocks.MockStakingKeeper.EXPECT().BondDenom(gomock.Any()).Return("stake").AnyTimes(),
-		),
+	gomock.InOrder(
+		append(testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4)),
+			testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4))...)...,
 	)
 
 	for _, prop := range pendingProps {
