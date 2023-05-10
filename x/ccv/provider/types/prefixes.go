@@ -31,5 +31,6 @@ const (
 	KeyAssignmentReplacementsBytePrefix
 	ConsumerAddrsToPruneBytePrefix
 	SlashLogBytePrefix
+	MyTestPrefix
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
