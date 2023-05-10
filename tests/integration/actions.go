@@ -538,6 +538,9 @@ func (tr TestRun) startConsumerChain(
 	action startConsumerChainAction,
 	verbose bool,
 ) {
+	// sleep to let the consumer chain addition proposal get processed
+	time.Sleep(1 * time.Second)
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.providerChain].binaryName,
 
