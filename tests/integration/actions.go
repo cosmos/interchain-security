@@ -51,7 +51,6 @@ func (tr TestRun) sendTokens(
 		fmt.Println("sendTokens cmd:", cmd.String())
 	}
 	bz, err := cmd.CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -189,12 +188,11 @@ func (tr TestRun) submitTextProposal(
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
-		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--node`, tr.getQueryNode(action.chain),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -260,7 +258,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--gas`, `900000`,
-		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--node`, tr.getQueryNode(action.chain),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -319,7 +317,7 @@ func (tr TestRun) submitConsumerRemovalProposal(
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
-		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--node`, tr.getQueryNode(action.chain),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -390,7 +388,7 @@ func (tr TestRun) submitParamChangeProposal(
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
-		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--node`, tr.getQueryNode(action.chain),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
@@ -459,7 +457,7 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(providerChain.chainId),
 		`--home`, tr.getValidatorHome(providerChain.chainId, action.from),
-		`--node`, tr.getValidatorNode(providerChain.chainId, action.from),
+		`--node`, tr.getQueryNode(providerChain.chainId),
 		`--gas`, "9000000",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
@@ -482,36 +480,46 @@ func (tr TestRun) voteGovProposal(
 	action voteGovProposalAction,
 	verbose bool,
 ) {
-	var wg sync.WaitGroup
 	for i, val := range action.from {
-		wg.Add(1)
 		vote := action.vote[i]
-		go func(val validatorID, vote string) {
-			defer wg.Done()
-			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-			bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+		bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-				"tx", "gov", "vote",
-				fmt.Sprint(action.propNumber), vote,
+			"tx", "gov", "vote",
+			fmt.Sprint(action.propNumber), vote,
 
-				`--from`, `validator`+fmt.Sprint(val),
-				`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
-				`--home`, tr.getValidatorHome(action.chain, val),
-				`--node`, tr.getValidatorNode(action.chain, val),
-				`--keyring-backend`, `test`,
-				`--gas`, "900000",
-				`-b`, `block`,
-				`-y`,
-			).CombinedOutput()
-
-			if err != nil {
-				log.Fatal(err, "\n", string(bz))
-			}
-		}(val, vote)
+			`--from`, `validator`+fmt.Sprint(val),
+			`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+			`--home`, tr.getValidatorHome(action.chain, val),
+			`--node`, tr.getQueryNode(action.chain),
+			`--keyring-backend`, `test`,
+			`--gas`, "900000",
+			`-b`, `block`,
+			`-y`,
+		).CombinedOutput()
+		if err != nil {
+			log.Fatal(err, "\n", string(bz))
+		}
 	}
 
-	wg.Wait()
-	time.Sleep(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
+	time.Sleep(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second) // wait for voting period to end
+	// run empty blocks to end voting period, but dont change any state - just revote on the same proposal?
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+
+		"tx", "gov", "vote",
+		fmt.Sprint(action.propNumber), action.vote[0],
+
+		`--from`, `validator`+fmt.Sprint(action.from[0]),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--home`, tr.getValidatorHome(action.chain, action.from[0]),
+		`--node`, tr.getQueryNode(action.chain),
+		`--keyring-backend`, `test`,
+		`--gas`, "900000",
+		`-b`, `block`,
+		`-y`,
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
 }
 
 type startConsumerChainAction struct {
@@ -539,7 +547,6 @@ func (tr TestRun) startConsumerChain(
 	}
 
 	bz, err := cmd.CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -693,8 +700,7 @@ type addIbcChannelAction struct {
 	order       string
 }
 
-type startHermesAction struct {
-}
+type startHermesAction struct{}
 
 func (tr TestRun) startHermes(
 	action startHermesAction,
@@ -863,7 +869,6 @@ func (tr TestRun) relayPackets(
 		log.Println("relayPackets cmd:", cmd.String())
 	}
 	bz, err := cmd.CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -957,7 +962,7 @@ func (tr TestRun) unbondTokens(
 		`--from`, `validator`+fmt.Sprint(action.sender),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.sender),
-		`--node`, tr.getValidatorNode(action.chain, action.sender),
+		`--node`, tr.getQueryNode(action.chain),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
@@ -1006,7 +1011,7 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 		`--from`, `validator`+fmt.Sprint(action.txSender),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.txSender),
-		`--node`, tr.getValidatorNode(action.chain, action.txSender),
+		`--node`, tr.getQueryNode(action.chain),
 		// Need to manually set gas limit past default (200000), since redelegate has a lot of operations
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
@@ -1040,7 +1045,6 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 
 // Sets validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
 func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, down bool, verbose bool) {
-
 	var lastArg string
 	if down {
 		lastArg = "down"
@@ -1077,7 +1081,6 @@ type unjailValidatorAction struct {
 
 // Sends an unjail transaction to the provider chain
 func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
-
 	// wait a block to be sure downtime_jail_duration has elapsed
 	tr.waitBlocks(action.provider, 1, time.Minute)
 
@@ -1090,7 +1093,7 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		`--from`, `validator`+fmt.Sprint(action.validator),
 		`--chain-id`, string(tr.chainConfigs[action.provider].chainId),
 		`--home`, tr.getValidatorHome(action.provider, action.validator),
-		`--node`, tr.getValidatorNode(action.provider, action.validator),
+		`--node`, tr.getQueryNode(action.provider),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
@@ -1151,12 +1154,11 @@ func (tr TestRun) registerRepresentative(
 				`--from`, `validator`+fmt.Sprint(val),
 				`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 				`--home`, tr.getValidatorHome(action.chain, val),
-				`--node`, tr.getValidatorNode(action.chain, val),
+				`--node`, tr.getQueryNode(action.chain),
 				`--keyring-backend`, `test`,
 				`-b`, `block`,
 				`-y`,
 			).CombinedOutput()
-
 			if err != nil {
 				log.Fatal(err, "\n", string(bz))
 			}
@@ -1191,7 +1193,6 @@ func (tr TestRun) invokeDoublesignSlash(
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/cause-doublesign.sh", chainConfig.binaryName, string(action.validator),
 		string(chainConfig.chainId), chainConfig.ipPrefix).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1219,7 +1220,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		action.validator,
 		tr.chainConfigs[chainID("provi")].chainId,
 		tr.getValidatorHome(chainID("provi"), action.validator),
-		tr.getValidatorNode(chainID("provi"), action.validator),
+		tr.getQueryNode(chainID("provi")),
 	)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
@@ -1312,7 +1313,6 @@ func (tr TestRun) waitForSlashThrottleDequeue(
 	action slashThrottleDequeue,
 	verbose bool,
 ) {
-
 	timeout := time.Now().Add(action.timeout)
 	initialGlobalQueueSize := int(tr.getGlobalSlashQueueSize())
 

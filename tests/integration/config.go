@@ -7,8 +7,10 @@ import (
 )
 
 // TODO: Determine if user defined type (wrapping a primitive string) is desired in long run
-type chainID string
-type validatorID string
+type (
+	chainID     string
+	validatorID string
+)
 
 // Attributes that are unique to a validator. Allows us to map (part of)
 // the set of strings defined above to a set of viable validators

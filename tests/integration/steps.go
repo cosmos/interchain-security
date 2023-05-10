@@ -31,11 +31,6 @@ func generateSimpleTestSteps() []Step {
 						validatorID("bob"):   9500000000,
 						validatorID("carol"): 9500000000,
 					},
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 500000000,
-						validatorID("bob"):   500000000,
-						validatorID("carol"): 500000000,
-					},
 				},
 			},
 		},
