@@ -12,6 +12,7 @@ const (
 	ChainToChannelBytePrefix
 	ChannelToChainBytePrefix
 	ChainToClientBytePrefix
+	MyBadTestPrefix
 	InitTimeoutTimestampBytePrefix
 	PendingCAPBytePrefix
 	PendingCRPBytePrefix
