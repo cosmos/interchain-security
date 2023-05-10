@@ -1,0 +1,21 @@
+name: Check Prefixes
+on:
+  pull_request:
+    paths:
+      - "x/ccv/consumer/types/prefixes.go"
+      - "x/ccv/provider/types/prefixes.go"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # fetch all history
+
+      - name: Fetch target branch
+        run: git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
+
+      - name: Check prefixes.go
+        run: bash scripts/prefix_checker.sh "${{ github.base_ref }}" "x/ccv/provider/types/prefixes.go"

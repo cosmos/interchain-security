@@ -1,10 +1,7 @@
 #!/bin/bash
 
-# Check if file name is provided
-if [[ -z $1 ]]; then
-    echo "Error: No file name provided"
-    exit 1
-fi
+target_branch=$1
+filename=$2
 
 # Extract keys from a given file
 # this awk command extracts the first word from each line between a line containing
@@ -14,12 +11,9 @@ extract_prefixes() {
     awk '/const \(/,/\)/ { if ($1 ~ /^[A-Za-z]/ && $1 != "const") print $1 }' $1
 }
 
-# Get the previous commit hash
-prev_commit=$(git rev-parse HEAD~1)
-
 # Extract keys from the current and previous versions of the file
 current_prefixes=$(extract_prefixes $1)
-prev_prefixes=$(extract_prefixes <(git show $prev_commit:$1))
+prev_prefixes=$(extract_prefixes <(git show $target_branch:$filename))
 
 echo $current_prefixes
 echo $prev_prefixes
