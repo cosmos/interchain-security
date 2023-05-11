@@ -6,6 +6,30 @@ Note: Some PRs in the unreleased section may reappear from the released sections
 
 The ICS v1.3.0 release will be based on the main branch, and will not have this issue. v1.3.0 will also contain all the accumulated PRs from the various releases below. After v1.3.0, we plan to revamp release practices, and how we modularize the repo for consumer/provider.
 
+* (fix) Ser correct byte prefix for SlashLogKey [#786](https://github.com/cosmos/interchain-security/pull/786)
+* (chore) add Makefile target to generate mocks [#769](https://github.com/cosmos/interchain-security/pull/769)
+* (deps) Bump github.com/golang/protobuf from 1.5.2 to 1.5.3 [#779](https://github.com/cosmos/interchain-security/pull/779)
+* (deps) Bump github.com/tidwall/gjson from 1.14.0 to 1.14.4 [#776](https://github.com/cosmos/interchain-security/pull/776)
+* (deps) Bump actions/checkout from 2 to 3 [#775](https://github.com/cosmos/interchain-security/pull/775)
+* (deps) Bump actions/setup-go from 2 to 3 [#774](https://github.com/cosmos/interchain-security/pull/774)
+* (feature) Improve keeper field validation [#766](https://github.com/cosmos/interchain-security/pull/766)
+* (deps) Bump json5 from 2.2.1 to 2.2.3 in /tests/difference/core/model [#762](https://github.com/cosmos/interchain-security/pull/762)
+* (deps) Bump golang.org/x/net from 0.5.0 to 0.7.0 [#763](https://github.com/cosmos/interchain-security/pull/763)
+* (chore) Add depedabot config [#764](https://github.com/cosmos/interchain-security/pull/764)
+* (chore) disable sonarcloud on dependabot PRs and forks [#768](https://github.com/cosmos/interchain-security/pull/768)
+* (chore) revert build.yml changes [#767](https://github.com/cosmos/interchain-security/pull/767)
+* (chore) update build.yml [commit](https://github.com/cosmos/interchain-security/commit/019f70fa7e83bd29ab94f4d1da77ba7aa49bba9c)
+* (docs) Tidy docs directory [#758](https://github.com/cosmos/interchain-security/pull/758)
+* (docs) Update issue template [#755](https://github.com/cosmos/interchain-security/pull/755)
+* (testing) gaia docker tests with custom sdk [#737](https://github.com/cosmos/interchain-security/pull/737)
+* (testing) gaia as provider in docker tests [#735](https://github.com/cosmos/interchain-security/pull/735)
+* (docs) Contributing guidelines [#744](https://github.com/cosmos/interchain-security/pull/744)
+* (refactor) Key assignment type safety [#725](https://github.com/cosmos/interchain-security/pull/725)
+* (refactor) Update protos and fix deps [#752](https://github.com/cosmos/interchain-security/pull/752)
+* (api) Add consumer QueryParams [#746](https://github.com/cosmos/interchain-security/pull/746)
+* (fix) Nits from audit [#743](https://github.com/cosmos/interchain-security/pull/743)
+* (feature) New validation for keeper fields [#740](https://github.com/cosmos/interchain-security/pull/740)
+
 ## v1.2.0-multiden
 
 The first release candidate for a fix built on top of v1.2.0, intended for consumers. This release adds a list of denoms on the consumer that are allowed to be sent to the provider as rewards. This prevents a potential DOS attack that was discovered during the audit of Replicated Security performed by Oak Security and funded by the Cosmos Hub community through Proposal 687. In an effort to move quickly, this release also includes a multisig fix that is effective only for provider. It shouldn't affect the consumer module.
