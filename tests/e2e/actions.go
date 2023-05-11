@@ -204,7 +204,7 @@ func (tr TestRun) submitTextProposal(
 type submitConsumerAdditionProposalAction struct {
 	chain         chainID
 	from          validatorID
-	propType      string
+	Type          string
 	deposit       uint
 	consumerChain chainID
 	spawnTime     uint
@@ -260,7 +260,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		"tx", "gov", "submit-legacy-proposal", "consumer-additon", "/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--type`, action.propType,
+		`--type`, action.Type,
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--gas`, `900000`,
