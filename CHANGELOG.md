@@ -8,6 +8,16 @@ The ICS v1.3.0 release will be based on the main branch, and will not have this 
 
 TODO: Feature EPICs that were completed and will be added within the next release (standalone to consumer, soft opt out, etc.)
 
+* (deps) Bump github.com/stretchr/testify from 1.8.1 to 1.8.2 [#854](https://github.com/cosmos/interchain-security/pull/854)
+* (feat) Standalone to consumer changeover - staking functionalities [#794](https://github.com/cosmos/interchain-security/pull/794)
+* (fix) prevent provider from sending VSCPackets with multiple updates for the same validator [#850](https://github.com/cosmos/interchain-security/pull/850)
+* (docs) code and docs mismatch [#844](https://github.com/cosmos/interchain-security/pull/844)
+* (testing) Use caching in dockerfiles [#843](https://github.com/cosmos/interchain-security/pull/843)
+* (feat) Soft opt out [#833](https://github.com/cosmos/interchain-security/issues/833)
+* (fix) Correctly handle VSC packet with duplicate val updates on consumer [#846](https://github.com/cosmos/interchain-security/pull/846)
+* (deps) bump sdk to v0.45.15.ics [#805](https://github.com/cosmos/interchain-security/pull/805)
+* (refactor) Remove starport config [#841](https://github.com/cosmos/interchain-security/pull/841)
+* (refactor) Remove RegisterSdkCryptoCodecInterfaces [#838](https://github.com/cosmos/interchain-security/pull/838)
 * (chore) fix makefile [#837](https://github.com/cosmos/interchain-security/pull/837)
 * (deps) Bump github.com/spf13/cobra from 1.6.1 to 1.7.0 [#834](https://github.com/cosmos/interchain-security/pull/834)
 * (deps) bump IBC to v4.3.0 [#823](https://github.com/cosmos/interchain-security/pull/823)
