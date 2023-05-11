@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
+	appDemocracy "github.com/cosmos/interchain-security/app/democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	integr "github.com/cosmos/interchain-security/tests/integration"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
@@ -25,13 +25,13 @@ func runCCVTestByName(t *testing.T, methodName string) {
 	findAndCallMethod(t, suite, methodName)
 }
 
-// runConsumerDemocracyTestByName runs a single consumer democracy integration test by name,
-// using a ConsumerDemocracyTestSuite initialized with the dummy
+// runDemocracyTestByName runs a single consumer democracy integration test by name,
+// using a DemocracyTestSuite initialized with the dummy
 // democracy consumer defined in this repo.
-func runConsumerDemocracyTestByName(t *testing.T, methodName string) {
+func runDemocracyTestByName(t *testing.T, methodName string) {
 	t.Helper()
-	suite := integr.NewConsumerDemocracyTestSuite[*appConsumerDemocracy.App](
-		icstestingutils.DemocracyConsumerAppIniter)
+	suite := integr.NewDemocracyTestSuite[*appDemocracy.App](
+		icstestingutils.DemocracyAppIniter)
 	suite.SetT(t)
 	suite.SetupTest()
 
@@ -62,11 +62,11 @@ func TestInitTimeout(t *testing.T) {
 //
 
 func TestDemocracyRewardsDistribution(t *testing.T) {
-	runConsumerDemocracyTestByName(t, "TestDemocracyRewardsDistribution")
+	runDemocracyTestByName(t, "TestDemocracyRewardsDistribution")
 }
 
 func TestDemocracyGovernanceWhitelisting(t *testing.T) {
-	runConsumerDemocracyTestByName(t, "TestDemocracyGovernanceWhitelisting")
+	runDemocracyTestByName(t, "TestDemocracyGovernanceWhitelisting")
 }
 
 //

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
+	appDemocracy "github.com/cosmos/interchain-security/app/democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	intg "github.com/cosmos/interchain-security/tests/integration"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
@@ -31,15 +31,15 @@ func TestCCVTestSuite(t *testing.T) {
 }
 
 // Executes a standard suite of tests, against a democracy consumer app.go implementation.
-func TestConsumerDemocracyCCVTestSuite(t *testing.T) {
+func TestDemocracyCCVTestSuite(t *testing.T) {
 	// Pass in concrete app type that implement the interface defined in /testutil/e2e/interfaces.go
 	// IMPORTANT: the concrete app types passed in as type parameters here must match the
 	// concrete app types returned by the relevant app initers.
-	democSuite := intg.NewCCVTestSuite[*appProvider.App, *appConsumerDemocracy.App](
+	democSuite := intg.NewCCVTestSuite[*appProvider.App, *appDemocracy.App](
 		// Pass in ibctesting.AppIniter for provider and democracy consumer.
-		// TestRewardsDistribution needs to be skipped since the democracy specific distribution test is in ConsumerDemocracyTestSuite,
+		// TestRewardsDistribution needs to be skipped since the democracy specific distribution test is in DemocracyTestSuite,
 		// while this one tests consumer app without minter
-		icstestingutils.ProviderAppIniter, icstestingutils.DemocracyConsumerAppIniter, []string{"TestRewardsDistribution"})
+		icstestingutils.ProviderAppIniter, icstestingutils.DemocracyAppIniter, []string{"TestRewardsDistribution"})
 
 	// Run tests
 	suite.Run(t, democSuite)
@@ -47,13 +47,13 @@ func TestConsumerDemocracyCCVTestSuite(t *testing.T) {
 
 // Executes a specialized group of tests specific to a democracy consumer,
 // against a democracy consumer app.go implementation.
-func TestConsumerDemocracyTestSuite(t *testing.T) {
+func TestDemocracyTestSuite(t *testing.T) {
 	// Pass in concrete app type that implement the interface defined in /testutil/e2e/interfaces.go
 	// IMPORTANT: the concrete app type passed in as a type parameter here must match the
 	// concrete app type returned by the relevant app initer.
-	democSuite := intg.NewConsumerDemocracyTestSuite[*appConsumerDemocracy.App](
+	democSuite := intg.NewDemocracyTestSuite[*appDemocracy.App](
 		// Pass in ibctesting.AppIniter for democracy consumer.
-		icstestingutils.DemocracyConsumerAppIniter)
+		icstestingutils.DemocracyAppIniter)
 
 	// Run tests
 	suite.Run(t, democSuite)

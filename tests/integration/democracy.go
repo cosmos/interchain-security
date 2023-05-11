@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type ConsumerDemocracyTestSuite struct {
+type DemocracyTestSuite struct {
 	suite.Suite
 	coordinator   *ibctesting.Coordinator
 	consumerChain *ibctesting.TestChain
@@ -27,12 +27,12 @@ type ConsumerDemocracyTestSuite struct {
 	setupCallback DemocSetupCallback
 }
 
-// NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite,
+// NewCCVTestSuite returns a new instance of DemocracyTestSuite,
 // ready to be tested against using suite.Run().
-func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
+func NewDemocracyTestSuite[T testutil.DemocConsumerApp](
 	democConsumerAppIniter ibctesting.AppIniter,
-) *ConsumerDemocracyTestSuite {
-	democSuite := new(ConsumerDemocracyTestSuite)
+) *DemocracyTestSuite {
+	democSuite := new(DemocracyTestSuite)
 
 	democSuite.setupCallback = func(t *testing.T) (
 		*ibctesting.Coordinator,
@@ -44,7 +44,7 @@ func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
 		coordinator := ibctesting.NewCoordinator(t, 0)
 
 		// Add single democracy consumer to coordinator, store returned test chain and app.
-		democConsumer, democConsumerApp := icstestingutils.AddDemocracyConsumer[T](
+		democConsumer, democConsumerApp := icstestingutils.AddDemocracy[T](
 			t, coordinator, democConsumerAppIniter)
 
 		// Pass variables to suite.
@@ -62,13 +62,13 @@ type DemocSetupCallback func(t *testing.T) (
 )
 
 // SetupTest sets up in-mem state before every test relevant to ccv with a democracy consumer
-func (suite *ConsumerDemocracyTestSuite) SetupTest() {
+func (suite *DemocracyTestSuite) SetupTest() {
 	// Instantiate new test utils using callback
 	suite.coordinator, suite.consumerChain,
 		suite.consumerApp = suite.setupCallback(suite.T())
 }
 
-func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
+func (s *DemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	s.consumerChain.NextBlock()
 	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
 	accountKeeper := s.consumerApp.GetTestAccountKeeper()
@@ -146,7 +146,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	}
 }
 
-func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
+func (s *DemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	govKeeper := s.consumerApp.GetTestGovKeeper()
 	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
 	bankKeeper := s.consumerApp.GetTestBankKeeper()
@@ -249,6 +249,6 @@ func getAccountsBalances(ctx sdk.Context, bankKeeper testutil.TestBankKeeper, bo
 	return accountsBalances
 }
 
-func (s *ConsumerDemocracyTestSuite) consumerCtx() sdk.Context {
+func (s *DemocracyTestSuite) consumerCtx() sdk.Context {
 	return s.consumerChain.GetContext()
 }

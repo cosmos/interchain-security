@@ -15,7 +15,7 @@ import (
 	tmdb "github.com/tendermint/tm-db"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
+	appDemocracy "github.com/cosmos/interchain-security/app/democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 )
 
@@ -35,10 +35,10 @@ func ConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	return testApp, appConsumer.NewDefaultGenesisState(encoding.Marshaler)
 }
 
-// DemocracyConsumerAppIniter implements ibctesting.AppIniter for a democracy consumer app
-func DemocracyConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	encoding := appConsumerDemocracy.MakeTestEncodingConfig()
-	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
+// DemocracyAppIniter implements ibctesting.AppIniter for a democracy consumer app
+func DemocracyAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
+	encoding := appDemocracy.MakeTestEncodingConfig()
+	testApp := appDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
-	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Marshaler)
+	return testApp, appDemocracy.NewDefaultGenesisState(encoding.Marshaler)
 }

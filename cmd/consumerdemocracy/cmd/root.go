@@ -31,7 +31,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-	simapp "github.com/cosmos/interchain-security/app/consumer-democracy"
+	simapp "github.com/cosmos/interchain-security/app/democracy"
 	"github.com/cosmos/interchain-security/app/params"
 )
 

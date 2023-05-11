@@ -62,8 +62,8 @@ func AddProvider[T testutil.ProviderApp](t *testing.T, coordinator *ibctesting.C
 	return provider, providerToReturn
 }
 
-// AddDemocracyConsumer adds a new democ consumer chain to the coordinator and returns the test chain and app type
-func AddDemocracyConsumer[T testutil.DemocConsumerApp](t *testing.T, coordinator *ibctesting.Coordinator,
+// AddDemocracy adds a new democ consumer chain to the coordinator and returns the test chain and app type
+func AddDemocracy[T testutil.DemocConsumerApp](t *testing.T, coordinator *ibctesting.Coordinator,
 	appIniter ibctesting.AppIniter,
 ) (*ibctesting.TestChain, T) {
 	t.Helper()
