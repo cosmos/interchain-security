@@ -6,6 +6,8 @@
 
 The first release candidate for a fix built on top of v1.2.0, intended for consumers. This release adds a list of denoms on the consumer that are allowed to be sent to the provider as rewards. This prevents a potential DOS attack that was discovered during the audit of Replicated Security performed by Oak Security and funded by the Cosmos Hub community through Proposal 687. In an effort to move quickly, this release also includes a multisig fix that is effective only for provider. It shouldn't affect the consumer module.
 
+Note PRs were made in a private security repo.
+
 [full diff](https://github.com/cosmos/interchain-security/compare/v1.2.0...v1.2.0-multiden-rc0)
 
 ## v1.1.0-multiden
