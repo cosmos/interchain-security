@@ -6,6 +6,25 @@ Note: Some PRs in the unreleased section may reappear from the released sections
 
 The ICS v1.3.0 release will be based on the main branch, and will not have this issue. v1.3.0 will also contain all the accumulated PRs from the various releases below. After v1.3.0, we plan to revamp release practices, and how we modularize the repo for consumer/provider.
 
+TODO: Feature EPICs that were completed and will be added within the next release (standalone to consumer, soft opt out, etc.)
+
+* (chore) fix makefile [#837](https://github.com/cosmos/interchain-security/pull/837)
+* (deps) Bump github.com/spf13/cobra from 1.6.1 to 1.7.0 [#834](https://github.com/cosmos/interchain-security/pull/834)
+* (deps) bump IBC to v4.3.0 [#823](https://github.com/cosmos/interchain-security/pull/823)
+* (docs) fix typos and broken links [#829](https://github.com/cosmos/interchain-security/pull/829)
+* (refactor) more linting [#820](https://github.com/cosmos/interchain-security/pull/820)
+* (refactor) linting [#810](https://github.com/cosmos/interchain-security/pull/810)
+* (refactor) Remove spm module [#812](https://github.com/cosmos/interchain-security/pull/812)
+* (feat) Standalone to consumer changeover part 1 [#757](https://github.com/cosmos/interchain-security/pull/757)
+* (deps) Bump webpack from 5.75.0 to 5.76.3 in /docs [#797](https://github.com/cosmos/interchain-security/pull/797)
+* (chore) Swap names of e2e and integration tests [#681](https://github.com/cosmos/interchain-security/pull/681)
+* (testing) Improved key tests [#787](https://github.com/cosmos/interchain-security/pull/787)
+* (chore) Change automated test run policy to run on pull req [#807](https://github.com/cosmos/interchain-security/pull/807)
+* (docs) Update consume chain governance documentation [commit](https://github.com/cosmos/interchain-security/commit/9c25ab51dc1c0311bd036935bab7478e6a2f2b71)
+* (fix) fix fix StopConsumerChain not running in cachedContext [#802](https://github.com/cosmos/interchain-security/pull/802). Also in earlier releases with different commit order!
+* (docs) Introduce docs website [#759](https://github.com/cosmos/interchain-security/pull/759)
+* (deps) Bump google.golang.org/protobuf from 1.28.2-0.20220831092852-f930b1dc76e8 to 1.30.0 [#793](https://github.com/cosmos/interchain-security/pull/793)
+* (deps) Bump actions/setup-go from 3 to 4 [#792](https://github.com/cosmos/interchain-security/pull/792)
 * (fix) Ser correct byte prefix for SlashLogKey [#786](https://github.com/cosmos/interchain-security/pull/786)
 * (chore) add Makefile target to generate mocks [#769](https://github.com/cosmos/interchain-security/pull/769)
 * (deps) Bump github.com/golang/protobuf from 1.5.2 to 1.5.3 [#779](https://github.com/cosmos/interchain-security/pull/779)
