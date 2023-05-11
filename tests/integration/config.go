@@ -153,7 +153,7 @@ func SlashThrottleTestRun() TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10\" | " +
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
@@ -161,14 +161,14 @@ func SlashThrottleTestRun() TestRun {
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"0.10\" | " +
-					".app_state.provider.params.slash_meter_replenish_period = \"10\"",
+					".app_state.provider.params.slash_meter_replenish_period = \"10s\"",
 			},
 			chainID("consu"): {
 				chainId:        chainID("consu"),
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10\" | " +
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
@@ -196,7 +196,7 @@ func DefaultTestRun() TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10\" | " +
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
@@ -211,7 +211,7 @@ func DefaultTestRun() TestRun {
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10\" | " +
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
@@ -239,7 +239,7 @@ func DemocracyTestRun() TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10\" | " +
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
@@ -282,7 +282,7 @@ func MultiConsumerTestRun() TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10\" | " +
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
@@ -296,7 +296,7 @@ func MultiConsumerTestRun() TestRun {
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10\" | " +
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
@@ -307,7 +307,7 @@ func MultiConsumerTestRun() TestRun {
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10\" | " +
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
