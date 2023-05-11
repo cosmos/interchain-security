@@ -335,7 +335,7 @@ echo $NODE_LISTEN_ADDR_STR
 NODE_LISTEN_ADDR_STR=${NODE_LISTEN_ADDR_STR%?}
 
 
-sleep 8
+sleep 2
 
 ip netns exec $QUERY_NET_NAMESPACE_NAME cometmock $NODE_LISTEN_ADDR_STR /$CHAIN_ID/genesis.json tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658 &> cometmock_${CHAIN_ID}_out.log &
 
