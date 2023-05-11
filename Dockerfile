@@ -37,9 +37,9 @@ USER root
 
 COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/
 
-COPY --from=is-builder /go/bin/interchain-security-pd /usr/local/bin/interchain-security-pd
-COPY --from=is-builder /go/bin/interchain-security-cd /usr/local/bin/interchain-security-cd
-COPY --from=is-builder /go/bin/interchain-security-cdd /usr/local/bin/interchain-security-cdd
+COPY --from=is-builder /go/bin/provider /usr/local/bin/provider
+COPY --from=is-builder /go/bin/consumer /usr/local/bin/consumer
+COPY --from=is-builder /go/bin/consumerd /usr/local/bin/consumerd
 
 
 # Copy in the shell scripts that run the testnet

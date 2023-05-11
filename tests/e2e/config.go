@@ -165,7 +165,7 @@ func SlashThrottleTestRun() TestRun {
 			},
 			chainID("consu"): {
 				chainId:        chainID("consu"),
-				binaryName:     "interchain-security-cd",
+				binaryName:     "consumer",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
@@ -208,7 +208,7 @@ func DefaultTestRun() TestRun {
 			},
 			chainID("consu"): {
 				chainId:        chainID("consu"),
-				binaryName:     "interchain-security-cd",
+				binaryName:     "consumer",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
@@ -250,7 +250,7 @@ func DemocracyTestRun() TestRun {
 			},
 			chainID("democ"): {
 				chainId:        chainID("democ"),
-				binaryName:     "interchain-security-cdd",
+				binaryName:     "democracy",
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"20\" | " +
@@ -293,7 +293,7 @@ func MultiConsumerTestRun() TestRun {
 			},
 			chainID("consu"): {
 				chainId:        chainID("consu"),
-				binaryName:     "interchain-security-cd",
+				binaryName:     "consumer",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
@@ -304,7 +304,7 @@ func MultiConsumerTestRun() TestRun {
 			},
 			chainID("densu"): {
 				chainId:        chainID("densu"),
-				binaryName:     "interchain-security-cd",
+				binaryName:     "consumer",
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +

@@ -15,7 +15,7 @@ The code for CCV is housed under [x/ccv](./x/ccv). The `types` folder contains t
 
 ## Instructions
 
-**Prerequisites**
+### Prerequisites
 
 ```bash
 ## For OSX or Linux
@@ -28,15 +28,15 @@ brew install jq
 
 ```
 
-**Installing and running binaries**
+### Installing and running binaries
 
 ```bash
-# install interchain-security-pd and interchain-security-cd binaries
+# install provider and consumer binaries
 make install
 # run provider
-interchain-security-pd
+provider
 # run consumer
-interchain-security-cd
+consumer
 # (if the above fail, ensure ~/go/bin on $PATH)
 export PATH=$PATH:$(go env GOPATH)/bin
 ```
