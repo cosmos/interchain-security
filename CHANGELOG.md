@@ -4,16 +4,19 @@
 
 ## v1.2.0-multiden
 
-The first release candidate for a fix built on top of v1.2.0, intended for consumers. This release adds a list of denoms on the consumer that are allowed to be sent to the provider as rewards. This prevents a potential DOS attack that was discovered during the audit of Replicated Security performed by Oak Security and funded by the Cosmos Hub community through Proposal 687.
+The first release candidate for a fix built on top of v1.2.0, intended for consumers. This release adds a list of denoms on the consumer that are allowed to be sent to the provider as rewards. This prevents a potential DOS attack that was discovered during the audit of Replicated Security performed by Oak Security and funded by the Cosmos Hub community through Proposal 687. In an effort to move quickly, this release also includes a multisig fix that is effective only for provider. It shouldn't affect the consumer module.
 
-* (fix) prevent denom DOS attack [54e9852](https://github.com/cosmos/interchain-security/commit/54e9852d3c89a2513cd0170a56c6eec894fc878d)
-* (fix) multisig [54e9852](https://github.com/cosmos/interchain-security/commit/54e9852d3c89a2513cd0170a56c6eec894fc878d)
+[full diff](https://github.com/cosmos/interchain-security/compare/v1.2.0...v1.2.0-multiden-rc0)
 
 ## v1.1.0-multiden
 
 This release combines two fixes on top of v1.1.0, that we judged were urgent to get onto the Cosmos Hub before the launch of the first ICS consumer chain. This is an emergency release intended for providers.
 
 The first fix is to enable the use of multisigs and Ledger devices when assigning keys for consumer chains. The second is to prevent a possible DOS vector involving the reward distribution system.
+
+Note PRs were made in a private security repo.
+
+[full diff](https://github.com/cosmos/interchain-security/compare/v1.1.0...release/v1.1.0-multiden)
 
 ### Multisig fix
 
