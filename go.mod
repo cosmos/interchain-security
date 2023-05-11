@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/confio/ics23/go v0.9.0
-	github.com/cosmos/cosmos-sdk v0.45.15
+	github.com/cosmos/cosmos-sdk v0.45.16-ics
 	github.com/cosmos/ibc-go/v4 v4.4.0
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/mock v1.6.0
@@ -151,7 +151,6 @@ require (
 )
 
 replace (
-	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.15-ics
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.27
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
