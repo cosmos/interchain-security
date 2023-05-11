@@ -46,7 +46,7 @@ func (tr TestRun) sendTokens(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `sync`,
 		`-y`,
 	)
 	if verbose {
@@ -181,21 +181,19 @@ func (tr TestRun) submitTextProposal(
 	// TEXT PROPOSAL
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-
 		"tx", "gov", "submit-legacy-proposal",
 		`--title`, action.title,
 		`--description`, action.description,
-		`--type`, action.propType,
 		`--deposit`, fmt.Sprint(action.deposit)+`stake`,
-
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -220,7 +218,6 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	prop := client.ConsumerAdditionProposalJSON{
 		Title:                             "Propose the addition of a new chain",
 		Summary:                           "Gonna be a great chain",
-		Type:                              "consumer-addition",
 		ChainId:                           string(tr.chainConfigs[action.consumerChain].chainId),
 		InitialHeight:                     action.initialHeight,
 		GenesisHash:                       []byte("gen_hash"),
@@ -256,20 +253,17 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	// CONSUMER ADDITION PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-
-		"tx", "gov", "submit-legacy-proposal", "consumer-additon", "/temp-proposal.json",
-
+		"tx", "gov", "submit-legacy-proposal", "consumer-addition", "/temp-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--type`, action.Type,
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--gas`, `900000`,
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -325,10 +319,10 @@ func (tr TestRun) submitConsumerRemovalProposal(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -397,10 +391,10 @@ func (tr TestRun) submitParamChangeProposal(
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -466,10 +460,10 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 		`--node`, tr.getValidatorNode(providerChain.chainId, action.from),
 		`--gas`, "9000000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -504,7 +498,7 @@ func (tr TestRun) voteGovProposal(
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
 				`--gas`, "900000",
-				`-b`, `block`,
+				`-b`, `sync`,
 				`-y`,
 			).CombinedOutput()
 			if err != nil {
@@ -800,6 +794,7 @@ func (tr TestRun) transferChannelComplete(
 		"--dst-channel", "channel-"+fmt.Sprint(action.channelA),
 		"--src-channel", "channel-"+fmt.Sprint(action.channelB),
 	)
+
 	executeCommand(chanOpenAckCmd, "transferChanOpenAck")
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenConfirmCmd arguments.
@@ -919,9 +914,10 @@ func (tr TestRun) delegateTokens(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `sync`,
 		`-y`,
 	)
+	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("delegate cmd:", cmd.String())
 	}
@@ -961,9 +957,10 @@ func (tr TestRun) unbondTokens(
 		`--node`, tr.getValidatorNode(action.chain, action.sender),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `sync`,
 		`-y`,
 	)
+	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("unbond cmd:", cmd.String())
 	}
@@ -1011,10 +1008,10 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 		// Need to manually set gas limit past default (200000), since redelegate has a lot of operations
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `sync`,
 		`-y`,
 	)
-
+	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("redelegate cmd:", cmd.String())
 	}
@@ -1092,9 +1089,10 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		`--node`, tr.getValidatorNode(action.provider, action.validator),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, `sync`,
 		`-y`,
 	)
+	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("unjail cmd:", cmd.String())
 	}
@@ -1152,12 +1150,13 @@ func (tr TestRun) registerRepresentative(
 				`--home`, tr.getValidatorHome(action.chain, val),
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
-				`-b`, `block`,
+				`-b`, `sync`,
 				`-y`,
 			).CombinedOutput()
 			if err != nil {
 				log.Fatal(err, "\n", string(bz))
 			}
+			time.Sleep(10 * time.Second)
 		}(val, stake)
 	}
 
@@ -1218,6 +1217,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		tr.getValidatorHome(chainID("provi"), action.validator),
 		tr.getValidatorNode(chainID("provi"), action.validator),
 	)
+	time.Sleep(10 * time.Second)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
 		tr.containerConfig.instanceName,

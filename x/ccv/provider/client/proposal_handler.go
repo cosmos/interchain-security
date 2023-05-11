@@ -96,7 +96,7 @@ Where proposal.json contains:
 				return err
 			}
 
-			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), "")
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary)
 			if err != nil {
 				return err
 			}
@@ -230,7 +230,6 @@ Where proposal.json contains:
 type ConsumerAdditionProposalJSON struct {
 	Title         string             `json:"title"`
 	Summary       string             `json:"summary"`
-	Type          string             `json:"type"`
 	ChainId       string             `json:"chain_id"`
 	InitialHeight clienttypes.Height `json:"initial_height"`
 	GenesisHash   []byte             `json:"genesis_hash"`
