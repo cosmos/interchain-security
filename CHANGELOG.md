@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+Note: Some PRs in the unreleased section may reappear from the released sections of some releases below. This is due to the fact that ICS v1.1.0 deviates from the commit ordering of the main branch, and all other releases thereafter are based on v1.1.0.
+
+The ICS v1.3.0 release will be based on the main branch, and will not have this issue. v1.3.0 will also contain all the accumulated PRs from the various releases below. After v1.3.0, we plan to revamp release practices, and how we modularize the repo for consumer/provider.
+
 ## v1.2.0-multiden
 
 The first release candidate for a fix built on top of v1.2.0, intended for consumers. This release adds a list of denoms on the consumer that are allowed to be sent to the provider as rewards. This prevents a potential DOS attack that was discovered during the audit of Replicated Security performed by Oak Security and funded by the Cosmos Hub community through Proposal 687. In an effort to move quickly, this release also includes a multisig fix that is effective only for provider. It shouldn't affect the consumer module.
