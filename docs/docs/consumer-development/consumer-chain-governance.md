@@ -12,7 +12,7 @@ The democracy module provides a governance experience identical to what exists o
 
 Using the democracy module on a consumer chain is the exact same experience, except for the fact that it is not the actual validator set of the chain (since it is a consumer chain, these are the Cosmos Hub validators) acting as representatives. Instead, there is a separate representative role who token holders can delegate to and who can perform the functions that validators do in Cosmos governance, without participating in proof of stake consensus.
 
-For an example, see the [Democracy Consumer](https://github.com/cosmos/interchain-security/tree/main/app/consumer-democracy)
+For an example, see  [Democracy](https://github.com/cosmos/interchain-security/tree/main/app/democracy)
 
 ## CosmWasm
 

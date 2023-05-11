@@ -19,7 +19,7 @@ You should not need to manage or override any code from the `x/consumer` module.
 
 ## Democracy consumer chain
 
-The source code for the example app can be found [here](https://github.com/cosmos/interchain-security/tree/main/app/consumer-democracy).
+The source code for the example app can be found [here](https://github.com/cosmos/interchain-security/tree/main/app/democracy).
 
 This type of consumer chain wraps the basic CosmosSDK `x/distribution`, `x/staking` and `x/governance` modules allowing the consumer chain to perform democratic actions such as participating and voting within the chain's governance system.
 
