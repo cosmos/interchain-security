@@ -7,7 +7,7 @@ import (
 
 // TraceWriter is an interface for writers that write steps to files.
 type TraceWriter interface {
-	WriteTraceToFile(filepath string, trace []Step)
+	WriteTraceToFile(filepath string, trace []Step) error
 }
 
 // JSONWriter is a simple writer that simply marshals the array of Step objects.

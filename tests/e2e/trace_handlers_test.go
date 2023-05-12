@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -63,8 +64,8 @@ func TestWriterThenParser(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			filename := filepath.Join(dir, name)
-			err := writer.WriteTraceToFile(filename, tc.trace)
+			filename := filepath.Join(dir, "trace.json")
+			err := WriteAndReadTrace(parser, writer, tc.trace, filename)
 			if err != nil {
 				t.Fatalf("in testcase %v, got error writing trace to file: %v", name, err)
 			}
@@ -197,22 +198,50 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			jsonobj, err := json.Marshal(tc.chainState)
+			err := MarshalAndUnmarshalChainState(tc.chainState)
 			if err != nil {
-				t.Fatalf("error marshalling chain state: %v", err)
-			}
-
-			var got *ChainState
-			err = json.Unmarshal(jsonobj, &got)
-			if err != nil {
-				t.Fatalf("error unmarshalling chain state: %v", err)
-			}
-
-			diff := cmp.Diff(tc.chainState, *got)
-			if diff != "" {
-				log.Print(string(jsonobj))
-				t.Fatalf(diff)
+				t.Fatalf(err.Error())
 			}
 		})
 	}
+}
+
+func MarshalAndUnmarshalChainState(chainState ChainState) error {
+	jsonobj, err := json.Marshal(chainState)
+	if err != nil {
+		return fmt.Errorf("error marshalling chain state: %v", err)
+	}
+
+	var got *ChainState
+	err = json.Unmarshal(jsonobj, &got)
+	if err != nil {
+		return fmt.Errorf("error unmarshalling chain state: %v", err)
+	}
+
+	diff := cmp.Diff(chainState, *got)
+	if diff != "" {
+		log.Print(string(jsonobj))
+		return fmt.Errorf(diff)
+	}
+
+	return nil
+}
+
+func WriteAndReadTrace(parser TraceParser, writer TraceWriter, trace []Step, tmp_filepath string) error {
+	err := writer.WriteTraceToFile(tmp_filepath, trace)
+	if err != nil {
+		return fmt.Errorf("error writing trace to file: %v", err)
+	}
+
+	got, err := parser.ReadTraceFromFile(tmp_filepath)
+	if err != nil {
+		return fmt.Errorf("error reading trace from file: %v", err)
+	}
+
+	diff := cmp.Diff(trace, got, cmp.AllowUnexported(Step{}))
+	if diff != "" {
+		return fmt.Errorf(diff)
+	}
+
+	return nil
 }
