@@ -2,6 +2,7 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
@@ -14,6 +15,12 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 }
 
 func (k Keeper) RegisterConsumerRewardDenom(ctx sdk.Context, denom string, sender sdk.AccAddress) error {
+
+	// Check if the denom is already registered
+	if k.ConsumerRewardDenomExists(ctx, denom) {
+		return consumertypes.ErrConsumerRewardDenomAlreadyRegistered
+	}
+
 	// Send the consumer reward denom registration fee to the community pool
 	err := k.distributionKeeper.FundCommunityPool(ctx, sdk.NewCoins(k.GetConsumerRewardDenomRegistrationFee(ctx)), sender)
 	if err != nil {
@@ -35,6 +42,15 @@ func (k Keeper) SetConsumerRewardDenom(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.ConsumerRewardDenomsKey(denom), []byte{})
+}
+
+func (k Keeper) ConsumerRewardDenomExists(
+	ctx sdk.Context,
+	denom string,
+) bool {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerRewardDenomsKey(denom))
+	return bz != nil
 }
 
 func (k Keeper) GetAllConsumerRewardDenoms(ctx sdk.Context) (consumerRewardDenoms []string) {
