@@ -1,5 +1,7 @@
 package main
 
+const consumerRewardDenom = "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9"
+
 func stepsDemocracy(consumerName string) []Step {
 	return []Step{
 		{
@@ -133,12 +135,12 @@ func stepsDemocracy(consumerName string) []Step {
 			action: registerConsumerRewardDenomAction{
 				chain: chainID("provi"),
 				from:  validatorID("bob"),
-				denom: "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9",
+				denom: consumerRewardDenom,
 			},
 			state: State{
 				chainID("provi"): ChainState{
 					// Check that the denom is registered on provider chain
-					RegisteredConsumerRewardDenoms: &[]string{"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9"},
+					RegisteredConsumerRewardDenoms: &[]string{consumerRewardDenom},
 					ValBalances: &map[validatorID]uint{
 						// make sure that bob's account was debited
 						validatorID("bob"): 9490000000,
