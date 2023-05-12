@@ -15,7 +15,6 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 }
 
 func (k Keeper) RegisterConsumerRewardDenom(ctx sdk.Context, denom string, sender sdk.AccAddress) error {
-
 	// Check if the denom is already registered
 	if k.ConsumerRewardDenomExists(ctx, denom) {
 		return consumertypes.ErrConsumerRewardDenomAlreadyRegistered
