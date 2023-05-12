@@ -2,11 +2,26 @@
 
 ## [Unreleased]
 
-Note: Some PRs in the unreleased section may reappear from the released sections of some releases below. This is due to the fact that ICS v1.1.0 deviates from the commit ordering of the main branch, and all other releases thereafter are based on v1.1.0.
+Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
 
-The ICS v1.3.0 release will be based on the main branch, and will not have this issue. v1.3.0 will also contain all the accumulated PRs from the various releases below. After v1.3.0, we plan to revamp release practices, and how we modularize the repo for consumer/provider.
+## v.1.3.0
 
-TODO: Feature EPICs that were completed and will be added within the next release (standalone to consumer, soft opt out, etc.)
+Date: May 12th, 2023
+
+Unlike prior releases, the ICS v1.3.0 release will be based on the main branch. v1.3.0 will contain all the accumulated PRs from the various releases below, along with other PRs that were merged, but not released to production. After v1.3.0, we plan to revamp release practices, and how we modularize the repo for consumer/provider.
+
+Some PRs from v1.3.0 may reappear from other releases below. This is due to the fact that ICS v1.1.0 deviates from the commit ordering of the main branch, and other releases thereafter are based on v1.1.0.
+
+### High level changes included in v1.3.0
+
+* MVP for standalone to consumer changeover, see [EPIC](https://github.com/cosmos/interchain-security/issues/756)
+* MVP for soft opt out, see [EPIC](https://github.com/cosmos/interchain-security/issues/851)
+* Various fixes, critical and non-critical
+* Docs updates which should not affect production code
+
+## PRs included in v1.3.0
+
+TODO: entry for https://github.com/cosmos/interchain-security/pull/931 once it's merged.
 
 * (deps) Bump hermes [#921](https://github.com/cosmos/interchain-security/pull/921)
 * (deps) bump gaurav-nelson/github-action-markdown-link-check from 1.0.13 to 1.0.15 [#928](https://github.com/cosmos/interchain-security/pull/928)
