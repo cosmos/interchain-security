@@ -11,7 +11,7 @@ Additionally, you can check the [testnet repo](https://github.com/cosmos/testnet
 ## 1. Complete testing & integration
 
 - [ ] test integration with gaia
-- [ ] test your protocol with supported relayer versions (minimum hermes 1.3)
+- [ ] test your protocol with supported relayer versions (minimum hermes 1.4.1)
 - [ ] reach out to the ICS team if you are facing issues
 
 ## 2. Create an Onboarding Repository
