@@ -19,26 +19,11 @@ import (
 // Reward Distribution follows a simple model: send tokens to the fee pool
 // of the provider validator set
 func (k Keeper) EndBlockRD(ctx sdk.Context) {
-	// Split blocks rewards.
-	// It panics in case of marshalling / unmarshalling errors or
-	// if sending coins between module accounts fails.
-	k.DistributeRewardsInternally(ctx)
-
-	if !k.shouldSendRewardsToProvider(ctx) {
+	if !k.shouldNotifyRewardsToProvider(ctx) {
 		return
 	}
 
-	// Try to send rewards to provider
-	cachedCtx, writeCache := ctx.CacheContext()
-	if err := k.SendRewardsToProvider(cachedCtx); err != nil {
-		k.Logger(ctx).Error("attempt to sent rewards to provider failed", "error", err)
-	} else {
-		// The cached context is created with a new EventManager so we merge the event
-		// into the original context
-		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
-		// write cache
-		writeCache()
-	}
+	k.QueueNotifyRewardsPackets(ctx)
 
 	// Update LastTransmissionBlockHeight
 	newLtbh := types.LastTransmissionBlockHeight{
@@ -91,16 +76,16 @@ func (k Keeper) DistributeRewardsInternally(ctx sdk.Context) {
 }
 
 // Check whether it's time to send rewards to provider
-func (k Keeper) shouldSendRewardsToProvider(ctx sdk.Context) bool {
+func (k Keeper) shouldNotifyRewardsToProvider(ctx sdk.Context) bool {
 	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
 	curHeight := ctx.BlockHeight()
 	ltbh := k.GetLastTransmissionBlockHeight(ctx)
 	return (curHeight - ltbh.Height) >= bpdt
 }
 
-// SendRewardsToProvider attempts to send to the provider (via IBC)
+// SendRewardsNotificationToProvider attempts to send to the provider (via IBC)
 // all the block rewards allocated for the provider
-func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
+func (k Keeper) SendRewardsNotificationToProvider(ctx sdk.Context) error {
 	// empty out the toSendToProviderTokens address
 	ch := k.GetDistributionTransmissionChannel(ctx)
 	transferChannel, found := k.channelKeeper.GetChannel(ctx, transfertypes.PortID, ch)

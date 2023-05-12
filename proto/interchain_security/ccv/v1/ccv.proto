@@ -53,6 +53,10 @@ message SlashPacketData {
   cosmos.staking.v1beta1.InfractionType infraction = 3;
 }
 
+message NotifyRewardsPacketData {
+  int64 block_height = 1;
+}
+
 // MaturedUnbondingOps defines a list of ids corresponding to ids of matured unbonding operations. 
 message MaturedUnbondingOps {
   repeated uint64 ids = 1;
@@ -65,6 +69,7 @@ message ConsumerPacketData {
   oneof data {
     SlashPacketData slashPacketData = 2;
     VSCMaturedPacketData vscMaturedPacketData = 3;
+    NotifyRewardsPacketData notifyRewardsPacketData = 4;
   }
 }
 
@@ -86,4 +91,6 @@ enum ConsumerPacketDataType {
   CONSUMER_PACKET_TYPE_SLASH = 1 [(gogoproto.enumvalue_customname) = "SlashPacket"];
   // VSCMatured packet
   CONSUMER_PACKET_TYPE_VSCM = 2 [(gogoproto.enumvalue_customname) = "VscMaturedPacket"];
+  // NotifyReward packet
+  CONSUMER_PACKET_TYPE_NOTIFY_REWARDS = 3 [(gogoproto.enumvalue_customname) = "NotifyRewardsPacket"];
 }

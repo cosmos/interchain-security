@@ -59,6 +59,10 @@ func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, infraction
 	}
 }
 
+func NewNotifyRewardsPacketData(blockHeight int64) *NotifyRewardsPacketData {
+	return &NotifyRewardsPacketData{BlockHeight: blockHeight}
+}
+
 func (vdt SlashPacketData) ValidateBasic() error {
 	if len(vdt.Validator.Address) == 0 || vdt.Validator.Power == 0 {
 		return sdkerrors.Wrap(ErrInvalidPacketData, "validator fields cannot be empty")

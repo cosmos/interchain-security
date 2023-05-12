@@ -10,9 +10,10 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
+	abci "github.com/tendermint/tendermint/abci/types"
+
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // OnRecvVSCPacket sets the pending validator set changes that will be flushed to ABCI on Endblock
@@ -85,6 +86,26 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	)
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
+}
+
+func (k *Keeper) QueueNotifyRewardsPackets(ctx sdk.Context) {
+	packet := ccv.NewNotifyRewardsPacketData(ctx.BlockHeight())
+	k.AppendPendingPacket(ctx, ccv.ConsumerPacketData{
+		Type: ccv.NotifyRewardsPacket,
+		Data: &ccv.ConsumerPacketData_NotifyRewardsPacketData{NotifyRewardsPacketData: packet},
+	})
+
+	k.Logger(ctx).Info("NotifyRewardsPacket enqueued", "blockHeight", packet.BlockHeight)
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			ccv.EventNotifyRewards,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
+			sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
+			sdk.NewAttribute(ccv.AttributeTimestamp, ctx.BlockTime().String()),
+		),
+	)
 }
 
 // QueueVSCMaturedPackets appends matured VSCs to an internal queue.

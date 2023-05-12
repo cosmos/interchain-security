@@ -10,6 +10,7 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
+
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -190,6 +191,9 @@ func (am AppModule) OnRecvPacket(
 		case ccv.SlashPacket:
 			// handle SlashPacket
 			ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
+		case ccv.NotifyRewardsPacket:
+			// do nothing
+			ack = channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 		default:
 			errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type))
 			ack = &errAck
