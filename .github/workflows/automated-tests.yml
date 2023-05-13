@@ -27,4 +27,4 @@ jobs:
         run: go test ./...
 
       - name: E2E tests
-        run: make test-e2e-short
+        run: go run ./tests/e2e/... --happy-path-only --verbose
