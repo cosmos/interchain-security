@@ -6,7 +6,7 @@ install: go.sum
 		export CGO_LDFLAGS="-Wl,-z,relro,-z,now -fstack-protector"
 		go install $(BUILD_FLAGS) ./cmd/provider
 		go install $(BUILD_FLAGS) ./cmd/consumer
-		go install $(BUILD_FLAGS) ./cmd/consumerd
+		go install $(BUILD_FLAGS) ./cmd/democracy
 
 # run all tests: unit, integration, diff, and E2E
 test: 
