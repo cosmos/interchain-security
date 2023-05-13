@@ -39,7 +39,7 @@ COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/
 
 COPY --from=is-builder /go/bin/provider /usr/local/bin/provider
 COPY --from=is-builder /go/bin/consumer /usr/local/bin/consumer
-COPY --from=is-builder /go/bin/consumerd /usr/local/bin/consumerd
+COPY --from=is-builder /go/bin/democracy /usr/local/bin/democracy
 
 
 # Copy in the shell scripts that run the testnet

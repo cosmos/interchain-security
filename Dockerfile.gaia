@@ -73,7 +73,7 @@ COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/
 # swap provider binary with gaia binary but keep the name
 COPY --from=gaia-builder /go/gaia/build/gaiad /usr/local/bin/provider
 COPY --from=is-builder /go/bin/consumer /usr/local/bin/consumer
-COPY --from=is-builder /go/bin/consumerd /usr/local/bin/consumerd
+COPY --from=is-builder /go/bin/democracy /usr/local/bin/democracy
 
 
 # Copy in the shell scripts that run the testnet
