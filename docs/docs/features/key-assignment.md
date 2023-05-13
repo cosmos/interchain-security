@@ -63,7 +63,7 @@ OR
 gaiad query provider validator-provider-key <consumer-chain-id> consumervalcons1e....123asdnoaisdao
 ```
 
-You must use a `valcons` address. You can obtain it by querying your node on the consumer `consumerd tendermint show-address`
+You must use a `valcons` address. You can obtain it by querying your node on the consumer `consumer tendermint show-address`
 
 ## Changing a key
 
