@@ -4,10 +4,12 @@ on:
     branches:
       - main
       - release/v*
+      - feat/*
   pull_request:
     branches:
       - main
       - release/v*
+      - feat/*
 jobs:
   E2E_Tests:
     runs-on: ubuntu-latest
