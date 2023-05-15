@@ -989,9 +989,8 @@ func TestBeginBlockCCR(t *testing.T) {
 	// Only first two consumer chains should be stopped
 	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
 	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
-	expectations = append(expectations, mocks.MockStakingKeeper.EXPECT().BondDenom(ctx).Return("stake").AnyTimes())
 
-	gomock.InAnyOrder(expectations)
+	gomock.InOrder(expectations...)
 
 	//
 	// Remaining setup
