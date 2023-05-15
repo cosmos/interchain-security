@@ -250,7 +250,8 @@ type ConsumerAdditionProposalReq struct {
 	Proposer sdk.AccAddress `json:"proposer"`
 
 	Title         string             `json:"title"`
-	Description   string             `json:"description"`
+	Summary       string             `json:"summary"`
+	Type          string             `json:"type"`
 	ChainId       string             `json:"chainId"`
 	InitialHeight clienttypes.Height `json:"initialHeight"`
 	GenesisHash   []byte             `json:"genesisHash"`
