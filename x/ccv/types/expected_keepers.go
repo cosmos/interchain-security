@@ -43,6 +43,7 @@ type StakingKeeper interface {
 	MaxValidators(ctx sdk.Context) uint32
 	GetLastTotalPower(ctx sdk.Context) sdk.Int
 	GetLastValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
+	BondDenom(ctx sdk.Context) (res string)
 }
 
 type EvidenceKeeper interface {
@@ -87,7 +88,10 @@ type ClientKeeper interface {
 	GetSelfConsensusState(ctx sdk.Context, height ibcexported.Height) (ibcexported.ConsensusState, error)
 }
 
-// TODO: Expected interfaces for distribution on provider and consumer chains
+// DistributionKeeper defines the expected interface of the distribution keeper
+type DistributionKeeper interface {
+	FundCommunityPool(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
+}
 
 // ConsumerHooks event hooks for newly bonded cross-chain validators
 type ConsumerHooks interface {

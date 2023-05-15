@@ -1160,6 +1160,36 @@ func (tr TestRun) registerRepresentative(
 	wg.Wait()
 }
 
+type registerConsumerRewardDenomAction struct {
+	chain chainID
+	from  validatorID
+	denom string
+}
+
+func (tr TestRun) registerConsumerRewardDenom(action registerConsumerRewardDenomAction, verbose bool) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+		"tx", "provider", "register-consumer-reward-denom", action.denom,
+
+		`--from`, `validator`+fmt.Sprint(action.from),
+		`--chain-id`, string(action.chain),
+		`--home`, tr.getValidatorHome(action.chain, action.from),
+		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--gas`, "9000000",
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	).CombinedOutput()
+
+	if verbose {
+		fmt.Println("redelegate cmd:", string(bz))
+	}
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
 // Creates an additional node on selected chain
 // by copying an existing validator's home folder
 //
