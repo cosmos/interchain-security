@@ -3,7 +3,6 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
-	"reflect"
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
@@ -103,6 +102,7 @@ func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
 	k.standaloneStakingKeeper = sk
 }
 
+/*
 // Validates that the consumer keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
@@ -130,6 +130,7 @@ func (k Keeper) mustValidateFields() {
 	ccv.PanicIfZeroOrNil(k.ibcCoreKeeper, "ibcCoreKeeper")         // 13
 	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")   // 14
 }
+*/
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {

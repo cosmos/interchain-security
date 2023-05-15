@@ -113,7 +113,7 @@ func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math
 // Note: This function advances blocks in-between operations, where validator powers are
 // not checked, since they are checked in integration tests.
 func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
-	srcValAddr sdk.ValAddress, dstValAddr sdk.ValAddress, amount math.Int,
+	srcValAddr, dstValAddr sdk.ValAddress, amount math.Int,
 ) {
 	// Delegate to src validator
 	srcValTokensBefore := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()

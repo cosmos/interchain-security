@@ -46,7 +46,6 @@ func (tr TestRun) sendTokens(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	)
 	if verbose {
@@ -169,7 +168,6 @@ type submitTextProposalAction struct {
 	chain       chainID
 	from        validatorID
 	deposit     uint
-	propType    string
 	title       string
 	description string
 }
@@ -178,23 +176,21 @@ func (tr TestRun) submitTextProposal(
 	action submitTextProposalAction,
 	verbose bool,
 ) {
+	// TEXT PROPOSAL
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-
-		"tx", "gov", "submit-proposal",
+		"tx", "gov", "submit-legacy-proposal",
 		`--title`, action.title,
 		`--description`, action.description,
-		`--type`, action.propType,
 		`--deposit`, fmt.Sprint(action.deposit)+`stake`,
-
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -217,7 +213,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	params := consumertypes.DefaultParams()
 	prop := client.ConsumerAdditionProposalJSON{
 		Title:                             "Propose the addition of a new chain",
-		Description:                       "Gonna be a great chain",
+		Summary:                           "Gonna be a great chain",
 		ChainId:                           string(tr.chainConfigs[action.consumerChain].chainId),
 		InitialHeight:                     action.initialHeight,
 		GenesisHash:                       []byte("gen_hash"),
@@ -251,21 +247,18 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// CONSUMER ADDITION PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-
-		"tx", "gov", "submit-proposal", "consumer-addition",
-		"/temp-proposal.json",
-
+		"tx", "gov", "submit-legacy-proposal", "consumer-addition", "/temp-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--gas`, `900000`,
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
-
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -311,20 +304,19 @@ func (tr TestRun) submitConsumerRemovalProposal(
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// CONSUMER REMOVAL PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-		"tx", "gov", "submit-proposal", "consumer-removal",
-		"/temp-proposal.json",
+		"tx", "gov", "submit-legacy-proposal", "consumer-removal", "/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
-
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -340,10 +332,10 @@ type submitParamChangeProposalAction struct {
 }
 
 type paramChangeProposalJSON struct {
-	Title       string            `json:"title"`
-	Description string            `json:"description"`
-	Changes     []paramChangeJSON `json:"changes"`
-	Deposit     string            `json:"deposit"`
+	Title   string            `json:"title"`
+	Summary string            `json:"summary"`
+	Changes []paramChangeJSON `json:"changes"`
+	Deposit string            `json:"deposit"`
 }
 
 type paramChangeJSON struct {
@@ -357,10 +349,10 @@ func (tr TestRun) submitParamChangeProposal(
 	verbose bool,
 ) {
 	prop := paramChangeProposalJSON{
-		Title:       "Param change",
-		Description: "Changing module params",
-		Changes:     []paramChangeJSON{{Subspace: action.subspace, Key: action.key, Value: action.value}},
-		Deposit:     fmt.Sprint(action.deposit) + `stake`,
+		Title:   "Param change",
+		Summary: "Changing module params",
+		Changes: []paramChangeJSON{{Subspace: action.subspace, Key: action.key, Value: action.value}},
+		Deposit: fmt.Sprint(action.deposit) + `stake`,
 	}
 
 	bz, err := json.Marshal(prop)
@@ -382,10 +374,10 @@ func (tr TestRun) submitParamChangeProposal(
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// PARAM CHANGE PROPOSAL // we should be able to make these all one command which will be cool
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-		"tx", "gov", "submit-proposal", "param-change",
-		"/params-proposal.json",
+		"tx", "gov", "submit-legacy-proposal", "param-change", "/params-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
@@ -393,10 +385,9 @@ func (tr TestRun) submitParamChangeProposal(
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
-
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -451,10 +442,10 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// EQUIVOCATION PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, providerChain.binaryName,
 
-		"tx", "gov", "submit-proposal", "equivocation",
-		"/equivocation-proposal.json",
+		"tx", "gov", "submit-legacy-proposal", "equivocation-proposal", "/equivocation-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(providerChain.chainId),
@@ -462,10 +453,9 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 		`--node`, tr.getValidatorNode(providerChain.chainId, action.from),
 		`--gas`, "9000000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
-
+	time.Sleep(10 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -500,7 +490,6 @@ func (tr TestRun) voteGovProposal(
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
 				`--gas`, "900000",
-				`-b`, `block`,
 				`-y`,
 			).CombinedOutput()
 			if err != nil {
@@ -580,7 +569,7 @@ websocket_addr = "%s"
 
 [chains.gas_price]
 	denom = "stake"
-	price = 0.00
+	price = 0.0001
 
 [chains.trust_threshold]
 	denominator = "3"
@@ -796,6 +785,7 @@ func (tr TestRun) transferChannelComplete(
 		"--dst-channel", "channel-"+fmt.Sprint(action.channelA),
 		"--src-channel", "channel-"+fmt.Sprint(action.channelB),
 	)
+
 	executeCommand(chanOpenAckCmd, "transferChanOpenAck")
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenConfirmCmd arguments.
@@ -915,9 +905,9 @@ func (tr TestRun) delegateTokens(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	)
+	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("delegate cmd:", cmd.String())
 	}
@@ -957,9 +947,9 @@ func (tr TestRun) unbondTokens(
 		`--node`, tr.getValidatorNode(action.chain, action.sender),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	)
+	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("unbond cmd:", cmd.String())
 	}
@@ -1007,10 +997,9 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 		// Need to manually set gas limit past default (200000), since redelegate has a lot of operations
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	)
-
+	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("redelegate cmd:", cmd.String())
 	}
@@ -1088,9 +1077,9 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		`--node`, tr.getValidatorNode(action.provider, action.validator),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	)
+	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("unjail cmd:", cmd.String())
 	}
@@ -1148,12 +1137,12 @@ func (tr TestRun) registerRepresentative(
 				`--home`, tr.getValidatorHome(action.chain, val),
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
-				`-b`, `block`,
 				`-y`,
 			).CombinedOutput()
 			if err != nil {
 				log.Fatal(err, "\n", string(bz))
 			}
+			time.Sleep(10 * time.Second)
 		}(val, stake)
 	}
 
@@ -1203,9 +1192,10 @@ type assignConsumerPubKeyAction struct {
 
 func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbose bool) {
 	valCfg := tr.validatorConfigs[action.validator]
+	time.Sleep(10 * time.Second)
 
 	assignKey := fmt.Sprintf(
-		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 900000 --keyring-backend test -b sync -y -o json`,
+		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas auto --keyring-backend test -y -o json`,
 		tr.chainConfigs[chainID("provi")].binaryName,
 		string(tr.chainConfigs[action.chain].chainId),
 		action.consumerPubkey,
@@ -1214,6 +1204,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		tr.getValidatorHome(chainID("provi"), action.validator),
 		tr.getValidatorNode(chainID("provi"), action.validator),
 	)
+	time.Sleep(10 * time.Second)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
 		tr.containerConfig.instanceName,

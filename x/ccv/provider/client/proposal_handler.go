@@ -40,13 +40,13 @@ The proposal details must be supplied via a JSON file.
 Unbonding period, transfer timeout period and ccv timeout period should be provided as nanosecond time periods.
 
 Example:
-$ <appd> tx gov submit-proposal consumer-addition <path/to/proposal.json> --from=<key_or_address>
+$ <appd> tx gov submit-legacy-proposal consumer-addition <path/to/proposal.json> --from=<key_or_address>
 
 Where proposal.json contains:
 
 {
     "title": "Create the FooChain",
-    "description": "Gonna be a great chain",
+    "summary": "Gonna be a great chain",
     "chain_id": "foochain",
     "initial_height": {
         "revision_number": 2,
@@ -79,7 +79,7 @@ Where proposal.json contains:
 			CheckPropUnbondingPeriod(clientCtx, proposal.UnbondingPeriod)
 
 			content := types.NewConsumerAdditionProposal(
-				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
+				proposal.Title, proposal.Summary, proposal.ChainId, proposal.InitialHeight,
 				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime,
 				proposal.ConsumerRedistributionFraction, proposal.BlocksPerDistributionTransmission, proposal.HistoricalEntries,
 				proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod)
@@ -96,7 +96,7 @@ Where proposal.json contains:
 				return err
 			}
 
-			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), "")
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary)
 			if err != nil {
 				return err
 			}
@@ -118,12 +118,12 @@ Submit a consumer chain removal proposal along with an initial deposit.
 The proposal details must be supplied via a JSON file.
 
 Example:
-$ <appd> tx gov submit-proposal consumer-removal <path/to/proposal.json> --from=<key_or_address>
+$ <appd> tx gov submit-legacy-proposal consumer-removal <path/to/proposal.json> --from=<key_or_address>
 
 Where proposal.json contains:
 {
 	 "title": "Stop the FooChain",
-	 "description": "It was a great chain",
+	 "summary": "It was a great chain",
 	 "chain_id": "foochain",
 	 "stop_time": "2022-01-27T15:59:50.121607-08:00",
 	 "deposit": "10000stake"
@@ -175,12 +175,12 @@ func SubmitEquivocationProposalTxCmd() *cobra.Command {
 The proposal details must be supplied via a JSON file.
 
 Example:
-$ <appd> tx gov submit-proposal equivocation <path/to/proposal.json> --from=<key_or_address>
+$ <appd> tx gov submit-legacy-proposal equivocation <path/to/proposal.json> --from=<key_or_address>
 
 Where proposal.json contains:
 {
 	 "title": "Equivoque Foo validator",
-	 "description": "He double-signs on the Foobar consumer chain",
+	 "summary": "He double-signs on the Foobar consumer chain",
 	 "equivocations": [
 		{
 			"height": 10420042,
@@ -229,7 +229,7 @@ Where proposal.json contains:
 
 type ConsumerAdditionProposalJSON struct {
 	Title         string             `json:"title"`
-	Description   string             `json:"description"`
+	Summary       string             `json:"summary"`
 	ChainId       string             `json:"chain_id"`
 	InitialHeight clienttypes.Height `json:"initial_height"`
 	GenesisHash   []byte             `json:"genesis_hash"`
