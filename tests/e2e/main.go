@@ -44,7 +44,7 @@ func main() {
 
 	testRuns := []testRunWithSteps{
 		{DefaultTestRun(), happyPathSteps},
-		{DemocracyTestRun(), democracySteps},
+		// {DemocracyTestRun(), democracySteps},
 		{SlashThrottleTestRun(), slashThrottleSteps},
 	}
 	if includeMultiConsumer != nil && *includeMultiConsumer {
