@@ -196,7 +196,7 @@ func TestCreateConsumerClient(t *testing.T) {
 //
 // Note: Separated from TestCreateConsumerClient to also be called from TestCreateConsumerChainProposal.
 func testCreatedConsumerClient(t *testing.T,
-	ctx sdk.Context, providerKeeper providerkeeper.Keeper, expectedChainID string, expectedClientID string,
+	ctx sdk.Context, providerKeeper providerkeeper.Keeper, expectedChainID, expectedClientID string,
 ) {
 	t.Helper()
 	// ClientID should be stored.
@@ -574,7 +574,7 @@ func TestStopConsumerChain(t *testing.T) {
 
 // testProviderStateIsCleaned executes test assertions for the proposer's state being cleaned after a stopped consumer chain.
 func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
-	expectedChainID string, expectedChannelID string,
+	expectedChainID, expectedChannelID string,
 ) {
 	t.Helper()
 	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)

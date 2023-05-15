@@ -63,7 +63,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 // NewParams creates new consumer parameters with provided arguments
 func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
-	ccvTimeoutPeriod time.Duration, transferTimeoutPeriod time.Duration,
+	ccvTimeoutPeriod, transferTimeoutPeriod time.Duration,
 	consumerRedistributionFraction string, historicalEntries int64,
 	consumerUnbondingPeriod time.Duration, softOptOutThreshold string,
 ) Params {
