@@ -180,6 +180,7 @@ func (tr TestRun) getBlockHeight(chain chainID) uint {
 
 		`--node`, tr.getQueryNode(chain),
 	).CombinedOutput()
+	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -194,10 +195,11 @@ func (tr TestRun) getBlockHeight(chain chainID) uint {
 
 func (tr TestRun) waitBlocks(chain chainID, blocks uint, timeout time.Duration) {
 	startBlock := tr.getBlockHeight(chain)
-
+	fmt.Println("start: ", startBlock)
 	start := time.Now()
 	for {
 		thisBlock := tr.getBlockHeight(chain)
+		fmt.Println("block: ", thisBlock)
 		if thisBlock >= startBlock+blocks {
 			return
 		}

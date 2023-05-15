@@ -36,6 +36,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+	"github.com/cosmos/cosmos-sdk/x/genutil"
 
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
@@ -127,6 +128,7 @@ var (
 		tendermint.AppModuleBasic{},
 		// router.AppModuleBasic{},
 		ibcconsumer.AppModuleBasic{},
+		genutil.AppModuleBasic{},
 	)
 
 	// module account permissions
