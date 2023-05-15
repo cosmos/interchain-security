@@ -1,7 +1,7 @@
 package simibc
 
 import (
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -160,7 +160,7 @@ func augmentHeader(sender *ibctesting.TestChain, receiver *ibctesting.TestChain,
 		// NextValidatorsHash
 		tmTrustedVals, ok = sender.GetValsAtHeight(int64(trustedHeight.RevisionHeight + 1))
 		if !ok {
-			return sdkerrors.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight)
+			return errorsmod.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight)
 		}
 	}
 	trustedVals, err := tmTrustedVals.ToProto()

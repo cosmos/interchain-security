@@ -7,7 +7,7 @@ import (
 
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -55,7 +55,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	chainID := prop.ChainId
 	// check that a client for this chain does not exist
 	if _, found := k.GetConsumerClientId(ctx, chainID); found {
-		return sdkerrors.Wrap(ccv.ErrDuplicateConsumerChain,
+		return errorsmod.Wrap(ccv.ErrDuplicateConsumerChain,
 			fmt.Sprintf("cannot create client for existent consumer chain: %s", chainID))
 	}
 
@@ -154,7 +154,7 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan bool) (err error) {
 	// check that a client for chainID exists
 	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
-		return sdkerrors.Wrap(ccv.ErrConsumerChainNotFound,
+		return errorsmod.Wrap(ccv.ErrConsumerChainNotFound,
 			fmt.Sprintf("cannot stop non-existent consumer chain: %s", chainID))
 	}
 
@@ -250,14 +250,14 @@ func (k Keeper) MakeConsumerGenesis(
 	clientState.LatestHeight = height
 	trustPeriod, err := ccv.CalculateTrustPeriod(providerUnbondingPeriod, k.GetTrustingPeriodFraction(ctx))
 	if err != nil {
-		return gen, nil, sdkerrors.Wrapf(sdkerrorstypes.ErrInvalidHeight, "error %s calculating trusting_period for: %s", err, height)
+		return gen, nil, errorsmod.Wrapf(sdkerrorstypes.ErrInvalidHeight, "error %s calculating trusting_period for: %s", err, height)
 	}
 	clientState.TrustingPeriod = trustPeriod
 	clientState.UnbondingPeriod = providerUnbondingPeriod
 
 	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
 	if err != nil {
-		return gen, nil, sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
+		return gen, nil, errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
 	}
 
 	var lastPowers []stakingtypes.LastValidatorPower
@@ -276,7 +276,7 @@ func (k Keeper) MakeConsumerGenesis(
 
 		val, found := k.stakingKeeper.GetValidator(ctx, addr)
 		if !found {
-			return gen, nil, sdkerrors.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers: %s", err)
+			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers: %s", err)
 		}
 
 		tmProtoPk, err := val.TmConsPublicKey()

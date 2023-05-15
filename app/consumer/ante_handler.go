@@ -1,7 +1,7 @@
 package app
 
 import (
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrorstypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -22,13 +22,13 @@ type HandlerOptions struct {
 
 func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 	if options.AccountKeeper == nil {
-		return nil, sdkerrors.Wrap(sdkerrorstypes.ErrLogic, "account keeper is required for AnteHandler")
+		return nil, errorsmod.Wrap(sdkerrorstypes.ErrLogic, "account keeper is required for AnteHandler")
 	}
 	if options.BankKeeper == nil {
-		return nil, sdkerrors.Wrap(sdkerrorstypes.ErrLogic, "bank keeper is required for AnteHandler")
+		return nil, errorsmod.Wrap(sdkerrorstypes.ErrLogic, "bank keeper is required for AnteHandler")
 	}
 	if options.SignModeHandler == nil {
-		return nil, sdkerrors.Wrap(sdkerrorstypes.ErrLogic, "sign mode handler is required for ante builder")
+		return nil, errorsmod.Wrap(sdkerrorstypes.ErrLogic, "sign mode handler is required for ante builder")
 	}
 
 	sigGasConsumer := options.SigGasConsumer

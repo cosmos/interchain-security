@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -155,7 +155,7 @@ func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return errorsmod.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	return k.channelKeeper.ChanCloseInit(ctx, portID, channelID, chanCap)
 }
@@ -414,20 +414,20 @@ func (k Keeper) DeletePacketMaturityTimes(ctx sdk.Context, vscId uint64, maturit
 // is the expected provider chain.
 func (k Keeper) VerifyProviderChain(ctx sdk.Context, connectionHops []string) error {
 	if len(connectionHops) != 1 {
-		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
+		return errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
 	}
 	connectionID := connectionHops[0]
 	conn, ok := k.connectionKeeper.GetConnection(ctx, connectionID)
 	if !ok {
-		return sdkerrors.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
+		return errorsmod.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
 	}
 	// Verify that client id is expected clientID
 	expectedClientId, ok := k.GetProviderClientID(ctx)
 	if !ok {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "could not find provider client id")
+		return errorsmod.Wrapf(clienttypes.ErrInvalidClient, "could not find provider client id")
 	}
 	if expectedClientId != conn.ClientId {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "invalid client: %s, channel must be built on top of client: %s", conn.ClientId, expectedClientId)
+		return errorsmod.Wrapf(clienttypes.ErrInvalidClient, "invalid client: %s, channel must be built on top of client: %s", conn.ClientId, expectedClientId)
 	}
 
 	return nil

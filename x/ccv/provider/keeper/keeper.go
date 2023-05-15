@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -17,7 +17,7 @@ import (
 	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -103,7 +103,7 @@ func (k Keeper) mustValidateFields() {
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", "x/"+ibchost.ModuleName+"-"+types.ModuleName)
+	return ctx.Logger().With("module", "x/"+ibcexported.ModuleName+"-"+types.ModuleName)
 }
 
 // IsBound checks if the CCV module is already bound to the desired port
@@ -273,7 +273,7 @@ func (k Keeper) DeleteConsumerGenesis(ctx sdk.Context, chainID string) {
 // is the expected consumer chain.
 func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectionHops []string) error {
 	if len(connectionHops) != 1 {
-		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
+		return errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
 	}
 	connectionID := connectionHops[0]
 	clientID, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
@@ -282,15 +282,15 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 	}
 	ccvClientId, found := k.GetConsumerClientId(ctx, tmClient.ChainId)
 	if !found {
-		return sdkerrors.Wrapf(ccv.ErrClientNotFound, "cannot find client for consumer chain %s", tmClient.ChainId)
+		return errorsmod.Wrapf(ccv.ErrClientNotFound, "cannot find client for consumer chain %s", tmClient.ChainId)
 	}
 	if ccvClientId != clientID {
-		return sdkerrors.Wrapf(ccv.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
+		return errorsmod.Wrapf(ccv.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
 	}
 
 	// Verify that there isn't already a CCV channel for the consumer chain
 	if prevChannel, ok := k.GetChainToChannel(ctx, tmClient.ChainId); ok {
-		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, tmClient.ChainId)
+		return errorsmod.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, tmClient.ChainId)
 	}
 	return nil
 }
@@ -305,10 +305,10 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	channel, ok := k.channelKeeper.GetChannel(ctx, ccv.ProviderPortID, channelID)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
+		return errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
 	}
 	if len(channel.ConnectionHops) != 1 {
-		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to consumer chain")
+		return errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to consumer chain")
 	}
 	connectionID := channel.ConnectionHops[0]
 	clientID, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
@@ -318,7 +318,7 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	// Verify that there isn't already a CCV channel for the consumer chain
 	chainID := tmClient.ChainId
 	if prevChannelID, ok := k.GetChainToChannel(ctx, chainID); ok {
-		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannelID, chainID)
+		return errorsmod.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannelID, chainID)
 	}
 
 	// the CCV channel is established:
@@ -604,19 +604,19 @@ func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (
 ) {
 	conn, ok := k.connectionKeeper.GetConnection(ctx, connectionID)
 	if !ok {
-		return "", nil, sdkerrors.Wrapf(conntypes.ErrConnectionNotFound,
+		return "", nil, errorsmod.Wrapf(conntypes.ErrConnectionNotFound,
 			"connection not found for connection ID: %s", connectionID)
 	}
 	clientID = conn.ClientId
 	clientState, ok := k.clientKeeper.GetClientState(ctx, clientID)
 	if !ok {
-		return "", nil, sdkerrors.Wrapf(clienttypes.ErrClientNotFound,
+		return "", nil, errorsmod.Wrapf(clienttypes.ErrClientNotFound,
 			"client not found for client ID: %s", conn.ClientId)
 	}
 	tmClient, ok = clientState.(*ibctmtypes.ClientState)
 	if !ok {
-		return "", nil, sdkerrors.Wrapf(clienttypes.ErrInvalidClientType,
-			"invalid client type. expected %s, got %s", ibchost.Tendermint, clientState.ClientType())
+		return "", nil, errorsmod.Wrapf(clienttypes.ErrInvalidClientType,
+			"invalid client type. expected %s, got %s", ibcexported.Tendermint, clientState.ClientType())
 	}
 	return clientID, tmClient, nil
 }
@@ -626,7 +626,7 @@ func (k Keeper) chanCloseInit(ctx sdk.Context, channelID string) error {
 	capName := host.ChannelCapabilityPath(ccv.ProviderPortID, channelID)
 	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return errorsmod.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	return k.channelKeeper.ChanCloseInit(ctx, ccv.ProviderPortID, channelID, chanCap)
 }
