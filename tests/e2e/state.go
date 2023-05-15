@@ -206,7 +206,7 @@ func (tr TestRun) waitBlocks(chain chainID, blocks uint, timeout time.Duration) 
 		if time.Since(start) > timeout {
 			panic(fmt.Sprintf("\n\n\nwaitBlocks method has timed out after: %s\n\n", timeout))
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(time.Second)
 	}
 }
 
@@ -598,6 +598,7 @@ func (tr TestRun) getProviderAddressFromConsumer(consumerChain chainID, validato
 		`--node`, tr.getQueryNode(chainID("provi")),
 		`-o`, `json`,
 	)
+
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))

@@ -298,6 +298,8 @@ func queryCommand() *cobra.Command {
 		rpc.BlockCommand(),
 		authcmd.QueryTxsByEventsCmd(),
 		authcmd.QueryTxCmd(),
+		authcmd.GetEncodeCommand(),
+		authcmd.GetDecodeCommand(),
 	)
 
 	providerApp.ModuleBasics.AddQueryCommands(cmd)

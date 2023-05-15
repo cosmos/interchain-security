@@ -139,9 +139,7 @@ Where proposal.json contains:
 				return err
 			}
 
-			content := types.NewConsumerRemovalProposal(
-				proposal.Title, proposal.Description, proposal.ChainId, proposal.StopTime)
-
+			content := types.NewConsumerRemovalProposal(proposal.Title, proposal.Summary, proposal.ChainId, proposal.StopTime)
 			from := clientCtx.GetFromAddress()
 
 			msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
@@ -154,7 +152,7 @@ Where proposal.json contains:
 				return err
 			}
 
-			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), "")
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary)
 			if err != nil {
 				return err
 			}
@@ -203,7 +201,7 @@ Where proposal.json contains:
 				return err
 			}
 
-			content := types.NewEquivocationProposal(proposal.Title, proposal.Description, proposal.Equivocations)
+			content := types.NewEquivocationProposal(proposal.Title, proposal.Summary, proposal.Equivocations)
 
 			from := clientCtx.GetFromAddress()
 
@@ -217,7 +215,7 @@ Where proposal.json contains:
 				return err
 			}
 
-			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), "")
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary)
 			if err != nil {
 				return err
 			}
@@ -284,11 +282,11 @@ func ParseConsumerAdditionProposalJSON(proposalFile string) (ConsumerAdditionPro
 }
 
 type ConsumerRemovalProposalJSON struct {
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	ChainId     string    `json:"chain_id"`
-	StopTime    time.Time `json:"stop_time"`
-	Deposit     string    `json:"deposit"`
+	Title    string    `json:"title"`
+	Summary  string    `json:"summary"`
+	ChainId  string    `json:"chain_id"`
+	StopTime time.Time `json:"stop_time"`
+	Deposit  string    `json:"deposit"`
 }
 
 type ConsumerRemovalProposalReq struct {
@@ -304,6 +302,7 @@ type ConsumerRemovalProposalReq struct {
 
 type EquivocationProposalJSON struct {
 	// evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	Summary string `json:"summary"`
 	types.EquivocationProposal
 
 	Deposit string `json:"deposit"`

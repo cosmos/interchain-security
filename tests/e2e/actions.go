@@ -17,7 +17,6 @@ import (
 
 	"github.com/cosmos/interchain-security/x/ccv/provider/client"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	"github.com/tidwall/gjson"
 )
 
 type SendTokensAction struct {
@@ -46,7 +45,6 @@ func (tr TestRun) sendTokens(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `sync`,
 		`-y`,
 	)
 	if verbose {
@@ -57,6 +55,9 @@ func (tr TestRun) sendTokens(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 2, 30*time.Second)
 }
 
 type StartChainAction struct {
@@ -190,19 +191,19 @@ func (tr TestRun) submitTextProposal(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 1, 10*time.Second)
 }
 
 type submitConsumerAdditionProposalAction struct {
 	chain         chainID
 	from          validatorID
-	Type          string
 	deposit       uint
 	consumerChain chainID
 	spawnTime     uint
@@ -260,13 +261,14 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		`--gas`, `900000`,
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(chainID("provi"), 2, 10*time.Second)
 }
 
 type submitConsumerRemovalProposalAction struct {
@@ -283,11 +285,11 @@ func (tr TestRun) submitConsumerRemovalProposal(
 ) {
 	stopTime := tr.containerConfig.now.Add(action.stopTimeOffset)
 	prop := client.ConsumerRemovalProposalJSON{
-		Title:       fmt.Sprintf("Stop the %v chain", action.consumerChain),
-		Description: "It was a great chain",
-		ChainId:     string(tr.chainConfigs[action.consumerChain].chainId),
-		StopTime:    stopTime,
-		Deposit:     fmt.Sprint(action.deposit) + `stake`,
+		Title:    fmt.Sprintf("Stop the %v chain", action.consumerChain),
+		Summary:  "It was a great chain",
+		ChainId:  string(tr.chainConfigs[action.consumerChain].chainId),
+		StopTime: stopTime,
+		Deposit:  fmt.Sprint(action.deposit) + `stake`,
 	}
 
 	bz, err := json.Marshal(prop)
@@ -311,21 +313,21 @@ func (tr TestRun) submitConsumerRemovalProposal(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	// CONSUMER REMOVAL PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-
 		"tx", "gov", "submit-legacy-proposal", "consumer-removal", "/temp-proposal.json",
-
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(chainID("provi"), 2, 20*time.Second)
 }
 
 type submitParamChangeProposalAction struct {
@@ -338,10 +340,11 @@ type submitParamChangeProposalAction struct {
 }
 
 type paramChangeProposalJSON struct {
-	Title   string            `json:"title"`
-	Summary string            `json:"summary"`
-	Changes []paramChangeJSON `json:"changes"`
-	Deposit string            `json:"deposit"`
+	Title       string            `json:"title"`
+	Summary     string            `json:"summary"`
+	Description string            `json:"description"`
+	Changes     []paramChangeJSON `json:"changes"`
+	Deposit     string            `json:"deposit"`
 }
 
 type paramChangeJSON struct {
@@ -355,10 +358,11 @@ func (tr TestRun) submitParamChangeProposal(
 	verbose bool,
 ) {
 	prop := paramChangeProposalJSON{
-		Title:   "Param change",
-		Summary: "Changing module params",
-		Changes: []paramChangeJSON{{Subspace: action.subspace, Key: action.key, Value: action.value}},
-		Deposit: fmt.Sprint(action.deposit) + `stake`,
+		Title:       "Param change",
+		Summary:     "Changing module params",
+		Description: "Changing module params",
+		Changes:     []paramChangeJSON{{Subspace: action.subspace, Key: action.key, Value: action.value}},
+		Deposit:     fmt.Sprint(action.deposit) + `stake`,
 	}
 
 	bz, err := json.Marshal(prop)
@@ -381,23 +385,25 @@ func (tr TestRun) submitParamChangeProposal(
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	// PARAM CHANGE PROPOSAL // we should be able to make these all one command which will be cool
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 		"tx", "gov", "submit-legacy-proposal", "param-change", "/params-proposal.json",
-
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `sync`,
 		`-y`,
-	).CombinedOutput()
-	time.Sleep(3 * time.Second)
+	)
+	fmt.Println("#", cmd.String())
+	bz, err = cmd.CombinedOutput()
+	fmt.Println("BZ", string(bz))
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 2, 60*time.Second)
 }
 
 type submitEquivocationProposalAction struct {
@@ -415,6 +421,7 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	providerChain := tr.chainConfigs[chainID("provi")]
 
 	prop := client.EquivocationProposalJSON{
+		Summary: "Validator equivocation!",
 		EquivocationProposal: types.EquivocationProposal{
 			Title:       "Validator equivocation!",
 			Description: fmt.Sprintf("Validator: %s has committed an equivocation infraction on chainID: %s", action.validator, action.chain),
@@ -451,22 +458,21 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	// EQUIVOCATION PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, providerChain.binaryName,
-
-		"tx", "gov", "submit-legacy-proposal", "equivocation-proposal", "/equivocation-proposal.json",
-
+		"tx", "gov", "submit-legacy-proposal", "equivocation", "/equivocation-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(providerChain.chainId),
 		`--home`, tr.getValidatorHome(providerChain.chainId, action.from),
 		`--node`, tr.getValidatorNode(providerChain.chainId, action.from),
 		`--gas`, "9000000",
 		`--keyring-backend`, `test`,
-		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(chainID("provi"), 2, 30*time.Second)
 }
 
 type voteGovProposalAction struct {
@@ -498,7 +504,6 @@ func (tr TestRun) voteGovProposal(
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
 				`--gas`, "900000",
-				`-b`, `sync`,
 				`-y`,
 			).CombinedOutput()
 			if err != nil {
@@ -508,6 +513,8 @@ func (tr TestRun) voteGovProposal(
 	}
 
 	wg.Wait()
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 1, 10*time.Second)
 	time.Sleep(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
 }
 
@@ -578,7 +585,7 @@ websocket_addr = "%s"
 
 [chains.gas_price]
 	denom = "stake"
-	price = 0.00
+	price = 0.000
 
 [chains.trust_threshold]
 	denominator = "3"
@@ -863,6 +870,8 @@ func (tr TestRun) relayPackets(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chain, 2, 60*time.Second)
 }
 
 type relayRewardPacketsToProviderAction struct {
@@ -914,7 +923,6 @@ func (tr TestRun) delegateTokens(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `sync`,
 		`-y`,
 	)
 	if verbose {
@@ -927,6 +935,9 @@ func (tr TestRun) delegateTokens(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 1, 10*time.Second)
 }
 
 type unbondTokensAction struct {
@@ -958,7 +969,6 @@ func (tr TestRun) unbondTokens(
 		`--node`, tr.getValidatorNode(action.chain, action.sender),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `sync`,
 		`-y`,
 	)
 	if verbose {
@@ -970,6 +980,9 @@ func (tr TestRun) unbondTokens(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 2, 20*time.Second)
 }
 
 type redelegateTokensAction struct {
@@ -1009,7 +1022,6 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 		// Need to manually set gas limit past default (200000), since redelegate has a lot of operations
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `sync`,
 		`-y`,
 	)
 	if verbose {
@@ -1021,6 +1033,9 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 2, 10*time.Second)
 }
 
 type downtimeSlashAction struct {
@@ -1032,7 +1047,7 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 	// Bring validator down
 	tr.setValidatorDowntime(action.chain, action.validator, true, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
-	tr.waitBlocks(action.chain, 24, 3*time.Minute)
+	tr.waitBlocks(action.chain, 10, 3*time.Minute)
 	// Bring validator back up
 	tr.setValidatorDowntime(action.chain, action.validator, false, verbose)
 }
@@ -1077,7 +1092,7 @@ type unjailValidatorAction struct {
 // Sends an unjail transaction to the provider chain
 func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 	// wait a block to be sure downtime_jail_duration has elapsed
-	tr.waitBlocks(action.provider, 40, time.Minute*3)
+	time.Sleep(61 * time.Second)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
@@ -1091,7 +1106,6 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		`--node`, tr.getValidatorNode(action.provider, action.validator),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `sync`,
 		`-y`,
 	)
 	if verbose {
@@ -1153,13 +1167,14 @@ func (tr TestRun) registerRepresentative(
 				`--home`, tr.getValidatorHome(action.chain, val),
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
-				`-b`, `sync`,
 				`-y`,
 			).CombinedOutput()
 			if err != nil {
 				log.Fatal(err, "\n", string(bz))
 			}
-			time.Sleep(3 * time.Second)
+
+			// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+			tr.waitBlocks(action.chain, 1, 10*time.Second)
 		}(val, stake)
 	}
 
@@ -1211,7 +1226,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	valCfg := tr.validatorConfigs[action.validator]
 
 	assignKey := fmt.Sprintf(
-		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 900000 --keyring-backend test -b sync -y -o json`,
+		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 90000 --keyring-backend test -y -o json`,
 		tr.chainConfigs[chainID("provi")].binaryName,
 		string(tr.chainConfigs[action.chain].chainId),
 		action.consumerPubkey,
@@ -1232,22 +1247,14 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	}
 
 	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	jsonStr := string(bz)
-	code := gjson.Get(jsonStr, "code")
-	rawLog := gjson.Get(jsonStr, "raw_log")
-	if !action.expectError && code.Int() != 0 {
-		log.Fatalf("unexpected error during key assignment - code: %s, output: %s", code, jsonStr)
+	if err != nil && !action.expectError {
+		log.Fatalf("unexpected error during key assignment - output: %s, err: %s", string(bz), err)
 	}
 	time.Sleep(3 * time.Second)
 
 	if action.expectError {
-		if code.Int() == 0 {
-		} else if verbose {
-			fmt.Printf("got expected error during key assignment | code: %v | log: %s\n", code, rawLog)
+		if verbose {
+			fmt.Printf("got expected error during key assignment | err: %s \n", err.Error())
 		}
 	}
 
@@ -1297,6 +1304,9 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		valCfg.useConsumerKey = true
 		tr.validatorConfigs[action.validator] = valCfg
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(chainID("provi"), 2, 30*time.Second)
 }
 
 // slashThrottleDequeue polls slash queue sizes until nextQueueSize is achieved
