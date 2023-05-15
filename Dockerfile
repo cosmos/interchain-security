@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.20-alpine AS is-builder
+FROM golang:1.19-alpine AS is-builder
 
 ENV PACKAGES curl make git libc-dev bash gcc linux-headers
 RUN apk add --no-cache $PACKAGES
@@ -28,7 +28,7 @@ RUN go mod tidy
 RUN make install
 
 # Get Hermes build
-FROM informalsystems/hermes:1.2.0 AS hermes-builder
+FROM ghcr.io/informalsystems/hermes:1.4.1 AS hermes-builder
 
 FROM --platform=linux/amd64 fedora:36
 RUN dnf update -y

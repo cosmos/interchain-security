@@ -21,7 +21,7 @@ The code for CCV is housed under [x/ccv](./x/ccv). The `types` folder contains t
 ## For OSX or Linux
 
 # go 1.18 (https://formulae.brew.sh/formula/go)
-brew install go@1.20
+brew install go@1.19
 # jq (optional, for testnet) (https://formulae.brew.sh/formula/jq)
 brew install jq
 # docker (optional, for integration tests, testnet) (https://docs.docker.com/get-docker/)
@@ -45,11 +45,11 @@ Inspect the [Makefile](./Makefile) if curious.
 
 ## Testing
 
-See [testing docs](./docs/testing.md).
+See [testing docs](./docs/old/testing.md).
 
 ## Learn more
 
-- [IBC Docs](https://docs.cosmos.network/master/ibc/)
+- [IBC Docs](https://ibc.cosmos.network/)
 - [IBC Protocol](https://ibcprotocol.org/)
 - [IBC Specs](https://github.com/cosmos/ibc)
 - [Cosmos SDK documentation](https://docs.cosmos.network)

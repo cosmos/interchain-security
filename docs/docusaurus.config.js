@@ -61,6 +61,11 @@ const config = {
           autoCollapseCategories: true,
         },
       },
+      colorMode: {
+        defaultMode: 'dark',
+        disableSwitch: true,
+        respectPrefersColorScheme: false,
+      },
       navbar: {
         title: "Interchain Security",
         hideOnScroll: false,
