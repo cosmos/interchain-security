@@ -170,7 +170,6 @@ type submitTextProposalAction struct {
 	chain       chainID
 	from        validatorID
 	deposit     uint
-	propType    string
 	title       string
 	description string
 }
