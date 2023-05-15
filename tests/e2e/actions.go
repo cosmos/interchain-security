@@ -53,6 +53,7 @@ func (tr TestRun) sendTokens(
 		fmt.Println("sendTokens cmd:", cmd.String())
 	}
 	bz, err := cmd.CombinedOutput()
+	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -193,7 +194,7 @@ func (tr TestRun) submitTextProposal(
 		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-	time.Sleep(10 * time.Second)
+	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -263,7 +264,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-	time.Sleep(10 * time.Second)
+	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -322,7 +323,7 @@ func (tr TestRun) submitConsumerRemovalProposal(
 		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-	time.Sleep(10 * time.Second)
+	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -394,7 +395,7 @@ func (tr TestRun) submitParamChangeProposal(
 		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-	time.Sleep(10 * time.Second)
+	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -463,7 +464,7 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 		`-b`, `sync`,
 		`-y`,
 	).CombinedOutput()
-	time.Sleep(10 * time.Second)
+	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -917,12 +918,13 @@ func (tr TestRun) delegateTokens(
 		`-b`, `sync`,
 		`-y`,
 	)
-	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("delegate cmd:", cmd.String())
 	}
 
 	bz, err := cmd.CombinedOutput()
+	time.Sleep(10 * time.Second)
+
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -960,12 +962,12 @@ func (tr TestRun) unbondTokens(
 		`-b`, `sync`,
 		`-y`,
 	)
-	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("unbond cmd:", cmd.String())
 	}
 
 	bz, err := cmd.CombinedOutput()
+	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1011,12 +1013,12 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 		`-b`, `sync`,
 		`-y`,
 	)
-	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("redelegate cmd:", cmd.String())
 	}
 
 	bz, err := cmd.CombinedOutput()
+	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1062,6 +1064,7 @@ func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, dow
 	}
 
 	bz, err := cmd.CombinedOutput()
+	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1092,12 +1095,12 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		`-b`, `sync`,
 		`-y`,
 	)
-	time.Sleep(10 * time.Second)
 	if verbose {
 		fmt.Println("unjail cmd:", cmd.String())
 	}
 
 	bz, err := cmd.CombinedOutput()
+	time.Sleep(3 * time.Second)
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -1131,6 +1134,7 @@ func (tr TestRun) registerRepresentative(
 			)
 
 			bzPubKey, err := pubKeycmd.CombinedOutput()
+			time.Sleep(3 * time.Second)
 			if err != nil {
 				log.Fatal(err, "\n", string(bzPubKey))
 			}
@@ -1156,7 +1160,7 @@ func (tr TestRun) registerRepresentative(
 			if err != nil {
 				log.Fatal(err, "\n", string(bz))
 			}
-			time.Sleep(10 * time.Second)
+			time.Sleep(3 * time.Second)
 		}(val, stake)
 	}
 
@@ -1217,7 +1221,6 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		tr.getValidatorHome(chainID("provi"), action.validator),
 		tr.getValidatorNode(chainID("provi"), action.validator),
 	)
-	time.Sleep(10 * time.Second)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
 		tr.containerConfig.instanceName,
@@ -1240,6 +1243,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	if !action.expectError && code.Int() != 0 {
 		log.Fatalf("unexpected error during key assignment - code: %s, output: %s", code, jsonStr)
 	}
+	time.Sleep(3 * time.Second)
 
 	if action.expectError {
 		if code.Int() == 0 {
