@@ -176,10 +176,6 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-// THESE CHANGES PROVED TO BE NECESSARY, AS EVIDENCED BY: https://github.com/cosmos/cosmos-sdk/pull/16043
-// NOTIONAL ASKED INFORMAL SYSTEMS ABOUT THIS SINCE MARCH 23, 2023, BUT NO RESPONSE WAS GIVEN
-// github.com/cosmos/cosmos-sdk => ../cosmos-sdk
-
 // this replace statement is sdk v0.47.x with MSalopek's patches, and they're much appreciated.
 replace github.com/cosmos/cosmos-sdk => github.com/notional-labs/cosmos-sdk v0.47.2-0.20230506162857-37b06634eb97
 
