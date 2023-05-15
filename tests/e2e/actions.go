@@ -192,7 +192,6 @@ func (tr TestRun) submitTextProposal(
 		`--keyring-backend`, `test`,
 		`-y`,
 	).CombinedOutput()
-
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
