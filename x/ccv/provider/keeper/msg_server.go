@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 
 	sdkerrors "cosmossdk.io/errors"
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
