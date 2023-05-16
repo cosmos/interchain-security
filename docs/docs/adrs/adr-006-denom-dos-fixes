@@ -40,7 +40,7 @@ We also add a new tx: register-consumer-reward-denom, and a new query: registere
 - Create a function AllowedRewardDenoms which maps over ProviderRewardDenoms and converts each denom to its ibc-prefixed denom using the provider chain's ibc channel information, then concatenates the RewardDenoms list and returns the combined list of allowed denoms.
 - In SendRewardsToProvider, instead of iterating over the balances of all denoms in the ToSendToProvider address, iterate over AllowedRewardDenoms
 
-Now, if somebody sends millions of junk denoms to ToSendToProvider, they will not be iterated over. Only the RewardDenoms and ProviderRewardDenoms will be iterated over. Since we do not require this feature to be permissionless on the consumer, we did not have to bother with the registration fee process.
+Now, if somebody sends millions of junk denoms to ToSendToProvider, they will not be iterated over. Only the RewardDenoms and ProviderRewardDenoms will be iterated over. Since we do not require this feature to be permissionless on the consumer, the registration fee process is not needed.
 
 ## Consequences
 
