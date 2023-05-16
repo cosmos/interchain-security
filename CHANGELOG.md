@@ -23,10 +23,12 @@ Some PRs from v1.3.0 may reappear from other releases below. This is due to the 
 
 * (fix) Prevent denom DOS [#931](https://github.com/cosmos/interchain-security/pull/931)
 * (fix) multisig for assigning consumer key, use json [#916](https://github.com/cosmos/interchain-security/pull/916)
+* (deps) Bump github.com/cosmos/ibc-go/v4 from 4.3.0 to 4.4.0 [#902](https://github.com/cosmos/interchain-security/pull/902)
 * (feat) Add warnings when provider unbonding is shorter than consumer unbonding [#858](https://github.com/cosmos/interchain-security/pull/858)
 * (chore) use go 1.19 [#899](https://github.com/cosmos/interchain-security/pull/899)
 * (feat) Standalone to consumer changeover - recycle existing transfer channel [#832](https://github.com/cosmos/interchain-security/pull/832)
 * (deps) Bump IBC [862](https://github.com/cosmos/interchain-security/pull/862)
+* (testing) Add tests for soft opt out [#857](https://github.com/cosmos/interchain-security/pull/857)
 * (chore) Use go 1.20 [#840](https://github.com/cosmos/interchain-security/pull/840)
 * (feat) Standalone to consumer changeover - staking functionalities [#794](https://github.com/cosmos/interchain-security/pull/794)
 * (fix) prevent provider from sending VSCPackets with multiple updates for the same validator [#850](https://github.com/cosmos/interchain-security/pull/850)
