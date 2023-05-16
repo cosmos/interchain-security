@@ -141,8 +141,7 @@ func (am AppModule) OnChanOpenAck(
 
 	// First check if an existing transfer channel already exists.
 	transChannelID := am.keeper.GetDistributionTransmissionChannel(ctx)
-	found := am.keeper.TransferChannelExists(ctx, transChannelID)
-	if found {
+	if found := am.keeper.TransferChannelExists(ctx, transChannelID); found {
 		return nil
 	}
 
