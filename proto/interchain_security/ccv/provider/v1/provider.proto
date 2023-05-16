@@ -58,10 +58,10 @@ message ConsumerAdditionProposal {
     // On sending transmission event, `consumer_redistribution_fraction` of the accumulated tokens are sent to the consumer redistribution address.
     int64 blocks_per_distribution_transmission = 12;
     // The ID of a token transfer channel used for the Reward Distribution
-    // sub-protocol. If transfer_channel_id == "", a new token transfer channel is
-    // created on top of the same connection as the CCV channel. Note that
-    // transfer_channel_id is the ID of the channel end on the consumer chain.
-    string transfer_channel_id = 13;
+    // sub-protocol. If DistributionTransmissionChannel == "", a new transfer 
+    // channel is created on top of the same connection as the CCV channel. 
+    // Note that transfer_channel_id is the ID of the channel end on the consumer chain.
+    string distribution_transmission_channel = 13;
     // The number of historical info entries to persist in store.
     // This param is a part of the cosmos sdk staking module. In the case of 
     // a ccv enabled consumer chain, the ccv module acts as the staking module.
