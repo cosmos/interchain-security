@@ -41,9 +41,6 @@ message GenesisState {
   interchain_security.ccv.consumer.v1.LastTransmissionBlockHeight last_transmission_block_height = 12
       [ (gogoproto.nullable) = false ];
   bool preCCV = 13; // flag indicating whether the consumer CCV module starts in pre-CCV state
-  // The ID of a token transfer channel used for the Reward Distribution
-  // sub-protocol.
-  string transfer_channel_id = 14;
 }
 
 // HeightValsetUpdateID defines the genesis information for the mapping 
