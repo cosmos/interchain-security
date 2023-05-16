@@ -21,8 +21,7 @@ Some PRs from v1.3.0 may reappear from other releases below. This is due to the 
 
 ## PRs included in v1.3.0
 
-TODO: entry for https://github.com/cosmos/interchain-security/pull/931 once it's merged.
-
+* (fix) Prevent denom DOS [#931](https://github.com/cosmos/interchain-security/pull/931)
 * (deps) Bump hermes [#921](https://github.com/cosmos/interchain-security/pull/921)
 * (deps) bump gaurav-nelson/github-action-markdown-link-check from 1.0.13 to 1.0.15 [#928](https://github.com/cosmos/interchain-security/pull/928)
 * (chore) update codeowners [#892](https://github.com/cosmos/interchain-security/pull/892)
