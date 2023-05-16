@@ -612,17 +612,3 @@ func (k Keeper) IsPrevStandaloneChain(ctx sdk.Context) bool {
 	store := ctx.KVStore(k.storeKey)
 	return store.Has(types.PrevStandaloneChainKey())
 }
-
-// SetStandaloneTransferChannelID sets the channelID of an existing transfer channel,
-// for a chain which used to be a standalone chain.
-func (k Keeper) SetStandaloneTransferChannelID(ctx sdk.Context, channelID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.StandaloneTransferChannelIDKey(), []byte(channelID))
-}
-
-// GetStandaloneTransferChannelID returns the channelID of an existing transfer channel,
-// for a chain which used to be a standalone chain.
-func (k Keeper) GetStandaloneTransferChannelID(ctx sdk.Context) string {
-	store := ctx.KVStore(k.storeKey)
-	return string(store.Get(types.StandaloneTransferChannelIDKey()))
-}
