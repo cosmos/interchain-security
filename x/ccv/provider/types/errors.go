@@ -19,4 +19,6 @@ var (
 	ErrCannotAssignDefaultKeyAssignment = errorsmod.Register(ModuleName, 11, "cannot re-assign default key assignment")
 	ErrInvalidConsumerParams            = errorsmod.Register(ModuleName, 12, "invalid consumer params")
 	ErrInvalidProviderAddress           = errorsmod.Register(ModuleName, 13, "invalid provider address")
+	ErrInvalidConsumerRewardDenom       = errorsmod.Register(ModuleName, 14, "invalid consumer reward denom")
+	ErrInvalidDepositorAddress          = errorsmod.Register(ModuleName, 15, "invalid depositor address")
 )
