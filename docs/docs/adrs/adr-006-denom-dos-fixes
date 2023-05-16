@@ -21,7 +21,7 @@ The provider and consumer modules are vulnerable to similar issues involving an 
 
 - Put the distribution module's FeePoolAddress back on the blocklist so that it cannot receive funds from users.
 - Create a new address called ConsumerRewardPool and unblock it, allowing funds to be sent to it.
-- Create a set of strings in the database for ConsumerRewardDenoms.
+- Create a set of strings in the store for allowed ConsumerRewardDenoms.
 - Create an endpoint called RegisterConsumerRewardDenom which deducts a fee from the sender's account, sends it to the community pool and adds a string to the ConsumerRewardDenoms set.
 - Create a parameter called ConsumerRewardDenomRegistrationFee which determines the fee that is 
 - Create a function called TransferRewardsToFeeCollector which gets the entire ConsumerRewardDenoms set from the database, iterates over it, and for each entry:
