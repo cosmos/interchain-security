@@ -2,26 +2,17 @@ package governance
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	gov "github.com/cosmos/cosmos-sdk/x/gov"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 const (
@@ -39,9 +30,7 @@ type AppModule struct {
 	gov.AppModule
 
 	keeper                      govkeeper.Keeper
-	keeperMap                   map[string]interface{}
 	isLegacyProposalWhitelisted func(govv1beta1.Content) bool
-	isParamChangeWhitelisted    func(map[ParamChangeKey]struct{}) bool
 	isModuleWhiteList           func(string) bool
 }
 
@@ -55,9 +44,7 @@ func NewAppModule(cdc codec.Codec,
 	ak govtypes.AccountKeeper,
 	bk govtypes.BankKeeper,
 	isProposalWhitelisted func(govv1beta1.Content) bool,
-	isParamChangeWhitelisted func(map[ParamChangeKey]struct{}) bool,
 	ss govtypes.ParamSubspace,
-	keeperMap map[string]interface{},
 	isModuleWhiteList func(string) bool,
 ) AppModule {
 	govAppModule := gov.NewAppModule(cdc, &keeper, ak, bk, ss)
@@ -65,8 +52,6 @@ func NewAppModule(cdc codec.Codec,
 		AppModule:                   govAppModule,
 		keeper:                      keeper,
 		isLegacyProposalWhitelisted: isProposalWhitelisted,
-		isParamChangeWhitelisted:    isParamChangeWhitelisted,
-		keeperMap:                   keeperMap,
 		isModuleWhiteList:           isModuleWhiteList,
 	}
 }
@@ -82,99 +67,37 @@ func (am AppModule) EndBlock(ctx sdk.Context, request abci.RequestEndBlock) []ab
 	return am.AppModule.EndBlock(ctx, request)
 }
 
-func GetChangeParamsKeys(currentParams, newParams any, typeUrl string) map[ParamChangeKey]struct{} {
-	keys := map[ParamChangeKey]struct{}{}
-
-	currentValues := reflect.ValueOf(currentParams)
-	currentTypes := currentValues.Type()
-
-	newValues := reflect.ValueOf(newParams)
-
-	for i := 0; i < currentValues.NumField(); i++ {
-		if !reflect.DeepEqual(currentValues.Field(i).Interface(), newValues.Field(i).Interface()) {
-			keys[ParamChangeKey{MsgType: typeUrl, Key: currentTypes.Field(i).Name}] = struct{}{}
-		}
-	}
-
-	return keys
-}
-
-func CheckIfParamKeyIsWhitelisted(flag *bool, typeUrl string, currentParam, newParam any, isParamChangeWhitelisted func(map[ParamChangeKey]struct{}) bool) {
-	keys := GetChangeParamsKeys(currentParam, newParam, typeUrl)
-	if !isParamChangeWhitelisted(keys) {
-		*flag = false
-	}
-}
-
-func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govv1.Proposal) {
+// isProposalWhitelisted checks whether a proposal is whitelisted
+func isProposalWhitelisted(ctx sdk.Context, am AppModule, proposal govv1.Proposal) bool {
 	messages := proposal.GetMessages()
-	breakFlag := true
 
+	// iterate over all the proposal messages
 	for _, message := range messages {
-
-		sdkMsg, ok := message.GetCachedValue().(*govv1.MsgExecLegacyContent)
-		if !ok {
-			if am.isModuleWhiteList(message.TypeUrl) {
-				m := message.GetCachedValue()
-				switch m := m.(type) {
-				case *minttypes.MsgUpdateParams:
-					if keeper, ok := am.keeperMap[message.TypeUrl].(mintkeeper.Keeper); ok {
-						newParam := m.Params
-						currentParam := keeper.GetParams(ctx)
-						CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
-					} else {
-						breakFlag = false
-					}
-				case *banktypes.MsgUpdateParams:
-					if keeper, ok := am.keeperMap[message.TypeUrl].(bankkeeper.Keeper); ok {
-						newParam := m.Params
-						currentParam := keeper.GetParams(ctx)
-						CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
-					} else {
-						breakFlag = false
-					}
-				case *distrtypes.MsgUpdateParams:
-					if keeper, ok := am.keeperMap[message.TypeUrl].(distrkeeper.Keeper); ok {
-						newParam := m.Params
-						currentParam := keeper.GetParams(ctx)
-						CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
-					} else {
-						breakFlag = false
-					}
-				case *stakingtypes.MsgUpdateParams:
-					if keeper, ok := am.keeperMap[message.TypeUrl].(stakingkeeper.Keeper); ok {
-						newParam := m.Params
-						currentParam := keeper.GetParams(ctx)
-						CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
-					} else {
-						breakFlag = false
-					}
-				case *govv1.MsgUpdateParams:
-					if keeper, ok := am.keeperMap[message.TypeUrl].(govkeeper.Keeper); ok {
-						newParam := m.Params
-						currentParam := keeper.GetParams(ctx)
-						CheckIfParamKeyIsWhitelisted(&breakFlag, message.TypeUrl, currentParam, newParam, am.isParamChangeWhitelisted)
-					} else {
-						breakFlag = false
-					}
-				default:
-					breakFlag = false
-				}
-			} else {
-				breakFlag = false
-			}
-		} else {
+		sdkMsg, isLegacyProposal := message.GetCachedValue().(*govv1.MsgExecLegacyContent)
+		if isLegacyProposal {
+			// legacy gov proposal content
 			content, err := govv1.LegacyContentFromMessage(sdkMsg)
 			if err != nil {
 				continue
 			}
 			if !am.isLegacyProposalWhitelisted(content) {
-				breakFlag = false
+				// not whitelisted
+				return false
+			}
+		} else {
+			// not legacy gov proposal content
+			if !am.isModuleWhiteList(message.TypeUrl) {
+				// not whitelisted
+				return false
 			}
 		}
 	}
+	return true
+}
 
-	if breakFlag {
+// deleteForbiddenProposal removes proposals that are not whitelisted
+func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govv1.Proposal) {
+	if isProposalWhitelisted(ctx, am, proposal) {
 		return
 	}
 

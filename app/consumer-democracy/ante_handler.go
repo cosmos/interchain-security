@@ -21,7 +21,7 @@ type HandlerOptions struct {
 	ConsumerKeeper ibcconsumerkeeper.Keeper
 }
 
-func NewAnteHandler(options HandlerOptions, keeperMap map[string]interface{}) (sdk.AnteHandler, error) {
+func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 	if options.AccountKeeper == nil {
 		return nil, sdkerrors.Wrap(sdkerrorstypes.ErrLogic, "account keeper is required for AnteHandler")
 	}
@@ -42,7 +42,7 @@ func NewAnteHandler(options HandlerOptions, keeperMap map[string]interface{}) (s
 		ante.NewExtensionOptionsDecorator(nil),
 		consumerante.NewMsgFilterDecorator(options.ConsumerKeeper),
 		consumerante.NewDisabledModulesDecorator("/cosmos.evidence", "/cosmos.slashing"),
-		democracyante.NewForbiddenProposalsDecorator(IsProposalWhitelisted, IsParamChangeWhitelisted, keeperMap, IsModuleWhiteList),
+		democracyante.NewForbiddenProposalsDecorator(IsProposalWhitelisted, IsModuleWhiteList),
 		ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, nil),
 		ante.NewValidateBasicDecorator(),
 		ante.NewTxTimeoutHeightDecorator(),

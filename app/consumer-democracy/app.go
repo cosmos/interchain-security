@@ -233,9 +233,6 @@ type App struct { // nolint: golint
 	// simulation manager
 	sm           *module.SimulationManager
 	configurator module.Configurator
-
-	// whitelist module's keeper map
-	KeeperMap map[string]interface{}
 }
 
 func init() {
@@ -532,16 +529,6 @@ func New(
 
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
-	keeperMap := map[string]interface{}{
-		"/cosmos.gov.v1.MsgUpdateParams":               app.GovKeeper,
-		"/cosmos.bank.v1beta1.MsgUpdateParams":         app.BankKeeper,
-		"/cosmos.staking.v1beta1.MsgUpdateParams":      &app.StakingKeeper,
-		"/cosmos.distribution.v1beta1.MsgUpdateParams": app.DistrKeeper,
-		"/cosmos.mint.v1beta1.MsgUpdateParams":         app.MintKeeper,
-	}
-
-	app.KeeperMap = keeperMap
-
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 	app.MM = module.NewManager(
@@ -557,7 +544,7 @@ func New(
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
-		ccvgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, IsProposalWhitelisted, IsParamChangeWhitelisted, app.GetSubspace(govtypes.ModuleName), keeperMap, IsModuleWhiteList),
+		ccvgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, IsProposalWhitelisted, app.GetSubspace(govtypes.ModuleName), IsModuleWhiteList),
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.ConsumerKeeper, app.GetSubspace(slashingtypes.ModuleName)),
 		ccvdistr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, *app.StakingKeeper, authtypes.FeeCollectorName, app.GetSubspace(distrtypes.ModuleName)),
@@ -662,7 +649,7 @@ func New(
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
-		ccvgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, IsProposalWhitelisted, IsParamChangeWhitelisted, app.GetSubspace(govtypes.ModuleName), keeperMap, IsModuleWhiteList),
+		ccvgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, IsProposalWhitelisted, app.GetSubspace(govtypes.ModuleName), IsModuleWhiteList),
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
 		ccvstaking.NewAppModule(appCodec, *app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		ccvdistr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, *app.StakingKeeper, authtypes.FeeCollectorName, app.GetSubspace(distrtypes.ModuleName)),
@@ -692,7 +679,6 @@ func New(
 			IBCKeeper:      app.IBCKeeper,
 			ConsumerKeeper: app.ConsumerKeeper,
 		},
-		keeperMap,
 	)
 	if err != nil {
 		panic(fmt.Errorf("failed to create AnteHandler: %s", err))
@@ -963,11 +949,6 @@ func (app *App) GetTxConfig() client.TxConfig {
 // TxConfig returns SimApp's TxConfig
 func (app *App) TxConfig() client.TxConfig {
 	return app.txConfig
-}
-
-// GetKeeperMap return keeper map
-func (app *App) GetKeeperMap() map[string]interface{} {
-	return app.KeeperMap
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided

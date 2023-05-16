@@ -90,19 +90,16 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 	accountKeeper := suite.consumerApp.GetTestAccountKeeper()
 	mintKeeper := suite.consumerApp.GetTestMintKeeper()
 
-	newAuthParamValue := uint64(128)
-	newMintParamValue := sdk.NewDecWithPrec(1, 1) // "0.100000000000000000"
-
 	// Mint MsgUpdateParams
 	mintParams := mintKeeper.GetParams(suite.consumerChain.GetContext())
-	mintParams.InflationMax = newMintParamValue
+	mintParams.InflationMax = sdk.NewDecWithPrec(1, 1) // "0.100000000000000000"
 	msg_1 := &minttypes.MsgUpdateParams{
 		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		Params:    mintParams,
 	}
 	// Auth MsgUpdateParams
 	authParams := accountKeeper.GetParams(suite.consumerChain.GetContext())
-	authParams.MaxMemoCharacters = newAuthParamValue
+	authParams.MaxMemoCharacters = uint64(128)
 	msg_2 := &authtypes.MsgUpdateParams{
 		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		Params:    authParams,
@@ -115,7 +112,7 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 		expectErr bool
 	}{
 		{
-			name: "legacy param change",
+			name: "Forbidden legacy param change - bank module",
 			ctx:  suite.consumerChain.GetContext(),
 			msgs: []sdk.Msg{
 				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
@@ -127,7 +124,7 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			name: "Allowed param change",
+			name: "Allowed param change - mint module",
 			ctx:  suite.consumerChain.GetContext(),
 			msgs: []sdk.Msg{
 				newParamChangeProposalMsg([]sdk.Msg{msg_1}),
@@ -135,7 +132,7 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name: "Forbidden legacy param change",
+			name: "Forbidden legacy param change - auth module",
 			ctx:  suite.consumerChain.GetContext(),
 			msgs: []sdk.Msg{
 				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
@@ -145,7 +142,7 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			name: "Forbidden param change",
+			name: "Forbidden param change - auth module",
 			ctx:  suite.consumerChain.GetContext(),
 			msgs: []sdk.Msg{
 				newParamChangeProposalMsg([]sdk.Msg{msg_2}),
@@ -175,15 +172,6 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 			name: "Allowed and forbidden legacy param changes in different msg",
 			ctx:  suite.consumerChain.GetContext(),
 			msgs: []sdk.Msg{
-				newParamChangeProposalMsg([]sdk.Msg{msg_1}),
-				newParamChangeProposalMsg([]sdk.Msg{msg_2}),
-			},
-			expectErr: true,
-		},
-		{
-			name: "Allowed and forbidden param changes in different msg",
-			ctx:  suite.consumerChain.GetContext(),
-			msgs: []sdk.Msg{
 				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
 					{Subspace: banktypes.ModuleName, Key: "SendEnabled", Value: ""},
 				}),
@@ -193,13 +181,22 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 			},
 			expectErr: true,
 		},
+		{
+			name: "Allowed and forbidden param changes in different msg",
+			ctx:  suite.consumerChain.GetContext(),
+			msgs: []sdk.Msg{
+				newParamChangeProposalMsg([]sdk.Msg{msg_1}),
+				newParamChangeProposalMsg([]sdk.Msg{msg_2}),
+			},
+			expectErr: true,
+		},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
 
 		t.Run(tc.name, func(t *testing.T) {
-			handler := ante.NewForbiddenProposalsDecorator(app.IsProposalWhitelisted, app.IsParamChangeWhitelisted, suite.consumerApp.GetKeeperMap(), app.IsModuleWhiteList)
+			handler := ante.NewForbiddenProposalsDecorator(app.IsProposalWhitelisted, app.IsModuleWhiteList)
 
 			txBuilder := txCfg.NewTxBuilder()
 			require.NoError(t, txBuilder.SetMsgs(tc.msgs...))
