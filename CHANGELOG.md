@@ -25,11 +25,10 @@ Some PRs from v1.3.0 may reappear from other releases below. This is due to the 
 * (fix) multisig for assigning consumer key, use json [#916](https://github.com/cosmos/interchain-security/pull/916)
 * (deps) Bump github.com/cosmos/ibc-go/v4 from 4.3.0 to 4.4.0 [#902](https://github.com/cosmos/interchain-security/pull/902)
 * (feat) Add warnings when provider unbonding is shorter than consumer unbonding [#858](https://github.com/cosmos/interchain-security/pull/858)
-* (chore) use go 1.19 [#899](https://github.com/cosmos/interchain-security/pull/899)
+* (chore) use go 1.19 [#899](https://github.com/cosmos/interchain-security/pull/899), [#840](https://github.com/cosmos/interchain-security/pull/840)
 * (feat) Standalone to consumer changeover - recycle existing transfer channel [#832](https://github.com/cosmos/interchain-security/pull/832)
 * (deps) Bump IBC [862](https://github.com/cosmos/interchain-security/pull/862)
 * (testing) Add tests for soft opt out [#857](https://github.com/cosmos/interchain-security/pull/857)
-* (chore) Use go 1.20 [#840](https://github.com/cosmos/interchain-security/pull/840)
 * (feat) Standalone to consumer changeover - staking functionalities [#794](https://github.com/cosmos/interchain-security/pull/794)
 * (fix) prevent provider from sending VSCPackets with multiple updates for the same validator [#850](https://github.com/cosmos/interchain-security/pull/850)
 * (feat) Soft opt out [#833](https://github.com/cosmos/interchain-security/issues/833)
@@ -40,13 +39,12 @@ Some PRs from v1.3.0 may reappear from other releases below. This is due to the 
 * (chore) Swap names of e2e and integration tests [#681](https://github.com/cosmos/interchain-security/pull/681)
 * (fix) fix StopConsumerChain not running in cachedContext [#802](https://github.com/cosmos/interchain-security/pull/802). Also in earlier releases with different commit order!
 * (docs) Introduce docs website [#759](https://github.com/cosmos/interchain-security/pull/759)
-* (fix) Ser correct byte prefix for SlashLogKey [#786](https://github.com/cosmos/interchain-security/pull/786)
+* (fix) Serialize correct byte prefix for SlashLogKey [#786](https://github.com/cosmos/interchain-security/pull/786)
 * (feature) Improve keeper field validation [#766](https://github.com/cosmos/interchain-security/pull/766)
 * (docs) Contributing guidelines [#744](https://github.com/cosmos/interchain-security/pull/744)
-* (refactor) Key assignment type safety [#725](https://github.com/cosmos/interchain-security/pull/725). Note this is technically a refactor but is a large enough change to be included in changelog
+* (refactor) Key assignment type safety [#725](https://github.com/cosmos/interchain-security/pull/725) 
 * (fix) Update protos and fix deps [#752](https://github.com/cosmos/interchain-security/pull/752)
 * (api) Add consumer QueryParams [#746](https://github.com/cosmos/interchain-security/pull/746)
-* (fix) Nits from audit [#743](https://github.com/cosmos/interchain-security/pull/743)
 * (feature) New validation for keeper fields [#740](https://github.com/cosmos/interchain-security/pull/740)
 
 ## v1.2.0-multiden
