@@ -24,7 +24,7 @@ The provider and consumer modules are vulnerable to similar issues involving an 
 - Create a set of strings in the store for allowed ConsumerRewardDenoms.
 - Create an endpoint called RegisterConsumerRewardDenom which deducts a fee from the sender's account, sends it to the community pool and adds a string to the ConsumerRewardDenoms set.
 - Create a parameter called ConsumerRewardDenomRegistrationFee which determines the fee that is 
-- Create a function called TransferRewardsToFeeCollector which gets the entire ConsumerRewardDenoms set from the database, iterates over it, and for each entry:
+- Create a function called TransferRewardsToFeeCollector which gets the entire ConsumerRewardDenoms set from the store, iterates over it, and for each entry:
   - Gets the balance of this denom for the ConsumerRewardPool account
   - Sends the entire balance out to the FeePoolAddress using SendCoinsFromModuleToModule which is not affected by the blocklist.
 - Run TransferRewardsToFeeCollector in the endblock
