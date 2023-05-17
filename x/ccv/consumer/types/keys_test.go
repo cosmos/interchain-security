@@ -27,6 +27,11 @@ func getAllKeyPrefixes() []byte {
 		ProviderClientByteKey,
 		ProviderChannelByteKey,
 		PendingChangesByteKey,
+		HistoricalInfoBytePrefix,
+		PacketMaturityTimeBytePrefix,
+		HeightValsetUpdateIDBytePrefix,
+		OutstandingDowntimeBytePrefix,
+		CrossChainValidatorBytePrefix,
 		PendingDataPacketsByteKey,
 		PreCCVByteKey,
 		InitialValSetByteKey,
@@ -34,11 +39,6 @@ func getAllKeyPrefixes() []byte {
 		SmallestNonOptOutPowerByteKey,
 		StandaloneTransferChannelIDByteKey,
 		PrevStandaloneChainByteKey,
-		HistoricalInfoBytePrefix,
-		PacketMaturityTimeBytePrefix,
-		HeightValsetUpdateIDBytePrefix,
-		OutstandingDowntimeBytePrefix,
-		CrossChainValidatorBytePrefix,
 	}
 }
 
@@ -61,6 +61,11 @@ func getAllFullyDefinedKeys() [][]byte {
 		ProviderClientIDKey(),
 		ProviderChannelKey(),
 		PendingChangesKey(),
+		HistoricalInfoKey(0),
+		PacketMaturityTimeKey(0, time.Time{}),
+		HeightValsetUpdateIDKey(0),
+		OutstandingDowntimeKey([]byte{}),
+		CrossChainValidatorKey([]byte{}),
 		PendingDataPacketsKey(),
 		PreCCVKey(),
 		InitialValSetKey(),
@@ -68,10 +73,5 @@ func getAllFullyDefinedKeys() [][]byte {
 		SmallestNonOptOutPowerKey(),
 		StandaloneTransferChannelIDKey(),
 		PrevStandaloneChainKey(),
-		HistoricalInfoKey(0),
-		PacketMaturityTimeKey(0, time.Time{}),
-		HeightValsetUpdateIDKey(0),
-		OutstandingDowntimeKey([]byte{}),
-		CrossChainValidatorKey([]byte{}),
 	}
 }
