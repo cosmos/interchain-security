@@ -28,35 +28,26 @@ func (decorator ForbiddenProposalsDecorator) AnteHandle(ctx sdk.Context, tx sdk.
 	currHeight := ctx.BlockHeight()
 
 	for _, msg := range tx.GetMsgs() {
-		submitProposalMgs, ok := msg.(*govv1.MsgSubmitProposal)
 		// if the message is MsgSubmitProposal, check if proposal is whitelisted
-		if ok {
-			messages := submitProposalMgs.GetMessages()
-			isWhitelisted := true
+		submitProposalMgs, ok := msg.(*govv1.MsgSubmitProposal)
+		if !ok {
+			continue
+		}
 
-			// iterate over all the proposal messages
-			for _, message := range messages {
-				sdkMsg, isLegacyProposal := message.GetCachedValue().(*govv1.MsgExecLegacyContent)
-				if isLegacyProposal {
-					// legacy gov proposal content
-					content, err := govv1.LegacyContentFromMessage(sdkMsg)
-					if err != nil {
-						continue
-					}
-					if !decorator.isLegacyProposalWhitelisted(content) {
-						// not whitelisted
-						isWhitelisted = false
-						break
-					}
-					// not legacy gov proposal content
-				} else if !decorator.isModuleWhiteList(message.TypeUrl) {
-					// not whitelisted
-					isWhitelisted = false
-					break
+		messages := submitProposalMgs.GetMessages()
+		for _, message := range messages {
+			if sdkMsg, isLegacyProposal := message.GetCachedValue().(*govv1.MsgExecLegacyContent); isLegacyProposal {
+				// legacy gov proposal content
+				content, err := govv1.LegacyContentFromMessage(sdkMsg)
+				if err != nil {
+					return ctx, fmt.Errorf("tx contains invalid LegacyContent")
+				}
+				if !decorator.isLegacyProposalWhitelisted(content) {
+					return ctx, fmt.Errorf("tx contains unsupported proposal message types at height %d", currHeight)
 				}
 			}
-
-			if !isWhitelisted {
+			// not legacy gov proposal content and not whitelisted
+			if !decorator.isModuleWhiteList(message.TypeUrl) {
 				return ctx, fmt.Errorf("tx contains unsupported proposal message types at height %d", currHeight)
 			}
 		}
