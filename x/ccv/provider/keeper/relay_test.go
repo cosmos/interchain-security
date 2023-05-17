@@ -13,10 +13,8 @@ import (
 	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
 	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	testutil "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -694,12 +692,12 @@ func TestSendVSCPacketsToChainFailure(t *testing.T) {
 
 	// append mocks for the channel keeper to return an error
 	mockCalls = append(mockCalls,
-		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, types.ProviderPortID,
+		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID,
 			"CCVChannelID").Return(channeltypes.Channel{}, false).Times(1),
 	)
 
 	// Append mocks for expected call to StopConsumerChain
-	mockCalls = append(mockCalls, testutil.GetMocksForStopConsumerChain(ctx, &mocks)...)
+	mockCalls = append(mockCalls, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
 
 	// Assert mock calls hit
 	gomock.InOrder(mockCalls...)
