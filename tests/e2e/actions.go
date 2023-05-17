@@ -331,7 +331,7 @@ func (tr TestRun) submitConsumerRemovalProposal(
 	tr.waitBlocks(chainID("provi"), 2, 20*time.Second)
 }
 
-type submitParamChangeProposalAction struct {
+type submitParamChangeLegacyProposalAction struct {
 	chain    chainID
 	from     validatorID
 	deposit  uint
@@ -355,13 +355,13 @@ type paramChangeJSON struct {
 }
 
 func (tr TestRun) submitParamChangeProposal(
-	action submitParamChangeProposalAction,
+	action submitParamChangeLegacyProposalAction,
 	verbose bool,
 ) {
 	prop := paramChangeProposalJSON{
-		Title:       "Param change",
-		Summary:     "Changing module params",
-		Description: "Changing module params",
+		Title:       "Legacy Param change",
+		Summary:     "Changing legacy module params",
+		Description: "Changing legacy module params",
 		Changes:     []paramChangeJSON{{Subspace: action.subspace, Key: action.key, Value: action.value}},
 		Deposit:     fmt.Sprint(action.deposit) + `stake`,
 	}
@@ -396,9 +396,8 @@ func (tr TestRun) submitParamChangeProposal(
 		`--keyring-backend`, `test`,
 		`-y`,
 	)
-	fmt.Println("#", cmd.String())
+
 	bz, err = cmd.CombinedOutput()
-	fmt.Println("BZ", string(bz))
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}

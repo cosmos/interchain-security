@@ -11,7 +11,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/runtime"
+	"github.com/cosmos/cosmos-sdk/x/consensus"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
+	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	appparams "github.com/cosmos/interchain-security/app/params"
@@ -165,6 +167,7 @@ var (
 		tendermint.AppModuleBasic{},
 		// router.AppModuleBasic{},
 		consumer.AppModuleBasic{},
+		consensus.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -270,7 +273,7 @@ func New(
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
-		capabilitytypes.StoreKey, authzkeeper.StoreKey,
+		capabilitytypes.StoreKey, authzkeeper.StoreKey, consensusparamtypes.StoreKey,
 		consumertypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -428,11 +431,7 @@ func New(
 
 	govKeeper.SetLegacyRouter(ccvgovRouter)
 
-	app.GovKeeper = *govKeeper.SetHooks(
-		govtypes.NewMultiGovHooks(
-		// register the governance hooks
-		),
-	)
+	app.GovKeeper = *govKeeper
 
 	// pre-initialize ConsumerKeeper to satsfy ibckeeper.NewKeeper
 	// which would panic on nil or zero keeper
@@ -556,6 +555,7 @@ func New(
 		ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
 		consumerModule,
+		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -582,6 +582,7 @@ func New(
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		genutiltypes.ModuleName,
+		consensusparamtypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
 		consumertypes.ModuleName,
@@ -602,6 +603,7 @@ func New(
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		genutiltypes.ModuleName,
+		consensusparamtypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
@@ -631,6 +633,7 @@ func New(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		genutiltypes.ModuleName,
+		consensusparamtypes.ModuleName,
 		ibchost.ModuleName,
 		ibctransfertypes.ModuleName,
 		consumertypes.ModuleName,

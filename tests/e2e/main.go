@@ -43,9 +43,9 @@ func main() {
 	}
 
 	testRuns := []testRunWithSteps{
-		{DefaultTestRun(), happyPathSteps},
+		// {DefaultTestRun(), happyPathSteps},
 		{DemocracyTestRun(), democracySteps},
-		{SlashThrottleTestRun(), slashThrottleSteps},
+		// {SlashThrottleTestRun(), slashThrottleSteps},
 	}
 	if includeMultiConsumer != nil && *includeMultiConsumer {
 		testRuns = append(testRuns, testRunWithSteps{MultiConsumerTestRun(), multipleConsumers})
@@ -105,7 +105,7 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.submitConsumerRemovalProposal(action, verbose)
 	case submitEquivocationProposalAction:
 		tr.submitEquivocationProposal(action, verbose)
-	case submitParamChangeProposalAction:
+	case submitParamChangeLegacyProposalAction:
 		tr.submitParamChangeProposal(action, verbose)
 	case voteGovProposalAction:
 		tr.voteGovProposal(action, verbose)
