@@ -3,8 +3,6 @@ package ante_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -16,93 +14,26 @@ import (
 	"github.com/cosmos/interchain-security/app/consumer-democracy/ante"
 	"github.com/stretchr/testify/require"
 
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
+	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 )
 
-// Setup is copy from integration test setup, to re-use the consumerApp in testing.
-// ConsumerApp is need to get the keeper in order to query the module params since params
-// are no longer being store in params module subspace. Also, ConsumerApp is needed to get
-// keeperMap for ante checking logic.
-type DemocSetupCallback func(t *testing.T) (
-	coord *ibctesting.Coordinator,
-	consumerChain *ibctesting.TestChain,
-	consumerApp testutil.DemocConsumerApp,
-)
-
-type AnteTestSuite struct {
-	suite.Suite
-	coordinator   *ibctesting.Coordinator
-	consumerChain *ibctesting.TestChain
-	consumerApp   testutil.DemocConsumerApp
-	setupCallback DemocSetupCallback
-}
-
-// NewCCVTestSuite returns a new instance of AnteTestSuite,
-func NewAnteTestSuite[T testutil.DemocConsumerApp](
-	democConsumerAppIniter ibctesting.AppIniter,
-) *AnteTestSuite {
-	democSuite := new(AnteTestSuite)
-
-	democSuite.setupCallback = func(t *testing.T) (
-		*ibctesting.Coordinator,
-		*ibctesting.TestChain,
-		testutil.DemocConsumerApp,
-	) {
-		t.Helper()
-		// Instantiate the test coordinator
-		coordinator := ibctesting.NewCoordinator(t, 0)
-
-		// Add single democracy consumer to coordinator, store returned test chain and app.
-		democConsumer, democConsumerApp := icstestingutils.AddDemocracyConsumer[T](
-			t, coordinator, democConsumerAppIniter)
-
-		// Pass variables to suite.
-		return coordinator, democConsumer, democConsumerApp
-	}
-	return democSuite
-}
-
-func (suite *AnteTestSuite) SetupTest() {
-	// Instantiate new test utils using callback
-	suite.coordinator, suite.consumerChain,
-		suite.consumerApp = suite.setupCallback(suite.T())
-}
-
-func setup(t *testing.T) *AnteTestSuite {
-	t.Helper()
-	suite := NewAnteTestSuite[*app.App](
-		icstestingutils.DemocracyConsumerAppIniter)
-	suite.SetT(t)
-	suite.SetupTest()
-
-	return suite
-}
-
+// in SDKv47 paramter updates full params object is required
+// either all params can be updated or none can be updated
 func TestForbiddenProposalsDecorator(t *testing.T) {
 	txCfg := app.MakeTestEncodingConfig().TxConfig
 
-	// Setup a tetstuite to fetch testConsumerApp
-	suite := setup(t)
-
-	// Get keeper to query params
-	accountKeeper := suite.consumerApp.GetTestAccountKeeper()
-	mintKeeper := suite.consumerApp.GetTestMintKeeper()
-
-	// Mint MsgUpdateParams
-	mintParams := mintKeeper.GetParams(suite.consumerChain.GetContext())
-	mintParams.InflationMax = sdk.NewDecWithPrec(1, 1) // "0.100000000000000000"
-	msg_1 := &minttypes.MsgUpdateParams{
+	// here we try to set whatever params exist to their default values
+	// the actual parameter setting is not important, what's being tested is the ante handle filter
+	// Note: mint params CAN be changed according to WhiteListModule in proposals_whitelisting.go
+	updateMintParams := &minttypes.MsgUpdateParams{
 		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		Params:    mintParams,
+		Params:    minttypes.DefaultParams(),
 	}
-	// Auth MsgUpdateParams
-	authParams := accountKeeper.GetParams(suite.consumerChain.GetContext())
-	authParams.MaxMemoCharacters = uint64(128)
-	msg_2 := &authtypes.MsgUpdateParams{
+
+	// Note: auth params CANNOT be changed according to WhiteListModule in proposals_whitelisting.go
+	updateAuthParams := &authtypes.MsgUpdateParams{
 		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		Params:    authParams,
+		Params:    authtypes.DefaultParams(),
 	}
 
 	testCases := []struct {
@@ -112,49 +43,87 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 		expectErr bool
 	}{
 		{
-			name: "Forbidden legacy param change - bank module",
-			ctx:  suite.consumerChain.GetContext(),
-			msgs: []sdk.Msg{
-				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
-					// only subspace and key are relevant for testing
-					{Subspace: banktypes.ModuleName, Key: "SendEnabled", Value: ""},
-				}),
-			},
-			// legacy param change proposals are forbidden
-			expectErr: true,
-		},
-		{
 			name: "Allowed param change - mint module",
-			ctx:  suite.consumerChain.GetContext(),
+			ctx:  sdk.Context{},
 			msgs: []sdk.Msg{
-				newParamChangeProposalMsg([]sdk.Msg{msg_1}),
+				newParamChangeProposalMsg([]sdk.Msg{updateMintParams}),
 			},
 			expectErr: false,
 		},
 		{
-			name: "Forbidden legacy param change - auth module",
-			ctx:  suite.consumerChain.GetContext(),
+			name: "Forbidden param change - auth module",
+			ctx:  sdk.Context{},
+			msgs: []sdk.Msg{
+				newParamChangeProposalMsg([]sdk.Msg{updateAuthParams}),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Allowed and forbidden param changes in the same msg",
+			ctx:  sdk.Context{},
+			msgs: []sdk.Msg{
+				newParamChangeProposalMsg([]sdk.Msg{updateMintParams, updateAuthParams}),
+			},
+			expectErr: true,
+		},
+		{
+			name: "Allowed and forbidden param changes in different msg",
+			ctx:  sdk.Context{},
+			msgs: []sdk.Msg{
+				newParamChangeProposalMsg([]sdk.Msg{updateMintParams}),
+				newParamChangeProposalMsg([]sdk.Msg{updateAuthParams}),
+			},
+			expectErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			handler := ante.NewForbiddenProposalsDecorator(app.IsProposalWhitelisted, app.IsModuleWhiteList)
+
+			txBuilder := txCfg.NewTxBuilder()
+			require.NoError(t, txBuilder.SetMsgs(tc.msgs...))
+
+			_, err := handler.AnteHandle(tc.ctx, txBuilder.GetTx(), false,
+				func(ctx sdk.Context, _ sdk.Tx, _ bool) (sdk.Context, error) { return ctx, nil })
+			if tc.expectErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+// Only ibctransfertypes.SendEnabled/ReceiveEnabled support legacy proposals for changing params
+// Note: see LegacyWhitelistedParams in proposals_whitelisting.go
+func TestForbiddenLegacyProposalsDecorator(t *testing.T) {
+	txCfg := app.MakeTestEncodingConfig().TxConfig
+
+	testCases := []struct {
+		name      string
+		ctx       sdk.Context
+		msgs      []sdk.Msg
+		expectErr bool
+	}{
+		{
+			name: "Allowed legacy param change -- only for ibctransfertypes.SendEnabled/ReceiveEnabled",
+			ctx:  sdk.Context{},
 			msgs: []sdk.Msg{
 				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
-					{Subspace: authtypes.ModuleName, Key: "MaxMemoCharacters", Value: ""},
+					// only subspace and key are relevant for testing
+					{Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled", Value: "true"},
 				}),
 			},
-			expectErr: true,
+			expectErr: false,
 		},
 		{
-			name: "Forbidden param change - auth module",
-			ctx:  suite.consumerChain.GetContext(),
-			msgs: []sdk.Msg{
-				newParamChangeProposalMsg([]sdk.Msg{msg_2}),
-			},
-			expectErr: true,
-		},
-		{
-			name: "Allowed and forbidden legacy param changes in the same msg",
-			ctx:  suite.consumerChain.GetContext(),
+			name: "Forbidden param change",
+			ctx:  sdk.Context{},
 			msgs: []sdk.Msg{
 				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
-					{Subspace: banktypes.ModuleName, Key: "SendEnabled", Value: ""},
 					{Subspace: authtypes.ModuleName, Key: "MaxMemoCharacters", Value: ""},
 				}),
 			},
@@ -162,20 +131,12 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 		},
 		{
 			name: "Allowed and forbidden param changes in the same msg",
-			ctx:  suite.consumerChain.GetContext(),
-			msgs: []sdk.Msg{
-				newParamChangeProposalMsg([]sdk.Msg{msg_1, msg_2}),
-			},
-			expectErr: true,
-		},
-		{
-			name: "Allowed and forbidden legacy param changes in different msg",
-			ctx:  suite.consumerChain.GetContext(),
+			ctx:  sdk.Context{},
 			msgs: []sdk.Msg{
 				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
-					{Subspace: banktypes.ModuleName, Key: "SendEnabled", Value: ""},
-				}),
-				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
+					// allowed
+					{Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled", Value: "true"},
+					// disallowed
 					{Subspace: authtypes.ModuleName, Key: "MaxMemoCharacters", Value: ""},
 				}),
 			},
@@ -183,10 +144,16 @@ func TestForbiddenProposalsDecorator(t *testing.T) {
 		},
 		{
 			name: "Allowed and forbidden param changes in different msg",
-			ctx:  suite.consumerChain.GetContext(),
+			ctx:  sdk.Context{},
 			msgs: []sdk.Msg{
-				newParamChangeProposalMsg([]sdk.Msg{msg_1}),
-				newParamChangeProposalMsg([]sdk.Msg{msg_2}),
+				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
+					// disallowed
+					{Subspace: banktypes.ModuleName, Key: "SendEnabled", Value: ""},
+				}),
+				newLegacyParamChangeProposalMsg([]proposal.ParamChange{
+					// allowed
+					{Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled", Value: "true"},
+				}),
 			},
 			expectErr: true,
 		},

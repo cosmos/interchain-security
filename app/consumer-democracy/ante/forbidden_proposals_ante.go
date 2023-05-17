@@ -45,6 +45,7 @@ func (decorator ForbiddenProposalsDecorator) AnteHandle(ctx sdk.Context, tx sdk.
 				if !decorator.isLegacyProposalWhitelisted(content) {
 					return ctx, fmt.Errorf("tx contains unsupported proposal message types at height %d", currHeight)
 				}
+				continue
 			}
 			// not legacy gov proposal content and not whitelisted
 			if !decorator.isModuleWhiteList(message.TypeUrl) {
