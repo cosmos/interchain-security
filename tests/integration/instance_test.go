@@ -47,14 +47,14 @@ func TestConsumerDemocracyCCVTestSuite(t *testing.T) {
 
 // Executes a specialized group of tests specific to a democracy consumer,
 // against a democracy consumer app.go implementation.
-// func TestConsumerDemocracyTestSuite(t *testing.T) {
-// 	// Pass in concrete app type that implement the interface defined in /testutil/e2e/interfaces.go
-// 	// IMPORTANT: the concrete app type passed in as a type parameter here must match the
-// 	// concrete app type returned by the relevant app initer.
-// 	democSuite := intg.NewConsumerDemocracyTestSuite[*appConsumerDemocracy.App](
-// 		// Pass in ibctesting.AppIniter for democracy consumer.
-// 		icstestingutils.DemocracyConsumerAppIniter)
+func TestConsumerDemocracyTestSuite(t *testing.T) {
+	// Pass in concrete app type that implement the interface defined in /testutil/e2e/interfaces.go
+	// IMPORTANT: the concrete app type passed in as a type parameter here must match the
+	// concrete app type returned by the relevant app initer.
+	democSuite := intg.NewConsumerDemocracyTestSuite[*appConsumerDemocracy.App](
+		// Pass in ibctesting.AppIniter for democracy consumer.
+		icstestingutils.DemocracyConsumerAppIniter)
 
-// 	// Run tests
-// 	suite.Run(t, democSuite)
-// }
+	// Run tests
+	suite.Run(t, democSuite)
+}
