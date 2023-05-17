@@ -13,8 +13,10 @@ import (
 	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
 	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	testutil "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -675,4 +677,41 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	// Check that the unbonding op index was removed
 	_, found = pk.GetUnbondingOpIndex(ctx, "chain-1", 3)
 	require.False(t, found)
+}
+
+// TestSendVSCPacketsToChainFailure tests the SendVSCPacketsToChain method failing
+func TestSendVSCPacketsToChainFailure(t *testing.T) {
+	// Keeper setup
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+
+	// Append mocks for full consumer setup
+	mockCalls := testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, "consumerChainID")
+
+	// Set 3 pending vsc packets
+	providerKeeper.AppendPendingVSCPackets(ctx, "consumerChainID", []ccv.ValidatorSetChangePacketData{{}, {}, {}}...)
+
+	// append mocks for the channel keeper to return an error
+	mockCalls = append(mockCalls,
+		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, types.ProviderPortID,
+			"CCVChannelID").Return(channeltypes.Channel{}, false).Times(1),
+	)
+
+	// Append mocks for expected call to StopConsumerChain
+	mockCalls = append(mockCalls, testutil.GetMocksForStopConsumerChain(ctx, &mocks)...)
+
+	// Assert mock calls hit
+	gomock.InOrder(mockCalls...)
+
+	// Execute setup
+	err := providerKeeper.SetConsumerChain(ctx, "channelID")
+	require.NoError(t, err)
+	providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientID")
+
+	// No panic should occur, StopConsumerChain should be called
+	providerKeeper.SendVSCPacketsToChain(ctx, "consumerChainID", "CCVChannelID")
+
+	// Pending VSC packets should be deleted in StopConsumerChain
+	require.Empty(t, providerKeeper.GetPendingVSCPackets(ctx, "consumerChainID"))
 }

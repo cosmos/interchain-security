@@ -295,8 +295,10 @@ func TestSendPacketsFailure(t *testing.T) {
 	}})
 
 	// Mock the channel keeper to return an error
-	mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, types.ConsumerPortID,
-		"consumerCCVChannelID").Return(channeltypes.Channel{}, false).Times(1)
+	gomock.InOrder(
+		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, types.ConsumerPortID,
+			"consumerCCVChannelID").Return(channeltypes.Channel{}, false).Times(1),
+	)
 
 	// No panic should occur, pending packets should not be cleared
 	consumerKeeper.SendPackets(ctx)
