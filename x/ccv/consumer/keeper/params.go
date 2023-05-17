@@ -11,6 +11,7 @@ import (
 )
 
 // GetParams returns the params for the consumer ccv module
+// NOTE: it is different from the GetParams method which is required to implement StakingKeeper interface
 func (k Keeper) GetConsumerParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.GetEnabled(ctx),
@@ -31,9 +32,12 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramStore.SetParamSet(ctx, &params)
 }
 
-// GetParams implement from staking keeper
+// GetParams implements StakingKeeper GetParams interface method
+// it returns an a empty stakingtypes.Params struct
+// NOTE: this method must be implemented on the consumer keeper because the evidence module keeper
+// in cosmos-sdk v0.47 requires this exact method with this exact signature to be available on the StakingKeepr
 func (k Keeper) GetParams(ctx sdk.Context) stakingtypes.Params {
-	return stakingtypes.DefaultParams()
+	return stakingtypes.Params{}
 }
 
 // GetEnabled returns the enabled flag for the consumer module

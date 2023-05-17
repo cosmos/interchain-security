@@ -54,8 +54,7 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 			k.SetCCValidator(ctx, ccVal)
 			err = k.AfterValidatorBonded(ctx, consAddr, nil)
 			if err != nil {
-				// An error here would indicate that the validator updates
-				// received from the provider are invalid.
+				// AfterValidatorBonded is called by the Slashing module and should not return an error.
 				panic(err)
 			}
 		} else {
@@ -125,8 +124,7 @@ func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress,
 	// If this is a previously standalone chain and infraction happened before the changeover was completed,
 	// slash only on the standalone staking keeper.
 	if k.IsPrevStandaloneChain(ctx) && infractionHeight < k.FirstConsumerHeight(ctx) {
-		// NOTE: I'm not sure this code is 100% correct and it's relatively newly implemented
-		// That is bothering me is that we call SlashWithInfractionReason without an infraction reason every time
+		// Slash for a standalone chain does not require an infraction reason so we pass in Infraction_INFRACTION_UNSPECIFIED
 		return k.standaloneStakingKeeper.SlashWithInfractionReason(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
 	}
 
@@ -307,7 +305,7 @@ func (k Keeper) MustGetCurrentValidatorsAsABCIUpdates(ctx sdk.Context) []abci.Va
 	return valUpdates
 }
 
-// implement interface metod needed for x/genutil in sdk v47
+// implement interface method needed for x/genutil in sdk v47
 // returns empty updates and err
 func (k Keeper) ApplyAndReturnValidatorSetUpdates(sdk.Context) (updates []abci.ValidatorUpdate, err error) {
 	return

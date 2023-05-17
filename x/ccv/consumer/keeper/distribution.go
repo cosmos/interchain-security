@@ -114,14 +114,14 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 		timeoutTimestamp := uint64(ctx.BlockTime().Add(transferTimeoutPeriod).UnixNano())
 		for _, token := range tstProviderTokens {
 			packetTransfer := &transfertypes.MsgTransfer{
-				SourcePort:       transfertypes.PortID,     // packet destination port is now the source
-				SourceChannel:    ch,                       // packet destination channel is now the source
-				Token:            token,                    // balance of the coin
-				Sender:           tstProviderAddr.String(), // recipient is the address in the Evmos chain
-				Receiver:         providerAddr,             // transfer to your own account address on the source chain
+				SourcePort:       transfertypes.PortID,
+				SourceChannel:    ch,
+				Token:            token,
+				Sender:           tstProviderAddr.String(), // consumer address to send from
+				Receiver:         providerAddr,             // provider fee pool address to send to
 				TimeoutHeight:    timeoutHeight,            // timeout height disabled
-				TimeoutTimestamp: timeoutTimestamp,         // timeout timestamp is 4 hours from now
-				Memo:             "",
+				TimeoutTimestamp: timeoutTimestamp,
+				Memo:             "consumer chain rewards distribution",
 			}
 			_, err := k.ibcTransferKeeper.Transfer(ctx, packetTransfer)
 			if err != nil {

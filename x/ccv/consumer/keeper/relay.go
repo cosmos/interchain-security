@@ -183,7 +183,6 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 
 	pending := k.GetPendingPackets(ctx)
 	for _, p := range pending.GetList() {
-
 		// send packet over IBC
 		err := ccv.SendIBCPacket(
 			ctx,

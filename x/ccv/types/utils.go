@@ -60,36 +60,28 @@ func SendIBCPacket(
 	ctx sdk.Context,
 	scopedKeeper ScopedKeeper,
 	channelKeeper ChannelKeeper,
-	channelID string,
-	portID string,
+	sourceChannelID string,
+	sourcePortID string,
 	packetData []byte,
 	timeoutPeriod time.Duration,
 ) error {
-	channel, ok := channelKeeper.GetChannel(ctx, portID, channelID)
+	_, ok := channelKeeper.GetChannel(ctx, sourcePortID, sourceChannelID)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
+		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", sourceChannelID)
 	}
-	channelCap, ok := scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(portID, channelID))
+	channelCap, ok := scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(sourcePortID, sourceChannelID))
 	if !ok {
 		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
 	}
 
-	// get the next sequence
-	sequence, found := channelKeeper.GetNextSequenceSend(ctx, portID, channelID)
-	if !found {
-		return sdkerrors.Wrapf(
-			channeltypes.ErrSequenceSendNotFound,
-			"source port: %s, source channel: %s", portID, channelID,
-		)
-	}
-	packet := channeltypes.NewPacket(
-		packetData, sequence,
-		portID, channelID,
-		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
-		clienttypes.Height{}, uint64(ctx.BlockTime().Add(timeoutPeriod).UnixNano()),
+	_, err := channelKeeper.SendPacket(ctx,
+		channelCap,
+		sourcePortID,
+		sourceChannelID,
+		clienttypes.Height{}, //  timeout height disabled
+		uint64(ctx.BlockTime().Add(timeoutPeriod).UnixNano()), // timeout timestamp
+		packetData,
 	)
-
-	_, err := channelKeeper.SendPacket(ctx, channelCap, packet.SourcePort, packet.SourceChannel, packet.TimeoutHeight, packet.TimeoutTimestamp, packet.Data)
 	return err
 }
 
