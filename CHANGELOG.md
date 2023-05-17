@@ -21,6 +21,7 @@ Some PRs from v1.3.0 may reappear from other releases below. This is due to the 
 
 ## PRs included in v1.3.0
 
+* (fix) consumer key prefix order to avoid complex migrations [#963](https://github.com/cosmos/interchain-security/pull/963)
 * (fix) Prevent denom DOS [#931](https://github.com/cosmos/interchain-security/pull/931)
 * (fix) multisig for assigning consumer key, use json [#916](https://github.com/cosmos/interchain-security/pull/916)
 * (deps) Bump github.com/cosmos/ibc-go/v4 from 4.3.0 to 4.4.0 [#902](https://github.com/cosmos/interchain-security/pull/902)
