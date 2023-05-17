@@ -17,7 +17,7 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 )
 
-// in SDKv47 paramter updates full params object is required
+// in SDKv47 parameter updates full params object is required
 // either all params can be updated or none can be updated
 func TestForbiddenProposalsDecorator(t *testing.T) {
 	txCfg := app.MakeTestEncodingConfig().TxConfig
