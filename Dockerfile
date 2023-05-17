@@ -48,6 +48,7 @@ RUN go build -o /CometMock_Binary ./cometmock
 
 # Get Hermes build
 FROM informalsystems/hermes:1.2.0 AS hermes-builder
+FROM informalofftermatt/gorelayer:latest AS gorelayer-builder
 
 FROM --platform=linux/amd64 fedora:36
 RUN dnf update -y
@@ -57,11 +58,13 @@ USER root
 
 
 COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/
+COPY --from=gorelayer-builder /bin/rly /usr/local/bin/
 
 COPY --from=is-builder /go/bin/interchain-security-pd /usr/local/bin/interchain-security-pd
 COPY --from=is-builder /go/bin/interchain-security-cd /usr/local/bin/interchain-security-cd
 COPY --from=is-builder /go/bin/interchain-security-cdd /usr/local/bin/interchain-security-cdd
 COPY --from=cometmock-builder /CometMock_Binary /usr/local/bin/cometmock
+
 
 
 # Copy in the shell scripts that run the testnet

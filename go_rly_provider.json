@@ -1,0 +1,16 @@
+{
+    "type": "cosmos",
+    "value": {
+        "key": "default",
+        "chain-id": "provider",
+        "rpc-addr": "tcp://127.0.0.1:29170",
+        "account-prefix": "cosmos",
+        "keyring-backend": "test",
+        "gas-adjustment": 1.2,
+        "gas-prices": "0.01stake",
+        "debug": true,
+        "timeout": "20s",
+        "output-format": "json",
+        "sign-mode": "direct"
+    }
+}
