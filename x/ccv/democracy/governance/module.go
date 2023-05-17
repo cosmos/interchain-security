@@ -84,12 +84,10 @@ func isProposalWhitelisted(ctx sdk.Context, am AppModule, proposal govv1.Proposa
 				// not whitelisted
 				return false
 			}
-		} else {
 			// not legacy gov proposal content
-			if !am.isModuleWhiteList(message.TypeUrl) {
-				// not whitelisted
-				return false
-			}
+		} else if !am.isModuleWhiteList(message.TypeUrl) {
+			// not whitelisted
+			return false
 		}
 	}
 	return true

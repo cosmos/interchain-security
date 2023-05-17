@@ -48,13 +48,11 @@ func (decorator ForbiddenProposalsDecorator) AnteHandle(ctx sdk.Context, tx sdk.
 						isWhitelisted = false
 						break
 					}
-				} else {
 					// not legacy gov proposal content
-					if !decorator.isModuleWhiteList(message.TypeUrl) {
-						// not whitelisted
-						isWhitelisted = false
-						break
-					}
+				} else if !decorator.isModuleWhiteList(message.TypeUrl) {
+					// not whitelisted
+					isWhitelisted = false
+					break
 				}
 			}
 
