@@ -2,13 +2,18 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - feat/*
+
     paths-ignore:
-      - 'legacy_ibc_testing'
+      - "legacy_ibc_testing"
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - feat/*
     paths-ignore:
-      - 'legacy_ibc_testing'
+      - "legacy_ibc_testing"
   schedule:
     #        ┌───────────── minute (0 - 59)
     #        │  ┌───────────── hour (0 - 23)
