@@ -68,6 +68,12 @@ service Query {
       returns (QueryThrottledConsumerPacketDataResponse) {
     option (google.api.http).get = "/interchain_security/ccv/provider/pending_consumer_packets";
   }
+
+  // QueryRegisteredConsumerRewardDenoms returns a list of consumer reward denoms that are registered
+  rpc QueryRegisteredConsumerRewardDenoms(QueryRegisteredConsumerRewardDenomsRequest)
+      returns (QueryRegisteredConsumerRewardDenomsResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/provider/registered_consumer_reward_denoms";
+  }
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
@@ -168,4 +174,10 @@ message ThrottledPacketDataWrapper {
     interchain_security.ccv.v1.SlashPacketData slash_packet = 1;
     interchain_security.ccv.v1.VSCMaturedPacketData vsc_matured_packet = 2;
   }
+}
+
+message QueryRegisteredConsumerRewardDenomsRequest {}
+
+message QueryRegisteredConsumerRewardDenomsResponse {
+  repeated string denoms = 1;
 }
