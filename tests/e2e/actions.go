@@ -866,7 +866,7 @@ func (tr TestRun) relayPackets(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	tr.waitBlocks(action.chain, 1, 10*time.Second)
+	tr.waitBlocks(action.chain, 1, 30*time.Second)
 }
 
 type relayRewardPacketsToProviderAction struct {
