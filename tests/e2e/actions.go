@@ -860,10 +860,13 @@ func (tr TestRun) relayPackets(
 	if verbose {
 		log.Println("relayPackets cmd:", cmd.String())
 	}
+
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chain, 1, 30*time.Second)
 }
 
 type relayRewardPacketsToProviderAction struct {
