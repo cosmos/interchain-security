@@ -40,7 +40,7 @@ echo "$CONSUMER_MNEMONIC" | $BIN keys add validator$VAL_ID --keyring-backend tes
 
 
 # restart node with new key
-ARGS="--home /$CHAIN_ID/validator$VAL_ID --address tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26655 --rpc.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26658 --grpc.address $CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:9091 --log_level trace --p2p.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26656 --grpc-web.enable=false"
+ARGS="--home /$CHAIN_ID/validator$VAL_ID --address tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26655 --rpc.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26658 --grpc.address $CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:9091 --log_level info --p2p.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26656 --grpc-web.enable=false"
 
 ip netns exec $CHAIN_ID-$VAL_ID $BIN $ARGS start &> /$CHAIN_ID/validator$VAL_ID/logs &
 
