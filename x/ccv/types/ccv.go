@@ -76,6 +76,22 @@ func (vdt SlashPacketData) GetBytes() []byte {
 	return valDowntimeBytes
 }
 
+func NewNotifyRewardsPacketData(blockHeight int64) *NotifyRewardsPacketData {
+	return &NotifyRewardsPacketData{BlockHeight: blockHeight}
+}
+
+func (n NotifyRewardsPacketData) ValidateBasic() error {
+	if n.BlockHeight == 0 {
+		return errorsmod.Wrap(ErrInvalidPacketData, "invalid block height")
+	}
+	return nil
+}
+
+func (n NotifyRewardsPacketData) GetBytes() []byte {
+	bytes := ModuleCdc.MustMarshalJSON(&n)
+	return bytes
+}
+
 func (cp ConsumerPacketData) ValidateBasic() (err error) {
 	switch cp.Type {
 	case VscMaturedPacket:
@@ -92,6 +108,12 @@ func (cp ConsumerPacketData) ValidateBasic() (err error) {
 			return fmt.Errorf("invalid consumer packet data: SlashPacketData data cannot be empty")
 		}
 		err = slashPacket.ValidateBasic()
+	case NotifyRewardsPacket:
+		notifyRewardsPacket := cp.GetNotifyRewardsPacketData()
+		if notifyRewardsPacket == nil {
+			return fmt.Errorf("invalid consumer packet data: NotifyRewardsPacket data cannot be empty")
+		}
+		err = notifyRewardsPacket.ValidateBasic()
 	default:
 		err = fmt.Errorf("invalid consumer packet type: %q", cp.Type)
 	}

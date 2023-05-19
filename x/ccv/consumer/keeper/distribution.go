@@ -2,13 +2,11 @@ package keeper
 
 import (
 	"fmt"
-	"strconv"
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -19,26 +17,11 @@ import (
 // Reward Distribution follows a simple model: send tokens to the fee pool
 // of the provider validator set
 func (k Keeper) EndBlockRD(ctx sdk.Context) {
-	// Split blocks rewards.
-	// It panics in case of marshalling / unmarshalling errors or
-	// if sending coins between module accounts fails.
-	k.DistributeRewardsInternally(ctx)
-
-	if !k.shouldSendRewardsToProvider(ctx) {
+	if !k.shouldNotifyRewardsToProvider(ctx) {
 		return
 	}
 
-	// Try to send rewards to provider
-	cachedCtx, writeCache := ctx.CacheContext()
-	if err := k.SendRewardsToProvider(cachedCtx); err != nil {
-		k.Logger(ctx).Error("attempt to sent rewards to provider failed", "error", err)
-	} else {
-		// The cached context is created with a new EventManager so we merge the event
-		// into the original context
-		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
-		// write cache
-		writeCache()
-	}
+	k.QueueNotifyRewardsPackets(ctx)
 
 	// Update LastTransmissionBlockHeight
 	newLtbh := types.LastTransmissionBlockHeight{
@@ -47,147 +30,12 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 	k.SetLastTransmissionBlockHeight(ctx, newLtbh)
 }
 
-// DistributeRewardsInternally splits the block rewards according to the
-// ConsumerRedistributionFrac param.
-// Returns true if it's time to send rewards to provider
-func (k Keeper) DistributeRewardsInternally(ctx sdk.Context) {
-	consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
-	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
-
-	// split the fee pool, send the consumer's fraction to the consumer redistribution address
-	frac, err := sdk.NewDecFromStr(k.GetConsumerRedistributionFrac(ctx))
-	if err != nil {
-		// ConsumerRedistributionFrac was already validated when set as a param
-		panic(fmt.Errorf("ConsumerRedistributionFrac is invalid: %w", err))
-	}
-	decFPTokens := sdk.NewDecCoinsFromCoins(fpTokens...)
-	// NOTE the truncated decimal remainder will be sent to the provider fee pool
-	consRedistrTokens, _ := decFPTokens.MulDec(frac).TruncateDecimal()
-	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
-		types.ConsumerRedistributeName, consRedistrTokens)
-	if err != nil {
-		// SendCoinsFromModuleToModule will panic if either module account does not exist,
-		// while SendCoins (called inside) returns an error upon failure.
-		// It is the common behavior in cosmos-sdk to panic if SendCoinsFromModuleToModule
-		// returns error.
-		panic(err)
-	}
-
-	// Send the remainder to the Provider fee pool over ibc. Buffer these
-	// through a secondary address on the consumer chain to ensure that the
-	// tokens do not go through the consumer redistribute split twice in the
-	// event that the transfer fails the tokens are returned to the consumer
-	// chain.
-	remainingTokens := fpTokens.Sub(consRedistrTokens)
-	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
-		types.ConsumerToSendToProviderName, remainingTokens)
-	if err != nil {
-		// SendCoinsFromModuleToModule will panic if either module account does not exist,
-		// while SendCoins (called inside) returns an error upon failure.
-		// It is the common behavior in cosmos-sdk to panic if SendCoinsFromModuleToModule
-		// returns error.
-		panic(err)
-	}
-}
-
-// Check whether it's time to send rewards to provider
-func (k Keeper) shouldSendRewardsToProvider(ctx sdk.Context) bool {
+// Check whether it's time to notify rewards to provider
+func (k Keeper) shouldNotifyRewardsToProvider(ctx sdk.Context) bool {
 	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
 	curHeight := ctx.BlockHeight()
 	ltbh := k.GetLastTransmissionBlockHeight(ctx)
 	return (curHeight - ltbh.Height) >= bpdt
-}
-
-// SendRewardsToProvider attempts to send to the provider (via IBC)
-// all the block rewards allocated for the provider
-func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
-	// empty out the toSendToProviderTokens address
-	ch := k.GetDistributionTransmissionChannel(ctx)
-	transferChannel, found := k.channelKeeper.GetChannel(ctx, transfertypes.PortID, ch)
-	if found && transferChannel.State == channeltypes.OPEN {
-		tstProviderAddr := k.authKeeper.GetModuleAccount(ctx,
-			types.ConsumerToSendToProviderName).GetAddress()
-		providerAddr := k.GetProviderFeePoolAddrStr(ctx)
-		timeoutHeight := clienttypes.ZeroHeight()
-		transferTimeoutPeriod := k.GetTransferTimeoutPeriod(ctx)
-		timeoutTimestamp := uint64(ctx.BlockTime().Add(transferTimeoutPeriod).UnixNano())
-
-		sentCoins := sdk.NewCoins()
-
-		// iterate over all whitelisted reward denoms
-		for _, denom := range k.AllowedRewardDenoms(ctx) {
-			// get the balance of the denom in the toSendToProviderTokens address
-			balance := k.bankKeeper.GetBalance(ctx, tstProviderAddr, denom)
-
-			// if the balance is not zero,
-			if !balance.IsZero() {
-				// send the balance to the provider
-				err := k.ibcTransferKeeper.SendTransfer(ctx,
-					transfertypes.PortID,
-					ch,
-					balance,
-					tstProviderAddr,
-					providerAddr,
-					timeoutHeight,
-					timeoutTimestamp,
-				)
-				if err != nil {
-					return err
-				}
-				sentCoins = sentCoins.Add(balance)
-			}
-		}
-
-		consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
-		fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
-
-		k.Logger(ctx).Info("sent block rewards to provider",
-			"total fee pool", fpTokens.String(),
-			"sent", sentCoins.String(),
-		)
-		currentHeight := ctx.BlockHeight()
-		ctx.EventManager().EmitEvent(
-			sdk.NewEvent(
-				ccv.EventTypeFeeDistribution,
-				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-				sdk.NewAttribute(ccv.AttributeDistributionCurrentHeight, strconv.Itoa(int(currentHeight))),
-				sdk.NewAttribute(ccv.AttributeDistributionNextHeight, strconv.Itoa(int(currentHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
-				sdk.NewAttribute(ccv.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
-				sdk.NewAttribute(ccv.AttributeDistributionTotal, fpTokens.String()),
-				sdk.NewAttribute(ccv.AttributeDistributionToProvider, sentCoins.String()),
-			),
-		)
-	}
-
-	return nil
-}
-
-// AllowedRewardDenoms returns a list of all denoms that are allowed
-// to be sent to the provider as rewards
-func (k Keeper) AllowedRewardDenoms(ctx sdk.Context) []string {
-	var rewardDenoms []string
-
-	// first, append the native reward denoms
-	rewardDenoms = append(rewardDenoms, k.GetRewardDenoms(ctx)...)
-
-	// then, append the provider-originated reward denoms
-	for _, denom := range k.GetProviderRewardDenoms(ctx) {
-		// every provider denom was sent over IBC,
-		// so we must prefix the denom
-		sourcePrefix := transfertypes.GetDenomPrefix(
-			transfertypes.PortID,
-			k.GetDistributionTransmissionChannel(ctx),
-		)
-		// NOTE: sourcePrefix contains the trailing "/"
-		prefixedDenom := sourcePrefix + denom
-		// construct the denomination trace from the full raw denomination
-		denomTrace := transfertypes.ParseDenomTrace(prefixedDenom)
-
-		// append the IBC denom to the list of allowed reward denoms
-		rewardDenoms = append(rewardDenoms, denomTrace.IBCDenom())
-	}
-
-	return rewardDenoms
 }
 
 func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) types.LastTransmissionBlockHeight {

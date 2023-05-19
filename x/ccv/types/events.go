@@ -14,6 +14,7 @@ const (
 	EventTypeFeeDistribution           = "fee_distribution"
 	EventTypeConsumerSlashRequest      = "consumer_slash_request"
 	EventTypeVSCMatured                = "vsc_matured"
+	EventNotifyRewards                 = "notify_rewards"
 
 	AttributeKeyAckSuccess = "success"
 	AttributeKeyAck        = "acknowledgement"
