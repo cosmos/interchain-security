@@ -1,4 +1,4 @@
-module github.com/cosmos/interchain-security
+module github.com/octopus-network/interchain-security
 
 go 1.19
 
