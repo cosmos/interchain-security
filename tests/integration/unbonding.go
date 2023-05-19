@@ -5,8 +5,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	providerkeeper "github.com/octopus-network/interchain-security/x/ccv/provider/keeper"
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 // TestUndelegationNormalOperation tests that undelegations complete after
@@ -29,48 +29,48 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 	}{
 		{
 			"provider unbonding period elapses first", 2, func(expBalance, balance sdk.Int) {
-				// increment time so that the unbonding period ends on the provider
-				incrementTimeByUnbondingPeriod(s, Provider)
+			// increment time so that the unbonding period ends on the provider
+			incrementTimeByUnbondingPeriod(s, Provider)
 
-				// check that onHold is true
-				checkStakingUnbondingOps(s, 1, true, true, "unbonding should be on hold")
+			// check that onHold is true
+			checkStakingUnbondingOps(s, 1, true, true, "unbonding should be on hold")
 
-				// check that the unbonding is not complete
-				s.Require().Equal(expBalance, balance, "unexpected balance after provider unbonding")
+			// check that the unbonding is not complete
+			s.Require().Equal(expBalance, balance, "unexpected balance after provider unbonding")
 
-				// undelegation complete on consumer
-				unbondConsumer(1)
-			},
+			// undelegation complete on consumer
+			unbondConsumer(1)
+		},
 		},
 		{
 			"consumer unbonding period elapses first", 2, func(expBalance, balance sdk.Int) {
-				// undelegation complete on consumer
-				unbondConsumer(1)
+			// undelegation complete on consumer
+			unbondConsumer(1)
 
-				// check that onHold is false
-				checkStakingUnbondingOps(s, 1, true, false, "unbonding should be not be on hold")
+			// check that onHold is false
+			checkStakingUnbondingOps(s, 1, true, false, "unbonding should be not be on hold")
 
-				// check that the unbonding is not complete
-				s.Require().Equal(expBalance, balance, "unexpected balance after consumer unbonding")
+			// check that the unbonding is not complete
+			s.Require().Equal(expBalance, balance, "unexpected balance after consumer unbonding")
 
-				// increment time so that the unbonding period ends on the provider
-				incrementTimeByUnbondingPeriod(s, Provider)
-			},
+			// increment time so that the unbonding period ends on the provider
+			incrementTimeByUnbondingPeriod(s, Provider)
+		},
 		},
 		{
 			"no valset changes", 1, func(expBalance, balance sdk.Int) {
-				// undelegation complete on consumer
-				unbondConsumer(1)
+			// undelegation complete on consumer
+			unbondConsumer(1)
 
-				// check that onHold is false
-				checkStakingUnbondingOps(s, 1, true, false, "unbonding should be not be on hold")
+			// check that onHold is false
+			checkStakingUnbondingOps(s, 1, true, false, "unbonding should be not be on hold")
 
-				// check that the unbonding is not complete
-				s.Require().Equal(expBalance, balance, "unexpected balance after consumer unbonding")
+			// check that the unbonding is not complete
+			s.Require().Equal(expBalance, balance, "unexpected balance after consumer unbonding")
 
-				// increment time so that the unbonding period ends on the provider
-				incrementTimeByUnbondingPeriod(s, Provider)
-			},
+			// increment time so that the unbonding period ends on the provider
+			incrementTimeByUnbondingPeriod(s, Provider)
+		},
 		},
 	}
 
@@ -195,19 +195,19 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 	}{
 		{
 			"channel handshake completes after unbonding period", func(pk *providerkeeper.Keeper, pUnbondingPeriod time.Duration) {
-				// change the init timeout timestamp for this consumer chain
-				// to make sure the chain is not removed before the unbonding period elapses
-				ts := s.providerCtx().BlockTime().Add(pUnbondingPeriod + 24*time.Hour)
-				pk.SetInitTimeoutTimestamp(s.providerCtx(), s.consumerChain.ChainID, uint64(ts.UnixNano()))
-			}, false,
+			// change the init timeout timestamp for this consumer chain
+			// to make sure the chain is not removed before the unbonding period elapses
+			ts := s.providerCtx().BlockTime().Add(pUnbondingPeriod + 24*time.Hour)
+			pk.SetInitTimeoutTimestamp(s.providerCtx(), s.consumerChain.ChainID, uint64(ts.UnixNano()))
+		}, false,
 		},
 		{
 			"channel handshake times out before unbonding period", func(pk *providerkeeper.Keeper, pUnbondingPeriod time.Duration) {
-				// change the init timeout timestamp for this consumer chain
-				// to make sure the chain is removed before the unbonding period elapses
-				ts := s.providerCtx().BlockTime().Add(pUnbondingPeriod - 24*time.Hour)
-				pk.SetInitTimeoutTimestamp(s.providerCtx(), s.consumerChain.ChainID, uint64(ts.UnixNano()))
-			}, true,
+			// change the init timeout timestamp for this consumer chain
+			// to make sure the chain is removed before the unbonding period elapses
+			ts := s.providerCtx().BlockTime().Add(pUnbondingPeriod - 24*time.Hour)
+			pk.SetInitTimeoutTimestamp(s.providerCtx(), s.consumerChain.ChainID, uint64(ts.UnixNano()))
+		}, true,
 		},
 	}
 

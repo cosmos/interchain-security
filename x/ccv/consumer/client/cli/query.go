@@ -5,7 +5,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+
+	"github.com/octopus-network/interchain-security/x/ccv/consumer/types"
 )
 
 // NewQueryCmd returns a root CLI command handler for all x/ccv/provider query commands.

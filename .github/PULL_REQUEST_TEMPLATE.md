@@ -23,10 +23,10 @@ I have...
 
 * [ ] Included the correct [type prefix](https://github.com/commitizen/conventional-commit-types/blob/v3.0.0/index.json) in the PR title
 * [ ] Added `!` to the type prefix if API or client breaking change
-* [ ] Targeted the correct branch (see [PR Targeting](https://github.com/cosmos/interchain-security/blob/main/CONTRIBUTING.md#pr-targeting))
+* [ ] Targeted the correct branch (see [PR Targeting](https://github.com/octopus-network/interchain-security/blob/main/CONTRIBUTING.md#pr-targeting))
 * [ ] Provided a link to the relevant issue or specification
 * [ ] Followed the guidelines for [building SDK modules](https://github.com/cosmos/cosmos-sdk/blob/main/docs/docs/building-modules)
-* [ ] Included the necessary unit and integration [tests](https://github.com/cosmos/interchain-security/blob/main/CONTRIBUTING.md#testing)
+* [ ] Included the necessary unit and integration [tests](https://github.com/octopus-network/interchain-security/blob/main/CONTRIBUTING.md#testing)
 * [ ] Added a changelog entry to `CHANGELOG.md`
 * [ ] Included comments for [documenting Go code](https://blog.golang.org/godoc)
 * [ ] Updated the relevant documentation or specification

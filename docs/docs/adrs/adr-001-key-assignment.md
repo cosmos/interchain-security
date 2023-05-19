@@ -269,4 +269,4 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 
 ## References
 
-* [Key assignment issue](https://github.com/cosmos/interchain-security/issues/26)
+* [Key assignment issue](https://github.com/octopus-network/interchain-security/issues/26)

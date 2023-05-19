@@ -75,12 +75,12 @@ but _maintaining_ that change over the years has a much higher cost that the ste
 
 To ensure a smooth workflow for all contributors, a general workflow for contributing has been established. 
 
-1. Start by browsing [existing issues](https://github.com/cosmos/interchain-security/issues) and [discussions](https://github.com/cosmos/interchain-security/discussions). If you are looking for something interesting or if you have something in your mind, there is a chance it had been discussed.
-   * Looking for a good place to start contributing? How about checking out some [good first issues](https://github.com/cosmos/interchain-security/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) or [bugs](https://github.com/cosmos/interchain-security/issues?q=is%3Aopen+is%3Aissue+label%3Abug)?
+1. Start by browsing [existing issues](https://github.com/octopus-network/interchain-security/issues) and [discussions](https://github.com/octopus-network/interchain-security/discussions). If you are looking for something interesting or if you have something in your mind, there is a chance it had been discussed.
+   * Looking for a good place to start contributing? How about checking out some [good first issues](https://github.com/octopus-network/interchain-security/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) or [bugs](https://github.com/octopus-network/interchain-security/issues?q=is%3Aopen+is%3Aissue+label%3Abug)?
 2. Determine whether a GitHub issue or discussion is more appropriate for your needs:
-   1. If you want to propose something new that requires specification or an additional design, or you would like to change a process, start with a [new discussion](https://github.com/cosmos/interchain-security/discussions/new/choose). With discussions, we can better handle the design process using discussion threads. A discussion usually leads to one or more issues.
-   2. If the issue you want addressed is a specific proposal or a bug, then open a [new issue](https://github.com/cosmos/interchain-security/issues/new/choose).
-   3. Review existing [issues](https://github.com/cosmos/interchain-security/issues) to find an issue you'd like to help with.
+   1. If you want to propose something new that requires specification or an additional design, or you would like to change a process, start with a [new discussion](https://github.com/octopus-network/interchain-security/discussions/new/choose). With discussions, we can better handle the design process using discussion threads. A discussion usually leads to one or more issues.
+   2. If the issue you want addressed is a specific proposal or a bug, then open a [new issue](https://github.com/octopus-network/interchain-security/issues/new/choose).
+   3. Review existing [issues](https://github.com/octopus-network/interchain-security/issues) to find an issue you'd like to help with.
 3. Participate in thoughtful discussion on that issue.
 4. If you would like to contribute:
    1. Ensure that the proposal has been accepted.
@@ -104,13 +104,13 @@ The developers work in sprints, which are available in a [GitHub Project](https:
 
 ## Architecture Decision Records (ADR)
 
-When proposing an architecture decision for ICS, please start by opening an [issue](https://github.com/cosmos/interchain-security/issues/new/choose) or a [discussion](https://github.com/cosmos/interchain-security/discussions/new) with a summary of the proposal. Once the proposal has been discussed and there is rough alignment on a high-level approach to the design, you may either start development, or write an ADR.
+When proposing an architecture decision for ICS, please start by opening an [issue](https://github.com/octopus-network/interchain-security/issues/new/choose) or a [discussion](https://github.com/octopus-network/interchain-security/discussions/new) with a summary of the proposal. Once the proposal has been discussed and there is rough alignment on a high-level approach to the design, you may either start development, or write an ADR.
 
 If your architecture decision is a simple change, you may contribute directly without writing an ADR. However, if you are proposing a significant change, please include a corresponding ADR.
 
 In certain circumstances, the architecture decision may require changes to the ICS spec. Note that the spec is responsible for defining language-agnostic, implementation-agnostic behaviors for the ICS protocol. Whereas ADRs are responsible for communicating implementation decisions contained within this repo.
 
-To create an ADR, follow the [template](./docs/docs/adrs/adr-template.md) and [doc](./docs/docs/adrs/Readme.md). If you would like to see examples of how these are written, please refer to the current [ADRs](https://github.com/cosmos/interchain-security/tree/main/docs/architecture).
+To create an ADR, follow the [template](./docs/docs/adrs/adr-template.md) and [doc](./docs/docs/adrs/Readme.md). If you would like to see examples of how these are written, please refer to the current [ADRs](https://github.com/octopus-network/interchain-security/tree/main/docs/architecture).
 
 ### ADR Proposals
 

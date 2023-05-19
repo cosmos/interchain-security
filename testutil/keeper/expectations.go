@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	time "time"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -10,11 +10,13 @@ import (
 	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
 
+	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
+
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 
 	extra "github.com/oxyno-zeta/gomock-extra-matcher"
 )

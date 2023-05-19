@@ -12,7 +12,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+
+	consumertypes "github.com/octopus-network/interchain-security/x/ccv/consumer/types"
 
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	abci "github.com/tendermint/tendermint/abci/types"

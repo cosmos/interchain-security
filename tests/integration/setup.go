@@ -6,16 +6,18 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/ibc-go/v4/testing/mock"
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
 	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
 
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	testutil "github.com/octopus-network/interchain-security/testutil/integration"
+
+	icstestingutils "github.com/octopus-network/interchain-security/testutil/ibc_testing"
+	consumertypes "github.com/octopus-network/interchain-security/x/ccv/consumer/types"
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+
+	ibctesting "github.com/octopus-network/interchain-security/legacy_ibc_testing/testing"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -261,7 +263,7 @@ func (suite *CCVTestSuite) ExecuteCCVChannelHandshake(path *ibctesting.Path) {
 }
 
 // TODO: Make SetupTransferChannel functional for multiple consumers by pattern matching SetupCCVChannel.
-// See: https://github.com/cosmos/interchain-security/issues/506
+// See: https://github.com/octopus-network/interchain-security/issues/506
 func (suite *CCVTestSuite) SetupTransferChannel() {
 	// transfer path will use the same connection as ccv path
 

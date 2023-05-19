@@ -10,8 +10,9 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 // OnRecvVSCMaturedPacket handles a VSCMatured packet
@@ -198,7 +199,7 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 				return
 			}
 			// TODO do not panic if the send fails
-			// https://github.com/cosmos/interchain-security/issues/649
+			// https://github.com/octopus-network/interchain-security/issues/649
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
 		// set the VSC send timestamp for this packet;
@@ -330,9 +331,9 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 	// Queue a slash entry to the global queue, which will be seen by the throttling logic
 	k.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-		ctx.BlockTime(),   // recv time
-		chainID,           // consumer chain id that sent the packet
-		packet.Sequence,   // IBC sequence number of the packet
+		ctx.BlockTime(), // recv time
+		chainID,         // consumer chain id that sent the packet
+		packet.Sequence, // IBC sequence number of the packet
 		providerConsAddr)) // Provider consensus address of val to be slashed
 
 	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,

@@ -7,9 +7,10 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+
+	"github.com/octopus-network/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 type msgServer struct {
@@ -52,7 +53,7 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	}
 
 	// Note: the correct way to decide if a key type is supported is to check the
-	// consensus params. However this functionality was disabled in https://github.com/cosmos/interchain-security/pull/916
+	// consensus params. However this functionality was disabled in https://github.com/octopus-network/interchain-security/pull/916
 	// as a quick way to get ed25519 working, avoiding amino/proto-any marshalling issues.
 
 	// make sure the consumer key type is supported

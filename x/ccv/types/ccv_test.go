@@ -5,9 +5,10 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 func TestPacketDataValidateBasic(t *testing.T) {

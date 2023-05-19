@@ -3,7 +3,7 @@ package interchain_security.ccv.consumer.v1;
 
 import "interchain_security/ccv/v1/ccv.proto";
 
-option go_package = "github.com/cosmos/interchain-security/x/ccv/consumer/types";
+option go_package = "github.com/octopus-network/interchain-security/x/ccv/consumer/types";
 
 import "google/protobuf/any.proto";
 import "gogoproto/gogo.proto";
@@ -14,7 +14,7 @@ import "google/protobuf/timestamp.proto";
 // Params defines the parameters for CCV consumer module
 message Params {
   // TODO: Remove enabled flag and find a better way to setup integration tests
-  // See: https://github.com/cosmos/interchain-security/issues/339
+  // See: https://github.com/octopus-network/interchain-security/issues/339
   bool enabled = 1;
 
   ///////////////////////

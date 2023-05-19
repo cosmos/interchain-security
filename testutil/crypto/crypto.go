@@ -1,9 +1,8 @@
 package crypto
 
 import (
-	"encoding/binary"
-
 	cryptoEd25519 "crypto/ed25519"
+	"encoding/binary"
 
 	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdkcryptoEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
@@ -11,7 +10,8 @@ import (
 	sdkcryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkstakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+
+	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
 
 	tmcrypto "github.com/tendermint/tendermint/crypto"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"

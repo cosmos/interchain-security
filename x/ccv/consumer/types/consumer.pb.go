@@ -6,7 +6,7 @@ package types
 import (
 	fmt "fmt"
 	types "github.com/cosmos/cosmos-sdk/codec/types"
-	_ "github.com/cosmos/interchain-security/x/ccv/types"
+	_ "github.com/octopus-network/interchain-security/x/ccv/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
@@ -34,7 +34,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // Params defines the parameters for CCV consumer module
 type Params struct {
 	// TODO: Remove enabled flag and find a better way to setup integration tests
-	// See: https://github.com/cosmos/interchain-security/issues/339
+	// See: https://github.com/octopus-network/interchain-security/issues/339
 	Enabled bool `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	///////////////////////
 	// Distribution Params

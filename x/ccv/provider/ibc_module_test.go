@@ -10,13 +10,14 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
+	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"
+	"github.com/octopus-network/interchain-security/x/ccv/provider"
+	providerkeeper "github.com/octopus-network/interchain-security/x/ccv/provider/keeper"
+	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 // TestOnChanOpenInit tests the provider's OnChanOpenInit method against spec.
@@ -203,7 +204,7 @@ func TestOnChanOpenAck(t *testing.T) {
 // Spec tag: [CCV-PCF-COCONFIRM.1]
 //
 // TODO: Validate spec requirement that duplicate channels attempting to become canonical CCV channel are closed.
-// See: https://github.com/cosmos/interchain-security/issues/327
+// See: https://github.com/octopus-network/interchain-security/issues/327
 func TestOnChanOpenConfirm(t *testing.T) {
 	testCases := []struct {
 		name                string

@@ -7,8 +7,8 @@ import (
 
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/octopus-network/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 // GetTemplateClient returns the template client for provider proposals

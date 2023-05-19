@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	testutil "github.com/cosmos/interchain-security/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
+	testutil "github.com/octopus-network/interchain-security/testutil/keeper"
+	consumertypes "github.com/octopus-network/interchain-security/x/ccv/consumer/types"
+	"github.com/octopus-network/interchain-security/x/ccv/provider/types"
 )
 
 // TestRegisterConsumerRewardDenom tests the RegisterConsumerRewardDenom method.

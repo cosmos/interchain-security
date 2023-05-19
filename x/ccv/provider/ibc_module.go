@@ -11,9 +11,10 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	"github.com/octopus-network/interchain-security/x/ccv/provider/keeper"
+	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 // OnChanOpenInit implements the IBCModule interface
@@ -182,7 +183,7 @@ func (am AppModule) OnRecvPacket(
 		ack = &errAck
 	} else {
 		// TODO: call ValidateBasic method on consumer packet data
-		// See: https://github.com/cosmos/interchain-security/issues/634
+		// See: https://github.com/octopus-network/interchain-security/issues/634
 
 		switch consumerPacket.Type {
 		case ccv.VscMaturedPacket:

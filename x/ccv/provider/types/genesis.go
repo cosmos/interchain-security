@@ -6,7 +6,8 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 func NewGenesisState(

@@ -9,15 +9,16 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	exported "github.com/cosmos/ibc-go/v4/modules/core/exported"
-	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
-	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 	"github.com/golang/mock/gomock"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	ibcsimapp "github.com/octopus-network/interchain-security/legacy_ibc_testing/simapp"
+	cryptotestutil "github.com/octopus-network/interchain-security/testutil/crypto"
+	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"
+	"github.com/octopus-network/interchain-security/x/ccv/provider/keeper"
+	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 
 	"github.com/stretchr/testify/require"
 )

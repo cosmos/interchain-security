@@ -117,7 +117,7 @@ Note that the Apalache team at Informal is working hard to make MBT a powerful p
 
 ## Comparison to Property Based Testing
 
-Property Based Testing is a loose term for testing properties of your system. Generally the idea is to make API calls using random heuristics and known tricks, and check that the result satisfies properties. Please see [this page](https://github.com/cosmos/interchain-security/blob/danwt/pbt-prototype/tests/pbt/tutorial.md) for a full tutorial on using a golang PBT library.
+Property Based Testing is a loose term for testing properties of your system. Generally the idea is to make API calls using random heuristics and known tricks, and check that the result satisfies properties. Please see [this page](https://github.com/octopus-network/interchain-security/blob/danwt/pbt-prototype/tests/pbt/tutorial.md) for a full tutorial on using a golang PBT library.
 
 ~~Why not use property based testing?~~ I suggest using it. See next section.
 

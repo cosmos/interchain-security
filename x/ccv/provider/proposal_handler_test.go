@@ -13,9 +13,10 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+
+	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"
+	"github.com/octopus-network/interchain-security/x/ccv/provider"
+	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
 )
 
 // TestProviderProposalHandler tests the highest level handler for proposals

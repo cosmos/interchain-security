@@ -8,9 +8,10 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	app "github.com/cosmos/interchain-security/app/consumer-democracy"
-	"github.com/cosmos/interchain-security/app/consumer-democracy/ante"
 	"github.com/stretchr/testify/require"
+
+	app "github.com/octopus-network/interchain-security/app/consumer-democracy"
+	"github.com/octopus-network/interchain-security/app/consumer-democracy/ante"
 )
 
 func TestForbiddenProposalsDecorator(t *testing.T) {

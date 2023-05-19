@@ -9,18 +9,21 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+
+	ibctestingcore "github.com/octopus-network/interchain-security/legacy_ibc_testing/core"
+	ibctesting "github.com/octopus-network/interchain-security/legacy_ibc_testing/testing"
 
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
 
-	simibc "github.com/cosmos/interchain-security/testutil/simibc"
+	appConsumer "github.com/octopus-network/interchain-security/app/consumer"
+	appProvider "github.com/octopus-network/interchain-security/app/provider"
+
+	"github.com/octopus-network/interchain-security/testutil/simibc"
 
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
+
+	consumerkeeper "github.com/octopus-network/interchain-security/x/ccv/consumer/keeper"
 )
 
 type CoreSuite struct {

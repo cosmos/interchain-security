@@ -17,12 +17,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	cryptoutil "github.com/octopus-network/interchain-security/testutil/crypto"
+	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"
+	consumertypes "github.com/octopus-network/interchain-security/x/ccv/consumer/types"
+	providerkeeper "github.com/octopus-network/interchain-security/x/ccv/provider/keeper"
+	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 //

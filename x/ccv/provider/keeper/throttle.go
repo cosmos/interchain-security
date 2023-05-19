@@ -5,9 +5,10 @@ import (
 	"time"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 // This file contains functionality relevant to the throttling of slash and vsc matured packets, aka circuit breaker logic.
@@ -561,7 +562,7 @@ func (k Keeper) GetSlashMeter(ctx sdktypes.Context) sdktypes.Int {
 //
 // Note: the value of this int should always be in the range of tendermint's [-MaxTotalVotingPower, MaxTotalVotingPower]
 func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value sdktypes.Int) {
-	// TODO: remove these invariant panics once https://github.com/cosmos/interchain-security/issues/534 is solved.
+	// TODO: remove these invariant panics once https://github.com/octopus-network/interchain-security/issues/534 is solved.
 
 	// The following panics are included since they are invariants for slash meter value.
 	//

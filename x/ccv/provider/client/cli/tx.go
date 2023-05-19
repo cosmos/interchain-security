@@ -12,7 +12,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+
+	"github.com/octopus-network/interchain-security/x/ccv/provider/types"
 )
 
 // GetTxCmd returns the transaction commands for this module

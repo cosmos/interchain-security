@@ -12,11 +12,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider"
-	keeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+
+	testcrypto "github.com/octopus-network/interchain-security/testutil/crypto"
+	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"
+	"github.com/octopus-network/interchain-security/x/ccv/provider"
+	"github.com/octopus-network/interchain-security/x/ccv/provider/keeper"
+	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
 )
 
 func TestInvalidMsg(t *testing.T) {

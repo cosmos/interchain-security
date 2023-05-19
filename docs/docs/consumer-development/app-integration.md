@@ -8,7 +8,7 @@ To help you on your journey, the ICS team has provided multiple examples of a mi
 
 ## Basic consumer chain
 
-The source code for the example app can be found [here](https://github.com/cosmos/interchain-security/tree/main/app/consumer).
+The source code for the example app can be found [here](https://github.com/octopus-network/interchain-security/tree/main/app/consumer).
 
 Please note that consumer chains do not implement the staking module - the validator set is replicated from the provider, meaning that the provider and the consumer use the same validator set and their stake on the provider directly determines their stake on the consumer.
 At present there is no opt-in mechanism available, so all validators of the provider must also validate on the provider chain.
@@ -19,7 +19,7 @@ You should not need to manage or override any code from the `x/consumer` module.
 
 ## Democracy consumer chain
 
-The source code for the example app can be found [here](https://github.com/cosmos/interchain-security/tree/main/app/consumer-democracy).
+The source code for the example app can be found [here](https://github.com/octopus-network/interchain-security/tree/main/app/consumer-democracy).
 
 This type of consumer chain wraps the basic CosmosSDK `x/distribution`, `x/staking` and `x/governance` modules allowing the consumer chain to perform democratic actions such as participating and voting within the chain's governance system.
 

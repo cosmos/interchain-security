@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	consumertypes "github.com/octopus-network/interchain-security/x/ccv/consumer/types"
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 )
@@ -32,7 +33,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 
 	k.SetParams(ctx, state.Params)
 	// TODO: Remove enabled flag and find a better way to setup integration tests
-	// See: https://github.com/cosmos/interchain-security/issues/339
+	// See: https://github.com/octopus-network/interchain-security/issues/339
 	if !state.Params.Enabled {
 		return nil
 	}

@@ -13,13 +13,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/client/cli"
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/octopus-network/interchain-security/x/ccv/provider/client/cli"
+	"github.com/octopus-network/interchain-security/x/ccv/provider/keeper"
+	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
 )
 
 var (

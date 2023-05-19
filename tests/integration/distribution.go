@@ -7,9 +7,10 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	consumertypes "github.com/octopus-network/interchain-security/x/ccv/consumer/types"
+	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 // This test is valid for minimal viable consumer chain

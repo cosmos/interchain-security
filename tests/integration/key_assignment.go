@@ -4,10 +4,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/ibc-go/v4/testing/mock"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+
+	providerkeeper "github.com/octopus-network/interchain-security/x/ccv/provider/keeper"
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 func (s *CCVTestSuite) TestKeyAssignment() {
@@ -19,153 +20,153 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 	}{
 		{
 			"assignment during channel init", func(pk *providerkeeper.Keeper) error {
-				// key assignment
-				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
-				if err != nil {
-					return err
-				}
+			// key assignment
+			validator, consumerKey := generateNewConsumerKey(s, 0)
+			err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+			if err != nil {
+				return err
+			}
 
-				// check that a VSCPacket is queued
-				s.providerChain.NextBlock()
-				pendingPackets := pk.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
-				s.Require().Len(pendingPackets, 1)
+			// check that a VSCPacket is queued
+			s.providerChain.NextBlock()
+			pendingPackets := pk.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
+			s.Require().Len(pendingPackets, 1)
 
-				// establish CCV channel
-				s.SetupCCVChannel(s.path)
+			// establish CCV channel
+			s.SetupCCVChannel(s.path)
 
-				return nil
-			}, false, 2,
+			return nil
+		}, false, 2,
 		},
 		{
 			"assignment after channel init", func(pk *providerkeeper.Keeper) error {
-				// establish CCV channel
-				s.SetupCCVChannel(s.path)
+			// establish CCV channel
+			s.SetupCCVChannel(s.path)
 
-				// key assignment
-				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
-				if err != nil {
-					return err
-				}
-				s.providerChain.NextBlock()
+			// key assignment
+			validator, consumerKey := generateNewConsumerKey(s, 0)
+			err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+			if err != nil {
+				return err
+			}
+			s.providerChain.NextBlock()
 
-				return nil
-			}, false, 2,
+			return nil
+		}, false, 2,
 		},
 		{
 			"assignment with power change", func(pk *providerkeeper.Keeper) error {
-				// establish CCV channel
-				s.SetupCCVChannel(s.path)
+			// establish CCV channel
+			s.SetupCCVChannel(s.path)
 
-				// key assignment
-				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
-				if err != nil {
-					return err
-				}
+			// key assignment
+			validator, consumerKey := generateNewConsumerKey(s, 0)
+			err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+			if err != nil {
+				return err
+			}
 
-				// Bond some tokens on provider to change validator powers
-				bondAmt := sdk.NewInt(1000000)
-				delAddr := s.providerChain.SenderAccount.GetAddress()
-				delegate(s, delAddr, bondAmt)
+			// Bond some tokens on provider to change validator powers
+			bondAmt := sdk.NewInt(1000000)
+			delAddr := s.providerChain.SenderAccount.GetAddress()
+			delegate(s, delAddr, bondAmt)
 
-				s.providerChain.NextBlock()
+			s.providerChain.NextBlock()
 
-				return nil
-			}, false, 2,
+			return nil
+		}, false, 2,
 		},
 		{
 			"double same-key assignment in same block", func(pk *providerkeeper.Keeper) error {
-				// establish CCV channel
-				s.SetupCCVChannel(s.path)
+			// establish CCV channel
+			s.SetupCCVChannel(s.path)
 
-				// key assignment
-				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
-				if err != nil {
-					return err
-				}
+			// key assignment
+			validator, consumerKey := generateNewConsumerKey(s, 0)
+			err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+			if err != nil {
+				return err
+			}
 
-				// same key assignment
-				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
-				if err != nil {
-					return err
-				}
-				s.providerChain.NextBlock()
+			// same key assignment
+			err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+			if err != nil {
+				return err
+			}
+			s.providerChain.NextBlock()
 
-				return nil
-			}, true, 2,
+			return nil
+		}, true, 2,
 		},
 		{
 			"double key assignment in same block", func(pk *providerkeeper.Keeper) error {
-				// establish CCV channel
-				s.SetupCCVChannel(s.path)
+			// establish CCV channel
+			s.SetupCCVChannel(s.path)
 
-				// key assignment
-				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
-				if err != nil {
-					return err
-				}
+			// key assignment
+			validator, consumerKey := generateNewConsumerKey(s, 0)
+			err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+			if err != nil {
+				return err
+			}
 
-				// same key assignment
-				validator, consumerKey = generateNewConsumerKey(s, 0)
-				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
-				if err != nil {
-					return err
-				}
-				s.providerChain.NextBlock()
+			// same key assignment
+			validator, consumerKey = generateNewConsumerKey(s, 0)
+			err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+			if err != nil {
+				return err
+			}
+			s.providerChain.NextBlock()
 
-				return nil
-			}, false, 2,
+			return nil
+		}, false, 2,
 		},
 		{
 			"double same-key assignment in different blocks", func(pk *providerkeeper.Keeper) error {
-				// establish CCV channel
-				s.SetupCCVChannel(s.path)
+			// establish CCV channel
+			s.SetupCCVChannel(s.path)
 
-				// key assignment
-				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
-				if err != nil {
-					return err
-				}
-				s.providerChain.NextBlock()
+			// key assignment
+			validator, consumerKey := generateNewConsumerKey(s, 0)
+			err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+			if err != nil {
+				return err
+			}
+			s.providerChain.NextBlock()
 
-				// same key assignment
-				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
-				if err != nil {
-					return err
-				}
-				s.providerChain.NextBlock()
+			// same key assignment
+			err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+			if err != nil {
+				return err
+			}
+			s.providerChain.NextBlock()
 
-				return nil
-			}, true, 2,
+			return nil
+		}, true, 2,
 		},
 		{
 			"double key assignment in different blocks", func(pk *providerkeeper.Keeper) error {
-				// establish CCV channel
-				s.SetupCCVChannel(s.path)
+			// establish CCV channel
+			s.SetupCCVChannel(s.path)
 
-				// key assignment
-				validator, consumerKey := generateNewConsumerKey(s, 0)
-				err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
-				if err != nil {
-					return err
-				}
-				s.providerChain.NextBlock()
+			// key assignment
+			validator, consumerKey := generateNewConsumerKey(s, 0)
+			err := pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+			if err != nil {
+				return err
+			}
+			s.providerChain.NextBlock()
 
-				// same key assignment
-				validator, consumerKey = generateNewConsumerKey(s, 0)
-				err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
-				if err != nil {
-					return err
-				}
-				s.providerChain.NextBlock()
+			// same key assignment
+			validator, consumerKey = generateNewConsumerKey(s, 0)
+			err = pk.AssignConsumerKey(s.providerCtx(), s.consumerChain.ChainID, validator, consumerKey)
+			if err != nil {
+				return err
+			}
+			s.providerChain.NextBlock()
 
-				return nil
-			}, false, 3,
+			return nil
+		}, false, 3,
 		},
 		// TODO: this test should pass if we manage to change the client update mode to sequential
 		// {

@@ -18,8 +18,9 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/spf13/cobra"
+
+	"github.com/octopus-network/interchain-security/x/ccv/provider/types"
 )
 
 var (

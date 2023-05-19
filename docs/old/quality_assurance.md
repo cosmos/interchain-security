@@ -50,8 +50,8 @@ IBC packets:
 | 2.01 | Create IBC clients | `Scheduled` (ibc-go) | `Done` [TestCreateConsumerClient](../../x/ccv/provider/keeper/proposal_test.go#117), [TestInitGenesis](../../x/ccv/consumer/keeper/genesis_test.go#26) | `Done` [SetupTest](../../tests/integration/setup.go) | `Future work` | `Scheduled` |
 | 2.02 | Create CCV channel (handshake) | `Scheduled` (ibc-go) | `Done` [provider/ibc_module_test.go](../../x/ccv/provider/ibc_module_test.go), [consumer/ibc_module_test.go](../../x/ccv/consumer/ibc_module_test.go) | `Done` [SetupCCVChannel](../../tests/integration/setup.go) | `Future work` | `Scheduled` |
 | 2.03 | Sending IBC packets | `Scheduled` (ibc-go) | `NA` | `Done` [TestSendVSCMaturedPackets](../../tests/integration/valset_update.go), [TestSendSlashPacket](../../tests/integration/slashing.go) | `Done` | `Scheduled` |
-| 2.04 | Handling acknowledgments | `Scheduled` (ibc-go) | [Scheduled](https://github.com/cosmos/interchain-security/issues/362) | `Partial coverage` [TestOnAcknowledgementPacket](../../x/ccv/consumer/keeper/relay_test.go#152), [TestSlashPacketAcknowldgement](../../tests/integration/slashing.go) | `Done` | `Scheduled` |
-| 2.05 | Handling timeouts | `Scheduled` (ibc-go) | [Scheduled](https://github.com/cosmos/interchain-security/issues/362) |`NA` | `Future work` | `Scheduled` |
+| 2.04 | Handling acknowledgments | `Scheduled` (ibc-go) | [Scheduled](https://github.com/octopus-network/interchain-security/issues/362) | `Partial coverage` [TestOnAcknowledgementPacket](../../x/ccv/consumer/keeper/relay_test.go#152), [TestSlashPacketAcknowldgement](../../tests/integration/slashing.go) | `Done` | `Scheduled` |
+| 2.05 | Handling timeouts | `Scheduled` (ibc-go) | [Scheduled](https://github.com/octopus-network/interchain-security/issues/362) |`NA` | `Future work` | `Scheduled` |
 | 2.06 | Handling IBC client expiration | `Scheduled` (ibc-go)  | `NA` | `Done` [expired_client.go](../../tests/integration/expired_client.go) | `Future work` | `Scheduled` |
 | 2.07 | ICS-20 channel creation | `Scheduled` (ibc-go) | `NA` | `Done` [SetupTransferChannel](../../tests/integration/setup.go) |`Future work` | `Scheduled` |
 | 2.08 | ICS-20 transfer | `Scheduled` (ibc-go) | `NA` | `Done` [TestRewardsDistribution](../../tests/integration/distribution.go) | `NA` | `Scheduled` |
@@ -147,9 +147,9 @@ In addition, the implementation MUST guarantee the following [system properties]
 
 The main concern addressed in this section is the correctness of the consumer chains. In other words, when Interchain Security is enabled (i.e., the consumer CCV module is enabled), the safety and liveness properties still hold. This also covers various flavor of consumer chains:
 
-- minimum viable consumer chain ([mvcc](https://github.com/cosmos/interchain-security/issues/139))
-- governance-enabled consumer chain ([gov-cc](https://github.com/cosmos/interchain-security/issues/141)), with the modified staking and distribution modules (see `x/ccv/staking` and `x/ccv/distribution`); also, must look at the [atom-gov module](https://github.com/cosmos/interchain-security/issues/162)
-- CosmWasm-enabled consumer chain ([wasm-cc](https://github.com/cosmos/interchain-security/issues/143)), with the CosmWasm module enabled
+- minimum viable consumer chain ([mvcc](https://github.com/octopus-network/interchain-security/issues/139))
+- governance-enabled consumer chain ([gov-cc](https://github.com/octopus-network/interchain-security/issues/141)), with the modified staking and distribution modules (see `x/ccv/staking` and `x/ccv/distribution`); also, must look at the [atom-gov module](https://github.com/octopus-network/interchain-security/issues/162)
+- CosmWasm-enabled consumer chain ([wasm-cc](https://github.com/octopus-network/interchain-security/issues/143)), with the CosmWasm module enabled
 
 | ID | Concern | Code Review | Unit Testing | Integration Testing | Diff. testing | Testnet | Protocol audit |
 | -- | ------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |

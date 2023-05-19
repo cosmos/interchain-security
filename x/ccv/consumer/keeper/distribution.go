@@ -9,8 +9,8 @@ import (
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/octopus-network/interchain-security/x/ccv/consumer/types"
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 // EndBlockRD executes EndBlock logic for the Reward Distribution sub-protocol.

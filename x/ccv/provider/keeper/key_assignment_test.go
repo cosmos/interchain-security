@@ -9,16 +9,18 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	cryptotestutil "github.com/octopus-network/interchain-security/testutil/crypto"
+	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"
+
 	"github.com/golang/mock/gomock"
+
+	providerkeeper "github.com/octopus-network/interchain-security/x/ccv/provider/keeper"
+	"github.com/octopus-network/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 func TestValidatorConsumerPubKeyCRUD(t *testing.T) {

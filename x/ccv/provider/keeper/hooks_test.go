@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/golang/mock/gomock"
+
+	cryptotestutil "github.com/octopus-network/interchain-security/testutil/crypto"
+	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"
+	providerkeeper "github.com/octopus-network/interchain-security/x/ccv/provider/keeper"
 )
 
 func TestValidatorConsensusKeyInUse(t *testing.T) {

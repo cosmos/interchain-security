@@ -1,13 +1,13 @@
 package types_test
 
 import (
-	fmt "fmt"
+	"fmt"
 	"testing"
 	"time"
 
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 
-	"github.com/golang/protobuf/proto" //nolint:staticcheck // see: https://github.com/cosmos/interchain-security/issues/236
+	"github.com/golang/protobuf/proto" //nolint:staticcheck // see: https://github.com/octopus-network/interchain-security/issues/236
 	"github.com/stretchr/testify/require"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -16,7 +16,8 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+
+	"github.com/octopus-network/interchain-security/x/ccv/provider/types"
 )
 
 func TestConsumerAdditionProposalValidateBasic(t *testing.T) {

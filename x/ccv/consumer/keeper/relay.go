@@ -12,8 +12,8 @@ import (
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/octopus-network/interchain-security/x/ccv/consumer/types"
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 // OnRecvVSCPacket sets the pending validator set changes that will be flushed to ABCI on Endblock

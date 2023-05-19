@@ -7,8 +7,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/octopus-network/interchain-security/x/ccv/consumer/types"
 )
 
 //

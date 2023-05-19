@@ -63,5 +63,5 @@ For `max_age_duration=172,800,000,000,000`, the parameter is too low, because th
 
 ## References
 
-* PR that ignores non downtime slash packet : [https://github.com/cosmos/interchain-security/pull/692](https://github.com/cosmos/interchain-security/pull/692)
-* PR that adds the governance slash proposal: [https://github.com/cosmos/interchain-security/pull/703](https://github.com/cosmos/interchain-security/pull/703)
+* PR that ignores non downtime slash packet : [https://github.com/octopus-network/interchain-security/pull/692](https://github.com/octopus-network/interchain-security/pull/692)
+* PR that adds the governance slash proposal: [https://github.com/octopus-network/interchain-security/pull/703](https://github.com/octopus-network/interchain-security/pull/703)

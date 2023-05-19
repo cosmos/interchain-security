@@ -15,7 +15,7 @@ please add links to any relevant follow up issues.*
 I have...
 
 - [ ] Included the correct [type prefix](https://github.com/commitizen/conventional-commit-types/blob/v3.0.0/index.json) in the PR title
-- [ ] Targeted the correct branch (see [PR Targeting](https://github.com/cosmos/interchain-security/blob/main/CONTRIBUTING.md#pr-targeting))
+- [ ] Targeted the correct branch (see [PR Targeting](https://github.com/octopus-network/interchain-security/blob/main/CONTRIBUTING.md#pr-targeting))
 - [ ] Provided a link to the relevant issue or specification
 - [ ] Reviewed "Files changed" and left comments if necessary <!-- relevant if the changes are not obvious -->
 - [ ] Confirmed all CI checks have passed

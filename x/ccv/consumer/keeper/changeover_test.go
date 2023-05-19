@@ -5,11 +5,12 @@ import (
 
 	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/testutil/crypto"
-	uthelpers "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/octopus-network/interchain-security/testutil/crypto"
+	uthelpers "github.com/octopus-network/interchain-security/testutil/keeper"
 )
 
 func TestChangeoverToConsumer(t *testing.T) {

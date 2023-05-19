@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	ibcsimapp "github.com/octopus-network/interchain-security/legacy_ibc_testing/simapp"
+	"github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 func TestAccumulateChanges(t *testing.T) {

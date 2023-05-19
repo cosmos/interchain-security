@@ -12,14 +12,15 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	"github.com/octopus-network/interchain-security/x/ccv/consumer/types"
 
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/interchain-security/testutil/crypto"
+	"github.com/octopus-network/interchain-security/testutil/crypto"
 
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
+
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 const (

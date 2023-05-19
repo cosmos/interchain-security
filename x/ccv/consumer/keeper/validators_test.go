@@ -6,14 +6,15 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	"github.com/octopus-network/interchain-security/testutil/crypto"
+	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"
+	"github.com/octopus-network/interchain-security/x/ccv/consumer/keeper"
+	"github.com/octopus-network/interchain-security/x/ccv/consumer/types"
 )
 
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper

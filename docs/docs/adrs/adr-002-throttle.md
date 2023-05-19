@@ -160,7 +160,7 @@ In summary, the throttling mechanism as designed has desirable properties whethe
 
 ### Negative
 
-* Throttling introduces a vector for a malicious consumer chain to halt the provider, see issue below. However, this is sacrificing liveness in a edge case scenario for the sake of security. As an improvement, [using retries](https://github.com/cosmos/interchain-security/issues/713) would fully prevent this attack vector.
+* Throttling introduces a vector for a malicious consumer chain to halt the provider, see issue below. However, this is sacrificing liveness in a edge case scenario for the sake of security. As an improvement, [using retries](https://github.com/octopus-network/interchain-security/issues/713) would fully prevent this attack vector.
 
 ### Neutral
 
@@ -169,6 +169,6 @@ In summary, the throttling mechanism as designed has desirable properties whethe
 
 ## References
 
-* [Original issue inspiring throttling feature](https://github.com/cosmos/interchain-security/issues/404)
-* [Issue on DOS vector](https://github.com/cosmos/interchain-security/issues/594)
-* [Consideration of another attack vector](https://github.com/cosmos/interchain-security/issues/685)
+* [Original issue inspiring throttling feature](https://github.com/octopus-network/interchain-security/issues/404)
+* [Issue on DOS vector](https://github.com/octopus-network/interchain-security/issues/594)
+* [Consideration of another attack vector](https://github.com/octopus-network/interchain-security/issues/685)

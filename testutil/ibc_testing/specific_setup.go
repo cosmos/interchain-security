@@ -9,14 +9,14 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/simapp"
 
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	ibctesting "github.com/octopus-network/interchain-security/legacy_ibc_testing/testing"
 
 	"github.com/tendermint/tendermint/libs/log"
 	tmdb "github.com/tendermint/tm-db"
 
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
+	appConsumer "github.com/octopus-network/interchain-security/app/consumer"
+	appConsumerDemocracy "github.com/octopus-network/interchain-security/app/consumer-democracy"
+	appProvider "github.com/octopus-network/interchain-security/app/provider"
 )
 
 // ProviderAppIniter implements ibctesting.AppIniter for a provider app

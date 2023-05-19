@@ -3,11 +3,12 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/stretchr/testify/require"
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	"github.com/octopus-network/interchain-security/testutil/crypto"
+	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"
+	"github.com/octopus-network/interchain-security/x/ccv/consumer/types"
 )
 
 // Tests that UpdateSmallestNonOptOutPower updates the smallest validator power that cannot soft opt out.

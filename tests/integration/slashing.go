@@ -9,13 +9,15 @@ import (
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	keepertestutil "github.com/cosmos/interchain-security/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	keepertestutil "github.com/octopus-network/interchain-security/testutil/keeper"
+	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
@@ -374,7 +376,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	// Expect no error ack if validator does not exist
 	// TODO: this behavior should be changed to return an error ack,
-	// see: https://github.com/cosmos/interchain-security/issues/546
+	// see: https://github.com/octopus-network/interchain-security/issues/546
 	ack := providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
 	suite.Require().True(ack.Success())
 

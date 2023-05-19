@@ -1,13 +1,14 @@
 package types
 
 import (
-	fmt "fmt"
-	time "time"
+	"fmt"
+	"time"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+
+	ccvtypes "github.com/octopus-network/interchain-security/x/ccv/types"
 )
 
 const (
