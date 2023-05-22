@@ -6,29 +6,30 @@ import (
 	"reflect"
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 // Keeper defines the Cross-Chain Validation Provider Keeper
 type Keeper struct {
-	storeKey         sdk.StoreKey
+	storeKey         storetypes.StoreKey
 	cdc              codec.BinaryCodec
 	paramSpace       paramtypes.Subspace
 	scopedKeeper     ccv.ScopedKeeper
@@ -45,7 +46,7 @@ type Keeper struct {
 
 // NewKeeper creates a new provider Keeper instance
 func NewKeeper(
-	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper ccv.ScopedKeeper,
+	cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper ccv.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
@@ -102,7 +103,7 @@ func (k Keeper) mustValidateFields() {
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", "x/"+host.ModuleName+"-"+types.ModuleName)
+	return ctx.Logger().With("module", "x/"+ibchost.ModuleName+"-"+types.ModuleName)
 }
 
 // IsBound checks if the CCV module is already bound to the desired port
@@ -615,7 +616,7 @@ func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (
 	tmClient, ok = clientState.(*ibctmtypes.ClientState)
 	if !ok {
 		return "", nil, sdkerrors.Wrapf(clienttypes.ErrInvalidClientType,
-			"invalid client type. expected %s, got %s", ibcexported.Tendermint, clientState.ClientType())
+			"invalid client type. expected %s, got %s", ibchost.Tendermint, clientState.ClientType())
 	}
 	return clientID, tmClient, nil
 }

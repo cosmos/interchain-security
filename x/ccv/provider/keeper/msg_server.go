@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/base64"
 
+	sdkerrors "cosmossdk.io/errors"
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 type msgServer struct {

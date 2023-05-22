@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
@@ -34,8 +34,6 @@ func TestParams(t *testing.T) {
 			clienttypes.Height{},
 			commitmenttypes.GetSDKSpecs(),
 			[]string{"ibc", "upgradedIBCState"},
-			true,
-			false,
 		),
 		"0.25",
 		7*24*time.Hour,

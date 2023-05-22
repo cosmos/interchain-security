@@ -5,9 +5,9 @@ import (
 	"time"
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
@@ -93,8 +93,6 @@ func DefaultParams() Params {
 			clienttypes.Height{}, // latest(initial) height
 			commitmenttypes.GetSDKSpecs(),
 			[]string{"upgrade", "upgradedIBCState"},
-			true,
-			true,
 		),
 		DefaultTrustingPeriodFraction,
 		ccvtypes.DefaultCCVTimeoutPeriod,

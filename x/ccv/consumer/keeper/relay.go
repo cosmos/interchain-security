@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"strconv"
 
+	sdkerrors "cosmossdk.io/errors"
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // OnRecvVSCPacket sets the pending validator set changes that will be flushed to ABCI on Endblock
@@ -123,9 +123,9 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 }
 
 // QueueSlashPacket appends a slash packet containing the given validator data and slashing info to queue.
-func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, valsetUpdateID uint64, infraction stakingtypes.InfractionType) {
+func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, valsetUpdateID uint64, infraction stakingtypes.Infraction) {
 	consAddr := sdk.ConsAddress(validator.Address)
-	downtime := infraction == stakingtypes.Downtime
+	downtime := infraction == stakingtypes.Infraction_INFRACTION_DOWNTIME
 
 	// return if an outstanding downtime request is set for the validator
 	if downtime && k.OutstandingDowntime(ctx, consAddr) {
@@ -183,7 +183,6 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 
 	pending := k.GetPendingPackets(ctx)
 	for _, p := range pending.GetList() {
-
 		// send packet over IBC
 		err := ccv.SendIBCPacket(
 			ctx,

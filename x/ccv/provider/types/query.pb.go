@@ -6,12 +6,12 @@ package types
 import (
 	context "context"
 	fmt "fmt"
+	_ "github.com/cosmos/gogoproto/gogoproto"
+	grpc1 "github.com/cosmos/gogoproto/grpc"
+	proto "github.com/cosmos/gogoproto/proto"
+	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	types "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	types1 "github.com/cosmos/interchain-security/x/ccv/types"
-	_ "github.com/gogo/protobuf/gogoproto"
-	grpc1 "github.com/gogo/protobuf/grpc"
-	proto "github.com/gogo/protobuf/proto"
-	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -1882,7 +1882,7 @@ func (m *QueryThrottleStateResponse) MarshalToSizedBuffer(dAtA []byte) (int, err
 			dAtA[i] = 0x22
 		}
 	}
-	n4, err4 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.NextReplenishCandidate, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.NextReplenishCandidate):])
+	n4, err4 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.NextReplenishCandidate, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.NextReplenishCandidate):])
 	if err4 != nil {
 		return 0, err4
 	}
@@ -2300,7 +2300,7 @@ func (m *QueryThrottleStateResponse) Size() (n int) {
 	if m.SlashMeterAllowance != 0 {
 		n += 1 + sovQuery(uint64(m.SlashMeterAllowance))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.NextReplenishCandidate)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.NextReplenishCandidate)
 	n += 1 + l + sovQuery(uint64(l))
 	if len(m.Packets) > 0 {
 		for _, e := range m.Packets {
@@ -3625,7 +3625,7 @@ func (m *QueryThrottleStateResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.NextReplenishCandidate, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.NextReplenishCandidate, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

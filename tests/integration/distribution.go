@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
@@ -44,7 +44,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	frac, err := sdk.NewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
 	s.Require().NoError(err)
 	consumerExpectedRewards, _ := sdk.NewDecCoinsFromCoins(feePoolTokens...).MulDec(frac).TruncateDecimal()
-	providerExpectedRewards := feePoolTokens.Sub(consumerExpectedRewards)
+	providerExpectedRewards := feePoolTokens.Sub(consumerExpectedRewards...)
 	s.consumerChain.NextBlock()
 
 	// amount from the fee pool is divided between consumer redistribute address and address reserved for provider chain

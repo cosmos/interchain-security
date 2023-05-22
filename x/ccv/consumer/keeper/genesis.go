@@ -7,7 +7,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 // InitGenesis initializes the CCV consumer state and binds to PortID.
@@ -108,13 +108,12 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 
 	// populate cross chain validators states with initial valset
 	k.ApplyCCValidatorChanges(ctx, state.InitialValSet)
-
 	return state.InitialValSet
 }
 
 // ExportGenesis returns the CCV consumer module's exported genesis
 func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisState) {
-	params := k.GetParams(ctx)
+	params := k.GetConsumerParams(ctx)
 	if !params.Enabled {
 		return consumertypes.DefaultGenesisState()
 	}

@@ -4,13 +4,15 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // GetParams returns the params for the consumer ccv module
-func (k Keeper) GetParams(ctx sdk.Context) types.Params {
+// NOTE: it is different from the GetParams method which is required to implement StakingKeeper interface
+func (k Keeper) GetConsumerParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.GetEnabled(ctx),
 		k.GetBlocksPerDistributionTransmission(ctx),
@@ -28,6 +30,14 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 // SetParams sets the paramset for the consumer module
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramStore.SetParamSet(ctx, &params)
+}
+
+// GetParams implements StakingKeeper GetParams interface method
+// it returns an a empty stakingtypes.Params struct
+// NOTE: this method must be implemented on the consumer keeper because the evidence module keeper
+// in cosmos-sdk v0.47 requires this exact method with this exact signature to be available on the StakingKeepr
+func (k Keeper) GetParams(ctx sdk.Context) stakingtypes.Params {
+	return stakingtypes.Params{}
 }
 
 // GetEnabled returns the enabled flag for the consumer module
