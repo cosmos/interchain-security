@@ -11,13 +11,13 @@ import (
 
 // Migrator is a struct for handling in-place store migrations.
 type Migrator struct {
-	ccvConsumerParamSpace paramtypes.Subspace
 	ccvConsumerKeeper     Keeper
+	ccvConsumerParamSpace paramtypes.Subspace
 }
 
 // NewMigrator returns a new Migrator.
-func NewMigrator(ccvConsumerKeeper Keeper) Migrator {
-	return Migrator{ccvConsumerKeeper: ccvConsumerKeeper}
+func NewMigrator(ccvConsumerKeeper Keeper, ccvConsumerParamSpace paramtypes.Subspace) Migrator {
+	return Migrator{ccvConsumerKeeper: ccvConsumerKeeper, ccvConsumerParamSpace: ccvConsumerParamSpace}
 }
 
 func (m Migrator) Migratev1p0To1p3(ctx sdk.Context) error {

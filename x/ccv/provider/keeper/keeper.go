@@ -82,6 +82,10 @@ func NewKeeper(
 	return k
 }
 
+func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
+	k.paramSpace = ps
+}
+
 // Validates that the provider keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
