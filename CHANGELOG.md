@@ -21,6 +21,7 @@ Some PRs from v1.3.0 may reappear from other releases below. This is due to the 
 
 ## PRs included in v1.3.0
 
+* (fix) Remove panics on failure to send IBC packets [#876](https://github.com/cosmos/interchain-security/pull/876)
 * (fix) consumer key prefix order to avoid complex migrations [#963](https://github.com/cosmos/interchain-security/pull/963)
 * (fix) Prevent denom DOS [#931](https://github.com/cosmos/interchain-security/pull/931)
 * (fix) multisig for assigning consumer key, use json [#916](https://github.com/cosmos/interchain-security/pull/916)

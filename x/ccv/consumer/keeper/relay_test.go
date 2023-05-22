@@ -280,3 +280,27 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	err = consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
 	require.Nil(t, err)
 }
+
+// TestSendPackets tests the SendPackets method failing
+func TestSendPacketsFailure(t *testing.T) {
+	// Keeper setup
+	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
+	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
+
+	// Set some pending packets
+	consumerKeeper.SetPendingPackets(ctx, types.ConsumerPacketDataList{List: []types.ConsumerPacketData{
+		{}, {}, {},
+	}})
+
+	// Mock the channel keeper to return an error
+	gomock.InOrder(
+		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, types.ConsumerPortID,
+			"consumerCCVChannelID").Return(channeltypes.Channel{}, false).Times(1),
+	)
+
+	// No panic should occur, pending packets should not be cleared
+	consumerKeeper.SendPackets(ctx)
+	require.Equal(t, 3, len(consumerKeeper.GetPendingPackets(ctx).List))
+}
