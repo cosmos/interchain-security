@@ -193,11 +193,6 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 }
 
-// ProposalContents doesn't return any content functions for governance proposals.
-func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalMsg {
-	return nil
-}
-
 // RegisterStoreDecoder registers a decoder for consumer module's types
 // TODO
 func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
