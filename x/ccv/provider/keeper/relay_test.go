@@ -676,3 +676,40 @@ func TestHandleVSCMaturedPacket(t *testing.T) {
 	_, found = pk.GetUnbondingOpIndex(ctx, "chain-1", 3)
 	require.False(t, found)
 }
+
+// TestSendVSCPacketsToChainFailure tests the SendVSCPacketsToChain method failing
+func TestSendVSCPacketsToChainFailure(t *testing.T) {
+	// Keeper setup
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+
+	// Append mocks for full consumer setup
+	mockCalls := testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, "consumerChainID")
+
+	// Set 3 pending vsc packets
+	providerKeeper.AppendPendingVSCPackets(ctx, "consumerChainID", []ccv.ValidatorSetChangePacketData{{}, {}, {}}...)
+
+	// append mocks for the channel keeper to return an error
+	mockCalls = append(mockCalls,
+		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID,
+			"CCVChannelID").Return(channeltypes.Channel{}, false).Times(1),
+	)
+
+	// Append mocks for expected call to StopConsumerChain
+	mockCalls = append(mockCalls, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
+
+	// Assert mock calls hit
+	gomock.InOrder(mockCalls...)
+
+	// Execute setup
+	err := providerKeeper.SetConsumerChain(ctx, "channelID")
+	require.NoError(t, err)
+	providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientID")
+
+	// No panic should occur, StopConsumerChain should be called
+	providerKeeper.SendVSCPacketsToChain(ctx, "consumerChainID", "CCVChannelID")
+
+	// Pending VSC packets should be deleted in StopConsumerChain
+	require.Empty(t, providerKeeper.GetPendingVSCPackets(ctx, "consumerChainID"))
+}
