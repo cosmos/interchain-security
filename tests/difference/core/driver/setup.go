@@ -356,7 +356,7 @@ func (b *Builder) setSigningInfos() {
 // Checks that the lexicographic ordering of validator addresses as computed in
 // the staking module match the ordering of validators in the model.
 func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
-	check := func(lesser sdk.ValAddress, greater sdk.ValAddress) {
+	check := func(lesser, greater sdk.ValAddress) {
 		lesserV, _ := b.providerStakingKeeper().GetValidator(b.providerCtx(), lesser)
 		greaterV, _ := b.providerStakingKeeper().GetValidator(b.providerCtx(), greater)
 		lesserKey := stakingtypes.GetValidatorsByPowerIndexKey(lesserV, sdk.DefaultPowerReduction)
@@ -514,6 +514,8 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 		consumertypes.DefaultHistoricalEntries,
 		b.initState.UnbondingC,
 		"0", // disable soft opt-out
+		[]string{},
+		[]string{},
 	)
 	return consumertypes.NewInitialGenesisState(client, providerConsState, valUpdates, params)
 }
@@ -525,7 +527,7 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 func GetZeroState(
 	suite *suite.Suite,
 	initState InitState,
-) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted int64, timeLastCommitted int64) {
+) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted, timeLastCommitted int64) {
 	b := Builder{initState: initState, suite: suite}
 
 	b.createProviderAndConsumer()

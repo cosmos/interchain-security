@@ -1,8 +1,6 @@
 package main
 
-const consumerRewardDenom = "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9"
-
-func stepsDemocracy(consumerName string) []Step {
+func stepsRewardDenomConsumer(consumerName string) []Step {
 	return []Step{
 		{
 			action: registerRepresentativeAction{
@@ -135,12 +133,12 @@ func stepsDemocracy(consumerName string) []Step {
 			action: registerConsumerRewardDenomAction{
 				chain: chainID("provi"),
 				from:  validatorID("bob"),
-				denom: consumerRewardDenom,
+				denom: "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9",
 			},
 			state: State{
 				chainID("provi"): ChainState{
 					// Check that the denom is registered on provider chain
-					RegisteredConsumerRewardDenoms: &[]string{consumerRewardDenom},
+					RegisteredConsumerRewardDenoms: &[]string{"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9"},
 					ValBalances: &map[validatorID]uint{
 						// make sure that bob's account was debited
 						validatorID("bob"): 9490000000,
@@ -157,12 +155,12 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 			state: State{
 				chainID("provi"): ChainState{
-					// Check that tokens are minted and sent to provider chain and distributed to validators and their delegators on provider chain
+					// Check that tokens are not minted and sent to provider chain and distributed to validators and their delegators on provider chain
 					Rewards: &Rewards{
 						IsRewarded: map[validatorID]bool{
-							validatorID("alice"): true,
-							validatorID("bob"):   true,
-							validatorID("carol"): true,
+							validatorID("alice"): false,
+							validatorID("bob"):   false,
+							validatorID("carol"): false,
 						},
 						IsIncrementalReward: false,
 						IsNativeDenom:       false,

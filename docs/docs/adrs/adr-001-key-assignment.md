@@ -1,3 +1,8 @@
+---
+sidebar_position: 3
+title: Key Assignment
+---
+
 # ADR 001: Key Assignment
 
 ## Changelog
