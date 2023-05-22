@@ -5,7 +5,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
+	ibcsimapp "github.com/cosmos/ibc-go/v7/testing/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )

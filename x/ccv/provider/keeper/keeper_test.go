@@ -8,7 +8,7 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
-	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
+	ibcsimapp "github.com/cosmos/ibc-go/v7/testing/simapp"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"

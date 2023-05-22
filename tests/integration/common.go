@@ -16,7 +16,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/testutil/integration"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"

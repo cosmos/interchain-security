@@ -7,8 +7,8 @@ import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	icstestingutil "github.com/cosmos/interchain-security/testutil/ibc_testing"
 )
 
 // BeginBlock updates the current header and calls the app.BeginBlock method.
@@ -58,7 +58,7 @@ func EndBlock(c *ibctesting.TestChain, preCommitCallback func()) (*ibctmtypes.He
 
 	for _, e := range ebRes.Events {
 		if e.Type == channeltypes.EventTypeSendPacket {
-			packet, _ := ibctestingcore.ReconstructPacketFromEvent(e)
+			packet, _ := icstestingutil.ReconstructPacketFromEvent(e)
 			packets = append(packets, packet)
 		}
 	}

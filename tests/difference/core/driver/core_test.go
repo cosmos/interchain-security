@@ -9,14 +9,14 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 
+	icstestingutil "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
@@ -190,7 +190,7 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool)
 	evts := ctx.EventManager().ABCIEvents()
 	for _, e := range evts[before:] {
 		if e.Type == channeltypes.EventTypeSendPacket {
-			packet, err := ibctestingcore.ReconstructPacketFromEvent(e)
+			packet, err := icstestingutil.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
 			s.simibc.Outboxes.AddPacket(s.chainID(C), packet)
 		}

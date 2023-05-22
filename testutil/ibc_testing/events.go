@@ -1,4 +1,4 @@
-package core
+package ibc_testing
 
 import (
 	"strconv"
