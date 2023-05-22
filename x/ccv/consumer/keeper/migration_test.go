@@ -42,7 +42,7 @@ func TestMigrateParamsv1p0To1p3(t *testing.T) {
 	)
 
 	// Note that new param key table is set in keeper constructor
-	subspace = subspace.WithKeyTable(consumertypes.ParamKeyTable())
+	subspace = subspace.WithKeyTable(v1p0p0KeyTable())
 
 	// Set 9 params from v1.0.0
 	subspace.Set(ctx, consumertypes.KeyEnabled, true)
@@ -55,10 +55,24 @@ func TestMigrateParamsv1p0To1p3(t *testing.T) {
 	subspace.Set(ctx, consumertypes.KeyHistoricalEntries, int64(10))
 	subspace.Set(ctx, consumertypes.KeyConsumerUnbondingPeriod, time.Hour)
 
-	// Confirm 3 new params are not set
-	require.False(t, subspace.Has(ctx, consumertypes.KeySoftOptOutThreshold))
-	require.False(t, subspace.Has(ctx, consumertypes.KeyRewardDenoms))
-	require.False(t, subspace.Has(ctx, consumertypes.KeyProviderRewardDenoms))
+	// Confirm 3 new params cannot be set with old key table
+	require.Panics(t, func() {
+		subspace.Set(ctx, consumertypes.KeySoftOptOutThreshold, "0.05")
+	})
+	require.Panics(t, func() {
+		subspace.Set(ctx, consumertypes.KeyRewardDenoms, []string{"untrn"})
+	})
+	require.Panics(t, func() {
+		subspace.Set(ctx, consumertypes.KeyProviderRewardDenoms, []string{"uatom"})
+	})
+
+	// Now create new subspace, mocking an upgrade where app initialization happens again
+	subspace = paramtypes.NewSubspace(cdc,
+		codec.NewLegacyAmino(),
+		storeKey,
+		memStoreKey,
+		paramtypes.ModuleName,
+	).WithKeyTable(consumertypes.ParamKeyTable()) // Use new key table, this would be set in keeper constructor
 
 	// Run migration
 	consumerkeeper.MigrateParamsv1p0To1p3(ctx, subspace)
@@ -91,4 +105,50 @@ func TestMigrateParamsv1p0To1p3(t *testing.T) {
 	require.Equal(t, "0.1", keeper.GetSoftOptOutThreshold(ctx))
 	require.Equal(t, []string{"untrn"}, keeper.GetRewardDenoms(ctx))
 	require.Equal(t, []string{"uatom"}, keeper.GetProviderRewardDenoms(ctx))
+}
+
+//
+// Note: the following methods and struct could be removed if v1.3.0 is actually defined as v2.0.0
+// and we bump the go.mod package name accordingly
+//
+
+// v1p0p0Params is a copy of the ParamKeyTable method from v1.0.0
+func v1p0p0KeyTable() paramtypes.KeyTable {
+	return paramtypes.NewKeyTable().RegisterParamSet(&v1p0p0Params{})
+}
+
+// ParamSetPairs implements params.ParamSet for v1p0p0Params
+func (p *v1p0p0Params) ParamSetPairs() paramtypes.ParamSetPairs {
+	return paramtypes.ParamSetPairs{
+		paramtypes.NewParamSetPair(consumertypes.KeyEnabled, p.Enabled, ccvtypes.ValidateBool),
+		paramtypes.NewParamSetPair(consumertypes.KeyBlocksPerDistributionTransmission,
+			p.BlocksPerDistributionTransmission, ccvtypes.ValidatePositiveInt64),
+		paramtypes.NewParamSetPair(consumertypes.KeyDistributionTransmissionChannel,
+			p.DistributionTransmissionChannel, consumertypes.ValidateDistributionTransmissionChannel),
+		paramtypes.NewParamSetPair(consumertypes.KeyProviderFeePoolAddrStr,
+			p.ProviderFeePoolAddrStr, consumertypes.ValidateProviderFeePoolAddrStr),
+		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod,
+			p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(consumertypes.KeyTransferTimeoutPeriod,
+			p.TransferTimeoutPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(consumertypes.KeyConsumerRedistributionFrac,
+			p.ConsumerRedistributionFraction, ccvtypes.ValidateStringFraction),
+		paramtypes.NewParamSetPair(consumertypes.KeyHistoricalEntries,
+			p.HistoricalEntries, ccvtypes.ValidatePositiveInt64),
+		paramtypes.NewParamSetPair(consumertypes.KeyConsumerUnbondingPeriod,
+			p.UnbondingPeriod, ccvtypes.ValidateDuration),
+	}
+}
+
+// v1p0p0Params is a copy of the Params struct from v1.0.0
+type v1p0p0Params struct {
+	Enabled                           bool          `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	BlocksPerDistributionTransmission int64         `protobuf:"varint,2,opt,name=blocks_per_distribution_transmission,json=blocksPerDistributionTransmission,proto3" json:"blocks_per_distribution_transmission,omitempty"`
+	DistributionTransmissionChannel   string        `protobuf:"bytes,3,opt,name=distribution_transmission_channel,json=distributionTransmissionChannel,proto3" json:"distribution_transmission_channel,omitempty"`
+	ProviderFeePoolAddrStr            string        `protobuf:"bytes,4,opt,name=provider_fee_pool_addr_str,json=providerFeePoolAddrStr,proto3" json:"provider_fee_pool_addr_str,omitempty"`
+	CcvTimeoutPeriod                  time.Duration `protobuf:"bytes,5,opt,name=ccv_timeout_period,json=ccvTimeoutPeriod,proto3,stdduration" json:"ccv_timeout_period"`
+	TransferTimeoutPeriod             time.Duration `protobuf:"bytes,6,opt,name=transfer_timeout_period,json=transferTimeoutPeriod,proto3,stdduration" json:"transfer_timeout_period"`
+	ConsumerRedistributionFraction    string        `protobuf:"bytes,7,opt,name=consumer_redistribution_fraction,json=consumerRedistributionFraction,proto3" json:"consumer_redistribution_fraction,omitempty"`
+	HistoricalEntries                 int64         `protobuf:"varint,8,opt,name=historical_entries,json=historicalEntries,proto3" json:"historical_entries,omitempty"`
+	UnbondingPeriod                   time.Duration `protobuf:"bytes,9,opt,name=unbonding_period,json=unbondingPeriod,proto3,stdduration" json:"unbonding_period"`
 }
