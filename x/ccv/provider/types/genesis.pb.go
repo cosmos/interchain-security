@@ -5,8 +5,8 @@ package types
 
 import (
 	fmt "fmt"
-	types1 "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	types "github.com/cosmos/interchain-security/x/ccv/types"
+	types1 "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	types "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	_ "github.com/tendermint/tendermint/proto/tendermint/crypto"
