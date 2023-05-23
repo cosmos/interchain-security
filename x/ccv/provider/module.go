@@ -12,6 +12,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/client/cli"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
@@ -88,13 +89,15 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 // AppModule represents the AppModule for this module
 type AppModule struct {
 	AppModuleBasic
-	keeper *keeper.Keeper
+	keeper     *keeper.Keeper
+	paramSpace paramtypes.Subspace
 }
 
 // NewAppModule creates a new provider module
-func NewAppModule(k *keeper.Keeper) AppModule {
+func NewAppModule(k *keeper.Keeper, paramSpace paramtypes.Subspace) AppModule {
 	return AppModule{
-		keeper: k,
+		keeper:     k,
+		paramSpace: paramSpace,
 	}
 }
 
@@ -122,6 +125,11 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	providertypes.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	providertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+
+	m := keeper.NewMigrator(*am.keeper, am.paramSpace)
+	if err := cfg.RegisterMigration(providertypes.ModuleName, 1, m.Migratev1Tov2); err != nil {
+		panic(fmt.Sprintf("failed to register migrator: %s", err))
+	}
 }
 
 // InitGenesis performs genesis initialization for the provider module. It returns no validator updates.

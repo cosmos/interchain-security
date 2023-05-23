@@ -7,7 +7,6 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	v2providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	v2ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	v1providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	v1ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
@@ -15,13 +14,11 @@ import (
 // Migrator is a struct for handling in-place store migrations.
 type Migrator struct {
 	ccvProviderKeeper     Keeper
-	stakingKeeper         v2ccvtypes.StakingKeeper
 	ccvProviderParamSpace paramtypes.Subspace
 }
 
 // NewMigrator returns a new Migrator.
-func NewMigrator(ccvProviderKeeper Keeper, stakingKeeper v2ccvtypes.StakingKeeper,
-	ccvProviderParamSpace paramtypes.Subspace,
+func NewMigrator(ccvProviderKeeper Keeper, ccvProviderParamSpace paramtypes.Subspace,
 ) Migrator {
 	return Migrator{ccvProviderKeeper: ccvProviderKeeper, ccvProviderParamSpace: ccvProviderParamSpace}
 }
@@ -33,7 +30,7 @@ func (m Migrator) Migratev1Tov2(ctx sdk.Context) error {
 		// See https://github.com/cosmos/interchain-security/blob/7861804cb311507ec6aebebbfad60ea42eb8ed4b/x/ccv/provider/keeper/params.go#L84
 		// The v1.1.0-multiden version of ICS hardcodes this param as 10 of bond type: k.stakingKeeper.BondDenom(ctx).
 		// Here we use the same starting value, but the param can now be changed through governance.
-		sdk.NewCoin(m.stakingKeeper.BondDenom(ctx), sdk.NewInt(10000000)),
+		sdk.NewCoin(m.ccvProviderKeeper.BondDenom(ctx), sdk.NewInt(10000000)),
 	)
 
 	return nil
