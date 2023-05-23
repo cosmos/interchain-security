@@ -203,7 +203,7 @@ PROVIDER_HOME_DIRS_STR=${PROVIDER_HOME_DIRS_STR::${#PROVIDER_HOME_DIRS_STR}-1}
 
 cometmock $PROVIDER_NODE_LISTEN_ADDR_STR ${LEAD_VALIDATOR_PROV_DIR}/config/genesis.json $PROVIDER_COMETMOCK_ADDR  $PROVIDER_HOME_DIRS_STR &> ${LEAD_VALIDATOR_PROV_DIR}/cometmock_log &
 
-sleep 5
+sleep 6
 
 # Build consumer chain proposal file
 tee ${LEAD_VALIDATOR_PROV_DIR}/consumer-proposal.json<<EOF
@@ -399,149 +399,11 @@ CONSUMER_HOME_DIRS_STR=${CONSUMER_HOME_DIRS_STR::${#CONSUMER_HOME_DIRS_STR}-1}
 cometmock $CONSUMER_NODE_LISTEN_ADDR_STR ${LEAD_VALIDATOR_CONS_DIR}/config/genesis.json $CONSUMER_COMETMOCK_ADDR $CONSUMER_HOME_DIRS_STR &> ${LEAD_VALIDATOR_CONS_DIR}/cometmock_log &
 
 sleep 5
-# # Setup Hermes in packet relayer mode
-# pkill -f hermes 2> /dev/null || true
 
-# tee ~/.hermes/config.toml<<EOF
-# [global]
-# log_level = "info"
+# gorelayer
+rly keys delete consumer default -y
+rly keys delete provider default -y
 
-# [mode]
-
-# [mode.clients]
-# enabled = true
-# refresh = true
-# misbehaviour = true
-
-# [mode.connections]
-# enabled = false
-
-# [mode.channels]
-# enabled = false
-
-# [mode.packets]
-# enabled = true
-
-# [[chains]]
-# account_prefix = "cosmos"
-# clock_drift = "5s"
-# gas_multiplier = 1.1
-# grpc_addr = "tcp://${NODE_IP}:9081"
-# id = "consumer"
-# key_name = "relayer"
-# max_gas = 2000000
-# rpc_addr = "http://${NODE_IP}:26648"
-# rpc_timeout = "10s"
-# store_prefix = "ibc"
-# trusting_period = "2days"
-# websocket_addr = "ws://${NODE_IP}:26648/websocket"
-
-# [chains.gas_price]
-#        denom = "stake"
-#        price = 0.00
-
-# [chains.trust_threshold]
-#        denominator = "3"
-#        numerator = "1"
-
-# [[chains]]
-# account_prefix = "cosmos"
-# clock_drift = "5s"
-# gas_multiplier = 1.1
-# grpc_addr = "tcp://${NODE_IP}:9091"
-# id = "provider"
-# key_name = "relayer"
-# max_gas = 2000000
-# rpc_addr = "http://${NODE_IP}:26658"
-# rpc_timeout = "10s"
-# store_prefix = "ibc"
-# trusting_period = "2days"
-# websocket_addr = "ws://${NODE_IP}:26658/websocket"
-
-# [chains.gas_price]
-#        denom = "stake"
-#        price = 0.00
-
-# [chains.trust_threshold]
-#        denominator = "3"
-#        numerator = "1"
-# EOF
-
-# # Delete all previous keys in relayer
-# hermes keys delete --chain consumer --all
-# hermes keys delete --chain provider --all
-
-# # Restore keys to hermes relayer
-# hermes keys add --key-file  ${CONS_NODE_DIR}/${PROV_KEY}.json --chain consumer
-# hermes keys add --key-file  ${PROV_NODE_DIR}/${PROV_KEY}.json --chain provider
-
-
-# sleep 5
-
-# hermes create connection \
-#      --a-chain consumer \
-#     --a-client 07-tendermint-0 \
-#     --b-client 07-tendermint-0
-
-# hermes create channel \
-#     --a-chain consumer \
-#     --a-port consumer \
-#     --b-port provider \
-#     --order ordered \
-#     --channel-version 1 \
-#     --a-connection connection-0
-
-# sleep 5
-
-# hermes --json start &> ~/.hermes/logs &
-
-# interchain-security-pd q tendermint-validator-set --home ${PROV_NODE_DIR}
-# interchain-security-cd q tendermint-validator-set --home ${CONS_NODE_DIR}
-
-# DELEGATIONS=$(interchain-security-pd q staking delegations $PROV_ACCOUNT_ADDR --home ${PROV_NODE_DIR} -o json)
-
-# OPERATOR_ADDR=$(echo $DELEGATIONS | jq -r '.delegation_responses[0].delegation.validator_address')
-
-# interchain-security-pd tx staking delegate $OPERATOR_ADDR 1000000stake \
-#        	--from $PROV_KEY \
-#        	--keyring-backend test \
-#        	--home ${PROV_NODE_DIR} \
-#        	--chain-id provider \
-# 	-y -b block
-
-# sleep 13
-
-# interchain-security-pd q tendermint-validator-set --home ${PROV_NODE_DIR}
-# interchain-security-cd q tendermint-validator-set --home ${CONS_NODE_DIR}
-
-
-# # sleep 5
-
-# # tee ${PROV_NODE_DIR}/stop-consumer-proposal.json<<EOF
-# # {
-# #     "title": "Stop the consumer",
-# #     "description": "It was a great chain",
-# #     "chain_id": "consumer",
-# #     "stop_time": "2022-01-27T15:59:50.121607-08:00",
-# #     "deposit": "100000001stake"
-# # }
-# # EOF
-
-# # # sleep 1
-
-# # interchain-security-pd tx gov submit-proposal stop-consumer-chain \
-# # ${PROV_NODE_DIR}/stop-consumer-proposal.json \
-# #                             --chain-id provider \
-# #                             --from $PROV_KEY \
-# #                             --home ${PROV_NODE_DIR} \
-# #                             --keyring-backend test \
-# #                             -b block -y
-
-# # # sleep 1
-
-# # interchain-security-pd tx gov vote 2 yes \
-# #                          --from $PROV_KEY \
-# #                          --keyring-backend test \
-# #                          --chain-id provider \
-# #                          --home $PROV_NODE_DIR \
-# #                          -b block -y
+# take keys from provider and consumer and add them to gorelayer
+rly keys restore provider default "$(interchain-security-pd keys show provider -a --home ${PROV_NODES_ROOT_DIR}/provider-${LEAD_VALIDATOR_MONIKER})"
+rly keys restore consumer default "$(interchain-security-pd keys show consumer -a --home ${CONS_NODES_ROOT_DIR}/consumer-${LEAD_VALIDATOR_MONIKER})"
