@@ -370,10 +370,21 @@ do
     sleep 6
 done
 
-# remove gorelayer keys from previous runs and ignore errors
+rm -r ~/.relayer
+
+# initialize gorelayer
+rly config init
+
+# add chains
+rly chains add --file go_rly_provider_nomock.json provider
+rly chains add --file go_rly_consumer_nomock.json consumer
+
+# gorelayer
 rly keys delete consumer default -y || true
 rly keys delete provider default -y || true
 
 # take keys from provider and consumer and add them to gorelayer
 rly keys restore provider default "$(cat ${LEAD_VALIDATOR_PROV_DIR}/${LEAD_VALIDATOR_MONIKER}-key.json | jq -r '.mnemonic')"
-rly keys restore consumer default "$(interchain-security-pd keys show consumer -a --home ${CONS_NODES_ROOT_DIR}/consumer-${LEAD_VALIDATOR_MONIKER})"
+rly keys restore consumer default "$(cat ${LEAD_VALIDATOR_CONS_DIR}/${LEAD_VALIDATOR_MONIKER}-key.json | jq -r '.mnemonic')"
+
+rly paths new provider consumer testpath

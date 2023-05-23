@@ -400,10 +400,21 @@ cometmock $CONSUMER_NODE_LISTEN_ADDR_STR ${LEAD_VALIDATOR_CONS_DIR}/config/genes
 
 sleep 5
 
+rm -r ~/.relayer
+
+# initialize gorelayer
+rly config init
+
+# add chains
+rly chains add --file go_rly_provider.json provider
+rly chains add --file go_rly_consumer.json consumer
+
 # gorelayer
-rly keys delete consumer default -y
-rly keys delete provider default -y
+rly keys delete consumer default -y || true
+rly keys delete provider default -y || true
 
 # take keys from provider and consumer and add them to gorelayer
-rly keys restore provider default "$(interchain-security-pd keys show provider -a --home ${PROV_NODES_ROOT_DIR}/provider-${LEAD_VALIDATOR_MONIKER})"
-rly keys restore consumer default "$(interchain-security-pd keys show consumer -a --home ${CONS_NODES_ROOT_DIR}/consumer-${LEAD_VALIDATOR_MONIKER})"
+rly keys restore provider default "$(cat ${LEAD_VALIDATOR_PROV_DIR}/${LEAD_VALIDATOR_MONIKER}-key.json | jq -r '.mnemonic')"
+rly keys restore consumer default "$(cat ${LEAD_VALIDATOR_CONS_DIR}/${LEAD_VALIDATOR_MONIKER}-key.json | jq -r '.mnemonic')"
+
+rly paths new provider consumer testpath

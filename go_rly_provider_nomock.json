@@ -2,8 +2,8 @@
     "type": "cosmos",
     "value": {
         "key": "default",
-        "chain-id": "consumer",
-        "rpc-addr": "tcp://127.0.0.1:22332",
+        "chain-id": "provider",
+        "rpc-addr": "tcp://127.0.0.1:29170",
         "account-prefix": "cosmos",
         "keyring-backend": "test",
         "gas-adjustment": 1.2,
