@@ -68,7 +68,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 
 	// Send slash packet from the first consumer chain
 	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
-	err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
+	_, err = s.getFirstBundle().Path.EndpointA.SendPacket(packet.TimeoutHeight, packet.TimeoutTimestamp, packet.Data)
 	s.Require().NoError(err)
 
 	// Set outstanding slashing flag for first consumer, it's important to use the consumer's cons addr here
@@ -196,7 +196,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 
 	// Send slash packet from the first consumer chain
 	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, 1)
-	err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
+	_, err = s.getFirstBundle().Path.EndpointA.SendPacket(packet.TimeoutHeight, packet.TimeoutTimestamp, packet.Data)
 	s.Require().NoError(err)
 
 	// receive the slash packet on the provider chain. RecvPacket() advances two blocks

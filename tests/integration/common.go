@@ -213,7 +213,7 @@ func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddre
 
 // sendOnProviderRecvOnConsumer sends a packet from the provider chain and receives it on the consumer chain
 func sendOnProviderRecvOnConsumer(s *CCVTestSuite, path *ibctesting.Path, packet channeltypes.Packet) {
-	err := path.EndpointB.SendPacket(packet)
+	_, err := path.EndpointB.SendPacket(packet.TimeoutHeight, packet.TimeoutTimestamp, packet.Data)
 	s.Require().NoError(err)
 	err = path.EndpointA.RecvPacket(packet)
 	s.Require().NoError(err)
@@ -221,7 +221,7 @@ func sendOnProviderRecvOnConsumer(s *CCVTestSuite, path *ibctesting.Path, packet
 
 // sendOnConsumerRecvOnProvider sends a packet from the consumer chain and receives it on the provider chain
 func sendOnConsumerRecvOnProvider(s *CCVTestSuite, path *ibctesting.Path, packet channeltypes.Packet) {
-	err := path.EndpointA.SendPacket(packet)
+	_, err := path.EndpointA.SendPacket(packet.TimeoutHeight, packet.TimeoutTimestamp, packet.Data)
 	s.Require().NoError(err)
 	err = path.EndpointB.RecvPacket(packet)
 	s.Require().NoError(err)
