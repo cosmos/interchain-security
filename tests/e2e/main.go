@@ -44,7 +44,8 @@ func main() {
 
 	testRuns := []testRunWithSteps{
 		{DefaultTestRun(), happyPathSteps},
-		{DemocracyTestRun(), democracySteps},
+		{DemocracyTestRun(true), democracySteps},
+		{DemocracyTestRun(false), rewardDenomConsumerSteps},
 		{SlashThrottleTestRun(), slashThrottleSteps},
 	}
 	if includeMultiConsumer != nil && *includeMultiConsumer {
@@ -143,6 +144,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.waitForSlashThrottleDequeue(action, verbose)
 	case startHermesAction:
 		tr.startHermes(action, verbose)
+	case registerConsumerRewardDenomAction:
+		tr.registerConsumerRewardDenom(action, verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", tr.name, action)
 	}

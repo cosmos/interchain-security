@@ -45,6 +45,14 @@ var democracySteps = concatSteps(
 	stepsDemocracy("democ"),
 )
 
+var rewardDenomConsumerSteps = concatSteps(
+	// democracySteps requires a transfer channel
+	stepsStartChains([]string{"democ"}, true),
+	// delegation needs to happen so the first VSC packet can be delivered
+	stepsDelegate("democ"),
+	stepsRewardDenomConsumer("democ"),
+)
+
 var multipleConsumers = concatSteps(
 	stepsStartChains([]string{"consu", "densu"}, false),
 	stepsMultiConsumerDelegate("consu", "densu"),
