@@ -21,16 +21,16 @@ func NewMigrator(ccvConsumerKeeper Keeper, ccvConsumerParamSpace paramtypes.Subs
 	return Migrator{ccvConsumerKeeper: ccvConsumerKeeper, ccvConsumerParamSpace: ccvConsumerParamSpace}
 }
 
-func (m Migrator) Migratev1p0To1p3(ctx sdk.Context) error {
+func (m Migrator) Migratev1Tov2(ctx sdk.Context) error {
 	// Migrate params
-	MigrateParamsv1p0To1p3(ctx, m.ccvConsumerParamSpace)
+	MigrateParamsv1Tov2(ctx, m.ccvConsumerParamSpace)
 
 	return nil
 }
 
-// MigrateParamsv1p0To1p3 migrates the consumer CCV module params from v1.0.0 to v1.3.0,
+// MigrateParamsv1Tov2 migrates the consumer CCV module params from v1.0.0 to v2.0.0,
 // setting default values for new params.
-func MigrateParamsv1p0To1p3(ctx sdk.Context, paramsSubspace paramtypes.Subspace) {
+func MigrateParamsv1Tov2(ctx sdk.Context, paramsSubspace paramtypes.Subspace) {
 	// Get old params
 	var enabled bool
 	paramsSubspace.Get(ctx, v1consumertypes.KeyEnabled, &enabled)

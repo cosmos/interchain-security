@@ -20,7 +20,7 @@ import (
 	tmdb "github.com/tendermint/tm-db"
 )
 
-func TestMigrateParamsv1p0To1p3(t *testing.T) {
+func TestMigrateParamsv1Tov2(t *testing.T) {
 	// Setup raw store
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
@@ -76,7 +76,7 @@ func TestMigrateParamsv1p0To1p3(t *testing.T) {
 	).WithKeyTable(v2consumertypes.ParamKeyTable()) // Use v2 key table, this would be set in keeper constructor upon app init
 
 	// Run migration
-	v2consumerkeeper.MigrateParamsv1p0To1p3(ctx, subspace)
+	v2consumerkeeper.MigrateParamsv1Tov2(ctx, subspace)
 
 	// Use v2 keeper to confirm params are set correctly
 	keeper := v2consumerkeeper.Keeper{}

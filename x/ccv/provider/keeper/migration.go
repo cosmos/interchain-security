@@ -25,9 +25,9 @@ func NewMigrator(ccvProviderKeeper Keeper, stakingKeeper v2ccvtypes.StakingKeepe
 	return Migrator{ccvProviderKeeper: ccvProviderKeeper, ccvProviderParamSpace: ccvProviderParamSpace}
 }
 
-func (m Migrator) Migratev1p0To1p3(ctx sdk.Context) error {
+func (m Migrator) Migratev1Tov2(ctx sdk.Context) error {
 	// Migrate params
-	MigrateParamsv1p0To1p3(ctx,
+	MigrateParamsv1Tov2(ctx,
 		m.ccvProviderParamSpace,
 		// See https://github.com/cosmos/interchain-security/blob/7861804cb311507ec6aebebbfad60ea42eb8ed4b/x/ccv/provider/keeper/params.go#L84
 		// The v1.1.0-multiden version of ICS hardcodes this param as 10 of bond type: k.stakingKeeper.BondDenom(ctx).
@@ -38,9 +38,9 @@ func (m Migrator) Migratev1p0To1p3(ctx sdk.Context) error {
 	return nil
 }
 
-// MigrateParamsv1p0To1p3 migrates the provider CCV module params from v1.0.0 to v1.3.0,
+// MigrateParamsv1Tov2 migrates the provider CCV module params from v1.0.0 to v2.0.0,
 // setting default values for new params.
-func MigrateParamsv1p0To1p3(ctx sdk.Context, paramsSubspace paramtypes.Subspace, consumerRewardDenomRegistrationFee sdk.Coin) {
+func MigrateParamsv1Tov2(ctx sdk.Context, paramsSubspace paramtypes.Subspace, consumerRewardDenomRegistrationFee sdk.Coin) {
 	// Get old params
 	var templateClient ibctmtypes.ClientState
 	paramsSubspace.Get(ctx, v1providertypes.KeyTemplateClient, &templateClient)
