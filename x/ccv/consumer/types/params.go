@@ -87,8 +87,8 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 
 // DefaultParams is the default params for the consumer module
 func DefaultParams() Params {
-	rewardDenoms := []string{}
-	provideRewardDenoms := []string{}
+	var rewardDenoms []string
+	var provideRewardDenoms []string
 	return NewParams(
 		false,
 		DefaultBlocksPerDistributionTransmission,
