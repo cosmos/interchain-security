@@ -254,7 +254,7 @@ func (b *Builder) getAppBytesAndSenders(
 
 func (b *Builder) newChain(
 	coord *ibctesting.Coordinator,
-	appInit ibctesting.AppIniter,
+	appInit icstestingutils.AppIniter,
 	chainID string,
 	validators *tmtypes.ValidatorSet,
 	signers map[string]tmtypes.PrivValidator,

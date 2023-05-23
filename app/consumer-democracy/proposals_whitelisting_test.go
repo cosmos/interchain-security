@@ -10,8 +10,8 @@ import (
 )
 
 func TestDemocracyGovernanceWhitelistingKeys(t *testing.T) {
-	chain := ibctesting.NewTestChain(t, ibctesting.NewCoordinator(t, 0),
-		icstestingutils.DemocracyConsumerAppIniter, "test")
+	ibctesting.DefaultTestingAppInit = icstestingutils.DemocracyConsumerAppIniter
+	chain := ibctesting.NewTestChain(t, ibctesting.NewCoordinator(t, 0), "test")
 	paramKeeper := chain.App.(*appConsumer.App).ParamsKeeper
 	for paramKey := range appConsumer.LegacyWhitelistedParams {
 		ss, ok := paramKeeper.GetSubspace(paramKey.Subspace)
