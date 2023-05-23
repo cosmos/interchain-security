@@ -7,9 +7,9 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	v2providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	v1ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	v2ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	v1providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	v1ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // Migrator is a struct for handling in-place store migrations.
@@ -21,7 +21,8 @@ type Migrator struct {
 
 // NewMigrator returns a new Migrator.
 func NewMigrator(ccvProviderKeeper Keeper, stakingKeeper v2ccvtypes.StakingKeeper,
-	ccvProviderParamSpace paramtypes.Subspace) Migrator {
+	ccvProviderParamSpace paramtypes.Subspace,
+) Migrator {
 	return Migrator{ccvProviderKeeper: ccvProviderKeeper, ccvProviderParamSpace: ccvProviderParamSpace}
 }
 
