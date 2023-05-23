@@ -1,14 +1,14 @@
 syntax = "proto3";
 
-package interchain_security.ccv.provider.v1;
+package interchain_security.ccv.provider.v2;
 
-option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types";
+option go_package = "github.com/cosmos/interchain-security/v2/x/ccv/provider/types";
 
 import "gogoproto/gogo.proto";
-import "interchain_security/ccv/v1/ccv.proto";
-import "interchain_security/ccv/provider/v1/provider.proto";
-import "interchain_security/ccv/consumer/v1/consumer.proto";
-import "interchain_security/ccv/consumer/v1/genesis.proto";
+import "interchain_security/ccv/v2/ccv.proto";
+import "interchain_security/ccv/provider/v2/provider.proto";
+import "interchain_security/ccv/consumer/v2/consumer.proto";
+import "interchain_security/ccv/consumer/v2/genesis.proto";
 import "tendermint/crypto/keys.proto";
 
 
@@ -22,10 +22,10 @@ message GenesisState {
     (gogoproto.moretags) = "yaml:\"consumer_states\""
   ];
   // empty for a new chain
-  repeated interchain_security.ccv.provider.v1.UnbondingOp unbonding_ops = 3
+  repeated interchain_security.ccv.provider.v2.UnbondingOp unbonding_ops = 3
   [ (gogoproto.nullable) = false ];
   // empty for a new chain
-  interchain_security.ccv.v1.MaturedUnbondingOps mature_unbonding_ops = 4;
+  interchain_security.ccv.v2.MaturedUnbondingOps mature_unbonding_ops = 4;
     // empty for a new chain
   repeated ValsetUpdateIdToHeight valset_update_id_to_height = 5
   [ (gogoproto.nullable) = false ];
@@ -59,14 +59,14 @@ message ConsumerState {
   // InitalHeight defines the initial block height for the consumer chain
   uint64 initial_height = 4;
   // ConsumerGenesis defines the initial consumer chain genesis states
-  interchain_security.ccv.consumer.v1.GenesisState consumer_genesis = 5
+  interchain_security.ccv.consumer.v2.GenesisState consumer_genesis = 5
   [ (gogoproto.nullable) = false ];
   // PendingValsetChanges defines the pending validator set changes for the consumer chain 
-  repeated interchain_security.ccv.v1.ValidatorSetChangePacketData pending_valset_changes = 6
+  repeated interchain_security.ccv.v2.ValidatorSetChangePacketData pending_valset_changes = 6
   [ (gogoproto.nullable) = false ];
   repeated string slash_downtime_ack = 7;
   // UnbondingOpsIndex defines the unbonding operations waiting on this consumer chain
-  repeated interchain_security.ccv.provider.v1.VscUnbondingOps unbonding_ops_index = 8
+  repeated interchain_security.ccv.provider.v2.VscUnbondingOps unbonding_ops_index = 8
   [ (gogoproto.nullable) = false ];
 }
 
