@@ -19,7 +19,7 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/interchain-security/legacy_ibc_testing/simapp/helpers"
+	"github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp/helpers"
 )
 
 /*
