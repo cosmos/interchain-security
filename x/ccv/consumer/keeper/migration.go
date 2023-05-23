@@ -5,8 +5,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	v2consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	v1consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	v1ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // Migrator is a struct for handling in-place store migrations.
@@ -32,27 +33,27 @@ func (m Migrator) Migratev1p0To1p3(ctx sdk.Context) error {
 func MigrateParamsv1p0To1p3(ctx sdk.Context, paramsSubspace paramtypes.Subspace) {
 	// Get old params
 	var enabled bool
-	paramsSubspace.Get(ctx, consumertypes.KeyEnabled, &enabled)
+	paramsSubspace.Get(ctx, v1consumertypes.KeyEnabled, &enabled)
 	var blocksPerDistributionTransmission int64
-	paramsSubspace.Get(ctx, consumertypes.KeyBlocksPerDistributionTransmission, &blocksPerDistributionTransmission)
+	paramsSubspace.Get(ctx, v1consumertypes.KeyBlocksPerDistributionTransmission, &blocksPerDistributionTransmission)
 	var distributionTransmissionChannel string
-	paramsSubspace.Get(ctx, consumertypes.KeyDistributionTransmissionChannel, &distributionTransmissionChannel)
+	paramsSubspace.Get(ctx, v1consumertypes.KeyDistributionTransmissionChannel, &distributionTransmissionChannel)
 	var providerFeePoolAddrStr string
-	paramsSubspace.Get(ctx, consumertypes.KeyProviderFeePoolAddrStr, &providerFeePoolAddrStr)
+	paramsSubspace.Get(ctx, v1consumertypes.KeyProviderFeePoolAddrStr, &providerFeePoolAddrStr)
 	var ccvTimeoutPeriod time.Duration
-	paramsSubspace.Get(ctx, ccvtypes.KeyCCVTimeoutPeriod, &ccvTimeoutPeriod)
+	paramsSubspace.Get(ctx, v1ccvtypes.KeyCCVTimeoutPeriod, &ccvTimeoutPeriod)
 	var transferTimeoutPeriod time.Duration
-	paramsSubspace.Get(ctx, consumertypes.KeyTransferTimeoutPeriod, &transferTimeoutPeriod)
+	paramsSubspace.Get(ctx, v1consumertypes.KeyTransferTimeoutPeriod, &transferTimeoutPeriod)
 	var consumerRedistributionFrac string
-	paramsSubspace.Get(ctx, consumertypes.KeyConsumerRedistributionFrac, &consumerRedistributionFrac)
+	paramsSubspace.Get(ctx, v1consumertypes.KeyConsumerRedistributionFrac, &consumerRedistributionFrac)
 	var historicalEntries int64
-	paramsSubspace.Get(ctx, consumertypes.KeyHistoricalEntries, &historicalEntries)
+	paramsSubspace.Get(ctx, v1consumertypes.KeyHistoricalEntries, &historicalEntries)
 	var unbondingPeriod time.Duration
-	paramsSubspace.Get(ctx, consumertypes.KeyConsumerUnbondingPeriod, &unbondingPeriod)
+	paramsSubspace.Get(ctx, v1consumertypes.KeyConsumerUnbondingPeriod, &unbondingPeriod)
 
 	// Recycle old params, set new params to default values
-	defaultParams := consumertypes.DefaultParams()
-	newParams := consumertypes.NewParams(
+	defaultParams := v2consumertypes.DefaultParams()
+	newParams := v2consumertypes.NewParams(
 		enabled,
 		blocksPerDistributionTransmission,
 		distributionTransmissionChannel,

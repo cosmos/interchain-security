@@ -82,6 +82,8 @@ func NewKeeper(
 	return k
 }
 
+// SetParamSpace sets the param space for the provider keeper.
+// Note: this is only used for testing!
 func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
 	k.paramSpace = ps
 }

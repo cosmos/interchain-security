@@ -6,19 +6,21 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	v2providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	v1ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	v2ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	v1providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
 // Migrator is a struct for handling in-place store migrations.
 type Migrator struct {
 	ccvProviderKeeper     Keeper
-	stakingKeeper         ccvtypes.StakingKeeper
+	stakingKeeper         v2ccvtypes.StakingKeeper
 	ccvProviderParamSpace paramtypes.Subspace
 }
 
 // NewMigrator returns a new Migrator.
-func NewMigrator(ccvProviderKeeper Keeper, stakingKeeper ccvtypes.StakingKeeper,
+func NewMigrator(ccvProviderKeeper Keeper, stakingKeeper v2ccvtypes.StakingKeeper,
 	ccvProviderParamSpace paramtypes.Subspace) Migrator {
 	return Migrator{ccvProviderKeeper: ccvProviderKeeper, ccvProviderParamSpace: ccvProviderParamSpace}
 }
@@ -41,24 +43,24 @@ func (m Migrator) Migratev1p0To1p3(ctx sdk.Context) error {
 func MigrateParamsv1p0To1p3(ctx sdk.Context, paramsSubspace paramtypes.Subspace, consumerRewardDenomRegistrationFee sdk.Coin) {
 	// Get old params
 	var templateClient ibctmtypes.ClientState
-	paramsSubspace.Get(ctx, providertypes.KeyTemplateClient, &templateClient)
+	paramsSubspace.Get(ctx, v1providertypes.KeyTemplateClient, &templateClient)
 	var trustingPeriodFraction string
-	paramsSubspace.Get(ctx, providertypes.KeyTrustingPeriodFraction, &trustingPeriodFraction)
+	paramsSubspace.Get(ctx, v1providertypes.KeyTrustingPeriodFraction, &trustingPeriodFraction)
 	var ccvTimeoutPeriod time.Duration
-	paramsSubspace.Get(ctx, ccvtypes.KeyCCVTimeoutPeriod, &ccvTimeoutPeriod)
+	paramsSubspace.Get(ctx, v1ccvtypes.KeyCCVTimeoutPeriod, &ccvTimeoutPeriod)
 	var initTimeoutPeriod time.Duration
-	paramsSubspace.Get(ctx, providertypes.KeyInitTimeoutPeriod, &initTimeoutPeriod)
+	paramsSubspace.Get(ctx, v1providertypes.KeyInitTimeoutPeriod, &initTimeoutPeriod)
 	var vscTimeoutPeriod time.Duration
-	paramsSubspace.Get(ctx, providertypes.KeyVscTimeoutPeriod, &vscTimeoutPeriod)
+	paramsSubspace.Get(ctx, v1providertypes.KeyVscTimeoutPeriod, &vscTimeoutPeriod)
 	var slashMeterReplenishPeriod time.Duration
-	paramsSubspace.Get(ctx, providertypes.KeySlashMeterReplenishPeriod, &slashMeterReplenishPeriod)
+	paramsSubspace.Get(ctx, v1providertypes.KeySlashMeterReplenishPeriod, &slashMeterReplenishPeriod)
 	var slashMeterReplenishFraction string
-	paramsSubspace.Get(ctx, providertypes.KeySlashMeterReplenishFraction, &slashMeterReplenishFraction)
+	paramsSubspace.Get(ctx, v1providertypes.KeySlashMeterReplenishFraction, &slashMeterReplenishFraction)
 	var maxThrottledPackets int64
-	paramsSubspace.Get(ctx, providertypes.KeyMaxThrottledPackets, &maxThrottledPackets)
+	paramsSubspace.Get(ctx, v1providertypes.KeyMaxThrottledPackets, &maxThrottledPackets)
 
 	// Recycle old params, set new param to input value
-	newParams := providertypes.NewParams(
+	newParams := v2providertypes.NewParams(
 		&templateClient,
 		trustingPeriodFraction,
 		ccvTimeoutPeriod,

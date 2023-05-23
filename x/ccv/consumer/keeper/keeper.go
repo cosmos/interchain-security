@@ -92,6 +92,8 @@ func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
 	k.standaloneStakingKeeper = sk
 }
 
+// SetParamSpace sets the param space for the consumer keeper.
+// Note: this is only used for testing!
 func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
 	k.paramStore = ps
 }
