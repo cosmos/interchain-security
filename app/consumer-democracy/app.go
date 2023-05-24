@@ -117,7 +117,7 @@ import (
 
 const (
 	AppName              = "interchain-security-cd"
-	upgradeName          = "v07-Theta" // arbitrary name, define your own appropriately named upgrade
+	upgradeName          = "ics-v1-to-v2" // arbitrary name, define your own appropriately named upgrade
 	AccountAddressPrefix = "cosmos"
 )
 
@@ -628,6 +628,8 @@ func New(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
+	// Note this upgrade handler is just an example and may not be exactly what you need to implement.
+	// See https://docs.cosmos.network/v0.45/building-modules/upgrade.html
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
 		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {

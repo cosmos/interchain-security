@@ -125,7 +125,6 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 }
 
 // RegisterServices registers module services.
-// TODO
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	consumertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
