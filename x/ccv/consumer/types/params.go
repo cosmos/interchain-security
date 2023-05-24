@@ -113,10 +113,10 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidatePositiveInt64(p.BlocksPerDistributionTransmission); err != nil {
 		return err
 	}
-	if err := validateDistributionTransmissionChannel(p.DistributionTransmissionChannel); err != nil {
+	if err := ValidateDistributionTransmissionChannel(p.DistributionTransmissionChannel); err != nil {
 		return err
 	}
-	if err := validateProviderFeePoolAddrStr(p.ProviderFeePoolAddrStr); err != nil {
+	if err := ValidateProviderFeePoolAddrStr(p.ProviderFeePoolAddrStr); err != nil {
 		return err
 	}
 	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
@@ -134,13 +134,13 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidateDuration(p.UnbondingPeriod); err != nil {
 		return err
 	}
-	if err := validateSoftOptOutThreshold(p.SoftOptOutThreshold); err != nil {
+	if err := ValidateSoftOptOutThreshold(p.SoftOptOutThreshold); err != nil {
 		return err
 	}
-	if err := validateDenoms(p.RewardDenoms); err != nil {
+	if err := ValidateDenoms(p.RewardDenoms); err != nil {
 		return err
 	}
-	if err := validateDenoms(p.ProviderRewardDenoms); err != nil {
+	if err := ValidateDenoms(p.ProviderRewardDenoms); err != nil {
 		return err
 	}
 	return nil
@@ -153,9 +153,9 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyBlocksPerDistributionTransmission,
 			p.BlocksPerDistributionTransmission, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyDistributionTransmissionChannel,
-			p.DistributionTransmissionChannel, validateDistributionTransmissionChannel),
+			p.DistributionTransmissionChannel, ValidateDistributionTransmissionChannel),
 		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
-			p.ProviderFeePoolAddrStr, validateProviderFeePoolAddrStr),
+			p.ProviderFeePoolAddrStr, ValidateProviderFeePoolAddrStr),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod,
 			p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyTransferTimeoutPeriod,
@@ -167,15 +167,15 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyConsumerUnbondingPeriod,
 			p.UnbondingPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySoftOptOutThreshold,
-			p.SoftOptOutThreshold, validateSoftOptOutThreshold),
+			p.SoftOptOutThreshold, ValidateSoftOptOutThreshold),
 		paramtypes.NewParamSetPair(KeyRewardDenoms,
-			p.RewardDenoms, validateDenoms),
+			p.RewardDenoms, ValidateDenoms),
 		paramtypes.NewParamSetPair(KeyProviderRewardDenoms,
-			p.ProviderRewardDenoms, validateDenoms),
+			p.ProviderRewardDenoms, ValidateDenoms),
 	}
 }
 
-func validateDistributionTransmissionChannel(i interface{}) error {
+func ValidateDistributionTransmissionChannel(i interface{}) error {
 	// Accept empty string as valid, since this will be the default value on genesis
 	if i == "" {
 		return nil
@@ -184,7 +184,7 @@ func validateDistributionTransmissionChannel(i interface{}) error {
 	return ccvtypes.ValidateChannelIdentifier(i)
 }
 
-func validateProviderFeePoolAddrStr(i interface{}) error {
+func ValidateProviderFeePoolAddrStr(i interface{}) error {
 	// Accept empty string as valid, since this will be the default value on genesis
 	if i == "" {
 		return nil
@@ -193,7 +193,7 @@ func validateProviderFeePoolAddrStr(i interface{}) error {
 	return ccvtypes.ValidateBech32(i)
 }
 
-func validateSoftOptOutThreshold(i interface{}) error {
+func ValidateSoftOptOutThreshold(i interface{}) error {
 	str, ok := i.(string)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
@@ -211,7 +211,7 @@ func validateSoftOptOutThreshold(i interface{}) error {
 	return nil
 }
 
-func validateDenoms(i interface{}) error {
+func ValidateDenoms(i interface{}) error {
 	v, ok := i.([]string)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)

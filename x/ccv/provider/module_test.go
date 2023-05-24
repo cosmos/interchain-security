@@ -94,7 +94,7 @@ func TestInitGenesis(t *testing.T) {
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 
-		appModule := provider.NewAppModule(&providerKeeper)
+		appModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
 		genState := types.NewGenesisState(
 			providerKeeper.GetValidatorSetUpdateId(ctx),
 			nil,
