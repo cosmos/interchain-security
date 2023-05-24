@@ -42,7 +42,7 @@ func TestMigrateParamsv1Tov2(t *testing.T) {
 	)
 
 	// Note that new param key table is set in keeper constructor
-	subspace = subspace.WithKeyTable(v1p0p0KeyTable())
+	subspace = subspace.WithKeyTable(v1KeyTable())
 
 	// Set 9 params from v1.0.0
 	subspace.Set(ctx, consumertypes.KeyEnabled, true)
@@ -107,18 +107,13 @@ func TestMigrateParamsv1Tov2(t *testing.T) {
 	require.Equal(t, []string{"uatom"}, keeper.GetProviderRewardDenoms(ctx))
 }
 
-//
-// Note: the following methods and struct could be removed if v1.3.0 is actually defined as v2.0.0
-// and we bump the go.mod package name accordingly
-//
-
-// v1p0p0Params is a copy of the ParamKeyTable method from v1.0.0
-func v1p0p0KeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&v1p0p0Params{})
+// v1KeyTable is a copy of the ParamKeyTable method from v1.0.0
+func v1KeyTable() paramtypes.KeyTable {
+	return paramtypes.NewKeyTable().RegisterParamSet(&v1Params{})
 }
 
-// ParamSetPairs implements params.ParamSet for v1p0p0Params
-func (p *v1p0p0Params) ParamSetPairs() paramtypes.ParamSetPairs {
+// ParamSetPairs implements params.ParamSet for v1Params
+func (p *v1Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(consumertypes.KeyEnabled, p.Enabled, ccvtypes.ValidateBool),
 		paramtypes.NewParamSetPair(consumertypes.KeyBlocksPerDistributionTransmission,
@@ -140,8 +135,8 @@ func (p *v1p0p0Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	}
 }
 
-// v1p0p0Params is a copy of the Params struct from v1.0.0
-type v1p0p0Params struct {
+// v1Params is a copy of the pb generated Params struct from v1.0.0
+type v1Params struct {
 	Enabled                           bool          `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	BlocksPerDistributionTransmission int64         `protobuf:"varint,2,opt,name=blocks_per_distribution_transmission,json=blocksPerDistributionTransmission,proto3" json:"blocks_per_distribution_transmission,omitempty"`
 	DistributionTransmissionChannel   string        `protobuf:"bytes,3,opt,name=distribution_transmission_channel,json=distributionTransmissionChannel,proto3" json:"distribution_transmission_channel,omitempty"`

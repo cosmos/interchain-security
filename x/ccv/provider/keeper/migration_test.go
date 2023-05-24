@@ -43,7 +43,7 @@ func TestMigrateParamsv1Tov2(t *testing.T) {
 	)
 
 	// Note that new param key table is set in keeper constructor
-	subspace = subspace.WithKeyTable(v1p0p0KeyTable())
+	subspace = subspace.WithKeyTable(v1KeyTable())
 
 	// Set 8 params from v1.0.0
 	subspace.Set(ctx, providertypes.KeyTemplateClient, providertypes.DefaultParams().TemplateClient)
@@ -93,18 +93,13 @@ func TestMigrateParamsv1Tov2(t *testing.T) {
 	require.Equal(t, sdk.NewCoin("uatom", sdk.NewInt(1000000000)), keeper.GetParams(ctx).ConsumerRewardDenomRegistrationFee)
 }
 
-//
-// Note: the following methods and struct could be removed if v1.3.0 is actually defined as v2.0.0
-// and we bump the go.mod package name accordingly
-//
-
-// v1p0p0Params is a copy of the ParamKeyTable method from v1.0.0
-func v1p0p0KeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&v1p0p0Params{})
+// v1KeyTable is a copy of the ParamKeyTable method from v1.0.0
+func v1KeyTable() paramtypes.KeyTable {
+	return paramtypes.NewKeyTable().RegisterParamSet(&v1Params{})
 }
 
-// ParamSetPairs implements params.ParamSet for v1p0p0Params
-func (p *v1p0p0Params) ParamSetPairs() paramtypes.ParamSetPairs {
+// ParamSetPairs implements params.ParamSet for v1Params
+func (p *v1Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(providertypes.KeyTemplateClient, p.TemplateClient, providertypes.ValidateTemplateClient),
 		paramtypes.NewParamSetPair(providertypes.KeyTrustingPeriodFraction, p.TrustingPeriodFraction, ccvtypes.ValidateStringFraction),
@@ -117,8 +112,8 @@ func (p *v1p0p0Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	}
 }
 
-// v1p0p0Params is a copy of the Params struct from v1.0.0
-type v1p0p0Params struct {
+// v1Params is a copy of the Params struct from v1.0.0
+type v1Params struct {
 	TemplateClient              *types2.ClientState `protobuf:"bytes,1,opt,name=template_client,json=templateClient,proto3" json:"template_client,omitempty"`
 	TrustingPeriodFraction      string              `protobuf:"bytes,2,opt,name=trusting_period_fraction,json=trustingPeriodFraction,proto3" json:"trusting_period_fraction,omitempty"`
 	CcvTimeoutPeriod            time.Duration       `protobuf:"bytes,3,opt,name=ccv_timeout_period,json=ccvTimeoutPeriod,proto3,stdduration" json:"ccv_timeout_period"`
