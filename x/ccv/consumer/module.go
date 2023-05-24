@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
@@ -91,13 +92,15 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 // AppModule represents the AppModule for this module
 type AppModule struct {
 	AppModuleBasic
-	keeper keeper.Keeper
+	keeper     keeper.Keeper
+	paramSpace paramtypes.Subspace
 }
 
 // NewAppModule creates a new consumer module
-func NewAppModule(k keeper.Keeper) AppModule {
+func NewAppModule(k keeper.Keeper, paramSpace paramtypes.Subspace) AppModule {
 	return AppModule{
-		keeper: k,
+		keeper:     k,
+		paramSpace: paramSpace,
 	}
 }
 
@@ -125,6 +128,11 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 // TODO
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	consumertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+
+	m := keeper.NewMigrator(am.keeper, am.paramSpace)
+	if err := cfg.RegisterMigration(consumertypes.ModuleName, 1, m.Migratev1Tov2); err != nil {
+		panic(fmt.Sprintf("failed to register migrator: %s", err))
+	}
 }
 
 // InitGenesis performs genesis initialization for the consumer module. It returns
