@@ -1,14 +1,14 @@
 syntax = "proto3";
-package interchain_security.ccv.provider.v2;
+package interchain_security.ccv.provider.v1;
 
-option go_package = "github.com/cosmos/interchain-security/v2/x/ccv/provider/types";
+option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types";
 
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
-import "interchain_security/ccv/v2/ccv.proto";
-import "interchain_security/ccv/consumer/v2/genesis.proto";
-import "interchain_security/ccv/provider/v2/provider.proto";
+import "interchain_security/ccv/v1/ccv.proto";
+import "interchain_security/ccv/consumer/v1/genesis.proto";
+import "interchain_security/ccv/provider/v1/provider.proto";
 
 
 service Query {
@@ -79,7 +79,7 @@ service Query {
 message QueryConsumerGenesisRequest { string chain_id = 1; }
 
 message QueryConsumerGenesisResponse {
-  interchain_security.ccv.consumer.v2.GenesisState genesis_state = 1
+  interchain_security.ccv.consumer.v1.GenesisState genesis_state = 1
       [ (gogoproto.nullable) = false ];
 }
 
@@ -162,17 +162,17 @@ message QueryThrottledConsumerPacketDataResponse {
 
 // A query wrapper type for the global entry and data relevant to a throttled slash packet.
 message ThrottledSlashPacket {
-  interchain_security.ccv.provider.v2.GlobalSlashEntry global_entry = 1
+  interchain_security.ccv.provider.v1.GlobalSlashEntry global_entry = 1
     [(gogoproto.nullable) = false];
-  interchain_security.ccv.v2.SlashPacketData data = 2
+  interchain_security.ccv.v1.SlashPacketData data = 2
     [(gogoproto.nullable) = false];
 }
 
 // ThrottledPacketDataWrapper contains either SlashPacketData or VSCMaturedPacketData
 message ThrottledPacketDataWrapper {
   oneof data {
-    interchain_security.ccv.v2.SlashPacketData slash_packet = 1;
-    interchain_security.ccv.v2.VSCMaturedPacketData vsc_matured_packet = 2;
+    interchain_security.ccv.v1.SlashPacketData slash_packet = 1;
+    interchain_security.ccv.v1.VSCMaturedPacketData vsc_matured_packet = 2;
   }
 }
 
