@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/interchain-security/legacy_ibc_testing/core"
+	"github.com/cosmos/interchain-security/v2/legacy_ibc_testing/core"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -24,7 +24,7 @@ import (
 
 	"github.com/cosmos/ibc-go/v4/modules/core/keeper"
 
-	"github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
+	"github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp"
 )
 
 /*
