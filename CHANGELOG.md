@@ -4,22 +4,22 @@
 
 Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
 
-## v.1.3.0
+## v.2.0.0
 
 Date: May 12th, 2023
 
-Unlike prior releases, the ICS v1.3.0 release will be based on the main branch. v1.3.0 will contain all the accumulated PRs from the various releases below, along with other PRs that were merged, but not released to production. After v1.3.0, we plan to revamp release practices, and how we modularize the repo for consumer/provider.
+Unlike prior releases, the ICS v2.0.0 release will be based on the main branch. v2.0.0 will contain all the accumulated PRs from the various releases below, along with other PRs that were merged, but not released to production. After v2.0.0, we plan to revamp release practices, and how we modularize the repo for consumer/provider.
 
-Some PRs from v1.3.0 may reappear from other releases below. This is due to the fact that ICS v1.1.0 deviates from the commit ordering of the main branch, and other releases thereafter are based on v1.1.0.
+Some PRs from v2.0.0 may reappear from other releases below. This is due to the fact that ICS v1.1.0 deviates from the commit ordering of the main branch, and other releases thereafter are based on v1.1.0.
 
-### High level changes included in v1.3.0
+### High level changes included in v2.0.0
 
 * MVP for standalone to consumer changeover, see [EPIC](https://github.com/cosmos/interchain-security/issues/756)
 * MVP for soft opt out, see [EPIC](https://github.com/cosmos/interchain-security/issues/851)
 * Various fixes, critical and non-critical
 * Docs updates which should not affect production code
 
-## PRs included in v1.3.0
+## PRs included in v2.0.0
 
 * (fix) Remove panics on failure to send IBC packets [#876](https://github.com/cosmos/interchain-security/pull/876)
 * (fix) consumer key prefix order to avoid complex migrations [#963](https://github.com/cosmos/interchain-security/pull/963)

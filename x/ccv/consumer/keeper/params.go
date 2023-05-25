@@ -5,8 +5,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // GetParams returns the params for the consumer ccv module
