@@ -36,6 +36,9 @@ TENDERMINT_CONFIG_TRANSFORM=$7
 # stores a comma separated list of nodes addresses
 NODE_LISTEN_ADDR_STR=""
 
+# stores a comma separated list of nodes home folders
+NODE_HOMES=""
+
 
 
 # CREATE VALIDATORS AND DO GENESIS CEREMONY
@@ -222,7 +225,9 @@ do
     VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$i].ip_suffix")
     NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
 
-    GAIA_HOME="--home /$CHAIN_ID/validator$VAL_ID"
+    NODE_HOME="/$CHAIN_ID/validator$VAL_ID"
+    GAIA_HOME="--home $NODE_HOME"
+    NODE_HOMES="$NODE_HOME,$NODE_HOMES"
     RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26658"
     GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:9091"
     LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26655"
@@ -332,12 +337,16 @@ ARGS="$QUERY_GAIA_HOME $QUERY_LISTEN_ADDRESS $QUERY_RPC_ADDRESS $QUERY_GRPC_ADDR
 echo "Node addresses:"
 echo $NODE_LISTEN_ADDR_STR
 
+echo "Node homes:"
+echo $NODE_HOMES
+
 NODE_LISTEN_ADDR_STR=${NODE_LISTEN_ADDR_STR%?}
+NODE_HOMES=${NODE_HOMES%?}
 
 
 sleep 2
 
-ip netns exec $QUERY_NET_NAMESPACE_NAME cometmock $NODE_LISTEN_ADDR_STR /$CHAIN_ID/genesis.json tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658 &> cometmock_${CHAIN_ID}_out.log &
+ip netns exec $QUERY_NET_NAMESPACE_NAME cometmock $NODE_LISTEN_ADDR_STR /$CHAIN_ID/genesis.json tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658 $NODE_HOMES &> cometmock_${CHAIN_ID}_out.log &
 
 sleep 3
 # exit
