@@ -72,3 +72,8 @@ var multipleConsumers = concatSteps(
 	stepsMultiConsumerDowntimeFromProvider("consu", "densu"),
 	stepsMultiConsumerDoubleSign("consu", "densu"), // double sign on one of the chains
 )
+
+var changeoverSteps = concatSteps(
+	stepStartProviderChain(),
+	stepStartSovereignChain(),
+)
