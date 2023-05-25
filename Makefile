@@ -125,7 +125,7 @@ proto-check:
 	@if git diff --quiet; then \
 		echo "No files were modified after running 'make proto-gen'. Pass!"; \
 	else \
-		echo "Error: Files were modified after running 'make proto-gen'. Please commit or stash your changes."; \
+		echo "Error: Files were modified after running 'make proto-gen'. Please commit changes to .pb files"; \
 		exit 1; \
 	fi
 
