@@ -29,7 +29,8 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 	for _, globalEntry := range allEntries {
 		// Subtract voting power that will be jailed/tombstoned from the slash meter
-		meter = meter.Sub(k.GetEffectiveValPower(ctx, *globalEntry.ProviderValConsAddr))
+		providerAddr := providertypes.NewProviderConsAddress(globalEntry.ProviderValConsAddr)
+		meter = meter.Sub(k.GetEffectiveValPower(ctx, providerAddr))
 
 		// Handle one slash and any trailing vsc matured packet data instances by passing in
 		// chainID and appropriate callbacks, relevant packet data is deleted in this method.
@@ -190,7 +191,7 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context, entry providertypes.GlobalSlashEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.GlobalSlashEntryKey(entry)
-	bz := entry.ProviderValConsAddr.ToSdkConsAddr()
+	bz := entry.ProviderValConsAddr
 	store.Set(key, bz)
 }
 

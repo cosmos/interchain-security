@@ -12,6 +12,6 @@ func NewGlobalSlashEntry(recvTime time.Time, consumerChainID string,
 		RecvTime:            recvTime.UTC(), // UTC prevents serialization inconsistencies
 		ConsumerChainID:     consumerChainID,
 		IbcSeqNum:           ibcSeqNum,
-		ProviderValConsAddr: &providerValConsAddr,
+		ProviderValConsAddr: providerValConsAddr.ToSdkConsAddr(),
 	}
 }
