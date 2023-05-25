@@ -114,6 +114,22 @@ proto-gen:
 	@if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoGen}$$"; then docker start -a $(containerProtoGen); else docker run --name $(containerProtoGen) -v $(CURDIR):/workspace --workdir /workspace $(containerProtoImage) \
 		sh ./scripts/protocgen.sh; fi
 
+proto-check:
+	@if git diff --quiet; then \
+		echo "No files were modified before running 'make proto-gen'."; \
+	else \
+		echo "Error: Uncommitted changes exist before running 'make proto-gen'. Please commit or stash your changes."; \
+		exit 1; \
+	fi
+	@$(MAKE) proto-gen
+	@if git diff --quiet; then \
+		echo "No files were modified after running 'make proto-gen'. Pass!"; \
+	else \
+		echo "Error: Files were modified after running 'make proto-gen'. Please commit or stash your changes."; \
+		exit 1; \
+	fi
+
+
 proto-format:
 	@echo "Formatting Protobuf files"
 	@if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoFmt}$$"; then docker start -a $(containerProtoFmt); else docker run --name $(containerProtoFmt) -v $(CURDIR):/workspace --workdir /workspace tendermintdev/docker-build-proto \
