@@ -190,11 +190,7 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context, entry providertypes.GlobalSlashEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.GlobalSlashEntryKey(entry)
-	bz, err := entry.ProviderValConsAddr.Marshal()
-	if err != nil {
-		// This should never happen, since the provider val cons addr should be a valid sdk address
-		panic(fmt.Sprintf("failed to marshal validator consensus address: %s", err.Error()))
-	}
+	bz := entry.ProviderValConsAddr.ToSdkConsAddr()
 	store.Set(key, bz)
 }
 
@@ -228,12 +224,7 @@ func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.G
 		// MustParseGlobalSlashEntryKey should not panic, since we should be iterating over keys that're
 		// assumed to be correctly serialized in QueueGlobalSlashEntry.
 		recvTime, chainID, ibcSeqNum := providertypes.MustParseGlobalSlashEntryKey(iterator.Key())
-		valAddr := providertypes.ProviderConsAddress{}
-		err := valAddr.Unmarshal(iterator.Value())
-		if err != nil {
-			// This should never happen, provider cons address is assumed to be correctly serialized in QueueGlobalSlashEntry
-			panic(fmt.Sprintf("failed to unmarshal validator consensus address: %s", err.Error()))
-		}
+		valAddr := providertypes.NewProviderConsAddress(iterator.Value())
 		entry := providertypes.NewGlobalSlashEntry(recvTime, chainID, ibcSeqNum, valAddr)
 		entries = append(entries, entry)
 	}

@@ -116,12 +116,7 @@ func (k Keeper) GetValidatorByConsumerAddr(
 	if bz == nil {
 		return providerAddr, false
 	}
-	err := providerAddr.Unmarshal(bz)
-	if err != nil {
-		// An error here would indicate something is very wrong,
-		// the provider address is assumed to be correctly serialized in SetValidatorByConsumerAddr.
-		panic(fmt.Sprintf("failed to unmarshal provider address: %v", err))
-	}
+	providerAddr = types.NewProviderConsAddress(bz)
 	return providerAddr, true
 }
 
@@ -135,11 +130,7 @@ func (k Keeper) SetValidatorByConsumerAddr(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	// Cons address is a type alias for a byte string, no marshaling needed
-	bz, err := providerAddr.Marshal()
-	if err != nil {
-		// An error here would indicate something is very wrong,
-		panic(fmt.Sprintf("failed to marshal provider address: %v", err))
-	}
+	bz := providerAddr.ToSdkConsAddr()
 	store.Set(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr), bz)
 }
 
@@ -173,13 +164,7 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string)
 			panic(fmt.Sprintf("failed to parse chainID and consumer address: %v", err))
 		}
 		consumerAddr := types.NewConsumerConsAddress(consumerAddrTmp)
-		var providerAddr types.ProviderConsAddress
-		err = providerAddr.Unmarshal(iterator.Value())
-		if err != nil {
-			// An error here would indicate something is very wrong,
-			// the provider address is assumed to be correctly serialized in SetValidatorByConsumerAddr.
-			panic(fmt.Sprintf("failed to unmarshal provider address: %v", err))
-		}
+		providerAddr := types.NewProviderConsAddress(iterator.Value())
 
 		validatorConsumerAddrs = append(validatorConsumerAddrs, types.ValidatorByConsumerAddr{
 			ConsumerAddr: &consumerAddr,
