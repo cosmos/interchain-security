@@ -201,6 +201,7 @@ func (tr TestRun) submitTextProposal(
 }
 
 type submitConsumerAdditionProposalAction struct {
+	preCCV        bool
 	chain         chainID
 	from          validatorID
 	deposit       uint
