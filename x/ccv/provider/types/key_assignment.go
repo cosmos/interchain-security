@@ -10,9 +10,6 @@ import (
 )
 
 // A validator's consensus address on the provider chain.
-//
-// Note: this type is implemented as a wrapper around sdk.ConsAddress, not a type alias,
-// to prevent implicit casting. Use ToSdkConsAddr() to get the underlying sdk.ConsAddress.
 type ProviderConsAddress struct {
 	Address sdk.ConsAddress
 }
@@ -20,9 +17,6 @@ type ProviderConsAddress struct {
 // A validator's assigned consensus address for a consumer chain.
 // Note this type is for type safety within provider code, consumer code uses normal sdk.ConsAddress,
 // since there's no notion of provider vs consumer address.
-//
-// Note: this type is implemented as a wrapper around sdk.ConsAddress, not a type alias,
-// to prevent implicit casting. Use ToSdkConsAddr() to get the underlying sdk.ConsAddress.
 type ConsumerConsAddress struct {
 	Address sdk.ConsAddress
 }
