@@ -30,7 +30,7 @@ func NewProviderConsAddress(addr sdk.ConsAddress) ProviderConsAddress {
 }
 
 func (p *ProviderConsAddress) ToSdkConsAddr() sdk.ConsAddress {
-	return sdk.ConsAddress(p.Address)
+	return p.Address
 }
 
 // String implements the Stringer interface for ProviderConsAddress,
@@ -50,7 +50,7 @@ func NewConsumerConsAddress(addr sdk.ConsAddress) ConsumerConsAddress {
 }
 
 func (c *ConsumerConsAddress) ToSdkConsAddr() sdk.ConsAddress {
-	return sdk.ConsAddress(c.Address)
+	return c.Address
 }
 
 // String implements the Stringer interface for ConsumerConsAddress,
