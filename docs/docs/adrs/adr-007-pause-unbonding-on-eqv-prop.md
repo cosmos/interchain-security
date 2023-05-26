@@ -18,7 +18,7 @@ Proposed
 Currently, if an equivocation slashing proposal is created after more than one
 week has passed since the equivocation, it is possible that the validator in
 question could unbond and get away without being slashed, since the unbonding
-period is 3 weeks, and the voting period is 3 weeks. For this reason, it might
+period is 3 weeks, and the voting period is 2 weeks. For this reason, it might
 be good to pause unbondings for validators named in an equivocation slashing
 proposal until the proposal's voting period is over.
 
