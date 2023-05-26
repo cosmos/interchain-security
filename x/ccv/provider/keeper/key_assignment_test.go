@@ -253,7 +253,7 @@ func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 	addrsToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
 	require.NotEmpty(t, addrsToPrune, "addresses to prune is empty")
 	require.Len(t, addrsToPrune, 1, "addresses to prune is not len 1")
-	require.Equal(t, addrsToPrune[0], consumerAddr.ToSdkConsAddr())
+	require.Equal(t, addrsToPrune[0], consumerAddr.ToSdkConsAddr().Bytes())
 
 	keeper.DeleteConsumerAddrsToPrune(ctx, chainID, vscID)
 	addrsToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
