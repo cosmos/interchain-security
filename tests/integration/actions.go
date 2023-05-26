@@ -815,7 +815,7 @@ func (tr TestRun) relayPackets(
 		pathName = string(tr.chainConfigs[action.chainB].chainId) + "-" + string(tr.chainConfigs[action.chainA].chainId)
 	}
 
-	// hermes clear packets ibc0 transfer channel-13
+	// rly transact relay-packets [path-name] --channel [channel-id]
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "transact", "relay-packets",
 		pathName,

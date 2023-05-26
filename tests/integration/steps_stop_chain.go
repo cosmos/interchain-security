@@ -2,8 +2,8 @@ package main
 
 import "time"
 
-// start hermes so that all messages are relayed
-func stepsStartHermes() []Step {
+// start GoRelayer so that all messages are relayed
+func stepsStartRelayer() []Step {
 	return []Step{
 		{
 			action: startGoRlyAction{},
