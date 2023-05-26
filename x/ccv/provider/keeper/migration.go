@@ -41,7 +41,6 @@ func (m Migrator) Migratev1Tov2(ctx sdk.Context) error {
 // MigrateParamsv1Tov2 migrates the provider CCV module params from v1.0.0 to v2.0.0,
 // setting default values for new params.
 func MigrateParamsv1Tov2(ctx sdk.Context, paramsSubspace paramtypes.Subspace, consumerRewardDenomRegistrationFee sdk.Coin) {
-
 	// Get old params
 	var templateClient ibctmtypes.ClientState
 	paramsSubspace.Get(ctx, providertypes.KeyTemplateClient, &templateClient)
