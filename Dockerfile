@@ -48,7 +48,7 @@ RUN go build -o /CometMock_Binary ./cometmock
 
 # Get Hermes build
 FROM informalsystems/hermes:1.2.0 AS hermes-builder
-FROM informalofftermatt/gorelayer:latest AS gorelayer-builder
+FROM informalofftermatt/gorelayer:nogas AS gorelayer-builder
 
 FROM --platform=linux/amd64 fedora:36
 RUN dnf update -y
