@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package interchain_security.ccv.v1;
 
-option go_package = "github.com/cosmos/interchain-security/x/ccv/types";
+option go_package = "github.com/cosmos/interchain-security/v2/x/ccv/types";
 
 import "cosmos/staking/v1beta1/staking.proto";
 
