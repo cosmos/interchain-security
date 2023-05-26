@@ -167,10 +167,8 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 		},
 		{
 			action: addIbcConnectionAction{
-				chainA:  chainID(consumerName),
-				chainB:  chainID("provi"),
-				clientA: 0,
-				clientB: chainIndex,
+				chainA: chainID(consumerName),
+				chainB: chainID("provi"),
 			},
 			state: State{},
 		},
@@ -259,7 +257,8 @@ func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},

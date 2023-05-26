@@ -579,29 +579,23 @@ type addChainToRelayerAction struct {
 	validator validatorID
 }
 
-const hermesChainConfigTemplate = `
-
-[[chains]]
-account_prefix = "cosmos"
-clock_drift = "5s"
-gas_multiplier = 1.1
-grpc_addr = "%s"
-id = "%s"
-key_name = "%s"
-max_gas = 20000000
-rpc_addr = "%s"
-rpc_timeout = "10s"
-store_prefix = "ibc"
-trusting_period = "14days"
-websocket_addr = "%s"
-
-[chains.gas_price]
-	denom = "stake"
-	price = 0.00
-
-[chains.trust_threshold]
-	denominator = "3"
-	numerator = "1"
+const rlyChainConfigTemplate = `
+{
+	"type": "cosmos",
+	"value": {
+		"key": "default",
+		"chain-id": "%s",
+		"rpc-addr": "%s",
+		"account-prefix": "cosmos",
+		"keyring-backend": "test",
+		"gas-adjustment": 1.2,
+		"gas-prices": "0.01stake",
+		"debug": true,
+		"timeout": "20s",
+		"output-format": "json",
+		"sign-mode": "direct"
+	}
+}
 `
 
 func (tr TestRun) addChainToRelayer(
@@ -610,93 +604,60 @@ func (tr TestRun) addChainToRelayer(
 ) {
 	queryNodeIP := tr.getQueryNodeIP(action.chain)
 	chainId := tr.chainConfigs[action.chain].chainId
-	keyName := "query"
 	rpcAddr := "http://" + queryNodeIP + ":26658"
-	grpcAddr := "tcp://" + queryNodeIP + ":9091"
-	wsAddr := "ws://" + queryNodeIP + ":26658/websocket"
 
-	chainConfig := fmt.Sprintf(hermesChainConfigTemplate,
-		grpcAddr,
+	chainConfig := fmt.Sprintf(rlyChainConfigTemplate,
 		chainId,
-		keyName,
 		rpcAddr,
-		wsAddr,
 	)
 
-	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, "/root/.hermes/config.toml")
-
+	bashCommand := fmt.Sprintf(`echo '%s' >> /root/%s_config.yaml`, chainConfig, chainId)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
-		bashCommand,
-	).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	// Save mnemonic to file within container
-	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, tr.validatorConfigs[action.validator].mnemonic, "/root/.hermes/mnemonic.txt")
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
-		saveMnemonicCommand,
-	).CombinedOutput()
+		bashCommand).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
-		"keys", "add",
-		"--chain", string(tr.chainConfigs[action.chain].chainId),
-		"--mnemonic-file", "/root/.hermes/mnemonic.txt",
-	).CombinedOutput()
-
+	bz, err = exec.Command("rly", "keys", "restore", string(chainId), "default", "\"", tr.validatorConfigs[action.validator].mnemonic, "\"").CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 }
 
 type addIbcConnectionAction struct {
-	chainA  chainID
-	chainB  chainID
-	clientA uint
-	clientB uint
+	chainA chainID
+	chainB chainID
 }
 
 func (tr TestRun) addIbcConnection(
 	action addIbcConnectionAction,
 	verbose bool,
 ) {
+	var pathName string
+	if string(tr.chainConfigs[action.chainA].chainId) < string(tr.chainConfigs[action.chainB].chainId) {
+		pathName = string(tr.chainConfigs[action.chainA].chainId) + "-" + string(tr.chainConfigs[action.chainB].chainId)
+	} else {
+		pathName = string(tr.chainConfigs[action.chainB].chainId) + "-" + string(tr.chainConfigs[action.chainA].chainId)
+	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
-		"create", "connection",
-		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
-		"--a-client", "07-tendermint-"+fmt.Sprint(action.clientA),
-		"--b-client", "07-tendermint-"+fmt.Sprint(action.clientB),
-	)
-
-	cmdReader, err := cmd.StdoutPipe()
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
+		"paths", "new",
+		string(tr.chainConfigs[action.chainA].chainId),
+		string(tr.chainConfigs[action.chainB].chainId),
+		pathName,
+	).CombinedOutput()
 	if err != nil {
-		log.Fatal(err)
-	}
-	cmd.Stderr = cmd.Stdout
-
-	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
+		log.Fatal(err, "\n", string(bz))
 	}
 
-	scanner := bufio.NewScanner(cmdReader)
-
-	for scanner.Scan() {
-		out := scanner.Text()
-		if verbose {
-			fmt.Println("addIbcConnection: " + out)
-		}
-		if out == "done!!!!!!!!" {
-			break
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
+		"transact", "clients",
+		pathName,
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
 	}
 }
 
@@ -709,15 +670,15 @@ type addIbcChannelAction struct {
 	order       string
 }
 
-type startHermesAction struct{}
+type startGoRlyAction struct{}
 
-func (tr TestRun) startHermes(
-	action startHermesAction,
+func (tr TestRun) startGoRly(
+	action startGoRlyAction,
 	verbose bool,
 ) {
-	// hermes start is running in detached mode
+	// gorelayer start is running in detached mode
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", "-d", tr.containerConfig.instanceName, "hermes",
+	cmd := exec.Command("docker", "exec", "-d", tr.containerConfig.instanceName, "rly",
 		"start",
 	)
 
@@ -726,7 +687,7 @@ func (tr TestRun) startHermes(
 	}
 
 	if verbose {
-		fmt.Println("started Hermes")
+		fmt.Println("started gorelayer")
 	}
 }
 
@@ -734,45 +695,22 @@ func (tr TestRun) addIbcChannel(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
+	var pathName string
+	if string(tr.chainConfigs[action.chainA].chainId) < string(tr.chainConfigs[action.chainB].chainId) {
+		pathName = string(tr.chainConfigs[action.chainA].chainId) + "-" + string(tr.chainConfigs[action.chainB].chainId)
+	} else {
+		pathName = string(tr.chainConfigs[action.chainB].chainId) + "-" + string(tr.chainConfigs[action.chainA].chainId)
+	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
-		"create", "channel",
-		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
-		"--a-connection", "connection-"+fmt.Sprint(action.connectionA),
-		"--a-port", action.portA,
-		"--b-port", action.portB,
-		"--channel-version", tr.containerConfig.ccvVersion,
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
+		"trsnact", "channel",
+		pathName,
+		"--src-port", action.portA,
+		"--dst-port", action.portB,
+		"--version", tr.containerConfig.ccvVersion,
 		"--order", action.order,
 	)
-
-	if verbose {
-		fmt.Println("addIbcChannel cmd:", cmd.String())
-	}
-
-	cmdReader, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-	cmd.Stderr = cmd.Stdout
-
-	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
-	}
-
-	scanner := bufio.NewScanner(cmdReader)
-
-	for scanner.Scan() {
-		out := scanner.Text()
-		if verbose {
-			fmt.Println("addIBCChannel: " + out)
-		}
-		if out == "done!!!!!!!!" {
-			break
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
+	executeCommand(cmd, "addChannel")
 }
 
 type transferChannelCompleteAction struct {
@@ -858,7 +796,8 @@ func executeCommand(cmd *exec.Cmd, cmdName string) {
 }
 
 type relayPacketsAction struct {
-	chain   chainID
+	chainA  chainID
+	chainB  chainID
 	port    string
 	channel uint
 }
@@ -867,11 +806,19 @@ func (tr TestRun) relayPackets(
 	action relayPacketsAction,
 	verbose bool,
 ) {
+	// find out counterparty chain for port and channel
+
+	var pathName string
+	if string(tr.chainConfigs[action.chainA].chainId) < string(tr.chainConfigs[action.chainB].chainId) {
+		pathName = string(tr.chainConfigs[action.chainA].chainId) + "-" + string(tr.chainConfigs[action.chainB].chainId)
+	} else {
+		pathName = string(tr.chainConfigs[action.chainB].chainId) + "-" + string(tr.chainConfigs[action.chainA].chainId)
+	}
+
 	// hermes clear packets ibc0 transfer channel-13
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes", "clear", "packets",
-		"--chain", string(tr.chainConfigs[action.chain].chainId),
-		"--port", action.port,
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "transact", "relay-packets",
+		pathName,
 		"--channel", "channel-"+fmt.Sprint(action.channel),
 	)
 	if verbose {
@@ -900,7 +847,7 @@ func (tr TestRun) relayRewardPacketsToProvider(
 		tr.waitBlocks(action.consumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
 	}
 
-	tr.relayPackets(relayPacketsAction{chain: action.consumerChain, port: action.port, channel: action.channel}, verbose)
+	tr.relayPackets(relayPacketsAction{chainA: action.consumerChain, chainB: action.providerChain, port: action.port, channel: action.channel}, verbose)
 	tr.waitBlocks(action.providerChain, 1, 10*time.Second)
 }
 

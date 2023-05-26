@@ -6,7 +6,7 @@ import "time"
 func stepsStartHermes() []Step {
 	return []Step{
 		{
-			action: startHermesAction{},
+			action: startGoRlyAction{},
 			state:  State{},
 		},
 	}
@@ -73,7 +73,6 @@ func stepsStopChain(consumerName string, propNumber uint) []Step {
 // the chain should not be removed
 func stepsConsumerRemovalPropNotPassing(consumerName string, propNumber uint) []Step {
 	s := []Step{
-
 		{
 			action: submitConsumerRemovalProposalAction{
 				chain:          chainID("provi"),

@@ -39,7 +39,8 @@ func stepsDowntime(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -65,7 +66,8 @@ func stepsDowntime(consumerName string) []Step {
 		// and can now be relayed as packet to consumer
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -106,7 +108,8 @@ func stepsDowntime(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -150,7 +153,8 @@ func stepsDowntime(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -188,7 +192,8 @@ func stepsDowntime(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -261,7 +266,8 @@ func stepsThrottledDowntime(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -323,7 +329,8 @@ func stepsThrottledDowntime(consumerName string) []Step {
 		// and can now be relayed as packet to consumer
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},

@@ -35,7 +35,7 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 			state: State{
 				chainID(consumerName): ChainState{
-					//Check that delegators on gov-consumer chain can change representative powers
+					// Check that delegators on gov-consumer chain can change representative powers
 					RepresentativePowers: &map[validatorID]uint{
 						validatorID("alice"): 100500000,
 						validatorID("bob"):   40000000,
@@ -46,7 +46,7 @@ func stepsDemocracy(consumerName string) []Step {
 						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
-					//Check that tokens are minted and distributed to representatives and their delegators
+					// Check that tokens are minted and distributed to representatives and their delegators
 					Rewards: &Rewards{
 						IsRewarded: map[validatorID]bool{
 							validatorID("alice"): true,
@@ -87,7 +87,7 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-			//Have accounts vote on something on the gov-consumer chain
+			// Have accounts vote on something on the gov-consumer chain
 			action: voteGovProposalAction{
 				chain:      chainID(consumerName),
 				from:       []validatorID{validatorID("alice"), validatorID("bob")},
@@ -100,7 +100,7 @@ func stepsDemocracy(consumerName string) []Step {
 						validatorID("alice"): 9899999999,
 						validatorID("bob"):   9960000001,
 					},
-					//Check that the parameter is changed on gov-consumer chain
+					// Check that the parameter is changed on gov-consumer chain
 					Params: &([]Param{{Subspace: "staking", Key: "MaxValidators", Value: "105"}}),
 				},
 			},
@@ -114,7 +114,7 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 			state: State{
 				chainID("provi"): ChainState{
-					//Check that tokens are minted and sent to provider chain and distributed to validators and their delegators on provider chain
+					// Check that tokens are minted and sent to provider chain and distributed to validators and their delegators on provider chain
 					Rewards: &Rewards{
 						IsRewarded: map[validatorID]bool{
 							validatorID("alice"): true,
@@ -152,7 +152,8 @@ func stepsDemocracy(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -178,7 +179,8 @@ func stepsDemocracy(consumerName string) []Step {
 		// and can now be relayed as packet to consumer
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -217,7 +219,8 @@ func stepsDemocracy(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -228,7 +231,7 @@ func stepsDemocracy(consumerName string) []Step {
 						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
-					//Check that slashing on the gov-consumer chain does not result in slashing for the representatives or their delegators
+					// Check that slashing on the gov-consumer chain does not result in slashing for the representatives or their delegators
 					RepresentativePowers: &map[validatorID]uint{
 						validatorID("alice"): 100500000,
 						validatorID("bob"):   40000000,
