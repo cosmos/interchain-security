@@ -105,7 +105,7 @@ message GlobalSlashEntry {
   // This field is used to obtain validator power in HandleThrottleQueues.
   // 
   // This field is not used in the store key, but is persisted in value bytes, see QueueGlobalSlashEntry.
-  ProviderConsAddress provider_val_cons_addr = 4;
+  bytes provider_val_cons_addr = 4;
 }
  
 // Params defines the parameters for CCV Provider module
@@ -166,6 +166,11 @@ message ConsumerRemovalProposals {
   repeated ConsumerRemovalProposal pending = 1;
 }
 
+// AddressList contains a list of consensus addresses
+message AddressList {
+  repeated bytes addresses = 1;
+}
+
 message ChannelToChain {
   string channel_id = 1;
   string chain_id = 2;
@@ -200,29 +205,8 @@ message VscSendTimestamp {
 // Key assignment section
 //
 
-// A validator's assigned consensus address for a consumer chain. 
-// Note this type is for type safety within provider code, consumer code uses normal sdk.ConsAddress, 
-// since there's no notion of provider vs consumer address.
-message ConsumerConsAddress {
-  // Do not generate stringer for this type, we'll use sdk.ConsAddress.String() instead
-  option (gogoproto.goproto_stringer) = false;
-  bytes address = 1;
-}
-
-// A validator's consensus address on the provider chain
-message ProviderConsAddress {
-  // Do not generate stringer for this type, we'll use sdk.ConsAddress.String() instead
-  option (gogoproto.goproto_stringer) = false;
-  bytes address = 1;
-}
-
-// ConsumerAddressList contains a list of consumer consensus addresses
-message ConsumerAddressList {
-  repeated ConsumerConsAddress addresses = 1;
-}
-  
 message KeyAssignmentReplacement {
-  ProviderConsAddress provider_addr = 1;
+  bytes provider_addr = 1;
   tendermint.crypto.PublicKey prev_c_key = 2;
   int64 power = 3;
 }
@@ -231,7 +215,7 @@ message KeyAssignmentReplacement {
 // ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey tmprotocrypto.PublicKey
 message ValidatorConsumerPubKey {
   string chain_id = 1;
-  ProviderConsAddress provider_addr = 2;
+  bytes provider_addr = 2;
   tendermint.crypto.PublicKey consumer_key = 3;
 }
 
@@ -239,8 +223,8 @@ message ValidatorConsumerPubKey {
 // ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr consAddr
 message ValidatorByConsumerAddr {
   string chain_id = 1;
-  ConsumerConsAddress consumer_addr = 2;
-  ProviderConsAddress provider_addr = 3;
+  bytes consumer_addr = 2;
+  bytes provider_addr = 3;
 }
 
 // Used to serialize the ConsumerAddrsToPrune index from key assignment
@@ -248,5 +232,5 @@ message ValidatorByConsumerAddr {
 message ConsumerAddrsToPrune {
   string chain_id = 1;
   uint64 vsc_id = 2;
-  ConsumerAddressList consumer_addrs = 3;
+  AddressList consumer_addrs = 3;
 }
