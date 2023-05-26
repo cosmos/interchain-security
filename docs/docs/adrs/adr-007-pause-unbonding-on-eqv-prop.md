@@ -13,8 +13,6 @@ Proposed
 
 ## Context
 
-(Copied from [#747](https://github.com/cosmos/interchain-security/issues/747))
-
 Currently, if an equivocation slashing proposal is created after more than one
 week has passed since the equivocation, it is possible that the validator in
 question could unbond and get away without being slashed, since the unbonding
