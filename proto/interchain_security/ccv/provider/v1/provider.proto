@@ -160,15 +160,15 @@ message ConsumerAdditionProposals {
   repeated ConsumerAdditionProposal pending = 1;
 }
 
-// AddressList contains a list of consensus addresses
-message AddressList {
-  repeated bytes addresses = 1;
-}
-
 // ConsumerRemovalProposals holds pending governance proposals on the provider chain to remove (and stop) a consumer chain.
 message ConsumerRemovalProposals {
   // proposals waiting for stop_time to pass
   repeated ConsumerRemovalProposal pending = 1;
+}
+
+// AddressList contains a list of consensus addresses
+message AddressList {
+  repeated bytes addresses = 1;
 }
 
 message ChannelToChain {
