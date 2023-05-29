@@ -10,11 +10,11 @@ import (
 	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
 
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 
 	extra "github.com/oxyno-zeta/gomock-extra-matcher"
 )

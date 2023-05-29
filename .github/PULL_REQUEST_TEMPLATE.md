@@ -23,6 +23,7 @@ I have...
 
 * [ ] Included the correct [type prefix](https://github.com/commitizen/conventional-commit-types/blob/v3.0.0/index.json) in the PR title
 * [ ] Added `!` to the type prefix if API or client breaking change
+* [ ] Confirmed this PR does not introduce changes requiring state migrations, OR migration code has been added to consumer and/or provider modules
 * [ ] Targeted the correct branch (see [PR Targeting](https://github.com/cosmos/interchain-security/blob/main/CONTRIBUTING.md#pr-targeting))
 * [ ] Provided a link to the relevant issue or specification
 * [ ] Followed the guidelines for [building SDK modules](https://github.com/cosmos/cosmos-sdk/blob/main/docs/docs/building-modules)
@@ -42,7 +43,8 @@ I have...
 
 * [ ] confirmed the correct [type prefix](https://github.com/commitizen/conventional-commit-types/blob/v3.0.0/index.json) in the PR title
 * [ ] confirmed `!` in the type prefix if API or client breaking change
-* [ ] confirmed all author checklist items have been addressed 
+* [ ] confirmed this PR does not introduce changes requiring state migrations, OR confirmed migration code has been added to consumer and/or provider modules
+* [ ] confirmed all author checklist items have been addressed
 * [ ] reviewed state machine logic
 * [ ] reviewed API design and naming
 * [ ] reviewed documentation is accurate

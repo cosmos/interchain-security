@@ -5,8 +5,8 @@ import (
 	"time"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -29,7 +29,8 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 	for _, globalEntry := range allEntries {
 		// Subtract voting power that will be jailed/tombstoned from the slash meter
-		meter = meter.Sub(k.GetEffectiveValPower(ctx, *globalEntry.ProviderValConsAddr))
+		providerAddr := providertypes.NewProviderConsAddress(globalEntry.ProviderValConsAddr)
+		meter = meter.Sub(k.GetEffectiveValPower(ctx, providerAddr))
 
 		// Handle one slash and any trailing vsc matured packet data instances by passing in
 		// chainID and appropriate callbacks, relevant packet data is deleted in this method.
@@ -190,11 +191,7 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context, entry providertypes.GlobalSlashEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.GlobalSlashEntryKey(entry)
-	bz, err := entry.ProviderValConsAddr.Marshal()
-	if err != nil {
-		// This should never happen, since the provider val cons addr should be a valid sdk address
-		panic(fmt.Sprintf("failed to marshal validator consensus address: %s", err.Error()))
-	}
+	bz := entry.ProviderValConsAddr
 	store.Set(key, bz)
 }
 
@@ -228,12 +225,7 @@ func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.G
 		// MustParseGlobalSlashEntryKey should not panic, since we should be iterating over keys that're
 		// assumed to be correctly serialized in QueueGlobalSlashEntry.
 		recvTime, chainID, ibcSeqNum := providertypes.MustParseGlobalSlashEntryKey(iterator.Key())
-		valAddr := providertypes.ProviderConsAddress{}
-		err := valAddr.Unmarshal(iterator.Value())
-		if err != nil {
-			// This should never happen, provider cons address is assumed to be correctly serialized in QueueGlobalSlashEntry
-			panic(fmt.Sprintf("failed to unmarshal validator consensus address: %s", err.Error()))
-		}
+		valAddr := providertypes.NewProviderConsAddress(iterator.Value())
 		entry := providertypes.NewGlobalSlashEntry(recvTime, chainID, ibcSeqNum, valAddr)
 		entries = append(entries, entry)
 	}

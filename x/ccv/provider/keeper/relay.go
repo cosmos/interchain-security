@@ -10,8 +10,8 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // OnRecvVSCMaturedPacket handles a VSCMatured packet
@@ -194,12 +194,17 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
 				// the client cannot expire during iteration (in the middle of a block)
-				k.Logger(ctx).Debug("IBC client is expired, cannot send VSC, leaving packet data stored:", "chainID", chainID, "vscid", data.ValsetUpdateId)
+				k.Logger(ctx).Info("IBC client is expired, cannot send VSC, leaving packet data stored:", "chainID", chainID, "vscid", data.ValsetUpdateId)
 				return
 			}
-			// TODO do not panic if the send fails
-			// https://github.com/cosmos/interchain-security/issues/649
-			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
+			// Not able to send packet over IBC!
+			k.Logger(ctx).Error("cannot send VSC, removing consumer:", "chainID", chainID, "vscid", data.ValsetUpdateId, "err", err.Error())
+			// If this happens, most likely the consumer is malicious; remove it
+			err := k.StopConsumerChain(ctx, chainID, true)
+			if err != nil {
+				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+			}
+			return
 		}
 		// set the VSC send timestamp for this packet;
 		// note that the VSC send timestamp are set when the packets

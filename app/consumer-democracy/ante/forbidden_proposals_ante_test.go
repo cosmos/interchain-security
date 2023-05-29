@@ -8,8 +8,8 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	app "github.com/cosmos/interchain-security/app/consumer-democracy"
-	"github.com/cosmos/interchain-security/app/consumer-democracy/ante"
+	app "github.com/cosmos/interchain-security/v2/app/consumer-democracy"
+	"github.com/cosmos/interchain-security/v2/app/consumer-democracy/ante"
 	"github.com/stretchr/testify/require"
 )
 
