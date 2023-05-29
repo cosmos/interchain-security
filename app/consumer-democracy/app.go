@@ -117,7 +117,7 @@ import (
 
 const (
 	AppName              = "interchain-security-cd"
-	upgradeName          = "ics-v1-to-v2" // arbitrary name, define your own appropriately named upgrade
+	upgradeName          = "sovereign-changeover" // arbitrary name, define your own appropriately named upgrade
 	AccountAddressPrefix = "cosmos"
 )
 
