@@ -29,12 +29,14 @@ Pausing the unbonding period is already possible thanks to the changes in the
 - `stakingKeeper.PutUnbondingOnHold` pauses an unbonding period
 - `stakingKeeper.UnbondingCanComplete` unpauses an unbonding period
 
-These methods use a counter under the hood, which means we can use them without 
-conflicts with the *Completion of Unbonding Operations* system. Giving an
-unbonding period (already paused by definition because of the *Completion of
-Unbonding Operations* system), an additional pause will just increase the
-counter, so when this unbonding period has reached its maturity on provider
-and all consumer chains, it will remain paused.
+These methods use a reference counter under the hood, that gets incremented
+every time `PutUnbondingOnHold` is called, and decreased when
+`UnbondingCanComplete` is called instead. A specific unbonding is considered
+fully unpaused when its underlying reference counter reaches 0. Therefore, as
+long as we safeguard consistency - i.e. we make sure we eventually decrement
+the reference counter for each time we have incremented it - we can safely use
+this existing mechanism without conflicts with the *Completion of Unbonding
+Operations* system.
 
 ### When pause
 
@@ -43,8 +45,9 @@ equivocation proposal enters the voting period. For that, the `gov` module's
 hook `AfterProposalDeposit` can be used. 
 
 If the hook is triggered with a an equivocation proposal in voting period, then
-for each equivocation of the proposal, the related unbonding operations of the
-related validator must be paused.
+for each equivocation of the proposal, the unbonding operations of the related
+validator that were initiated after the equivocation block time must be paused
+- i.e. the underlying reference counter has to be increased.
 
 Note that even after the voting period has started, a proposal can receive
 additional deposits. The hook is triggered however at arrival of a deposit, so
@@ -57,7 +60,10 @@ We can use a `gov` module's hook also here and it is
 `AfterProposalVotingPeriodEnded`.
 
 If the hook is triggered with an equivocation proposal, then for each
-equivocation, unpause all unbonding operations of the related validator.
+associated equivocation, the unbonding operations of the related validator that
+were initiated between the equivocation block time and the start of the
+proposal voting period must be unpaused - i.e. decrease the underlying
+reference counter - regardless of the proposal outcome.
 
 ## Consequences
 
