@@ -66,4 +66,11 @@ var multipleConsumers = concatSteps(
 var changeoverSteps = concatSteps(
 	stepStartProviderChain(),
 	stepStartSovereignChain(),
+
+	// make some txs on sovereign (delegate)
+	// setup upgrade proposal on sovereign so it halts
+	// setup consumer launch proposal on provider
+	// copy over the sovereign state to the consumer
+	// start consumer
+	// run happy path
 )

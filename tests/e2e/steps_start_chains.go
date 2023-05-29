@@ -49,6 +49,37 @@ func stepStartSovereignChain() []Step {
 				},
 			},
 		},
+		{
+			action: delegateTokensAction{
+				chain:  chainID("sover"),
+				from:   validatorID("alice"),
+				to:     validatorID("alice"),
+				amount: 11000000,
+			},
+			state: State{
+				chainID("sover"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+					},
+				},
+			},
+		},
+		{
+			action: SendTokensAction{
+				chain:  chainID("sover"),
+				from:   validatorID("alice"),
+				to:     validatorID("bob"),
+				amount: 10000,
+			},
+			state: State{
+				chainID("sover"): ChainState{
+					ValBalances: &map[validatorID]uint{
+						validatorID("bob"): 9500010000,
+					},
+				},
+			},
+		},
 	}
 }
 
