@@ -79,22 +79,22 @@ func TestInitAndExportGenesis(t *testing.T) {
 		[]providertypes.ValidatorConsumerPubKey{
 			{
 				ChainId:      cChainIDs[0],
-				ProviderAddr: &provAddr,
+				ProviderAddr: provAddr.ToSdkConsAddr(),
 				ConsumerKey:  &consumerTmPubKey,
 			},
 		},
 		[]providertypes.ValidatorByConsumerAddr{
 			{
 				ChainId:      cChainIDs[0],
-				ProviderAddr: &provAddr,
-				ConsumerAddr: &consumerConsAddr,
+				ProviderAddr: provAddr.ToSdkConsAddr(),
+				ConsumerAddr: consumerConsAddr.ToSdkConsAddr(),
 			},
 		},
 		[]providertypes.ConsumerAddrsToPrune{
 			{
 				ChainId:       cChainIDs[0],
 				VscId:         vscID,
-				ConsumerAddrs: &providertypes.ConsumerAddressList{Addresses: []*providertypes.ConsumerConsAddress{&consumerConsAddr}},
+				ConsumerAddrs: &providertypes.AddressList{Addresses: [][]byte{consumerConsAddr.ToSdkConsAddr()}},
 			},
 		},
 	)
@@ -155,7 +155,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 
 	addrs := pk.GetConsumerAddrsToPrune(ctx, cChainIDs[0], vscID)
 	// Expect same list as what was provided in provGenesis
-	expectedAddrList := providertypes.ConsumerAddressList{Addresses: []*providertypes.ConsumerConsAddress{&consumerConsAddr}}
+	expectedAddrList := providertypes.AddressList{Addresses: [][]byte{consumerConsAddr.ToSdkConsAddr()}}
 	require.Equal(t, expectedAddrList, addrs)
 
 	// check provider chain's consumer chain states
