@@ -611,19 +611,29 @@ func (tr TestRun) addChainToRelayer(
 		rpcAddr,
 	)
 
-	bashCommand := fmt.Sprintf(`echo '%s' >> /root/%s_config.yaml`, chainConfig, chainId)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "config", "init").CombinedOutput()
+	if err != nil && !strings.Contains(string(bz), "config already exists") {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	chainConfigFileName := fmt.Sprintf("/root/%s_config.json", chainId)
+
+	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, chainConfigFileName)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
 		bashCommand).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err = exec.Command("rly", "keys", "restore", string(chainId), "default", "\"", tr.validatorConfigs[action.validator].mnemonic, "\"").CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
+	addChainCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "chains", "add", "--file", chainConfigFileName, string(chainId))
+	executeCommand(addChainCommand, "add chain")
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	keyRestoreCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "keys", "restore", string(chainId), "default", tr.validatorConfigs[action.validator].mnemonic)
+	executeCommand(keyRestoreCommand, "restore keys")
 }
 
 type addIbcConnectionAction struct {
@@ -642,23 +652,34 @@ func (tr TestRun) addIbcConnection(
 		pathName = string(tr.chainConfigs[action.chainB].chainId) + "-" + string(tr.chainConfigs[action.chainA].chainId)
 	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
+	newPathCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
 		"paths", "new",
 		string(tr.chainConfigs[action.chainA].chainId),
 		string(tr.chainConfigs[action.chainB].chainId),
 		pathName,
-	).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
+	)
 
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
+	executeCommand(newPathCommand, "new path")
+
+	newClientsCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
 		"transact", "clients",
 		pathName,
-	).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
+	)
+
+	executeCommand(newClientsCommand, "new clients")
+
+	tr.waitBlocks(action.chainA, 1, 10*time.Second)
+	tr.waitBlocks(action.chainB, 1, 10*time.Second)
+
+	newConnectionCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
+		"transact", "connection",
+		pathName,
+	)
+
+	executeCommand(newConnectionCommand, "new connection")
+
+	tr.waitBlocks(action.chainA, 1, 10*time.Second)
+	tr.waitBlocks(action.chainB, 1, 10*time.Second)
 }
 
 type addIbcChannelAction struct {
@@ -703,12 +724,13 @@ func (tr TestRun) addIbcChannel(
 	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
-		"trsnact", "channel",
+		"transact", "channel",
 		pathName,
 		"--src-port", action.portA,
 		"--dst-port", action.portB,
 		"--version", tr.containerConfig.ccvVersion,
 		"--order", action.order,
+		"--debug",
 	)
 	executeCommand(cmd, "addChannel")
 }
