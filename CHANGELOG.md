@@ -21,6 +21,7 @@ Some PRs from v2.0.0 may reappear from other releases below. This is due to the 
 
 ## PRs included in v2.0.0
 
+* (feat) v2 migrations [#975](https://github.com/cosmos/interchain-security/pull/975)
 * (deps) Bump github.com/cosmos/ibc-go/v4 from 4.4.0 to 4.4.2 [#982](https://github.com/cosmos/interchain-security/pull/982)
 * (fix) partially revert key assignment type safety PR [#980](https://github.com/cosmos/interchain-security/pull/980)
 * (fix) Remove panics on failure to send IBC packets [#876](https://github.com/cosmos/interchain-security/pull/876)
