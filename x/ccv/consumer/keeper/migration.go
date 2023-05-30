@@ -20,6 +20,17 @@ func NewMigrator(ccvConsumerKeeper Keeper, ccvConsumerParamSpace paramtypes.Subs
 	return Migrator{ccvConsumerKeeper: ccvConsumerKeeper, ccvConsumerParamSpace: ccvConsumerParamSpace}
 }
 
+// Migratev1p2p0MultidenTov2 migrates a consumer from v1.2.0-multiden to v2.0.0.
+func (m Migrator) Migratev1p2p0MultidenTov2(ctx sdk.Context) error {
+	// Note: If migrating from v1.2.0-multiden to v2.0.0, there are no migrations required.
+	// This is due to the fact that the former version includes both of:
+	// - https://github.com/cosmos/interchain-security/commit/54e9852d3c89a2513cd0170a56c6eec894fc878d
+	// - https://github.com/cosmos/interchain-security/pull/833
+	// both of which handle the introduction of new params.
+	return nil
+}
+
+// Migratev1Tov2 migrates a consumer from v1.0.0 to v2.0.0.
 func (m Migrator) Migratev1Tov2(ctx sdk.Context) error {
 	// Migrate params
 	MigrateParamsv1Tov2(ctx, m.ccvConsumerParamSpace)

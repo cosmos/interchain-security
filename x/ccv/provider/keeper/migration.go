@@ -22,6 +22,12 @@ func NewMigrator(ccvProviderKeeper Keeper, ccvProviderParamSpace paramtypes.Subs
 	return Migrator{ccvProviderKeeper: ccvProviderKeeper, ccvProviderParamSpace: ccvProviderParamSpace}
 }
 
+// Migratev1p1p0MultidenTov2 migrates a provider from v1.1.0-multiden to v2.0.0.
+func (m Migrator) Migratev1p1p0MultidenTov2(ctx sdk.Context) error {
+	return m.Migratev1Tov2(ctx) // Note same as v1.0.0 to v2.0.0
+}
+
+// Migratev1Tov2 migrates a provider from v1.0.0 to v2.0.0.
 func (m Migrator) Migratev1Tov2(ctx sdk.Context) error {
 	// Migrate params
 	MigrateParamsv1Tov2(ctx,
@@ -35,6 +41,7 @@ func (m Migrator) Migratev1Tov2(ctx sdk.Context) error {
 	// Delete select consumer genesis states for consumers that're launched
 	MigrateConsumerGenesisStatesv1Tov2(ctx, m.ccvProviderKeeper)
 
+	// Migrate keys to accommodate fix from https://github.com/cosmos/interchain-security/pull/786
 	MigrateKeysv1Tov2(ctx, m.ccvProviderKeeper)
 
 	return nil
