@@ -21,6 +21,7 @@ Some PRs from v2.0.0 may reappear from other releases below. This is due to the 
 
 ## PRs included in v2.0.0
 
+* (fix) partially revert key assignment type safety PR [#980](https://github.com/cosmos/interchain-security/pull/980)
 * (fix) Remove panics on failure to send IBC packets [#876](https://github.com/cosmos/interchain-security/pull/876)
 * (fix) consumer key prefix order to avoid complex migrations [#963](https://github.com/cosmos/interchain-security/pull/963)
 * (fix) Prevent denom DOS [#931](https://github.com/cosmos/interchain-security/pull/931)
