@@ -163,10 +163,32 @@ func TestMigrateKeysv1Tov2(t *testing.T) {
 	p = []string{"charlie", "mac", "dennis"}
 	providerKeeper.SetSlashAcks(ctx, "chain-2", p)
 
+	// Mock two clients being established with chain-1 and chain-2,
+	// This is needed for migration logic.
+	providerKeeper.SetConsumerClientId(ctx, "chain-1", "client-1")
+	providerKeeper.SetConsumerClientId(ctx, "chain-2", "client-2")
+
 	// Confirm slash logs and slash acks exist together
 	require.True(t, providerKeeper.GetSlashLogOnlyForTesting(ctx, cIds[0].SDKValConsAddress()))
 	require.True(t, providerKeeper.GetSlashLogOnlyForTesting(ctx, cIds[1].SDKValConsAddress()))
 	require.True(t, providerKeeper.GetSlashLogOnlyForTesting(ctx, cIds[2].SDKValConsAddress()))
 	require.Len(t, providerKeeper.GetSlashAcks(ctx, "chain-1"), 3)
 	require.Len(t, providerKeeper.GetSlashAcks(ctx, "chain-2"), 3)
+
+	// Run migration
+	providerkeeper.MigrateKeysv1Tov2(ctx, providerKeeper)
+
+	// Confirm slash logs cannot be found from legacy methods
+	require.False(t, providerKeeper.GetSlashLogOnlyForTesting(ctx, cIds[0].SDKValConsAddress()))
+	require.False(t, providerKeeper.GetSlashLogOnlyForTesting(ctx, cIds[1].SDKValConsAddress()))
+	require.False(t, providerKeeper.GetSlashLogOnlyForTesting(ctx, cIds[2].SDKValConsAddress()))
+
+	// Slash acks remain unchanged
+	require.Len(t, providerKeeper.GetSlashAcks(ctx, "chain-1"), 3)
+	require.Len(t, providerKeeper.GetSlashAcks(ctx, "chain-2"), 3)
+
+	// Confirm slash logs can be found from new/correct methods
+	require.True(t, providerKeeper.GetSlashLog(ctx, cIds[0].ProviderConsAddress()))
+	require.True(t, providerKeeper.GetSlashLog(ctx, cIds[1].ProviderConsAddress()))
+	require.True(t, providerKeeper.GetSlashLog(ctx, cIds[2].ProviderConsAddress()))
 }
