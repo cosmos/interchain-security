@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	types2 "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	"github.com/cosmos/interchain-security/v2/testutil/crypto"
 	testutil "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
@@ -138,8 +139,34 @@ func TestMigrateConsumerGenesisv1Tov2(t *testing.T) {
 	_, found = providerKeeper.GetConsumerGenesis(ctx, "neutron-1")
 	require.True(t, found)
 
-	providerkeeper.MigrateConsumerGenesisStates(ctx, providerKeeper)
+	providerkeeper.MigrateConsumerGenesisStatesv1Tov2(ctx, providerKeeper)
 
 	_, found = providerKeeper.GetConsumerGenesis(ctx, "neutron-1")
 	require.False(t, found)
+}
+
+func TestMigrateKeysv1Tov2(t *testing.T) {
+
+	providerKeeper, ctx, ctrl, _ := testutil.GetProviderKeeperAndCtx(t, testutil.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// First we setup a scenario that may show up in prod for v1,
+	// where both slash logs and slash acks are persisted under the same key prefix
+	cIds := crypto.GenMultipleCryptoIds(3, 349823489230)
+	providerKeeper.SetSlashLogOnlyForTesting(ctx, cIds[0].SDKValConsAddress()) // This is the old (incorrect) method of storing slash logs
+	providerKeeper.SetSlashLogOnlyForTesting(ctx, cIds[1].SDKValConsAddress())
+	providerKeeper.SetSlashLogOnlyForTesting(ctx, cIds[2].SDKValConsAddress())
+
+	// Setup slash acks
+	p := []string{"alice", "bob", "frank"}
+	providerKeeper.SetSlashAcks(ctx, "chain-1", p)
+	p = []string{"charlie", "mac", "dennis"}
+	providerKeeper.SetSlashAcks(ctx, "chain-2", p)
+
+	// Confirm slash logs and slash acks exist together
+	require.True(t, providerKeeper.GetSlashLogOnlyForTesting(ctx, cIds[0].SDKValConsAddress()))
+	require.True(t, providerKeeper.GetSlashLogOnlyForTesting(ctx, cIds[1].SDKValConsAddress()))
+	require.True(t, providerKeeper.GetSlashLogOnlyForTesting(ctx, cIds[2].SDKValConsAddress()))
+	require.Len(t, providerKeeper.GetSlashAcks(ctx, "chain-1"), 3)
+	require.Len(t, providerKeeper.GetSlashAcks(ctx, "chain-2"), 3)
 }
