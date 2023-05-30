@@ -261,7 +261,7 @@ type GlobalSlashEntry struct {
 	// This field is used to obtain validator power in HandleThrottleQueues.
 	//
 	// This field is not used in the store key, but is persisted in value bytes, see QueueGlobalSlashEntry.
-	ProviderValConsAddr *ProviderConsAddress `protobuf:"bytes,4,opt,name=provider_val_cons_addr,json=providerValConsAddr,proto3" json:"provider_val_cons_addr,omitempty"`
+	ProviderValConsAddr []byte `protobuf:"bytes,4,opt,name=provider_val_cons_addr,json=providerValConsAddr,proto3" json:"provider_val_cons_addr,omitempty"`
 }
 
 func (m *GlobalSlashEntry) Reset()         { *m = GlobalSlashEntry{} }
@@ -318,7 +318,7 @@ func (m *GlobalSlashEntry) GetIbcSeqNum() uint64 {
 	return 0
 }
 
-func (m *GlobalSlashEntry) GetProviderValConsAddr() *ProviderConsAddress {
+func (m *GlobalSlashEntry) GetProviderValConsAddr() []byte {
 	if m != nil {
 		return m.ProviderValConsAddr
 	}
@@ -591,6 +591,51 @@ func (m *ConsumerAdditionProposals) GetPending() []*ConsumerAdditionProposal {
 	return nil
 }
 
+// AddressList contains a list of consensus addresses
+type AddressList struct {
+	Addresses [][]byte `protobuf:"bytes,1,rep,name=addresses,proto3" json:"addresses,omitempty"`
+}
+
+func (m *AddressList) Reset()         { *m = AddressList{} }
+func (m *AddressList) String() string { return proto.CompactTextString(m) }
+func (*AddressList) ProtoMessage()    {}
+func (*AddressList) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f22ec409a72b7b72, []int{8}
+}
+func (m *AddressList) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *AddressList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_AddressList.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *AddressList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AddressList.Merge(m, src)
+}
+func (m *AddressList) XXX_Size() int {
+	return m.Size()
+}
+func (m *AddressList) XXX_DiscardUnknown() {
+	xxx_messageInfo_AddressList.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AddressList proto.InternalMessageInfo
+
+func (m *AddressList) GetAddresses() [][]byte {
+	if m != nil {
+		return m.Addresses
+	}
+	return nil
+}
+
 // ConsumerRemovalProposals holds pending governance proposals on the provider chain to remove (and stop) a consumer chain.
 type ConsumerRemovalProposals struct {
 	// proposals waiting for stop_time to pass
@@ -601,7 +646,7 @@ func (m *ConsumerRemovalProposals) Reset()         { *m = ConsumerRemovalProposa
 func (m *ConsumerRemovalProposals) String() string { return proto.CompactTextString(m) }
 func (*ConsumerRemovalProposals) ProtoMessage()    {}
 func (*ConsumerRemovalProposals) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{8}
+	return fileDescriptor_f22ec409a72b7b72, []int{9}
 }
 func (m *ConsumerRemovalProposals) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -646,7 +691,7 @@ func (m *ChannelToChain) Reset()         { *m = ChannelToChain{} }
 func (m *ChannelToChain) String() string { return proto.CompactTextString(m) }
 func (*ChannelToChain) ProtoMessage()    {}
 func (*ChannelToChain) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{9}
+	return fileDescriptor_f22ec409a72b7b72, []int{10}
 }
 func (m *ChannelToChain) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -700,7 +745,7 @@ func (m *VscUnbondingOps) Reset()         { *m = VscUnbondingOps{} }
 func (m *VscUnbondingOps) String() string { return proto.CompactTextString(m) }
 func (*VscUnbondingOps) ProtoMessage()    {}
 func (*VscUnbondingOps) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{10}
+	return fileDescriptor_f22ec409a72b7b72, []int{11}
 }
 func (m *VscUnbondingOps) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -755,7 +800,7 @@ func (m *UnbondingOp) Reset()         { *m = UnbondingOp{} }
 func (m *UnbondingOp) String() string { return proto.CompactTextString(m) }
 func (*UnbondingOp) ProtoMessage()    {}
 func (*UnbondingOp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{11}
+	return fileDescriptor_f22ec409a72b7b72, []int{12}
 }
 func (m *UnbondingOp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -807,7 +852,7 @@ func (m *InitTimeoutTimestamp) Reset()         { *m = InitTimeoutTimestamp{} }
 func (m *InitTimeoutTimestamp) String() string { return proto.CompactTextString(m) }
 func (*InitTimeoutTimestamp) ProtoMessage()    {}
 func (*InitTimeoutTimestamp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{12}
+	return fileDescriptor_f22ec409a72b7b72, []int{13}
 }
 func (m *InitTimeoutTimestamp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -859,7 +904,7 @@ func (m *VscSendTimestamp) Reset()         { *m = VscSendTimestamp{} }
 func (m *VscSendTimestamp) String() string { return proto.CompactTextString(m) }
 func (*VscSendTimestamp) ProtoMessage()    {}
 func (*VscSendTimestamp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{13}
+	return fileDescriptor_f22ec409a72b7b72, []int{14}
 }
 func (m *VscSendTimestamp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -902,152 +947,17 @@ func (m *VscSendTimestamp) GetTimestamp() time.Time {
 	return time.Time{}
 }
 
-// A validator's assigned consensus address for a consumer chain.
-// Note this type is for type safety within provider code, consumer code uses normal sdk.ConsAddress,
-// since there's no notion of provider vs consumer address.
-type ConsumerConsAddress struct {
-	Address []byte `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-}
-
-func (m *ConsumerConsAddress) Reset()      { *m = ConsumerConsAddress{} }
-func (*ConsumerConsAddress) ProtoMessage() {}
-func (*ConsumerConsAddress) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{14}
-}
-func (m *ConsumerConsAddress) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ConsumerConsAddress) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ConsumerConsAddress.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ConsumerConsAddress) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ConsumerConsAddress.Merge(m, src)
-}
-func (m *ConsumerConsAddress) XXX_Size() int {
-	return m.Size()
-}
-func (m *ConsumerConsAddress) XXX_DiscardUnknown() {
-	xxx_messageInfo_ConsumerConsAddress.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ConsumerConsAddress proto.InternalMessageInfo
-
-func (m *ConsumerConsAddress) GetAddress() []byte {
-	if m != nil {
-		return m.Address
-	}
-	return nil
-}
-
-// A validator's consensus address on the provider chain
-type ProviderConsAddress struct {
-	Address []byte `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-}
-
-func (m *ProviderConsAddress) Reset()      { *m = ProviderConsAddress{} }
-func (*ProviderConsAddress) ProtoMessage() {}
-func (*ProviderConsAddress) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{15}
-}
-func (m *ProviderConsAddress) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ProviderConsAddress) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ProviderConsAddress.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ProviderConsAddress) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ProviderConsAddress.Merge(m, src)
-}
-func (m *ProviderConsAddress) XXX_Size() int {
-	return m.Size()
-}
-func (m *ProviderConsAddress) XXX_DiscardUnknown() {
-	xxx_messageInfo_ProviderConsAddress.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ProviderConsAddress proto.InternalMessageInfo
-
-func (m *ProviderConsAddress) GetAddress() []byte {
-	if m != nil {
-		return m.Address
-	}
-	return nil
-}
-
-// ConsumerAddressList contains a list of consumer consensus addresses
-type ConsumerAddressList struct {
-	Addresses []*ConsumerConsAddress `protobuf:"bytes,1,rep,name=addresses,proto3" json:"addresses,omitempty"`
-}
-
-func (m *ConsumerAddressList) Reset()         { *m = ConsumerAddressList{} }
-func (m *ConsumerAddressList) String() string { return proto.CompactTextString(m) }
-func (*ConsumerAddressList) ProtoMessage()    {}
-func (*ConsumerAddressList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{16}
-}
-func (m *ConsumerAddressList) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ConsumerAddressList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ConsumerAddressList.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ConsumerAddressList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ConsumerAddressList.Merge(m, src)
-}
-func (m *ConsumerAddressList) XXX_Size() int {
-	return m.Size()
-}
-func (m *ConsumerAddressList) XXX_DiscardUnknown() {
-	xxx_messageInfo_ConsumerAddressList.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ConsumerAddressList proto.InternalMessageInfo
-
-func (m *ConsumerAddressList) GetAddresses() []*ConsumerConsAddress {
-	if m != nil {
-		return m.Addresses
-	}
-	return nil
-}
-
 type KeyAssignmentReplacement struct {
-	ProviderAddr *ProviderConsAddress `protobuf:"bytes,1,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty"`
-	PrevCKey     *crypto.PublicKey    `protobuf:"bytes,2,opt,name=prev_c_key,json=prevCKey,proto3" json:"prev_c_key,omitempty"`
-	Power        int64                `protobuf:"varint,3,opt,name=power,proto3" json:"power,omitempty"`
+	ProviderAddr []byte            `protobuf:"bytes,1,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty"`
+	PrevCKey     *crypto.PublicKey `protobuf:"bytes,2,opt,name=prev_c_key,json=prevCKey,proto3" json:"prev_c_key,omitempty"`
+	Power        int64             `protobuf:"varint,3,opt,name=power,proto3" json:"power,omitempty"`
 }
 
 func (m *KeyAssignmentReplacement) Reset()         { *m = KeyAssignmentReplacement{} }
 func (m *KeyAssignmentReplacement) String() string { return proto.CompactTextString(m) }
 func (*KeyAssignmentReplacement) ProtoMessage()    {}
 func (*KeyAssignmentReplacement) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{17}
+	return fileDescriptor_f22ec409a72b7b72, []int{15}
 }
 func (m *KeyAssignmentReplacement) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1076,7 +986,7 @@ func (m *KeyAssignmentReplacement) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_KeyAssignmentReplacement proto.InternalMessageInfo
 
-func (m *KeyAssignmentReplacement) GetProviderAddr() *ProviderConsAddress {
+func (m *KeyAssignmentReplacement) GetProviderAddr() []byte {
 	if m != nil {
 		return m.ProviderAddr
 	}
@@ -1100,16 +1010,16 @@ func (m *KeyAssignmentReplacement) GetPower() int64 {
 // Used to serialize the ValidatorConsumerPubKey index from key assignment
 // ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey tmprotocrypto.PublicKey
 type ValidatorConsumerPubKey struct {
-	ChainId      string               `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	ProviderAddr *ProviderConsAddress `protobuf:"bytes,2,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty"`
-	ConsumerKey  *crypto.PublicKey    `protobuf:"bytes,3,opt,name=consumer_key,json=consumerKey,proto3" json:"consumer_key,omitempty"`
+	ChainId      string            `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	ProviderAddr []byte            `protobuf:"bytes,2,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty"`
+	ConsumerKey  *crypto.PublicKey `protobuf:"bytes,3,opt,name=consumer_key,json=consumerKey,proto3" json:"consumer_key,omitempty"`
 }
 
 func (m *ValidatorConsumerPubKey) Reset()         { *m = ValidatorConsumerPubKey{} }
 func (m *ValidatorConsumerPubKey) String() string { return proto.CompactTextString(m) }
 func (*ValidatorConsumerPubKey) ProtoMessage()    {}
 func (*ValidatorConsumerPubKey) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{18}
+	return fileDescriptor_f22ec409a72b7b72, []int{16}
 }
 func (m *ValidatorConsumerPubKey) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1145,7 +1055,7 @@ func (m *ValidatorConsumerPubKey) GetChainId() string {
 	return ""
 }
 
-func (m *ValidatorConsumerPubKey) GetProviderAddr() *ProviderConsAddress {
+func (m *ValidatorConsumerPubKey) GetProviderAddr() []byte {
 	if m != nil {
 		return m.ProviderAddr
 	}
@@ -1162,16 +1072,16 @@ func (m *ValidatorConsumerPubKey) GetConsumerKey() *crypto.PublicKey {
 // Used to serialize the ValidatorConsumerAddr index from key assignment
 // ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr consAddr
 type ValidatorByConsumerAddr struct {
-	ChainId      string               `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	ConsumerAddr *ConsumerConsAddress `protobuf:"bytes,2,opt,name=consumer_addr,json=consumerAddr,proto3" json:"consumer_addr,omitempty"`
-	ProviderAddr *ProviderConsAddress `protobuf:"bytes,3,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty"`
+	ChainId      string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	ConsumerAddr []byte `protobuf:"bytes,2,opt,name=consumer_addr,json=consumerAddr,proto3" json:"consumer_addr,omitempty"`
+	ProviderAddr []byte `protobuf:"bytes,3,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty"`
 }
 
 func (m *ValidatorByConsumerAddr) Reset()         { *m = ValidatorByConsumerAddr{} }
 func (m *ValidatorByConsumerAddr) String() string { return proto.CompactTextString(m) }
 func (*ValidatorByConsumerAddr) ProtoMessage()    {}
 func (*ValidatorByConsumerAddr) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{19}
+	return fileDescriptor_f22ec409a72b7b72, []int{17}
 }
 func (m *ValidatorByConsumerAddr) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1207,14 +1117,14 @@ func (m *ValidatorByConsumerAddr) GetChainId() string {
 	return ""
 }
 
-func (m *ValidatorByConsumerAddr) GetConsumerAddr() *ConsumerConsAddress {
+func (m *ValidatorByConsumerAddr) GetConsumerAddr() []byte {
 	if m != nil {
 		return m.ConsumerAddr
 	}
 	return nil
 }
 
-func (m *ValidatorByConsumerAddr) GetProviderAddr() *ProviderConsAddress {
+func (m *ValidatorByConsumerAddr) GetProviderAddr() []byte {
 	if m != nil {
 		return m.ProviderAddr
 	}
@@ -1224,16 +1134,16 @@ func (m *ValidatorByConsumerAddr) GetProviderAddr() *ProviderConsAddress {
 // Used to serialize the ConsumerAddrsToPrune index from key assignment
 // ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrs AddressList
 type ConsumerAddrsToPrune struct {
-	ChainId       string               `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	VscId         uint64               `protobuf:"varint,2,opt,name=vsc_id,json=vscId,proto3" json:"vsc_id,omitempty"`
-	ConsumerAddrs *ConsumerAddressList `protobuf:"bytes,3,opt,name=consumer_addrs,json=consumerAddrs,proto3" json:"consumer_addrs,omitempty"`
+	ChainId       string       `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	VscId         uint64       `protobuf:"varint,2,opt,name=vsc_id,json=vscId,proto3" json:"vsc_id,omitempty"`
+	ConsumerAddrs *AddressList `protobuf:"bytes,3,opt,name=consumer_addrs,json=consumerAddrs,proto3" json:"consumer_addrs,omitempty"`
 }
 
 func (m *ConsumerAddrsToPrune) Reset()         { *m = ConsumerAddrsToPrune{} }
 func (m *ConsumerAddrsToPrune) String() string { return proto.CompactTextString(m) }
 func (*ConsumerAddrsToPrune) ProtoMessage()    {}
 func (*ConsumerAddrsToPrune) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{20}
+	return fileDescriptor_f22ec409a72b7b72, []int{18}
 }
 func (m *ConsumerAddrsToPrune) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1276,7 +1186,7 @@ func (m *ConsumerAddrsToPrune) GetVscId() uint64 {
 	return 0
 }
 
-func (m *ConsumerAddrsToPrune) GetConsumerAddrs() *ConsumerAddressList {
+func (m *ConsumerAddrsToPrune) GetConsumerAddrs() *AddressList {
 	if m != nil {
 		return m.ConsumerAddrs
 	}
@@ -1292,15 +1202,13 @@ func init() {
 	proto.RegisterType((*HandshakeMetadata)(nil), "interchain_security.ccv.provider.v1.HandshakeMetadata")
 	proto.RegisterType((*SlashAcks)(nil), "interchain_security.ccv.provider.v1.SlashAcks")
 	proto.RegisterType((*ConsumerAdditionProposals)(nil), "interchain_security.ccv.provider.v1.ConsumerAdditionProposals")
+	proto.RegisterType((*AddressList)(nil), "interchain_security.ccv.provider.v1.AddressList")
 	proto.RegisterType((*ConsumerRemovalProposals)(nil), "interchain_security.ccv.provider.v1.ConsumerRemovalProposals")
 	proto.RegisterType((*ChannelToChain)(nil), "interchain_security.ccv.provider.v1.ChannelToChain")
 	proto.RegisterType((*VscUnbondingOps)(nil), "interchain_security.ccv.provider.v1.VscUnbondingOps")
 	proto.RegisterType((*UnbondingOp)(nil), "interchain_security.ccv.provider.v1.UnbondingOp")
 	proto.RegisterType((*InitTimeoutTimestamp)(nil), "interchain_security.ccv.provider.v1.InitTimeoutTimestamp")
 	proto.RegisterType((*VscSendTimestamp)(nil), "interchain_security.ccv.provider.v1.VscSendTimestamp")
-	proto.RegisterType((*ConsumerConsAddress)(nil), "interchain_security.ccv.provider.v1.ConsumerConsAddress")
-	proto.RegisterType((*ProviderConsAddress)(nil), "interchain_security.ccv.provider.v1.ProviderConsAddress")
-	proto.RegisterType((*ConsumerAddressList)(nil), "interchain_security.ccv.provider.v1.ConsumerAddressList")
 	proto.RegisterType((*KeyAssignmentReplacement)(nil), "interchain_security.ccv.provider.v1.KeyAssignmentReplacement")
 	proto.RegisterType((*ValidatorConsumerPubKey)(nil), "interchain_security.ccv.provider.v1.ValidatorConsumerPubKey")
 	proto.RegisterType((*ValidatorByConsumerAddr)(nil), "interchain_security.ccv.provider.v1.ValidatorByConsumerAddr")
@@ -1312,110 +1220,106 @@ func init() {
 }
 
 var fileDescriptor_f22ec409a72b7b72 = []byte{
-	// 1635 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x58, 0x4f, 0x6f, 0x1b, 0xc7,
-	0x15, 0xd7, 0x8a, 0xd4, 0x1f, 0x0e, 0xf5, 0xc7, 0x5e, 0xc9, 0x31, 0xe5, 0xaa, 0x14, 0xb3, 0x6d,
-	0x03, 0x15, 0x45, 0x96, 0x90, 0x82, 0x00, 0x81, 0xd1, 0x20, 0x90, 0xe8, 0x38, 0x56, 0xd5, 0xc4,
-	0xcc, 0x4a, 0x55, 0xd0, 0x16, 0xc5, 0x62, 0x76, 0xf6, 0x99, 0x1c, 0x68, 0x77, 0x67, 0x3d, 0x33,
-	0xbb, 0x36, 0xbf, 0x41, 0x8f, 0x01, 0x7a, 0x09, 0xd0, 0x4b, 0x2e, 0x3d, 0xf4, 0xd4, 0xaf, 0x11,
-	0xa0, 0x97, 0x1c, 0x7a, 0xe8, 0x29, 0x2d, 0xe4, 0x43, 0xef, 0xfd, 0x04, 0xc5, 0xcc, 0xfe, 0x25,
-	0x2d, 0x27, 0x14, 0xec, 0xde, 0x76, 0xde, 0xbc, 0xf7, 0x9b, 0xf7, 0xde, 0xbc, 0xf7, 0x7b, 0x43,
-	0xa2, 0x43, 0x1a, 0x49, 0xe0, 0x64, 0x8c, 0x69, 0xe4, 0x0a, 0x20, 0x09, 0xa7, 0x72, 0xd2, 0x27,
-	0x24, 0xed, 0xc7, 0x9c, 0xa5, 0xd4, 0x07, 0xde, 0x4f, 0x0f, 0xca, 0x6f, 0x3b, 0xe6, 0x4c, 0x32,
-	0xf3, 0x27, 0xd7, 0xd8, 0xd8, 0x84, 0xa4, 0x76, 0xa9, 0x97, 0x1e, 0xdc, 0xdb, 0x1e, 0xb1, 0x11,
-	0xd3, 0xfa, 0x7d, 0xf5, 0x95, 0x99, 0xde, 0xdb, 0x1b, 0x31, 0x36, 0x0a, 0xa0, 0xaf, 0x57, 0x5e,
-	0xf2, 0xa4, 0x2f, 0x69, 0x08, 0x42, 0xe2, 0x30, 0xce, 0x15, 0xba, 0xb3, 0x0a, 0x7e, 0xc2, 0xb1,
-	0xa4, 0x2c, 0x2a, 0x00, 0xa8, 0x47, 0xfa, 0x84, 0x71, 0xe8, 0x93, 0x80, 0x42, 0x24, 0x95, 0x7b,
-	0xd9, 0x57, 0xae, 0xd0, 0x57, 0x0a, 0x01, 0x1d, 0x8d, 0x65, 0x26, 0x16, 0x7d, 0x09, 0x91, 0x0f,
-	0x3c, 0xa4, 0x99, 0x72, 0xb5, 0xca, 0x0d, 0x76, 0x6b, 0xfb, 0x84, 0x4f, 0x62, 0xc9, 0xfa, 0x97,
-	0x30, 0x11, 0xf9, 0xee, 0x3b, 0x84, 0x89, 0x90, 0x89, 0x3e, 0xa8, 0xc0, 0x22, 0x02, 0xfd, 0xf4,
-	0xc0, 0x03, 0x89, 0x0f, 0x4a, 0x41, 0xe1, 0x77, 0xae, 0xe7, 0x61, 0x51, 0xe9, 0x10, 0x46, 0x73,
-	0xbf, 0xad, 0x3f, 0x2d, 0xa3, 0xce, 0x80, 0x45, 0x22, 0x09, 0x81, 0x1f, 0xf9, 0x3e, 0x55, 0x21,
-	0x0d, 0x39, 0x8b, 0x99, 0xc0, 0x81, 0xb9, 0x8d, 0x96, 0x24, 0x95, 0x01, 0x74, 0x8c, 0x9e, 0xb1,
-	0xdf, 0x72, 0xb2, 0x85, 0xd9, 0x43, 0x6d, 0x1f, 0x04, 0xe1, 0x34, 0x56, 0xca, 0x9d, 0x45, 0xbd,
-	0x57, 0x17, 0x99, 0x3b, 0x68, 0x35, 0xbb, 0x05, 0xea, 0x77, 0x1a, 0x7a, 0x7b, 0x45, 0xaf, 0x4f,
-	0x7c, 0xf3, 0x13, 0xb4, 0x41, 0x23, 0x2a, 0x29, 0x0e, 0xdc, 0x31, 0xa8, 0x6c, 0x74, 0x9a, 0x3d,
-	0x63, 0xbf, 0x7d, 0x78, 0xcf, 0xa6, 0x1e, 0xb1, 0x55, 0x02, 0xed, 0x3c, 0x6d, 0xe9, 0x81, 0xfd,
-	0x48, 0x6b, 0x1c, 0x37, 0xbf, 0xf9, 0x6e, 0x6f, 0xc1, 0x59, 0xcf, 0xed, 0x32, 0xa1, 0xf9, 0x36,
-	0x5a, 0x1b, 0x41, 0x04, 0x82, 0x0a, 0x77, 0x8c, 0xc5, 0xb8, 0xb3, 0xd4, 0x33, 0xf6, 0xd7, 0x9c,
-	0x76, 0x2e, 0x7b, 0x84, 0xc5, 0xd8, 0xdc, 0x43, 0x6d, 0x8f, 0x46, 0x98, 0x4f, 0x32, 0x8d, 0x65,
-	0xad, 0x81, 0x32, 0x91, 0x56, 0x18, 0x20, 0x24, 0x62, 0xfc, 0x2c, 0x72, 0xd5, 0x6d, 0x77, 0x56,
-	0x72, 0x47, 0xb2, 0x9b, 0xb6, 0x8b, 0x9b, 0xb6, 0xcf, 0x8b, 0x52, 0x38, 0x5e, 0x55, 0x8e, 0x7c,
-	0xf9, 0xaf, 0x3d, 0xc3, 0x69, 0x69, 0x3b, 0xb5, 0x63, 0x7e, 0x86, 0x6e, 0x25, 0x91, 0xc7, 0x22,
-	0x9f, 0x46, 0x23, 0x37, 0x06, 0x4e, 0x99, 0xdf, 0x59, 0xd5, 0x50, 0x3b, 0x2f, 0x41, 0x3d, 0xc8,
-	0x8b, 0x26, 0x43, 0xfa, 0x4a, 0x21, 0x6d, 0x96, 0xc6, 0x43, 0x6d, 0x6b, 0x7e, 0x8e, 0x4c, 0x42,
-	0x52, 0xed, 0x12, 0x4b, 0x64, 0x81, 0xd8, 0x9a, 0x1f, 0xf1, 0x16, 0x21, 0xe9, 0x79, 0x66, 0x9d,
-	0x43, 0xfe, 0x1e, 0xdd, 0x95, 0x1c, 0x47, 0xe2, 0x09, 0xf0, 0x59, 0x5c, 0x34, 0x3f, 0xee, 0x9d,
-	0x02, 0x63, 0x1a, 0xfc, 0x11, 0xea, 0x91, 0xbc, 0x80, 0x5c, 0x0e, 0x3e, 0x15, 0x92, 0x53, 0x2f,
-	0x51, 0xb6, 0xee, 0x13, 0x8e, 0x89, 0xae, 0x91, 0xb6, 0x2e, 0x82, 0x6e, 0xa1, 0xe7, 0x4c, 0xa9,
-	0x3d, 0xcc, 0xb5, 0xcc, 0xc7, 0xe8, 0xa7, 0x5e, 0xc0, 0xc8, 0xa5, 0x50, 0xce, 0xb9, 0x53, 0x48,
-	0xfa, 0xe8, 0x90, 0x0a, 0xa1, 0xd0, 0xd6, 0x7a, 0xc6, 0x7e, 0xc3, 0x79, 0x3b, 0xd3, 0x1d, 0x02,
-	0x7f, 0x50, 0xd3, 0x3c, 0xaf, 0x29, 0x9a, 0xef, 0x22, 0x73, 0x4c, 0x85, 0x64, 0x9c, 0x12, 0x1c,
-	0xb8, 0x10, 0x49, 0x4e, 0x41, 0x74, 0xd6, 0xb5, 0xf9, 0xed, 0x6a, 0xe7, 0xe3, 0x6c, 0xe3, 0xfe,
-	0xea, 0x1f, 0xbf, 0xde, 0x5b, 0xf8, 0xea, 0xeb, 0xbd, 0x05, 0xeb, 0x6f, 0x06, 0xba, 0x3b, 0x28,
-	0x9d, 0x0d, 0x59, 0x8a, 0x83, 0xff, 0x67, 0x53, 0x1c, 0xa1, 0x96, 0x90, 0x2c, 0xce, 0xca, 0xb0,
-	0x79, 0x83, 0x32, 0x5c, 0x55, 0x66, 0x6a, 0xc3, 0xfa, 0xb3, 0x81, 0xb6, 0x3f, 0x7e, 0x9a, 0xd0,
-	0x94, 0x11, 0xfc, 0x46, 0x7a, 0xf8, 0x14, 0xad, 0x43, 0x0d, 0x4f, 0x74, 0x1a, 0xbd, 0xc6, 0x7e,
-	0xfb, 0xf0, 0x67, 0x76, 0x46, 0x28, 0x76, 0xc9, 0x33, 0x39, 0xa9, 0xd8, 0xf5, 0xd3, 0x9d, 0x69,
-	0x5b, 0xeb, 0x2f, 0x8b, 0xe8, 0xd6, 0x27, 0x01, 0xf3, 0x70, 0x70, 0x16, 0x60, 0x31, 0x56, 0x09,
-	0x9f, 0xa8, 0xa8, 0x39, 0xe4, 0x95, 0xae, 0xbd, 0x9b, 0x3b, 0x6a, 0x65, 0xa6, 0x7b, 0xef, 0x23,
-	0x74, 0xbb, 0xac, 0xbd, 0x32, 0xb9, 0x3a, 0x98, 0xe3, 0xad, 0xab, 0xef, 0xf6, 0x36, 0x8b, 0x3b,
-	0x1c, 0xe8, 0x44, 0x3f, 0x70, 0x36, 0xc9, 0x94, 0xc0, 0x37, 0xbb, 0xa8, 0x4d, 0x3d, 0xe2, 0x0a,
-	0x78, 0xea, 0x46, 0x49, 0xa8, 0xef, 0xa5, 0xe9, 0xb4, 0xa8, 0x47, 0xce, 0xe0, 0xe9, 0x67, 0x49,
-	0x68, 0x86, 0xe8, 0xad, 0x62, 0x78, 0xb8, 0x29, 0x0e, 0x5c, 0x65, 0xef, 0x62, 0xdf, 0xe7, 0xf9,
-	0x35, 0x7d, 0x60, 0xcf, 0x31, 0x73, 0xec, 0x61, 0xfe, 0xad, 0xdc, 0x39, 0xf2, 0x7d, 0x0e, 0x42,
-	0x38, 0x5b, 0x85, 0xc2, 0x05, 0x0e, 0x0a, 0xb9, 0xf5, 0x9f, 0x25, 0xb4, 0x3c, 0xc4, 0x1c, 0x87,
-	0xc2, 0x3c, 0x47, 0x9b, 0x12, 0xc2, 0x38, 0xc0, 0x12, 0xdc, 0x8c, 0x11, 0xf3, 0x1c, 0xfd, 0x42,
-	0x33, 0x65, 0x7d, 0x92, 0xd8, 0xb5, 0xd9, 0x91, 0x1e, 0xd8, 0x03, 0x2d, 0x3d, 0x93, 0x58, 0x82,
-	0xb3, 0x51, 0x60, 0x64, 0x42, 0xf3, 0x03, 0xd4, 0x91, 0x3c, 0x11, 0xb2, 0xe2, 0xaa, 0xaa, 0x49,
-	0xb3, 0x22, 0x78, 0xab, 0xd8, 0xcf, 0xda, 0xbb, 0x6c, 0xce, 0xeb, 0x69, 0xa9, 0xf1, 0x3a, 0xb4,
-	0x74, 0x86, 0xb6, 0x14, 0xa7, 0xcf, 0x62, 0x36, 0xe7, 0xc7, 0xbc, 0xad, 0xec, 0xa7, 0x41, 0x3f,
-	0x47, 0x66, 0x2a, 0xc8, 0x2c, 0xe6, 0xd2, 0x0d, 0xfc, 0x4c, 0x05, 0x99, 0x86, 0xf4, 0xd1, 0xae,
-	0x50, 0x65, 0xeb, 0x86, 0x20, 0x35, 0xc9, 0xc5, 0x01, 0x44, 0x54, 0x8c, 0x0b, 0xf0, 0xe5, 0xf9,
-	0xc1, 0x77, 0x34, 0xd0, 0xa7, 0x0a, 0xc7, 0x29, 0x60, 0xf2, 0x53, 0x06, 0xa8, 0x7b, 0xfd, 0x29,
-	0xe5, 0x05, 0xad, 0xe8, 0x0b, 0xfa, 0xd1, 0x35, 0x10, 0xe5, 0x2d, 0x1d, 0xa2, 0x3b, 0x21, 0x7e,
-	0xee, 0xca, 0x31, 0x67, 0x52, 0x06, 0xe0, 0xbb, 0x31, 0x26, 0x97, 0x20, 0x85, 0x9e, 0x48, 0x0d,
-	0x67, 0x2b, 0xc4, 0xcf, 0xcf, 0x8b, 0xbd, 0x61, 0xb6, 0x65, 0x0a, 0xf4, 0x4e, 0x8d, 0xc0, 0x9f,
-	0x61, 0xee, 0xbb, 0x3e, 0x44, 0x2c, 0x74, 0x39, 0x8c, 0x14, 0xb3, 0xe2, 0x8c, 0xcb, 0x01, 0xca,
-	0x21, 0x94, 0x53, 0x80, 0x7a, 0x53, 0x94, 0xed, 0x3f, 0x60, 0x34, 0xca, 0x27, 0xb5, 0x55, 0xf1,
-	0xbc, 0x42, 0x7b, 0xa0, 0xc0, 0x9c, 0x1a, 0xd6, 0x43, 0x00, 0xcb, 0x43, 0xb7, 0x1f, 0xe1, 0xc8,
-	0x17, 0x63, 0x7c, 0x09, 0x9f, 0x82, 0xc4, 0x3e, 0x96, 0xd8, 0x7c, 0xaf, 0xd6, 0x6d, 0x4f, 0x00,
-	0xdc, 0x98, 0xb1, 0x20, 0xeb, 0xb6, 0x8c, 0xbc, 0xca, 0x9e, 0x79, 0x08, 0x30, 0x64, 0x2c, 0x50,
-	0x3d, 0x63, 0x76, 0xd0, 0x4a, 0x0a, 0x5c, 0x54, 0x15, 0x5c, 0x2c, 0xad, 0x9f, 0xa3, 0x96, 0xa6,
-	0x9b, 0x23, 0x72, 0x29, 0xcc, 0x5d, 0xd4, 0xc2, 0x59, 0xeb, 0x81, 0xe8, 0x18, 0xbd, 0xc6, 0x7e,
-	0xcb, 0xa9, 0x04, 0x96, 0x44, 0x3b, 0xaf, 0x7a, 0x05, 0x09, 0xf3, 0x0b, 0xb4, 0x12, 0x83, 0x1e,
-	0xd1, 0xda, 0xb0, 0x7d, 0xf8, 0xe1, 0x5c, 0x5d, 0xff, 0x2a, 0x40, 0xa7, 0x40, 0xb3, 0x78, 0xf5,
-	0xf6, 0x9a, 0x99, 0x32, 0xc2, 0xbc, 0x98, 0x3d, 0xf4, 0x97, 0x37, 0x3a, 0x74, 0x06, 0xaf, 0x3a,
-	0xf3, 0x57, 0x68, 0x63, 0x30, 0xc6, 0x51, 0x04, 0xc1, 0x39, 0xd3, 0x2c, 0x68, 0xfe, 0x18, 0x21,
-	0x92, 0x49, 0x14, 0x7b, 0x66, 0x99, 0x6e, 0xe5, 0x92, 0x13, 0x7f, 0x6a, 0x6e, 0x2d, 0x4e, 0xcd,
-	0x2d, 0xcb, 0x41, 0x9b, 0x17, 0x82, 0xfc, 0xa6, 0x78, 0xc0, 0x3c, 0x8e, 0x85, 0x79, 0x07, 0x2d,
-	0xab, 0xf6, 0xcb, 0x81, 0x9a, 0xce, 0x52, 0x2a, 0xc8, 0x89, 0x6f, 0xee, 0xd7, 0x1f, 0x49, 0x2c,
-	0x76, 0xa9, 0x2f, 0x3a, 0x8b, 0xbd, 0xc6, 0x7e, 0xd3, 0xd9, 0x48, 0x2a, 0xf3, 0x13, 0x5f, 0x58,
-	0xbf, 0x45, 0xed, 0x1a, 0xa0, 0xb9, 0x81, 0x16, 0x4b, 0xac, 0x45, 0xea, 0x9b, 0xf7, 0xd1, 0x4e,
-	0x05, 0x34, 0xcd, 0xfd, 0x19, 0x62, 0xcb, 0xb9, 0x5b, 0x2a, 0x4c, 0xd1, 0xbf, 0xb0, 0x1e, 0xa3,
-	0xed, 0x93, 0x8a, 0x2f, 0xca, 0xc9, 0x32, 0x15, 0xa1, 0x31, 0x3d, 0x99, 0x77, 0x51, 0xab, 0xfc,
-	0x25, 0xa0, 0xa3, 0x6f, 0x3a, 0x95, 0xc0, 0x0a, 0xd1, 0xad, 0x0b, 0x41, 0xce, 0x20, 0xf2, 0x2b,
-	0xb0, 0x57, 0x24, 0xe0, 0x78, 0x16, 0x68, 0xee, 0x97, 0x66, 0x75, 0xdc, 0xfb, 0x68, 0xab, 0x8c,
-	0xa8, 0x9a, 0x24, 0xaa, 0x01, 0xf2, 0x42, 0xd6, 0x47, 0xae, 0x39, 0xc5, 0xf2, 0x7e, 0x53, 0x3f,
-	0x66, 0xde, 0x47, 0x5b, 0xd7, 0x0c, 0xa0, 0x1f, 0x34, 0x0b, 0xab, 0xd3, 0x72, 0x93, 0x5f, 0x53,
-	0x21, 0xcd, 0x8b, 0xd9, 0x3e, 0x9a, 0x77, 0x08, 0x5e, 0xe3, 0x7a, 0xbd, 0x03, 0xff, 0x6e, 0xa0,
-	0xce, 0x29, 0x4c, 0x8e, 0x84, 0xa0, 0xa3, 0x28, 0x84, 0x48, 0x2a, 0x72, 0xc3, 0x04, 0xd4, 0xa7,
-	0xf9, 0x07, 0xb4, 0x5e, 0x12, 0x43, 0xc9, 0x07, 0xaf, 0x33, 0x7d, 0xd7, 0x0a, 0x05, 0x4d, 0x21,
-	0xf7, 0x11, 0x8a, 0x39, 0xa4, 0x2e, 0x71, 0x2f, 0x61, 0x92, 0xdf, 0xce, 0x6e, 0x7d, 0xaa, 0x66,
-	0xbf, 0xbf, 0xec, 0x61, 0xe2, 0x05, 0x94, 0x9c, 0xc2, 0xc4, 0x59, 0x55, 0xfa, 0x83, 0x53, 0x98,
-	0xa8, 0xf7, 0x55, 0xcc, 0x9e, 0x01, 0xd7, 0xa3, 0xb0, 0xe1, 0x64, 0x0b, 0xeb, 0x1f, 0x06, 0xba,
-	0x7b, 0x81, 0x03, 0xea, 0x63, 0xc9, 0x78, 0x11, 0xf9, 0x30, 0xf1, 0x94, 0xc5, 0xf7, 0x94, 0xdb,
-	0x4b, 0x71, 0x2e, 0xbe, 0xd1, 0x38, 0x3f, 0x42, 0x6b, 0x65, 0xcb, 0xa8, 0x48, 0x1b, 0x73, 0x44,
-	0xda, 0x2e, 0x2c, 0x4e, 0x61, 0x62, 0xfd, 0xb7, 0x1e, 0xd6, 0xf1, 0xa4, 0x5e, 0x1f, 0x3f, 0x10,
-	0x56, 0x79, 0xee, 0x8d, 0xc3, 0xba, 0xae, 0x6e, 0xca, 0x30, 0xf4, 0xc9, 0x2f, 0x65, 0xad, 0xf1,
-	0x26, 0xb3, 0x66, 0xfd, 0xd5, 0x40, 0xdb, 0xf5, 0x48, 0xc5, 0x39, 0x1b, 0xf2, 0x24, 0x82, 0xef,
-	0x8b, 0xb8, 0x62, 0x81, 0xc5, 0x3a, 0x0b, 0xb8, 0x68, 0x63, 0x2a, 0x11, 0xe2, 0x46, 0xae, 0x5e,
-	0xd3, 0x8e, 0xce, 0x7a, 0x3d, 0x13, 0xe2, 0xf8, 0x8b, 0x6f, 0xae, 0xba, 0xc6, 0xb7, 0x57, 0x5d,
-	0xe3, 0xdf, 0x57, 0x5d, 0xe3, 0xcb, 0x17, 0xdd, 0x85, 0x6f, 0x5f, 0x74, 0x17, 0xfe, 0xf9, 0xa2,
-	0xbb, 0xf0, 0xbb, 0x0f, 0x47, 0x54, 0x8e, 0x13, 0xcf, 0x26, 0x2c, 0xec, 0xe7, 0xff, 0x09, 0x54,
-	0x67, 0xbe, 0x5b, 0xfe, 0xc5, 0x92, 0x1e, 0xf6, 0x9f, 0x4f, 0xff, 0xcf, 0x22, 0x27, 0x31, 0x08,
-	0x6f, 0x59, 0x93, 0xd4, 0x7b, 0xff, 0x0b, 0x00, 0x00, 0xff, 0xff, 0xe3, 0xe8, 0xf1, 0x4f, 0x98,
-	0x11, 0x00, 0x00,
+	// 1576 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x57, 0x4b, 0x73, 0x1c, 0x47,
+	0x1d, 0xd7, 0x68, 0xf5, 0xda, 0x5e, 0x3d, 0xec, 0xb1, 0x1c, 0xaf, 0x8c, 0x58, 0x6d, 0x26, 0x90,
+	0x12, 0x95, 0xca, 0x2c, 0x52, 0x2e, 0x94, 0x8b, 0x54, 0x4a, 0x5a, 0xc7, 0xb1, 0x10, 0x89, 0x37,
+	0x23, 0x21, 0x17, 0x70, 0x98, 0xea, 0xe9, 0xf9, 0x7b, 0xb7, 0x4b, 0x33, 0xd3, 0xe3, 0xee, 0x9e,
+	0xb1, 0xf7, 0xc2, 0x99, 0x63, 0x28, 0x2e, 0x29, 0xb8, 0x84, 0x4f, 0xc0, 0xd7, 0xc8, 0x31, 0x47,
+	0x4e, 0x81, 0x92, 0x0f, 0x1c, 0xf8, 0x12, 0x54, 0xf7, 0xbc, 0x57, 0xb2, 0x59, 0x17, 0x70, 0x9b,
+	0xfe, 0x3f, 0x7e, 0xfd, 0xeb, 0xfe, 0xbf, 0x7a, 0xd0, 0x21, 0x8d, 0x24, 0x70, 0x32, 0xc1, 0x34,
+	0x72, 0x05, 0x90, 0x84, 0x53, 0x39, 0x1d, 0x10, 0x92, 0x0e, 0x62, 0xce, 0x52, 0xea, 0x03, 0x1f,
+	0xa4, 0x07, 0xe5, 0xb7, 0x1d, 0x73, 0x26, 0x99, 0xf9, 0xde, 0x0d, 0x3e, 0x36, 0x21, 0xa9, 0x5d,
+	0xda, 0xa5, 0x07, 0xf7, 0xb7, 0xc7, 0x6c, 0xcc, 0xb4, 0xfd, 0x40, 0x7d, 0x65, 0xae, 0xf7, 0xf7,
+	0xc6, 0x8c, 0x8d, 0x03, 0x18, 0xe8, 0x95, 0x97, 0x3c, 0x1b, 0x48, 0x1a, 0x82, 0x90, 0x38, 0x8c,
+	0x73, 0x83, 0xde, 0xac, 0x81, 0x9f, 0x70, 0x2c, 0x29, 0x8b, 0x0a, 0x00, 0xea, 0x91, 0x01, 0x61,
+	0x1c, 0x06, 0x24, 0xa0, 0x10, 0x49, 0x45, 0x2f, 0xfb, 0xca, 0x0d, 0x06, 0xca, 0x20, 0xa0, 0xe3,
+	0x89, 0xcc, 0xc4, 0x62, 0x20, 0x21, 0xf2, 0x81, 0x87, 0x34, 0x33, 0xae, 0x56, 0xb9, 0xc3, 0x6e,
+	0x4d, 0x4f, 0xf8, 0x34, 0x96, 0x6c, 0x70, 0x09, 0x53, 0x91, 0x6b, 0xdf, 0x27, 0x4c, 0x84, 0x4c,
+	0x0c, 0x40, 0x1d, 0x2c, 0x22, 0x30, 0x48, 0x0f, 0x3c, 0x90, 0xf8, 0xa0, 0x14, 0x14, 0xbc, 0x73,
+	0x3b, 0x0f, 0x8b, 0xca, 0x86, 0x30, 0x9a, 0xf3, 0xb6, 0xfe, 0xb8, 0x82, 0xba, 0x43, 0x16, 0x89,
+	0x24, 0x04, 0x7e, 0xe4, 0xfb, 0x54, 0x1d, 0x69, 0xc4, 0x59, 0xcc, 0x04, 0x0e, 0xcc, 0x6d, 0xb4,
+	0x2c, 0xa9, 0x0c, 0xa0, 0x6b, 0xf4, 0x8d, 0xfd, 0xb6, 0x93, 0x2d, 0xcc, 0x3e, 0xea, 0xf8, 0x20,
+	0x08, 0xa7, 0xb1, 0x32, 0xee, 0x2e, 0x6a, 0x5d, 0x5d, 0x64, 0xee, 0xa0, 0xb5, 0x2c, 0x0a, 0xd4,
+	0xef, 0xb6, 0xb4, 0x7a, 0x55, 0xaf, 0x4f, 0x7c, 0xf3, 0x33, 0xb4, 0x49, 0x23, 0x2a, 0x29, 0x0e,
+	0xdc, 0x09, 0xa8, 0xdb, 0xe8, 0x2e, 0xf5, 0x8d, 0xfd, 0xce, 0xe1, 0x7d, 0x9b, 0x7a, 0xc4, 0x56,
+	0x17, 0x68, 0xe7, 0xd7, 0x96, 0x1e, 0xd8, 0x8f, 0xb5, 0xc5, 0xf1, 0xd2, 0xb7, 0xdf, 0xef, 0x2d,
+	0x38, 0x1b, 0xb9, 0x5f, 0x26, 0x34, 0xdf, 0x45, 0xeb, 0x63, 0x88, 0x40, 0x50, 0xe1, 0x4e, 0xb0,
+	0x98, 0x74, 0x97, 0xfb, 0xc6, 0xfe, 0xba, 0xd3, 0xc9, 0x65, 0x8f, 0xb1, 0x98, 0x98, 0x7b, 0xa8,
+	0xe3, 0xd1, 0x08, 0xf3, 0x69, 0x66, 0xb1, 0xa2, 0x2d, 0x50, 0x26, 0xd2, 0x06, 0x43, 0x84, 0x44,
+	0x8c, 0x5f, 0x44, 0xae, 0x8a, 0x76, 0x77, 0x35, 0x27, 0x92, 0x45, 0xda, 0x2e, 0x22, 0x6d, 0x9f,
+	0x17, 0xa9, 0x70, 0xbc, 0xa6, 0x88, 0x7c, 0xf5, 0xf7, 0x3d, 0xc3, 0x69, 0x6b, 0x3f, 0xa5, 0x31,
+	0xbf, 0x40, 0xb7, 0x92, 0xc8, 0x63, 0x91, 0x4f, 0xa3, 0xb1, 0x1b, 0x03, 0xa7, 0xcc, 0xef, 0xae,
+	0x69, 0xa8, 0x9d, 0x6b, 0x50, 0x0f, 0xf3, 0xa4, 0xc9, 0x90, 0xbe, 0x56, 0x48, 0x5b, 0xa5, 0xf3,
+	0x48, 0xfb, 0x9a, 0x5f, 0x22, 0x93, 0x90, 0x54, 0x53, 0x62, 0x89, 0x2c, 0x10, 0xdb, 0xf3, 0x23,
+	0xde, 0x22, 0x24, 0x3d, 0xcf, 0xbc, 0x73, 0xc8, 0xdf, 0xa2, 0x7b, 0x92, 0xe3, 0x48, 0x3c, 0x03,
+	0x3e, 0x8b, 0x8b, 0xe6, 0xc7, 0xbd, 0x5b, 0x60, 0x34, 0xc1, 0x1f, 0xa3, 0x3e, 0xc9, 0x13, 0xc8,
+	0xe5, 0xe0, 0x53, 0x21, 0x39, 0xf5, 0x12, 0xe5, 0xeb, 0x3e, 0xe3, 0x98, 0xe8, 0x1c, 0xe9, 0xe8,
+	0x24, 0xe8, 0x15, 0x76, 0x4e, 0xc3, 0xec, 0x51, 0x6e, 0x65, 0x3e, 0x41, 0x3f, 0xf2, 0x02, 0x46,
+	0x2e, 0x85, 0x22, 0xe7, 0x36, 0x90, 0xf4, 0xd6, 0x21, 0x15, 0x42, 0xa1, 0xad, 0xf7, 0x8d, 0xfd,
+	0x96, 0xf3, 0x6e, 0x66, 0x3b, 0x02, 0xfe, 0xb0, 0x66, 0x79, 0x5e, 0x33, 0x34, 0x3f, 0x44, 0xe6,
+	0x84, 0x0a, 0xc9, 0x38, 0x25, 0x38, 0x70, 0x21, 0x92, 0x9c, 0x82, 0xe8, 0x6e, 0x68, 0xf7, 0xdb,
+	0x95, 0xe6, 0xd3, 0x4c, 0xf1, 0x60, 0xed, 0xf7, 0xdf, 0xec, 0x2d, 0x7c, 0xfd, 0xcd, 0xde, 0x82,
+	0xf5, 0x57, 0x03, 0xdd, 0x1b, 0x96, 0x64, 0x43, 0x96, 0xe2, 0xe0, 0xff, 0x59, 0x14, 0x47, 0xa8,
+	0x2d, 0x24, 0x8b, 0xb3, 0x34, 0x5c, 0x7a, 0x8b, 0x34, 0x5c, 0x53, 0x6e, 0x4a, 0x61, 0xfd, 0xd9,
+	0x40, 0xdb, 0x9f, 0x3e, 0x4f, 0x68, 0xca, 0x08, 0xfe, 0x9f, 0xd4, 0xf0, 0x29, 0xda, 0x80, 0x1a,
+	0x9e, 0xe8, 0xb6, 0xfa, 0xad, 0xfd, 0xce, 0xe1, 0x8f, 0xed, 0xac, 0xa1, 0xd8, 0x65, 0x9f, 0xc9,
+	0x9b, 0x8a, 0x5d, 0xdf, 0xdd, 0x69, 0xfa, 0x5a, 0xff, 0x32, 0xd0, 0xad, 0xcf, 0x02, 0xe6, 0xe1,
+	0xe0, 0x2c, 0xc0, 0x62, 0xa2, 0x2e, 0x7c, 0xaa, 0x4e, 0xcd, 0x21, 0xcf, 0x74, 0xcd, 0x6e, 0xee,
+	0x53, 0x2b, 0x37, 0x5d, 0x7b, 0x9f, 0xa0, 0xdb, 0x65, 0xee, 0x95, 0x97, 0xab, 0x0f, 0x73, 0x7c,
+	0xe7, 0xea, 0xfb, 0xbd, 0xad, 0x22, 0x86, 0x43, 0x7d, 0xd1, 0x0f, 0x9d, 0x2d, 0xd2, 0x10, 0xf8,
+	0x66, 0x0f, 0x75, 0xa8, 0x47, 0x5c, 0x01, 0xcf, 0xdd, 0x28, 0x09, 0x75, 0x5c, 0x96, 0x9c, 0x36,
+	0xf5, 0xc8, 0x19, 0x3c, 0xff, 0x22, 0x09, 0xcd, 0x8f, 0xd0, 0x3b, 0xc5, 0xf0, 0x70, 0x53, 0x1c,
+	0xb8, 0xca, 0xdf, 0xc5, 0xbe, 0xcf, 0x75, 0x98, 0xd6, 0x9d, 0x3b, 0x85, 0xf6, 0x02, 0x07, 0x6a,
+	0xb3, 0x23, 0xdf, 0xe7, 0xd6, 0x3f, 0x97, 0xd1, 0xca, 0x08, 0x73, 0x1c, 0x0a, 0xf3, 0x1c, 0x6d,
+	0x49, 0x08, 0xe3, 0x00, 0x4b, 0x70, 0xb3, 0xbe, 0x96, 0x9f, 0xf4, 0x03, 0xdd, 0xef, 0xea, 0xf3,
+	0xc0, 0xae, 0x4d, 0x80, 0xf4, 0xc0, 0x1e, 0x6a, 0xe9, 0x99, 0xc4, 0x12, 0x9c, 0xcd, 0x02, 0x23,
+	0x13, 0x9a, 0x3f, 0x43, 0x5d, 0xc9, 0x13, 0x21, 0xab, 0x8e, 0x53, 0x95, 0x5a, 0x16, 0xca, 0x77,
+	0x0a, 0x7d, 0x56, 0xa4, 0x65, 0x89, 0xdd, 0xdc, 0x5c, 0x5a, 0xff, 0x4d, 0x73, 0x39, 0x43, 0x77,
+	0x54, 0x67, 0x9e, 0xc5, 0x5c, 0x9a, 0x1f, 0xf3, 0xb6, 0xf2, 0x6f, 0x82, 0x7e, 0x89, 0xcc, 0x54,
+	0x90, 0x59, 0xcc, 0xe5, 0xb7, 0xe0, 0x99, 0x0a, 0xd2, 0x84, 0xf4, 0xd1, 0xae, 0x50, 0xc9, 0xe7,
+	0x86, 0x20, 0x75, 0xab, 0x8a, 0x03, 0x88, 0xa8, 0x98, 0x14, 0xe0, 0x2b, 0xf3, 0x83, 0xef, 0x68,
+	0xa0, 0xcf, 0x15, 0x8e, 0x53, 0xc0, 0xe4, 0xbb, 0x0c, 0x51, 0xef, 0xe6, 0x5d, 0xca, 0x00, 0xad,
+	0xea, 0x00, 0xfd, 0xe0, 0x06, 0x88, 0x32, 0x4a, 0x87, 0xe8, 0x6e, 0x88, 0x5f, 0xba, 0x72, 0xc2,
+	0x99, 0x94, 0x01, 0xf8, 0x6e, 0x8c, 0xc9, 0x25, 0x48, 0xa1, 0xe7, 0x4a, 0xcb, 0xb9, 0x13, 0xe2,
+	0x97, 0xe7, 0x85, 0x6e, 0x94, 0xa9, 0x4c, 0x81, 0xde, 0xaf, 0xb5, 0xe1, 0x17, 0x98, 0xfb, 0xae,
+	0x0f, 0x11, 0x0b, 0x5d, 0x0e, 0x63, 0xd5, 0x1f, 0x71, 0xd6, 0x91, 0x01, 0xca, 0x51, 0x92, 0x17,
+	0xb2, 0x7a, 0x19, 0x94, 0x45, 0x3c, 0x64, 0x34, 0xca, 0xe7, 0xad, 0x55, 0x75, 0x6b, 0x85, 0xf6,
+	0x50, 0x81, 0x39, 0x35, 0xac, 0x47, 0x00, 0x96, 0x87, 0x6e, 0x3f, 0xc6, 0x91, 0x2f, 0x26, 0xf8,
+	0x12, 0x3e, 0x07, 0x89, 0x7d, 0x2c, 0x71, 0xa3, 0x66, 0x9e, 0x01, 0xb8, 0x31, 0x63, 0x41, 0x56,
+	0x33, 0x59, 0x0b, 0x2a, 0x6b, 0xe6, 0x11, 0xc0, 0x88, 0xb1, 0x40, 0xd5, 0x8c, 0xd9, 0x45, 0xab,
+	0x29, 0x70, 0x51, 0x65, 0x70, 0xb1, 0xb4, 0x7e, 0x82, 0xda, 0xba, 0x69, 0x1c, 0x91, 0x4b, 0x61,
+	0xee, 0xa2, 0xb6, 0x42, 0x02, 0x21, 0x40, 0x74, 0x8d, 0x7e, 0x6b, 0xbf, 0xed, 0x54, 0x02, 0x4b,
+	0xa2, 0x9d, 0xd7, 0xbd, 0x65, 0x84, 0xf9, 0x14, 0xad, 0xc6, 0xa0, 0x07, 0xad, 0x76, 0xec, 0x1c,
+	0x7e, 0x6c, 0xcf, 0xf1, 0x5e, 0xb4, 0x5f, 0x07, 0xe8, 0x14, 0x68, 0xd6, 0x07, 0xa8, 0x73, 0x94,
+	0x51, 0xf8, 0x25, 0x15, 0xf2, 0x3a, 0xc5, 0xf5, 0x3a, 0x45, 0x5e, 0x3d, 0xb7, 0x66, 0x06, 0x8b,
+	0x30, 0x2f, 0x66, 0x19, 0xfe, 0xfc, 0xad, 0x18, 0xce, 0xe0, 0x55, 0x04, 0x7f, 0x81, 0x36, 0x87,
+	0x13, 0x1c, 0x45, 0x10, 0x9c, 0x33, 0xdd, 0xf8, 0xcc, 0x1f, 0x22, 0x44, 0x32, 0x89, 0x6a, 0x98,
+	0x59, 0x58, 0xda, 0xb9, 0xe4, 0xc4, 0x6f, 0x8c, 0xaa, 0xc5, 0xc6, 0xa8, 0xb2, 0x1c, 0xb4, 0x75,
+	0x21, 0xc8, 0xaf, 0x8a, 0x37, 0xcb, 0x93, 0x58, 0x98, 0x77, 0xd1, 0x8a, 0xaa, 0xd5, 0x1c, 0x68,
+	0xc9, 0x59, 0x4e, 0x05, 0x39, 0xf1, 0xcd, 0xfd, 0xfa, 0xbb, 0x88, 0xc5, 0x2e, 0xf5, 0x45, 0x77,
+	0xb1, 0xdf, 0xda, 0x5f, 0x72, 0x36, 0x93, 0xca, 0xfd, 0xc4, 0x17, 0xd6, 0xaf, 0x51, 0xa7, 0x06,
+	0x68, 0x6e, 0xa2, 0xc5, 0x12, 0x6b, 0x91, 0xfa, 0xe6, 0x03, 0xb4, 0x53, 0x01, 0x35, 0xdb, 0x7d,
+	0x86, 0xd8, 0x76, 0xee, 0x95, 0x06, 0x8d, 0x8e, 0x2f, 0xac, 0x27, 0x68, 0xfb, 0xa4, 0x6a, 0x2e,
+	0xe5, 0x30, 0x69, 0x9c, 0xd0, 0x68, 0x0e, 0xe3, 0x5d, 0xd4, 0x2e, 0x1f, 0xff, 0xfa, 0xf4, 0x4b,
+	0x4e, 0x25, 0xb0, 0x42, 0x74, 0xeb, 0x42, 0x90, 0x33, 0x88, 0xfc, 0x0a, 0xec, 0x35, 0x17, 0x70,
+	0x3c, 0x0b, 0x34, 0xf7, 0xe3, 0xb2, 0xda, 0xee, 0x0f, 0x06, 0xea, 0x9e, 0xc2, 0xf4, 0x48, 0x08,
+	0x3a, 0x8e, 0x42, 0x88, 0xa4, 0x6a, 0x16, 0x98, 0x80, 0xfa, 0x34, 0xdf, 0x43, 0x1b, 0x65, 0xa1,
+	0x95, 0xf5, 0xb5, 0xee, 0xac, 0x17, 0x42, 0x5d, 0x58, 0x0f, 0x10, 0x8a, 0x39, 0xa4, 0x2e, 0x71,
+	0x2f, 0x61, 0x9a, 0xd3, 0xd8, 0xad, 0xcf, 0x9a, 0xec, 0xdf, 0xc2, 0x1e, 0x25, 0x5e, 0x40, 0xc9,
+	0x29, 0x4c, 0x9d, 0x35, 0x65, 0x3f, 0x3c, 0x85, 0xa9, 0x7a, 0x3b, 0xc4, 0xec, 0x05, 0x70, 0x3d,
+	0x20, 0x5a, 0x4e, 0xb6, 0xb0, 0xfe, 0x64, 0xa0, 0x7b, 0x17, 0x38, 0xa0, 0x3e, 0x96, 0x8c, 0x17,
+	0xf7, 0x3d, 0x4a, 0x3c, 0xe5, 0xf1, 0x86, 0x7b, 0xbd, 0xc6, 0x76, 0xf1, 0x06, 0xb6, 0x9f, 0xa0,
+	0xf5, 0x32, 0xc2, 0x8a, 0x6f, 0x6b, 0x0e, 0xbe, 0x9d, 0xc2, 0xe3, 0x14, 0xa6, 0xd6, 0xef, 0x6a,
+	0xdc, 0x8e, 0xa7, 0xb5, 0xe2, 0xe5, 0xff, 0x81, 0x5b, 0xb9, 0x6d, 0x9d, 0x1b, 0xa9, 0xfb, 0x5f,
+	0x3b, 0x40, 0xeb, 0xfa, 0x01, 0xac, 0xbf, 0x18, 0x68, 0xbb, 0xbe, 0xab, 0x38, 0x67, 0x23, 0x9e,
+	0x44, 0xf0, 0xa6, 0xdd, 0xab, 0xfc, 0x59, 0xac, 0xe7, 0xcf, 0x53, 0xb4, 0xd9, 0x20, 0x25, 0xf2,
+	0xdb, 0xf8, 0xe9, 0x5c, 0x5d, 0xa1, 0xd6, 0x92, 0x9c, 0x8d, 0xfa, 0x39, 0xc4, 0xf1, 0xd3, 0x6f,
+	0xaf, 0x7a, 0xc6, 0x77, 0x57, 0x3d, 0xe3, 0x1f, 0x57, 0x3d, 0xe3, 0xab, 0x57, 0xbd, 0x85, 0xef,
+	0x5e, 0xf5, 0x16, 0xfe, 0xf6, 0xaa, 0xb7, 0xf0, 0x9b, 0x8f, 0xc7, 0x54, 0x4e, 0x12, 0xcf, 0x26,
+	0x2c, 0x1c, 0xe4, 0x3f, 0x8e, 0xd5, 0x5e, 0x1f, 0x96, 0xff, 0xe1, 0xe9, 0xe1, 0xe0, 0x65, 0xf3,
+	0x67, 0x5c, 0x4e, 0x63, 0x10, 0xde, 0x8a, 0x4e, 0xeb, 0x8f, 0xfe, 0x1d, 0x00, 0x00, 0xff, 0xff,
+	0x40, 0xf6, 0xbb, 0xdd, 0xbd, 0x0f, 0x00, 0x00,
 }
 
 func (m *ConsumerAdditionProposal) Marshal() (dAtA []byte, err error) {
@@ -1658,15 +1562,10 @@ func (m *GlobalSlashEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.ProviderValConsAddr != nil {
-		{
-			size, err := m.ProviderValConsAddr.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintProvider(dAtA, i, uint64(size))
-		}
+	if len(m.ProviderValConsAddr) > 0 {
+		i -= len(m.ProviderValConsAddr)
+		copy(dAtA[i:], m.ProviderValConsAddr)
+		i = encodeVarintProvider(dAtA, i, uint64(len(m.ProviderValConsAddr)))
 		i--
 		dAtA[i] = 0x22
 	}
@@ -1682,12 +1581,12 @@ func (m *GlobalSlashEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	n8, err8 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.RecvTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.RecvTime):])
-	if err8 != nil {
-		return 0, err8
+	n7, err7 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.RecvTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.RecvTime):])
+	if err7 != nil {
+		return 0, err7
 	}
-	i -= n8
-	i = encodeVarintProvider(dAtA, i, uint64(n8))
+	i -= n7
+	i = encodeVarintProvider(dAtA, i, uint64(n7))
 	i--
 	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
@@ -1735,36 +1634,36 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x3a
 	}
-	n10, err10 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.SlashMeterReplenishPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.SlashMeterReplenishPeriod):])
+	n9, err9 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.SlashMeterReplenishPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.SlashMeterReplenishPeriod):])
+	if err9 != nil {
+		return 0, err9
+	}
+	i -= n9
+	i = encodeVarintProvider(dAtA, i, uint64(n9))
+	i--
+	dAtA[i] = 0x32
+	n10, err10 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.VscTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.VscTimeoutPeriod):])
 	if err10 != nil {
 		return 0, err10
 	}
 	i -= n10
 	i = encodeVarintProvider(dAtA, i, uint64(n10))
 	i--
-	dAtA[i] = 0x32
-	n11, err11 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.VscTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.VscTimeoutPeriod):])
+	dAtA[i] = 0x2a
+	n11, err11 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.InitTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.InitTimeoutPeriod):])
 	if err11 != nil {
 		return 0, err11
 	}
 	i -= n11
 	i = encodeVarintProvider(dAtA, i, uint64(n11))
 	i--
-	dAtA[i] = 0x2a
-	n12, err12 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.InitTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.InitTimeoutPeriod):])
+	dAtA[i] = 0x22
+	n12, err12 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
 	if err12 != nil {
 		return 0, err12
 	}
 	i -= n12
 	i = encodeVarintProvider(dAtA, i, uint64(n12))
-	i--
-	dAtA[i] = 0x22
-	n13, err13 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
-	if err13 != nil {
-		return 0, err13
-	}
-	i -= n13
-	i = encodeVarintProvider(dAtA, i, uint64(n13))
 	i--
 	dAtA[i] = 0x1a
 	if len(m.TrustingPeriodFraction) > 0 {
@@ -1895,6 +1794,38 @@ func (m *ConsumerAdditionProposals) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 
+func (m *AddressList) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AddressList) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AddressList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Addresses) > 0 {
+		for iNdEx := len(m.Addresses) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Addresses[iNdEx])
+			copy(dAtA[i:], m.Addresses[iNdEx])
+			i = encodeVarintProvider(dAtA, i, uint64(len(m.Addresses[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *ConsumerRemovalProposals) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1990,20 +1921,20 @@ func (m *VscUnbondingOps) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if len(m.UnbondingOpIds) > 0 {
-		dAtA16 := make([]byte, len(m.UnbondingOpIds)*10)
-		var j15 int
+		dAtA15 := make([]byte, len(m.UnbondingOpIds)*10)
+		var j14 int
 		for _, num := range m.UnbondingOpIds {
 			for num >= 1<<7 {
-				dAtA16[j15] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA15[j14] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j15++
+				j14++
 			}
-			dAtA16[j15] = uint8(num)
-			j15++
+			dAtA15[j14] = uint8(num)
+			j14++
 		}
-		i -= j15
-		copy(dAtA[i:], dAtA16[:j15])
-		i = encodeVarintProvider(dAtA, i, uint64(j15))
+		i -= j14
+		copy(dAtA[i:], dAtA15[:j14])
+		i = encodeVarintProvider(dAtA, i, uint64(j14))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -2107,115 +2038,18 @@ func (m *VscSendTimestamp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	n17, err17 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.Timestamp, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.Timestamp):])
-	if err17 != nil {
-		return 0, err17
+	n16, err16 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.Timestamp, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.Timestamp):])
+	if err16 != nil {
+		return 0, err16
 	}
-	i -= n17
-	i = encodeVarintProvider(dAtA, i, uint64(n17))
+	i -= n16
+	i = encodeVarintProvider(dAtA, i, uint64(n16))
 	i--
 	dAtA[i] = 0x12
 	if m.VscId != 0 {
 		i = encodeVarintProvider(dAtA, i, uint64(m.VscId))
 		i--
 		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ConsumerConsAddress) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ConsumerConsAddress) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ConsumerConsAddress) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Address) > 0 {
-		i -= len(m.Address)
-		copy(dAtA[i:], m.Address)
-		i = encodeVarintProvider(dAtA, i, uint64(len(m.Address)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ProviderConsAddress) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ProviderConsAddress) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ProviderConsAddress) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Address) > 0 {
-		i -= len(m.Address)
-		copy(dAtA[i:], m.Address)
-		i = encodeVarintProvider(dAtA, i, uint64(len(m.Address)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ConsumerAddressList) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ConsumerAddressList) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ConsumerAddressList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Addresses) > 0 {
-		for iNdEx := len(m.Addresses) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Addresses[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintProvider(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
 	}
 	return len(dAtA) - i, nil
 }
@@ -2257,15 +2091,10 @@ func (m *KeyAssignmentReplacement) MarshalToSizedBuffer(dAtA []byte) (int, error
 		i--
 		dAtA[i] = 0x12
 	}
-	if m.ProviderAddr != nil {
-		{
-			size, err := m.ProviderAddr.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintProvider(dAtA, i, uint64(size))
-		}
+	if len(m.ProviderAddr) > 0 {
+		i -= len(m.ProviderAddr)
+		copy(dAtA[i:], m.ProviderAddr)
+		i = encodeVarintProvider(dAtA, i, uint64(len(m.ProviderAddr)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -2304,15 +2133,10 @@ func (m *ValidatorConsumerPubKey) MarshalToSizedBuffer(dAtA []byte) (int, error)
 		i--
 		dAtA[i] = 0x1a
 	}
-	if m.ProviderAddr != nil {
-		{
-			size, err := m.ProviderAddr.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintProvider(dAtA, i, uint64(size))
-		}
+	if len(m.ProviderAddr) > 0 {
+		i -= len(m.ProviderAddr)
+		copy(dAtA[i:], m.ProviderAddr)
+		i = encodeVarintProvider(dAtA, i, uint64(len(m.ProviderAddr)))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -2346,27 +2170,17 @@ func (m *ValidatorByConsumerAddr) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	_ = i
 	var l int
 	_ = l
-	if m.ProviderAddr != nil {
-		{
-			size, err := m.ProviderAddr.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintProvider(dAtA, i, uint64(size))
-		}
+	if len(m.ProviderAddr) > 0 {
+		i -= len(m.ProviderAddr)
+		copy(dAtA[i:], m.ProviderAddr)
+		i = encodeVarintProvider(dAtA, i, uint64(len(m.ProviderAddr)))
 		i--
 		dAtA[i] = 0x1a
 	}
-	if m.ConsumerAddr != nil {
-		{
-			size, err := m.ConsumerAddr.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintProvider(dAtA, i, uint64(size))
-		}
+	if len(m.ConsumerAddr) > 0 {
+		i -= len(m.ConsumerAddr)
+		copy(dAtA[i:], m.ConsumerAddr)
+		i = encodeVarintProvider(dAtA, i, uint64(len(m.ConsumerAddr)))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -2548,8 +2362,8 @@ func (m *GlobalSlashEntry) Size() (n int) {
 	if m.IbcSeqNum != 0 {
 		n += 1 + sovProvider(uint64(m.IbcSeqNum))
 	}
-	if m.ProviderValConsAddr != nil {
-		l = m.ProviderValConsAddr.Size()
+	l = len(m.ProviderValConsAddr)
+	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
 	return n
@@ -2630,6 +2444,21 @@ func (m *ConsumerAdditionProposals) Size() (n int) {
 	if len(m.Pending) > 0 {
 		for _, e := range m.Pending {
 			l = e.Size()
+			n += 1 + l + sovProvider(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *AddressList) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Addresses) > 0 {
+		for _, b := range m.Addresses {
+			l = len(b)
 			n += 1 + l + sovProvider(uint64(l))
 		}
 	}
@@ -2735,55 +2564,14 @@ func (m *VscSendTimestamp) Size() (n int) {
 	return n
 }
 
-func (m *ConsumerConsAddress) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Address)
-	if l > 0 {
-		n += 1 + l + sovProvider(uint64(l))
-	}
-	return n
-}
-
-func (m *ProviderConsAddress) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Address)
-	if l > 0 {
-		n += 1 + l + sovProvider(uint64(l))
-	}
-	return n
-}
-
-func (m *ConsumerAddressList) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Addresses) > 0 {
-		for _, e := range m.Addresses {
-			l = e.Size()
-			n += 1 + l + sovProvider(uint64(l))
-		}
-	}
-	return n
-}
-
 func (m *KeyAssignmentReplacement) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.ProviderAddr != nil {
-		l = m.ProviderAddr.Size()
+	l = len(m.ProviderAddr)
+	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
 	if m.PrevCKey != nil {
@@ -2806,8 +2594,8 @@ func (m *ValidatorConsumerPubKey) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
-	if m.ProviderAddr != nil {
-		l = m.ProviderAddr.Size()
+	l = len(m.ProviderAddr)
+	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
 	if m.ConsumerKey != nil {
@@ -2827,12 +2615,12 @@ func (m *ValidatorByConsumerAddr) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
-	if m.ConsumerAddr != nil {
-		l = m.ConsumerAddr.Size()
+	l = len(m.ConsumerAddr)
+	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
-	if m.ProviderAddr != nil {
-		l = m.ProviderAddr.Size()
+	l = len(m.ProviderAddr)
+	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
 	return n
@@ -3757,7 +3545,7 @@ func (m *GlobalSlashEntry) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ProviderValConsAddr", wireType)
 			}
-			var msglen int
+			var byteLen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowProvider
@@ -3767,26 +3555,24 @@ func (m *GlobalSlashEntry) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				byteLen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			if byteLen < 0 {
 				return ErrInvalidLengthProvider
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + byteLen
 			if postIndex < 0 {
 				return ErrInvalidLengthProvider
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.ProviderValConsAddr = append(m.ProviderValConsAddr[:0], dAtA[iNdEx:postIndex]...)
 			if m.ProviderValConsAddr == nil {
-				m.ProviderValConsAddr = &ProviderConsAddress{}
-			}
-			if err := m.ProviderValConsAddr.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
+				m.ProviderValConsAddr = []byte{}
 			}
 			iNdEx = postIndex
 		default:
@@ -4402,6 +4188,88 @@ func (m *ConsumerAdditionProposals) Unmarshal(dAtA []byte) error {
 			if err := m.Pending[len(m.Pending)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipProvider(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthProvider
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AddressList) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowProvider
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AddressList: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AddressList: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Addresses", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProvider
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthProvider
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthProvider
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Addresses = append(m.Addresses, make([]byte, postIndex-iNdEx))
+			copy(m.Addresses[len(m.Addresses)-1], dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -5071,258 +4939,6 @@ func (m *VscSendTimestamp) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ConsumerConsAddress) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowProvider
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ConsumerConsAddress: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ConsumerConsAddress: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowProvider
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthProvider
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthProvider
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Address = append(m.Address[:0], dAtA[iNdEx:postIndex]...)
-			if m.Address == nil {
-				m.Address = []byte{}
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipProvider(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthProvider
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ProviderConsAddress) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowProvider
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ProviderConsAddress: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ProviderConsAddress: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowProvider
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthProvider
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthProvider
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Address = append(m.Address[:0], dAtA[iNdEx:postIndex]...)
-			if m.Address == nil {
-				m.Address = []byte{}
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipProvider(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthProvider
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ConsumerAddressList) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowProvider
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ConsumerAddressList: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ConsumerAddressList: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Addresses", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowProvider
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthProvider
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthProvider
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Addresses = append(m.Addresses, &ConsumerConsAddress{})
-			if err := m.Addresses[len(m.Addresses)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipProvider(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthProvider
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *KeyAssignmentReplacement) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -5356,7 +4972,7 @@ func (m *KeyAssignmentReplacement) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddr", wireType)
 			}
-			var msglen int
+			var byteLen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowProvider
@@ -5366,26 +4982,24 @@ func (m *KeyAssignmentReplacement) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				byteLen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			if byteLen < 0 {
 				return ErrInvalidLengthProvider
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + byteLen
 			if postIndex < 0 {
 				return ErrInvalidLengthProvider
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.ProviderAddr = append(m.ProviderAddr[:0], dAtA[iNdEx:postIndex]...)
 			if m.ProviderAddr == nil {
-				m.ProviderAddr = &ProviderConsAddress{}
-			}
-			if err := m.ProviderAddr.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
+				m.ProviderAddr = []byte{}
 			}
 			iNdEx = postIndex
 		case 2:
@@ -5529,7 +5143,7 @@ func (m *ValidatorConsumerPubKey) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddr", wireType)
 			}
-			var msglen int
+			var byteLen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowProvider
@@ -5539,26 +5153,24 @@ func (m *ValidatorConsumerPubKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				byteLen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			if byteLen < 0 {
 				return ErrInvalidLengthProvider
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + byteLen
 			if postIndex < 0 {
 				return ErrInvalidLengthProvider
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.ProviderAddr = append(m.ProviderAddr[:0], dAtA[iNdEx:postIndex]...)
 			if m.ProviderAddr == nil {
-				m.ProviderAddr = &ProviderConsAddress{}
-			}
-			if err := m.ProviderAddr.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
+				m.ProviderAddr = []byte{}
 			}
 			iNdEx = postIndex
 		case 3:
@@ -5683,7 +5295,7 @@ func (m *ValidatorByConsumerAddr) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerAddr", wireType)
 			}
-			var msglen int
+			var byteLen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowProvider
@@ -5693,33 +5305,31 @@ func (m *ValidatorByConsumerAddr) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				byteLen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			if byteLen < 0 {
 				return ErrInvalidLengthProvider
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + byteLen
 			if postIndex < 0 {
 				return ErrInvalidLengthProvider
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.ConsumerAddr = append(m.ConsumerAddr[:0], dAtA[iNdEx:postIndex]...)
 			if m.ConsumerAddr == nil {
-				m.ConsumerAddr = &ConsumerConsAddress{}
-			}
-			if err := m.ConsumerAddr.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
+				m.ConsumerAddr = []byte{}
 			}
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddr", wireType)
 			}
-			var msglen int
+			var byteLen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowProvider
@@ -5729,26 +5339,24 @@ func (m *ValidatorByConsumerAddr) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				byteLen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			if byteLen < 0 {
 				return ErrInvalidLengthProvider
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + byteLen
 			if postIndex < 0 {
 				return ErrInvalidLengthProvider
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.ProviderAddr = append(m.ProviderAddr[:0], dAtA[iNdEx:postIndex]...)
 			if m.ProviderAddr == nil {
-				m.ProviderAddr = &ProviderConsAddress{}
-			}
-			if err := m.ProviderAddr.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
+				m.ProviderAddr = []byte{}
 			}
 			iNdEx = postIndex
 		default:
@@ -5882,7 +5490,7 @@ func (m *ConsumerAddrsToPrune) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.ConsumerAddrs == nil {
-				m.ConsumerAddrs = &ConsumerAddressList{}
+				m.ConsumerAddrs = &AddressList{}
 			}
 			if err := m.ConsumerAddrs.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
