@@ -146,7 +146,6 @@ func TestMigrateConsumerGenesisv1Tov2(t *testing.T) {
 }
 
 func TestMigrateKeysv1Tov2(t *testing.T) {
-
 	providerKeeper, ctx, ctrl, _ := testutil.GetProviderKeeperAndCtx(t, testutil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
