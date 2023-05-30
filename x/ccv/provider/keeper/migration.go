@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
@@ -127,7 +126,7 @@ func MigrateKeysv1Tov2(ctx sdk.Context, providerKeeper Keeper) {
 	store := ctx.KVStore(providerKeeper.storeKey)
 	for _, key := range keysToMigrate {
 		keyNoPrefix := key[1:]
-		keyCorrectPrefix := append([]byte{types.SlashLogBytePrefix}, keyNoPrefix...)
+		keyCorrectPrefix := append([]byte{providertypes.SlashLogBytePrefix}, keyNoPrefix...)
 		valueBz := store.Get(key)
 		store.Set(keyCorrectPrefix, valueBz)
 		store.Delete(key)
@@ -136,7 +135,7 @@ func MigrateKeysv1Tov2(ctx sdk.Context, providerKeeper Keeper) {
 
 func (k Keeper) getAllKeysUnderSlashAcksPrefix(ctx sdk.Context) [][]byte {
 	store := ctx.KVStore(k.storeKey)
-	prefix := []byte{types.SlashAcksBytePrefix}
+	prefix := []byte{providertypes.SlashAcksBytePrefix}
 	iterator := sdk.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 	keys := [][]byte{}
@@ -152,7 +151,7 @@ func (k Keeper) getAllKeysUnderSlashAcksPrefix(ctx sdk.Context) [][]byte {
 // LEGACY METHOD USED FOR TESTING MIGRATION ONLY. DO NOT USE!
 // This method is copy/pasted from ICS v1.0.0.
 func SlashLogKeyOnlyForTesting(providerAddr sdk.ConsAddress) []byte {
-	return append([]byte{types.SlashAcksBytePrefix}, providerAddr.Bytes()...)
+	return append([]byte{providertypes.SlashAcksBytePrefix}, providerAddr.Bytes()...)
 }
 
 // LEGACY METHOD USED FOR TESTING MIGRATION ONLY. DO NOT USE!
