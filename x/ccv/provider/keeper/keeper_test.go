@@ -8,7 +8,7 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
-	ibcsimapp "github.com/cosmos/ibc-go/v7/testing/simapp"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
@@ -156,7 +156,7 @@ func TestPendingVSCs(t *testing.T) {
 	pending := providerKeeper.GetPendingVSCPackets(ctx, chainID)
 	require.Len(t, pending, 0)
 
-	pks := ibcsimapp.CreateTestPubKeys(4)
+	_, pks, _ := ibctesting.GenerateKeys(t, 4)
 	var ppks [4]tmprotocrypto.PublicKey
 	for i, pk := range pks {
 		ppks[i], _ = cryptocodec.ToTmProtoPublicKey(pk)

@@ -5,13 +5,13 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	ibcsimapp "github.com/cosmos/ibc-go/v7/testing/simapp"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAccumulateChanges(t *testing.T) {
-	testKeys := ibcsimapp.CreateTestPubKeys(2)
+	_, testKeys, _ := ibctesting.GenerateKeys(t, 2)
 
 	tmPubKey, _ := cryptocodec.ToTmProtoPublicKey(testKeys[0])
 	tmPubKey2, _ := cryptocodec.ToTmProtoPublicKey(testKeys[1])
