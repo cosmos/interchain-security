@@ -637,9 +637,27 @@ func (tr TestRun) addChainToRelayer(
 }
 
 type addIbcConnectionAction struct {
-	chainA chainID
-	chainB chainID
+	chainA  chainID
+	chainB  chainID
+	clientA uint
+	clientB uint
 }
+
+const rlyPathConfigTemplate = `{
+    "src": {
+        "chain-id": "%s",
+        "client-id": "07-tendermint-%v"
+    },
+    "dst": {
+        "chain-id": "%s",
+        "client-id": "07-tendermint-%v"
+    },
+    "src-channel-filter": {
+        "rule": "",
+        "channel-list": []
+    }
+}
+`
 
 func (tr TestRun) addIbcConnection(
 	action addIbcConnectionAction,
@@ -651,12 +669,24 @@ func (tr TestRun) addIbcConnection(
 	} else {
 		pathName = string(tr.chainConfigs[action.chainB].chainId) + "-" + string(tr.chainConfigs[action.chainA].chainId)
 	}
+
+	pathConfig := fmt.Sprintf(rlyPathConfigTemplate, action.chainA, action.clientA, action.chainB, action.clientB)
+
+	pathConfigFileName := fmt.Sprintf("/root/%s_config.json", pathName)
+
+	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, pathConfig, pathConfigFileName)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	pathConfigCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
+		bashCommand)
+	executeCommand(pathConfigCommand, "add path config")
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	newPathCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
-		"paths", "new",
+		"paths", "add",
 		string(tr.chainConfigs[action.chainA].chainId),
 		string(tr.chainConfigs[action.chainB].chainId),
 		pathName,
+		"--file", pathConfigFileName,
 	)
 
 	executeCommand(newPathCommand, "new path")
@@ -670,6 +700,10 @@ func (tr TestRun) addIbcConnection(
 
 	tr.waitBlocks(action.chainA, 1, 10*time.Second)
 	tr.waitBlocks(action.chainB, 1, 10*time.Second)
+
+	// replace the default client-id with the one expected by interchain security
+	configReplaceCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "sed", "-i", "s/client-id: 07-tendermint-1/client-id: 07-tendermint-0/g", "/root/.relayer/config/config.yaml")
+	executeCommand(configReplaceCommand, "replace default client-id")
 
 	newConnectionCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
 		"transact", "connection",

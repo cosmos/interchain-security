@@ -167,8 +167,10 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 		},
 		{
 			action: addIbcConnectionAction{
-				chainA: chainID(consumerName),
-				chainB: chainID("provi"),
+				chainA:  chainID(consumerName),
+				chainB:  chainID("provi"),
+				clientA: 0,
+				clientB: chainIndex,
 			},
 			state: State{},
 		},
