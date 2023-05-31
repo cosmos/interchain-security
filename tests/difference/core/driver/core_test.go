@@ -8,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -16,7 +15,6 @@ import (
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 
-	icstestingutil "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
@@ -187,14 +185,10 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool)
 	before := len(ctx.EventManager().Events())
 	s.consumerKeeper().SlashWithInfractionReason(ctx, val, h, 0, sdk.Dec{}, kind)
 	// consumer module emits packets on slash, so these must be collected.
-	evts := ctx.EventManager().ABCIEvents()
-	for _, e := range evts[before:] {
-		if e.Type == channeltypes.EventTypeSendPacket {
-			packet, err := icstestingutil.ReconstructPacketFromEvent(e)
-			s.Require().NoError(err)
-			s.simibc.Outboxes.AddPacket(s.chainID(C), packet)
-		}
-	}
+	evts := ctx.EventManager().Events()
+	packet, err := ibctesting.ParsePacketFromEvents(evts[before:])
+	s.Require().NoError(err)
+	s.simibc.Outboxes.AddPacket(s.chainID(C), packet)
 }
 
 func (s *CoreSuite) updateClient(chain string) {
