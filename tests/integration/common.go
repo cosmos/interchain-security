@@ -274,7 +274,8 @@ func relayAllCommittedPackets(
 // to be one day larger than the consumer unbonding period.
 func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	// Get unboding periods
-	providerUnbondingPeriod := s.providerApp.GetStakingKeeper().UnbondingTime(s.providerCtx())
+
+	providerUnbondingPeriod := s.providerApp.GetTestStakingKeeper().UnbondingTime(s.providerCtx())
 	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerCtx())
 	var jumpPeriod time.Duration
 	if chainType == Provider {

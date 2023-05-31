@@ -293,7 +293,7 @@ func (suite *CCVTestSuite) SetupTransferChannel() {
 
 func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) { //nolint:govet // this is a test so we can copy locks
 	consumerKeeper := consumerBundle.GetKeeper()
-	providerStakingKeeper := s.providerApp.GetStakingKeeper()
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 	consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(consumerBundle.GetCtx())
 	cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(),
