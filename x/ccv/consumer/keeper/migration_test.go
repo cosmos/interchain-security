@@ -39,10 +39,7 @@ func TestMigrateParamsv1Tov2(t *testing.T) {
 		storeKey,
 		memStoreKey,
 		paramtypes.ModuleName,
-	)
-
-	// Note that new param key table is set in keeper constructor
-	subspace = subspace.WithKeyTable(v1KeyTable())
+	).WithKeyTable(v1KeyTable()) // Note that new param key table is set in keeper constructor
 
 	// Set 9 params from v1.0.0
 	subspace.Set(ctx, consumertypes.KeyEnabled, true)
