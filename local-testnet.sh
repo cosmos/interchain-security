@@ -417,4 +417,10 @@ rly keys delete provider default -y || true
 rly keys restore provider default "$(cat ${LEAD_VALIDATOR_PROV_DIR}/${LEAD_VALIDATOR_MONIKER}-key.json | jq -r '.mnemonic')"
 rly keys restore consumer default "$(cat ${LEAD_VALIDATOR_CONS_DIR}/${LEAD_VALIDATOR_MONIKER}-key.json | jq -r '.mnemonic')"
 
-rly paths new provider consumer testpath
+rly paths new consumer provider testpath
+
+rly paths delete testpath
+rly paths add consumer provider testpath --file testpath.json
+rly transact clients testpath
+rly transact connection testpath
+rly transact channel testpath --src-port consumer --dst-port provider --order ordered --version 1

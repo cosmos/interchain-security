@@ -26,13 +26,22 @@ NODE_ADDRESS_BASEPORT=29200
 PPROF_LADDR_BASEPORT=29210
 CLIENT_BASEPORT=29220
 
-LOG_LEVEL=trace
+# keeps a comma separated list of node addresses for provider and consumer
+PROVIDER_NODE_LISTEN_ADDR_STR=""
+CONSUMER_NODE_LISTEN_ADDR_STR=""
 
+PROVIDER_HOME_DIRS_STR=""
+CONSUMER_HOME_DIRS_STR=""
+
+PROVIDER_COMETMOCK_ADDR=tcp://$NODE_IP:22331
+CONSUMER_COMETMOCK_ADDR=tcp://$NODE_IP:22332
 
 # Clean start
 pkill -f interchain-security-pd &> /dev/null || true
+pkill -f cometmock &> /dev/null || true
 sleep 1
 rm -rf ${PROV_NODES_ROOT_DIR}
+rm -rf ${CONS_NODES_ROOT_DIR}
 
 # Let lead validator create genesis file
 LEAD_VALIDATOR_PROV_DIR=${PROV_NODES_ROOT_DIR}/provider-${LEAD_VALIDATOR_MONIKER}
@@ -170,10 +179,14 @@ do
     GRPC_LADDR_PORT=$(($GRPC_LADDR_BASEPORT + $index))
     NODE_ADDRESS_PORT=$(($NODE_ADDRESS_BASEPORT + $index))
 
+    PROVIDER_NODE_LISTEN_ADDR_STR="${NODE_IP}:${NODE_ADDRESS_PORT},$PROVIDER_NODE_LISTEN_ADDR_STR"
+    PROVIDER_HOME_DIRS_STR="$PROV_NODE_DIR,$PROVIDER_HOME_DIRS_STR"
+
+
     # Start gaia
     interchain-security-pd start \
         --home ${PROV_NODE_DIR} \
-        --log_level ${LOG_LEVEL} \
+        --transport=grpc --with-tendermint=false \
         --p2p.persistent_peers ${PERSISTENT_PEERS} \
         --rpc.laddr tcp://${NODE_IP}:${RPC_LADDR_PORT} \
         --grpc.address ${NODE_IP}:${GRPC_LADDR_PORT} \
@@ -183,6 +196,15 @@ do
 
     sleep 5
 done
+
+# remove trailing commas
+PROVIDER_NODE_LISTEN_ADDR_STR=${PROVIDER_NODE_LISTEN_ADDR_STR::${#PROVIDER_NODE_LISTEN_ADDR_STR}-1}
+PROVIDER_HOME_DIRS_STR=${PROVIDER_HOME_DIRS_STR::${#PROVIDER_HOME_DIRS_STR}-1}
+
+echo cometmock $PROVIDER_NODE_LISTEN_ADDR_STR ${LEAD_VALIDATOR_PROV_DIR}/config/genesis.json $PROVIDER_COMETMOCK_ADDR  $PROVIDER_HOME_DIRS_STR &> ${LEAD_VALIDATOR_PROV_DIR}/cometmock_log &
+
+echo "Start cometmock, then press any key to continue"
+read -n 1 -s key
 
 # Build consumer chain proposal file
 tee ${LEAD_VALIDATOR_PROV_DIR}/consumer-proposal.json<<EOF
@@ -208,10 +230,8 @@ EOF
 
 interchain-security-pd keys show $LEAD_PROV_KEY --keyring-backend test --home ${LEAD_VALIDATOR_PROV_DIR}
 
-sleep 2
-
-# Submit consumer chain proposal
-interchain-security-pd tx gov submit-proposal consumer-addition ${LEAD_VALIDATOR_PROV_DIR}/consumer-proposal.json --chain-id provider --from $LEAD_PROV_KEY --home ${LEAD_VALIDATOR_PROV_DIR} --node $LEAD_PROV_LISTEN_ADDR  --keyring-backend test -b block -y --gas auto
+# Submit consumer chain proposal; use 100* standard gas to ensure we have enough
+interchain-security-pd tx gov submit-proposal consumer-addition ${LEAD_VALIDATOR_PROV_DIR}/consumer-proposal.json --chain-id provider --from $LEAD_PROV_KEY --home ${LEAD_VALIDATOR_PROV_DIR} --node $PROVIDER_COMETMOCK_ADDR  --keyring-backend test -b block -y --gas 20000000
 
 sleep 1
 
@@ -224,7 +244,7 @@ do
     RPC_LADDR=tcp://${NODE_IP}:${RPC_LADDR_PORT}
 
     PROV_NODE_DIR=${PROV_NODES_ROOT_DIR}/provider-${MONIKER}
-    interchain-security-pd tx gov vote 1 yes --from $PROV_KEY --chain-id provider --home ${PROV_NODE_DIR} --node $RPC_LADDR -b block -y --keyring-backend test
+    interchain-security-pd tx gov vote 1 yes --from $PROV_KEY --chain-id provider --home ${PROV_NODE_DIR} --node $PROVIDER_COMETMOCK_ADDR -b block -y --keyring-backend test
 done
 
 # sleep 3
@@ -264,13 +284,13 @@ do
     # Add stake to user
     CONS_ACCOUNT_ADDR=$(jq -r '.address' ${CONS_NODE_DIR}/${PROV_KEY}.json)
     interchain-security-cd add-genesis-account $CONS_ACCOUNT_ADDR $USER_COINS --home ${CONS_NODE_DIR}
-    sleep 10
+    sleep 4
 
     ### this probably doesnt have to be done for each node
     # Add consumer genesis states to genesis file
     RPC_LADDR_PORT=$(($RPC_LADDR_BASEPORT + $index))
     RPC_LADDR=tcp://${NODE_IP}:${RPC_LADDR_PORT}
-    interchain-security-pd query provider consumer-genesis consumer --home ${PROV_NODE_DIR} --node ${RPC_LADDR} -o json > consumer_gen.json
+    interchain-security-pd query provider consumer-genesis consumer --home ${PROV_NODE_DIR} --node $PROVIDER_COMETMOCK_ADDR -o json > consumer_gen.json
     jq -s '.[0].app_state.ccvconsumer = .[1] | .[0]' ${CONS_NODE_DIR}/config/genesis.json consumer_gen.json > ${CONS_NODE_DIR}/edited_genesis.json \
     && mv ${CONS_NODE_DIR}/edited_genesis.json ${CONS_NODE_DIR}/config/genesis.json
     rm consumer_gen.json
@@ -356,19 +376,32 @@ do
     GRPC_LADDR_PORT=$(($GRPC_LADDR_BASEPORT + ${#MONIKERS[@]} + $index))
     NODE_ADDRESS_PORT=$(($NODE_ADDRESS_BASEPORT + ${#MONIKERS[@]} + $index))
 
+    CONSUMER_NODE_LISTEN_ADDR_STR="${NODE_IP}:${NODE_ADDRESS_PORT},$CONSUMER_NODE_LISTEN_ADDR_STR"
+    CONSUMER_HOME_DIRS_STR="$CONS_NODE_DIR,$CONSUMER_HOME_DIRS_STR"
+
     # Start gaia
     interchain-security-cd start \
         --home ${CONS_NODE_DIR} \
+        --transport=grpc --with-tendermint=false \
         --p2p.persistent_peers ${PERSISTENT_PEERS} \
-        --log_level ${LOG_LEVEL} \
         --rpc.laddr tcp://${NODE_IP}:${RPC_LADDR_PORT} \
         --grpc.address ${NODE_IP}:${GRPC_LADDR_PORT} \
         --address tcp://${NODE_IP}:${NODE_ADDRESS_PORT} \
         --p2p.laddr tcp://${NODE_IP}:${P2P_LADDR_PORT} \
         --grpc-web.enable=false &> ${CONS_NODE_DIR}/logs &
 
-    sleep 6
+    sleep 1
 done
+
+# remove trailing commas
+CONSUMER_NODE_LISTEN_ADDR_STR=${CONSUMER_NODE_LISTEN_ADDR_STR::${#CONSUMER_NODE_LISTEN_ADDR_STR}-1}
+CONSUMER_HOME_DIRS_STR=${CONSUMER_HOME_DIRS_STR::${#CONSUMER_HOME_DIRS_STR}-1}
+
+echo cometmock $CONSUMER_NODE_LISTEN_ADDR_STR ${LEAD_VALIDATOR_CONS_DIR}/config/genesis.json $CONSUMER_COMETMOCK_ADDR $CONSUMER_HOME_DIRS_STR &> ${LEAD_VALIDATOR_CONS_DIR}/cometmock_log &
+echo "Start cometmock, then press any key to continue"
+read -n 1 -s key
+
+sleep 5
 
 rm -r ~/.relayer
 
@@ -376,8 +409,8 @@ rm -r ~/.relayer
 rly config init
 
 # add chains
-rly chains add --file go_rly_provider_nomock.json provider
-rly chains add --file go_rly_consumer_nomock.json consumer
+rly chains add --file go_rly_provider.json provider
+rly chains add --file go_rly_consumer.json consumer
 
 # gorelayer
 rly keys delete consumer default -y || true
