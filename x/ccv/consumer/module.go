@@ -150,7 +150,14 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 2 }
+func (AppModule) ConsensusVersion() uint64 {
+	// Note that v1.0.0 consumers should technically be on a different consensus version
+	// than v1.2.0-multiden and v2.0.0. However, Neutron was the first consumer to launch
+	// in prod, and they've started on v1.2.0-multiden (which has a ConsensusVersion of 1).
+	//
+	// v1.2.0-multiden and v2.0.0 are consensus compatible, so they need return the same ConsensusVersion of 1.
+	return 1
+}
 
 // BeginBlock implements the AppModule interface
 // Set the VSC ID for the subsequent block to the same value as the current block
