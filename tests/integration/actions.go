@@ -873,9 +873,9 @@ func (tr TestRun) relayPackets(
 
 	// rly transact relay-packets [path-name] --channel [channel-id]
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "transact", "relay-packets",
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "transact", "flush",
 		pathName,
-		"--channel", "channel-"+fmt.Sprint(action.channel),
+		"channel-"+fmt.Sprint(action.channel),
 	)
 	if verbose {
 		log.Println("relayPackets cmd:", cmd.String())
