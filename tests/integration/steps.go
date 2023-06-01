@@ -78,6 +78,16 @@ var happyPathSteps = concatSteps(
 	stepsStopChain("consu", 4),                     // stop chain
 )
 
+var cometMockHappyPath = concatSteps(
+	stepsStartChains([]string{"consu"}, false),
+	stepsDelegate("consu"),
+	stepsUnbond("consu"),
+	stepsRedelegate("consu"),
+	stepsStartRelayer(),
+	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
+	stepsStopChain("consu", 3),                     // stop chain
+)
+
 var slashThrottleSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),

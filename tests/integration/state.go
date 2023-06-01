@@ -119,7 +119,7 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 	}
 
 	if modelState.ValPowers != nil {
-		tr.waitBlocks(chain, 2, 10*time.Second)
+		tr.waitBlocks(chain, 3, 10*time.Second)
 		powers := tr.getValPowers(chain, *modelState.ValPowers)
 		chainState.ValPowers = &powers
 	}
@@ -328,14 +328,16 @@ var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
 // interchain-securityd query gov proposals
 func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+	queryCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
 
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
 
 		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
-	).CombinedOutput()
+	)
+	log.Println(queryCommand)
+	bz, err := queryCommand.CombinedOutput()
 
 	prop := TextProposal{}
 

@@ -38,7 +38,7 @@ func main() {
 	if happyPathOnly != nil && *happyPathOnly {
 		fmt.Println("=============== running happy path only ===============")
 		tr := DefaultTestRun()
-		tr.Run(simpleTestSteps, *localSdkPath, *useGaia, *gaiaTag)
+		tr.Run(cometMockHappyPath, *localSdkPath, *useGaia, *gaiaTag)
 		return
 	}
 

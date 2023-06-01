@@ -25,9 +25,9 @@ func stepsStopChain(consumerName string, propNumber uint) []Step {
 			},
 			state: State{
 				chainID("provi"): ChainState{
-					ValBalances: &map[validatorID]uint{
-						validatorID("bob"): 9489999999,
-					},
+					// ValBalances: &map[validatorID]uint{
+					// 	// validatorID("bob"): 9489999999,
+					// },
 					Proposals: &map[uint]Proposal{
 						propNumber: ConsumerRemovalProposal{
 							Deposit:  10000001,
@@ -57,9 +57,9 @@ func stepsStopChain(consumerName string, propNumber uint) []Step {
 							Status:   "PROPOSAL_STATUS_PASSED",
 						},
 					},
-					ValBalances: &map[validatorID]uint{
-						validatorID("bob"): 9500000000,
-					},
+					// ValBalances: &map[validatorID]uint{
+					// 	validatorID("bob"): 9500000000,
+					// },
 					ConsumerChains: &map[chainID]bool{}, // Consumer chain is now removed
 				},
 			},
@@ -83,9 +83,9 @@ func stepsConsumerRemovalPropNotPassing(consumerName string, propNumber uint) []
 			},
 			state: State{
 				chainID("provi"): ChainState{
-					ValBalances: &map[validatorID]uint{
-						validatorID("bob"): 9489999999,
-					},
+					// ValBalances: &map[validatorID]uint{
+					// 	// validatorID("bob"): 9489999999,
+					// },
 					Proposals: &map[uint]Proposal{
 						propNumber: ConsumerRemovalProposal{
 							Deposit:  10000001,
@@ -115,9 +115,9 @@ func stepsConsumerRemovalPropNotPassing(consumerName string, propNumber uint) []
 							Status:   "PROPOSAL_STATUS_REJECTED",
 						},
 					},
-					ValBalances: &map[validatorID]uint{
-						validatorID("bob"): 9500000000,
-					},
+					// ValBalances: &map[validatorID]uint{
+					// 	// validatorID("bob"): 9500000000,
+					// },
 					ConsumerChains: &map[chainID]bool{"consu": true}, // consumer chain not removed
 				},
 			},
