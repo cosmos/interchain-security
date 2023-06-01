@@ -82,6 +82,12 @@ func NewKeeper(
 	return k
 }
 
+// SetParamSpace sets the param space for the provider keeper.
+// Note: this is only used for testing!
+func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
+	k.paramSpace = ps
+}
+
 // Validates that the provider keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
@@ -1053,4 +1059,8 @@ func (k Keeper) GetSlashLog(
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SlashLogKey(providerAddr))
 	return bz != nil
+}
+
+func (k Keeper) BondDenom(ctx sdk.Context) string {
+	return k.stakingKeeper.BondDenom(ctx)
 }

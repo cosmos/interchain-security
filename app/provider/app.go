@@ -109,7 +109,7 @@ import (
 
 const (
 	AppName              = "interchain-security-p"
-	upgradeName          = "v07-Theta"
+	upgradeName          = "ics-v1-to-v2"
 	AccountAddressPrefix = "cosmos"
 )
 
@@ -415,7 +415,7 @@ func New(
 		authtypes.FeeCollectorName,
 	)
 
-	providerModule := ibcprovider.NewAppModule(&app.ProviderKeeper)
+	providerModule := ibcprovider.NewAppModule(&app.ProviderKeeper, app.GetSubspace(providertypes.ModuleName))
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
@@ -616,6 +616,8 @@ func New(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
+	// Note this upgrade handler is just an example and may not be exactly what you need to implement.
+	// See https://docs.cosmos.network/v0.45/building-modules/upgrade.html
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
 		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
