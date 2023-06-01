@@ -4,7 +4,11 @@
 
 Date: June 1st, 2023
 
-Unlike prior releases, the ICS v2.0.0 release will be based on the main branch. v2.0.0 will contain all the accumulated PRs from the various releases below, along with other PRs that were merged, but not released to production. After v2.0.0, we plan to revamp release practices, and how we modularize the repo for consumer/provider.
+Unlike prior releases, the ICS `v2.0.0` release will be based on the main branch. `v2.0.0` will contain all the accumulated PRs from the various releases below, along with other PRs that were merged, but not released to production. After `v2.0.0`, we plan to revamp release practices, and how we modularize the repo for consumer/provider.
+
+Upgrading a provider from `v1.1.0-multiden` to `v2.0.0` will require state migrations. See [migration.go](./x/ccv/provider/keeper/migration.go). See the provider module's `ConsensusVersion` in [module](./x/ccv/provider/module.go)
+
+Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state migrations. See the consumer module's `ConsensusVersion` in [module](./x/ccv/consumer/module.go)
 
 ### High level changes included in v2.0.0
 
