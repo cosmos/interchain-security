@@ -22,7 +22,7 @@ func NewMigrator(ccvProviderKeeper Keeper, ccvProviderParamSpace paramtypes.Subs
 	return Migrator{ccvProviderKeeper: ccvProviderKeeper, ccvProviderParamSpace: ccvProviderParamSpace}
 }
 
-// Migratev1Tov2 migrates a provider from v1.0.0 to v2.0.0.
+// Migratev1Tov2 migrates a provider from v1.0.0 to v2.0.0, and/or consensus version 1 -> 2.
 func (m Migrator) Migratev1Tov2(ctx sdk.Context) error {
 	// Migrate params
 	MigrateParamsv1Tov2(ctx,
