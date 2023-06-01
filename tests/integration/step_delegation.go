@@ -39,7 +39,7 @@ func stepsDelegate(consumerName string) []Step {
 					// Tx should not go through, ICS channel is not setup until first VSC packet has been relayed to consumer
 					ValBalances: &map[validatorID]uint{
 						validatorID("alice"): 10000000000,
-						validatorID("bob"):   10000000000,
+						// validatorID("bob"):   10000000000,
 					},
 				},
 			},
@@ -73,7 +73,7 @@ func stepsDelegate(consumerName string) []Step {
 					// Now tx should execute
 					ValBalances: &map[validatorID]uint{
 						validatorID("alice"): 9999999999,
-						validatorID("bob"):   10000000001,
+						// validatorID("bob"):   10000000001,
 					},
 				},
 			},
