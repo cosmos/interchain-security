@@ -605,7 +605,7 @@ const rlyChainConfigTemplate = `
 		"account-prefix": "cosmos",
 		"keyring-backend": "test",
 		"gas-adjustment": 1.2,
-		"gas-prices": "0.01stake",
+		"gas-prices": "0.00stake",
 		"debug": true,
 		"timeout": "20s",
 		"output-format": "json",
