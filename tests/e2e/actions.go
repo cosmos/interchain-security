@@ -132,6 +132,7 @@ func (tr TestRun) startChain(
 		// lower timeout_commit means the blocks are produced faster making the test run shorter
 		// with short timeout_commit (eg. timeout_commit = 1s) some nodes may miss blocks causing the test run to fail
 		tr.tendermintConfigOverride,
+		"false",
 	)
 
 	cmdReader, err := cmd.StdoutPipe()
