@@ -779,6 +779,7 @@ func (tr TestRun) addIbcConnectionRly(
 
 	executeCommand(newPathCommand, "new path")
 
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	newClientsCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
 		"transact", "clients",
 		pathName,
@@ -789,10 +790,7 @@ func (tr TestRun) addIbcConnectionRly(
 	tr.waitBlocks(action.chainA, 1, 10*time.Second)
 	tr.waitBlocks(action.chainB, 1, 10*time.Second)
 
-	// replace the default client-id with the one expected by interchain security
-	configReplaceCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "sed", "-i", "s/client-id: 07-tendermint-1/client-id: 07-tendermint-0/g", "/root/.relayer/config/config.yaml")
-	executeCommand(configReplaceCommand, "replace default client-id")
-
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	newConnectionCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
 		"transact", "connection",
 		pathName,
@@ -1194,6 +1192,8 @@ func (tr TestRun) delegateTokens(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chain, 1, 10*time.Second)
 }
 
 type unbondTokensAction struct {
