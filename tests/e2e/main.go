@@ -22,6 +22,8 @@ var (
 	parallel             = flag.Bool("parallel", false, "run all tests in parallel")
 	localSdkPath         = flag.String("local-sdk-path", "",
 		"path of a local sdk version to build and reference in integration tests")
+	useCometmock = flag.Bool("use-cometmock", false, "use cometmock instead of CometBFT")
+	useRly       = flag.Bool("use-rly", false, "use go relayer instead of Hermes")
 )
 
 var (
@@ -80,6 +82,8 @@ func main() {
 // Docker containers are torn down after the test run is complete.
 func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag string) {
 	tr.SetDockerConfig(localSdkPath, useGaia, gaiaTag)
+	tr.SetCometMockConfig(*useCometmock)
+	tr.SetRelayerConfig(*useRly)
 
 	tr.validateStringLiterals()
 	tr.startDocker()

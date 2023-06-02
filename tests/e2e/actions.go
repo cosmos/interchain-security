@@ -122,6 +122,13 @@ func (tr TestRun) startChain(
 		genesisChanges = chainConfig.genesisChanges
 	}
 
+	var cometmockArg string
+	if tr.useCometmock {
+		cometmockArg = "true"
+	} else {
+		cometmockArg = "false"
+	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/start-chain.sh", chainConfig.binaryName, string(vals),
@@ -132,7 +139,7 @@ func (tr TestRun) startChain(
 		// lower timeout_commit means the blocks are produced faster making the test run shorter
 		// with short timeout_commit (eg. timeout_commit = 1s) some nodes may miss blocks causing the test run to fail
 		tr.tendermintConfigOverride,
-		"false",
+		cometmockArg,
 	)
 
 	cmdReader, err := cmd.StdoutPipe()
@@ -588,7 +595,74 @@ websocket_addr = "%s"
 	numerator = "1"
 `
 
+const rlyChainConfigTemplate = `
+{
+	"type": "cosmos",
+	"value": {
+		"key": "default",
+		"chain-id": "%s",
+		"rpc-addr": "%s",
+		"account-prefix": "cosmos",
+		"keyring-backend": "test",
+		"gas-adjustment": 1.2,
+		"gas-prices": "0.01stake",
+		"debug": true,
+		"timeout": "20s",
+		"output-format": "json",
+		"sign-mode": "direct"
+	}
+}`
+
 func (tr TestRun) addChainToRelayer(
+	action addChainToRelayerAction,
+	verbose bool,
+) {
+	if !tr.useRly {
+		tr.addChainToHermes(action, verbose)
+	} else {
+		tr.addChainToRly(action, verbose)
+	}
+}
+
+func (tr TestRun) addChainToRly(
+	action addChainToRelayerAction,
+	verbose bool,
+) {
+	queryNodeIP := tr.getQueryNodeIP(action.chain)
+	chainId := tr.chainConfigs[action.chain].chainId
+	rpcAddr := "http://" + queryNodeIP + ":26658"
+
+	chainConfig := fmt.Sprintf(rlyChainConfigTemplate,
+		chainId,
+		rpcAddr,
+	)
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "config", "init").CombinedOutput()
+	if err != nil && !strings.Contains(string(bz), "config already exists") {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	chainConfigFileName := fmt.Sprintf("/root/%s_config.json", chainId)
+
+	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, chainConfigFileName)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
+		bashCommand).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	addChainCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "chains", "add", "--file", chainConfigFileName, string(chainId))
+	executeCommand(addChainCommand, "add chain")
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	keyRestoreCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "keys", "restore", string(chainId), "default", tr.validatorConfigs[action.validator].mnemonic)
+	executeCommand(keyRestoreCommand, "restore keys")
+}
+
+func (tr TestRun) addChainToHermes(
 	action addChainToRelayerAction,
 	verbose bool,
 ) {
@@ -646,7 +720,91 @@ type addIbcConnectionAction struct {
 	clientB uint
 }
 
+const rlyPathConfigTemplate = `{
+    "src": {
+        "chain-id": "%s",
+        "client-id": "07-tendermint-%v"
+    },
+    "dst": {
+        "chain-id": "%s",
+        "client-id": "07-tendermint-%v"
+    },
+    "src-channel-filter": {
+        "rule": "",
+        "channel-list": []
+    }
+}
+`
+
 func (tr TestRun) addIbcConnection(
+	action addIbcConnectionAction,
+	verbose bool,
+) {
+	if !tr.useRly {
+		tr.addIbcConnectionHermes(action, verbose)
+	} else {
+		tr.addIbcConnectionRly(action, verbose)
+	}
+}
+
+func (tr TestRun) addIbcConnectionRly(
+	action addIbcConnectionAction,
+	verbose bool,
+) {
+	var pathName string
+	if string(tr.chainConfigs[action.chainA].chainId) < string(tr.chainConfigs[action.chainB].chainId) {
+		pathName = string(tr.chainConfigs[action.chainA].chainId) + "-" + string(tr.chainConfigs[action.chainB].chainId)
+	} else {
+		pathName = string(tr.chainConfigs[action.chainB].chainId) + "-" + string(tr.chainConfigs[action.chainA].chainId)
+	}
+
+	pathConfig := fmt.Sprintf(rlyPathConfigTemplate, action.chainA, action.clientA, action.chainB, action.clientB)
+
+	pathConfigFileName := fmt.Sprintf("/root/%s_config.json", pathName)
+
+	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, pathConfig, pathConfigFileName)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	pathConfigCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
+		bashCommand)
+	executeCommand(pathConfigCommand, "add path config")
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	newPathCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
+		"paths", "add",
+		string(tr.chainConfigs[action.chainA].chainId),
+		string(tr.chainConfigs[action.chainB].chainId),
+		pathName,
+		"--file", pathConfigFileName,
+	)
+
+	executeCommand(newPathCommand, "new path")
+
+	newClientsCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
+		"transact", "clients",
+		pathName,
+	)
+
+	executeCommand(newClientsCommand, "new clients")
+
+	tr.waitBlocks(action.chainA, 1, 10*time.Second)
+	tr.waitBlocks(action.chainB, 1, 10*time.Second)
+
+	// replace the default client-id with the one expected by interchain security
+	configReplaceCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "sed", "-i", "s/client-id: 07-tendermint-1/client-id: 07-tendermint-0/g", "/root/.relayer/config/config.yaml")
+	executeCommand(configReplaceCommand, "replace default client-id")
+
+	newConnectionCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
+		"transact", "connection",
+		pathName,
+	)
+
+	executeCommand(newConnectionCommand, "new connection")
+
+	tr.waitBlocks(action.chainA, 1, 10*time.Second)
+	tr.waitBlocks(action.chainB, 1, 10*time.Second)
+}
+
+func (tr TestRun) addIbcConnectionHermes(
 	action addIbcConnectionAction,
 	verbose bool,
 ) {
@@ -718,6 +876,40 @@ func (tr TestRun) addIbcChannel(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
+	if tr.useRly {
+		tr.addIbcChannelRly(action, verbose)
+	} else {
+		tr.addIbcChannelHermes(action, verbose)
+	}
+}
+
+func (tr TestRun) addIbcChannelRly(
+	action addIbcChannelAction,
+	verbose bool,
+) {
+	var pathName string
+	if string(tr.chainConfigs[action.chainA].chainId) < string(tr.chainConfigs[action.chainB].chainId) {
+		pathName = string(tr.chainConfigs[action.chainA].chainId) + "-" + string(tr.chainConfigs[action.chainB].chainId)
+	} else {
+		pathName = string(tr.chainConfigs[action.chainB].chainId) + "-" + string(tr.chainConfigs[action.chainA].chainId)
+	}
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
+		"transact", "channel",
+		pathName,
+		"--src-port", action.portA,
+		"--dst-port", action.portB,
+		"--version", tr.containerConfig.ccvVersion,
+		"--order", action.order,
+		"--debug",
+	)
+	executeCommand(cmd, "addChannel")
+}
+
+func (tr TestRun) addIbcChannelHermes(
+	action addIbcChannelAction,
+	verbose bool,
+) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"create", "channel",
@@ -774,6 +966,10 @@ func (tr TestRun) transferChannelComplete(
 	action transferChannelCompleteAction,
 	verbose bool,
 ) {
+	if tr.useRly {
+		log.Fatal("transferChannelComplete is not implemented for rly")
+	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenTryCmd arguments.
 	chanOpenTryCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"tx", "chan-open-try",
@@ -842,7 +1038,8 @@ func executeCommand(cmd *exec.Cmd, cmdName string) {
 }
 
 type relayPacketsAction struct {
-	chain   chainID
+	chainA  chainID
+	chainB  chainID
 	port    string
 	channel uint
 }
@@ -851,10 +1048,47 @@ func (tr TestRun) relayPackets(
 	action relayPacketsAction,
 	verbose bool,
 ) {
+	if tr.useRly {
+		tr.relayPacketsRly(action, verbose)
+	} else {
+		tr.relayPacketsHermes(action, verbose)
+	}
+}
+
+func (tr TestRun) relayPacketsRly(
+	action relayPacketsAction,
+	verbose bool,
+) {
+	var pathName string
+	if string(tr.chainConfigs[action.chainA].chainId) < string(tr.chainConfigs[action.chainB].chainId) {
+		pathName = string(tr.chainConfigs[action.chainA].chainId) + "-" + string(tr.chainConfigs[action.chainB].chainId)
+	} else {
+		pathName = string(tr.chainConfigs[action.chainB].chainId) + "-" + string(tr.chainConfigs[action.chainA].chainId)
+	}
+
+	// rly transact relay-packets [path-name] --channel [channel-id]
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "transact", "flush",
+		pathName,
+		"channel-"+fmt.Sprint(action.channel),
+	)
+	if verbose {
+		log.Println("relayPackets cmd:", cmd.String())
+	}
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
+func (tr TestRun) relayPacketsHermes(
+	action relayPacketsAction,
+	verbose bool,
+) {
 	// hermes clear packets ibc0 transfer channel-13
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes", "clear", "packets",
-		"--chain", string(tr.chainConfigs[action.chain].chainId),
+		"--chain", string(tr.chainConfigs[action.chainA].chainId),
 		"--port", action.port,
 		"--channel", "channel-"+fmt.Sprint(action.channel),
 	)
@@ -867,7 +1101,7 @@ func (tr TestRun) relayPackets(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	tr.waitBlocks(action.chain, 1, 30*time.Second)
+	tr.waitBlocks(action.chainA, 1, 30*time.Second)
 }
 
 type relayRewardPacketsToProviderAction struct {
@@ -887,7 +1121,7 @@ func (tr TestRun) relayRewardPacketsToProvider(
 		tr.waitBlocks(action.consumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
 	}
 
-	tr.relayPackets(relayPacketsAction{chain: action.consumerChain, port: action.port, channel: action.channel}, verbose)
+	tr.relayPackets(relayPacketsAction{chainA: action.consumerChain, chainB: action.providerChain, port: action.port, channel: action.channel}, verbose)
 	tr.waitBlocks(action.providerChain, 1, 10*time.Second)
 }
 

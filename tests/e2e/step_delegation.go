@@ -46,7 +46,8 @@ func stepsDelegate(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -110,7 +111,8 @@ func stepsUnbond(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -160,7 +162,8 @@ func stepsRedelegateForOptOut(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -212,7 +215,8 @@ func stepsRedelegate(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},

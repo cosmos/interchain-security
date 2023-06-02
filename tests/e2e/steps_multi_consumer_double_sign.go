@@ -45,7 +45,8 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		{
 			// relay power change to consumer1
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer1),
 				port:    "provider",
 				channel: 0, // consumer1 channel
 			},
@@ -76,7 +77,8 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		{
 			// relay power change to consumer2
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer2),
 				port:    "provider",
 				channel: 1, // consumer2 channel
 			},
@@ -137,7 +139,8 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer1),
 				port:    "provider",
 				channel: 0, // consumer1 channel
 			},
@@ -168,7 +171,8 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		{
 			// consumer1 learns about the double sign
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer1),
 				port:    "provider",
 				channel: 0, // consumer1 channel
 			},
@@ -199,7 +203,8 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 		{
 			// consumer2 learns about the double sign
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer2),
 				port:    "provider",
 				channel: 1, // consumer2 channel
 			},
