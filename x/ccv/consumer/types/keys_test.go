@@ -63,7 +63,7 @@ func getAllFullyDefinedKeys() [][]byte {
 		ProviderClientIDKey(),
 		ProviderChannelKey(),
 		PendingChangesKey(),
-		PendingDataPacketsKey(),
+		// PendingDataPacketsKey() does not use duplicated prefix with value of 0x06
 		PreCCVKey(),
 		InitialValSetKey(),
 		// LastStandaloneHeightKey() is depreciated
@@ -72,7 +72,7 @@ func getAllFullyDefinedKeys() [][]byte {
 		PacketMaturityTimeKey(0, time.Time{}),
 		HeightValsetUpdateIDKey(0),
 		OutstandingDowntimeKey([]byte{}),
-		// PendingDataPacketsKey() does not use depreciated prefix
+		PendingDataPacketsKey(),
 		CrossChainValidatorKey([]byte{}),
 		InitGenesisHeightKey(),
 		StandaloneTransferChannelIDKey(),

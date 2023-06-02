@@ -173,7 +173,7 @@ func CrossChainValidatorKey(addr []byte) []byte {
 // that cannot be sent yet to the provider chain either because the CCV channel
 // is not established or because the client is expired.
 func PendingDataPacketsKey() []byte {
-	return []byte{PendingDataPacketsByteKey}
+	return []byte{PendingDataPacketsBytePrefix}
 }
 
 func PreCCVKey() []byte {
