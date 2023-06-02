@@ -1,5 +1,5 @@
 syntax = "proto3";
-package interchain_security.ccv.provider.v1;
+package interchain_security.ccv.provider.v2;
 
 option go_package = "github.com/cosmos/interchain-security/v2/x/ccv/provider/types";
 

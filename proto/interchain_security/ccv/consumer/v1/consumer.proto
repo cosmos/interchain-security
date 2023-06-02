@@ -1,5 +1,5 @@
 syntax = "proto3";
-package interchain_security.ccv.consumer.v1;
+package interchain_security.ccv.consumer.v2;
 
 import "interchain_security/ccv/v1/ccv.proto";
 
