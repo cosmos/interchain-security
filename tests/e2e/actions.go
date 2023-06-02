@@ -851,10 +851,40 @@ type addIbcChannelAction struct {
 	order       string
 }
 
-type startHermesAction struct{}
+type startRelayerAction struct{}
+
+func (tr TestRun) startRelayer(
+	action startRelayerAction,
+	verbose bool,
+) {
+	if tr.useRly {
+		tr.startRly(action, verbose)
+	} else {
+		tr.startHermes(action, verbose)
+	}
+}
+
+func (tr TestRun) startRly(
+	action startRelayerAction,
+	verbose bool,
+) {
+	// gorelayer start is running in detached mode
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", "-d", tr.containerConfig.instanceName, "rly",
+		"start",
+	)
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	if verbose {
+		fmt.Println("started gorelayer")
+	}
+}
 
 func (tr TestRun) startHermes(
-	action startHermesAction,
+	action startRelayerAction,
 	verbose bool,
 ) {
 	// hermes start is running in detached mode

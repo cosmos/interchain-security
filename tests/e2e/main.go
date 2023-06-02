@@ -146,8 +146,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.assignConsumerPubKey(action, verbose)
 	case slashThrottleDequeue:
 		tr.waitForSlashThrottleDequeue(action, verbose)
-	case startHermesAction:
-		tr.startHermes(action, verbose)
+	case startRelayerAction:
+		tr.startRelayer(action, verbose)
 	case registerConsumerRewardDenomAction:
 		tr.registerConsumerRewardDenom(action, verbose)
 	default:

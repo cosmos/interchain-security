@@ -6,7 +6,7 @@ import "time"
 func stepsStartHermes() []Step {
 	return []Step{
 		{
-			action: startHermesAction{},
+			action: startRelayerAction{},
 			state:  State{},
 		},
 	}
