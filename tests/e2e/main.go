@@ -18,6 +18,7 @@ import (
 var (
 	verbose              = flag.Bool("verbose", false, "turn verbose logging on/off")
 	happyPathOnly        = flag.Bool("happy-path-only", false, "run happy path tests only")
+	shortHappyPathOnly   = flag.Bool("short-happy-path", false, "run abridged happy path tests only - suited for CometMock+Gorelayer testing")
 	includeMultiConsumer = flag.Bool("include-multi-consumer", false, "include multiconsumer tests in run")
 	parallel             = flag.Bool("parallel", false, "run all tests in parallel")
 	localSdkPath         = flag.String("local-sdk-path", "",
@@ -36,6 +37,13 @@ var (
 // after building docker containers, all tests are run in parallel using their respective docker containers
 func main() {
 	flag.Parse()
+
+	if shortHappyPathOnly != nil && *shortHappyPathOnly {
+		fmt.Println("=============== running short happy path only ===============")
+		tr := DefaultTestRun()
+		tr.Run(shortHappyPathSteps, *localSdkPath, *useGaia, *gaiaTag)
+		return
+	}
 
 	if happyPathOnly != nil && *happyPathOnly {
 		fmt.Println("=============== running happy path only ===============")

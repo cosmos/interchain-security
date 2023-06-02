@@ -25,9 +25,20 @@ var happyPathSteps = concatSteps(
 	stepsRejectEquivocationProposal("consu", 2),   // prop to tombstone bob is rejected
 	stepsDoubleSignOnProviderAndConsumer("consu"), // carol double signs on provider, bob double signs on consumer
 	stepsSubmitEquivocationProposal("consu", 2),   // now prop to tombstone bob is submitted and accepted
-	stepsStartHermes(),
+	stepsStartRelayer(),
 	stepsConsumerRemovalPropNotPassing("consu", 3), // submit removal prop but vote no on it - chain should stay
 	stepsStopChain("consu", 4),                     // stop chain
+)
+
+var shortHappyPathSteps = concatSteps(
+	stepsStartChains([]string{"consu"}, false),
+	stepsDelegate("consu"),
+	stepsRedelegateForOptOut("consu"),
+	stepsUnbond("consu"),
+	stepsRedelegate("consu"),
+	stepsStartRelayer(),
+	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
+	stepsStopChain("consu", 3),                     // stop chain
 )
 
 var slashThrottleSteps = concatSteps(
