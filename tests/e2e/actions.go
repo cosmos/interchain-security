@@ -1236,6 +1236,8 @@ func (tr TestRun) unbondTokens(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chain, 1, 10*time.Second)
 }
 
 type redelegateTokensAction struct {
