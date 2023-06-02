@@ -466,7 +466,7 @@ func (m *ConsumerPacketDataList) GetList() []ConsumerPacketData {
 }
 
 func init() {
-	proto.RegisterEnum("interchain_security.ccv.v1.ConsumerPacketDataType", ConsumerPacketDataType_name, ConsumerPacketDataType_value)
+	// proto.RegisterEnum("interchain_security.ccv.v1.ConsumerPacketDataType", ConsumerPacketDataType_name, ConsumerPacketDataType_value)
 	proto.RegisterType((*ValidatorSetChangePacketData)(nil), "interchain_security.ccv.v1.ValidatorSetChangePacketData")
 	proto.RegisterType((*ValidatorSetChangePackets)(nil), "interchain_security.ccv.v1.ValidatorSetChangePackets")
 	proto.RegisterType((*VSCMaturedPacketData)(nil), "interchain_security.ccv.v1.VSCMaturedPacketData")
