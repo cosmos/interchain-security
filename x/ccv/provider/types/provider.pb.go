@@ -1194,25 +1194,25 @@ func (m *ConsumerAddrsToPrune) GetConsumerAddrs() *AddressList {
 }
 
 func init() {
-	proto.RegisterType((*ConsumerAdditionProposal)(nil), "interchain_security.ccv.provider.v1.ConsumerAdditionProposal")
-	proto.RegisterType((*ConsumerRemovalProposal)(nil), "interchain_security.ccv.provider.v1.ConsumerRemovalProposal")
-	proto.RegisterType((*EquivocationProposal)(nil), "interchain_security.ccv.provider.v1.EquivocationProposal")
-	proto.RegisterType((*GlobalSlashEntry)(nil), "interchain_security.ccv.provider.v1.GlobalSlashEntry")
-	proto.RegisterType((*Params)(nil), "interchain_security.ccv.provider.v1.Params")
-	proto.RegisterType((*HandshakeMetadata)(nil), "interchain_security.ccv.provider.v1.HandshakeMetadata")
-	proto.RegisterType((*SlashAcks)(nil), "interchain_security.ccv.provider.v1.SlashAcks")
-	proto.RegisterType((*ConsumerAdditionProposals)(nil), "interchain_security.ccv.provider.v1.ConsumerAdditionProposals")
-	proto.RegisterType((*ConsumerRemovalProposals)(nil), "interchain_security.ccv.provider.v1.ConsumerRemovalProposals")
-	proto.RegisterType((*AddressList)(nil), "interchain_security.ccv.provider.v1.AddressList")
-	proto.RegisterType((*ChannelToChain)(nil), "interchain_security.ccv.provider.v1.ChannelToChain")
-	proto.RegisterType((*VscUnbondingOps)(nil), "interchain_security.ccv.provider.v1.VscUnbondingOps")
-	proto.RegisterType((*UnbondingOp)(nil), "interchain_security.ccv.provider.v1.UnbondingOp")
-	proto.RegisterType((*InitTimeoutTimestamp)(nil), "interchain_security.ccv.provider.v1.InitTimeoutTimestamp")
-	proto.RegisterType((*VscSendTimestamp)(nil), "interchain_security.ccv.provider.v1.VscSendTimestamp")
-	proto.RegisterType((*KeyAssignmentReplacement)(nil), "interchain_security.ccv.provider.v1.KeyAssignmentReplacement")
-	proto.RegisterType((*ValidatorConsumerPubKey)(nil), "interchain_security.ccv.provider.v1.ValidatorConsumerPubKey")
-	proto.RegisterType((*ValidatorByConsumerAddr)(nil), "interchain_security.ccv.provider.v1.ValidatorByConsumerAddr")
-	proto.RegisterType((*ConsumerAddrsToPrune)(nil), "interchain_security.ccv.provider.v1.ConsumerAddrsToPrune")
+	proto.RegisterType((*ConsumerAdditionProposal)(nil), "interchain_security.ccv.provider.v2.ConsumerAdditionProposal")
+	proto.RegisterType((*ConsumerRemovalProposal)(nil), "interchain_security.ccv.provider.v2.ConsumerRemovalProposal")
+	proto.RegisterType((*EquivocationProposal)(nil), "interchain_security.ccv.provider.v2.EquivocationProposal")
+	proto.RegisterType((*GlobalSlashEntry)(nil), "interchain_security.ccv.provider.v2.GlobalSlashEntry")
+	proto.RegisterType((*Params)(nil), "interchain_security.ccv.provider.v2.Params")
+	proto.RegisterType((*HandshakeMetadata)(nil), "interchain_security.ccv.provider.v2.HandshakeMetadata")
+	proto.RegisterType((*SlashAcks)(nil), "interchain_security.ccv.provider.v2.SlashAcks")
+	proto.RegisterType((*ConsumerAdditionProposals)(nil), "interchain_security.ccv.provider.v2.ConsumerAdditionProposals")
+	proto.RegisterType((*ConsumerRemovalProposals)(nil), "interchain_security.ccv.provider.v2.ConsumerRemovalProposals")
+	proto.RegisterType((*AddressList)(nil), "interchain_security.ccv.provider.v2.AddressList")
+	proto.RegisterType((*ChannelToChain)(nil), "interchain_security.ccv.provider.v2.ChannelToChain")
+	proto.RegisterType((*VscUnbondingOps)(nil), "interchain_security.ccv.provider.v2.VscUnbondingOps")
+	proto.RegisterType((*UnbondingOp)(nil), "interchain_security.ccv.provider.v2.UnbondingOp")
+	proto.RegisterType((*InitTimeoutTimestamp)(nil), "interchain_security.ccv.provider.v2.InitTimeoutTimestamp")
+	proto.RegisterType((*VscSendTimestamp)(nil), "interchain_security.ccv.provider.v2.VscSendTimestamp")
+	proto.RegisterType((*KeyAssignmentReplacement)(nil), "interchain_security.ccv.provider.v2.KeyAssignmentReplacement")
+	proto.RegisterType((*ValidatorConsumerPubKey)(nil), "interchain_security.ccv.provider.v2.ValidatorConsumerPubKey")
+	proto.RegisterType((*ValidatorByConsumerAddr)(nil), "interchain_security.ccv.provider.v2.ValidatorByConsumerAddr")
+	proto.RegisterType((*ConsumerAddrsToPrune)(nil), "interchain_security.ccv.provider.v2.ConsumerAddrsToPrune")
 }
 
 func init() {
@@ -1230,7 +1230,7 @@ var fileDescriptor_f22ec409a72b7b72 = []byte{
 	0xdc, 0x30, 0x3d, 0xdd, 0x5f, 0xf7, 0x4c, 0x77, 0x7f, 0x3d, 0x40, 0x87, 0x34, 0x92, 0xc0, 0xc9,
 	0x04, 0xd3, 0xc8, 0x15, 0x40, 0x12, 0x4e, 0xe5, 0x74, 0x40, 0x48, 0x3a, 0x88, 0x39, 0x4b, 0xa9,
 	0x0f, 0x7c, 0x90, 0x1e, 0x94, 0xdf, 0x76, 0xcc, 0x99, 0x64, 0xe6, 0x7b, 0x37, 0xd8, 0xd8, 0x84,
-	0xa4, 0x76, 0xa9, 0x97, 0x1e, 0xdc, 0xdf, 0x1e, 0xb3, 0x31, 0xd3, 0xfa, 0x03, 0xf5, 0x95, 0x99,
+	0xa4, 0x76, 0xa9, 0x97, 0x1e, 0xde, 0xdf, 0x1e, 0xb3, 0x31, 0xd3, 0xfa, 0x03, 0xf5, 0x95, 0x99,
 	0xde, 0xdf, 0x1b, 0x33, 0x36, 0x0e, 0x60, 0xa0, 0x57, 0x5e, 0xf2, 0x6c, 0x20, 0x69, 0x08, 0x42,
 	0xe2, 0x30, 0xce, 0x15, 0x7a, 0xb3, 0x0a, 0x7e, 0xc2, 0xb1, 0xa4, 0x2c, 0x2a, 0x00, 0xa8, 0x47,
 	0x06, 0x84, 0x71, 0x18, 0x90, 0x80, 0x42, 0x24, 0x55, 0x78, 0xd9, 0x57, 0xae, 0x30, 0x50, 0x0a,
@@ -1319,7 +1319,7 @@ var fileDescriptor_f22ec409a72b7b72 = []byte{
 	0xbd, 0x85, 0xef, 0x5e, 0xf5, 0x16, 0xfe, 0xf6, 0xaa, 0xb7, 0xf0, 0x9b, 0x8f, 0xc7, 0x54, 0x4e,
 	0x12, 0xcf, 0x26, 0x2c, 0x1c, 0xe4, 0x3f, 0x8e, 0x95, 0xaf, 0x0f, 0xcb, 0xff, 0xf0, 0xf4, 0x70,
 	0xf0, 0xb2, 0xf9, 0x33, 0x2e, 0xa7, 0x31, 0x08, 0x6f, 0x45, 0x97, 0xf5, 0x47, 0xff, 0x0e, 0x00,
-	0x00, 0xff, 0xff, 0x50, 0x7d, 0x10, 0xbd, 0xbd, 0x0f, 0x00, 0x00,
+	0x00, 0xff, 0xff, 0xec, 0xd0, 0x27, 0xfd, 0xbd, 0x0f, 0x00, 0x00,
 }
 
 func (m *ConsumerAdditionProposal) Marshal() (dAtA []byte, err error) {
