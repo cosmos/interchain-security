@@ -33,7 +33,6 @@ var happyPathSteps = concatSteps(
 var shortHappyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
-	stepsRedelegateForOptOut("consu"),
 	stepsUnbond("consu"),
 	stepsRedelegate("consu"),
 	stepsStartRelayer(),
