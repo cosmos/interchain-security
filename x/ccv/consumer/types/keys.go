@@ -61,7 +61,7 @@ const (
 	// InitialValSetByteKey is the byte to store the initial validator set for a consumer
 	InitialValSetByteKey
 
-	// LastStandaloneHeightByteKey is the byte that will store last standalone height
+	// NOTE: This prefix is depreciated, but left in place to avoid consumer state migrations
 	LastStandaloneHeightByteKey
 
 	// SmallestNonOptOutPowerByteKey is the byte that will store the smallest val power that cannot opt out
