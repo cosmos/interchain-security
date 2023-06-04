@@ -5,10 +5,10 @@ package interchain_security.ccv.provider.v2;
 option go_package = "github.com/cosmos/interchain-security/v2/x/ccv/provider/types";
 
 import "gogoproto/gogo.proto";
-import "interchain_security/ccv/v1/ccv.proto";
-import "interchain_security/ccv/provider/v1/provider.proto";
-import "interchain_security/ccv/consumer/v1/consumer.proto";
-import "interchain_security/ccv/consumer/v1/genesis.proto";
+import "interchain_security/ccv/v2/ccv.proto";
+import "interchain_security/ccv/provider/v2/provider.proto";
+import "interchain_security/ccv/consumer/v2/consumer.proto";
+import "interchain_security/ccv/consumer/v2/genesis.proto";
 import "tendermint/crypto/keys.proto";
 
 

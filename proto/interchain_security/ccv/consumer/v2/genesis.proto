@@ -4,8 +4,8 @@ package interchain_security.ccv.consumer.v2;
 
 option go_package = "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types";
 
-import "interchain_security/ccv/v1/ccv.proto";
-import "interchain_security/ccv/consumer/v1/consumer.proto";
+import "interchain_security/ccv/v2/ccv.proto";
+import "interchain_security/ccv/consumer/v2/consumer.proto";
 import "tendermint/abci/types.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "ibc/core/channel/v1/channel.proto";

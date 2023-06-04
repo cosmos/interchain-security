@@ -5,7 +5,7 @@ option go_package = "github.com/cosmos/interchain-security/v2/x/ccv/consumer/typ
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "interchain_security/ccv/consumer/v1/consumer.proto";
+import "interchain_security/ccv/consumer/v2/consumer.proto";
 
 service Query {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
