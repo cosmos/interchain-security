@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	ProposalTypeConsumerAddition = "ConsumerAddition"
-	ProposalTypeConsumerRemoval  = "ConsumerRemoval"
-	ProposalTypeEquivocation     = "Equivocation"
+	ProposalTypeConsumerAddition = "interchain_security.ccv.v2.ConsumerAddition"
+	ProposalTypeConsumerRemoval  = "interchain_security.ccv.v2.ConsumerRemoval"
+	ProposalTypeEquivocation     = "interchain_security.ccv.v2.Equivocation"
 )
 
 var (
