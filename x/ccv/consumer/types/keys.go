@@ -49,6 +49,24 @@ const (
 	// received over CCV channel but not yet flushed over ABCI
 	PendingChangesByteKey
 
+	// PendingDataPacketsByteKey is the byte key for storing
+	// a list of data packets that cannot be sent yet to the provider
+	// chain either because the CCV channel is not established or
+	// because the client is expired
+	PendingDataPacketsByteKey
+
+	// PreCCVByteKey is the byte to store the consumer is running on democracy staking module without consumer
+	PreCCVByteKey
+
+	// InitialValSetByteKey is the byte to store the initial validator set for a consumer
+	InitialValSetByteKey
+
+	// NOTE: This prefix is depreciated, but left in place to avoid consumer state migrations
+	LastStandaloneHeightByteKey
+
+	// SmallestNonOptOutPowerByteKey is the byte that will store the smallest val power that cannot opt out
+	SmallestNonOptOutPowerByteKey
+
 	// HistoricalInfoKey is the byte prefix that will store the historical info for a given height
 	HistoricalInfoBytePrefix
 
@@ -67,23 +85,8 @@ const (
 	// CrossChainValidatorPrefix is the byte prefix that will store cross-chain validators by consensus address
 	CrossChainValidatorBytePrefix
 
-	// PendingDataPacketsByteKey is the byte key for storing
-	// a list of data packets that cannot be sent yet to the provider
-	// chain either because the CCV channel is not established or
-	// because the client is expired
-	PendingDataPacketsByteKey
-
-	// PreCCVByteKey is the byte to store the consumer is running on democracy staking module without consumer
-	PreCCVByteKey
-
-	// InitialValSetByteKey is the byte to store the initial validator set for a consumer
-	InitialValSetByteKey
-
 	// InitGenesisHeightByteKey is the byte that will store the init genesis height
 	InitGenesisHeightByteKey
-
-	// SmallestNonOptOutPowerByteKey is the byte that will store the smallest val power that cannot opt out
-	SmallestNonOptOutPowerByteKey
 
 	// StandaloneTransferChannelIDByteKey is the byte storing the channelID of transfer channel
 	// that existed from a standalone chain changing over to a consumer
@@ -170,7 +173,7 @@ func CrossChainValidatorKey(addr []byte) []byte {
 // that cannot be sent yet to the provider chain either because the CCV channel
 // is not established or because the client is expired.
 func PendingDataPacketsKey() []byte {
-	return []byte{PendingDataPacketsByteKey}
+	return []byte{PendingDataPacketsBytePrefix}
 }
 
 func PreCCVKey() []byte {
