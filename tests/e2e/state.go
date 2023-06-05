@@ -368,7 +368,7 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			Title:       title,
 			Description: description,
 		}
-	case "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal":
+	case "/interchain_security.ccv.provider.v2.ConsumerAdditionProposal":
 		chainId := gjson.Get(string(bz), `content.chain_id`).String()
 		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time().Sub(tr.containerConfig.now)
 
@@ -390,7 +390,7 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 				RevisionHeight: gjson.Get(string(bz), `content.initial_height.revision_height`).Uint(),
 			},
 		}
-	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
+	case "/interchain_security.ccv.provider.v2.ConsumerRemovalProposal":
 		chainId := gjson.Get(string(bz), `content.chain_id`).String()
 		stopTime := gjson.Get(string(bz), `content.stop_time`).Time().Sub(tr.containerConfig.now)
 
@@ -409,7 +409,7 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			StopTime: int(stopTime.Milliseconds()),
 		}
 
-	case "/interchain_security.ccv.provider.v1.EquivocationProposal":
+	case "/interchain_security.ccv.provider.v2.EquivocationProposal":
 		return EquivocationProposal{
 			Deposit:          uint(deposit),
 			Status:           status,
