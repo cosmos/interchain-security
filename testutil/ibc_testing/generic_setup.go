@@ -29,10 +29,18 @@ type (
 // to run integration tests against your app.go implementations!
 
 var (
-	FirstConsumerChainID = ibctesting.GetChainID(2)
-	provChainID          = ibctesting.GetChainID(1)
-	democConsumerChainID = ibctesting.GetChainID(5000)
+	FirstConsumerChainID string
+	provChainID          string
+	democConsumerChainID string
 )
+
+func init() {
+	// Disable revision format
+	ibctesting.ChainIDSuffix = ""
+	FirstConsumerChainID = ibctesting.GetChainID(2)
+	provChainID = ibctesting.GetChainID(1)
+	democConsumerChainID = ibctesting.GetChainID(5000)
+}
 
 // ConsumerBundle serves as a way to store useful in-mem consumer app chain state
 // and relevant IBC paths in the context of CCV integration testing.
