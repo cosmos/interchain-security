@@ -29,7 +29,7 @@ type ConsumerDemocracyTestSuite struct {
 // NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite,
 // ready to be tested against using suite.Run().
 func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
-	democConsumerAppIniter icstestingutils.AppIniter,
+	democConsumerAppIniter icstestingutils.ValSetAppIniter,
 ) *ConsumerDemocracyTestSuite {
 	democSuite := new(ConsumerDemocracyTestSuite)
 

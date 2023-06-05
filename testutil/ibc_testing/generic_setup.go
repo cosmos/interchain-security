@@ -14,11 +14,15 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/cometbft/cometbft/abci/types"
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	tmtypes "github.com/cometbft/cometbft/types"
 )
 
-type AppIniter func() (ibctesting.TestingApp, map[string]json.RawMessage)
+type (
+	AppIniter       func() (ibctesting.TestingApp, map[string]json.RawMessage)
+	ValSetAppIniter func([]types.ValidatorUpdate) AppIniter
+)
 
 // Contains generic setup code for running integration tests against a provider, consumer,
 // and/or democracy consumer app.go implementation. You should not need to modify or replicate this file
@@ -68,10 +72,10 @@ func AddProvider[T testutil.ProviderApp](t *testing.T, coordinator *ibctesting.C
 
 // AddDemocracyConsumer adds a new democ consumer chain to the coordinator and returns the test chain and app type
 func AddDemocracyConsumer[T testutil.DemocConsumerApp](t *testing.T, coordinator *ibctesting.Coordinator,
-	appIniter AppIniter,
+	appIniter ValSetAppIniter,
 ) (*ibctesting.TestChain, T) {
 	t.Helper()
-	ibctesting.DefaultTestingAppInit = appIniter
+	ibctesting.DefaultTestingAppInit = appIniter(nil)
 	democConsumer := ibctesting.NewTestChain(t, coordinator, democConsumerChainID)
 	coordinator.Chains[democConsumerChainID] = democConsumer
 
@@ -93,7 +97,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	coordinator *ibctesting.Coordinator,
 	s *suite.Suite,
 	index int,
-	appIniter AppIniter,
+	appIniter ValSetAppIniter,
 ) *ConsumerBundle {
 	// consumer chain ID
 	chainID := ibctesting.GetChainID(index + 2)
@@ -139,7 +143,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	}
 
 	// create and instantiate consumer chain
-	ibctesting.DefaultTestingAppInit = appIniter
+	ibctesting.DefaultTestingAppInit = appIniter(consumerGenesisState.InitialValSet)
 	testChain := ibctesting.NewTestChainWithValSet(s.T(), coordinator, chainID,
 		tmtypes.NewValidatorSet(valz), providerChain.Signers)
 	coordinator.Chains[chainID] = testChain
