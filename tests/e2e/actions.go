@@ -1805,7 +1805,94 @@ func (tr *TestRun) submitUpgradeProposal(action upgradeProposalAction, verbose b
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+}
 
+type upgradeAction struct {
+	chain         chainID
+	newBinaryName string                // binary to run after upgrade height
+	validators    []StartChainValidator // validators nodes to upgrade
+}
+
+func (tr *TestRun) upgradeChain(action upgradeAction, verbose bool) {
+	chainConfig := tr.chainConfigs[action.chain]
+	type jsonValAttrs struct {
+		Mnemonic         string `json:"mnemonic"`
+		Allocation       string `json:"allocation"`
+		Stake            string `json:"stake"`
+		ValId            string `json:"val_id"`
+		PrivValidatorKey string `json:"priv_validator_key"`
+		NodeKey          string `json:"node_key"`
+		IpSuffix         string `json:"ip_suffix"`
+
+		ConsumerMnemonic         string `json:"consumer_mnemonic"`
+		ConsumerPrivValidatorKey string `json:"consumer_priv_validator_key"`
+		StartWithConsumerKey     bool   `json:"start_with_consumer_key"`
+	}
+
+	var validators []jsonValAttrs
+	for _, val := range action.validators {
+		validators = append(validators, jsonValAttrs{
+			Mnemonic:         tr.validatorConfigs[val.id].mnemonic,
+			NodeKey:          tr.validatorConfigs[val.id].nodeKey,
+			ValId:            fmt.Sprint(val.id),
+			PrivValidatorKey: tr.validatorConfigs[val.id].privValidatorKey,
+			Allocation:       fmt.Sprint(val.allocation) + "stake",
+			Stake:            fmt.Sprint(val.stake) + "stake",
+			IpSuffix:         tr.validatorConfigs[val.id].ipSuffix,
+
+			ConsumerMnemonic:         tr.validatorConfigs[val.id].consumerMnemonic,
+			ConsumerPrivValidatorKey: tr.validatorConfigs[val.id].consumerPrivValidatorKey,
+			// if true node will be started with consumer key for each consumer chain
+			StartWithConsumerKey: tr.validatorConfigs[val.id].useConsumerKey,
+		})
+	}
+
+	vals, err := json.Marshal(validators)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
+		"/testnet-scripts/upgrade-chain.sh",
+		chainConfig.binaryName, // binary to stop
+		action.newBinaryName,   // binary to start
+		string(vals),
+		string(action.chain),
+		chainConfig.ipPrefix,
+	)
+
+	cmdReader, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(cmdReader)
+
+	for scanner.Scan() {
+		out := scanner.Text()
+		if verbose {
+			fmt.Println("upgradeChain: " + out)
+		}
+		if out == done {
+			break
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	if verbose {
+		fmt.Println("assignConsumerPubKey cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
 }
 
 func uintPointer(i uint) *uint {

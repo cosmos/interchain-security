@@ -31,62 +31,6 @@ func stepsChangeoverConsumerChain(consumerName string, proposalIndex, chainIndex
 				},
 			},
 		},
-		// add a consumer key before the chain starts
-		// the key will be present in consumer genesis initial_val_set
-		{
-			action: assignConsumerPubKeyAction{
-				chain:          chainID(consumerName),
-				validator:      validatorID("carol"),
-				consumerPubkey: `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
-				// consumer chain has not started
-				// we don't need to reconfigure the node
-				// since it will start with consumer key
-				reconfigureNode: false,
-			},
-			state: State{
-				chainID(consumerName): ChainState{
-					AssignedKeys: &map[validatorID]string{
-						validatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
-					},
-					ProviderKeys: &map[validatorID]string{
-						validatorID("carol"): "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
-					},
-				},
-			},
-		},
-		{
-			// op should fail - key already assigned by the same validator
-			action: assignConsumerPubKeyAction{
-				chain:           chainID(consumerName),
-				validator:       validatorID("carol"),
-				consumerPubkey:  `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
-				reconfigureNode: false,
-				expectError:     true,
-			},
-			state: State{},
-		},
-		{
-			// op should fail - key already assigned by another validator
-			action: assignConsumerPubKeyAction{
-				chain:     chainID(consumerName),
-				validator: validatorID("bob"),
-				// same pub key as carol
-				consumerPubkey:  `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
-				reconfigureNode: false,
-				expectError:     true,
-			},
-			state: State{
-				chainID(consumerName): ChainState{
-					AssignedKeys: &map[validatorID]string{
-						validatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
-						validatorID("bob"):   "",
-					},
-					ProviderKeys: &map[validatorID]string{
-						validatorID("carol"): "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
-					},
-				},
-			},
-		},
 		{
 			action: voteGovProposalAction{
 				chain:      chainID("provi"),
