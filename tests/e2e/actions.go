@@ -759,12 +759,7 @@ func (tr TestRun) addIbcConnectionGorelayer(
 	action addIbcConnectionAction,
 	verbose bool,
 ) {
-	var pathName string
-	if string(tr.chainConfigs[action.chainA].chainId) < string(tr.chainConfigs[action.chainB].chainId) {
-		pathName = string(tr.chainConfigs[action.chainA].chainId) + "-" + string(tr.chainConfigs[action.chainB].chainId)
-	} else {
-		pathName = string(tr.chainConfigs[action.chainB].chainId) + "-" + string(tr.chainConfigs[action.chainA].chainId)
-	}
+	pathName := tr.GetPathNameForGorelayer(action.chainA, action.chainB)
 
 	pathConfig := fmt.Sprintf(gorelayerPathConfigTemplate, action.chainA, action.clientA, action.chainB, action.clientB)
 
@@ -923,12 +918,7 @@ func (tr TestRun) addIbcChannelGorelayer(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
-	var pathName string
-	if string(tr.chainConfigs[action.chainA].chainId) < string(tr.chainConfigs[action.chainB].chainId) {
-		pathName = string(tr.chainConfigs[action.chainA].chainId) + "-" + string(tr.chainConfigs[action.chainB].chainId)
-	} else {
-		pathName = string(tr.chainConfigs[action.chainB].chainId) + "-" + string(tr.chainConfigs[action.chainA].chainId)
-	}
+	pathName := tr.GetPathNameForGorelayer(action.chainA, action.chainB)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
 		"transact", "channel",
@@ -1095,12 +1085,7 @@ func (tr TestRun) relayPacketsGorelayer(
 	action relayPacketsAction,
 	verbose bool,
 ) {
-	var pathName string
-	if string(tr.chainConfigs[action.chainA].chainId) < string(tr.chainConfigs[action.chainB].chainId) {
-		pathName = string(tr.chainConfigs[action.chainA].chainId) + "-" + string(tr.chainConfigs[action.chainB].chainId)
-	} else {
-		pathName = string(tr.chainConfigs[action.chainB].chainId) + "-" + string(tr.chainConfigs[action.chainA].chainId)
-	}
+	pathName := tr.GetPathNameForGorelayer(action.chainA, action.chainB)
 
 	// rly transact relay-packets [path-name] --channel [channel-id]
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -1644,4 +1629,18 @@ func (tr TestRun) waitForSlashThrottleDequeue(
 
 func uintPointer(i uint) *uint {
 	return &i
+}
+
+// GetPathNameForGorelayer returns the name of the path between two given chains used by Gorelayer.
+// Since paths are bidirectional, we need either chain to be able to be provided as first or second argument
+// and still return the same name, so we sort the chain names alphabetically.
+func (tr TestRun) GetPathNameForGorelayer(chainA, chainB chainID) string {
+	var pathName string
+	if string(chainA) < string(chainB) {
+		pathName = string(chainA) + "-" + string(chainB)
+	} else {
+		pathName = string(chainB) + "-" + string(chainA)
+	}
+
+	return pathName
 }

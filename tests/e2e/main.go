@@ -28,7 +28,7 @@ This is suited for CometMock+Gorelayer testing`)
 	localSdkPath         = flag.String("local-sdk-path", "",
 		"path of a local sdk version to build and reference in integration tests")
 	useCometmock = flag.Bool("use-cometmock", false, "use cometmock instead of CometBFT")
-	useRly       = flag.Bool("use-rly", false, "use go relayer instead of Hermes")
+	useGorelayer = flag.Bool("use-gorelayer", false, "use go relayer instead of Hermes")
 )
 
 var (
@@ -95,7 +95,7 @@ func main() {
 func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag string) {
 	tr.SetDockerConfig(localSdkPath, useGaia, gaiaTag)
 	tr.SetCometMockConfig(*useCometmock)
-	tr.SetRelayerConfig(*useRly)
+	tr.SetRelayerConfig(*useGorelayer)
 
 	tr.validateStringLiterals()
 	tr.startDocker()
