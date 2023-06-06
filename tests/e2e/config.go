@@ -71,7 +71,7 @@ type TestRun struct {
 	localSdkPath             string
 	useGaia                  bool
 	useCometmock             bool // if false, nodes run CometBFT
-	useRly                   bool // if false, Hermes is used as the relayer
+	useGorelayer             bool // if false, Hermes is used as the relayer
 	gaiaTag                  string
 
 	name string
@@ -346,7 +346,7 @@ func (s *TestRun) SetCometMockConfig(useCometmock bool) {
 }
 
 func (s *TestRun) SetRelayerConfig(useRly bool) {
-	s.useRly = useRly
+	s.useGorelayer = useRly
 }
 
 // validateStringLiterals enforces that configs follow the constraints

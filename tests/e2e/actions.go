@@ -595,7 +595,11 @@ websocket_addr = "%s"
 	numerator = "1"
 `
 
-const rlyChainConfigTemplate = `
+// Set up the config for a new chain for gorelayer.
+// This config is added to the container as a file.
+// We then add the chain to the relayer, using this config as the chain config with `rly chains add --file`
+// This is functionally similar to the config used by Hermes for chains, e.g. gas is free.
+const gorelayerChainConfigTemplate = `
 {
 	"type": "cosmos",
 	"value": {
@@ -617,14 +621,14 @@ func (tr TestRun) addChainToRelayer(
 	action addChainToRelayerAction,
 	verbose bool,
 ) {
-	if !tr.useRly {
+	if !tr.useGorelayer {
 		tr.addChainToHermes(action, verbose)
 	} else {
-		tr.addChainToRly(action, verbose)
+		tr.addChainToGorelayer(action, verbose)
 	}
 }
 
-func (tr TestRun) addChainToRly(
+func (tr TestRun) addChainToGorelayer(
 	action addChainToRelayerAction,
 	verbose bool,
 ) {
@@ -632,7 +636,7 @@ func (tr TestRun) addChainToRly(
 	chainId := tr.chainConfigs[action.chain].chainId
 	rpcAddr := "http://" + queryNodeIP + ":26658"
 
-	chainConfig := fmt.Sprintf(rlyChainConfigTemplate,
+	chainConfig := fmt.Sprintf(gorelayerChainConfigTemplate,
 		chainId,
 		rpcAddr,
 	)
@@ -713,14 +717,11 @@ func (tr TestRun) addChainToHermes(
 	}
 }
 
-type addIbcConnectionAction struct {
-	chainA  chainID
-	chainB  chainID
-	clientA uint
-	clientB uint
-}
-
-const rlyPathConfigTemplate = `{
+// This config file is used by gorelayer to create a path between chains.
+// Since the tests assume we use a certain client-id for certain paths,
+// in the config we specify the client id, e.g. 07-tendermint-5.
+// The src-channel-filter is empty because we want to relay all channels.
+const gorelayerPathConfigTemplate = `{
     "src": {
         "chain-id": "%s",
         "client-id": "07-tendermint-%v"
@@ -736,18 +737,25 @@ const rlyPathConfigTemplate = `{
 }
 `
 
+type addIbcConnectionAction struct {
+	chainA  chainID
+	chainB  chainID
+	clientA uint
+	clientB uint
+}
+
 func (tr TestRun) addIbcConnection(
 	action addIbcConnectionAction,
 	verbose bool,
 ) {
-	if !tr.useRly {
+	if !tr.useGorelayer {
 		tr.addIbcConnectionHermes(action, verbose)
 	} else {
-		tr.addIbcConnectionRly(action, verbose)
+		tr.addIbcConnectionGorelayer(action, verbose)
 	}
 }
 
-func (tr TestRun) addIbcConnectionRly(
+func (tr TestRun) addIbcConnectionGorelayer(
 	action addIbcConnectionAction,
 	verbose bool,
 ) {
@@ -758,7 +766,7 @@ func (tr TestRun) addIbcConnectionRly(
 		pathName = string(tr.chainConfigs[action.chainB].chainId) + "-" + string(tr.chainConfigs[action.chainA].chainId)
 	}
 
-	pathConfig := fmt.Sprintf(rlyPathConfigTemplate, action.chainA, action.clientA, action.chainB, action.clientB)
+	pathConfig := fmt.Sprintf(gorelayerPathConfigTemplate, action.chainA, action.clientA, action.chainB, action.clientB)
 
 	pathConfigFileName := fmt.Sprintf("/root/%s_config.json", pathName)
 
@@ -855,14 +863,14 @@ func (tr TestRun) startRelayer(
 	action startRelayerAction,
 	verbose bool,
 ) {
-	if tr.useRly {
-		tr.startRly(action, verbose)
+	if tr.useGorelayer {
+		tr.startGorelayer(action, verbose)
 	} else {
 		tr.startHermes(action, verbose)
 	}
 }
 
-func (tr TestRun) startRly(
+func (tr TestRun) startGorelayer(
 	action startRelayerAction,
 	verbose bool,
 ) {
@@ -904,14 +912,14 @@ func (tr TestRun) addIbcChannel(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
-	if tr.useRly {
-		tr.addIbcChannelRly(action, verbose)
+	if tr.useGorelayer {
+		tr.addIbcChannelGorelayer(action, verbose)
 	} else {
 		tr.addIbcChannelHermes(action, verbose)
 	}
 }
 
-func (tr TestRun) addIbcChannelRly(
+func (tr TestRun) addIbcChannelGorelayer(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
@@ -994,7 +1002,7 @@ func (tr TestRun) transferChannelComplete(
 	action transferChannelCompleteAction,
 	verbose bool,
 ) {
-	if tr.useRly {
+	if tr.useGorelayer {
 		log.Fatal("transferChannelComplete is not implemented for rly")
 	}
 
@@ -1076,14 +1084,14 @@ func (tr TestRun) relayPackets(
 	action relayPacketsAction,
 	verbose bool,
 ) {
-	if tr.useRly {
-		tr.relayPacketsRly(action, verbose)
+	if tr.useGorelayer {
+		tr.relayPacketsGorelayer(action, verbose)
 	} else {
 		tr.relayPacketsHermes(action, verbose)
 	}
 }
 
-func (tr TestRun) relayPacketsRly(
+func (tr TestRun) relayPacketsGorelayer(
 	action relayPacketsAction,
 	verbose bool,
 ) {

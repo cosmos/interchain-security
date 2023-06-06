@@ -16,9 +16,13 @@ import (
 )
 
 var (
-	verbose              = flag.Bool("verbose", false, "turn verbose logging on/off")
-	happyPathOnly        = flag.Bool("happy-path-only", false, "run happy path tests only")
-	shortHappyPathOnly   = flag.Bool("short-happy-path", false, "run abridged happy path tests only - suited for CometMock+Gorelayer testing")
+	verbose            = flag.Bool("verbose", false, "turn verbose logging on/off")
+	happyPathOnly      = flag.Bool("happy-path-only", false, "run happy path tests only")
+	shortHappyPathOnly = flag.Bool("short-happy-path", false, `run abridged happy path tests only.
+This is like the happy path, but skips steps
+that involve starting or stopping nodes for the same chain outside of the chain setup or teardown.
+In particular, this skips steps related to downtime and double signing.
+This is suited for CometMock+Gorelayer testing`)
 	includeMultiConsumer = flag.Bool("include-multi-consumer", false, "include multiconsumer tests in run")
 	parallel             = flag.Bool("parallel", false, "run all tests in parallel")
 	localSdkPath         = flag.String("local-sdk-path", "",
