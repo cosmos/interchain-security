@@ -238,37 +238,25 @@ func relayAllCommittedPackets(
 	msgAndArgs ...interface{},
 ) {
 	// check that the packets are committed in  state
-	events := s.providerCtx().EventManager().Events()
-	var packets []channeltypes.Packet
-	for i, ev := range events {
-		if ev.Type == channeltypes.EventTypeSendPacket {
-			packet, err := ibctesting.ParsePacketFromEvents(events[i:])
-			s.Require().NoError(
-				err,
-				fmt.Sprintf("error while parsing events to packets; %s", msgAndArgs...),
-			)
-			packets = append(packets, packet)
-		}
-	}
-	// commitments := srcChain.App.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
-	// srcChain.GetContext(),
-	// srcPortID,
-	// srcChannelID,
-	// )
+	commitments := srcChain.App.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
+		srcChain.GetContext(),
+		srcPortID,
+		srcChannelID,
+	)
 	s.Require().Equal(
 		expectedPackets,
-		len(packets),
+		len(commitments),
 		fmt.Sprintf("actual number of packet commitments does not match expectation; %s", msgAndArgs...),
 	)
 
 	// relay all packets from srcChain to counterparty
-	for _, packet := range packets {
+	for _, commitment := range commitments {
 		// - get packets
-		// packet, found := srcChain.GetSentPacket(commitment.Sequence, srcChannelID)
-		// s.Require().True(
-		// found,
-		// fmt.Sprintf("did not find sent packet; %s", msgAndArgs...),
-		// )
+		packet, found := s.getSentPacket(srcChain, commitment.Sequence, srcChannelID)
+		s.Require().True(
+			found,
+			fmt.Sprintf("did not find sent packet; %s", msgAndArgs...),
+		)
 		// - relay the packet
 		err := path.RelayPacket(packet)
 		s.Require().NoError(
