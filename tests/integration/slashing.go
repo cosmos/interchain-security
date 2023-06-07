@@ -67,8 +67,12 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
 
 	// Send slash packet from the first consumer chain
-	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
-	_, err = s.getFirstBundle().Path.EndpointA.SendPacket(packet.TimeoutHeight, packet.TimeoutTimestamp, packet.Data)
+	var (
+		timeoutHeight    = clienttypes.Height{}
+		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
+	)
+	data := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+	sequence, err := s.getFirstBundle().Path.EndpointA.SendPacket(timeoutHeight, timeoutTimestamp, data)
 	s.Require().NoError(err)
 
 	// Set outstanding slashing flag for first consumer, it's important to use the consumer's cons addr here
@@ -85,6 +89,10 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	valsetUpdateIdN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// receive the slash packet on the provider chain. RecvPacket() calls the provider endblocker twice
+	packet := channeltypes.NewPacket(data, sequence,
+		s.getFirstBundle().Path.EndpointA.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointA.ChannelID,
+		s.getFirstBundle().Path.EndpointB.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointB.ChannelID,
+		timeoutHeight, timeoutTimestamp)
 	err = s.path.EndpointB.RecvPacket(packet)
 	s.Require().NoError(err)
 
@@ -195,13 +203,12 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
 
 	// Send slash packet from the first consumer chain
-	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, 1)
-	_, err = s.getFirstBundle().Path.EndpointA.SendPacket(packet.TimeoutHeight, packet.TimeoutTimestamp, packet.Data)
-	s.Require().NoError(err)
-
-	// receive the slash packet on the provider chain. RecvPacket() advances two blocks
-	err = s.path.EndpointB.RecvPacket(packet)
-	s.Require().NoError(err)
+	var (
+		timeoutHeight    = clienttypes.Height{}
+		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
+	)
+	data := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
+	packet := sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, data)
 
 	// Advance a few more blocks to make sure any voting power changes would be reflected
 	s.providerChain.NextBlock()
