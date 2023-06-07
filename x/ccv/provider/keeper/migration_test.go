@@ -13,7 +13,6 @@ import (
 	types2 "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/v2/testutil/crypto"
 	testutil "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
@@ -122,24 +121,6 @@ type v1Params struct {
 	SlashMeterReplenishPeriod   time.Duration       `protobuf:"bytes,6,opt,name=slash_meter_replenish_period,json=slashMeterReplenishPeriod,proto3,stdduration" json:"slash_meter_replenish_period"`
 	SlashMeterReplenishFraction string              `protobuf:"bytes,7,opt,name=slash_meter_replenish_fraction,json=slashMeterReplenishFraction,proto3" json:"slash_meter_replenish_fraction,omitempty"`
 	MaxThrottledPackets         int64               `protobuf:"varint,8,opt,name=max_throttled_packets,json=maxThrottledPackets,proto3" json:"max_throttled_packets,omitempty"`
-}
-
-func TestMigrateConsumerGenesisv1Tov2(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testutil.GetProviderKeeperAndCtx(t, testutil.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	_, found := providerKeeper.GetConsumerGenesis(ctx, "neutron-1")
-	require.False(t, found)
-
-	providerKeeper.SetConsumerGenesis(ctx, "neutron-1", consumertypes.GenesisState{})
-
-	_, found = providerKeeper.GetConsumerGenesis(ctx, "neutron-1")
-	require.True(t, found)
-
-	providerkeeper.MigrateConsumerGenesisStatesv1Tov2(ctx, providerKeeper)
-
-	_, found = providerKeeper.GetConsumerGenesis(ctx, "neutron-1")
-	require.False(t, found)
 }
 
 func TestMigrateKeysv1Tov2(t *testing.T) {
