@@ -65,14 +65,8 @@ func DemocracyConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter
 		encoding := appConsumerDemocracy.MakeTestEncodingConfig()
 		testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, simtestutil.EmptyAppOptions{})
 		genesisState := appConsumerDemocracy.NewDefaultGenesisState(encoding.Codec)
-		// NOTE ibc-go/v7/testing.SetupWithGenesisValSet requires a staking module
-		// genesisState or it panics. Feed a minimum one.
-		genesisState[stakingtypes.ModuleName] = encoding.Codec.MustMarshalJSON(
-			&stakingtypes.GenesisState{
-				Params: stakingtypes.Params{BondDenom: sdk.DefaultBondDenom},
-			},
-		)
 		// Feed consumer genesis with provider validators
+		// TODO See if useful for democracy
 		var consumerGenesis consumertypes.GenesisState
 		encoding.Codec.MustUnmarshalJSON(genesisState[consumertypes.ModuleName], &consumerGenesis)
 		consumerGenesis.InitialValSet = initValPowers
