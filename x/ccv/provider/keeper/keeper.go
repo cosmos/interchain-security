@@ -1060,7 +1060,3 @@ func (k Keeper) GetSlashLog(
 	bz := store.Get(types.SlashLogKey(providerAddr))
 	return bz != nil
 }
-
-func (k Keeper) BondDenom(ctx sdk.Context) string {
-	return k.stakingKeeper.BondDenom(ctx)
-}
