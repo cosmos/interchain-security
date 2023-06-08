@@ -14,7 +14,7 @@ Once a `ConsumerAdditionProposal` passes, validators need to prepare to run the 
 Provider chain and consumer chains represent standalone chains that only share the validator set ie. the same validator operators are tasked with running all chains.
 
 :::info
-To validate a consumer chain and be eligible for rewards validators are required to be in the active set of the provider chain (first 175 validators for Cosmos Hub).
+To validate a consumer chain and be eligible for rewards validators are required to be in the active set of the provider chain (first 180 validators for Cosmos Hub).
 :::
 
 ## Startup sequence overview
