@@ -392,15 +392,9 @@ func newPacketSniffer() *packetSniffer {
 }
 
 func (ps *packetSniffer) ListenEndBlock(ctx context.Context, req abci.RequestEndBlock, res abci.ResponseEndBlock) error {
-	events := simibc.ABCIToSDKEvents(res.GetEvents())
-	for i, ev := range events {
-		if ev.Type == channeltypes.EventTypeSendPacket {
-			packet, err := ibctesting.ParsePacketFromEvents(events[i:])
-			if err != nil {
-				panic(err)
-			}
-			ps.packets[getSentPacketKey(packet.Sequence, packet.SourceChannel)] = packet
-		}
+	packets := simibc.ParsePacketsFromEvents(simibc.ABCIToSDKEvents(res.GetEvents()))
+	for _, packet := range packets {
+		ps.packets[getSentPacketKey(packet.Sequence, packet.SourceChannel)] = packet
 	}
 	return nil
 }

@@ -54,18 +54,24 @@ func EndBlock(c *ibctesting.TestChain, preCommitCallback func()) (*ibctmtypes.He
 
 	c.LastHeader = c.CurrentTMClientHeader()
 
-	packets := []channeltypes.Packet{}
-
 	sdkEvts := ABCIToSDKEvents(ebRes.Events)
+	packets := ParsePacketsFromEvents(sdkEvts)
 
-	for i, ev := range sdkEvts {
+	return c.LastHeader, packets
+}
+
+// ParsePacketsFromEvents returns all packets found in events.
+func ParsePacketsFromEvents(events []sdk.Event) (packets []channeltypes.Packet) {
+	for i, ev := range events {
 		if ev.Type == channeltypes.EventTypeSendPacket {
-			packet, _ := ibctesting.ParsePacketFromEvents(sdkEvts[i:])
+			packet, err := ibctesting.ParsePacketFromEvents(events[i:])
+			if err != nil {
+				panic(err)
+			}
 			packets = append(packets, packet)
 		}
 	}
-
-	return c.LastHeader, packets
+	return
 }
 
 // ABCIToSDKEvents converts a list of ABCI events to Cosmos SDK events.

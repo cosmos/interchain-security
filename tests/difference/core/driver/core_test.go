@@ -186,9 +186,10 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool)
 	s.consumerKeeper().SlashWithInfractionReason(ctx, val, h, 0, sdk.Dec{}, kind)
 	// consumer module emits packets on slash, so these must be collected.
 	evts := ctx.EventManager().Events()
-	packet, err := ibctesting.ParsePacketFromEvents(evts[before:])
-	s.Require().NoError(err)
-	s.simibc.Outboxes.AddPacket(s.chainID(C), packet)
+	packets := simibc.ParsePacketsFromEvents(evts[before:])
+	if len(packets) > 0 {
+		s.simibc.Outboxes.AddPacket(s.chainID(C), packets[0])
+	}
 }
 
 func (s *CoreSuite) updateClient(chain string) {

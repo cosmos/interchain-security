@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
@@ -88,34 +87,10 @@ func AddDemocracyConsumer[T testutil.DemocConsumerApp](
 	s.T().Helper()
 
 	// generate validators private/public key
-	var (
-		validatorsPerChain = 4
-		validators         []*tmtypes.Validator
-		valUpdates         []types.ValidatorUpdate
-		signersByAddress   = make(map[string]tmtypes.PrivValidator, validatorsPerChain)
-	)
-	for i := 0; i < validatorsPerChain; i++ {
-		privVal := mock.NewPV()
-		pubKey, err := privVal.GetPubKey()
-		s.Require().NoError(err)
-		val := tmtypes.NewValidator(pubKey, 1)
-		validators = append(validators, val)
-		signersByAddress[pubKey.Address().String()] = privVal
-
-		protoPubKey, err := tmencoding.PubKeyToProto(val.PubKey)
-		s.Require().NoError(err)
-		valUpdates = append(valUpdates, types.ValidatorUpdate{
-			PubKey: protoPubKey,
-			Power:  val.VotingPower,
-		})
-	}
-	// construct validator set;
-	// Note that the validators are sorted by voting power
-	// or, if equal, by address lexical order
-	valSet := tmtypes.NewValidatorSet(validators)
+	valSet, valUpdates, signers := testutil.CreateValidators(s.T(), 4)
 
 	ibctesting.DefaultTestingAppInit = appIniter(valUpdates)
-	democConsumer := ibctesting.NewTestChainWithValSet(s.T(), coordinator, democConsumerChainID, valSet, signersByAddress)
+	democConsumer := ibctesting.NewTestChainWithValSet(s.T(), coordinator, democConsumerChainID, valSet, signers)
 	coordinator.Chains[democConsumerChainID] = democConsumer
 
 	democConsumerToReturn, ok := democConsumer.App.(T)
