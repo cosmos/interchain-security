@@ -33,8 +33,10 @@ func (m Migrator) Migratev1Tov2(ctx sdk.Context) error {
 		sdk.NewCoin(m.ccvProviderKeeper.BondDenom(ctx), sdk.NewInt(10000000)),
 	)
 
-	// Delete select consumer genesis states for consumers that're launched
-	MigrateConsumerGenesisStatesv1Tov2(ctx, m.ccvProviderKeeper)
+	// Consumer genesis states persisted on the provider do not need to be migrated,
+	// as protobuf serialization is able to gracefully handle unpopulated fields when deserializing.
+	// See https://github.com/smarshall-spitzbart/ics-migration-tests/commit/b589e3982c26783ed66e954051f7da1ead16de68
+	// which passes, proving the addition of preCCV will not break things.
 
 	// Migrate keys to accommodate fix from https://github.com/cosmos/interchain-security/pull/786
 	MigrateKeysv1Tov2(ctx, m.ccvProviderKeeper)
@@ -78,14 +80,6 @@ func MigrateParamsv1Tov2(ctx sdk.Context, paramsSubspace paramtypes.Subspace, co
 
 	// Persist new params
 	paramsSubspace.SetParamSet(ctx, &newParams)
-}
-
-func MigrateConsumerGenesisStatesv1Tov2(ctx sdk.Context, providerKeeper Keeper) {
-	// We could try to migrate existing ConsumerGenesisStates, but they're not needed after consumer launch.
-	// Hence we delete them strategically.
-	providerKeeper.DeleteConsumerGenesis(ctx, "neutron-1") // See https://github.com/neutron-org/mainnet-assets#parameters
-
-	// TODO: determine if any other ConsumerGenesisStates need to be deleted, or actually migrated!
 }
 
 // Due to https://github.com/cosmos/interchain-security/pull/786,
