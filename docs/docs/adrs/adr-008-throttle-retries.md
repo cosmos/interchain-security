@@ -39,7 +39,9 @@ If the proposed change will be large, please also indicate a way to do the chang
 
 The main change needed for the provider is the removal of queuing logic for slash and vsc matured packets upon being received. Instead, the provider will consult the slash meter to determine if a slash packet can be handled immediately. If not, the provider will return an ack message to the consumer communicating that the slash packet could not be handled, and needs to be sent again in the future (retried). VSCMatured packets will always be handled immediately upon being received by the provider.
 
-Note [spec](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#consumer-initiated-slashing). Specifically the section on _VSC Maturity and Slashing Order_. Previously the onus was on the provider to maintain this property via its queuing. Now the onus will be on the consumer to send the packets in the correct order, and the ordered IBC channel will ensure that the packets are received in the correct order on the provider.
+Note [spec](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#consumer-initiated-slashing). Specifically the section on _VSC Maturity and Slashing Order_. Previously the onus was on the provider to maintain this property via its queuing. Now the onus will be on the consumer to send packets in the correct order and block packet sending as needed. Then the ordered IBC channel will ensure that the packets are received in the correct order on the provider.
+
+The provider's main responsibility regarding throttling will now be to determine if a recv slash packet can be handled via slash meter etc., and appropriately ack to the sending consumer.
 
 ### Consumer changes
 
