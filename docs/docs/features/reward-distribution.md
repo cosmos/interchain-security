@@ -15,7 +15,7 @@ Sending and distributing rewards from consumer chains to provider chain is handl
 ## Note
 The ICS distribution system works by allowing consumer chains to send rewards to a module address on the provider called the `ConsumerRewardsPool`.
 There is a new transaction type called `RegisterConsumerRewardDenom`. This transaction allows consumer chains to register denoms to be used as consumer chain rewards on the provider.
-The cost to register register a denom is configurable (`ConsumerRewardDenomRegistrationFee` chain param) and the full amount is transferred to the community pool of the provider chain. Only denoms registered through this transaction are then transferred to the `FeePoolAddress` and distributed out to delegators and validators.
+The cost to register a denom is configurable (`ConsumerRewardDenomRegistrationFee` chain param) and the full amount of this fee is transferred to the community pool of the provider chain. Only denoms registered through this transaction are then transferred from the `ConsumerRewardsPool` to the `FeePoolAddress`, to be distributed out to delegators and validators.
 
 ### Instructions for adding a denom
 The transaction must be carried out on the provider chain. Please use the `ibc/*` denom trace format.
