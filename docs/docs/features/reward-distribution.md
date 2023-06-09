@@ -12,6 +12,21 @@ The distributed reward tokens are IBC tokens and therefore cannot be staked on t
 
 Sending and distributing rewards from consumer chains to provider chain is handled by the `Reward Distribution` sub-protocol.
 
+## Note
+The ICS distribution system works by allowing consumer chains to send rewards to a module address on the provider called the `ConsumerRewardsPool`.
+There is a new transaction type called `RegisterConsumerRewardDenom`. This transaction allows consumer chains to register denoms to be used as consumer chain rewards on the provider.
+It costs `10 ATOM` to register a denom and the full amount is transferred to the community pool of the provider chain. Only denoms registered through this transaction are then transferred to the `FeePoolAddress` and distributed out to delegators and validators.
+
+### Instructions for adding a denom
+The transaction must be carried out on the provider chain. Please use the `ibc/*` denom trace format.
+
+:::tip
+```
+# reward denoms must be registered on the provider chain (gaia in this example)
+gaiad tx provider register-consumer-reward-denom ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9 --from mykey
+```
+:::
+
 ## Parameters
 :::tip
 The following chain parameters dictate consumer chain distribution amount and frequency.
