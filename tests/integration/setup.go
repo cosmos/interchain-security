@@ -68,8 +68,6 @@ type CCVTestSuite struct {
 	skippedTests    map[string]bool
 
 	// packetSniffers maps a chain and a packetSniffer
-	// TODO check if we can have a single packetSniffer for all chains. Possible
-	// if the packetSentKey is unique along all chains.
 	packetSniffers map[*ibctesting.TestChain]*packetSniffer
 }
 
