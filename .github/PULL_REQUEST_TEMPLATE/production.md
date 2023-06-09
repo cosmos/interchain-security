@@ -1,5 +1,5 @@
 <!--
-The default pull request template is for types feat, fix, or refactor.
+The production pull request template is for types feat, fix, or refactor.
 -->
 
 ## Description
