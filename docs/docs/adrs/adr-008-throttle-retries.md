@@ -53,7 +53,7 @@ Instead, we will now introduce the following logic on endblock:
 * If two slash packets are at the head of the queue, the consumer will send the first slash packet, and then wait for a success ack from the provider before sending the second slash packet. This seems like it'd simplify implementation.
 * VSC matured packets at the head of the queue (ie. NOT trailing a slash packet) can be sent immediately, and do not block any other packets in the queue, since the provider always handles them immediately.
 
-Note IBC doesn't implement an event subscription model between chains, so the consumer will have to retry the sending of slash packets over some period of time. This can be achieved with an on chain consumer param. The suggested param value would probably be 1/2 of the provider's `SlashMeterReplenishmentPeriod`, although it doesn't matter too much as long as the param value is sane.
+To prevent the provider from having to keep track of what slash packets have been rejected, the consumer will have to retry the sending of slash packets over some period of time. This can be achieved with an on-chain consumer param. The suggested param value would probably be 1/2 of the provider's `SlashMeterReplenishmentPeriod`, although it doesn't matter too much as long as the param value is sane.
 
 Note to prevent weird edge case behavior, a retry would not be attempted until either a success ack or failure ack has been recv from the provider.
 
