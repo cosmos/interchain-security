@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
@@ -79,12 +80,42 @@ func AddProvider[T testutil.ProviderApp](t *testing.T, coordinator *ibctesting.C
 }
 
 // AddDemocracyConsumer adds a new democ consumer chain to the coordinator and returns the test chain and app type
-func AddDemocracyConsumer[T testutil.DemocConsumerApp](t *testing.T, coordinator *ibctesting.Coordinator,
+func AddDemocracyConsumer[T testutil.DemocConsumerApp](
+	coordinator *ibctesting.Coordinator,
+	s *suite.Suite,
 	appIniter ValSetAppIniter,
 ) (*ibctesting.TestChain, T) {
-	t.Helper()
-	ibctesting.DefaultTestingAppInit = appIniter(nil)
-	democConsumer := ibctesting.NewTestChain(t, coordinator, democConsumerChainID)
+	s.T().Helper()
+
+	// generate validators private/public key
+	var (
+		validatorsPerChain = 4
+		validators         []*tmtypes.Validator
+		valUpdates         []types.ValidatorUpdate
+		signersByAddress   = make(map[string]tmtypes.PrivValidator, validatorsPerChain)
+	)
+	for i := 0; i < validatorsPerChain; i++ {
+		privVal := mock.NewPV()
+		pubKey, err := privVal.GetPubKey()
+		s.Require().NoError(err)
+		val := tmtypes.NewValidator(pubKey, 1)
+		validators = append(validators, val)
+		signersByAddress[pubKey.Address().String()] = privVal
+
+		protoPubKey, err := tmencoding.PubKeyToProto(val.PubKey)
+		s.Require().NoError(err)
+		valUpdates = append(valUpdates, types.ValidatorUpdate{
+			PubKey: protoPubKey,
+			Power:  val.VotingPower,
+		})
+	}
+	// construct validator set;
+	// Note that the validators are sorted by voting power
+	// or, if equal, by address lexical order
+	valSet := tmtypes.NewValidatorSet(validators)
+
+	ibctesting.DefaultTestingAppInit = appIniter(valUpdates)
+	democConsumer := ibctesting.NewTestChainWithValSet(s.T(), coordinator, democConsumerChainID, valSet, signersByAddress)
 	coordinator.Chains[democConsumerChainID] = democConsumer
 
 	democConsumerToReturn, ok := democConsumer.App.(T)

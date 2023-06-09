@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"testing"
 	"time"
 
 	"cosmossdk.io/math"
@@ -33,18 +32,18 @@ func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
 ) *ConsumerDemocracyTestSuite {
 	democSuite := new(ConsumerDemocracyTestSuite)
 
-	democSuite.setupCallback = func(t *testing.T) (
+	democSuite.setupCallback = func(s *suite.Suite) (
 		*ibctesting.Coordinator,
 		*ibctesting.TestChain,
 		testutil.DemocConsumerApp,
 	) {
-		t.Helper()
+		s.T().Helper()
 		// Instantiate the test coordinator
-		coordinator := ibctesting.NewCoordinator(t, 0)
+		coordinator := ibctesting.NewCoordinator(s.T(), 0)
 
 		// Add single democracy consumer to coordinator, store returned test chain and app.
 		democConsumer, democConsumerApp := icstestingutils.AddDemocracyConsumer[T](
-			t, coordinator, democConsumerAppIniter)
+			coordinator, s, democConsumerAppIniter)
 
 		// Pass variables to suite.
 		return coordinator, democConsumer, democConsumerApp
@@ -54,7 +53,7 @@ func NewConsumerDemocracyTestSuite[T testutil.DemocConsumerApp](
 
 // Callback for instantiating a new coordinator, consumer test chain, and consumer app
 // before every test defined on the suite.
-type DemocSetupCallback func(t *testing.T) (
+type DemocSetupCallback func(s *suite.Suite) (
 	coord *ibctesting.Coordinator,
 	consumerChain *ibctesting.TestChain,
 	consumerApp testutil.DemocConsumerApp,
@@ -64,7 +63,7 @@ type DemocSetupCallback func(t *testing.T) (
 func (suite *ConsumerDemocracyTestSuite) SetupTest() {
 	// Instantiate new test utils using callback
 	suite.coordinator, suite.consumerChain,
-		suite.consumerApp = suite.setupCallback(suite.T())
+		suite.consumerApp = suite.setupCallback(&suite.Suite)
 }
 
 func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
