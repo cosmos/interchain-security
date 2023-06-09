@@ -818,6 +818,10 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 	providerKeeper.SetSlashMeterReplenishTimeCandidate(s.providerCtx())
 
 	// Execute end blocker to dequeue only the leading vsc matured packets.
+	// Note we must call the end blocker three times, since only 100 vsc matured packets can be handled
+	// each block, and we have 5*50=250 total.
+	s.providerChain.NextBlock()
+	s.providerChain.NextBlock()
 	s.providerChain.NextBlock()
 
 	// Confirm queue size is 100 for each consumer-specific queue (50 leading vsc matured are dequeued).

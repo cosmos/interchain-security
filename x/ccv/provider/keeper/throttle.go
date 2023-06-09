@@ -22,6 +22,13 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 		return
 	}
 
+	// Return if vsc matured handle limit was already reached this block, during HandleLeadingVSCMaturedPackets.
+	// It makes no practical difference for throttling logic to execute next block.
+	// By doing this, we assure that all leading vsc matured packets were handled before any slash packets.
+	if k.VSCMaturedHandledLimitReached(ctx) {
+		return
+	}
+
 	// Obtain all global slash entries, where only some of them may be handled in this method,
 	// depending on the value of the slash meter.
 	allEntries := k.GetAllGlobalSlashEntries(ctx)
@@ -85,15 +92,24 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 ) {
 	// Get slash packet data and trailing vsc matured packet data, handle it all.
 	slashFound, slashData, vscMaturedData, seqNums := k.GetSlashAndTrailingData(ctx, consumerChainID)
+	seqNumsHandled := []uint64{}
 	if slashFound {
 		slashPacketHandler(ctx, consumerChainID, slashData)
+		// Slash packet should always be the first packet in the queue, so we can safely append the first seqNum.
+		seqNumsHandled = append(seqNumsHandled, seqNums[0])
 	}
-	for _, vscMData := range vscMaturedData {
+	for idx, vscMData := range vscMaturedData {
+		if k.VSCMaturedHandledLimitReached(ctx) {
+			// Break from for-loop, DeleteThrottledPacketData will still be called for this consumer
+			break
+		}
 		vscMaturedPacketHandler(ctx, consumerChainID, vscMData)
+		// Append seq num for this vsc matured packet
+		seqNumsHandled = append(seqNumsHandled, seqNums[idx+1]) // Note idx+1, since slash packet is at index 0
 	}
 
 	// Delete handled data after it has all been handled.
-	k.DeleteThrottledPacketData(ctx, consumerChainID, seqNums...)
+	k.DeleteThrottledPacketData(ctx, consumerChainID, seqNumsHandled...)
 }
 
 // InitializeSlashMeter initializes the slash meter to it's max value (also its allowance),
@@ -606,4 +622,30 @@ func (k Keeper) SetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context) {
 	store := ctx.KVStore(k.storeKey)
 	timeToStore := ctx.BlockTime().UTC().Add(k.GetSlashMeterReplenishPeriod(ctx))
 	store.Set(providertypes.SlashMeterReplenishTimeCandidateKey(), sdktypes.FormatTimeBytes(timeToStore))
+}
+
+// TODO: UTs
+
+func (k Keeper) IncrementVSCMaturedHandledThisBlock(ctx sdktypes.Context) {
+	current := k.GetVSCMaturedHandledThisBlock(ctx)
+	store := ctx.KVStore(k.storeKey)
+	store.Set(providertypes.VSCMaturedHandledThisBlockKey(), sdktypes.Uint64ToBigEndian(current+1))
+}
+
+func (k Keeper) VSCMaturedHandledLimitReached(ctx sdktypes.Context) bool {
+	return k.GetVSCMaturedHandledThisBlock(ctx) >= 100
+}
+
+func (k Keeper) GetVSCMaturedHandledThisBlock(ctx sdktypes.Context) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(providertypes.VSCMaturedHandledThisBlockKey())
+	if bz == nil {
+		return 0
+	}
+	return sdktypes.BigEndianToUint64(bz)
+}
+
+func (k Keeper) ResetVSCMaturedHandledThisBlock(ctx sdktypes.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(providertypes.VSCMaturedHandledThisBlockKey())
 }

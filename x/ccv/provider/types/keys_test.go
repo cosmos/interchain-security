@@ -51,6 +51,7 @@ func getAllKeyPrefixes() []byte {
 		providertypes.KeyAssignmentReplacementsBytePrefix,
 		providertypes.ConsumerAddrsToPruneBytePrefix,
 		providertypes.SlashLogBytePrefix,
+		providertypes.VSCMaturedHandledThisBlockBytePrefix,
 	}
 }
 
@@ -94,6 +95,7 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.KeyAssignmentReplacementsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ConsumerAddrsToPruneKey("chainID", 88),
 		providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.VSCMaturedHandledThisBlockKey(),
 	}
 }
 

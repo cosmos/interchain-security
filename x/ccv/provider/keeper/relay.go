@@ -55,11 +55,19 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 // bypassing HandleThrottleQueues.
 func (k Keeper) HandleLeadingVSCMaturedPackets(ctx sdk.Context) {
 	for _, chain := range k.GetAllConsumerChains(ctx) {
+		// Note: it's assumed the order of the vsc matured slice matches the order of the ibc seq nums slice,
+		// in that a vsc matured packet data at index i is associated with the ibc seq num at index i.
 		leadingVscMatured, ibcSeqNums := k.GetLeadingVSCMaturedData(ctx, chain.ChainId)
-		for _, data := range leadingVscMatured {
+		ibcSeqNumsHandled := []uint64{}
+		for idx, data := range leadingVscMatured {
+			if k.VSCMaturedHandledLimitReached(ctx) {
+				// Break from inner for-loop, DeleteThrottledPacketData will still be called for this consumer
+				break
+			}
 			k.HandleVSCMaturedPacket(ctx, chain.ChainId, data)
+			ibcSeqNumsHandled = append(ibcSeqNumsHandled, ibcSeqNums[idx])
 		}
-		k.DeleteThrottledPacketData(ctx, chain.ChainId, ibcSeqNums...)
+		k.DeleteThrottledPacketData(ctx, chain.ChainId, ibcSeqNumsHandled...)
 	}
 }
 
@@ -95,6 +103,9 @@ func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv
 		"chainID", chainID,
 		"vscID", data.ValsetUpdateId,
 	)
+
+	// Keep track of how many vsc matured packets have been handled this block
+	k.IncrementVSCMaturedHandledThisBlock(ctx)
 }
 
 // CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations
@@ -267,6 +278,11 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// - Marshaling and/or store corruption errors.
 	// - Setting invalid slash meter values (see SetSlashMeter).
 	k.CheckForSlashMeterReplenishment(ctx)
+
+	// Reset the vsc matured packet handler counter.
+	// Note this assumes vsc matured packets are only handled in the two methods following this call.
+	k.ResetVSCMaturedHandledThisBlock(ctx)
+
 	// Handle leading vsc matured packets before throttling logic.
 	//
 	// Note: HandleLeadingVSCMaturedPackets contains panics for the following scenarios, any of which should never occur
