@@ -6,16 +6,16 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/ibc-go/v4/testing/mock"
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
+	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
 	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
 
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -63,7 +63,7 @@ type CCVTestSuite struct {
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
 func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
-	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string,
+	providerAppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string,
 ) *CCVTestSuite {
 	ccvSuite := new(CCVTestSuite)
 

@@ -13,11 +13,11 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
+	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -112,7 +112,7 @@ func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.
 // Note: This function advances blocks in-between operations, where validator powers are
 // not checked, since they are checked in integration tests.
 func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
-	srcValAddr sdk.ValAddress, dstValAddr sdk.ValAddress, amount sdk.Int,
+	srcValAddr, dstValAddr sdk.ValAddress, amount sdk.Int,
 ) {
 	// Delegate to src validator
 	srcValTokensBefore := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
@@ -284,7 +284,7 @@ func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	incrementTime(s, jumpPeriod)
 }
 
-func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, onHold bool, msgAndArgs ...interface{}) {
+func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found, onHold bool, msgAndArgs ...interface{}) {
 	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerApp.GetTestStakingKeeper(), id)
 	s.Require().Equal(
 		found,

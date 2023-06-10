@@ -13,10 +13,10 @@ import (
 
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/provider/client"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/client"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	"github.com/tidwall/gjson"
 )
 
@@ -860,10 +860,13 @@ func (tr TestRun) relayPackets(
 	if verbose {
 		log.Println("relayPackets cmd:", cmd.String())
 	}
+
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chain, 1, 30*time.Second)
 }
 
 type relayRewardPacketsToProviderAction struct {
@@ -1036,7 +1039,7 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 }
 
 // Sets validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
-func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, down bool, verbose bool) {
+func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, down, verbose bool) {
 	var lastArg string
 	if down {
 		lastArg = "down"
@@ -1158,6 +1161,36 @@ func (tr TestRun) registerRepresentative(
 	}
 
 	wg.Wait()
+}
+
+type registerConsumerRewardDenomAction struct {
+	chain chainID
+	from  validatorID
+	denom string
+}
+
+func (tr TestRun) registerConsumerRewardDenom(action registerConsumerRewardDenomAction, verbose bool) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+		"tx", "provider", "register-consumer-reward-denom", action.denom,
+
+		`--from`, `validator`+fmt.Sprint(action.from),
+		`--chain-id`, string(action.chain),
+		`--home`, tr.getValidatorHome(action.chain, action.from),
+		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--gas`, "9000000",
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	).CombinedOutput()
+
+	if verbose {
+		fmt.Println("redelegate cmd:", string(bz))
+	}
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
 }
 
 // Creates an additional node on selected chain

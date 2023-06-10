@@ -3,6 +3,7 @@ package provider
 import (
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -10,9 +11,9 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // OnChanOpenInit implements the IBCModule interface
@@ -29,7 +30,7 @@ func (am AppModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
-	return version, sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
+	return version, errorsmod.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
 }
 
 // OnChanOpenTry implements the IBCModule interface
@@ -55,13 +56,13 @@ func (am AppModule) OnChanOpenTry(
 
 	// ensure the counterparty port ID matches the expected consumer port ID
 	if counterparty.PortId != ccv.ConsumerPortID {
-		return "", sdkerrors.Wrapf(porttypes.ErrInvalidPort,
+		return "", errorsmod.Wrapf(porttypes.ErrInvalidPort,
 			"invalid counterparty port: %s, expected %s", counterparty.PortId, ccv.ConsumerPortID)
 	}
 
 	// ensure the counter party version matches the expected version
 	if counterpartyVersion != ccv.Version {
-		return "", sdkerrors.Wrapf(
+		return "", errorsmod.Wrapf(
 			ccv.ErrInvalidVersion, "invalid counterparty version: got: %s, expected %s",
 			counterpartyVersion, ccv.Version)
 	}
@@ -84,12 +85,12 @@ func (am AppModule) OnChanOpenTry(
 		// the consumer chain must be excluded from the blocked addresses
 		// blacklist or all all ibc-transfers from the consumer chain to the
 		// provider chain will fail
-		ProviderFeePoolAddr: am.keeper.GetFeeCollectorAddressStr(ctx),
+		ProviderFeePoolAddr: am.keeper.GetConsumerRewardsPoolAddressStr(ctx),
 		Version:             ccv.Version,
 	}
 	mdBz, err := (&md).Marshal()
 	if err != nil {
-		return "", sdkerrors.Wrapf(ccv.ErrInvalidHandshakeMetadata,
+		return "", errorsmod.Wrapf(ccv.ErrInvalidHandshakeMetadata,
 			"error marshalling ibc-try metadata: %v", err)
 	}
 	return string(mdBz), nil
@@ -103,13 +104,13 @@ func validateCCVChannelParams(
 	portID string,
 ) error {
 	if order != channeltypes.ORDERED {
-		return sdkerrors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.ORDERED, order)
+		return errorsmod.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.ORDERED, order)
 	}
 
 	// the port ID must match the port ID the CCV module is bounded to
 	boundPort := keeper.GetPort(ctx)
 	if boundPort != portID {
-		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
+		return errorsmod.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
 	}
 	return nil
 }
@@ -125,7 +126,7 @@ func (am AppModule) OnChanOpenAck(
 	counterpartyChannelID string,
 	counterpartyVersion string,
 ) error {
-	return sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
+	return errorsmod.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
 }
 
 // OnChanOpenConfirm implements the IBCModule interface
@@ -151,7 +152,7 @@ func (am AppModule) OnChanCloseInit(
 	channelID string,
 ) error {
 	// Disallow user-initiated channel closing for provider channels
-	return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
+	return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
 }
 
 // OnChanCloseConfirm implements the IBCModule interface
@@ -216,7 +217,7 @@ func (am AppModule) OnAcknowledgementPacket(
 ) error {
 	var ack channeltypes.Acknowledgement
 	if err := ccv.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal provider packet acknowledgement: %v", err)
+		return errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal provider packet acknowledgement: %v", err)
 	}
 
 	if err := am.keeper.OnAcknowledgementPacket(ctx, packet, ack); err != nil {

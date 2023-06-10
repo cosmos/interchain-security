@@ -18,7 +18,7 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -32,15 +32,15 @@ import (
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	simibc "github.com/cosmos/interchain-security/testutil/simibc"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	appConsumer "github.com/cosmos/interchain-security/v2/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v2/app/provider"
+	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
+	simibc "github.com/cosmos/interchain-security/v2/testutil/simibc"
+	consumerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
 
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 type Builder struct {
@@ -356,7 +356,7 @@ func (b *Builder) setSigningInfos() {
 // Checks that the lexicographic ordering of validator addresses as computed in
 // the staking module match the ordering of validators in the model.
 func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
-	check := func(lesser sdk.ValAddress, greater sdk.ValAddress) {
+	check := func(lesser, greater sdk.ValAddress) {
 		lesserV, _ := b.providerStakingKeeper().GetValidator(b.providerCtx(), lesser)
 		greaterV, _ := b.providerStakingKeeper().GetValidator(b.providerCtx(), greater)
 		lesserKey := stakingtypes.GetValidatorsByPowerIndexKey(lesserV, sdk.DefaultPowerReduction)
@@ -514,6 +514,8 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 		consumertypes.DefaultHistoricalEntries,
 		b.initState.UnbondingC,
 		"0", // disable soft opt-out
+		[]string{},
+		[]string{},
 	)
 	return consumertypes.NewInitialGenesisState(client, providerConsState, valUpdates, params)
 }
@@ -525,7 +527,7 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 func GetZeroState(
 	suite *suite.Suite,
 	initState InitState,
-) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted int64, timeLastCommitted int64) {
+) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted, timeLastCommitted int64) {
 	b := Builder{initState: initState, suite: suite}
 
 	b.createProviderAndConsumer()

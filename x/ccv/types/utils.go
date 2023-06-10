@@ -5,9 +5,9 @@ import (
 	"sort"
 	"time"
 
+	errorsmod "cosmossdk.io/errors"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
@@ -67,17 +67,17 @@ func SendIBCPacket(
 ) error {
 	channel, ok := channelKeeper.GetChannel(ctx, portID, channelID)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
+		return errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
 	}
 	channelCap, ok := scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(portID, channelID))
 	if !ok {
-		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
+		return errorsmod.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
 	}
 
 	// get the next sequence
 	sequence, found := channelKeeper.GetNextSequenceSend(ctx, portID, channelID)
 	if !found {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			channeltypes.ErrSequenceSendNotFound,
 			"source port: %s, source channel: %s", portID, channelID,
 		)
