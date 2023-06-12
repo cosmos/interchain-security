@@ -155,6 +155,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.delegateTokens(action, verbose)
 	case unbondTokensAction:
 		tr.unbondTokens(action, verbose)
+	case cancelUnbondTokensAction:
+		tr.cancelUnbondTokens(action, verbose)
 	case redelegateTokensAction:
 		tr.redelegateTokens(action, verbose)
 	case downtimeSlashAction:

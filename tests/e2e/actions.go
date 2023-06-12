@@ -1417,6 +1417,74 @@ func (tr TestRun) unbondTokens(
 	tr.waitBlocks(action.chain, 1, 10*time.Second)
 }
 
+type cancelUnbondTokensAction struct {
+	chain     chainID
+	delegator validatorID
+	validator validatorID
+	amount    uint
+}
+
+func (tr TestRun) cancelUnbondTokens(
+	action cancelUnbondTokensAction,
+	verbose bool,
+) {
+	validator := tr.validatorConfigs[action.validator].valoperAddress
+	if tr.validatorConfigs[action.validator].useConsumerKey {
+		validator = tr.validatorConfigs[action.validator].consumerValoperAddress
+	}
+
+	// get creation-height from state
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+		"q", "staking", "unbonding-delegation",
+		tr.validatorConfigs[action.delegator].delAddress,
+		validator,
+		`--home`, tr.getValidatorHome(action.chain, action.delegator),
+		`--node`, tr.getValidatorNode(action.chain, action.delegator),
+		`-o`, `json`,
+	)
+	if verbose {
+		fmt.Println("get unbonding delegations cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+	creationHeight := gjson.Get(string(bz), "entries.0.creation_height").Int()
+	if creationHeight == 0 {
+		log.Fatal("invalid creation height")
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+		"tx", "staking", "cancel-unbond",
+		validator,
+		fmt.Sprint(action.amount)+`stake`,
+		fmt.Sprint(creationHeight),
+		`--from`, `validator`+fmt.Sprint(action.delegator),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--home`, tr.getValidatorHome(action.chain, action.delegator),
+		`--node`, tr.getValidatorNode(action.chain, action.delegator),
+		`--gas`, "900000",
+		`--keyring-backend`, `test`,
+		`-o`, `json`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("unbond cmd:", cmd.String())
+	}
+
+	bz, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 2, 20*time.Second)
+}
+
 type redelegateTokensAction struct {
 	chain    chainID
 	src      validatorID

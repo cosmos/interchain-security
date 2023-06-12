@@ -18,6 +18,7 @@ var happyPathSteps = concatSteps(
 	stepsDelegate("consu"),
 	stepsAssignConsumerKeyOnStartedChain("consu", "bob"),
 	stepsUnbond("consu"),
+	stepsCancelUnbond("consu"),
 	stepsRedelegateForOptOut("consu"),
 	stepsDowntimeWithOptOut("consu"),
 	stepsRedelegate("consu"),

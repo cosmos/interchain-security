@@ -44,6 +44,7 @@ type StakingKeeper interface {
 	GetLastTotalPower(ctx sdk.Context) sdk.Int
 	GetLastValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
 	BondDenom(ctx sdk.Context) (res string)
+	GetUnbondingType(ctx sdk.Context, id uint64) (unbondingType stakingtypes.UnbondingType, found bool)
 }
 
 type EvidenceKeeper interface {

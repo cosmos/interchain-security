@@ -110,6 +110,14 @@ func (m *MockStakingKeeper) GetLastValidators(ctx types.Context) []types4.Valida
 	return ret0
 }
 
+func (m *MockStakingKeeper) GetUnbondingType(ctx types0.Context, id uint64) (types5.UnbondingType, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUnbondingType", ctx, id)
+	ret0, _ := ret[0].(types5.UnbondingType)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
 // GetLastValidators indicates an expected call of GetLastValidators.
 func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
