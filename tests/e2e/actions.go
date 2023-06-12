@@ -1003,6 +1003,7 @@ func (tr TestRun) cancelUnbondTokens(
 	}
 
 	// get creation-height from state
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 		"q", "staking", "unbonding-delegation",
 		tr.validatorConfigs[action.delegator].delAddress,
