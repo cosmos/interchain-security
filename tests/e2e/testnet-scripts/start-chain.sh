@@ -343,7 +343,7 @@ QUERY_PERSISTENT_PEERS="--p2p.persistent_peers ${QUERY_PERSISTENT_PEERS:1}"
 ## START NODE
 ARGS="$QUERY_GAIA_HOME $QUERY_LISTEN_ADDRESS $QUERY_RPC_ADDRESS $QUERY_GRPC_ADDRESS $QUERY_LOG_LEVEL $QUERY_P2P_ADDRESS $QUERY_ENABLE_WEBGRPC $QUERY_PERSISTENT_PEERS"
 
-# Query node is only started if CometMock is not uses - with CometMock, it takes the role of the query node
+# Query node is only started if CometMock is not used - with CometMock, it takes the role of the query node
 if [[ "$USE_COMETMOCK" != "true" ]]; then
     ip netns exec $QUERY_NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/$QUERY_NODE_ID/logs &
 fi
