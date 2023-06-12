@@ -75,7 +75,7 @@ test-no-cache:
 ###                                Linting                                  ###
 ###############################################################################
 
-golangci_version=latest
+golangci_version=v1.52.2
 
 lint:
 	@echo "--> Running linter"
