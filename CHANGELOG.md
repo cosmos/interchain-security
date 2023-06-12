@@ -6,9 +6,13 @@ Add an entry to the unreleased section whenever merging a PR to main that is not
 
 ## v.2.0.0
 
-Date: May 12th, 2023
+Date: June 1st, 2023
 
-Unlike prior releases, the ICS v2.0.0 release will be based on the main branch. v2.0.0 will contain all the accumulated PRs from the various releases below, along with other PRs that were merged, but not released to production. After v2.0.0, we plan to revamp release practices, and how we modularize the repo for consumer/provider.
+Unlike prior releases, the ICS `v2.0.0` release will be based on the main branch. `v2.0.0` will contain all the accumulated PRs from the various releases below, along with other PRs that were merged, but not released to production. After `v2.0.0`, we plan to revamp release practices, and how we modularize the repo for consumer/provider.
+
+Upgrading a provider from `v1.1.0-multiden` to `v2.0.0` will require state migrations. See [migration.go](./x/ccv/provider/keeper/migration.go). See the provider module's `ConsensusVersion` in [module](./x/ccv/provider/module.go)
+
+Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state migrations. See the consumer module's `ConsensusVersion` in [module](./x/ccv/consumer/module.go)
 
 Some PRs from v2.0.0 may reappear from other releases below. This is due to the fact that ICS v1.1.0 deviates from the commit ordering of the main branch, and other releases thereafter are based on v1.1.0.
 
@@ -19,11 +23,13 @@ Some PRs from v2.0.0 may reappear from other releases below. This is due to the 
 * Various fixes, critical and non-critical
 * Docs updates which should not affect production code
 
-## PRs included in v2.0.0
+## Notable PRs included in v2.0.0
 
+* (fix) cosumer key prefix order to avoid complex migrations [#963](https://github.com/cosmos/interchain-security/pull/963) and [#991](https://github.com/cosmos/interchain-security/pull/991). The latter PR is the proper fix.
+* (feat) v1->v2 migrations to accommodate a bugfix having to do with store keys, introduce new params, and deal with consumer genesis state schema changes [#975](https://github.com/cosmos/interchain-security/pull/975) and [#997](https://github.com/cosmos/interchain-security/pull/997)
+* (deps) Bump github.com/cosmos/ibc-go/v4 from 4.4.0 to 4.4.2 [#982](https://github.com/cosmos/interchain-security/pull/982)
 * (fix) partially revert key assignment type safety PR [#980](https://github.com/cosmos/interchain-security/pull/980)
 * (fix) Remove panics on failure to send IBC packets [#876](https://github.com/cosmos/interchain-security/pull/876)
-* (fix) consumer key prefix order to avoid complex migrations [#963](https://github.com/cosmos/interchain-security/pull/963)
 * (fix) Prevent denom DOS [#931](https://github.com/cosmos/interchain-security/pull/931)
 * (fix) multisig for assigning consumer key, use json [#916](https://github.com/cosmos/interchain-security/pull/916)
 * (deps) Bump github.com/cosmos/ibc-go/v4 from 4.3.0 to 4.4.0 [#902](https://github.com/cosmos/interchain-security/pull/902)
