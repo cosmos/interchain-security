@@ -37,10 +37,13 @@ TENDERMINT_CONFIG_TRANSFORM=$7
 USE_COMETMOCK=$8
 
 # stores a comma separated list of nodes addresses
-NODE_LISTEN_ADDR_STR=""
+# needed for CometMock - these are the addresses that the ABCI servers of the apps are listening on
+NODE_LISTEN_ADDR_STR="" # example value: 7.7.8.6:26655,7.7.8.4:26655,7.7.8.5:26655
 
 # stores a comma separated list of nodes home folders
-NODE_HOMES=""
+# needed for CometMock - validator nodes have their private keys in their home directories, and CometMock
+# reads the keys to sign with from there
+NODE_HOMES="" # example value: /consu/validatorcarol,/consu/validatoralice,/consu/validatorbob
 
 
 
@@ -259,6 +262,7 @@ do
 
     ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
     if [[ "$USE_COMETMOCK" == "true" ]]; then
+        # to start with CometMock, ensure ABCI server  uses grpc (--transport=grpc) and the app is started without in-process CometBFT (--with-tendermint=false)
         ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start --transport=grpc --with-tendermint=false &> /$CHAIN_ID/validator$VAL_ID/logs &
     else
         ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/validator$VAL_ID/logs &
@@ -339,6 +343,7 @@ QUERY_PERSISTENT_PEERS="--p2p.persistent_peers ${QUERY_PERSISTENT_PEERS:1}"
 ## START NODE
 ARGS="$QUERY_GAIA_HOME $QUERY_LISTEN_ADDRESS $QUERY_RPC_ADDRESS $QUERY_GRPC_ADDRESS $QUERY_LOG_LEVEL $QUERY_P2P_ADDRESS $QUERY_ENABLE_WEBGRPC $QUERY_PERSISTENT_PEERS"
 
+# Query node is only started if CometMock is not uses - with CometMock, it takes the role of the query node
 if [[ "$USE_COMETMOCK" != "true" ]]; then
     ip netns exec $QUERY_NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/$QUERY_NODE_ID/logs &
 fi
@@ -354,7 +359,7 @@ NODE_LISTEN_ADDR_STR=${NODE_LISTEN_ADDR_STR%?}
 NODE_HOMES=${NODE_HOMES%?}
 
 
-
+# CometMock takes the role of the query node
 if [[ "$USE_COMETMOCK" == "true" ]]; then
     sleep 2
     ip netns exec $QUERY_NET_NAMESPACE_NAME cometmock $NODE_LISTEN_ADDR_STR /$CHAIN_ID/genesis.json tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658 $NODE_HOMES &> cometmock_${CHAIN_ID}_out.log &
