@@ -38,9 +38,10 @@ TENDERMINT_CONFIG_TRANSFORM=$6
 echo "killing nodes"
 pkill -f "^"interchain-security-sd &> /dev/null || true
 
-mkdir /.sovereign
+mkdir -p /root/.sovereign/config
+
 cp -r /sover/validatoralice /.sovereign  # see: app/consumer-democracy/app.go::657
-jq "$GENESIS_TRANSFORM" /sover/validatoralice/config/genesis.json > /.sovereign/validatoralice/config/genesis.json
+jq "$GENESIS_TRANSFORM" /sover/validatoralice/config/genesis.json > /root/.sovereign/config/genesis.json
 
 
 # Get number of nodes from length of validators array
@@ -174,64 +175,9 @@ do
     ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/validator$VAL_ID/logs &
 done
 
-## SETUP QUERY NODE NETWORK NAMESPACE
-QUERY_NODE_ID="query"
-QUERY_IP_SUFFIX="253"
-QUERY_NET_NAMESPACE_NAME="$CHAIN_ID-$QUERY_NODE_ID"
-QUERY_IP_ADDR="$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX/24"
-
-ip netns add $QUERY_NET_NAMESPACE_NAME
-ip link add $QUERY_NET_NAMESPACE_NAME-in type veth peer name $QUERY_NET_NAMESPACE_NAME-out
-ip link set $QUERY_NET_NAMESPACE_NAME-in netns $QUERY_NET_NAMESPACE_NAME
-ip netns exec $QUERY_NET_NAMESPACE_NAME ip addr add $QUERY_IP_ADDR dev $QUERY_NET_NAMESPACE_NAME-in
-ip link set $QUERY_NET_NAMESPACE_NAME-out master virtual-bridge
-## DONE ADD SETUP QUERY NODE NETWORK NAMESPACE
-
-## QUERY NODE ENABLE DEVICE
-ip link set $QUERY_NET_NAMESPACE_NAME-out up
-ip netns exec $QUERY_NET_NAMESPACE_NAME ip link set dev $QUERY_NET_NAMESPACE_NAME-in up
-ip netns exec $QUERY_NET_NAMESPACE_NAME ip link set dev lo up
-## DONE QUERY NODE ENABLE DEVICE
-
-## INIT QUERY NODE
-$BIN init --home /$CHAIN_ID/$QUERY_NODE_ID --chain-id=$CHAIN_ID $QUERY_NODE_ID > /dev/null
-cp /sover/validatoralice/config/genesis.json /$CHAIN_ID/$QUERY_NODE_ID/config/genesis.json
-## DONE INIT QUERY NODE
-
-
-## START QUERY NODE
-QUERY_GAIA_HOME="--home /$CHAIN_ID/$QUERY_NODE_ID"
-QUERY_RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658"
-QUERY_GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:9091"
-QUERY_LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26655"
-QUERY_P2P_ADDRESS="--p2p.laddr tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26656"
-# QUERY_LOG_LEVEL="--log_level trace" # switch to trace to see panic messages and rich and all debug msgs
-QUERY_LOG_LEVEL="--log_level info"
-QUERY_ENABLE_WEBGRPC="--grpc-web.enable=false"
-
-QUERY_PERSISTENT_PEERS=""
-
-## add validators to persistend peers of QUERY node
-for j in $(seq 0 $(($NODES - 1)));
-do
-    PEER_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$j].val_id")
-    PEER_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$j].ip_suffix")
-    NODE_ID=$($BIN tendermint show-node-id --home /$CHAIN_ID/validator$PEER_VAL_ID)
-    ADDRESS="$NODE_ID@$CHAIN_IP_PREFIX.$PEER_VAL_IP_SUFFIX:26656"
-    QUERY_PERSISTENT_PEERS="$QUERY_PERSISTENT_PEERS,$ADDRESS"
-done
-
-# Remove leading comma and concat to flag
-QUERY_PERSISTENT_PEERS="--p2p.persistent_peers ${QUERY_PERSISTENT_PEERS:1}"
-
-## START NODE
-ARGS="$QUERY_GAIA_HOME $QUERY_LISTEN_ADDRESS $QUERY_RPC_ADDRESS $QUERY_GRPC_ADDRESS $QUERY_LOG_LEVEL $QUERY_P2P_ADDRESS $QUERY_ENABLE_WEBGRPC $QUERY_PERSISTENT_PEERS"
-ip netns exec $QUERY_NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/$QUERY_NODE_ID/logs &
-## DONE START NODE
-
 # poll for chain start
 set +e
-until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 0.3 ; done
+until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$4:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 0.3 ; done
 set -e
 
 echo "done!!!!!!!!"
