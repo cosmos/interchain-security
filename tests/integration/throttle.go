@@ -12,6 +12,8 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
+const fullSlashMeterString = "1.0"
+
 // TestBasicSlashPacketThrottling tests slash packet throttling with a single consumer,
 // two slash packets, and no VSC matured packets. The most basic scenario.
 func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
@@ -651,7 +653,7 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 
 	// Set replenish fraction to 1.0 so that all sent packets should handled immediately (no throttling)
 	params := providerKeeper.GetParams(s.providerCtx())
-	params.SlashMeterReplenishFraction = "1.0"
+	params.SlashMeterReplenishFraction = fullSlashMeterString // needs to be const for linter
 	providerKeeper.SetParams(s.providerCtx(), params)
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
 
@@ -706,7 +708,7 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 
 	// Set replenish fraction to 1.0 so that all sent packets should be handled immediately (no throttling)
 	params := providerKeeper.GetParams(s.providerCtx())
-	params.SlashMeterReplenishFraction = "1.0"
+	params.SlashMeterReplenishFraction = fullSlashMeterString // needs to be const for linter
 	providerKeeper.SetParams(s.providerCtx(), params)
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
 
@@ -852,7 +854,7 @@ func (s *CCVTestSuite) TestVscMaturedHandledPerBlockLimit() {
 
 	// Set replenish fraction to 1.0 so that all sent packets should be handled immediately (no jail throttling)
 	params := providerKeeper.GetParams(s.providerCtx())
-	params.SlashMeterReplenishFraction = "1.0"
+	params.SlashMeterReplenishFraction = fullSlashMeterString // needs to be const for linter
 	providerKeeper.SetParams(s.providerCtx(), params)
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
 
