@@ -134,7 +134,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 			handledData = append(handledData, data)
 		}
 
-		providerKeeper.HandlePacketDataForChain(ctx, tc.chainID, slashHandleCounter, vscMaturedHandleCounter)
+		providerKeeper.HandlePacketDataForChain(ctx, tc.chainID, slashHandleCounter, vscMaturedHandleCounter, 0)
 
 		// Assert number of handled data instances matches expected number
 		require.Equal(t, len(tc.expectedHandledIndexes), len(handledData))
