@@ -50,6 +50,17 @@ type ConsumerAdditionProposal struct {
 	Status        string
 }
 
+type UpgradeProposal struct {
+	Title         string
+	Description   string
+	UpgradeHeight uint64
+	Type          string
+	Deposit       uint
+	Status        string
+}
+
+func (p UpgradeProposal) isProposal() {}
+
 func (p ConsumerAdditionProposal) isProposal() {}
 
 type ConsumerRemovalProposal struct {
@@ -390,6 +401,16 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 				RevisionHeight: gjson.Get(string(bz), `content.initial_height.revision_height`).Uint(),
 			},
 		}
+	case "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal":
+		height := gjson.Get(string(bz), `content.plan.height`).Uint()
+		title := gjson.Get(string(bz), `content.plan.name`).String()
+		return UpgradeProposal{
+			Deposit:       uint(deposit),
+			Status:        status,
+			UpgradeHeight: height,
+			Title:         title,
+			Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
+		}
 	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
 		chainId := gjson.Get(string(bz), `content.chain_id`).String()
 		stopTime := gjson.Get(string(bz), `content.stop_time`).Time().Sub(tr.containerConfig.now)
@@ -691,7 +712,14 @@ func (tr TestRun) getQueryNode(chain chainID) string {
 }
 
 // getQueryNodeIP returns query node IP for chain,
-// ipSuffix is hardcoded to be 253 on all query nodes.
+// ipSuffix is hardcoded to be 253 on all query nodes
+// except for "sover" chain where there's only one node
 func (tr TestRun) getQueryNodeIP(chain chainID) string {
+	if chain == chainID("sover") {
+		// return addres of first and only validator
+		return fmt.Sprintf("%s.%s",
+			tr.chainConfigs[chain].ipPrefix,
+			tr.validatorConfigs[validatorID("alice")].ipSuffix)
+	}
 	return fmt.Sprintf("%s.253", tr.chainConfigs[chain].ipPrefix)
 }

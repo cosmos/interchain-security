@@ -30,21 +30,19 @@ func stepStartProviderChain() []Step {
 
 // start sovereign chain with 2 validators
 // nodes will cease being validators once the changeover occurs
-func stepStartSovereignChain() []Step {
+func stepRunSovereignChain() []Step {
 	return []Step{
 		{
-			action: StartChainAction{
+			action: StartSovereignChainAction{
 				chain: chainID("sover"),
 				validators: []StartChainValidator{
 					{id: validatorID("alice"), stake: 500000000, allocation: 10000000000},
-					{id: validatorID("bob"), stake: 500000000, allocation: 10000000000},
 				},
 			},
 			state: State{
 				chainID("sover"): ChainState{
 					ValBalances: &map[validatorID]uint{
 						validatorID("alice"): 9500000000,
-						validatorID("bob"):   9500000000,
 					},
 				},
 			},
@@ -60,22 +58,55 @@ func stepStartSovereignChain() []Step {
 				chainID("sover"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   500,
+					},
+				},
+			},
+		},
+
+		// {
+		// 	"title": "Test Proposal",
+		// 	"description": "My awesome proposal",
+		// 	"type": "Text",
+		// 	"deposit": "10test"
+		// }
+		{
+			action: UpgradeProposalAction{
+				chainID:       chainID("sover"),
+				upgradeTitle:  "sovereign-changeover",
+				proposer:      validatorID("alice"),
+				upgradeHeight: 150,
+			},
+			state: State{
+				chainID("sover"): ChainState{
+					Proposals: &map[uint]Proposal{
+						1: UpgradeProposal{
+							Title:         "sovereign-changeover",
+							UpgradeHeight: 150,
+							Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
+							Deposit:       10000000,
+							Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
+						},
 					},
 				},
 			},
 		},
 		{
-			action: SendTokensAction{
-				chain:  chainID("sover"),
-				from:   validatorID("alice"),
-				to:     validatorID("bob"),
-				amount: 10000,
+			action: voteGovProposalAction{
+				chain:      chainID("sover"),
+				from:       []validatorID{validatorID("alice")},
+				vote:       []string{"yes"},
+				propNumber: 1,
 			},
 			state: State{
 				chainID("sover"): ChainState{
-					ValBalances: &map[validatorID]uint{
-						validatorID("bob"): 9500010000,
+					Proposals: &map[uint]Proposal{
+						1: UpgradeProposal{
+							Deposit:       10000000,
+							UpgradeHeight: 150,
+							Title:         "sovereign-changeover",
+							Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
+							Status:        "PROPOSAL_STATUS_PASSED",
+						},
 					},
 				},
 			},
