@@ -559,7 +559,7 @@ func (tr TestRun) startConsumerChain(
 	}, verbose)
 }
 
-type changeoverChainAction struct {
+type ChangeoverChainAction struct {
 	sovereignChain chainID
 	providerChain  chainID
 	validators     []StartChainValidator
@@ -567,9 +567,11 @@ type changeoverChainAction struct {
 }
 
 func (tr TestRun) changeoverChain(
-	action changeoverChainAction,
+	action ChangeoverChainAction,
 	verbose bool,
 ) {
+	// sleep until the consumer chain genesis is ready on consumer
+	time.Sleep(5 * time.Second)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.providerChain].binaryName,
 
@@ -581,7 +583,7 @@ func (tr TestRun) changeoverChain(
 	)
 
 	if verbose {
-		log.Println("startConsumerChain cmd: ", cmd.String())
+		log.Println("changeoverChain cmd: ", cmd.String())
 	}
 
 	bz, err := cmd.CombinedOutput()
@@ -589,23 +591,24 @@ func (tr TestRun) changeoverChain(
 		log.Fatal(err, "\n", string(bz))
 	}
 
+	fmt.Println("consumer genesis: ", string(bz))
 	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
 	consumerGenesisChanges := tr.chainConfigs[action.sovereignChain].genesisChanges
 	if consumerGenesisChanges != "" {
 		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges + " | " + action.genesisChanges
 	}
 
-	tr.startChangeover(changeoverChainAction{
+	tr.startChangeover(ChangeoverChainAction{
 		validators:     action.validators,
 		genesisChanges: consumerGenesis,
 	}, verbose)
 }
 
 func (tr TestRun) startChangeover(
-	action changeoverChainAction,
+	action ChangeoverChainAction,
 	verbose bool,
 ) {
-	chainConfig := tr.chainConfigs[chainID("consu")]
+	chainConfig := tr.chainConfigs[chainID("sover")]
 	type jsonValAttrs struct {
 		Mnemonic         string `json:"mnemonic"`
 		Allocation       string `json:"allocation"`
@@ -653,9 +656,8 @@ func (tr TestRun) startChangeover(
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
-		"/testnet-scripts/start-changeover.sh", chainConfig.binaryName, string(vals),
+		"/testnet-scripts/start-changeover.sh", chainConfig.upgradeBinary, string(vals),
 		"sover", chainConfig.ipPrefix, genesisChanges,
-		fmt.Sprint(true),
 		tr.tendermintConfigOverride,
 	)
 
@@ -674,16 +676,17 @@ func (tr TestRun) startChangeover(
 	for scanner.Scan() {
 		out := scanner.Text()
 		if verbose {
-			fmt.Println("startChain: " + out)
+			fmt.Println("startChangeover: " + out)
 		}
 		if out == done {
+			fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$ BROKE")
 			break
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+		log.Fatal("startChangeover died", err)
 	}
-
+	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$ OUT")
 	tr.addChainToRelayer(addChainToRelayerAction{
 		chain:     "sover",
 		validator: action.validators[0].id,

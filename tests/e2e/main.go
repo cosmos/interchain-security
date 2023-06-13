@@ -84,7 +84,7 @@ func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag 
 	tr.validateStringLiterals()
 	tr.startDocker()
 	tr.executeSteps(steps)
-	tr.teardownDocker()
+	// tr.teardownDocker()
 }
 
 type testRunWithSteps struct {
@@ -100,6 +100,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.startSovereignChain(action, verbose)
 	case UpgradeProposalAction:
 		tr.submitUpgradeProposal(action, verbose)
+	case ChangeoverChainAction:
+		tr.changeoverChain(action, true)
 	case SendTokensAction:
 		tr.sendTokens(action, verbose)
 	case submitTextProposalAction:

@@ -64,9 +64,10 @@ var multipleConsumers = concatSteps(
 )
 
 var changeoverSteps = concatSteps(
-	// stepStartProviderChain(),
-	// start chain and test delegation operation
+	// start sovereign chain and test delegation operation
+	// the chain will halt once upgrade height is reached
 	stepRunSovereignChain(),
+	stepsChangeoverToConsumer("sover", false),
 
 	// setup upgrade proposal on sovereign so it halts
 	// setup consumer launch proposal on provider
