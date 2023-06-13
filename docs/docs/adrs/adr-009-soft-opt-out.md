@@ -22,9 +22,9 @@ This document specifies a modification to the ccv protocol which allows the bott
 
 A consumer param exists, known as `SoftOptOutThreshold`, which is a string decimal in the range of [0, 0.2], that determines the portion of validators which are allowed to opt out of validating consumers.
 
-Every consumer beginblocker, a function is ran which determines the voting power s.t. any validator with greater than or equal to said voting power must validate all consumers. Any validator with less than said voting power may opt out of validating any consumer chain.
+Every consumer beginblocker, a function is ran which determines the voting power s.t. any validator with greater than or equal to said voting power must validate that specific consumer. Any validator with less than said voting power may opt out of validating that consumer chain.
 
-The voting power value described above is referred to in code as "smallest non opt out power". The value is recomputed every beginblocker in `UpdateSmallestNonOptOutPower()`. In a nutshell, the method obtains the total voting power of the chain, iterates through the full valset (ordered power ascending) keeping track of a power sum, and when `powerSum / totalPower > SoftOptOutThreshold`, the `SmallestNonOptOutPower` is found and persisted.
+The voting power value described above is referred to in code as "smallest non opt out power". The value is recomputed every beginblocker in `UpdateSmallestNonOptOutPower()`. In a nutshell, the method obtains the total voting power of the consumer, iterates through the full valset (ordered power ascending) keeping track of a power sum, and when `powerSum / totalPower > SoftOptOutThreshold`, the `SmallestNonOptOutPower` is found and persisted.
 
 Then, whenever the `Slash()` interface is executed on the consumer, if the voting power of the relevant validator being slashed is less than `SmallestNonOptOutPower` for that block, the slash request is dropped and never sent to the provider.
 
@@ -32,7 +32,7 @@ Then, whenever the `Slash()` interface is executed on the consumer, if the votin
 
 ### Positive
 
-* Small validators can opt out of validating consumers without being punished for it.
+* Small validators can opt out of validating specific consumers without being punished for it.
 
 ### Negative
 
@@ -40,7 +40,7 @@ Then, whenever the `Slash()` interface is executed on the consumer, if the votin
 
 ### Neutral
 
-* In nominal scenarios, consumers will be computing slash packets for small vals, which may be dropped. This is wasted computation, but necessary to keep implementation simple.
+* In nominal scenarios, consumers with soft opt out enabled will be computing slash packets for small vals, which may be dropped. This is wasted computation, but necessary to keep implementation simple.
 * Validators in the bottom of the valset who don't have to validate, may receive large delegation(s) which suddenly boost the validator to the subset that has to validate. This may catch the validator off guard.
 
 ## References
