@@ -20,7 +20,7 @@ This document specifies a modification to the ccv protocol which allows the bott
 
 ## Decision
 
-A consumer param exists, known as `SoftOptOutThreshold`, which is a string decimal in the range of [0, 0.2], that determines the portion of validators which are allowed to opt out of validating consumers.
+A consumer param exists, known as `SoftOptOutThreshold`, which is a string decimal in the range of [0, 0.2], that determines the portion of validators which are allowed to opt out of validating that specific consumer.
 
 Every consumer beginblocker, a function is ran which determines the voting power s.t. any validator with greater than or equal to said voting power must validate that specific consumer. Any validator with less than said voting power may opt out of validating that consumer chain.
 
