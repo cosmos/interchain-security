@@ -1315,6 +1315,46 @@ func TestSlashMeterReplenishTimeCandidate(t *testing.T) {
 	}
 }
 
+func TestVscMaturedHandledThisBlockCRUD(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Confirm initial value is 0
+	require.Equal(t, uint64(0), providerKeeper.GetVSCMaturedHandledThisBlock(ctx))
+	require.False(t, providerKeeper.VSCMaturedHandledLimitReached(ctx)) // limit is always 100
+
+	// Increment 25 times and confirm values
+	for i := uint64(0); i < 25; i++ {
+		before := providerKeeper.GetVSCMaturedHandledThisBlock(ctx)
+		providerKeeper.IncrementVSCMaturedHandledThisBlock(ctx)
+		after := providerKeeper.GetVSCMaturedHandledThisBlock(ctx)
+		require.Equal(t, before+1, after)
+		require.False(t, providerKeeper.VSCMaturedHandledLimitReached(ctx))
+	}
+	require.Equal(t, uint64(25), providerKeeper.GetVSCMaturedHandledThisBlock(ctx))
+
+	// Confirm that resetting works
+	providerKeeper.ResetVSCMaturedHandledThisBlock(ctx)
+	require.Equal(t, uint64(0), providerKeeper.GetVSCMaturedHandledThisBlock(ctx))
+
+	// Increment 99 times
+	for i := uint64(0); i < 99; i++ {
+		providerKeeper.IncrementVSCMaturedHandledThisBlock(ctx)
+	}
+
+	// Confirm limit not reached
+	require.False(t, providerKeeper.VSCMaturedHandledLimitReached(ctx))
+
+	// Increment more, confirm that limit is reached
+	providerKeeper.IncrementVSCMaturedHandledThisBlock(ctx)
+	require.Equal(t, uint64(100), providerKeeper.GetVSCMaturedHandledThisBlock(ctx))
+	require.True(t, providerKeeper.VSCMaturedHandledLimitReached(ctx))
+
+	providerKeeper.IncrementVSCMaturedHandledThisBlock(ctx)
+	require.Equal(t, uint64(101), providerKeeper.GetVSCMaturedHandledThisBlock(ctx))
+	require.True(t, providerKeeper.VSCMaturedHandledLimitReached(ctx))
+}
+
 // Struct used for TestPendingPacketData and helpers
 type throttledPacketDataInstance struct {
 	IbcSeqNum uint64

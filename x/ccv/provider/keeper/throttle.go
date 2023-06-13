@@ -624,8 +624,6 @@ func (k Keeper) SetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context) {
 	store.Set(providertypes.SlashMeterReplenishTimeCandidateKey(), sdktypes.FormatTimeBytes(timeToStore))
 }
 
-// TODO: UTs
-
 func (k Keeper) IncrementVSCMaturedHandledThisBlock(ctx sdktypes.Context) {
 	current := k.GetVSCMaturedHandledThisBlock(ctx)
 	store := ctx.KVStore(k.storeKey)
