@@ -98,7 +98,9 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 	seqNumsHandled := []uint64{}
 	if slashFound {
 		slashPacketHandler(ctx, consumerChainID, slashData)
-		// Slash packet should always be the first packet in the queue, so we can safely append the first seqNum.
+		// Due to HandleLeadingVSCMaturedPackets() running before HandleThrottleQueues(), and the fact that
+		// HandleThrottleQueues() will return until all leading vsc matured have been handled, a slash packet
+		// should always be the first packet in the queue. So we can safely append the first seqNum here.
 		seqNumsHandled = append(seqNumsHandled, seqNums[0])
 	}
 	for idx, vscMData := range vscMaturedData {
