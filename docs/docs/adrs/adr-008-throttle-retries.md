@@ -3,15 +3,13 @@ sidebar_position: 7
 title: Throttle with retries
 ---
 
-# ADR {008}: {Throttle with retries}
+## ADR 008: Throttle with retries
 
 ## Changelog
 
-* {6/9/23}: Initial draft
+* 6/9/23: Initial draft
 
 ## Status
-
-> A decision may be "proposed" if it hasn't been agreed upon yet, or "accepted" once it is agreed upon. If a later ADR changes or reverses a decision, it may be marked as "deprecated" or "superseded" with a reference to its replacement.
 
 Proposed
 
@@ -29,11 +27,6 @@ Currently the throttling mechanism is designed so that provider logic (slash met
 So what's the solution? We can improve the throttling mechanism to instead queue/persist relevant data on each consumer, and have consumers retry slash requests as needed.
 
 ## Decision
-
-> This section explains all of the details of the proposed solution, including implementation details.
-It should also describe affects / corollary items that may need to be changed as a part of this.
-If the proposed change will be large, please also indicate a way to do the change to maximize ease of review.
-(e.g. the optimal split of things to do between separate PR's)
 
 ### Provider changes
 
@@ -63,11 +56,9 @@ In the normal case, when no or a few slash packets are being sent, the VSCMature
 
 ### Splitting of PRs
 
-We could split this feature into two PRs, one affecting the consumer and one affecting the provider, along with a third PR which could setup a clever way to upgrade the provider in multiple steps, ensuring that queued slash packets at upgrade time are handled properly. 
+We could split this feature into two PRs, one affecting the consumer and one affecting the provider, along with a third PR which could setup a clever way to upgrade the provider in multiple steps, ensuring that queued slash packets at upgrade time are handled properly.
 
 ## Consequences
-
-> This section describes the consequences, after applying the decision. All consequences should be summarized here, not just the "positive" ones.
 
 * Consumers will now have to manage their own queues, and retry logic.
 * Consumers still aren't trustless, but the provider is now less susceptible to mismanaged or malicious consumers.
