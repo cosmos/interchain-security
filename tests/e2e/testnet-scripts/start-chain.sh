@@ -291,6 +291,7 @@ ip netns exec $QUERY_NET_NAMESPACE_NAME ip link set dev lo up
 ## INIT QUERY NODE
 $BIN init --home /$CHAIN_ID/$QUERY_NODE_ID --chain-id=$CHAIN_ID $QUERY_NODE_ID > /dev/null
 cp /$CHAIN_ID/genesis.json /$CHAIN_ID/$QUERY_NODE_ID/config/genesis.json
+cat /$CHAIN_ID/genesis.json
 ## DONE INIT QUERY NODE
 
 

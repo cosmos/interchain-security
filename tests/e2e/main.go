@@ -96,6 +96,10 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 	switch action := step.action.(type) {
 	case StartChainAction:
 		tr.startChain(action, verbose)
+	case StartSovereignChainAction:
+		tr.startSovereignChain(action, verbose)
+	case UpgradeProposalAction:
+		tr.submitUpgradeProposal(action, verbose)
 	case SendTokensAction:
 		tr.sendTokens(action, verbose)
 	case submitTextProposalAction:
