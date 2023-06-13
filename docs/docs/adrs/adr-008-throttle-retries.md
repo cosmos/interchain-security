@@ -44,7 +44,7 @@ Note to prevent weird edge case behavior, a retry would not be attempted until e
 
 With the behavior described, we maintain very similar behavior to the current throttling mechanism regarding the timing that slash and vsc matured packets are handled on the provider. Obviously the queueing and blocking logic is moved, and the two chains would have to send more messages between one another (only in the case the throttling mechanism is triggered).
 
-In the normal case, when no or a few slash packets are being sent, the VSCMaturedPacketswill not be delayed, and hence unbonding will not be delayed.
+In the normal case, when no or a few slash packets are being sent, the VSCMaturedPackets will not be delayed, and hence unbonding will not be delayed.
 
 ### Provider changes
 
