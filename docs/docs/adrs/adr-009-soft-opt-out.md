@@ -32,25 +32,17 @@ Then, whenever the provider receives a slash packet and that packet is handled, 
 
 ### Positive
 
-- Validators subject to an equivocation proposal cannot finish unbonding
-  their tokens before the end of the voting period.
+* Small validators can opt out of validating consumers without being punished for it.
 
 ### Negative
 
-- A malicious consumer chain could forge slash packets enabling submission of
-  an equivocation proposal on the provider chain, resulting in the freezing of
-  validator's unbondings for an undeterminated amount of time.
-- Misbehavior on a consumer chain can potentially go unpunished, if no one
-  submits an equivocation proposal in time, or if the proposal doesn't pass.
+* Small validators who are not being slashed will still be present in the validator set of the consumer chain. In other words, we are sacrificing liveness, not safety. The economic security of the consumer chain is the same, but consumers may be more likely to halt. If soft opt out threshold is set to 10% for example, and every validator who doesn't have to validate the consumer doesn't validate it, then 23% downtime of the remaining valset could halt the chain. This may manifest in slightly longer downtime periods during upgrades.
 
 ### Neutral
 
-- This feature can't be used for social slashing, because an equivocation
-  proposal is only accepted if there's a slash log for the related
-  validator(s), meaning the consumer chain has reported the equivocation to
-  the provider chain.
+* In nominal scenarios, consumers will be sending slash packets for small vals, which may be dropped by the provider. This is wasted computation, but necessary to keep implementation simple.
+* Validators in the bottom of the valset who don't have to validate, may receive large delegation(s) which suddenly boost the validator to the subset that has to validate. This may catch the validator off guard.
 
 ## References
 
-* https://github.com/cosmos/interchain-security/issues/747
-* https://github.com/cosmos/interchain-security/pull/791
+* Original issue with some napkin math [#784](https://github.com/cosmos/interchain-security/issues/784)
