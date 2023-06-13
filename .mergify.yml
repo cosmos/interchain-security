@@ -1,0 +1,20 @@
+defaults:
+  actions:
+    backport:
+      assignees:
+        - "{{ author }}"
+
+queue_rules:
+  - name: default
+    conditions:
+      - "#approved-reviews-by>1"
+
+pull_request_rules:
+  - name: Backport patches to the release/v2.0.x branch
+    conditions:
+      - base=main
+      - label=A:backport/v2.0.x
+    actions:
+      backport:
+        branches:
+          - release/v2.0.x
