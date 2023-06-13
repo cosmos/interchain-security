@@ -59,7 +59,7 @@ Note to prevent weird edge case behavior, a retry would not be attempted until e
 
 With the behavior described, we maintain very similar behavior to the current throttling mechanism regarding the timing that slash and vsc matured packets are handled on the provider. Obviously the queueing and blocking logic is moved, and the two chains do have to send more messages between one another.
 
-In the nominal case (no or minimal slash packets being sent), the vsc matured packets will not be delayed, and hence unbonding will not be delayed.
+In the normal case, when no or a few slash packets are being sent, the VSCMaturedPacketswill not be delayed, and hence unbonding will not be delayed.
 
 ### Splitting of PRs
 
@@ -93,6 +93,6 @@ We could split this feature into two PRs, one affecting the consumer and one aff
 
 ## References
 
-* [EPIC](https://github.com/cosmos/interchain-security/issues/713)
-* [ADR 002](./adr-002-throttle.md)
+* [EPIC](https://github.com/cosmos/interchain-security/issues/713) tracking the changes proposed by this ADR
+* [ADR 002: Jail Throttling](./adr-002-throttle.md)
 * [#594](https://github.com/cosmos/interchain-security/issues/594)
