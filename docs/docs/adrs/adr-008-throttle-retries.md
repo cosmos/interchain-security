@@ -54,9 +54,21 @@ Instead, the provider will consult the slash meter to determine if a slash packe
 
 VSCMatured packets will always be handled immediately upon being received by the provider.
 
-Note [spec](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#consumer-initiated-slashing). Specifically the section on _VSC Maturity and Slashing Order_. Previously the onus was on the provider to maintain this property via its queuing. Now the onus will be on the consumer to send packets in the correct order and block packet sending as needed. Then the ordered IBC channel will ensure that the packets are received in the correct order on the provider.
+Note [spec](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#consumer-initiated-slashing). Specifically the section on _VSC Maturity and Slashing Order_. Previously the onus was on the provider to maintain this property via queuing packets and handling them FIFO.
+
+Now this property will be maintained by the consumer sending packets in the correct order, and blocking the sending of VSCMatured packets as needed. Then, the ordered IBC channel will ensure that Slash/VSCMatured packets are received in the correct order on the provider.
 
 The provider's main responsibility regarding throttling will now be to determine if a recv slash packet can be handled via slash meter etc., and appropriately ack to the sending consumer.
+
+### Why the provider can handle VSCMatured packets immediately
+
+First we answer, what does a VSCMatured packet communicate to the provider? A VSCMatured packet communicates that a VSC has been applied to a consumer long enough that infractions committed on the consumer could have been submitted.
+
+If the consumer is following the queuing/blocking protocol described. No bad behavior occurs, `VSC Maturity and Slashing Order` property is maintained.
+
+If a consumer sends VSCMatured packets too leniently: The consumer is malicious and sending duplicate vsc matured packets, or sending the packets sooner than the ccv protocol specifies. In this scenario, the provider needs to handle vsc matured packets immediately to prevent DOS, state bloat, or other issues. The only possible negative outcome is that the malicious consumer may not be able to jail a validator who should have been jailed. The malicious behavior only creates a negative outcome for the chain that is being malicious.
+
+If a consumer blocks the sending of VSCMatured packets: The consumer is malicious and blocking vsc matured packets that should have been sent. This will block unbonding only up until the VSC timeout period has elapsed. At that time, the consumer is removed. Again the malicious behavior only creates a negative outcome for the chain that is being malicious.
 
 ### Splitting of PRs
 
