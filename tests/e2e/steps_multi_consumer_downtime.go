@@ -40,7 +40,8 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 			// Downtime jailing and corresponding voting power change are processed by provider
 			// Validator powers are unchanged on consumer chains
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer1),
 				port:    "provider",
 				channel: 0,
 			},
@@ -73,7 +74,8 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 			// and can now be relayed as packet to consumer
 			// consumer1 will now see the validator power changes - consumer2 will not (had not been relayed)
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer1),
 				port:    "provider",
 				channel: 0, // consumer1 chan
 			},
@@ -100,7 +102,8 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 		{
 			// both consumer1 and consumer will now see the validator power changes
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer2),
 				port:    "provider",
 				channel: 1, // consumer2 chan
 			},
@@ -156,7 +159,8 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 		{
 			// relay to consumer 1
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer1),
 				port:    "provider",
 				channel: 0,
 			},
@@ -187,7 +191,8 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 		{
 			// relay to consumer2
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer2),
 				port:    "provider",
 				channel: 1, // consumer2 chan
 			},
@@ -255,7 +260,8 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer1),
 				port:    "provider",
 				channel: 0, // consumer 1 channel
 			},
@@ -288,7 +294,8 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer2),
 				port:    "provider",
 				channel: 1, // consumer2 channel
 			},
@@ -349,7 +356,8 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer1),
 				port:    "provider",
 				channel: 0, // consumer1 channel
 			},
@@ -380,7 +388,8 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer2),
 				port:    "provider",
 				channel: 1, // consumer2 channel
 			},

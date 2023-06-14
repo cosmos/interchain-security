@@ -205,6 +205,10 @@ func TestLeadingVSCMaturedAreDequeued(t *testing.T) {
 	runCCVTestByName(t, "TestLeadingVSCMaturedAreDequeued")
 }
 
+func TestVscMaturedHandledPerBlockLimit(t *testing.T) {
+	runCCVTestByName(t, "TestVscMaturedHandledPerBlockLimit")
+}
+
 //
 // Unbonding tests
 //
