@@ -89,21 +89,23 @@ func stepsChangeoverToConsumer(consumerName string, setupTransferChans bool) []S
 				// soft opt-out threshold to 0.05 in the consumer genesis to ensure that the
 				// consumer binary doesn't panic. Sdk requires that all params are set to valid
 				// values from the genesis file.
-				genesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\"",
+				genesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\" | " +
+					".app_state.ccvconsumer.params.pre_ccv = true",
 			},
 			state: State{
 				chainID("provi"): ChainState{
-					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 9500000000,
-						validatorID("bob"):   9500000000,
-						validatorID("carol"): 9500000000,
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 500,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
 					},
 				},
 				chainID(consumerName): ChainState{
-					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 10000000000,
-						validatorID("bob"):   10000000000,
-						validatorID("carol"): 10000000000,
+					ValPowers: &map[validatorID]uint{
+						// uses val powers from consumer
+						validatorID("alice"): 500,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
 					},
 				},
 			},
@@ -179,6 +181,8 @@ func stepRunSovereignChain() []Step {
 				chainID("sover"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
+						validatorID("bob"):   0, // does not exist on pre-ccv sover
+						validatorID("carol"): 0, // does not exist on pre-ccv sover
 					},
 				},
 			},

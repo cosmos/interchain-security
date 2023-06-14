@@ -599,7 +599,6 @@ func (tr TestRun) changeoverChain(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	fmt.Println("consumer genesis: ", string(bz))
 	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
 	consumerGenesisChanges := tr.chainConfigs[action.sovereignChain].genesisChanges
 	if consumerGenesisChanges != "" {
@@ -687,14 +686,13 @@ func (tr TestRun) startChangeover(
 			fmt.Println("startChangeover: " + out)
 		}
 		if out == done {
-			fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$ BROKE")
 			break
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal("startChangeover died", err)
 	}
-	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$ OUT")
+
 	tr.addChainToRelayer(addChainToRelayerAction{
 		chain:     "sover",
 		validator: action.validators[0].id,
