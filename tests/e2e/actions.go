@@ -133,7 +133,6 @@ func (tr TestRun) startChain(
 		// with short timeout_commit (eg. timeout_commit = 1s) some nodes may miss blocks causing the test run to fail
 		tr.tendermintConfigOverride,
 	)
-	fmt.Println("CMD:", cmd.String())
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {

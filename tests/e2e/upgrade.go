@@ -73,7 +73,6 @@ func (tr TestRun) startSovereignChain(
 		string(chainConfig.chainId), chainConfig.ipPrefix, genesisChanges,
 		tr.tendermintConfigOverride,
 	)
-	fmt.Println("CMD:", cmd.String())
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {

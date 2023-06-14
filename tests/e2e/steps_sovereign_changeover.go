@@ -90,7 +90,7 @@ func stepsChangeoverToConsumer(consumerName string, setupTransferChans bool) []S
 				// consumer binary doesn't panic. Sdk requires that all params are set to valid
 				// values from the genesis file.
 				genesisChanges: ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\" | " +
-					".app_state.ccvconsumer.params.pre_ccv = true",
+					".app_state.ccvconsumer.preCCV = true", // !important
 			},
 			state: State{
 				chainID("provi"): ChainState{
