@@ -141,7 +141,6 @@ func (tr TestRun) startChain(
 		tr.tendermintConfigOverride,
 		cometmockArg,
 	)
-	fmt.Println("CMD:", cmd.String())
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
