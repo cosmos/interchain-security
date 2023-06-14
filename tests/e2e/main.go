@@ -121,7 +121,7 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 	case addChainToRelayerAction:
 		tr.addChainToRelayer(action, verbose)
 	case addIbcConnectionAction:
-		tr.addIbcConnection(action, verbose)
+		tr.addIbcConnection(action, true)
 	case addIbcChannelAction:
 		tr.addIbcChannel(action, verbose)
 	case transferChannelCompleteAction:
