@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -72,7 +73,7 @@ type StartChainValidator struct {
 	stake      uint
 }
 
-func (tr TestRun) startChain(
+func (tr *TestRun) startChain(
 	action StartChainAction,
 	verbose bool,
 ) {
@@ -171,6 +172,17 @@ func (tr TestRun) startChain(
 		chain:     action.chain,
 		validator: action.validators[0].id,
 	}, verbose)
+
+	// store the fact that we started the chain
+	if tr.runningChains == nil {
+		tr.runningChains = make(map[chainID]bool)
+	}
+	tr.runningChains[action.chain] = true
+	fmt.Println("Started chain", action.chain)
+	if tr.timeOffset != 0 {
+		// advance time for this chain so that it is in sync with the rest of the network
+		tr.AdvanceTimeForChain(action.chain, tr.timeOffset)
+	}
 }
 
 type submitTextProposalAction struct {
@@ -486,7 +498,7 @@ type voteGovProposalAction struct {
 	propNumber uint
 }
 
-func (tr TestRun) voteGovProposal(
+func (tr *TestRun) voteGovProposal(
 	action voteGovProposalAction,
 	verbose bool,
 ) {
@@ -518,7 +530,7 @@ func (tr TestRun) voteGovProposal(
 	}
 
 	wg.Wait()
-	time.Sleep(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
+	tr.WaitTime(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
 }
 
 type startConsumerChainAction struct {
@@ -528,7 +540,7 @@ type startConsumerChainAction struct {
 	genesisChanges string
 }
 
-func (tr TestRun) startConsumerChain(
+func (tr *TestRun) startConsumerChain(
 	action startConsumerChainAction,
 	verbose bool,
 ) {
@@ -1307,6 +1319,10 @@ func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, dow
 		lastArg = "up"
 	}
 
+	if tr.useCometmock {
+		// send set_signing_status either to down or up for validator
+	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command(
 		"docker",
@@ -1643,4 +1659,34 @@ func (tr TestRun) GetPathNameForGorelayer(chainA, chainB chainID) string {
 	}
 
 	return pathName
+}
+
+func (tr *TestRun) WaitTime(duration time.Duration) {
+	if !tr.useCometmock {
+		time.Sleep(duration)
+	} else {
+		fmt.Println("advancing time with CometMock")
+		tr.timeOffset = tr.timeOffset + duration
+		fmt.Println(tr.runningChains)
+		for chain, running := range tr.runningChains {
+			fmt.Println("chain: ", chain, "running: ", running)
+			if !running {
+				continue
+			}
+			tr.AdvanceTimeForChain(chain, duration)
+		}
+	}
+}
+
+func (tr TestRun) AdvanceTimeForChain(chain chainID, duration time.Duration) {
+	// cometmock avoids sleeping, and instead advances time for all chains
+	method := "advance_time"
+	params := fmt.Sprintf(`{"duration_in_seconds": "%d"}`, int(math.Ceil(duration.Seconds())))
+
+	address := tr.getQueryNodeRPCAddress(chain)
+
+	tr.curlJsonRPCRequest(method, params, address)
+
+	// wait for 1 block of the chain to get a block with the advanced timestamp
+	tr.waitBlocks(chain, 1, time.Minute)
 }

@@ -199,6 +199,16 @@ func (tr TestRun) getBlockHeight(chain chainID) uint {
 }
 
 func (tr TestRun) waitBlocks(chain chainID, blocks uint, timeout time.Duration) {
+	if tr.useCometmock {
+		// call advance_blocks method on cometmock
+		// curl -H 'Content-Type: application/json' -H 'Accept:application/json' --data '{"jsonrpc":"2.0","method":"advance_blocks","params":{"num_blocks": "36000000"},"id":1}' 127.0.0.1:22331
+		tcpAddress := tr.getQueryNodeRPCAddress(chain)
+		method := "advance_blocks"
+		params := fmt.Sprintf(`{"num_blocks": "%d"}`, blocks)
+
+		tr.curlJsonRPCRequest(method, params, tcpAddress)
+		return
+	}
 	startBlock := tr.getBlockHeight(chain)
 
 	start := time.Now()
@@ -687,11 +697,24 @@ func (tr TestRun) getValidatorHome(chain chainID, validator validatorID) string 
 
 // getQueryNode returns query node tcp address on chain.
 func (tr TestRun) getQueryNode(chain chainID) string {
-	return fmt.Sprintf("tcp://%s:26658", tr.getQueryNodeIP(chain))
+	return fmt.Sprintf("tcp://%s", tr.getQueryNodeRPCAddress(chain))
+}
+
+func (tr TestRun) getQueryNodeRPCAddress(chain chainID) string {
+	return fmt.Sprintf("%s:26658", tr.getQueryNodeIP(chain))
 }
 
 // getQueryNodeIP returns query node IP for chain,
 // ipSuffix is hardcoded to be 253 on all query nodes.
 func (tr TestRun) getQueryNodeIP(chain chainID) string {
 	return fmt.Sprintf("%s.253", tr.chainConfigs[chain].ipPrefix)
+}
+
+func (tr TestRun) curlJsonRPCRequest(method, params, address string) {
+	cmd_template := `curl -H 'Content-Type: application/json' -H 'Accept:application/json' --data '{"jsonrpc":"2.0","method":"%s","params":%s,"id":1}' %s`
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
+
+	executeCommand(cmd, "curlJsonRPCRequest")
 }

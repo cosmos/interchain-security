@@ -73,6 +73,10 @@ type TestRun struct {
 	useCometmock             bool // if false, nodes run CometBFT
 	useGorelayer             bool // if false, Hermes is used as the relayer
 	gaiaTag                  string
+	// chains which are running, i.e. producing blocks, at the moment
+	runningChains map[chainID]bool
+	// Used with CometMock. The time by which chains have been advanced. Used to keep chains in sync: when a new chain is started, advance its time by this value to keep chains in sync.
+	timeOffset time.Duration
 
 	name string
 }
