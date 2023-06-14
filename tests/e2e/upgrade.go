@@ -145,7 +145,6 @@ func (tr *TestRun) submitUpgradeProposal(action UpgradeProposalAction, verbose b
 	}
 
 	bz, err := cmd.CombinedOutput()
-	fmt.Println(string(bz))
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
