@@ -11,7 +11,7 @@ title: Throttle with retries
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
