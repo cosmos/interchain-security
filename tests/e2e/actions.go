@@ -1666,7 +1666,7 @@ func (tr *TestRun) WaitTime(duration time.Duration) {
 		time.Sleep(duration)
 	} else {
 		fmt.Println("advancing time with CometMock")
-		tr.timeOffset = tr.timeOffset + duration
+		tr.timeOffset += duration
 		fmt.Println(tr.runningChains)
 		for chain, running := range tr.runningChains {
 			fmt.Println("chain: ", chain, "running: ", running)
