@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"strconv"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // EndBlockRD executes EndBlock logic for the Reward Distribution sub-protocol.
@@ -107,23 +107,34 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 	if found && transferChannel.State == channeltypes.OPEN {
 		tstProviderAddr := k.authKeeper.GetModuleAccount(ctx,
 			types.ConsumerToSendToProviderName).GetAddress()
-		tstProviderTokens := k.bankKeeper.GetAllBalances(ctx, tstProviderAddr)
 		providerAddr := k.GetProviderFeePoolAddrStr(ctx)
 		timeoutHeight := clienttypes.ZeroHeight()
 		transferTimeoutPeriod := k.GetTransferTimeoutPeriod(ctx)
 		timeoutTimestamp := uint64(ctx.BlockTime().Add(transferTimeoutPeriod).UnixNano())
-		for _, token := range tstProviderTokens {
-			err := k.ibcTransferKeeper.SendTransfer(ctx,
-				transfertypes.PortID,
-				ch,
-				token,
-				tstProviderAddr,
-				providerAddr,
-				timeoutHeight,
-				timeoutTimestamp,
-			)
-			if err != nil {
-				return err
+
+		sentCoins := sdk.NewCoins()
+
+		// iterate over all whitelisted reward denoms
+		for _, denom := range k.AllowedRewardDenoms(ctx) {
+			// get the balance of the denom in the toSendToProviderTokens address
+			balance := k.bankKeeper.GetBalance(ctx, tstProviderAddr, denom)
+
+			// if the balance is not zero,
+			if !balance.IsZero() {
+				// send the balance to the provider
+				err := k.ibcTransferKeeper.SendTransfer(ctx,
+					transfertypes.PortID,
+					ch,
+					balance,
+					tstProviderAddr,
+					providerAddr,
+					timeoutHeight,
+					timeoutTimestamp,
+				)
+				if err != nil {
+					return err
+				}
+				sentCoins = sentCoins.Add(balance)
 			}
 		}
 
@@ -132,7 +143,7 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 
 		k.Logger(ctx).Info("sent block rewards to provider",
 			"total fee pool", fpTokens.String(),
-			"sent", tstProviderTokens.String(),
+			"sent", sentCoins.String(),
 		)
 		currentHeight := ctx.BlockHeight()
 		ctx.EventManager().EmitEvent(
@@ -143,12 +154,40 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 				sdk.NewAttribute(ccv.AttributeDistributionNextHeight, strconv.Itoa(int(currentHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
 				sdk.NewAttribute(ccv.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
 				sdk.NewAttribute(ccv.AttributeDistributionTotal, fpTokens.String()),
-				sdk.NewAttribute(ccv.AttributeDistributionToProvider, tstProviderTokens.String()),
+				sdk.NewAttribute(ccv.AttributeDistributionToProvider, sentCoins.String()),
 			),
 		)
 	}
 
 	return nil
+}
+
+// AllowedRewardDenoms returns a list of all denoms that are allowed
+// to be sent to the provider as rewards
+func (k Keeper) AllowedRewardDenoms(ctx sdk.Context) []string {
+	var rewardDenoms []string
+
+	// first, append the native reward denoms
+	rewardDenoms = append(rewardDenoms, k.GetRewardDenoms(ctx)...)
+
+	// then, append the provider-originated reward denoms
+	for _, denom := range k.GetProviderRewardDenoms(ctx) {
+		// every provider denom was sent over IBC,
+		// so we must prefix the denom
+		sourcePrefix := transfertypes.GetDenomPrefix(
+			transfertypes.PortID,
+			k.GetDistributionTransmissionChannel(ctx),
+		)
+		// NOTE: sourcePrefix contains the trailing "/"
+		prefixedDenom := sourcePrefix + denom
+		// construct the denomination trace from the full raw denomination
+		denomTrace := transfertypes.ParseDenomTrace(prefixedDenom)
+
+		// append the IBC denom to the list of allowed reward denoms
+		rewardDenoms = append(rewardDenoms, denomTrace.IBCDenom())
+	}
+
+	return rewardDenoms
 }
 
 func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) types.LastTransmissionBlockHeight {
@@ -186,7 +225,7 @@ func (k Keeper) TransferChannelExists(ctx sdk.Context, channelID string) bool {
 func (k Keeper) GetConnectionHops(ctx sdk.Context, srcPort, srcChan string) ([]string, error) {
 	ch, found := k.channelKeeper.GetChannel(ctx, srcPort, srcChan)
 	if !found {
-		return []string{}, sdkerrors.Wrapf(ccv.ErrChannelNotFound,
+		return []string{}, errorsmod.Wrapf(ccv.ErrChannelNotFound,
 			"cannot get connection hops from non-existent channel")
 	}
 	return ch.ConnectionHops, nil

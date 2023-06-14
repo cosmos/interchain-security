@@ -12,13 +12,13 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/interchain-security/testutil/crypto"
+	"github.com/cosmos/interchain-security/v2/testutil/crypto"
 
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -223,6 +223,8 @@ func TestValidateInitialGenesisState(t *testing.T) {
 					types.DefaultHistoricalEntries,
 					types.DefaultConsumerUnbondingPeriod,
 					types.DefaultSoftOptOutThreshold,
+					[]string{},
+					[]string{},
 				)),
 			true,
 		},
@@ -439,6 +441,8 @@ func TestValidateRestartGenesisState(t *testing.T) {
 					types.DefaultHistoricalEntries,
 					types.DefaultConsumerUnbondingPeriod,
 					types.DefaultSoftOptOutThreshold,
+					[]string{},
+					[]string{},
 				)),
 			true,
 		},

@@ -13,10 +13,10 @@ import (
 
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/provider/client"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/client"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	"github.com/tidwall/gjson"
 )
 
@@ -122,6 +122,13 @@ func (tr TestRun) startChain(
 		genesisChanges = chainConfig.genesisChanges
 	}
 
+	var cometmockArg string
+	if tr.useCometmock {
+		cometmockArg = "true"
+	} else {
+		cometmockArg = "false"
+	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/start-chain.sh", chainConfig.binaryName, string(vals),
@@ -132,6 +139,7 @@ func (tr TestRun) startChain(
 		// lower timeout_commit means the blocks are produced faster making the test run shorter
 		// with short timeout_commit (eg. timeout_commit = 1s) some nodes may miss blocks causing the test run to fail
 		tr.tendermintConfigOverride,
+		cometmockArg,
 	)
 
 	cmdReader, err := cmd.StdoutPipe()
@@ -587,7 +595,78 @@ websocket_addr = "%s"
 	numerator = "1"
 `
 
+// Set up the config for a new chain for gorelayer.
+// This config is added to the container as a file.
+// We then add the chain to the relayer, using this config as the chain config with `rly chains add --file`
+// This is functionally similar to the config used by Hermes for chains, e.g. gas is free.
+const gorelayerChainConfigTemplate = `
+{
+	"type": "cosmos",
+	"value": {
+		"key": "default",
+		"chain-id": "%s",
+		"rpc-addr": "%s",
+		"account-prefix": "cosmos",
+		"keyring-backend": "test",
+		"gas-adjustment": 1.2,
+		"gas-prices": "0.00stake",
+		"debug": true,
+		"timeout": "20s",
+		"output-format": "json",
+		"sign-mode": "direct"
+	}
+}`
+
 func (tr TestRun) addChainToRelayer(
+	action addChainToRelayerAction,
+	verbose bool,
+) {
+	if !tr.useGorelayer {
+		tr.addChainToHermes(action, verbose)
+	} else {
+		tr.addChainToGorelayer(action, verbose)
+	}
+}
+
+func (tr TestRun) addChainToGorelayer(
+	action addChainToRelayerAction,
+	verbose bool,
+) {
+	queryNodeIP := tr.getQueryNodeIP(action.chain)
+	chainId := tr.chainConfigs[action.chain].chainId
+	rpcAddr := "http://" + queryNodeIP + ":26658"
+
+	chainConfig := fmt.Sprintf(gorelayerChainConfigTemplate,
+		chainId,
+		rpcAddr,
+	)
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "config", "init").CombinedOutput()
+	if err != nil && !strings.Contains(string(bz), "config already exists") {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	chainConfigFileName := fmt.Sprintf("/root/%s_config.json", chainId)
+
+	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, chainConfigFileName)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
+		bashCommand).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	addChainCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "chains", "add", "--file", chainConfigFileName, string(chainId))
+	executeCommand(addChainCommand, "add chain")
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	keyRestoreCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "keys", "restore", string(chainId), "default", tr.validatorConfigs[action.validator].mnemonic)
+	executeCommand(keyRestoreCommand, "restore keys")
+}
+
+func (tr TestRun) addChainToHermes(
 	action addChainToRelayerAction,
 	verbose bool,
 ) {
@@ -638,6 +717,26 @@ func (tr TestRun) addChainToRelayer(
 	}
 }
 
+// This config file is used by gorelayer to create a path between chains.
+// Since the tests assume we use a certain client-id for certain paths,
+// in the config we specify the client id, e.g. 07-tendermint-5.
+// The src-channel-filter is empty because we want to relay all channels.
+const gorelayerPathConfigTemplate = `{
+    "src": {
+        "chain-id": "%s",
+        "client-id": "07-tendermint-%v"
+    },
+    "dst": {
+        "chain-id": "%s",
+        "client-id": "07-tendermint-%v"
+    },
+    "src-channel-filter": {
+        "rule": "",
+        "channel-list": []
+    }
+}
+`
+
 type addIbcConnectionAction struct {
 	chainA  chainID
 	chainB  chainID
@@ -646,6 +745,67 @@ type addIbcConnectionAction struct {
 }
 
 func (tr TestRun) addIbcConnection(
+	action addIbcConnectionAction,
+	verbose bool,
+) {
+	if !tr.useGorelayer {
+		tr.addIbcConnectionHermes(action, verbose)
+	} else {
+		tr.addIbcConnectionGorelayer(action, verbose)
+	}
+}
+
+func (tr TestRun) addIbcConnectionGorelayer(
+	action addIbcConnectionAction,
+	verbose bool,
+) {
+	pathName := tr.GetPathNameForGorelayer(action.chainA, action.chainB)
+
+	pathConfig := fmt.Sprintf(gorelayerPathConfigTemplate, action.chainA, action.clientA, action.chainB, action.clientB)
+
+	pathConfigFileName := fmt.Sprintf("/root/%s_config.json", pathName)
+
+	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, pathConfig, pathConfigFileName)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	pathConfigCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
+		bashCommand)
+	executeCommand(pathConfigCommand, "add path config")
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	newPathCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
+		"paths", "add",
+		string(tr.chainConfigs[action.chainA].chainId),
+		string(tr.chainConfigs[action.chainB].chainId),
+		pathName,
+		"--file", pathConfigFileName,
+	)
+
+	executeCommand(newPathCommand, "new path")
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	newClientsCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
+		"transact", "clients",
+		pathName,
+	)
+
+	executeCommand(newClientsCommand, "new clients")
+
+	tr.waitBlocks(action.chainA, 1, 10*time.Second)
+	tr.waitBlocks(action.chainB, 1, 10*time.Second)
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	newConnectionCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
+		"transact", "connection",
+		pathName,
+	)
+
+	executeCommand(newConnectionCommand, "new connection")
+
+	tr.waitBlocks(action.chainA, 1, 10*time.Second)
+	tr.waitBlocks(action.chainB, 1, 10*time.Second)
+}
+
+func (tr TestRun) addIbcConnectionHermes(
 	action addIbcConnectionAction,
 	verbose bool,
 ) {
@@ -692,10 +852,40 @@ type addIbcChannelAction struct {
 	order       string
 }
 
-type startHermesAction struct{}
+type startRelayerAction struct{}
+
+func (tr TestRun) startRelayer(
+	action startRelayerAction,
+	verbose bool,
+) {
+	if tr.useGorelayer {
+		tr.startGorelayer(action, verbose)
+	} else {
+		tr.startHermes(action, verbose)
+	}
+}
+
+func (tr TestRun) startGorelayer(
+	action startRelayerAction,
+	verbose bool,
+) {
+	// gorelayer start is running in detached mode
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", "-d", tr.containerConfig.instanceName, "rly",
+		"start",
+	)
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	if verbose {
+		fmt.Println("started gorelayer")
+	}
+}
 
 func (tr TestRun) startHermes(
-	action startHermesAction,
+	action startRelayerAction,
 	verbose bool,
 ) {
 	// hermes start is running in detached mode
@@ -714,6 +904,35 @@ func (tr TestRun) startHermes(
 }
 
 func (tr TestRun) addIbcChannel(
+	action addIbcChannelAction,
+	verbose bool,
+) {
+	if tr.useGorelayer {
+		tr.addIbcChannelGorelayer(action, verbose)
+	} else {
+		tr.addIbcChannelHermes(action, verbose)
+	}
+}
+
+func (tr TestRun) addIbcChannelGorelayer(
+	action addIbcChannelAction,
+	verbose bool,
+) {
+	pathName := tr.GetPathNameForGorelayer(action.chainA, action.chainB)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
+		"transact", "channel",
+		pathName,
+		"--src-port", action.portA,
+		"--dst-port", action.portB,
+		"--version", tr.containerConfig.ccvVersion,
+		"--order", action.order,
+		"--debug",
+	)
+	executeCommand(cmd, "addChannel")
+}
+
+func (tr TestRun) addIbcChannelHermes(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
@@ -773,6 +992,10 @@ func (tr TestRun) transferChannelComplete(
 	action transferChannelCompleteAction,
 	verbose bool,
 ) {
+	if tr.useGorelayer {
+		log.Fatal("transferChannelComplete is not implemented for rly")
+	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenTryCmd arguments.
 	chanOpenTryCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"tx", "chan-open-try",
@@ -841,7 +1064,8 @@ func executeCommand(cmd *exec.Cmd, cmdName string) {
 }
 
 type relayPacketsAction struct {
-	chain   chainID
+	chainA  chainID
+	chainB  chainID
 	port    string
 	channel uint
 }
@@ -850,12 +1074,24 @@ func (tr TestRun) relayPackets(
 	action relayPacketsAction,
 	verbose bool,
 ) {
-	// hermes clear packets ibc0 transfer channel-13
+	if tr.useGorelayer {
+		tr.relayPacketsGorelayer(action, verbose)
+	} else {
+		tr.relayPacketsHermes(action, verbose)
+	}
+}
+
+func (tr TestRun) relayPacketsGorelayer(
+	action relayPacketsAction,
+	verbose bool,
+) {
+	pathName := tr.GetPathNameForGorelayer(action.chainA, action.chainB)
+
+	// rly transact relay-packets [path-name] --channel [channel-id]
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes", "clear", "packets",
-		"--chain", string(tr.chainConfigs[action.chain].chainId),
-		"--port", action.port,
-		"--channel", "channel-"+fmt.Sprint(action.channel),
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "transact", "flush",
+		pathName,
+		"channel-"+fmt.Sprint(action.channel),
 	)
 	if verbose {
 		log.Println("relayPackets cmd:", cmd.String())
@@ -864,6 +1100,29 @@ func (tr TestRun) relayPackets(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+}
+
+func (tr TestRun) relayPacketsHermes(
+	action relayPacketsAction,
+	verbose bool,
+) {
+	// hermes clear packets ibc0 transfer channel-13
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes", "clear", "packets",
+		"--chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--port", action.port,
+		"--channel", "channel-"+fmt.Sprint(action.channel),
+	)
+	if verbose {
+		log.Println("relayPackets cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	tr.waitBlocks(action.chainA, 1, 30*time.Second)
 }
 
 type relayRewardPacketsToProviderAction struct {
@@ -883,7 +1142,7 @@ func (tr TestRun) relayRewardPacketsToProvider(
 		tr.waitBlocks(action.consumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
 	}
 
-	tr.relayPackets(relayPacketsAction{chain: action.consumerChain, port: action.port, channel: action.channel}, verbose)
+	tr.relayPackets(relayPacketsAction{chainA: action.consumerChain, chainB: action.providerChain, port: action.port, channel: action.channel}, verbose)
 	tr.waitBlocks(action.providerChain, 1, 10*time.Second)
 }
 
@@ -926,6 +1185,8 @@ func (tr TestRun) delegateTokens(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chain, 1, 10*time.Second)
 }
 
 type unbondTokensAction struct {
@@ -968,6 +1229,8 @@ func (tr TestRun) unbondTokens(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chain, 1, 10*time.Second)
 }
 
 type redelegateTokensAction struct {
@@ -1160,6 +1423,36 @@ func (tr TestRun) registerRepresentative(
 	wg.Wait()
 }
 
+type registerConsumerRewardDenomAction struct {
+	chain chainID
+	from  validatorID
+	denom string
+}
+
+func (tr TestRun) registerConsumerRewardDenom(action registerConsumerRewardDenomAction, verbose bool) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+		"tx", "provider", "register-consumer-reward-denom", action.denom,
+
+		`--from`, `validator`+fmt.Sprint(action.from),
+		`--chain-id`, string(action.chain),
+		`--home`, tr.getValidatorHome(action.chain, action.from),
+		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--gas`, "9000000",
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	).CombinedOutput()
+
+	if verbose {
+		fmt.Println("redelegate cmd:", string(bz))
+	}
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
 // Creates an additional node on selected chain
 // by copying an existing validator's home folder
 //
@@ -1336,4 +1629,18 @@ func (tr TestRun) waitForSlashThrottleDequeue(
 
 func uintPointer(i uint) *uint {
 	return &i
+}
+
+// GetPathNameForGorelayer returns the name of the path between two given chains used by Gorelayer.
+// Since paths are bidirectional, we need either chain to be able to be provided as first or second argument
+// and still return the same name, so we sort the chain names alphabetically.
+func (tr TestRun) GetPathNameForGorelayer(chainA, chainB chainID) string {
+	var pathName string
+	if string(chainA) < string(chainB) {
+		pathName = string(chainA) + "-" + string(chainB)
+	} else {
+		pathName = string(chainB) + "-" + string(chainA)
+	}
+
+	return pathName
 }

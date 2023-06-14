@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // InitGenesis initializes the CCV provider state and binds to PortID.
@@ -73,16 +73,20 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 
 	// Import key assignment state
 	for _, item := range genState.ValidatorConsumerPubkeys {
-		k.SetValidatorConsumerPubKey(ctx, item.ChainId, *item.ProviderAddr, *item.ConsumerKey)
+		providerAddr := types.NewProviderConsAddress(item.ProviderAddr)
+		k.SetValidatorConsumerPubKey(ctx, item.ChainId, providerAddr, *item.ConsumerKey)
 	}
 
 	for _, item := range genState.ValidatorsByConsumerAddr {
-		k.SetValidatorByConsumerAddr(ctx, item.ChainId, *item.ConsumerAddr, *item.ProviderAddr)
+		consumerAddr := types.NewConsumerConsAddress(item.ConsumerAddr)
+		providerAddr := types.NewProviderConsAddress(item.ProviderAddr)
+		k.SetValidatorByConsumerAddr(ctx, item.ChainId, consumerAddr, providerAddr)
 	}
 
 	for _, item := range genState.ConsumerAddrsToPrune {
 		for _, addr := range item.ConsumerAddrs.Addresses {
-			k.AppendConsumerAddrsToPrune(ctx, item.ChainId, item.VscId, *addr)
+			consumerAddr := types.NewConsumerConsAddress(addr)
+			k.AppendConsumerAddrsToPrune(ctx, item.ChainId, item.VscId, consumerAddr)
 		}
 	}
 

@@ -5,8 +5,8 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	cryptoutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -51,6 +51,7 @@ func getAllKeyPrefixes() []byte {
 		providertypes.KeyAssignmentReplacementsBytePrefix,
 		providertypes.ConsumerAddrsToPruneBytePrefix,
 		providertypes.SlashLogBytePrefix,
+		providertypes.VSCMaturedHandledThisBlockBytePrefix,
 	}
 }
 
@@ -94,6 +95,7 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.KeyAssignmentReplacementsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ConsumerAddrsToPruneKey("chainID", 88),
 		providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.VSCMaturedHandledThisBlockKey(),
 	}
 }
 
