@@ -193,7 +193,8 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -219,7 +220,8 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 		// and can now be relayed as packet to consumer
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -258,7 +260,8 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},

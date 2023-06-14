@@ -30,7 +30,8 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 		{
 			// relay power change to consumerName
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0, // consumerName channel
 			},
@@ -78,7 +79,8 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -102,7 +104,8 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 		{
 			// consumer learns about the double sign
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
