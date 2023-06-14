@@ -242,6 +242,8 @@ func TestValidateInitialGenesisState(t *testing.T) {
 					types.DefaultHistoricalEntries,
 					types.DefaultConsumerUnbondingPeriod,
 					types.DefaultSoftOptOutThreshold,
+					[]string{},
+					[]string{},
 				)),
 			true,
 		},

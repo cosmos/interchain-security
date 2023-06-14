@@ -109,7 +109,7 @@ func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 	}
 
 	if err := ccvtypes.ValidateDistributionTransmissionChannel(cccp.DistributionTransmissionChannel); err != nil {
-		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "distribution transmission channel")
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "distribution transmission channel")
 	}
 
 	if err := ccvtypes.ValidatePositiveInt64(cccp.HistoricalEntries); err != nil {
