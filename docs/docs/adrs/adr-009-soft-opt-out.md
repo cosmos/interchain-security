@@ -14,7 +14,7 @@ Accepted
 
 ## Context
 
-Some small validators may not have the resources needed to validate all consumer chains. Therefore a need exists to allow the bottom _% of validators to opt-out of validating a consumer chain. Meaning downtime infractions for relevant validators are dropped without ever reaching the provider.
+Some small validators may not have the resources needed to validate all consumer chains. Therefore a need exists to allow the bottom `x%` of validators to opt-out of validating a consumer chain. Meaning downtime infractions for these validators are dropped without ever reaching the provider.
 
 This document specifies a modification to the ccv protocol which allows the bottom x% of the validator set by power to opt out of validating consumer chains without being jailed or otherwise punished for it. The feature is implemented with entirely consumer-side code.
 
@@ -36,7 +36,7 @@ Then, whenever the `Slash()` interface is executed on the consumer, if the votin
 
 ### Negative
 
-* Small validators who are not being slashed will still be present in the validator set of the consumer chain. In other words, we are sacrificing liveness, not safety. The economic security of the consumer chain is the same, but consumers may be more likely to halt. If soft opt out threshold is set to 10% for example, and every validator who doesn't have to validate the consumer doesn't validate it, then 23% downtime of the remaining valset could halt the chain. This may manifest in slightly longer downtime periods during upgrades.
+The bottom `x%` is still part of the total voting power of the consumer chain. This means that if the soft opt-out threshold is set to `10%` for example, and every validator in the bottom `10%` opts out from validating the consumer, then a `24%` downtime of the remaining voting power would halt the chain. This may be especially problematic during consumer upgrades.
 
 ### Neutral
 
