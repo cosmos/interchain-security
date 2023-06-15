@@ -34,4 +34,5 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 | ------ | ----------- | ------ |
 | [001](./adr-001-key-assignment.md) | Consumer chain key assignment | Accepted, Implemented |
 | [002](./adr-002-throttle.md) | Jail Throttling | Accepted, Implemented |
-| [003](./adr-003-equivocation-gov-proposal.md) | Equivocation governance proposal | Accepted, Implemented 
+| [003](./adr-003-equivocation-gov-proposal.md) | Equivocation governance proposal | Accepted, Implemented |
+| [008](./adr-008-throttle-retries.md) | Throttle with retries | Accepted, In-progress |
