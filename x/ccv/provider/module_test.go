@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

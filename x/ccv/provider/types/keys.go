@@ -28,9 +28,6 @@ const (
 
 	// Default validator set update ID
 	DefaultValsetUpdateID = 1
-
-	// This address receives rewards from consumer chains
-	ConsumerRewardsPool = "consumer_rewards_pool"
 )
 
 // Iota generated keys/byte prefixes (as a byte), supports 256 possible values
@@ -130,9 +127,6 @@ const (
 	// SlashLogBytePrefix is the byte prefix that will store the mapping from provider address to boolean
 	// denoting whether the provider address has committed any double signign infractions
 	SlashLogBytePrefix
-
-	// ConsumerRewardDenomsBytePrefix is the byte prefix that will store a list of consumer reward denoms
-	ConsumerRewardDenomsBytePrefix
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
@@ -366,11 +360,6 @@ func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
 // SlashLogKey returns the key to a validator's slash log
 func SlashLogKey(providerAddr ProviderConsAddress) []byte {
 	return append([]byte{SlashLogBytePrefix}, providerAddr.ToSdkConsAddr().Bytes()...)
-}
-
-// ConsumerRewardDenomsKey returns the key under which consumer reward denoms are stored
-func ConsumerRewardDenomsKey(denom string) []byte {
-	return append([]byte{ConsumerRewardDenomsBytePrefix}, []byte(denom)...)
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go

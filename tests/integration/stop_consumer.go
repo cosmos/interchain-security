@@ -1,10 +1,10 @@
 package integration
 
 import (
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	abci "github.com/tendermint/tendermint/abci/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 	"github.com/octopus-network/interchain-security/x/ccv/provider/types"
 	ccv "github.com/octopus-network/interchain-security/x/ccv/types"

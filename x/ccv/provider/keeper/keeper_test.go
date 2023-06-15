@@ -10,8 +10,8 @@ import (
 
 	ibcsimapp "github.com/octopus-network/interchain-security/legacy_ibc_testing/simapp"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	cryptotestutil "github.com/octopus-network/interchain-security/testutil/crypto"
 	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"

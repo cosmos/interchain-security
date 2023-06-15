@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 )
@@ -16,18 +16,17 @@ import (
 type State map[chainID]ChainState
 
 type ChainState struct {
-	ValBalances                    *map[validatorID]uint
-	Proposals                      *map[uint]Proposal
-	ValPowers                      *map[validatorID]uint
-	RepresentativePowers           *map[validatorID]uint
-	Params                         *[]Param
-	Rewards                        *Rewards
-	ConsumerChains                 *map[chainID]bool
-	AssignedKeys                   *map[validatorID]string
-	ProviderKeys                   *map[validatorID]string // validatorID: validator provider key
-	ConsumerChainQueueSizes        *map[chainID]uint
-	GlobalSlashQueueSize           *uint
-	RegisteredConsumerRewardDenoms *[]string
+	ValBalances             *map[validatorID]uint
+	Proposals               *map[uint]Proposal
+	ValPowers               *map[validatorID]uint
+	RepresentativePowers    *map[validatorID]uint
+	Params                  *[]Param
+	Rewards                 *Rewards
+	ConsumerChains          *map[chainID]bool
+	AssignedKeys            *map[validatorID]string
+	ProviderKeys            *map[validatorID]string // validatorID: validator provider key
+	ConsumerChainQueueSizes *map[chainID]uint
+	GlobalSlashQueueSize    *uint
 }
 
 type Proposal interface {
@@ -168,11 +167,6 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 		chainState.ConsumerChainQueueSizes = &consumerChainQueueSizes
 	}
 
-	if modelState.RegisteredConsumerRewardDenoms != nil {
-		registeredConsumerRewardDenoms := tr.getRegisteredConsumerRewardDenoms(chain)
-		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
-	}
-
 	return chainState
 }
 
@@ -210,7 +204,7 @@ func (tr TestRun) waitBlocks(chain chainID, blocks uint, timeout time.Duration) 
 		if time.Since(start) > timeout {
 			panic(fmt.Sprintf("\n\n\nwaitBlocks method has timed out after: %s\n\n", timeout))
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(time.Second)
 	}
 }
 
@@ -353,7 +347,7 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	propType := gjson.Get(string(bz), `content.@type`).String()
+	propType := gjson.Get(string(bz), `messages.0.content.@type`).String()
 	deposit := gjson.Get(string(bz), `total_deposit.#(denom=="stake").amount`).Uint()
 	status := gjson.Get(string(bz), `status`).String()
 
@@ -369,8 +363,8 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			Description: description,
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal":
-		chainId := gjson.Get(string(bz), `content.chain_id`).String()
-		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time().Sub(tr.containerConfig.now)
+		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
+		spawnTime := gjson.Get(string(bz), `messages.0.content.spawn_time`).Time().Sub(tr.containerConfig.now)
 
 		var chain chainID
 		for i, conf := range tr.chainConfigs {
@@ -386,13 +380,13 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			Chain:     chain,
 			SpawnTime: int(spawnTime.Milliseconds()),
 			InitialHeight: clienttypes.Height{
-				RevisionNumber: gjson.Get(string(bz), `content.initial_height.revision_number`).Uint(),
-				RevisionHeight: gjson.Get(string(bz), `content.initial_height.revision_height`).Uint(),
+				RevisionNumber: gjson.Get(string(bz), `messages.0.content.initial_height.revision_number`).Uint(),
+				RevisionHeight: gjson.Get(string(bz), `messages.0.content.initial_height.revision_height`).Uint(),
 			},
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
-		chainId := gjson.Get(string(bz), `content.chain_id`).String()
-		stopTime := gjson.Get(string(bz), `content.stop_time`).Time().Sub(tr.containerConfig.now)
+		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
+		stopTime := gjson.Get(string(bz), `messages.0.content.stop_time`).Time().Sub(tr.containerConfig.now)
 
 		var chain chainID
 		for i, conf := range tr.chainConfigs {
@@ -413,18 +407,18 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 		return EquivocationProposal{
 			Deposit:          uint(deposit),
 			Status:           status,
-			Height:           uint(gjson.Get(string(bz), `content.equivocations.0.height`).Uint()),
-			Power:            uint(gjson.Get(string(bz), `content.equivocations.0.power`).Uint()),
-			ConsensusAddress: gjson.Get(string(bz), `content.equivocations.0.consensus_address`).String(),
+			Height:           uint(gjson.Get(string(bz), `messages.0.content.equivocations.0.height`).Uint()),
+			Power:            uint(gjson.Get(string(bz), `messages.0.content.equivocations.0.power`).Uint()),
+			ConsensusAddress: gjson.Get(string(bz), `messages.0.content.equivocations.0.consensus_address`).String(),
 		}
 
 	case "/cosmos.params.v1beta1.ParameterChangeProposal":
 		return ParamsProposal{
 			Deposit:  uint(deposit),
 			Status:   status,
-			Subspace: gjson.Get(string(bz), `content.changes.0.subspace`).String(),
-			Key:      gjson.Get(string(bz), `content.changes.0.key`).String(),
-			Value:    gjson.Get(string(bz), `content.changes.0.value`).String(),
+			Subspace: gjson.Get(string(bz), `messages.0.content.changes.0.subspace`).String(),
+			Key:      gjson.Get(string(bz), `messages.0.content.changes.0.key`).String(),
+			Value:    gjson.Get(string(bz), `messages.0.content.changes.0.value`).String(),
 		}
 	}
 
@@ -602,6 +596,7 @@ func (tr TestRun) getProviderAddressFromConsumer(consumerChain chainID, validato
 		`--node`, tr.getQueryNode(chainID("provi")),
 		`-o`, `json`,
 	)
+
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
@@ -644,28 +639,6 @@ func (tr TestRun) getConsumerChainPacketQueueSize(consumerChain chainID) uint {
 
 	size := gjson.Get(string(bz), "size").Uint()
 	return uint(size)
-}
-
-func (tr TestRun) getRegisteredConsumerRewardDenoms(chain chainID) []string {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
-
-		"query", "provider", "registered-consumer-reward-denoms",
-		`--node`, tr.getQueryNode(chain),
-		`-o`, `json`,
-	)
-	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	denoms := gjson.Get(string(bz), "denoms").Array()
-	rewardDenoms := make([]string, len(denoms))
-	for i, d := range denoms {
-		rewardDenoms[i] = d.String()
-	}
-
-	return rewardDenoms
 }
 
 func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {

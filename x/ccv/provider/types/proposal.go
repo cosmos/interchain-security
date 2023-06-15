@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	errorsmod "cosmossdk.io/errors"
+	sdkerrors "cosmossdk.io/errors"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 
 	ccvtypes "github.com/octopus-network/interchain-security/x/ccv/types"
 )
@@ -21,15 +21,15 @@ const (
 )
 
 var (
-	_ govtypes.Content = &ConsumerAdditionProposal{}
-	_ govtypes.Content = &ConsumerRemovalProposal{}
-	_ govtypes.Content = &EquivocationProposal{}
+	_ govv1beta1.Content = &ConsumerAdditionProposal{}
+	_ govv1beta1.Content = &ConsumerRemovalProposal{}
+	_ govv1beta1.Content = &EquivocationProposal{}
 )
 
 func init() {
-	govtypes.RegisterProposalType(ProposalTypeConsumerAddition)
-	govtypes.RegisterProposalType(ProposalTypeConsumerRemoval)
-	govtypes.RegisterProposalType(ProposalTypeEquivocation)
+	govv1beta1.RegisterProposalType(ProposalTypeConsumerAddition)
+	govv1beta1.RegisterProposalType(ProposalTypeConsumerRemoval)
+	govv1beta1.RegisterProposalType(ProposalTypeEquivocation)
 }
 
 // NewConsumerAdditionProposal creates a new consumer addition proposal.
@@ -42,7 +42,7 @@ func NewConsumerAdditionProposal(title, description, chainID string,
 	ccvTimeoutPeriod time.Duration,
 	transferTimeoutPeriod time.Duration,
 	unbondingPeriod time.Duration,
-) govtypes.Content {
+) govv1beta1.Content {
 	return &ConsumerAdditionProposal{
 		Title:                             title,
 		Description:                       description,
@@ -76,51 +76,51 @@ func (cccp *ConsumerAdditionProposal) ProposalType() string {
 
 // ValidateBasic runs basic stateless validity checks
 func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
-	if err := govtypes.ValidateAbstract(cccp); err != nil {
+	if err := govv1beta1.ValidateAbstract(cccp); err != nil {
 		return err
 	}
 
 	if strings.TrimSpace(cccp.ChainId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "consumer chain id must not be blank")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "consumer chain id must not be blank")
 	}
 
 	if cccp.InitialHeight.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "initial height cannot be zero")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "initial height cannot be zero")
 	}
 
 	if len(cccp.GenesisHash) == 0 {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "genesis hash cannot be empty")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "genesis hash cannot be empty")
 	}
 	if len(cccp.BinaryHash) == 0 {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "binary hash cannot be empty")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "binary hash cannot be empty")
 	}
 
 	if cccp.SpawnTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "spawn time cannot be zero")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "spawn time cannot be zero")
 	}
 
 	if err := ccvtypes.ValidateStringFraction(cccp.ConsumerRedistributionFraction); err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerAdditionProposal, "consumer redistribution fraction is invalid: %s", err)
+		return sdkerrors.Wrapf(ErrInvalidConsumerAdditionProposal, "consumer redistribution fraction is invalid: %s", err)
 	}
 
 	if err := ccvtypes.ValidatePositiveInt64(cccp.BlocksPerDistributionTransmission); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "blocks per distribution transmission cannot be < 1")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "blocks per distribution transmission cannot be < 1")
 	}
 
 	if err := ccvtypes.ValidatePositiveInt64(cccp.HistoricalEntries); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "historical entries cannot be < 1")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "historical entries cannot be < 1")
 	}
 
 	if err := ccvtypes.ValidateDuration(cccp.CcvTimeoutPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "ccv timeout period cannot be zero")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "ccv timeout period cannot be zero")
 	}
 
 	if err := ccvtypes.ValidateDuration(cccp.TransferTimeoutPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "transfer timeout period cannot be zero")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "transfer timeout period cannot be zero")
 	}
 
 	if err := ccvtypes.ValidateDuration(cccp.UnbondingPeriod); err != nil {
-		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
 	}
 
 	return nil
@@ -158,7 +158,7 @@ func (cccp *ConsumerAdditionProposal) String() string {
 }
 
 // NewConsumerRemovalProposal creates a new consumer removal proposal.
-func NewConsumerRemovalProposal(title, description, chainID string, stopTime time.Time) govtypes.Content {
+func NewConsumerRemovalProposal(title, description, chainID string, stopTime time.Time) govv1beta1.Content {
 	return &ConsumerRemovalProposal{
 		Title:       title,
 		Description: description,
@@ -175,22 +175,22 @@ func (sccp *ConsumerRemovalProposal) ProposalType() string { return ProposalType
 
 // ValidateBasic runs basic stateless validity checks
 func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
-	if err := govtypes.ValidateAbstract(sccp); err != nil {
+	if err := govv1beta1.ValidateAbstract(sccp); err != nil {
 		return err
 	}
 
 	if strings.TrimSpace(sccp.ChainId) == "" {
-		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
+		return sdkerrors.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
 	}
 
 	if sccp.StopTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
+		return sdkerrors.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
 	}
 	return nil
 }
 
 // NewEquivocationProposal creates a new equivocation proposal.
-func NewEquivocationProposal(title, description string, equivocations []*evidencetypes.Equivocation) govtypes.Content {
+func NewEquivocationProposal(title, description string, equivocations []*evidencetypes.Equivocation) govv1beta1.Content {
 	return &EquivocationProposal{
 		Title:         title,
 		Description:   description,
@@ -208,7 +208,7 @@ func (sp *EquivocationProposal) ProposalType() string {
 
 // ValidateBasic runs basic stateless validity checks
 func (sp *EquivocationProposal) ValidateBasic() error {
-	if err := govtypes.ValidateAbstract(sp); err != nil {
+	if err := govv1beta1.ValidateAbstract(sp); err != nil {
 		return err
 	}
 	if len(sp.Equivocations) == 0 {

@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/base64"
 
-	errorsmod "cosmossdk.io/errors"
+	sdkerrors "cosmossdk.io/errors"
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
 	"github.com/octopus-network/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/octopus-network/interchain-security/x/ccv/types"
@@ -60,7 +60,7 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	// cp := ctx.ConsensusParams()
 	// if cp != nil && cp.Validator != nil {
 	// 	if !tmstrings.StringInSlice(pkType, cp.Validator.PubKeyTypes) {
-	// 		return nil, errorsmod.Wrapf(
+	// 		return nil, sdkerrors.Wrapf(
 	// 			stakingtypes.ErrValidatorPubKeyTypeNotSupported,
 	// 			"got: %s, expected one of: %s", pkType, cp.Validator.PubKeyTypes,
 	// 		)
@@ -70,7 +70,7 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	// For now, only accept ed25519.
 	// TODO: decide what types should be supported.
 	if pkType != "/cosmos.crypto.ed25519.PubKey" {
-		return nil, errorsmod.Wrapf(
+		return nil, sdkerrors.Wrapf(
 			stakingtypes.ErrValidatorPubKeyTypeNotSupported,
 			"got: %s, expected: %s", pkType, "/cosmos.crypto.ed25519.PubKey",
 		)
@@ -105,25 +105,4 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	})
 
 	return &types.MsgAssignConsumerKeyResponse{}, nil
-}
-
-func (k msgServer) RegisterConsumerRewardDenom(goCtx context.Context, msg *types.MsgRegisterConsumerRewardDenom) (*types.MsgRegisterConsumerRewardDenomResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	depositer, err := sdk.AccAddressFromBech32(msg.Depositor)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := k.Keeper.RegisterConsumerRewardDenom(ctx, msg.Denom, depositer); err != nil {
-		return nil, err
-	}
-
-	ctx.EventManager().EmitEvent(sdk.NewEvent(
-		ccvtypes.EventTypeRegisterConsumerRewardDenom,
-		sdk.NewAttribute(ccvtypes.AttributeConsumerRewardDenom, msg.Denom),
-		sdk.NewAttribute(ccvtypes.AttributeConsumerRewardDepositor, msg.Depositor),
-	))
-
-	return &types.MsgRegisterConsumerRewardDenomResponse{}, nil
 }

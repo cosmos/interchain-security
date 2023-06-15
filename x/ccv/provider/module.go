@@ -4,19 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
-	"github.com/gorilla/mux"
+	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/octopus-network/interchain-security/x/ccv/provider/client/cli"
 	"github.com/octopus-network/interchain-security/x/ccv/provider/keeper"
@@ -63,10 +61,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return data.Validate()
 }
 
-// RegisterRESTRoutes implements AppModuleBasic interface
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
-}
-
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the ibc-provider module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 	err := providertypes.RegisterQueryHandlerClient(context.Background(), mux, providertypes.NewQueryClient(clientCtx))
@@ -102,21 +96,6 @@ func NewAppModule(k *keeper.Keeper) AppModule {
 // RegisterInvariants implements the AppModule interface
 func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 	// TODO
-}
-
-// Route implements the AppModule interface
-func (am AppModule) Route() sdk.Route {
-	return sdk.Route{}
-}
-
-// QuerierRoute implements the AppModule interface
-func (AppModule) QuerierRoute() string {
-	return providertypes.QuerierRoute
-}
-
-// LegacyQuerierHandler implements the AppModule interface
-func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
-	return nil
 }
 
 // RegisterServices registers module services.
@@ -164,8 +143,6 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	am.keeper.EndBlockCCR(ctx)
 	// EndBlock logic needed for the Validator Set Update sub-protocol
 	am.keeper.EndBlockVSU(ctx)
-	// EndBlock logic need for the  Reward Distribution sub-protocol
-	am.keeper.EndBlockRD(ctx)
 
 	return []abci.ValidatorUpdate{}
 }
@@ -174,16 +151,6 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 
 // GenerateGenesisState creates a randomized GenState of the transfer module.
 func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
-}
-
-// ProposalContents doesn't return any content functions for governance proposals.
-func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalContent {
-	return nil
-}
-
-// RandomizedParams creates randomized provider param changes for the simulator.
-func (AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
-	return nil
 }
 
 // RegisterStoreDecoder registers a decoder for provider module's types

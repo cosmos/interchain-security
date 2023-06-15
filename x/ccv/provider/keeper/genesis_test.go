@@ -5,7 +5,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 
 	"github.com/octopus-network/interchain-security/testutil/crypto"
 	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"

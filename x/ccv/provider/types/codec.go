@@ -5,7 +5,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 )
 
 // RegisterLegacyAminoCodec registers the necessary x/ibc transfer interfaces and concrete types
@@ -16,11 +16,11 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 // RegisterInterfaces registers the provider proposal structs to the interface registry
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
-		(*govtypes.Content)(nil),
+		(*govv1beta1.Content)(nil),
 		&ConsumerAdditionProposal{},
 	)
 	registry.RegisterImplementations(
-		(*govtypes.Content)(nil),
+		(*govv1beta1.Content)(nil),
 		&ConsumerRemovalProposal{},
 	)
 	registry.RegisterImplementations(
@@ -28,14 +28,9 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&MsgAssignConsumerKey{},
 	)
 	registry.RegisterImplementations(
-		(*sdk.Msg)(nil),
-		&MsgRegisterConsumerRewardDenom{},
-	)
-	registry.RegisterImplementations(
-		(*govtypes.Content)(nil),
+		(*govv1beta1.Content)(nil),
 		&EquivocationProposal{},
 	)
-
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 

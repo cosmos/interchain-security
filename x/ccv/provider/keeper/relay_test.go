@@ -4,14 +4,14 @@ import (
 	"testing"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	"github.com/golang/mock/gomock"
-	abci "github.com/tendermint/tendermint/abci/types"
 
 	ibcsimapp "github.com/octopus-network/interchain-security/legacy_ibc_testing/simapp"
 	cryptotestutil "github.com/octopus-network/interchain-security/testutil/crypto"
@@ -240,7 +240,7 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 
 	// Generate a new slash packet data instance with double sign infraction type
 	packetData := testkeeper.GetNewSlashPacketData()
-	packetData.Infraction = stakingtypes.DoubleSign
+	packetData.Infraction = stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 
 	// Set a block height for the valset update id in the generated packet data
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
@@ -274,7 +274,7 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 
 	// Generate a new slash packet data instance with downtime infraction type
 	packetData := testkeeper.GetNewSlashPacketData()
-	packetData.Infraction = stakingtypes.Downtime
+	packetData.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
 
 	// Set a block height for the valset update id in the generated packet data
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
@@ -292,7 +292,7 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 
 	// Generate a new downtime packet data instance with downtime infraction type
 	packetData = testkeeper.GetNewSlashPacketData()
-	packetData.Infraction = stakingtypes.Downtime
+	packetData.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
 
 	// Set a block height for the valset update id in the generated packet data
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
@@ -368,22 +368,22 @@ func TestValidateSlashPacket(t *testing.T) {
 		},
 		{
 			"valid double sign packet with non-zero vscID",
-			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.DoubleSign},
+			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN},
 			false,
 		},
 		{
 			"valid downtime packet with non-zero vscID",
-			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.Downtime},
+			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.Infraction_INFRACTION_DOWNTIME},
 			false,
 		},
 		{
 			"valid double sign packet with zero vscID",
-			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.DoubleSign},
+			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN},
 			false,
 		},
 		{
 			"valid downtime packet with zero vscID",
-			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.Downtime},
+			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.Infraction_INFRACTION_DOWNTIME},
 			false,
 		},
 	}
@@ -434,7 +434,7 @@ func TestHandleSlashPacket(t *testing.T) {
 			ccv.SlashPacketData{
 				Validator:      abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				ValsetUpdateId: validVscID,
-				Infraction:     stakingtypes.Downtime,
+				Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
 			},
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
@@ -455,7 +455,7 @@ func TestHandleSlashPacket(t *testing.T) {
 			ccv.SlashPacketData{
 				Validator:      abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				ValsetUpdateId: validVscID,
-				Infraction:     stakingtypes.Downtime,
+				Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
 			},
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
@@ -477,7 +477,7 @@ func TestHandleSlashPacket(t *testing.T) {
 			ccv.SlashPacketData{
 				Validator:      abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				ValsetUpdateId: 78, // Keeper doesn't have a height mapped to this vscID.
-				Infraction:     stakingtypes.Downtime,
+				Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
 			},
 
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
@@ -500,7 +500,7 @@ func TestHandleSlashPacket(t *testing.T) {
 			*ccv.NewSlashPacketData(
 				abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				0, // ValsetUpdateId = 0 uses init chain height.
-				stakingtypes.Downtime),
+				stakingtypes.Infraction_INFRACTION_DOWNTIME),
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
@@ -517,7 +517,7 @@ func TestHandleSlashPacket(t *testing.T) {
 			*ccv.NewSlashPacketData(
 				abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				validVscID,
-				stakingtypes.Downtime),
+				stakingtypes.Infraction_INFRACTION_DOWNTIME),
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {

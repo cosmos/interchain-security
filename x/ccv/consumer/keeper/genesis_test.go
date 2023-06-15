@@ -4,15 +4,15 @@ import (
 	"testing"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/octopus-network/interchain-security/testutil/crypto"
 	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"
@@ -59,8 +59,6 @@ func TestInitGenesis(t *testing.T) {
 		clienttypes.Height{},
 		commitmenttypes.GetSDKSpecs(),
 		[]string{"upgrade", "upgradedIBCState"},
-		true,
-		true,
 	)
 
 	matPackets := []consumertypes.MaturingVSCPacket{
@@ -74,7 +72,7 @@ func TestInitGenesis(t *testing.T) {
 			{
 				Type: ccv.SlashPacket,
 				Data: &ccv.ConsumerPacketData_SlashPacketData{
-					SlashPacketData: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Downtime),
+					SlashPacketData: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Infraction_INFRACTION_DOWNTIME),
 				},
 			},
 			{
@@ -127,7 +125,7 @@ func TestInitGenesis(t *testing.T) {
 				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 
 				require.Equal(t, validator.Address.Bytes(), ck.GetAllCCValidator(ctx)[0].Address)
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		}, {
 			"restart a chain without an established CCV channel",
@@ -154,7 +152,7 @@ func TestInitGenesis(t *testing.T) {
 				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
 				require.Equal(t, validator.Address.Bytes(), ck.GetAllCCValidator(ctx)[0].Address)
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		}, {
 			"restart a chain with an established CCV channel",
@@ -198,7 +196,7 @@ func TestInitGenesis(t *testing.T) {
 				assertHeightValsetUpdateIDs(t, ctx, &ck, updatedHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
 
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		},
 	}
@@ -252,7 +250,7 @@ func TestExportGenesis(t *testing.T) {
 			{
 				Type: ccv.SlashPacket,
 				Data: &ccv.ConsumerPacketData_SlashPacketData{
-					SlashPacketData: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Downtime),
+					SlashPacketData: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Infraction_INFRACTION_DOWNTIME),
 				},
 			},
 			{

@@ -6,17 +6,17 @@ import (
 	"testing"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/bytes"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/bytes"
 
 	"github.com/octopus-network/interchain-security/testutil/crypto"
 	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"
@@ -233,7 +233,7 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	consumerKeeper.SetProviderChannel(ctx, channelIDToProvider)
 
 	packetData := types.NewSlashPacketData(
-		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Downtime,
+		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Infraction_INFRACTION_DOWNTIME,
 	)
 
 	// AcknowledgePacket is in reference to a packet originally sent from this (consumer) module.

@@ -44,8 +44,7 @@ func main() {
 
 	testRuns := []testRunWithSteps{
 		{DefaultTestRun(), happyPathSteps},
-		{DemocracyTestRun(true), democracySteps},
-		{DemocracyTestRun(false), rewardDenomConsumerSteps},
+		{DemocracyTestRun(), democracySteps},
 		{SlashThrottleTestRun(), slashThrottleSteps},
 	}
 	if includeMultiConsumer != nil && *includeMultiConsumer {
@@ -106,7 +105,7 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.submitConsumerRemovalProposal(action, verbose)
 	case submitEquivocationProposalAction:
 		tr.submitEquivocationProposal(action, verbose)
-	case submitParamChangeProposalAction:
+	case submitParamChangeLegacyProposalAction:
 		tr.submitParamChangeProposal(action, verbose)
 	case voteGovProposalAction:
 		tr.voteGovProposal(action, verbose)
@@ -128,6 +127,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.delegateTokens(action, verbose)
 	case unbondTokensAction:
 		tr.unbondTokens(action, verbose)
+	case cancelUnbondTokensAction:
+		tr.cancelUnbondTokens(action, verbose)
 	case redelegateTokensAction:
 		tr.redelegateTokens(action, verbose)
 	case downtimeSlashAction:
@@ -144,8 +145,6 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.waitForSlashThrottleDequeue(action, verbose)
 	case startHermesAction:
 		tr.startHermes(action, verbose)
-	case registerConsumerRewardDenomAction:
-		tr.registerConsumerRewardDenom(action, verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", tr.name, action)
 	}

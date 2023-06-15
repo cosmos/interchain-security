@@ -6,20 +6,21 @@ import (
 	"reflect"
 	"time"
 
-	errorsmod "cosmossdk.io/errors"
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 
+	tmtypes "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	tmtypes "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/octopus-network/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
@@ -27,7 +28,7 @@ import (
 
 // Keeper defines the Cross-Chain Validation Consumer Keeper
 type Keeper struct {
-	storeKey         sdk.StoreKey
+	storeKey         storetypes.StoreKey
 	cdc              codec.BinaryCodec
 	paramStore       paramtypes.Subspace
 	scopedKeeper     ccv.ScopedKeeper
@@ -52,7 +53,7 @@ type Keeper struct {
 // NOTE: the feeCollectorName is in reference to the consumer-chain fee
 // collector (and not the provider chain)
 func NewKeeper(
-	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
+	cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace,
 	scopedKeeper ccv.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
@@ -85,6 +86,16 @@ func NewKeeper(
 
 	k.mustValidateFields()
 	return k
+}
+
+// Returns a keeper with cdc, key and paramSpace set it does not raise any panics during registration (eg with IBCKeeper).
+// Used only in testing.
+func NewNonZeroKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace) Keeper {
+	return Keeper{
+		storeKey:   key,
+		cdc:        cdc,
+		paramStore: paramSpace,
+	}
 }
 
 // SetStandaloneStakingKeeper sets the standalone staking keeper for the consumer chain.
@@ -123,7 +134,7 @@ func (k Keeper) mustValidateFields() {
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", "x/"+host.ModuleName+"-"+types.ModuleName)
+	return ctx.Logger().With("module", "x/"+host.SubModuleName+"-"+types.ModuleName)
 }
 
 func (k *Keeper) SetHooks(sh ccv.ConsumerHooks) *Keeper {
@@ -144,7 +155,7 @@ func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
 	if !ok {
-		return errorsmod.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	return k.channelKeeper.ChanCloseInit(ctx, portID, channelID, chanCap)
 }
@@ -403,20 +414,20 @@ func (k Keeper) DeletePacketMaturityTimes(ctx sdk.Context, vscId uint64, maturit
 // is the expected provider chain.
 func (k Keeper) VerifyProviderChain(ctx sdk.Context, connectionHops []string) error {
 	if len(connectionHops) != 1 {
-		return errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
+		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
 	}
 	connectionID := connectionHops[0]
 	conn, ok := k.connectionKeeper.GetConnection(ctx, connectionID)
 	if !ok {
-		return errorsmod.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
+		return sdkerrors.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
 	}
 	// Verify that client id is expected clientID
 	expectedClientId, ok := k.GetProviderClientID(ctx)
 	if !ok {
-		return errorsmod.Wrapf(clienttypes.ErrInvalidClient, "could not find provider client id")
+		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "could not find provider client id")
 	}
 	if expectedClientId != conn.ClientId {
-		return errorsmod.Wrapf(clienttypes.ErrInvalidClient, "invalid client: %s, channel must be built on top of client: %s", conn.ClientId, expectedClientId)
+		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "invalid client: %s, channel must be built on top of client: %s", conn.ClientId, expectedClientId)
 	}
 
 	return nil
@@ -555,6 +566,21 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 		val := types.CrossChainValidator{}
 		k.cdc.MustUnmarshal(iterator.Value(), &val)
 		validators = append(validators, val)
+	}
+
+	return validators
+}
+
+// Implement from stakingkeeper interface
+func (k Keeper) GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Validator) {
+	store := ctx.KVStore(k.storeKey)
+
+	iterator := sdk.KVStorePrefixIterator(store, stakingtypes.ValidatorsKey)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		validator := stakingtypes.MustUnmarshalValidator(k.cdc, iterator.Value())
+		validators = append(validators, validator)
 	}
 
 	return validators

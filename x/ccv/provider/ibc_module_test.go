@@ -6,10 +6,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -71,32 +71,32 @@ func TestOnChanOpenTry(t *testing.T) {
 		},
 		{
 			"invalid order", func(params *params, keeper *providerkeeper.Keeper) {
-				params.order = channeltypes.UNORDERED
-			}, false,
+			params.order = channeltypes.UNORDERED
+		}, false,
 		},
 		{
 			"invalid port ID", func(params *params, keeper *providerkeeper.Keeper) {
-				params.portID = "bad port"
-			}, false,
+			params.portID = "bad port"
+		}, false,
 		},
 		{
 			"invalid counter party port ID", func(params *params, keeper *providerkeeper.Keeper) {
-				params.counterparty.PortId = "bad port"
-			}, false,
+			params.counterparty.PortId = "bad port"
+		}, false,
 		},
 		{
 			"invalid counter party version", func(params *params, keeper *providerkeeper.Keeper) {
-				params.counterpartyVersion = "invalidVersion"
-			}, false,
+			params.counterpartyVersion = "invalidVersion"
+		}, false,
 		},
 		{
 			"unexpected client ID mapped to chain ID", func(params *params, keeper *providerkeeper.Keeper) {
-				keeper.SetConsumerClientId(
-					params.ctx,
-					"consumerChainID",
-					"invalidClientID",
-				)
-			}, false,
+			keeper.SetConsumerClientId(
+				params.ctx,
+				"consumerChainID",
+				"invalidClientID",
+			)
+		}, false,
 		},
 		{
 			"other CCV channel exists for this consumer chain",
@@ -134,7 +134,7 @@ func TestOnChanOpenTry(t *testing.T) {
 
 		// Expected mock calls
 		moduleAcct := authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{}}
-		moduleAcct.BaseAccount.Address = authtypes.NewModuleAddress(providertypes.ConsumerRewardsPool).String()
+		moduleAcct.BaseAccount.Address = authtypes.NewModuleAddress(authtypes.FeeCollectorName).String()
 
 		// Number of calls is not asserted, since not all code paths are hit for failures
 		gomock.InOrder(
@@ -146,7 +146,7 @@ func TestOnChanOpenTry(t *testing.T) {
 			mocks.MockClientKeeper.EXPECT().GetClientState(ctx, "clientIDToConsumer").Return(
 				&ibctmtypes.ClientState{ChainId: "consumerChainID"}, true,
 			).AnyTimes(),
-			mocks.MockAccountKeeper.EXPECT().GetModuleAccount(ctx, providertypes.ConsumerRewardsPool).Return(&moduleAcct).AnyTimes(),
+			mocks.MockAccountKeeper.EXPECT().GetModuleAccount(ctx, authtypes.FeeCollectorName).Return(&moduleAcct).AnyTimes(),
 		)
 
 		tc.mutateParams(&params, &providerKeeper)

@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
 	consumertypes "github.com/octopus-network/interchain-security/x/ccv/consumer/types"
 	ccvtypes "github.com/octopus-network/interchain-security/x/ccv/types"
@@ -44,14 +43,13 @@ const (
 
 // Reflection based keys for params subspace
 var (
-	KeyTemplateClient                     = []byte("TemplateClient")
-	KeyTrustingPeriodFraction             = []byte("TrustingPeriodFraction")
-	KeyInitTimeoutPeriod                  = []byte("InitTimeoutPeriod")
-	KeyVscTimeoutPeriod                   = []byte("VscTimeoutPeriod")
-	KeySlashMeterReplenishPeriod          = []byte("SlashMeterReplenishPeriod")
-	KeySlashMeterReplenishFraction        = []byte("SlashMeterReplenishFraction")
-	KeyMaxThrottledPackets                = []byte("MaxThrottledPackets")
-	KeyConsumerRewardDenomRegistrationFee = []byte("ConsumerRewardDenomRegistrationFee")
+	KeyTemplateClient              = []byte("TemplateClient")
+	KeyTrustingPeriodFraction      = []byte("TrustingPeriodFraction")
+	KeyInitTimeoutPeriod           = []byte("InitTimeoutPeriod")
+	KeyVscTimeoutPeriod            = []byte("VscTimeoutPeriod")
+	KeySlashMeterReplenishPeriod   = []byte("SlashMeterReplenishPeriod")
+	KeySlashMeterReplenishFraction = []byte("SlashMeterReplenishFraction")
+	KeyMaxThrottledPackets         = []byte("MaxThrottledPackets")
 )
 
 // ParamKeyTable returns a key table with the necessary registered provider params
@@ -69,18 +67,16 @@ func NewParams(
 	slashMeterReplenishPeriod time.Duration,
 	slashMeterReplenishFraction string,
 	maxThrottledPackets int64,
-	consumerRewardDenomRegistrationFee sdk.Coin,
 ) Params {
 	return Params{
-		TemplateClient:                     cs,
-		TrustingPeriodFraction:             trustingPeriodFraction,
-		CcvTimeoutPeriod:                   ccvTimeoutPeriod,
-		InitTimeoutPeriod:                  initTimeoutPeriod,
-		VscTimeoutPeriod:                   vscTimeoutPeriod,
-		SlashMeterReplenishPeriod:          slashMeterReplenishPeriod,
-		SlashMeterReplenishFraction:        slashMeterReplenishFraction,
-		MaxThrottledPackets:                maxThrottledPackets,
-		ConsumerRewardDenomRegistrationFee: consumerRewardDenomRegistrationFee,
+		TemplateClient:              cs,
+		TrustingPeriodFraction:      trustingPeriodFraction,
+		CcvTimeoutPeriod:            ccvTimeoutPeriod,
+		InitTimeoutPeriod:           initTimeoutPeriod,
+		VscTimeoutPeriod:            vscTimeoutPeriod,
+		SlashMeterReplenishPeriod:   slashMeterReplenishPeriod,
+		SlashMeterReplenishFraction: slashMeterReplenishFraction,
+		MaxThrottledPackets:         maxThrottledPackets,
 	}
 }
 
@@ -98,8 +94,6 @@ func DefaultParams() Params {
 			clienttypes.Height{}, // latest(initial) height
 			commitmenttypes.GetSDKSpecs(),
 			[]string{"upgrade", "upgradedIBCState"},
-			true,
-			true,
 		),
 		DefaultTrustingPeriodFraction,
 		ccvtypes.DefaultCCVTimeoutPeriod,
@@ -108,12 +102,6 @@ func DefaultParams() Params {
 		DefaultSlashMeterReplenishPeriod,
 		DefaultSlashMeterReplenishFraction,
 		DefaultMaxThrottledPackets,
-		// Defining this inline because it's not possible to define a constant of type sdk.Coin.
-		// Following the pattern from cosmos-sdk/staking/types/params.go
-		sdk.Coin{
-			Denom:  sdk.DefaultBondDenom,
-			Amount: sdk.NewInt(10000000),
-		},
 	)
 }
 
@@ -146,9 +134,6 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidatePositiveInt64(p.MaxThrottledPackets); err != nil {
 		return fmt.Errorf("max throttled packets is invalid: %s", err)
 	}
-	if err := validateCoin(p.ConsumerRewardDenomRegistrationFee); err != nil {
-		return fmt.Errorf("consumer reward denom registration fee is invalid: %s", err)
-	}
 	return nil
 }
 
@@ -163,7 +148,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishPeriod, p.SlashMeterReplenishPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(KeyMaxThrottledPackets, p.MaxThrottledPackets, ccvtypes.ValidatePositiveInt64),
-		paramtypes.NewParamSetPair(KeyConsumerRewardDenomRegistrationFee, p.ConsumerRewardDenomRegistrationFee, validateCoin),
 	}
 }
 
@@ -191,18 +175,5 @@ func validateTemplateClient(i interface{}) error {
 	if err := copiedClient.Validate(); err != nil {
 		return err
 	}
-	return nil
-}
-
-func validateCoin(i interface{}) error {
-	v, ok := i.(sdk.Coin)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-
-	if !v.IsValid() {
-		return fmt.Errorf("invalid consumer reward denom registration fee: %s", v)
-	}
-
 	return nil
 }

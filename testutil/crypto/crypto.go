@@ -13,9 +13,9 @@ import (
 
 	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
 
-	tmcrypto "github.com/tendermint/tendermint/crypto"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
-	tmtypes "github.com/tendermint/tendermint/types"
+	tmcrypto "github.com/cometbft/cometbft/crypto"
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	tmtypes "github.com/cometbft/cometbft/types"
 )
 
 // CryptoIdentity is a test helper for generating keys and addresses of

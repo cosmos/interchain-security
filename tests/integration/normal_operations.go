@@ -1,8 +1,8 @@
 package integration
 
 import (
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	consumertypes "github.com/octopus-network/interchain-security/x/ccv/consumer/types"
 )

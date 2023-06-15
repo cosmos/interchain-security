@@ -1,7 +1,5 @@
 package main
 
-const consumerRewardDenom = "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9"
-
 func stepsDemocracy(consumerName string) []Step {
 	return []Step{
 		{
@@ -62,13 +60,14 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-			action: submitParamChangeProposalAction{
+			// whitelisted legacy proposal can only handle ibctransfer.SendEnabled/ReceiveEnabled
+			action: submitParamChangeLegacyProposalAction{
 				chain:    chainID(consumerName),
 				from:     validatorID("alice"),
 				deposit:  10000001,
-				subspace: "staking",
-				key:      "MaxValidators",
-				value:    105,
+				subspace: "transfer",
+				key:      "SendEnabled",
+				value:    true,
 			},
 			state: State{
 				chainID(consumerName): ChainState{
@@ -80,9 +79,9 @@ func stepsDemocracy(consumerName string) []Step {
 						1: ParamsProposal{
 							Deposit:  10000001,
 							Status:   "PROPOSAL_STATUS_VOTING_PERIOD",
-							Subspace: "staking",
-							Key:      "MaxValidators",
-							Value:    "105",
+							Subspace: "transfer",
+							Key:      "SendEnabled",
+							Value:    "true",
 						},
 					},
 				},
@@ -103,48 +102,7 @@ func stepsDemocracy(consumerName string) []Step {
 						validatorID("bob"):   9960000001,
 					},
 					// Check that the parameter is changed on gov-consumer chain
-					Params: &([]Param{{Subspace: "staking", Key: "MaxValidators", Value: "105"}}),
-				},
-			},
-		},
-		{
-			action: relayRewardPacketsToProviderAction{
-				consumerChain: chainID(consumerName),
-				providerChain: chainID("provi"),
-				port:          "transfer",
-				channel:       1,
-			},
-			state: State{
-				chainID("provi"): ChainState{
-					// Check that tokens are not distributed before the denom has been registered
-					Rewards: &Rewards{
-						IsRewarded: map[validatorID]bool{
-							validatorID("alice"): false,
-							validatorID("bob"):   false,
-							validatorID("carol"): false,
-						},
-						IsIncrementalReward: false,
-						IsNativeDenom:       false,
-					},
-					// Check that the denom is not registered on provider chain
-					RegisteredConsumerRewardDenoms: &[]string{},
-				},
-			},
-		},
-		{
-			action: registerConsumerRewardDenomAction{
-				chain: chainID("provi"),
-				from:  validatorID("bob"),
-				denom: consumerRewardDenom,
-			},
-			state: State{
-				chainID("provi"): ChainState{
-					// Check that the denom is registered on provider chain
-					RegisteredConsumerRewardDenoms: &[]string{consumerRewardDenom},
-					ValBalances: &map[validatorID]uint{
-						// make sure that bob's account was debited
-						validatorID("bob"): 9490000000,
-					},
+					Params: &([]Param{{Subspace: "transfer", Key: "SendEnabled", Value: "true"}}),
 				},
 			},
 		},

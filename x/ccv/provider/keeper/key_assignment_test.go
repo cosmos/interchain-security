@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
 	cryptotestutil "github.com/octopus-network/interchain-security/testutil/crypto"
 	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"

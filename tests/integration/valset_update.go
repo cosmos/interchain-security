@@ -3,11 +3,11 @@ package integration
 import (
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	abci "github.com/tendermint/tendermint/abci/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
 )

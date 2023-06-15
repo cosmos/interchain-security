@@ -5,15 +5,16 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/golang/mock/gomock"
 
 	"github.com/octopus-network/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/octopus-network/interchain-security/x/ccv/types"
 
+	tmtypes "github.com/cometbft/cometbft/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	tmtypes "github.com/tendermint/tendermint/types"
 	"golang.org/x/exp/slices"
 
 	cryptoutil "github.com/octopus-network/interchain-security/testutil/crypto"
@@ -181,9 +182,9 @@ func TestSlashMeterReplenishment(t *testing.T) {
 	testCases := []struct {
 		replenishPeriod   time.Duration
 		replenishFraction string
-		totalPower        sdktypes.Int
+		totalPower        math.Int
 		// Replenish fraction * total power, also serves as max slash meter value
-		expectedAllowance sdktypes.Int
+		expectedAllowance math.Int
 	}{
 		{
 			replenishPeriod:   time.Minute,
@@ -453,11 +454,11 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 // voting power becomes lower from slashing.
 func TestNegativeSlashMeter(t *testing.T) {
 	testCases := []struct {
-		slashedPower           sdktypes.Int
-		totalPower             sdktypes.Int
+		slashedPower           math.Int
+		totalPower             math.Int
 		replenishFraction      string
 		numReplenishesTillFull int
-		finalMeterValue        sdktypes.Int
+		finalMeterValue        math.Int
 	}{
 		{
 			// Meter is initialized to a value of: 0.01*1000 = 10.
@@ -568,9 +569,9 @@ func TestNegativeSlashMeter(t *testing.T) {
 func TestGetSlashMeterAllowance(t *testing.T) {
 	testCases := []struct {
 		replenishFraction string
-		totalPower        sdktypes.Int
+		totalPower        math.Int
 		// Replenish fraction * total power
-		expectedAllowance sdktypes.Int
+		expectedAllowance math.Int
 	}{
 		{
 			replenishFraction: "0.00",
@@ -1248,7 +1249,7 @@ func TestThrottledPacketDataSize(t *testing.T) {
 // TestSlashMeter tests the getter and setter for the slash gas meter
 func TestSlashMeter(t *testing.T) {
 	testCases := []struct {
-		meterValue  sdktypes.Int
+		meterValue  math.Int
 		shouldPanic bool
 	}{
 		{meterValue: sdktypes.NewInt(-7999999999999999999), shouldPanic: true},

@@ -3,15 +3,15 @@ package keeper
 import (
 	"fmt"
 
-	errorsmod "cosmossdk.io/errors"
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/octopus-network/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/octopus-network/interchain-security/x/ccv/types"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
 // GetValidatorConsumerPubKey returns a validator's public key assigned for a consumer chain
@@ -409,13 +409,13 @@ func (k Keeper) AssignConsumerKey(
 		// This ensures that a validator joining the active set who has not explicitly assigned
 		// a consumer key, will be able to use their provider key as consumer key (as per default).
 		if existingVal.OperatorAddress != validator.OperatorAddress {
-			return errorsmod.Wrapf(
+			return sdkerrors.Wrapf(
 				types.ErrConsumerKeyInUse, "a different validator already uses the consumer key",
 			)
 		}
 		_, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 		if !found {
-			return errorsmod.Wrapf(
+			return sdkerrors.Wrapf(
 				types.ErrCannotAssignDefaultKeyAssignment,
 				"a validator cannot assign the default key assignment unless its key on that consumer has already been assigned",
 			)
@@ -425,7 +425,7 @@ func (k Keeper) AssignConsumerKey(
 	if _, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
 		// consumer key is already in use
 		// prevent multiple validators from assigning the same key
-		return errorsmod.Wrapf(
+		return sdkerrors.Wrapf(
 			types.ErrConsumerKeyInUse, "a validator has assigned the consumer key already",
 		)
 	}

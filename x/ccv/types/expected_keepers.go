@@ -4,18 +4,20 @@ import (
 	context "context"
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 // StakingKeeper defines the contract expected by provider-chain ccv module from a Staking Module that will keep track
@@ -29,11 +31,12 @@ type StakingKeeper interface {
 	GetLastValidatorPower(ctx sdk.Context, operator sdk.ValAddress) (power int64)
 	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
 	Jail(sdk.Context, sdk.ConsAddress) // jail a validator
-	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec, stakingtypes.InfractionType)
+	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec) math.Int
+	SlashWithInfractionReason(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec, stakingtypes.Infraction) math.Int
 	Unjail(ctx sdk.Context, addr sdk.ConsAddress)
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
-	PowerReduction(ctx sdk.Context) sdk.Int
+	PowerReduction(ctx sdk.Context) math.Int
 	PutUnbondingOnHold(ctx sdk.Context, id uint64) error
 	IterateValidators(ctx sdk.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool))
 	Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.ValidatorI
@@ -41,9 +44,9 @@ type StakingKeeper interface {
 	ValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) stakingtypes.ValidatorI
 	Delegation(ctx sdk.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) stakingtypes.DelegationI
 	MaxValidators(ctx sdk.Context) uint32
-	GetLastTotalPower(ctx sdk.Context) sdk.Int
+	GetLastTotalPower(ctx sdk.Context) math.Int
 	GetLastValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
-	BondDenom(ctx sdk.Context) (res string)
+	GetUnbondingType(ctx sdk.Context, id uint64) (unbondingType stakingtypes.UnbondingType, found bool)
 }
 
 type EvidenceKeeper interface {
@@ -65,7 +68,15 @@ type SlashingKeeper interface {
 type ChannelKeeper interface {
 	GetChannel(ctx sdk.Context, srcPort, srcChan string) (channel channeltypes.Channel, found bool)
 	GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool)
-	SendPacket(ctx sdk.Context, channelCap *capabilitytypes.Capability, packet ibcexported.PacketI) error
+	SendPacket(
+		ctx sdk.Context,
+		chanCap *capabilitytypes.Capability,
+		sourcePort string,
+		sourceChannel string,
+		timeoutHeight clienttypes.Height,
+		timeoutTimestamp uint64,
+		data []byte,
+	) (sequence uint64, err error)
 	WriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet ibcexported.PacketI, acknowledgement ibcexported.Acknowledgement) error
 	ChanCloseInit(ctx sdk.Context, portID, channelID string, chanCap *capabilitytypes.Capability) error
 }
@@ -88,14 +99,11 @@ type ClientKeeper interface {
 	GetSelfConsensusState(ctx sdk.Context, height ibcexported.Height) (ibcexported.ConsensusState, error)
 }
 
-// DistributionKeeper defines the expected interface of the distribution keeper
-type DistributionKeeper interface {
-	FundCommunityPool(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
-}
+// TODO: Expected interfaces for distribution on provider and consumer chains
 
 // ConsumerHooks event hooks for newly bonded cross-chain validators
 type ConsumerHooks interface {
-	AfterValidatorBonded(ctx sdk.Context, consAddr sdk.ConsAddress, _ sdk.ValAddress)
+	AfterValidatorBonded(ctx sdk.Context, consAddr sdk.ConsAddress, valAddresses sdk.ValAddress) error
 }
 
 // BankKeeper defines the expected interface needed to retrieve account balances.
@@ -113,16 +121,7 @@ type AccountKeeper interface {
 // IBCTransferKeeper defines the expected interface needed for distribution transfer
 // of tokens from the consumer to the provider chain
 type IBCTransferKeeper interface {
-	SendTransfer(
-		ctx sdk.Context,
-		sourcePort,
-		sourceChannel string,
-		token sdk.Coin,
-		sender sdk.AccAddress,
-		receiver string,
-		timeoutHeight clienttypes.Height,
-		timeoutTimestamp uint64,
-	) error
+	Transfer(context.Context, *transfertypes.MsgTransfer) (*transfertypes.MsgTransferResponse, error)
 }
 
 // IBCKeeper defines the expected interface needed for openning a

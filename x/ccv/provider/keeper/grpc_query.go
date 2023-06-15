@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	errorsmod "cosmossdk.io/errors"
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -28,7 +28,7 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 
 	gen, ok := k.GetConsumerGenesis(ctx, req.ChainId)
 	if !ok {
-		return nil, errorsmod.Wrap(types.ErrUnknownConsumerChainId, req.ChainId)
+		return nil, sdkerrors.Wrap(types.ErrUnknownConsumerChainId, req.ChainId)
 	}
 
 	return &types.QueryConsumerGenesisResponse{GenesisState: gen}, nil
@@ -236,18 +236,4 @@ func (k Keeper) getSlashPacketData(ctx sdk.Context, consumerChainID string, ibcS
 	}
 
 	return packet, true
-}
-
-func (k Keeper) QueryRegisteredConsumerRewardDenoms(goCtx context.Context, req *types.QueryRegisteredConsumerRewardDenomsRequest) (*types.QueryRegisteredConsumerRewardDenomsResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
-
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	denoms := k.GetAllConsumerRewardDenoms(ctx)
-
-	return &types.QueryRegisteredConsumerRewardDenomsResponse{
-		Denoms: denoms,
-	}, nil
 }

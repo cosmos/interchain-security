@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strconv"
 
-	errorsmod "cosmossdk.io/errors"
+	sdkerrors "cosmossdk.io/errors"
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
-	abci "github.com/tendermint/tendermint/abci/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 
 	"github.com/octopus-network/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/octopus-network/interchain-security/x/ccv/types"
@@ -88,26 +88,6 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	return ack
 }
 
-func (k *Keeper) QueueNotifyRewardsPackets(ctx sdk.Context) {
-	packet := ccv.NewNotifyRewardsPacketData(ctx.BlockHeight())
-	k.AppendPendingPacket(ctx, ccv.ConsumerPacketData{
-		Type: ccv.NotifyRewardsPacket,
-		Data: &ccv.ConsumerPacketData_NotifyRewardsPacketData{NotifyRewardsPacketData: packet},
-	})
-
-	k.Logger(ctx).Info("NotifyRewardsPacket enqueued", "blockHeight", packet.BlockHeight)
-
-	ctx.EventManager().EmitEvent(
-		sdk.NewEvent(
-			ccv.EventNotifyRewards,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
-			sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
-			sdk.NewAttribute(ccv.AttributeTimestamp, ctx.BlockTime().String()),
-		),
-	)
-}
-
 // QueueVSCMaturedPackets appends matured VSCs to an internal queue.
 //
 // Note: Per spec, a VSC reaching maturity on a consumer chain means that all the unbonding
@@ -144,9 +124,9 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 }
 
 // QueueSlashPacket appends a slash packet containing the given validator data and slashing info to queue.
-func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, valsetUpdateID uint64, infraction stakingtypes.InfractionType) {
+func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, valsetUpdateID uint64, infraction stakingtypes.Infraction) {
 	consAddr := sdk.ConsAddress(validator.Address)
-	downtime := infraction == stakingtypes.Downtime
+	downtime := infraction == stakingtypes.Infraction_INFRACTION_DOWNTIME
 
 	// return if an outstanding downtime request is set for the validator
 	if downtime && k.OutstandingDowntime(ctx, consAddr) {
@@ -204,7 +184,6 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 
 	pending := k.GetPendingPackets(ctx)
 	for _, p := range pending.GetList() {
-
 		// send packet over IBC
 		err := ccv.SendIBCPacket(
 			ctx,
@@ -253,7 +232,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		// check if there is an established CCV channel to provider
 		channelID, found := k.GetProviderChannel(ctx)
 		if !found {
-			return errorsmod.Wrapf(types.ErrNoProposerChannelId, "recv ErrorAcknowledgement on non-established channel %s", packet.SourceChannel)
+			return sdkerrors.Wrapf(types.ErrNoProposerChannelId, "recv ErrorAcknowledgement on non-established channel %s", packet.SourceChannel)
 		}
 		if channelID != packet.SourceChannel {
 			// Close the established CCV channel as well

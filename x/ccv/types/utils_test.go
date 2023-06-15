@@ -3,9 +3,9 @@ package types_test
 import (
 	"testing"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
 
 	ibcsimapp "github.com/octopus-network/interchain-security/legacy_ibc_testing/simapp"
 	"github.com/octopus-network/interchain-security/x/ccv/types"

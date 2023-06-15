@@ -3,6 +3,7 @@ package integration
 import (
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	providerkeeper "github.com/octopus-network/interchain-security/x/ccv/provider/keeper"
@@ -25,10 +26,10 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 	testCases := []struct {
 		name     string
 		shareDiv int64
-		unbond   func(expBalance, balance sdk.Int)
+		unbond   func(expBalance, balance math.Int)
 	}{
 		{
-			"provider unbonding period elapses first", 2, func(expBalance, balance sdk.Int) {
+			"provider unbonding period elapses first", 2, func(expBalance, balance math.Int) {
 			// increment time so that the unbonding period ends on the provider
 			incrementTimeByUnbondingPeriod(s, Provider)
 
@@ -43,7 +44,7 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 		},
 		},
 		{
-			"consumer unbonding period elapses first", 2, func(expBalance, balance sdk.Int) {
+			"consumer unbonding period elapses first", 2, func(expBalance, balance math.Int) {
 			// undelegation complete on consumer
 			unbondConsumer(1)
 
@@ -58,7 +59,7 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 		},
 		},
 		{
-			"no valset changes", 1, func(expBalance, balance sdk.Int) {
+			"no valset changes", 1, func(expBalance, balance math.Int) {
 			// undelegation complete on consumer
 			unbondConsumer(1)
 

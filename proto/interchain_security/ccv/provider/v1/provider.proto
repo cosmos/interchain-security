@@ -11,7 +11,6 @@ import "ibc/core/client/v1/client.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "tendermint/crypto/keys.proto";
 import "cosmos/evidence/v1beta1/evidence.proto";
-import "cosmos/base/v1beta1/coin.proto";
 
 // ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
 // If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time
@@ -137,10 +136,6 @@ message Params {
   // The maximum amount of throttled slash or vsc matured packets 
   // that can be queued for a single consumer before the provider chain halts.
   int64 max_throttled_packets = 8;
-
-  // The fee required to be paid to add a reward denom
-  cosmos.base.v1beta1.Coin consumer_reward_denom_registration_fee = 9
-      [(gogoproto.nullable) = false];
 }
 
 message HandshakeMetadata {

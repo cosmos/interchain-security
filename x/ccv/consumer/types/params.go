@@ -54,8 +54,6 @@ var (
 	KeyHistoricalEntries                 = []byte("HistoricalEntries")
 	KeyConsumerUnbondingPeriod           = []byte("UnbondingPeriod")
 	KeySoftOptOutThreshold               = []byte("SoftOptOutThreshold")
-	KeyRewardDenoms                      = []byte("RewardDenoms")
-	KeyProviderRewardDenoms              = []byte("ProviderRewardDenoms")
 )
 
 // ParamKeyTable type declaration for parameters
@@ -68,7 +66,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
 	ccvTimeoutPeriod, transferTimeoutPeriod time.Duration,
 	consumerRedistributionFraction string, historicalEntries int64,
-	consumerUnbondingPeriod time.Duration, softOptOutThreshold string, rewardDenoms, providerRewardDenoms []string,
+	consumerUnbondingPeriod time.Duration, softOptOutThreshold string,
 ) Params {
 	return Params{
 		Enabled:                           enabled,
@@ -81,15 +79,11 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		HistoricalEntries:                 historicalEntries,
 		UnbondingPeriod:                   consumerUnbondingPeriod,
 		SoftOptOutThreshold:               softOptOutThreshold,
-		RewardDenoms:                      rewardDenoms,
-		ProviderRewardDenoms:              providerRewardDenoms,
 	}
 }
 
 // DefaultParams is the default params for the consumer module
 func DefaultParams() Params {
-	var rewardDenoms []string
-	var provideRewardDenoms []string
 	return NewParams(
 		false,
 		DefaultBlocksPerDistributionTransmission,
@@ -101,8 +95,6 @@ func DefaultParams() Params {
 		DefaultHistoricalEntries,
 		DefaultConsumerUnbondingPeriod,
 		DefaultSoftOptOutThreshold,
-		rewardDenoms,
-		provideRewardDenoms,
 	)
 }
 
@@ -138,12 +130,6 @@ func (p Params) Validate() error {
 	if err := validateSoftOptOutThreshold(p.SoftOptOutThreshold); err != nil {
 		return err
 	}
-	if err := validateDenoms(p.RewardDenoms); err != nil {
-		return err
-	}
-	if err := validateDenoms(p.ProviderRewardDenoms); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -169,10 +155,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.UnbondingPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySoftOptOutThreshold,
 			p.SoftOptOutThreshold, validateSoftOptOutThreshold),
-		paramtypes.NewParamSetPair(KeyRewardDenoms,
-			p.RewardDenoms, validateDenoms),
-		paramtypes.NewParamSetPair(KeyProviderRewardDenoms,
-			p.ProviderRewardDenoms, validateDenoms),
 	}
 }
 
@@ -209,26 +191,5 @@ func validateSoftOptOutThreshold(i interface{}) error {
 	if !dec.Sub(sdktypes.MustNewDecFromStr("0.2")).IsNegative() {
 		return fmt.Errorf("soft opt out threshold cannot be greater than 0.2, got %s", str)
 	}
-	return nil
-}
-
-func validateDenoms(i interface{}) error {
-	v, ok := i.([]string)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-
-	// iterate over the denoms, turning them into coins and validating them
-	for _, denom := range v {
-		coin := sdktypes.Coin{
-			Denom:  denom,
-			Amount: sdktypes.NewInt(0),
-		}
-
-		if err := coin.Validate(); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }

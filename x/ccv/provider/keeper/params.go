@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
 	"github.com/octopus-network/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/octopus-network/interchain-security/x/ccv/types"
@@ -77,15 +77,6 @@ func (k Keeper) GetMaxThrottledPackets(ctx sdk.Context) int64 {
 	return p
 }
 
-func (k Keeper) GetConsumerRewardDenomRegistrationFee(ctx sdk.Context) sdk.Coin {
-	// Due to difficulties doing migrations in coordinated upgrades, this param is hardcoded to 10 ATOM in v1.1.0-multiden.
-	// The below code is the proper way to store the param. A future scheduled upgrade will
-	// need to run migrations to add the param. This will allow us to change the fee by governance.
-	var c sdk.Coin
-	k.paramSpace.Get(ctx, types.KeyConsumerRewardDenomRegistrationFee, &c)
-	return c
-}
-
 // GetParams returns the paramset for the provider module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
@@ -97,7 +88,6 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetSlashMeterReplenishPeriod(ctx),
 		k.GetSlashMeterReplenishFraction(ctx),
 		k.GetMaxThrottledPackets(ctx),
-		k.GetConsumerRewardDenomRegistrationFee(ctx),
 	)
 }
 

@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"cosmossdk.io/math"
+	tmtypes "github.com/cometbft/cometbft/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 
 	providertypes "github.com/octopus-network/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/octopus-network/interchain-security/x/ccv/types"
@@ -59,7 +60,7 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 // Obtains the effective validator power relevant to a validator consensus address.
 func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
 	valConsAddr providertypes.ProviderConsAddress,
-) sdktypes.Int {
+) math.Int {
 	// Obtain staking module val object from the provider's consensus address.
 	// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
 	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr.ToSdkConsAddr())
@@ -159,7 +160,7 @@ func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 // Note: allowance can change between blocks, since it is directly correlated to total voting power.
 // The slash meter must be less than or equal to the allowance for this block, before any slash
 // packet handling logic can be executed.
-func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
+func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) math.Int {
 	strFrac := k.GetSlashMeterReplenishFraction(ctx)
 	// MustNewDecFromStr should not panic, since the (string representation) of the slash meter replenish fraction
 	// is validated in ValidateGenesis and anytime the param is mutated.
@@ -401,9 +402,9 @@ func (k Keeper) GetLeadingVSCMaturedData(ctx sdktypes.Context, consumerChainID s
 // Thus, the returned array is in ascending order of ibc seq numbers.
 func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID string) (
 	slashFound bool, slashData ccvtypes.SlashPacketData, vscMaturedData []ccvtypes.VSCMaturedPacketData,
-	// Note: this slice contains the IBC sequence numbers of the slash packet data
-	// and trailing vsc matured packet data instances. This is used by caller to delete the
-	// data after it has been handled.
+// Note: this slice contains the IBC sequence numbers of the slash packet data
+// and trailing vsc matured packet data instances. This is used by caller to delete the
+// data after it has been handled.
 	ibcSeqNums []uint64,
 ) {
 	store := ctx.KVStore(k.storeKey)
@@ -540,7 +541,7 @@ func (k Keeper) DeleteThrottledPacketData(ctx sdktypes.Context, consumerChainID 
 // to an allowance of validators that can be jailed/tombstoned over time.
 //
 // Note: the value of this int should always be in the range of tendermint's [-MaxVotingPower, MaxVotingPower]
-func (k Keeper) GetSlashMeter(ctx sdktypes.Context) sdktypes.Int {
+func (k Keeper) GetSlashMeter(ctx sdktypes.Context) math.Int {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(providertypes.SlashMeterKey())
 	if bz == nil {
@@ -561,7 +562,7 @@ func (k Keeper) GetSlashMeter(ctx sdktypes.Context) sdktypes.Int {
 // SetSlashMeter sets the slash meter to the given signed int value
 //
 // Note: the value of this int should always be in the range of tendermint's [-MaxTotalVotingPower, MaxTotalVotingPower]
-func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value sdktypes.Int) {
+func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value math.Int) {
 	// TODO: remove these invariant panics once https://github.com/octopus-network/interchain-security/issues/534 is solved.
 
 	// The following panics are included since they are invariants for slash meter value.

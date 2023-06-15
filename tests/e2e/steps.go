@@ -18,6 +18,7 @@ var happyPathSteps = concatSteps(
 	stepsDelegate("consu"),
 	stepsAssignConsumerKeyOnStartedChain("consu", "bob"),
 	stepsUnbond("consu"),
+	stepsCancelUnbond("consu"),
 	stepsRedelegateForOptOut("consu"),
 	stepsDowntimeWithOptOut("consu"),
 	stepsRedelegate("consu"),
@@ -43,14 +44,6 @@ var democracySteps = concatSteps(
 	// delegation needs to happen so the first VSC packet can be delivered
 	stepsDelegate("democ"),
 	stepsDemocracy("democ"),
-)
-
-var rewardDenomConsumerSteps = concatSteps(
-	// democracySteps requires a transfer channel
-	stepsStartChains([]string{"democ"}, true),
-	// delegation needs to happen so the first VSC packet can be delivered
-	stepsDelegate("democ"),
-	stepsRewardDenomConsumer("democ"),
 )
 
 var multipleConsumers = concatSteps(

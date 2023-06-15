@@ -3,8 +3,8 @@ package keeper_test
 import (
 	"testing"
 
+	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/stretchr/testify/require"
-	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/octopus-network/interchain-security/testutil/crypto"
 	testkeeper "github.com/octopus-network/interchain-security/testutil/keeper"

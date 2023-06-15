@@ -3,10 +3,10 @@ package types_test
 import (
 	"testing"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/octopus-network/interchain-security/x/ccv/types"
 )
