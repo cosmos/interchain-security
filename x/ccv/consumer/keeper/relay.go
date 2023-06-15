@@ -211,13 +211,38 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 	}
 
 	// clear pending data packets
-	k.DeletePendingDataPackets(ctx)
+	k.DeletePendingDataPackets(ctx) // TODO: only delete packets that were sent
 }
 
 // OnAcknowledgementPacket executes application logic for acknowledgments of sent VSCMatured and Slash packets
 // in conjunction with the ibc module's execution of "acknowledgePacket",
 // according to https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
+
+	// TODO: define shared enum between provider and consumer for ack types
+	if res := ack.GetResult(); res != nil {
+		if len(res) != 1 {
+			k.Logger(ctx).Error("recv invalid ack; expected length 1", "channel", packet.SourceChannel, "ack", res)
+		}
+		switch res[0] {
+		case 1:
+			// No-op result ack. These are sent by the provider to indicate that the packet was received,
+			// and no actions are required by the consumer. Throttling v1 always sends this ack for slash and VSCMatured packets.
+			k.Logger(ctx).Info("recv no-op ack", "channel", packet.SourceChannel, "ack", res)
+		case 2:
+			// Slash packet handled result ack, sent by the provider to indicate that the bouncing slash packet was handled.
+			// Queued packets will now be unblocked from sending.
+			k.DeleteBouncingSlash(ctx)
+			k.DeleteSlashRetryAllowed(ctx) // Not strictly necessary, but we reset this flag.
+		case 3:
+			// Slash packet bounced result ack, sent by the provider to indicate that the bouncing slash packet was NOT handled.
+			// Bouncing slash still persisted, retry is now allowed.
+			k.SetSlashRetryAllowed(ctx)
+		default:
+			k.Logger(ctx).Error("recv invalid result ack; expected 1, 2, or 3", "channel", packet.SourceChannel, "ack", res)
+		}
+	}
+
 	if err := ack.GetError(); err != "" {
 		// Reasons for ErrorAcknowledgment
 		//  - packet data could not be successfully decoded

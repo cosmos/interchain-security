@@ -41,6 +41,8 @@ func getAllKeyPrefixes() []byte {
 		InitGenesisHeightByteKey,
 		StandaloneTransferChannelIDByteKey,
 		PrevStandaloneChainByteKey,
+		BouncingSlashByteKey,
+		RetryAllowedByteKey,
 	}
 }
 
@@ -77,5 +79,7 @@ func getAllFullyDefinedKeys() [][]byte {
 		InitGenesisHeightKey(),
 		StandaloneTransferChannelIDKey(),
 		PrevStandaloneChainKey(),
+		BouncingSlashKey(),
+		RetryAllowedKey(),
 	}
 }

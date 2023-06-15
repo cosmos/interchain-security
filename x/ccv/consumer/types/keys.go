@@ -97,6 +97,10 @@ const (
 	// PrevStandaloneChainByteKey is the byte storing the flag marking whether this chain was previously standalone
 	PrevStandaloneChainByteKey
 
+	BouncingSlashByteKey
+
+	RetryAllowedByteKey
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -203,6 +207,14 @@ func StandaloneTransferChannelIDKey() []byte {
 // PrevStandaloneChainKey returns the key to the flag marking whether this chain was previously standalone
 func PrevStandaloneChainKey() []byte {
 	return []byte{PrevStandaloneChainByteKey}
+}
+
+func BouncingSlashKey() []byte {
+	return []byte{BouncingSlashByteKey}
+}
+
+func RetryAllowedKey() []byte {
+	return []byte{RetryAllowedByteKey}
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go
