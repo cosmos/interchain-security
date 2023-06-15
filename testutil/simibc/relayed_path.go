@@ -5,7 +5,7 @@ import (
 	"time"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
 )
 
 // RelayedPath is a wrapper around ibctesting.Path gives fine-grained

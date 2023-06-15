@@ -10,8 +10,8 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // OnRecvVSCMaturedPacket handles a VSCMatured packet
@@ -53,14 +53,25 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 // the "VSC Maturity and Slashing Order" CCV property. If VSC matured packet data DOES NOT
 // trail slash packet data for that consumer, it will be handled in this method,
 // bypassing HandleThrottleQueues.
-func (k Keeper) HandleLeadingVSCMaturedPackets(ctx sdk.Context) {
+func (k Keeper) HandleLeadingVSCMaturedPackets(ctx sdk.Context) (vscMaturedHandledThisBlock int) {
+	vscMaturedHandledThisBlock = 0
 	for _, chain := range k.GetAllConsumerChains(ctx) {
+		// Note: it's assumed the order of the vsc matured slice matches the order of the ibc seq nums slice,
+		// in that a vsc matured packet data at index i is associated with the ibc seq num at index i.
 		leadingVscMatured, ibcSeqNums := k.GetLeadingVSCMaturedData(ctx, chain.ChainId)
-		for _, data := range leadingVscMatured {
+		ibcSeqNumsHandled := []uint64{}
+		for idx, data := range leadingVscMatured {
+			if vscMaturedHandledThisBlock >= vscMaturedHandledPerBlockLimit {
+				// Break from inner for-loop, DeleteThrottledPacketData will still be called for this consumer
+				break
+			}
 			k.HandleVSCMaturedPacket(ctx, chain.ChainId, data)
+			vscMaturedHandledThisBlock++
+			ibcSeqNumsHandled = append(ibcSeqNumsHandled, ibcSeqNums[idx])
 		}
-		k.DeleteThrottledPacketData(ctx, chain.ChainId, ibcSeqNums...)
+		k.DeleteThrottledPacketData(ctx, chain.ChainId, ibcSeqNumsHandled...)
 	}
+	return vscMaturedHandledThisBlock
 }
 
 // HandleVSCMaturedPacket handles a VSCMatured packet.
@@ -267,13 +278,14 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// - Marshaling and/or store corruption errors.
 	// - Setting invalid slash meter values (see SetSlashMeter).
 	k.CheckForSlashMeterReplenishment(ctx)
+
 	// Handle leading vsc matured packets before throttling logic.
 	//
 	// Note: HandleLeadingVSCMaturedPackets contains panics for the following scenarios, any of which should never occur
 	// if the protocol is correct and external data is properly validated:
 	//
 	// - Marshaling and/or store corruption errors.
-	k.HandleLeadingVSCMaturedPackets(ctx)
+	vscMaturedHandledThisBlock := k.HandleLeadingVSCMaturedPackets(ctx)
 	// Handle queue entries considering throttling logic.
 	//
 	// Note: HandleThrottleQueues contains panics for the following scenarios, any of which should never occur
@@ -282,7 +294,7 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// - SlashMeter has not been set (which should be set in InitGenesis, see InitializeSlashMeter).
 	// - Marshaling and/or store corruption errors.
 	// - Setting invalid slash meter values (see SetSlashMeter).
-	k.HandleThrottleQueues(ctx)
+	k.HandleThrottleQueues(ctx, vscMaturedHandledThisBlock)
 }
 
 // OnRecvSlashPacket delivers a received slash packet, validates it and

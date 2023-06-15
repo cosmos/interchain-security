@@ -38,7 +38,8 @@ func stepsMultiConsumerDelegate(consumer1, consumer2 string) []Step {
 		{
 			// relay changes to consumer1
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer1),
 				port:    "provider",
 				channel: 0, // consumer1 channel
 			},
@@ -69,7 +70,8 @@ func stepsMultiConsumerDelegate(consumer1, consumer2 string) []Step {
 		{
 			// relay changes to consumer2
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer2),
 				port:    "provider",
 				channel: 1, // consumer2 channel
 			},
@@ -138,7 +140,8 @@ func stepsMultiConsumerUnbond(consumer1, consumer2 string) []Step {
 		{
 			// relay to consumer1
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer1),
 				port:    "provider",
 				channel: 0, // consumer1 channel
 			},
@@ -169,7 +172,8 @@ func stepsMultiConsumerUnbond(consumer1, consumer2 string) []Step {
 		{
 			// relay to consumer2
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer2),
 				port:    "provider",
 				channel: 1, // consumer2 channel
 			},
@@ -242,7 +246,8 @@ func stepsMultiConsumerRedelegate(consumer1, consumer2 string) []Step {
 		{
 			// relay to consumer1
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer1),
 				port:    "provider",
 				channel: 0, // consumer1 channel
 			},
@@ -273,7 +278,8 @@ func stepsMultiConsumerRedelegate(consumer1, consumer2 string) []Step {
 		{
 			// relay to consumer2
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumer2),
 				port:    "provider",
 				channel: 1, // consumer1 channel
 			},

@@ -19,9 +19,9 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -80,6 +80,12 @@ func NewKeeper(
 
 	k.mustValidateFields()
 	return k
+}
+
+// SetParamSpace sets the param space for the provider keeper.
+// Note: this is only used for testing!
+func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
+	k.paramSpace = ps
 }
 
 // Validates that the provider keeper is initialized with non-zero and
@@ -1053,4 +1059,8 @@ func (k Keeper) GetSlashLog(
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SlashLogKey(providerAddr))
 	return bz != nil
+}
+
+func (k Keeper) BondDenom(ctx sdk.Context) string {
+	return k.stakingKeeper.BondDenom(ctx)
 }

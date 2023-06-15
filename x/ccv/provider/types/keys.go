@@ -8,7 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 type Status int
@@ -133,6 +133,10 @@ const (
 
 	// ConsumerRewardDenomsBytePrefix is the byte prefix that will store a list of consumer reward denoms
 	ConsumerRewardDenomsBytePrefix
+
+	// VSCMaturedHandledThisBlockBytePrefix is the byte prefix storing the number of vsc matured packets
+	// handled in the current block
+	VSCMaturedHandledThisBlockBytePrefix
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
@@ -474,6 +478,10 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
 	addr := bz[prefixL+8+int(chainIdL):]
 	return chainID, addr, nil
+}
+
+func VSCMaturedHandledThisBlockKey() []byte {
+	return []byte{VSCMaturedHandledThisBlockBytePrefix}
 }
 
 //

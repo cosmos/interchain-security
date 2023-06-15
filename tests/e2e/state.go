@@ -669,6 +669,11 @@ func (tr TestRun) getRegisteredConsumerRewardDenoms(chain chainID) []string {
 }
 
 func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {
+	// for CometMock, validatorNodes are all the same address as the query node (which is CometMocks address)
+	if tr.useCometmock {
+		return tr.getQueryNode(chain)
+	}
+
 	return "tcp://" + tr.getValidatorIP(chain, validator) + ":26658"
 }
 

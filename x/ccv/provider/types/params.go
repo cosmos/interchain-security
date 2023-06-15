@@ -9,8 +9,8 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 const (
@@ -121,7 +121,7 @@ func (p Params) Validate() error {
 	if p.TemplateClient == nil {
 		return fmt.Errorf("template client is nil")
 	}
-	if err := validateTemplateClient(*p.TemplateClient); err != nil {
+	if err := ValidateTemplateClient(*p.TemplateClient); err != nil {
 		return err
 	}
 	if err := ccvtypes.ValidateStringFraction(p.TrustingPeriodFraction); err != nil {
@@ -145,7 +145,7 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidatePositiveInt64(p.MaxThrottledPackets); err != nil {
 		return fmt.Errorf("max throttled packets is invalid: %s", err)
 	}
-	if err := validateCoin(p.ConsumerRewardDenomRegistrationFee); err != nil {
+	if err := ValidateCoin(p.ConsumerRewardDenomRegistrationFee); err != nil {
 		return fmt.Errorf("consumer reward denom registration fee is invalid: %s", err)
 	}
 	return nil
@@ -154,7 +154,7 @@ func (p Params) Validate() error {
 // ParamSetPairs implements params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyTemplateClient, p.TemplateClient, validateTemplateClient),
+		paramtypes.NewParamSetPair(KeyTemplateClient, p.TemplateClient, ValidateTemplateClient),
 		paramtypes.NewParamSetPair(KeyTrustingPeriodFraction, p.TrustingPeriodFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyInitTimeoutPeriod, p.InitTimeoutPeriod, ccvtypes.ValidateDuration),
@@ -162,11 +162,11 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishPeriod, p.SlashMeterReplenishPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(KeyMaxThrottledPackets, p.MaxThrottledPackets, ccvtypes.ValidatePositiveInt64),
-		paramtypes.NewParamSetPair(KeyConsumerRewardDenomRegistrationFee, p.ConsumerRewardDenomRegistrationFee, validateCoin),
+		paramtypes.NewParamSetPair(KeyConsumerRewardDenomRegistrationFee, p.ConsumerRewardDenomRegistrationFee, ValidateCoin),
 	}
 }
 
-func validateTemplateClient(i interface{}) error {
+func ValidateTemplateClient(i interface{}) error {
 	cs, ok := i.(ibctmtypes.ClientState)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T, expected: %T", i, ibctmtypes.ClientState{})
@@ -193,7 +193,7 @@ func validateTemplateClient(i interface{}) error {
 	return nil
 }
 
-func validateCoin(i interface{}) error {
+func ValidateCoin(i interface{}) error {
 	v, ok := i.(sdk.Coin)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)

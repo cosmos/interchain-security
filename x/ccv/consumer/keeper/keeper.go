@@ -18,8 +18,8 @@ import (
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -90,6 +90,12 @@ func NewKeeper(
 // This method should only be called for previously standalone chains that are now consumers.
 func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
 	k.standaloneStakingKeeper = sk
+}
+
+// SetParamSpace sets the param space for the consumer keeper.
+// Note: this is only used for testing!
+func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
+	k.paramStore = ps
 }
 
 // Validates that the consumer keeper is initialized with non-zero and
