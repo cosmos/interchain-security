@@ -36,11 +36,11 @@ Then, whenever the `Slash()` interface is executed on the consumer, if the votin
 
 ### Negative
 
-The bottom `x%` is still part of the total voting power of the consumer chain. This means that if the soft opt-out threshold is set to `10%` for example, and every validator in the bottom `10%` opts out from validating the consumer, then a `24%` downtime of the remaining voting power would halt the chain. This may be especially problematic during consumer upgrades.
+* The bottom `x%` is still part of the total voting power of the consumer chain. This means that if the soft opt-out threshold is set to `10%` for example, and every validator in the bottom `10%` opts out from validating the consumer, then a `24%` downtime of the remaining voting power would halt the chain. This may be especially problematic during consumer upgrades.
+* In nominal scenarios, consumers with soft opt out enabled will be constructing slash packets for small vals, which may be dropped. This is wasted computation, but necessary to keep implementation simple. Note that the sdk's [full downtime logic](https://github.com/cosmos/cosmos-sdk/blob/d3f09c222243bb3da3464969f0366330dcb977a8/x/slashing/keeper/infractions.go#L75) is always executed on the consumer, which can be computationally expensive and slow down certain blocks.
 
 ### Neutral
 
-* In nominal scenarios, consumers with soft opt out enabled will be computing slash packets for small vals, which may be dropped. This is wasted computation, but necessary to keep implementation simple.
 * Validators in the bottom of the valset who don't have to validate, may receive large delegation(s) which suddenly boost the validator to the subset that has to validate. This may catch the validator off guard.
 
 ## References
