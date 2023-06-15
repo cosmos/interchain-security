@@ -716,5 +716,6 @@ func (tr TestRun) curlJsonRPCRequest(method, params, address string) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
 
-	executeCommand(cmd, "curlJsonRPCRequest")
+	verbosity := true
+	executeCommandWithVerbosity(cmd, "curlJsonRPCRequest", &verbosity)
 }

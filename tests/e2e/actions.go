@@ -1047,7 +1047,7 @@ func (tr TestRun) transferChannelComplete(
 	executeCommand(chanOpenConfirmCmd, "transferChanOpenConfirm")
 }
 
-func executeCommand(cmd *exec.Cmd, cmdName string) {
+func executeCommandWithVerbosity(cmd *exec.Cmd, cmdName string, verbose *bool) {
 	if verbose != nil && *verbose {
 		fmt.Println(cmdName+" cmd:", cmd.String())
 	}
@@ -1073,6 +1073,10 @@ func executeCommand(cmd *exec.Cmd, cmdName string) {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func executeCommand(cmd *exec.Cmd, cmdName string) {
+	executeCommandWithVerbosity(cmd, cmdName, verbose)
 }
 
 type relayPacketsAction struct {
@@ -1112,6 +1116,8 @@ func (tr TestRun) relayPacketsGorelayer(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chainA, 1, 30*time.Second)
 }
 
 func (tr TestRun) relayPacketsHermes(
@@ -1294,11 +1300,27 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chain, 1, 10*time.Second)
 }
 
 type downtimeSlashAction struct {
 	chain     chainID
 	validator validatorID
+}
+
+// takes a string representation of the private key like
+// `{"address":"DF090A4880B54CD57B2A79E64D9E969BD7514B09","pub_key":{"type":"tendermint/PubKeyEd25519","value":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TRJgf7lkTjs/sj43pyweEOanyV7H7fhnVivOi0A4yjW6NjXgCCilX3TshiA8CT/nHxz3brtLh9B/z2fJ4I9N6w=="}}`
+// and returns the value of the "address" field
+func (tr TestRun) getValidatorKeyAddressFromString(keystring string) string {
+	var key struct {
+		Address string `json:"address"`
+	}
+	err := json.Unmarshal([]byte(keystring), &key)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return key.Address
 }
 
 func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) {
@@ -1321,6 +1343,26 @@ func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, dow
 
 	if tr.useCometmock {
 		// send set_signing_status either to down or up for validator
+		var validatorAddress string
+		if chain == chainID("provi") {
+			validatorAddress = tr.getValidatorKeyAddressFromString(tr.validatorConfigs[validator].privValidatorKey)
+		} else {
+			var valAddressString string
+			if tr.validatorConfigs[validator].useConsumerKey {
+				valAddressString = tr.validatorConfigs[validator].consumerPrivValidatorKey
+			} else {
+				valAddressString = tr.validatorConfigs[validator].privValidatorKey
+			}
+			validatorAddress = tr.getValidatorKeyAddressFromString(valAddressString)
+		}
+
+		method := "set_signing_status"
+		params := fmt.Sprintf(`{"validator_address":"%s","status":"%s"}`, validatorAddress, lastArg)
+		address := tr.getQueryNodeRPCAddress(chain)
+
+		tr.curlJsonRPCRequest(method, params, address)
+		tr.waitBlocks(chain, 1, 10*time.Second)
+		return
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -1596,6 +1638,8 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 
 		// TODO: @MSalopek refactor this so test config is not changed at runtime
 		// make the validator use consumer key
+		// @POfftermatt I am currently using this for downtime slashing with cometmock
+		// (I need to find the currently used validator key address)Í
 		valCfg.useConsumerKey = true
 		tr.validatorConfigs[action.validator] = valCfg
 	}
