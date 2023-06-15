@@ -35,3 +35,4 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 | [001](./adr-001-key-assignment.md) | Consumer chain key assignment | Accepted, Implemented |
 | [002](./adr-002-throttle.md) | Jail Throttling | Accepted, Implemented |
 | [003](./adr-003-equivocation-gov-proposal.md) | Equivocation governance proposal | Accepted, Implemented 
+| [004](./adr-004-denom-dos-fixes) | Denom DOS fixes | Accepted, Implemented 
