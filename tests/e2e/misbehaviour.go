@@ -1,12 +1,14 @@
 package e2e
 
 import (
-	"fmt"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	ibcclientypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	ibctestingmock "github.com/cosmos/ibc-go/v4/testing/mock"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -25,7 +27,6 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 		s.setDefaultValSigningInfo(*v)
 	}
 
-	// consumerConsState, _ := s.providerChain.GetConsensusState(s.path.EndpointA.ClientID, s.consumerChain.LastHeader.TrustedHeight)
 	altTime := s.providerCtx().BlockTime().Add(time.Minute)
 
 	clientHeight := s.consumerChain.LastHeader.TrustedHeight
@@ -34,7 +35,6 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 
 	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:2])
 	altSigners := make(map[string]tmtypes.PrivValidator, 1)
-	// altSigners[altValset.Validators[0].Address.String()] = altPrivVal
 	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
 
@@ -83,28 +83,25 @@ func (s *CCVTestSuite) TestCheckConsumerMisbehaviour() {
 	// required to have the consumer client revision height greater than 0
 	s.SendEmptyVSCPacket()
 
-	// consumerConsState, _ := s.providerChain.GetConsensusState(s.path.EndpointA.ClientID, s.consumerChain.LastHeader.TrustedHeight)
+	consumerConsState, ok := s.providerChain.GetConsensusState(s.path.EndpointA.ClientID, s.consumerChain.LastHeader.TrustedHeight)
+	s.Require().True(ok)
 
 	clientHeight := s.consumerChain.LastHeader.TrustedHeight
 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
 	clientSigners := s.consumerChain.Signers
 
-	// altPrivVal := ibctestingmock.NewPV()
-	// altPubKey, err := altPrivVal.GetPubKey()
-	// s.Require().NoError(err)
-	// altVal := tmtypes.NewValidator(altPubKey, 4)
+	altPrivVal := ibctestingmock.NewPV()
+	altPubKey, err := altPrivVal.GetPubKey()
+	s.Require().NoError(err)
+	altVal := tmtypes.NewValidator(altPubKey, 4)
 
-	// altValset := tmtypes.NewValidatorSet([]*tmtypes.Validator{altVal})
-	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:2])
+	altValset := tmtypes.NewValidatorSet([]*tmtypes.Validator{altVal})
 	altSigners := make(map[string]tmtypes.PrivValidator, 1)
-	// altSigners[altValset.Validators[0].Address.String()] = altPrivVal
-	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
-	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
+	altSigners[altValset.Validators[0].Address.String()] = altPrivVal
 
 	altTime := s.providerCtx().BlockTime().Add(time.Minute)
-	// heightPlus5 := ibcclientypes.NewHeight(0, clientHeight.RevisionHeight+5)
-
-	// heightPlus3 := ibcclientypes.NewHeight(0, clientHeight.RevisionHeight+3)
+	heightPlus5 := ibcclientypes.NewHeight(0, clientHeight.RevisionHeight+5)
+	heightPlus3 := ibcclientypes.NewHeight(0, clientHeight.RevisionHeight+3)
 
 	testCases := []struct {
 		name         string
@@ -112,318 +109,318 @@ func (s *CCVTestSuite) TestCheckConsumerMisbehaviour() {
 		malleate     func()
 		expPass      bool
 	}{
-		// {
-		// 	"misbehaviour height is at same height as trusted height",
-		// 	func() *ibctmtypes.Misbehaviour {
-		// 		return &ibctmtypes.Misbehaviour{
-		// 			ClientId: s.path.EndpointA.ClientID,
-		// 			Header1: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight),
-		// 				clientHeight,
-		// 				altTime,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 			Header2: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight),
-		// 				clientHeight,
-		// 				s.providerCtx().BlockTime(),
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 		}
-		// 	},
-		// 	func() {},
-		// 	false,
-		// }, {
-		// 	"invalid chain ID",
-		// 	func() *ibctmtypes.Misbehaviour {
+		{
+			"misbehaviour height is at same height as trusted height",
+			func() *ibctmtypes.Misbehaviour {
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight),
+						clientHeight,
+						altTime,
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+					Header2: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight),
+						clientHeight,
+						s.providerCtx().BlockTime(),
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+				}
+			},
+			func() {},
+			false,
+		}, {
+			"invalid chain ID",
+			func() *ibctmtypes.Misbehaviour {
 
-		// 		mb := &ibctmtypes.Misbehaviour{
-		// 			ClientId: s.path.EndpointA.ClientID,
-		// 			Header1: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight+1),
-		// 				clientHeight,
-		// 				altTime,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 			Header2: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight+1),
-		// 				clientHeight,
-		// 				altTime,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 		}
+				mb := &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight+1),
+						clientHeight,
+						altTime,
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+					Header2: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight+1),
+						clientHeight,
+						altTime,
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+				}
 
-		// 		mb.Header1.Header.ChainID = "wrongchainid"
-		// 		return mb
+				mb.Header1.Header.ChainID = "wrongchainid"
+				return mb
 
-		// 	},
-		// 	func() {},
-		// 	false,
-		// },
-		// {
-		// 	"invalid client ID",
-		// 	func() *ibctmtypes.Misbehaviour {
+			},
+			func() {},
+			false,
+		},
+		{
+			"invalid client ID",
+			func() *ibctmtypes.Misbehaviour {
 
-		// 		mb := &ibctmtypes.Misbehaviour{
-		// 			ClientId: "wrongclientid",
-		// 			Header1: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight+1),
-		// 				clientHeight,
-		// 				altTime,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 			Header2: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight+1),
-		// 				clientHeight,
-		// 				altTime,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 		}
+				mb := &ibctmtypes.Misbehaviour{
+					ClientId: "wrongclientid",
+					Header1: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight+1),
+						clientHeight,
+						altTime,
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+					Header2: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight+1),
+						clientHeight,
+						altTime,
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+				}
 
-		// 		return mb
+				return mb
 
-		// 	},
-		// 	func() {},
-		// 	false,
-		// }, {
-		// 	"different trusted height shouldn't pass",
-		// 	func() *ibctmtypes.Misbehaviour {
-		// 		return &ibctmtypes.Misbehaviour{
-		// 			ClientId: s.path.EndpointA.ClientID,
-		// 			Header1: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight+1),
-		// 				clientHeight,
-		// 				altTime,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 			Header2: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight+1),
-		// 				heightPlus3,
-		// 				s.providerCtx().BlockTime(),
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 		}
-		// 	},
-		// 	func() {},
-		// 	false,
-		// }, {
-		// 	"trusting period misbehavior should pass",
-		// 	func() *ibctmtypes.Misbehaviour {
-		// 		return &ibctmtypes.Misbehaviour{
-		// 			ClientId: s.path.EndpointA.ClientID,
-		// 			Header1: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight+1),
-		// 				clientHeight,
-		// 				altTime,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 			Header2: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight+1),
-		// 				clientHeight,
-		// 				s.providerCtx().BlockTime(),
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 		}
-		// 	},
-		// 	func() {},
-		// 	true,
-		// },
-		// {
-		// 	"time misbehavior should pass",
-		// 	func() *ibctmtypes.Misbehaviour {
-		// 		return &ibctmtypes.Misbehaviour{
-		// 			ClientId: s.path.EndpointA.ClientID,
-		// 			Header1: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight+5),
-		// 				clientHeight,
-		// 				s.providerCtx().BlockTime(),
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 			Header2: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight+1),
-		// 				clientHeight,
-		// 				altTime,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 		}
-		// 	},
-		// 	func() {},
-		// 	true,
-		// },
-		// {
-		// 	"both later height should pass",
-		// 	func() *ibctmtypes.Misbehaviour {
-		// 		return &ibctmtypes.Misbehaviour{
-		// 			ClientId: s.path.EndpointA.ClientID,
-		// 			Header1: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(heightPlus5.RevisionHeight+1),
-		// 				clientHeight,
-		// 				s.providerCtx().BlockTime(),
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 			Header2: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(heightPlus5.RevisionHeight+1),
-		// 				clientHeight,
-		// 				altTime,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 		}
-		// 	},
-		// 	func() {
+			},
+			func() {},
+			false,
+		}, {
+			"different trusted height shouldn't pass",
+			func() *ibctmtypes.Misbehaviour {
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight+1),
+						clientHeight,
+						altTime,
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+					Header2: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight+1),
+						heightPlus3,
+						s.providerCtx().BlockTime(),
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+				}
+			},
+			func() {},
+			false,
+		}, {
+			"trusting period misbehavior should pass",
+			func() *ibctmtypes.Misbehaviour {
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight+1),
+						clientHeight,
+						altTime,
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+					Header2: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight+1),
+						clientHeight,
+						s.providerCtx().BlockTime(),
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+				}
+			},
+			func() {},
+			true,
+		},
+		{
+			"time misbehavior should pass",
+			func() *ibctmtypes.Misbehaviour {
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight+5),
+						clientHeight,
+						s.providerCtx().BlockTime(),
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+					Header2: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight+1),
+						clientHeight,
+						altTime,
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+				}
+			},
+			func() {},
+			true,
+		},
+		{
+			"both later height should pass",
+			func() *ibctmtypes.Misbehaviour {
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(heightPlus5.RevisionHeight+1),
+						clientHeight,
+						s.providerCtx().BlockTime(),
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+					Header2: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(heightPlus5.RevisionHeight+1),
+						clientHeight,
+						altTime,
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+				}
+			},
+			func() {
 
-		// 		consumerConsState.(*ibctmtypes.ConsensusState).NextValidatorsHash = clientTMValset.Hash()
-		// 		clientState := ibctmtypes.NewClientState(s.consumerChain.ChainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, clientHeight, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, false, false)
+				consumerConsState.(*ibctmtypes.ConsensusState).NextValidatorsHash = clientTMValset.Hash()
+				clientState := ibctmtypes.NewClientState(s.consumerChain.ChainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, clientHeight, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, false, false)
 
-		// 		// store trusted consensus state for Header2
-		// 		intermediateConsState := &ibctmtypes.ConsensusState{
-		// 			Timestamp:          altTime,
-		// 			NextValidatorsHash: clientTMValset.Hash(),
-		// 		}
+				// store trusted consensus state for Header2
+				intermediateConsState := &ibctmtypes.ConsensusState{
+					Timestamp:          altTime,
+					NextValidatorsHash: clientTMValset.Hash(),
+				}
 
-		// 		s.providerApp.GetIBCKeeper().ClientKeeper.SetClientConsensusState(s.providerCtx(), s.path.EndpointA.ClientID, heightPlus3, intermediateConsState)
+				s.providerApp.GetIBCKeeper().ClientKeeper.SetClientConsensusState(s.providerCtx(), s.path.EndpointA.ClientID, heightPlus3, intermediateConsState)
 
-		// 		clientState.LatestHeight = heightPlus3
-		// 		s.providerApp.GetIBCKeeper().ClientKeeper.SetClientState(s.providerCtx(), s.path.EndpointA.ClientID, clientState)
-		// 	},
-		// 	true,
-		// },
-		// {
-		// 	"trusted ConsensusState1 not found",
-		// 	func() *ibctmtypes.Misbehaviour {
-		// 		return &ibctmtypes.Misbehaviour{
-		// 			ClientId: s.path.EndpointA.ClientID,
-		// 			Header1: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight),
-		// 				heightPlus3,
-		// 				altTime,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 			Header2: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight),
-		// 				clientHeight,
-		// 				s.providerCtx().BlockTime(),
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 		}
-		// 	},
-		// 	func() {},
-		// 	false,
-		// },
-		// {
-		// 	"trusted ConsensusState2 not found",
-		// 	func() *ibctmtypes.Misbehaviour {
-		// 		return &ibctmtypes.Misbehaviour{
-		// 			ClientId: s.path.EndpointA.ClientID,
-		// 			Header1: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight),
-		// 				clientHeight,
-		// 				altTime,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 			Header2: s.consumerChain.CreateTMClientHeader(
-		// 				s.consumerChain.ChainID,
-		// 				int64(clientHeight.RevisionHeight),
-		// 				heightPlus3,
-		// 				s.providerCtx().BlockTime(),
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientTMValset,
-		// 				clientSigners,
-		// 			),
-		// 		}
-		// 	},
-		// 	func() {},
-		// 	false,
-		// },
-		// {
-		// 	"client state not found",
-		// 	func() *ibctmtypes.Misbehaviour {
-		// 		return &ibctmtypes.Misbehaviour{}
-		// 	},
-		// 	func() {},
-		// 	false,
-		// }, {
-		// 	"client already is not active - client is frozen",
-		// 	func() *ibctmtypes.Misbehaviour {
-		// 		return &ibctmtypes.Misbehaviour{}
-		// 	},
-		// 	func() {
-		// 		consumerConsState.(*ibctmtypes.ConsensusState).NextValidatorsHash = clientTMValset.Hash()
-		// 		clientState := ibctmtypes.NewClientState(s.consumerChain.ChainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, clientHeight, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, false, false)
+				clientState.LatestHeight = heightPlus3
+				s.providerApp.GetIBCKeeper().ClientKeeper.SetClientState(s.providerCtx(), s.path.EndpointA.ClientID, clientState)
+			},
+			true,
+		},
+		{
+			"trusted ConsensusState1 not found",
+			func() *ibctmtypes.Misbehaviour {
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight),
+						heightPlus3,
+						altTime,
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+					Header2: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight),
+						clientHeight,
+						s.providerCtx().BlockTime(),
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+				}
+			},
+			func() {},
+			false,
+		},
+		{
+			"trusted ConsensusState2 not found",
+			func() *ibctmtypes.Misbehaviour {
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight),
+						clientHeight,
+						altTime,
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+					Header2: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight),
+						heightPlus3,
+						s.providerCtx().BlockTime(),
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+				}
+			},
+			func() {},
+			false,
+		},
+		{
+			"client state not found",
+			func() *ibctmtypes.Misbehaviour {
+				return &ibctmtypes.Misbehaviour{}
+			},
+			func() {},
+			false,
+		}, {
+			"client already is not active - client is frozen",
+			func() *ibctmtypes.Misbehaviour {
+				return &ibctmtypes.Misbehaviour{}
+			},
+			func() {
+				consumerConsState.(*ibctmtypes.ConsensusState).NextValidatorsHash = clientTMValset.Hash()
+				clientState := ibctmtypes.NewClientState(s.consumerChain.ChainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, clientHeight, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, false, false)
 
-		// 		clientState.FrozenHeight = ibcclientypes.NewHeight(0, 1)
-		// 		s.providerApp.GetIBCKeeper().ClientKeeper.SetClientState(s.providerCtx(), s.path.EndpointA.ClientID, clientState)
-		// 	},
-		// 	false,
-		// },
+				clientState.FrozenHeight = ibcclientypes.NewHeight(0, 1)
+				s.providerApp.GetIBCKeeper().ClientKeeper.SetClientState(s.providerCtx(), s.path.EndpointA.ClientID, clientState)
+			},
+			false,
+		},
 		{
 			"misbehaviour check failed",
 			func() *ibctmtypes.Misbehaviour {
@@ -490,7 +487,6 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 	// required to have the consumer client revision height greater than 0
 	s.SendEmptyVSCPacket()
 
-	// consumerConsState, _ := s.providerChain.GetConsensusState(s.path.EndpointA.ClientID, s.consumerChain.LastHeader.TrustedHeight)
 	altTime := s.providerCtx().BlockTime().Add(time.Minute)
 
 	clientHeight := s.consumerChain.LastHeader.TrustedHeight
@@ -499,7 +495,6 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 
 	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:2])
 	altSigners := make(map[string]tmtypes.PrivValidator, 1)
-	// altSigners[altValset.Validators[0].Address.String()] = altPrivVal
 	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
 
@@ -534,50 +529,12 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 
 	s.NoError(err)
 
-	val, err := s.providerApp.GetProviderKeeper().GetByzantineValidators(
+	byzVals, err := s.providerApp.GetProviderKeeper().GetByzantineValidators(
 		s.providerCtx(),
 		*misb,
 	)
-
 	s.NoError(err)
+	s.Require().Equal(len(altValset.Validators), len(byzVals))
 
-	fmt.Println(len(val))
-	fmt.Println(len(s.consumerChain.Vals.Validators))
+	// TODO: check that the byzantine validators == altValset.Validators
 }
-
-// s.SetupCCVChannel(s.path)
-// // required to have the consumer client revision height greater than 0
-// s.SendEmptyVSCPacket()
-// s.consumerCtx().BlockHeight()
-// // get consumer client state
-// // consumerClientState := s.providerChain.GetClientState(s.path.EndpointA.ClientID)
-
-// // create two conflicting headers and forge them
-// // commit new block on consumer
-
-// s.coordinator.CommitBlock(s.consumerChain)
-
-// // get trusted height from client state
-// trustedHeight := s.providerChain.GetClientState(s.path.EndpointA.ClientID).GetLatestHeight().(clienttypes.Height)
-// tmTrustedVals := s.consumerChain.Vals
-// // get last consumer header
-// header := s.consumerChain.LastHeader
-
-// header.TrustedHeight = trustedHeight
-// trustedVals, err := tmTrustedVals.ToProto()
-// s.NoError(err)
-// header.TrustedValidators = trustedVals
-
-// msg, err := clienttypes.NewMsgUpdateClient(
-// 	s.path.EndpointB.ClientID, header,
-// 	s.path.EndpointB.Chain.SenderAccount.GetAddress().String(),
-// )
-// s.NoError(err)
-
-// header2 := *header
-// header2.SignedHeader.Commit.BlockID.Hash = []byte("forge_hash")
-
-// _, err = s.providerChain.SendMsgs(msg)
-// s.NoError(err)
-
-// fmt.Printf("%+v\n", msg.Header)
