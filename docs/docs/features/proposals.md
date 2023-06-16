@@ -43,6 +43,9 @@ Minimal example:
     "historical_entries": 10000,
     "genesis_hash": "d86d756e10118e66e6805e9cc476949da2e750098fcc7634fd0cc77f57a0b2b0",
     "binary_hash": "376cdbd3a222a3d5c730c9637454cd4dd925e2f9e2e0d0f3702fc922928583f1"
+    // relevant for chains performing a sovereign to consumer changeover
+    // in order to maintan the existing ibc transfer channel
+    "distribution_transmission_channel": "channel-123"
 }
 ```
 More examples can be found in the replicated security testnet repository [here](https://github.com/cosmos/testnets/blob/master/replicated-security/baryon-1/proposal-baryon-1.json) and [here](https://github.com/cosmos/testnets/blob/master/replicated-security/noble-1/start-proposal-noble-1.json).
