@@ -68,8 +68,10 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	for _, v := range altValset.Validators {
 		consuAddr := sdk.ConsAddress(v.Address.Bytes())
 		provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
-		s.providerApp.GetE2eStakingKeeper().ValidatorByConsAddr(s.providerCtx(), consuAddr)
-		val, ok := s.providerApp.GetProviderKeeper().stakingKeeper.GetValidatorByConsAddr(s.providerCtx(), provAddr)
+		val, ok := s.providerApp.GetE2eStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), provAddr)
+		s.Require().True(ok)
+		s.Require().True(val.Jailed)
+		s.Require().True(s.providerApp.GetE2eSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr))
 	}
 
 }
