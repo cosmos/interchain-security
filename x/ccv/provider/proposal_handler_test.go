@@ -41,6 +41,7 @@ func TestProviderProposalHandler(t *testing.T) {
 				clienttypes.NewHeight(2, 3), []byte("gen_hash"), []byte("bin_hash"), now,
 				"0.75",
 				10,
+				"",
 				10000,
 				100000000000,
 				100000000000,
@@ -58,14 +59,14 @@ func TestProviderProposalHandler(t *testing.T) {
 		},
 		{
 			// no slash log for equivocation
-			name: "invalid equivocation posal",
+			name: "invalid equivocation proposal",
 			content: providertypes.NewEquivocationProposal(
 				"title", "description", []*evidencetypes.Equivocation{equivocation}),
 			blockTime:            hourFromNow,
 			expValidEquivocation: false,
 		},
 		{
-			name: "valid equivocation posal",
+			name: "valid equivocation proposal",
 			content: providertypes.NewEquivocationProposal(
 				"title", "description", []*evidencetypes.Equivocation{equivocation}),
 			blockTime:            hourFromNow,
