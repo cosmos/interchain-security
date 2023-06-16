@@ -59,7 +59,6 @@ func (k Keeper) GetPacketsToSend(ctx sdktypes.Context) ccvtypes.ConsumerPacketDa
 }
 
 // TODO: will need good integration tests making sure this state is properly init, cleared, etc.
-// TODO: UTs
 
 func (k Keeper) SetBouncingSlash(ctx sdktypes.Context, bouncingSlash consumertypes.BouncingSlash) {
 	store := ctx.KVStore(k.storeKey)
