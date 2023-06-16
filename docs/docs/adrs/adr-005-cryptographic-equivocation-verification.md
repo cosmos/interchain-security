@@ -25,7 +25,13 @@ Current limitations:
 
 - This only handles light client attacks, not double signing. In the future, we will add the code to also verify double signing.
 - Since a special endpoint must be used to submit the evidence, the evidence is not automatically submitted by Hermes. In the future, we may make Hermes submit the evidence, or use a hook provided by IBC to run the code automatically when evidence is submitted to the IBC client. In the current state, someone will need to submit the evidence manually in the 3 weeks after a light client attack has occured.
-- We currently can't derive an infraction height from the evidence, so it is only possible to tombstone validators, not actually slash them.
+- We cannot derive an infraction height from the evidence, so it is only possible to tombstone validators, not actually slash them.
+  To explain the technical reasons behind this limitation, let's recap the initial [consumer initiated slashing logic](https://github.com/cosmos/ibc/blob/2aa283d4bc8b747cbb860c0f94389d7a62bb802b/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#consumer-initiated-slashing). 
+  In a nutshell, consumer heights are mapped to provider heights through `VSCPackets`, namely through the so called `vscIDs`. 
+  When an infraction occurs on the consumer, a `SlashPacket` containing the `vscID` obtained from mapping the consumer infraction height is sent to the provider. 
+  Upon receiving the packet, the provider maps the consumer infraction height to a local infraction height, which is used to slash the misbehaving validator. 
+  In the context of untrusted consumer chains, all their states, including `vscIDs`, could be corrupted and therefore cannot be used for slashing purposes.
+
 
 ## Consequences
 
