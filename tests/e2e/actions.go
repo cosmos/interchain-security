@@ -1357,7 +1357,7 @@ func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, dow
 		}
 
 		method := "set_signing_status"
-		params := fmt.Sprintf(`{"validator_address":"%s","status":"%s"}`, validatorAddress, lastArg)
+		params := fmt.Sprintf(`{"private_key_address":"%s","status":"%s"}`, validatorAddress, lastArg)
 		address := tr.getQueryNodeRPCAddress(chain)
 
 		tr.curlJsonRPCRequest(method, params, address)
