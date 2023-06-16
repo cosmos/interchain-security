@@ -116,7 +116,7 @@ func (p *v1Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(consumertypes.KeyBlocksPerDistributionTransmission,
 			p.BlocksPerDistributionTransmission, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(consumertypes.KeyDistributionTransmissionChannel,
-			p.DistributionTransmissionChannel, consumertypes.ValidateDistributionTransmissionChannel),
+			p.DistributionTransmissionChannel, ccvtypes.ValidateDistributionTransmissionChannel),
 		paramtypes.NewParamSetPair(consumertypes.KeyProviderFeePoolAddrStr,
 			p.ProviderFeePoolAddrStr, consumertypes.ValidateProviderFeePoolAddrStr),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod,

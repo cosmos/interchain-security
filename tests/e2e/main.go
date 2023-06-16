@@ -43,6 +43,7 @@ func main() {
 	}
 
 	testRuns := []testRunWithSteps{
+		{ChangeoverTestRun(), changeoverSteps},
 		{DefaultTestRun(), happyPathSteps},
 		{DemocracyTestRun(true), democracySteps},
 		{DemocracyTestRun(false), rewardDenomConsumerSteps},
@@ -96,6 +97,14 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 	switch action := step.action.(type) {
 	case StartChainAction:
 		tr.startChain(action, verbose)
+	case StartSovereignChainAction:
+		tr.startSovereignChain(action, verbose)
+	case UpgradeProposalAction:
+		tr.submitUpgradeProposal(action, verbose)
+	case waitUntilBlockAction:
+		tr.waitUntilBlockOnChain(action)
+	case ChangeoverChainAction:
+		tr.changeoverChain(action, verbose)
 	case SendTokensAction:
 		tr.sendTokens(action, verbose)
 	case submitTextProposalAction:
@@ -114,6 +123,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.startConsumerChain(action, verbose)
 	case addChainToRelayerAction:
 		tr.addChainToRelayer(action, verbose)
+	case createIbcClientsAction:
+		tr.createIbcClientsHermes(action, verbose)
 	case addIbcConnectionAction:
 		tr.addIbcConnection(action, verbose)
 	case addIbcChannelAction:

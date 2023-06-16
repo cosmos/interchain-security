@@ -47,6 +47,9 @@ type ChainConfig struct {
 	// Example: ".app_state.gov.voting_params.voting_period = \"5s\" | .app_state.slashing.params.signed_blocks_window = \"2\" | .app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\""
 	genesisChanges string
 	binaryName     string
+
+	// binary to use after upgrade height
+	upgradeBinary string
 }
 
 type ContainerConfig struct {
@@ -323,6 +326,51 @@ func MultiConsumerTestRun() TestRun {
 		},
 		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "3s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "100ms"/;`,
+	}
+}
+
+func ChangeoverTestRun() TestRun {
+	return TestRun{
+		name: "changeover",
+		containerConfig: ContainerConfig{
+			containerName: "interchain-security-changeover-container",
+			instanceName:  "interchain-security-changeover-instance",
+			ccvVersion:    "1",
+			now:           time.Now(),
+		},
+		validatorConfigs: getDefaultValidators(),
+		chainConfigs: map[chainID]ChainConfig{
+			chainID("provi"): {
+				chainId:        chainID("provi"),
+				binaryName:     "interchain-security-pd",
+				ipPrefix:       "7.7.7",
+				votingWaitTime: 20,
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
+					// Custom slashing parameters for testing validator downtime functionality
+					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
+					".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
+			},
+			chainID("sover"): {
+				chainId:        chainID("sover"),
+				binaryName:     "interchain-security-sd",
+				upgradeBinary:  "interchain-security-cdd",
+				ipPrefix:       "7.7.8",
+				votingWaitTime: 20,
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+					".app_state.staking.params.unbonding_time = \"1728000s\"", // making the genesis unbonding time equal to unbonding time in the consumer addition proposal
+			},
+		},
+		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
 }
 
