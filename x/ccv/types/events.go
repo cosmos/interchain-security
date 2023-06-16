@@ -33,8 +33,10 @@ const (
 	AttributeUnbondingPeriod          = "unbonding_period"
 	AttributeProviderValidatorAddress = "provider_validator_address"
 	AttributeConsumerConsensusPubKey  = "consumer_consensus_pub_key"
-	AttributeSubmitterAddress         = "provider_validator_address"
-	AttributeConsumerMisbehaviour     = "consumer_consensus_pub_key"
+	AttributeSubmitterAddress         = "submitter_address"
+	AttributeConsumerMisbehaviour     = "consumer_misbehaving"
+	AttributeConsumerDoubleVoting     = "consumer_double_voting"
+	AttributeInfractionBlockHeader    = "infraction_block_header"
 
 	AttributeDistributionCurrentHeight = "current_distribution_height"
 	AttributeDistributionNextHeight    = "next_distribution_height"
