@@ -12,15 +12,22 @@ import (
 
 func (k Keeper) GetPacketsToSend(ctx sdktypes.Context) ccvtypes.ConsumerPacketDataList {
 
+	// TODO: incorporate retry delay
+
 	// Handle retries for bouncing slash packet if one exists
-	bouncingSlashExists, bouncingSlashData := k.GetBouncingSlash(ctx)
+	bouncingSlashExists, bouncingSlash := k.GetBouncingSlash(ctx)
 	if bouncingSlashExists {
+		// Note if bouncing slash exists, return is always hit.
+		// Ie. we block sending of all other packets until bouncing slash is handled by provider.
+
 		// If retry of bouncing slash is allowed, return bouncing slash packet to be sent.
-		// TODO: incorporate retry delay
-		if k.IsSlashRetryAllowed(ctx) {
-			return ccvtypes.ConsumerPacketDataList{List: []ccvtypes.ConsumerPacketData{bouncingSlashData}}
-			// Otherwise, return empty list. Block sending of all other packets until bouncing slash is handled by provider.
+		if bouncingSlash.RetryAllowed {
+			// Another retry will not be allowed until current retry result is received from provider.
+			bouncingSlash.RetryAllowed = false
+			k.SetBouncingSlash(ctx, bouncingSlash)
+			return ccvtypes.ConsumerPacketDataList{List: []ccvtypes.ConsumerPacketData{*bouncingSlash.SlashPacketData}}
 		} else {
+			// If slash retry not allowed, return empty list. We still need to hear back from provider.
 			return ccvtypes.ConsumerPacketDataList{}
 		}
 	}
@@ -35,11 +42,14 @@ func (k Keeper) GetPacketsToSend(ctx sdktypes.Context) ccvtypes.ConsumerPacketDa
 
 		} else if packet.Type == ccvtypes.SlashPacket {
 			toSend.List = append(toSend.List, packet)
-			k.SetBouncingSlash(ctx, packet)
-			k.DeleteSlashRetryAllowed(ctx) // Retry not allowed until result is received from provider.
+			bouncingSlash := consumertypes.BouncingSlash{
+				SlashPacketData: &packet,
+				// Retry not allowed until result is received from provider.
+				RetryAllowed: false,
+			}
+			k.SetBouncingSlash(ctx, bouncingSlash)
 
 			// Break for-loop. No more packets are sent until the bouncing slash packet is handled by provider.
-			// Once handled, BouncingSlash is deleted from state.
 			break
 		} else {
 			panic("unknown packet type")
@@ -49,27 +59,11 @@ func (k Keeper) GetPacketsToSend(ctx sdktypes.Context) ccvtypes.ConsumerPacketDa
 }
 
 // TODO: will need good integration tests making sure this state is properly init, cleared, etc.
-
-func (k Keeper) SetSlashRetryAllowed(ctx sdktypes.Context) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(consumertypes.RetryAllowedKey(), []byte{1})
-}
-
-func (k Keeper) DeleteSlashRetryAllowed(ctx sdktypes.Context) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(consumertypes.RetryAllowedKey())
-}
-
-func (k Keeper) IsSlashRetryAllowed(ctx sdktypes.Context) bool {
-	store := ctx.KVStore(k.storeKey)
-	return store.Has(consumertypes.RetryAllowedKey())
-}
-
 // TODO: UTs
 
-func (k Keeper) SetBouncingSlash(ctx sdktypes.Context, slashPacketData ccvtypes.ConsumerPacketData) {
+func (k Keeper) SetBouncingSlash(ctx sdktypes.Context, bouncingSlash consumertypes.BouncingSlash) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := slashPacketData.Marshal()
+	bz, err := bouncingSlash.Marshal()
 	if err != nil {
 		// This should never happen
 		panic(fmt.Errorf("failed to marshal bouncing slash: %w", err))
@@ -77,18 +71,18 @@ func (k Keeper) SetBouncingSlash(ctx sdktypes.Context, slashPacketData ccvtypes.
 	store.Set(consumertypes.BouncingSlashKey(), bz)
 }
 
-func (k Keeper) GetBouncingSlash(ctx sdktypes.Context) (found bool, packetData ccvtypes.ConsumerPacketData) {
+func (k Keeper) GetBouncingSlash(ctx sdktypes.Context) (found bool, bouncingSlash consumertypes.BouncingSlash) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(consumertypes.BouncingSlashKey())
 	if bz == nil {
-		return false, packetData
+		return false, bouncingSlash
 	}
-	err := packetData.Unmarshal(bz)
+	err := bouncingSlash.Unmarshal(bz)
 	if err != nil {
 		// An error here would indicate something is very wrong,
 		panic(fmt.Errorf("failed to unmarshal bouncing slash: %w", err))
 	}
-	return true, packetData
+	return true, bouncingSlash
 }
 
 func (k Keeper) DeleteBouncingSlash(ctx sdktypes.Context) {

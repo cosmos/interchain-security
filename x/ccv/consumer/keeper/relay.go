@@ -233,11 +233,16 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			// Slash packet handled result ack, sent by the provider to indicate that the bouncing slash packet was handled.
 			// Queued packets will now be unblocked from sending.
 			k.DeleteBouncingSlash(ctx)
-			k.DeleteSlashRetryAllowed(ctx) // Not strictly necessary, but we reset this flag.
 		case 3:
 			// Slash packet bounced result ack, sent by the provider to indicate that the bouncing slash packet was NOT handled.
-			// Bouncing slash still persisted, retry is now allowed.
-			k.SetSlashRetryAllowed(ctx)
+			found, bouncingSlash := k.GetBouncingSlash(ctx)
+			if !found {
+				k.Logger(ctx).Error("recv invalid result ack; expected bouncing slash to be set",
+					"channel", packet.SourceChannel, "ack", res)
+			}
+			// Retry is now allowed
+			bouncingSlash.RetryAllowed = true
+			k.SetBouncingSlash(ctx, bouncingSlash)
 		default:
 			k.Logger(ctx).Error("recv invalid result ack; expected 1, 2, or 3", "channel", packet.SourceChannel, "ack", res)
 		}
