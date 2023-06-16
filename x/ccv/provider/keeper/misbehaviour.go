@@ -26,15 +26,18 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	// isn't too old. see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 	for _, v := range byzantineValidators {
 		// convert address to key assigned
-		consAddr := sdk.ConsAddress(v.Address.Bytes())
-		validator := k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr)
-		if validator == nil || validator.IsUnbonded() {
+		consuAddr := sdk.ConsAddress(v.Address.Bytes())
+		provAddr := k.GetProviderAddrFromConsumerAddr(ctx, misbehaviour.Header1.Header.ChainID, consuAddr)
+		k.stakingKeeper.ValidatorByConsAddr(ctx, consuAddr)
+		val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, provAddr)
+		if !ok || val.IsUnbonded() {
 			// Defensive: Simulation doesn't take unbonding periods into account, and
 			// Tendermint might break this assumption at some point.
-			k.Logger(ctx).Error("validator not found or is unbonded", consAddr)
+			k.Logger(ctx).Error("validator not found or is unbonded", provAddr.String())
+			continue
 		}
-		k.slashingKeeper.JailUntil(ctx, consAddr, evidencetypes.DoubleSignJailEndTime)
-		k.slashingKeeper.Tombstone(ctx, consAddr)
+		k.slashingKeeper.JailUntil(ctx, provAddr, evidencetypes.DoubleSignJailEndTime)
+		k.slashingKeeper.Tombstone(ctx, provAddr)
 		// store misbehaviour?
 	}
 
