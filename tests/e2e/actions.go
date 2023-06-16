@@ -1705,6 +1705,10 @@ func (tr TestRun) GetPathNameForGorelayer(chainA, chainB chainID) string {
 	return pathName
 }
 
+// WaitTime waits for the given duration.
+// The CometMock version of this takes a pointer to the TestRun as it needs to manipulate
+// information in the testrun that stores how much each chain has waited, to keep times in sync.
+// Be careful that all functions calling WaitTime should therefore also take a pointer to the TestRun.
 func (tr *TestRun) WaitTime(duration time.Duration) {
 	if !tr.useCometmock {
 		time.Sleep(duration)
