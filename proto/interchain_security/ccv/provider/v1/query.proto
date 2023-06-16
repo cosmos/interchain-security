@@ -49,6 +49,13 @@ service Query {
         "/interchain_security/ccv/provider/validator_consumer_addr";
   }
 
+  // QueryValidatorConsumerAddr queries the address
+  // assigned by a validator for a consumer chain.
+  rpc QueryAllValidatorsConsumerAddr(QueryAllValidatorsConsumerAddrRequest)
+      returns (QueryAllValidatorsConsumerAddrResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/provider/all_validator_consumer_addr";
+  }
+
   // QueryProviderAddr returns the provider chain validator
   // given a consumer chain validator address
   rpc QueryValidatorProviderAddr(QueryValidatorProviderAddrRequest)
@@ -124,6 +131,26 @@ message QueryValidatorConsumerAddrRequest {
 message QueryValidatorConsumerAddrResponse {
   // The address of the validator on the consumer chain
   string consumer_address = 1;
+}
+
+message QueryAllValidatorsConsumerAddrRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  // The id of the consumer chain, optional
+  string chain_id = 1;
+}
+
+message ValidatorWithConsumerAddr {
+  // The id of the consumer chain, optional
+  string chain_id = 1;
+  // The address of the validator on the consumer chain
+  string consumer_address = 2;
+  // The address of the validator on the provider chain
+  string provider_address = 3;
+}
+
+message QueryAllValidatorsConsumerAddrResponse {
+  repeated ValidatorWithConsumerAddr validators = 1;
 }
 
 message QueryValidatorProviderAddrRequest {

@@ -231,6 +231,50 @@ $ %s query provider validator-consumer-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 }
 
 // TODO: fix naming
+func CmdConsumerAllValidatorKeysAssignment() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "validators-consumer-keys [chainid]",
+		Short: "Query all assigned validators consensus public keys",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Returns the currently assigned validators consensus public keys for a
+specified consumer chain (or all chains), if one has been assigned.
+Example:
+$ %s query provider validators-consumer-keys foochain
+`,
+				version.AppName,
+			),
+		),
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			consumerChainID := ""
+			if len(args) > 0 {
+				consumerChainID = args[0]
+			}
+
+			req := &types.QueryAllValidatorsConsumerAddrRequest{
+				ChainId: consumerChainID,
+			}
+			res, err := queryClient.QueryAllValidatorsConsumerAddr(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// TODO: fix naming
 func CmdProviderValidatorKey() *cobra.Command {
 	bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
 	cmd := &cobra.Command{

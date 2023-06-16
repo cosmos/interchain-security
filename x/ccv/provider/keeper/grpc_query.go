@@ -114,6 +114,34 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 	}, nil
 }
 
+func (k Keeper) QueryAllValidatorsConsumerAddr(goCtx context.Context, req *types.QueryAllValidatorsConsumerAddrRequest) (*types.QueryAllValidatorsConsumerAddrResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	var chainID *string
+	if req.ChainId != "" {
+		chainID = &req.ChainId
+	}
+
+	keys := k.GetAllValidatorConsumerPubKeys(ctx, chainID)
+
+	validators := make([]*types.ValidatorWithConsumerAddr, len(keys))
+	for index, validatorInfo := range validators {
+		validators[index] = &types.ValidatorWithConsumerAddr{
+			ChainId:         validatorInfo.ChainId,
+			ConsumerAddress: validatorInfo.ConsumerAddress,
+			ProviderAddress: validatorInfo.ProviderAddress,
+		}
+	}
+
+	return &types.QueryAllValidatorsConsumerAddrResponse{
+		Validators: validators,
+	}, nil
+}
+
 func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.QueryValidatorProviderAddrRequest) (*types.QueryValidatorProviderAddrResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
