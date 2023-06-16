@@ -42,10 +42,10 @@ func (k Keeper) GetPacketsToSend(ctx sdktypes.Context) ccvtypes.ConsumerPacketDa
 
 		} else if packet.Type == ccvtypes.SlashPacket {
 			toSend.List = append(toSend.List, packet)
-			bouncingSlash := consumertypes.BouncingSlash{
-				SlashPacketData: &packet,
-				// Retry not allowed until result is received from provider.
-				RetryAllowed: false,
+			bouncingSlash, ok := consumertypes.NewBouncingSlash(packet)
+			if !ok {
+				ctx.Logger().Error("corrupted slash packet data")
+				break
 			}
 			k.SetBouncingSlash(ctx, bouncingSlash)
 

@@ -239,8 +239,9 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			if !found {
 				k.Logger(ctx).Error("recv invalid result ack; expected bouncing slash to be set",
 					"channel", packet.SourceChannel, "ack", res)
+				break
 			}
-			// Retry is now allowed
+			// Bouncing slash should be found, retry is now allowed
 			bouncingSlash.RetryAllowed = true
 			k.SetBouncingSlash(ctx, bouncingSlash)
 		default:
