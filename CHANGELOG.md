@@ -3,7 +3,6 @@
 ## [Unreleased]
 
 Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
-* feat!: Add DistributionTransmissionChannel to ConsumerAdditionProposal [#965](https://github.com/cosmos/interchain-security/pull/965)
 
 ## v.2.0.0
 
@@ -26,6 +25,7 @@ Some PRs from v2.0.0 may reappear from other releases below. This is due to the 
 
 ## Notable PRs included in v2.0.0
 
+* (feat!) Add DistributionTransmissionChannel to ConsumerAdditionProposal [#965](https://github.com/cosmos/interchain-security/pull/965)
 * (feat/fix) limit vsc matured packets handled per endblocker [#1004](https://github.com/cosmos/interchain-security/pull/1004)
 * (fix) cosumer key prefix order to avoid complex migrations [#963](https://github.com/cosmos/interchain-security/pull/963) and [#991](https://github.com/cosmos/interchain-security/pull/991). The latter PR is the proper fix.
 * (feat) v1->v2 migrations to accommodate a bugfix having to do with store keys, introduce new params, and deal with consumer genesis state schema changes [#975](https://github.com/cosmos/interchain-security/pull/975) and [#997](https://github.com/cosmos/interchain-security/pull/997)
