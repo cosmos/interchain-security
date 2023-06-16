@@ -1113,7 +1113,6 @@ func (tr TestRun) addIbcChannelHermes(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
-
 	// if version is not specified, use the default version when creating ccv connections
 	// otherwise, use the provided version schema (usually it is ICS20-1 for IBC transfer)
 	chanVersion := action.version
