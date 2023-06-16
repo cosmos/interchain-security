@@ -303,7 +303,7 @@ func (k Keeper) MakeConsumerGenesis(
 	consumerGenesisParams := consumertypes.NewParams(
 		true,
 		prop.BlocksPerDistributionTransmission,
-		"", // distributionTransmissionChannel
+		prop.DistributionTransmissionChannel,
 		"", // providerFeePoolAddrStr,
 		prop.CcvTimeoutPeriod,
 		prop.TransferTimeoutPeriod,
