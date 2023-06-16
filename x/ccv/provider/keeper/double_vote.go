@@ -26,13 +26,18 @@ func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmproto.Du
 		return err
 	}
 
-	// TODO: convert misbehaving validator consumer pubkey
-	// TODO: call k.evidenceKeeper.HandleEquivocationEvidence() using correct infraction height
+	// TODO: evidenceKeeper.HandleEquivocationEvidence() might be used when the slasing is enabled
+	consuAddress := sdk.ConsAddress(evidence.VoteA.GetValidatorAddress())
+	chainID := header.Header.ChainID
+
+	k.JailConsumerValidator(ctx, chainID, consuAddress)
+
+	provAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consuAddress)
 
 	logger := ctx.Logger()
 	logger.Info(
 		"confirmed equivocation",
-		"byzantine validator", sdk.ConsAddress(evidence.VoteA.GetValidatorAddress()),
+		"byzantine validator address", provAddr,
 	)
 
 	return nil

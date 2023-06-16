@@ -25,21 +25,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	// w.r.t to the last trusted consensus it entails that the infraction age
 	// isn't too old. see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 	for _, v := range byzantineValidators {
-		// convert address to key assigned
-		consuAddr := sdk.ConsAddress(v.Address.Bytes())
-		provAddr := k.GetProviderAddrFromConsumerAddr(ctx, misbehaviour.Header1.Header.ChainID, consuAddr)
-		k.stakingKeeper.ValidatorByConsAddr(ctx, consuAddr)
-		val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, provAddr)
-		if !ok || val.IsUnbonded() {
-			// Defensive: Simulation doesn't take unbonding periods into account, and
-			// Tendermint might break this assumption at some point.
-			k.Logger(ctx).Error("validator not found or is unbonded", provAddr.String())
-			continue
-		}
-		// TODO: continue if validator is already tombstoned/jailed + log
-		k.stakingKeeper.Jail(ctx, provAddr)
-		k.slashingKeeper.JailUntil(ctx, provAddr, evidencetypes.DoubleSignJailEndTime)
-		k.slashingKeeper.Tombstone(ctx, provAddr)
+		k.JailConsumerValidator(ctx, misbehaviour.Header1.Header.ChainID, sdk.ConsAddress(v.Address.Bytes()))
 		// store misbehaviour?
 	}
 
@@ -170,4 +156,22 @@ func HeaderToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 		SignedHeader: sh,
 		ValidatorSet: vs,
 	}, nil
+}
+
+// TODO: return bool and move logger to calling func
+func (k Keeper) JailConsumerValidator(ctx sdk.Context, chainID string, consumerAddress sdk.ConsAddress) {
+	// convert address to key assigned
+	providerAddress := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerAddress)
+	k.stakingKeeper.ValidatorByConsAddr(ctx, consumerAddress)
+	val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddress)
+	if !ok || val.IsUnbonded() {
+		// Defensive: Simulation doesn't take unbonding periods into account, and
+		// Tendermint might break this assumption at some point.
+		k.Logger(ctx).Error("validator not found or is unbonded", providerAddress.String())
+		return
+	}
+	// TODO: continue if validator is already tombstoned/jailed + log
+	k.stakingKeeper.Jail(ctx, providerAddress)
+	k.slashingKeeper.JailUntil(ctx, providerAddress, evidencetypes.DoubleSignJailEndTime)
+	k.slashingKeeper.Tombstone(ctx, providerAddress)
 }
