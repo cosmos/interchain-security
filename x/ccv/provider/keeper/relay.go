@@ -41,7 +41,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		"vscID", data.ValsetUpdateId,
 	)
 
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	ack := channeltypes.NewResultAcknowledgement(ccv.NoOpResult)
 	return ack
 }
 
@@ -342,7 +342,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 		// return successful ack, as an error would result
 		// in the consumer closing the CCV channel
-		return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+		return channeltypes.NewResultAcknowledgement(ccv.NoOpResult)
 	}
 
 	// Queue a slash entry to the global queue, which will be seen by the throttling logic
@@ -366,7 +366,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		"infractionType", data.Infraction,
 	)
 
-	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	return channeltypes.NewResultAcknowledgement(ccv.NoOpResult)
 }
 
 // ValidateSlashPacket validates a recv slash packet before it is

@@ -219,21 +219,22 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 // according to https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 
-	// TODO: define shared enum between provider and consumer for ack types
+	// TODO: integration test for enum being handled correctly
+
 	if res := ack.GetResult(); res != nil {
 		if len(res) != 1 {
 			k.Logger(ctx).Error("recv invalid ack; expected length 1", "channel", packet.SourceChannel, "ack", res)
 		}
 		switch res[0] {
-		case 1:
+		case ccv.NoOpResult[0]:
 			// No-op result ack. These are sent by the provider to indicate that the packet was received,
 			// and no actions are required by the consumer. Throttling v1 always sends this ack for slash and VSCMatured packets.
 			k.Logger(ctx).Info("recv no-op ack", "channel", packet.SourceChannel, "ack", res)
-		case 2:
+		case ccv.SlashPacketHandledResult[0]:
 			// Slash packet handled result ack, sent by the provider to indicate that the bouncing slash packet was handled.
 			// Queued packets will now be unblocked from sending.
 			k.DeleteBouncingSlash(ctx)
-		case 3:
+		case ccv.SlashPacketBouncedResult[0]:
 			// Slash packet bounced result ack, sent by the provider to indicate that the bouncing slash packet was NOT handled.
 			found, bouncingSlash := k.GetBouncingSlash(ctx)
 			if !found {
@@ -241,7 +242,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 					"channel", packet.SourceChannel, "ack", res)
 				break
 			}
-			// Bouncing slash should be found, retry is now allowed
+			// Bouncing slash should be found in consumer state, retry is now allowed
 			bouncingSlash.RetryAllowed = true
 			k.SetBouncingSlash(ctx, bouncingSlash)
 		default:

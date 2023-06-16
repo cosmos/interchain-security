@@ -103,3 +103,11 @@ func (cp ConsumerPacketData) GetBytes() []byte {
 	bytes := ModuleCdc.MustMarshalJSON(&cp)
 	return bytes
 }
+
+type PacketAckResult []byte
+
+var ( // slice types can't be const
+	NoOpResult               = PacketAckResult([]byte{byte(1)})
+	SlashPacketHandledResult = PacketAckResult([]byte{byte(2)})
+	SlashPacketBouncedResult = PacketAckResult([]byte{byte(3)})
+)
