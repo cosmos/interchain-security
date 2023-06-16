@@ -248,3 +248,11 @@ func TestPacketRoundtrip(t *testing.T) {
 func TestQueueAndSendVSCMaturedPackets(t *testing.T) {
 	runCCVTestByName(t, "TestQueueAndSendVSCMaturedPackets")
 }
+
+//
+// Changeover tests
+//
+
+func TestRecycleTransferChannel(t *testing.T) {
+	runCCVTestByName(t, "TestRecycleTransferChannel")
+}
