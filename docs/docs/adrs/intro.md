@@ -37,3 +37,4 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 | [003](./adr-003-equivocation-gov-proposal.md) | Equivocation governance proposal | Accepted, Implemented |
 | [004](./adr-004-denom-dos-fixes) | Denom DOS fixes | Accepted, Implemented |
 | [007](./adr-007-pause-unbonding-on-eqv-prop.md) | Pause validator unbonding during equivocation proposal | Proposed |
+| [008](./adr-008-throttle-retries.md) | Throttle with retries | Accepted, In-progress |
