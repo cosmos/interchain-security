@@ -214,7 +214,7 @@ func TestOnChanOpenAck(t *testing.T) {
 		expPass bool
 	}{
 		{
-			"success",
+			"success - empty transferChannelID",
 			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				// Expected msg
 				distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
@@ -226,8 +226,13 @@ func TestOnChanOpenAck(t *testing.T) {
 					"", // signer unused
 				)
 
+				transferChannelID := ""
+				keeper.SetDistributionTransmissionChannel(params.ctx, transferChannelID)
+
 				// Expected mock calls
 				gomock.InOrder(
+					mocks.MockChannelKeeper.EXPECT().GetChannel(
+						params.ctx, transfertypes.PortID, transferChannelID).Return(channeltypes.Channel{}, false).Times(1),
 					mocks.MockChannelKeeper.EXPECT().GetChannel(
 						params.ctx, params.portID, params.channelID).Return(channeltypes.Channel{
 						ConnectionHops: []string{"connectionID"},

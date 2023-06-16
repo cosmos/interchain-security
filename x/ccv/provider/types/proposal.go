@@ -36,7 +36,8 @@ func NewConsumerAdditionProposal(title, description, chainID string,
 	initialHeight clienttypes.Height, genesisHash, binaryHash []byte,
 	spawnTime time.Time,
 	consumerRedistributionFraction string,
-	blocksPerDistributionTransmission,
+	blocksPerDistributionTransmission int64,
+	distributionTransmissionChannel string,
 	historicalEntries int64,
 	ccvTimeoutPeriod time.Duration,
 	transferTimeoutPeriod time.Duration,
@@ -52,6 +53,7 @@ func NewConsumerAdditionProposal(title, description, chainID string,
 		SpawnTime:                         spawnTime,
 		ConsumerRedistributionFraction:    consumerRedistributionFraction,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
+		DistributionTransmissionChannel:   distributionTransmissionChannel,
 		HistoricalEntries:                 historicalEntries,
 		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
 		TransferTimeoutPeriod:             transferTimeoutPeriod,
@@ -106,6 +108,10 @@ func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "blocks per distribution transmission cannot be < 1")
 	}
 
+	if err := ccvtypes.ValidateDistributionTransmissionChannel(cccp.DistributionTransmissionChannel); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "distribution transmission channel")
+	}
+
 	if err := ccvtypes.ValidatePositiveInt64(cccp.HistoricalEntries); err != nil {
 		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "historical entries cannot be < 1")
 	}
@@ -137,6 +143,7 @@ func (cccp *ConsumerAdditionProposal) String() string {
 	SpawnTime: %s
 	ConsumerRedistributionFraction: %s
 	BlocksPerDistributionTransmission: %d
+	DistributionTransmissionChannel: %s
 	HistoricalEntries: %d
 	CcvTimeoutPeriod: %d
 	TransferTimeoutPeriod: %d
@@ -150,6 +157,7 @@ func (cccp *ConsumerAdditionProposal) String() string {
 		cccp.SpawnTime,
 		cccp.ConsumerRedistributionFraction,
 		cccp.BlocksPerDistributionTransmission,
+		cccp.DistributionTransmissionChannel,
 		cccp.HistoricalEntries,
 		cccp.CcvTimeoutPeriod,
 		cccp.TransferTimeoutPeriod,
