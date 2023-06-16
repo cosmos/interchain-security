@@ -36,6 +36,8 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 			k.Logger(ctx).Error("validator not found or is unbonded", provAddr.String())
 			continue
 		}
+		// TODO: continue if validator is already tombstoned/jailed + log
+		k.stakingKeeper.Jail(ctx, provAddr)
 		k.slashingKeeper.JailUntil(ctx, provAddr, evidencetypes.DoubleSignJailEndTime)
 		k.slashingKeeper.Tombstone(ctx, provAddr)
 		// store misbehaviour?
