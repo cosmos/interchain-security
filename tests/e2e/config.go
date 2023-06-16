@@ -368,7 +368,7 @@ func ChangeoverTestRun() TestRun {
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
-					".app_state.staking.params.unbonding_time = \"1728000s\"",
+					".app_state.staking.params.unbonding_time = \"1728000s\"", // making the genesis unbonding time equal to unbonding time in the consumer addition proposal
 			},
 		},
 		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +

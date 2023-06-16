@@ -693,12 +693,6 @@ func (tr TestRun) startChangeover(
 	if err := scanner.Err(); err != nil {
 		log.Fatal("startChangeover died", err)
 	}
-
-	// tr.addChainToRelayer(addChainToRelayerAction{
-	// 	chain:     "sover",
-	// 	validator: action.validators[0].id,
-	// 	consumer:  true,
-	// }, verbose)
 }
 
 type addChainToRelayerAction struct {
@@ -947,6 +941,9 @@ type createIbcClientsAction struct {
 	chainB chainID
 }
 
+// if clients are not provided hermes will first
+// create new clients and then a new connection
+// otherwise, it would use client provided as CLI argument (-a-client)
 func (tr TestRun) createIbcClientsHermes(
 	action createIbcClientsAction,
 	verbose bool,
@@ -1116,7 +1113,9 @@ func (tr TestRun) addIbcChannelHermes(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+
+	// if version is not specified, use the default version when creating ccv connections
+	// otherwise, use the provided version schema (usually it is ICS20-1 for IBC transfer)
 	chanVersion := action.version
 	if chanVersion == "" {
 		chanVersion = tr.containerConfig.ccvVersion

@@ -2,6 +2,11 @@ package main
 
 import clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 
+// this creates new clients on both chains and a connection (connection-0) between them
+// connection-0 is used to create a transfer channel between the chains
+// the transfer channel is maintained during the changeover process, meaning that
+// the consumer chain will be able to send rewards to the provider chain using the old channel
+// as opposed to creating a new transfer channel which happens for new consumers
 func stepsSovereignTransferChan() []Step {
 	return []Step{
 		{
@@ -12,6 +17,7 @@ func stepsSovereignTransferChan() []Step {
 			state: State{},
 		},
 		{
+			// this will create channel-0 connection end on both chain
 			action: addIbcChannelAction{
 				chainA:      chainID("sover"),
 				chainB:      chainID("provi"),
@@ -31,12 +37,15 @@ func stepsChangeoverToConsumer(consumerName string) []Step {
 	s := []Step{
 		{
 			action: submitConsumerAdditionProposalAction{
-				preCCV:              true,
-				chain:               chainID("provi"),
-				from:                validatorID("alice"),
-				deposit:             10000001,
-				consumerChain:       chainID(consumerName),
-				distributionChannel: "channel-0", // consumer's channel end
+				preCCV:        true,
+				chain:         chainID("provi"),
+				from:          validatorID("alice"),
+				deposit:       10000001,
+				consumerChain: chainID(consumerName),
+				// chain-0 is the transfer channelID that gets created in stepsSovereignTransferChan
+				// the consumer chain will use this channel to send rewards to the provider chain
+				// there is no need to create a new channel for rewards distribution
+				distributionChannel: "channel-0",
 				spawnTime:           0,
 				initialHeight:       clienttypes.Height{RevisionNumber: 0, RevisionHeight: 111}, // 1 block after upgrade !important
 			},
@@ -137,8 +146,11 @@ func stepsChangeoverToConsumer(consumerName string) []Step {
 	return s
 }
 
-// start sovereign chain with 2 validators
-// nodes will cease being validators once the changeover occurs
+// start sovereign chain with a single validator so it is easier to manage
+// when the chain is converted to a consumer chain the validators from the
+// consumer chain will be used
+// validatoralice is the only validator on the sovereign chain that is in both
+// sovereign validator set and consumer validator set
 func stepRunSovereignChain() []Step {
 	return []Step{
 		{
@@ -231,7 +243,9 @@ func stepsUpgradeChain() []Step {
 	}
 }
 
-// stepsPostChangeoverDelegate tests basic delegation and resulting validator power changes
+// stepsPostChangeoverDelegate tests basic delegation and resulting validator power changes after changeover
+// we cannot use stepsDelegate and stepsUnbond because they make assumptions about which connection to use
+// here we need to use connection-1, and in tests with new consumers connection-0 is used because the chain is new (has no IBC states prior to launch)
 func stepsPostChangeoverDelegate(consumerName string) []Step {
 	return []Step{
 		{

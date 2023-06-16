@@ -34,13 +34,13 @@ TENDERMINT_CONFIG_TRANSFORM=$6
 # CREATE VALIDATORS AND DO GENESIS CEREMONY
 # !!!!!!!!!!!!!! IMPORTANT !!!!!!!!!!!!!!!! #
 # data dir from the sovereign chain is copied to other nodes (namely bob and carol)
-# alice simply performs an upgrade
+# alice simply performs a chain upgrade
 echo "killing nodes"
 pkill -f "^"interchain-security-sd &> /dev/null || true
 
 mkdir -p /root/.sovereign/config
 
-cp -r /sover/validatoralice /.sovereign  # see: app/consumer-democracy/app.go::657
+# apply genesis changes to existing genesis -> this creates the changeover genesis file wih intial validator set
 jq "$GENESIS_TRANSFORM" /sover/validatoralice/config/genesis.json > /root/.sovereign/config/genesis.json
 
 
