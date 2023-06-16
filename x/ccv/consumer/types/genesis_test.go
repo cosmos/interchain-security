@@ -210,7 +210,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 			true,
 		},
 		{
-			"invalid new consumer genesis state: invalid params",
+			"invalid new consumer genesis state: invalid params - ccvTimeoutPeriod",
 			types.NewInitialGenesisState(cs, consensusState, valUpdates,
 				types.NewParams(
 					true,
@@ -218,6 +218,25 @@ func TestValidateInitialGenesisState(t *testing.T) {
 					"",
 					"",
 					0, // CCV timeout period cannot be 0
+					types.DefaultTransferTimeoutPeriod,
+					types.DefaultConsumerRedistributeFrac,
+					types.DefaultHistoricalEntries,
+					types.DefaultConsumerUnbondingPeriod,
+					types.DefaultSoftOptOutThreshold,
+					[]string{},
+					[]string{},
+				)),
+			true,
+		},
+		{
+			"invalid new consumer genesis state: invalid params - distributionTransmissionChannel",
+			types.NewInitialGenesisState(cs, consensusState, valUpdates,
+				types.NewParams(
+					true,
+					types.DefaultBlocksPerDistributionTransmission,
+					"badchannel/",
+					"",
+					ccv.DefaultCCVTimeoutPeriod,
 					types.DefaultTransferTimeoutPeriod,
 					types.DefaultConsumerRedistributeFrac,
 					types.DefaultHistoricalEntries,

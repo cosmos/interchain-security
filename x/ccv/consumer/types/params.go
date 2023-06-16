@@ -113,7 +113,7 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidatePositiveInt64(p.BlocksPerDistributionTransmission); err != nil {
 		return err
 	}
-	if err := ValidateDistributionTransmissionChannel(p.DistributionTransmissionChannel); err != nil {
+	if err := ccvtypes.ValidateDistributionTransmissionChannel(p.DistributionTransmissionChannel); err != nil {
 		return err
 	}
 	if err := ValidateProviderFeePoolAddrStr(p.ProviderFeePoolAddrStr); err != nil {
@@ -153,7 +153,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyBlocksPerDistributionTransmission,
 			p.BlocksPerDistributionTransmission, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyDistributionTransmissionChannel,
-			p.DistributionTransmissionChannel, ValidateDistributionTransmissionChannel),
+			p.DistributionTransmissionChannel, ccvtypes.ValidateDistributionTransmissionChannel),
 		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
 			p.ProviderFeePoolAddrStr, ValidateProviderFeePoolAddrStr),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod,
@@ -173,15 +173,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyProviderRewardDenoms,
 			p.ProviderRewardDenoms, ValidateDenoms),
 	}
-}
-
-func ValidateDistributionTransmissionChannel(i interface{}) error {
-	// Accept empty string as valid, since this will be the default value on genesis
-	if i == "" {
-		return nil
-	}
-	// Otherwise validate as usual for a channelID
-	return ccvtypes.ValidateChannelIdentifier(i)
 }
 
 func ValidateProviderFeePoolAddrStr(i interface{}) error {
