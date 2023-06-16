@@ -244,6 +244,10 @@ func TestQueueAndSendVSCMaturedPackets(t *testing.T) {
 // Misbehaviour test
 //
 
+func TestHandleConsumerMisbehaviour(t *testing.T) {
+	runCCVTestByName(t, "TestHandleConsumerMisbehaviour")
+}
+
 func TestCheckConsumerMisbehaviour(t *testing.T) {
 	runCCVTestByName(t, "TestCheckConsumerMisbehaviour")
 }
