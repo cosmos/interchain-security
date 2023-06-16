@@ -16,12 +16,19 @@ import (
 )
 
 var (
-	verbose              = flag.Bool("verbose", false, "turn verbose logging on/off")
-	happyPathOnly        = flag.Bool("happy-path-only", false, "run happy path tests only")
+	verbose            = flag.Bool("verbose", false, "turn verbose logging on/off")
+	happyPathOnly      = flag.Bool("happy-path-only", false, "run happy path tests only")
+	shortHappyPathOnly = flag.Bool("short-happy-path", false, `run abridged happy path tests only.
+This is like the happy path, but skips steps
+that involve starting or stopping nodes for the same chain outside of the chain setup or teardown.
+In particular, this skips steps related to downtime and double signing.
+This is suited for CometMock+Gorelayer testing`)
 	includeMultiConsumer = flag.Bool("include-multi-consumer", false, "include multiconsumer tests in run")
 	parallel             = flag.Bool("parallel", false, "run all tests in parallel")
 	localSdkPath         = flag.String("local-sdk-path", "",
 		"path of a local sdk version to build and reference in integration tests")
+	useCometmock = flag.Bool("use-cometmock", false, "use cometmock instead of CometBFT")
+	useGorelayer = flag.Bool("use-gorelayer", false, "use go relayer instead of Hermes")
 )
 
 var (
@@ -34,6 +41,13 @@ var (
 // after building docker containers, all tests are run in parallel using their respective docker containers
 func main() {
 	flag.Parse()
+
+	if shortHappyPathOnly != nil && *shortHappyPathOnly {
+		fmt.Println("=============== running short happy path only ===============")
+		tr := DefaultTestRun()
+		tr.Run(shortHappyPathSteps, *localSdkPath, *useGaia, *gaiaTag)
+		return
+	}
 
 	if happyPathOnly != nil && *happyPathOnly {
 		fmt.Println("=============== running happy path only ===============")
@@ -81,6 +95,8 @@ func main() {
 // Docker containers are torn down after the test run is complete.
 func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag string) {
 	tr.SetDockerConfig(localSdkPath, useGaia, gaiaTag)
+	tr.SetCometMockConfig(*useCometmock)
+	tr.SetRelayerConfig(*useGorelayer)
 
 	tr.validateStringLiterals()
 	tr.startDocker()
@@ -153,8 +169,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.assignConsumerPubKey(action, verbose)
 	case slashThrottleDequeue:
 		tr.waitForSlashThrottleDequeue(action, verbose)
-	case startHermesAction:
-		tr.startHermes(action, verbose)
+	case startRelayerAction:
+		tr.startRelayer(action, verbose)
 	case registerConsumerRewardDenomAction:
 		tr.registerConsumerRewardDenom(action, verbose)
 	default:

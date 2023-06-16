@@ -73,6 +73,8 @@ type TestRun struct {
 	tendermintConfigOverride string
 	localSdkPath             string
 	useGaia                  bool
+	useCometmock             bool // if false, nodes run CometBFT
+	useGorelayer             bool // if false, Hermes is used as the relayer
 	gaiaTag                  string
 
 	name string
@@ -385,6 +387,14 @@ func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag str
 	s.useGaia = useGaia
 	s.gaiaTag = gaiaTag
 	s.localSdkPath = localSdkPath
+}
+
+func (s *TestRun) SetCometMockConfig(useCometmock bool) {
+	s.useCometmock = useCometmock
+}
+
+func (s *TestRun) SetRelayerConfig(useRly bool) {
+	s.useGorelayer = useRly
 }
 
 // validateStringLiterals enforces that configs follow the constraints
