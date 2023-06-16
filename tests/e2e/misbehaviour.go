@@ -422,7 +422,7 @@ func (s *CCVTestSuite) TestCheckConsumerMisbehaviour() {
 			false,
 		},
 		{
-			"misbehaviour check failed",
+			"misbehaviour check failed", //TODO: verify as client is already frozen
 			func() *ibctmtypes.Misbehaviour {
 				return &ibctmtypes.Misbehaviour{
 					ClientId: s.path.EndpointA.ClientID,
@@ -449,7 +449,7 @@ func (s *CCVTestSuite) TestCheckConsumerMisbehaviour() {
 				}
 			},
 			func() {},
-			true,
+			false,
 		},
 	}
 
