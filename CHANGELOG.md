@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
+* feat!: Add DistributionTransmissionChannel to ConsumerAdditionProposal [#965](https://github.com/cosmos/interchain-security/pull/965)
 
 ## v.2.0.0
 
