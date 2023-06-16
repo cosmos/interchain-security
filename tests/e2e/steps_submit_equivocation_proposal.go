@@ -122,7 +122,8 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 		{
 			// relay power change to consumer1
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
