@@ -30,16 +30,27 @@ RUN make install
 # Get Hermes build
 FROM ghcr.io/informalsystems/hermes:1.4.1 AS hermes-builder
 
+# Get CometMock
+FROM informalofftermatt/cometmock:latest as cometmock-builder
+
+# Get GoRelayer
+FROM informalofftermatt/gorelayer:nogas AS gorelayer-builder
+
 FROM --platform=linux/amd64 fedora:36
 RUN dnf update -y
 RUN dnf install -y which iproute iputils procps-ng vim-minimal tmux net-tools htop jq
 USER root
 
 COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/
+COPY --from=cometmock-builder /usr/local/bin/cometmock /usr/local/bin/cometmock
+COPY --from=gorelayer-builder /bin/rly /usr/local/bin/
 
 COPY --from=is-builder /go/bin/provider /usr/local/bin/provider
 COPY --from=is-builder /go/bin/consumer /usr/local/bin/consumer
 COPY --from=is-builder /go/bin/democracy /usr/local/bin/democracy
+COPY --from=is-builder /go/bin/sovereign /usr/local/bin/sovereign
+
+
 
 
 # Copy in the shell scripts that run the testnet

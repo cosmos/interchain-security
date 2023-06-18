@@ -3,11 +3,12 @@ package integration_test
 import (
 	"testing"
 
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appDemocracy "github.com/cosmos/interchain-security/app/democracy"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
-	intg "github.com/cosmos/interchain-security/tests/integration"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	appConsumer "github.com/cosmos/interchain-security/v2/app/consumer"
+	appDemocracy "github.com/cosmos/interchain-security/v2/app/democracy"
+	appProvider "github.com/cosmos/interchain-security/v2/app/provider"
+	intg "github.com/cosmos/interchain-security/v2/tests/integration"
+	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
+
 	"github.com/stretchr/testify/suite"
 )
 

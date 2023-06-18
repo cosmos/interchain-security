@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # build latest tagged gaia
-FROM golang:1.19-alpine AS gaia-builder 
+FROM golang:1.20-alpine AS gaia-builder 
 # WORKDIR is set to /go by default
 ARG USE_GAIA_TAG
 ENV GAIA_TAG=${USE_GAIA_TAG}
@@ -74,6 +74,8 @@ COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/
 COPY --from=gaia-builder /go/gaia/build/gaiad /usr/local/bin/provider
 COPY --from=is-builder /go/bin/consumer /usr/local/bin/consumer
 COPY --from=is-builder /go/bin/democracy /usr/local/bin/democracy
+COPY --from=is-builder /go/bin/sovereign /usr/local/bin/sovereign
+
 
 
 # Copy in the shell scripts that run the testnet

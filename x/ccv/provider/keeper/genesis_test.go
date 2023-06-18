@@ -6,13 +6,13 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	"github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	"github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -79,22 +79,22 @@ func TestInitAndExportGenesis(t *testing.T) {
 		[]providertypes.ValidatorConsumerPubKey{
 			{
 				ChainId:      cChainIDs[0],
-				ProviderAddr: &provAddr,
+				ProviderAddr: provAddr.ToSdkConsAddr(),
 				ConsumerKey:  &consumerTmPubKey,
 			},
 		},
 		[]providertypes.ValidatorByConsumerAddr{
 			{
 				ChainId:      cChainIDs[0],
-				ProviderAddr: &provAddr,
-				ConsumerAddr: &consumerConsAddr,
+				ProviderAddr: provAddr.ToSdkConsAddr(),
+				ConsumerAddr: consumerConsAddr.ToSdkConsAddr(),
 			},
 		},
 		[]providertypes.ConsumerAddrsToPrune{
 			{
 				ChainId:       cChainIDs[0],
 				VscId:         vscID,
-				ConsumerAddrs: &providertypes.ConsumerAddressList{Addresses: []*providertypes.ConsumerConsAddress{&consumerConsAddr}},
+				ConsumerAddrs: &providertypes.AddressList{Addresses: [][]byte{consumerConsAddr.ToSdkConsAddr()}},
 			},
 		},
 	)
@@ -155,7 +155,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 
 	addrs := pk.GetConsumerAddrsToPrune(ctx, cChainIDs[0], vscID)
 	// Expect same list as what was provided in provGenesis
-	expectedAddrList := providertypes.ConsumerAddressList{Addresses: []*providertypes.ConsumerConsAddress{&consumerConsAddr}}
+	expectedAddrList := providertypes.AddressList{Addresses: [][]byte{consumerConsAddr.ToSdkConsAddr()}}
 	require.Equal(t, expectedAddrList, addrs)
 
 	// check provider chain's consumer chain states

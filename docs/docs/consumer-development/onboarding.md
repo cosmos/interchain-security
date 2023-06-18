@@ -91,6 +91,13 @@ Example of a consumer chain addition proposal.
     // This param is a part of the cosmos sdk staking module. In the case of
     // a ccv enabled consumer chain, the ccv module acts as the staking module.
     "historical_entries": 10000,
+    // The ID of a token transfer channel used for the Reward Distribution
+	// sub-protocol. If DistributionTransmissionChannel == "", a new transfer
+	// channel is created on top of the same connection as the CCV channel.
+	// Note that transfer_channel_id is the ID of the channel end on the consumer chain.
+    // it is most relevant for chains performing a sovereign to consumer changeover
+    // in order to maintan the existing ibc transfer channel
+    "distribution_transmission_channel": "channel-123"
 }
 ```
 

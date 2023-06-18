@@ -5,8 +5,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	app "github.com/cosmos/interchain-security/app/democracy"
-	"github.com/cosmos/interchain-security/cmd/democracy/cmd"
+	app "github.com/cosmos/interchain-security/v2/app/democracy"
+	"github.com/cosmos/interchain-security/v2/cmd/democracy/cmd"
 )
 
 func main() {

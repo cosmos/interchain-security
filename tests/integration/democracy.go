@@ -7,15 +7,15 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
+	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	"github.com/stretchr/testify/suite"
 )
 

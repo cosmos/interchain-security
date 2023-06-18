@@ -10,10 +10,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	"github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -539,19 +539,6 @@ func TestGetAllOutstandingDowntimes(t *testing.T) {
 	result := ck.GetAllOutstandingDowntimes(ctx)
 	require.Len(t, result, len(addresses))
 	require.Equal(t, result, expectedGetAllOrder)
-}
-
-// TestStandaloneTransferChannelID tests the getter and setter for the existing transfer channel id
-func TestStandaloneTransferChannelID(t *testing.T) {
-	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	// Test that the default value is empty
-	require.Equal(t, "", ck.GetStandaloneTransferChannelID(ctx))
-
-	// Test that the value can be set and retrieved
-	ck.SetStandaloneTransferChannelID(ctx, "channelID1234")
-	require.Equal(t, "channelID1234", ck.GetStandaloneTransferChannelID(ctx))
 }
 
 func TestPrevStandaloneChainFlag(t *testing.T) {

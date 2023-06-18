@@ -1,7 +1,7 @@
 syntax = "proto3";
 package interchain_security.ccv.provider.v1;
 
-option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types";
+option go_package = "github.com/cosmos/interchain-security/v2/x/ccv/provider/types";
 
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
@@ -67,6 +67,12 @@ service Query {
   rpc QueryThrottledConsumerPacketData(QueryThrottledConsumerPacketDataRequest)
       returns (QueryThrottledConsumerPacketDataResponse) {
     option (google.api.http).get = "/interchain_security/ccv/provider/pending_consumer_packets";
+  }
+
+  // QueryRegisteredConsumerRewardDenoms returns a list of consumer reward denoms that are registered
+  rpc QueryRegisteredConsumerRewardDenoms(QueryRegisteredConsumerRewardDenomsRequest)
+      returns (QueryRegisteredConsumerRewardDenomsResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/provider/registered_consumer_reward_denoms";
   }
 }
 
@@ -168,4 +174,10 @@ message ThrottledPacketDataWrapper {
     interchain_security.ccv.v1.SlashPacketData slash_packet = 1;
     interchain_security.ccv.v1.VSCMaturedPacketData vsc_matured_packet = 2;
   }
+}
+
+message QueryRegisteredConsumerRewardDenomsRequest {}
+
+message QueryRegisteredConsumerRewardDenomsResponse {
+  repeated string denoms = 1;
 }

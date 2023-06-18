@@ -13,10 +13,10 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
+	consumerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/consumer/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -24,6 +24,7 @@ import (
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ProviderApp interface {
 	ibctesting.TestingApp
+	GetSubspace(moduleName string) paramstypes.Subspace
 
 	//
 	// Keeper getters
@@ -32,12 +33,14 @@ type ProviderApp interface {
 	GetProviderKeeper() providerkeeper.Keeper
 	// Returns a staking keeper interface with more capabilities than the expected_keepers interface
 	GetTestStakingKeeper() TestStakingKeeper
-	// Testurns a bank keeper interface with more capabilities than the expected_keepers interface
+	// Returns a bank keeper interface with more capabilities than the expected_keepers interface
 	GetTestBankKeeper() TestBankKeeper
-	// Testurns a slashing keeper interface with more capabilities than the expected_keepers interface
+	// Returns a slashing keeper interface with more capabilities than the expected_keepers interface
 	GetTestSlashingKeeper() TestSlashingKeeper
-	// Integrurns a distribution keeper interface with more capabilities than the expected_keepers interface
+	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
 	GetTestDistributionKeeper() TestDistributionKeeper
+	// Returns an account keeper interface with more capabilities than the expected_keepers interface
+	GetTestAccountKeeper() TestAccountKeeper
 }
 
 // The interface that any consumer app must implement to be compatible with integration tests
@@ -104,6 +107,8 @@ type TestBankKeeper interface {
 	ccvtypes.BankKeeper
 	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress,
 		recipientModule string, amt sdk.Coins) error
+	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string,
+		recipientAddr sdk.AccAddress, amt sdk.Coins) error
 }
 
 type TestAccountKeeper interface {

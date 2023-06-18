@@ -11,7 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 )
 
 // NewQueryCmd returns a root CLI command handler for all x/ccv/provider query commands.
@@ -32,6 +32,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdProviderValidatorKey())
 	cmd.AddCommand(CmdThrottleState())
 	cmd.AddCommand(CmdThrottledConsumerPacketData())
+	cmd.AddCommand(CmdRegisteredConsumerRewardDenoms())
 
 	return cmd
 }
@@ -308,6 +309,41 @@ $ %s query provider throttled-consumer-packet-data foochain
 
 			req := &types.QueryThrottledConsumerPacketDataRequest{ChainId: args[0]}
 			res, err := queryClient.QueryThrottledConsumerPacketData(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdRegisteredConsumerRewardDenoms() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "registered-consumer-reward-denoms",
+		Short: "Query registered consumer reward denoms",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Returns the registered consumer reward denoms.
+Example:
+$ %s query provider registered-consumer-reward-denoms
+`,
+				version.AppName,
+			),
+		),
+		Args: cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryRegisteredConsumerRewardDenomsRequest{}
+			res, err := queryClient.QueryRegisteredConsumerRewardDenoms(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

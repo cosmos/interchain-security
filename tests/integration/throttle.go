@@ -6,11 +6,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
+
+const fullSlashMeterString = "1.0"
 
 // TestBasicSlashPacketThrottling tests slash packet throttling with a single consumer,
 // two slash packets, and no VSC matured packets. The most basic scenario.
@@ -651,7 +653,7 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 
 	// Set replenish fraction to 1.0 so that all sent packets should handled immediately (no throttling)
 	params := providerKeeper.GetParams(s.providerCtx())
-	params.SlashMeterReplenishFraction = "1.0"
+	params.SlashMeterReplenishFraction = fullSlashMeterString // needs to be const for linter
 	providerKeeper.SetParams(s.providerCtx(), params)
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
 
@@ -706,7 +708,7 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 
 	// Set replenish fraction to 1.0 so that all sent packets should be handled immediately (no throttling)
 	params := providerKeeper.GetParams(s.providerCtx())
-	params.SlashMeterReplenishFraction = "1.0"
+	params.SlashMeterReplenishFraction = fullSlashMeterString // needs to be const for linter
 	providerKeeper.SetParams(s.providerCtx(), params)
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
 
@@ -779,7 +781,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 
 	// Queue up 50 slash packets for each consumer
 	for _, bundle := range s.consumerBundles {
-		for i := 0; i < 50; i++ {
+		for i := 50; i < 100; i++ {
 			ibcSeqNum := uint64(i)
 			packet := s.constructSlashPacketFromConsumer(*bundle,
 				*s.providerChain.Vals.Validators[0], stakingtypes.Downtime, ibcSeqNum)
@@ -792,7 +794,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 
 	// Queue up another 50 vsc matured packets for each consumer
 	for _, bundle := range s.consumerBundles {
-		for i := 0; i < 50; i++ {
+		for i := 100; i < 150; i++ {
 			ibcSeqNum := uint64(i)
 			packet := s.constructVSCMaturedPacketFromConsumer(*bundle, ibcSeqNum)
 			packetData := ccvtypes.ConsumerPacketData{}
@@ -818,6 +820,10 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 	providerKeeper.SetSlashMeterReplenishTimeCandidate(s.providerCtx())
 
 	// Execute end blocker to dequeue only the leading vsc matured packets.
+	// Note we must call the end blocker three times, since only 100 vsc matured packets can be handled
+	// each block, and we have 5*50=250 total.
+	s.providerChain.NextBlock()
+	s.providerChain.NextBlock()
 	s.providerChain.NextBlock()
 
 	// Confirm queue size is 100 for each consumer-specific queue (50 leading vsc matured are dequeued).
@@ -827,7 +833,78 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 	}
 
 	// No slash packets handled, global slash queue is same size as last block.
+	globalEntries = providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
 	s.Require().Equal(len(globalEntries), 50*5)
+
+	// No slash packets handled even if we call end blocker a couple more times.
+	s.providerChain.NextBlock()
+	s.providerChain.NextBlock()
+	globalEntries = providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
+	s.Require().Equal(len(globalEntries), 50*5)
+}
+
+// TestVscMaturedHandledPerBlockLimit tests that only 100 vsc matured packets are handled per block,
+// specifically from HandleThrottleQueues().
+//
+// Note the vsc matured per block limit is also tested in, TestLeadingVSCMaturedAreDequeued,
+// specifically in the context of HandleLeadingVSCMaturedPackets().
+func (s *CCVTestSuite) TestVscMaturedHandledPerBlockLimit() {
+	s.SetupAllCCVChannels()
+	providerKeeper := s.providerApp.GetProviderKeeper()
+
+	// Set replenish fraction to 1.0 so that all sent packets should be handled immediately (no jail throttling)
+	params := providerKeeper.GetParams(s.providerCtx())
+	params.SlashMeterReplenishFraction = fullSlashMeterString // needs to be const for linter
+	providerKeeper.SetParams(s.providerCtx(), params)
+	providerKeeper.InitializeSlashMeter(s.providerCtx())
+
+	// Queue up 100 vsc matured packets for each consumer
+	for _, bundle := range s.consumerBundles {
+		for i := 0; i < 100; i++ {
+			ibcSeqNum := uint64(i)
+			packet := s.constructVSCMaturedPacketFromConsumer(*bundle, ibcSeqNum)
+			packetData := ccvtypes.ConsumerPacketData{}
+			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetData)
+			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(),
+				packet, *packetData.GetVscMaturedPacketData())
+		}
+	}
+
+	// Queue up 50 slash packets for each consumer, with new IBC sequence numbers
+	for _, bundle := range s.consumerBundles {
+		for i := 100; i < 150; i++ {
+			ibcSeqNum := uint64(i)
+			packet := s.constructSlashPacketFromConsumer(*bundle,
+				*s.providerChain.Vals.Validators[0], stakingtypes.Downtime, ibcSeqNum)
+			packetData := ccvtypes.ConsumerPacketData{}
+			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetData)
+			providerKeeper.OnRecvSlashPacket(s.providerCtx(),
+				packet, *packetData.GetSlashPacketData())
+		}
+	}
+
+	// Confirm queue size is 150 for each consumer-specific queue.
+	for _, bundle := range s.consumerBundles {
+		s.Require().Equal(uint64(150),
+			providerKeeper.GetThrottledPacketDataSize(s.providerCtx(), bundle.Chain.ChainID))
+	}
+	// Confirm global queue size is 50 * 5 (50 slash packets for each of 5 consumers)
+	globalEntries := providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
+	s.Require().Equal(len(globalEntries), 50*5)
+
+	// Note even though there is no jail throttling active, slash packets will not be handled until
+	// all of the leading vsc matured packets are handled first. This should take 5 blocks.
+	for i := 0; i < 5; i++ {
+		s.providerChain.NextBlock()
+		s.Require().Len(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()), 250) // global entries remain same size
+	}
+
+	// Set signing info for val to be jailed, preventing panic
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
+
+	// Now we execute one more block and all 250 of the slash packets should be handled.
+	s.providerChain.NextBlock()
+	s.Require().Empty(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())) // empty global entries = all slash packets handled
 }
 
 func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPower bool) {

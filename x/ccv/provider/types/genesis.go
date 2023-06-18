@@ -3,10 +3,10 @@ package types
 import (
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 func NewGenesisState(
@@ -47,7 +47,7 @@ func DefaultGenesisState() *GenesisState {
 
 func (gs GenesisState) Validate() error {
 	if gs.ValsetUpdateId == 0 {
-		return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "valset update ID cannot be equal to zero")
+		return errorsmod.Wrap(ccv.ErrInvalidGenesis, "valset update ID cannot be equal to zero")
 	}
 
 	for _, ubdOp := range gs.UnbondingOps {
@@ -58,26 +58,26 @@ func (gs GenesisState) Validate() error {
 
 	for _, prop := range gs.ConsumerAdditionProposals {
 		if err := prop.ValidateBasic(); err != nil {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, err.Error())
+			return errorsmod.Wrap(ccv.ErrInvalidGenesis, err.Error())
 		}
 	}
 
 	for _, prop := range gs.ConsumerRemovalProposals {
 		if err := prop.ValidateBasic(); err != nil {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, err.Error())
+			return errorsmod.Wrap(ccv.ErrInvalidGenesis, err.Error())
 		}
 	}
 
 	if len(gs.ValsetUpdateIdToHeight) > 0 {
 		// check only the first tuple of the list since it is ordered by VSC ID
 		if gs.ValsetUpdateIdToHeight[0].ValsetUpdateId == 0 {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "valset update ID cannot be equal to zero")
+			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "valset update ID cannot be equal to zero")
 		}
 	}
 
 	for _, cs := range gs.ConsumerStates {
 		if err := cs.Validate(); err != nil {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, fmt.Sprintf("%s: for consumer chain id: %s", err, cs.ChainId))
+			return errorsmod.Wrap(ccv.ErrInvalidGenesis, fmt.Sprintf("%s: for consumer chain id: %s", err, cs.ChainId))
 		}
 	}
 
@@ -97,7 +97,7 @@ func (gs GenesisState) Validate() error {
 
 func (gs GenesisState) ValidateUnbondingOp(ubdOp UnbondingOp) error {
 	if len(ubdOp.UnbondingConsumerChains) == 0 {
-		return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "unbonding operations cannot have an empty consumer chain list")
+		return errorsmod.Wrap(ccv.ErrInvalidGenesis, "unbonding operations cannot have an empty consumer chain list")
 	}
 
 	// Check that the ID is set correctly in the UnbondingOpsIndex
@@ -119,7 +119,7 @@ func (gs GenesisState) ValidateUnbondingOp(ubdOp UnbondingOp) error {
 			}
 		}
 		if !found {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis,
+			return errorsmod.Wrap(ccv.ErrInvalidGenesis,
 				fmt.Sprintf("unbonding operation without UnbondingOpsIndex, opID=%d, chainID=%s", ubdOp.Id, chainID))
 		}
 	}
