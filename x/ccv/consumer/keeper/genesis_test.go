@@ -148,7 +148,12 @@ func TestInitGenesis(t *testing.T) {
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
 				assertConsumerPortIsBound(t, ctx, &ck)
 
-				require.Equal(t, pendingDataPackets, ck.GetPendingPackets(ctx))
+				obtainedPendingPackets := ck.GetPendingPackets(ctx)
+				for idx, expectedPacketData := range pendingDataPackets.List {
+					require.Equal(t, expectedPacketData.Type, obtainedPendingPackets[idx].Type)
+					require.Equal(t, expectedPacketData.Data, obtainedPendingPackets[idx].Data)
+				}
+
 				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
 				require.Equal(t, validator.Address.Bytes(), ck.GetAllCCValidator(ctx)[0].Address)
@@ -186,7 +191,12 @@ func TestInitGenesis(t *testing.T) {
 				require.Equal(t, provChannelID, gotChannelID)
 
 				require.True(t, ck.PacketMaturityTimeExists(ctx, matPackets[0].VscId, matPackets[0].MaturityTime))
-				require.Equal(t, pendingDataPackets, ck.GetPendingPackets(ctx))
+
+				obtainedPendingPackets := ck.GetPendingPackets(ctx)
+				for idx, expectedPacketData := range pendingDataPackets.List {
+					require.Equal(t, expectedPacketData.Type, obtainedPendingPackets[idx].Type)
+					require.Equal(t, expectedPacketData.Data, obtainedPendingPackets[idx].Data)
+				}
 
 				require.Equal(t, gs.OutstandingDowntimeSlashing, ck.GetAllOutstandingDowntimes(ctx))
 
@@ -252,12 +262,16 @@ func TestExportGenesis(t *testing.T) {
 				Data: &ccv.ConsumerPacketData_SlashPacketData{
 					SlashPacketData: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Downtime),
 				},
+				Idx: 0,
 			},
 			{
 				Type: ccv.VscMaturedPacket,
 				Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 					VscMaturedPacketData: ccv.NewVSCMaturedPacketData(vscID),
 				},
+				// This idx is a part of the expected genesis state.
+				// If the keeper is correctly storing consumer packet data, indexes should be populated.
+				Idx: 1,
 			},
 		},
 	}
