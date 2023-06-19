@@ -76,8 +76,17 @@ type TestRun struct {
 	useCometmock             bool // if false, nodes run CometBFT
 	useGorelayer             bool // if false, Hermes is used as the relayer
 	gaiaTag                  string
+	// chains which are running, i.e. producing blocks, at the moment
+	runningChains map[chainID]bool
+	// Used with CometMock. The time by which chains have been advanced. Used to keep chains in sync: when a new chain is started, advance its time by this value to keep chains in sync.
+	timeOffset time.Duration
 
 	name string
+}
+
+// Initialize initializes the TestRun instance by setting the runningChains field to an empty map.
+func (tr *TestRun) Initialize() {
+	tr.runningChains = make(map[chainID]bool)
 }
 
 func getDefaultValidators() map[validatorID]ValidatorConfig {
@@ -143,7 +152,7 @@ func getDefaultValidators() map[validatorID]ValidatorConfig {
 }
 
 func SlashThrottleTestRun() TestRun {
-	return TestRun{
+	tr := TestRun{
 		name: "slash-throttling",
 		containerConfig: ContainerConfig{
 			containerName: "interchain-security-slash-container",
@@ -183,10 +192,12 @@ func SlashThrottleTestRun() TestRun {
 		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
+	tr.Initialize()
+	return tr
 }
 
 func DefaultTestRun() TestRun {
-	return TestRun{
+	tr := TestRun{
 		name: "default",
 		containerConfig: ContainerConfig{
 			containerName: "interchain-security-container",
@@ -226,6 +237,8 @@ func DefaultTestRun() TestRun {
 		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
+	tr.Initialize()
+	return tr
 }
 
 func DemocracyTestRun(allowReward bool) TestRun {
@@ -241,7 +254,7 @@ func DemocracyTestRun(allowReward bool) TestRun {
 		consumerGenChanges += " | .app_state.ccvconsumer.params.reward_denoms = [\"stake\"]"
 	}
 
-	return TestRun{
+	tr := TestRun{
 		name: "democracy",
 		containerConfig: ContainerConfig{
 			containerName: "interchain-security-democ-container",
@@ -276,10 +289,12 @@ func DemocracyTestRun(allowReward bool) TestRun {
 		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
+	tr.Initialize()
+	return tr
 }
 
 func MultiConsumerTestRun() TestRun {
-	return TestRun{
+	tr := TestRun{
 		name: "multi-consumer",
 		containerConfig: ContainerConfig{
 			containerName: "interchain-security-multic-container",
@@ -329,10 +344,12 @@ func MultiConsumerTestRun() TestRun {
 		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "3s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "100ms"/;`,
 	}
+	tr.Initialize()
+	return tr
 }
 
 func ChangeoverTestRun() TestRun {
-	return TestRun{
+	tr := TestRun{
 		name: "changeover",
 		containerConfig: ContainerConfig{
 			containerName: "interchain-security-changeover-container",
@@ -374,6 +391,8 @@ func ChangeoverTestRun() TestRun {
 		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
+	tr.Initialize()
+	return tr
 }
 
 func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string) {
