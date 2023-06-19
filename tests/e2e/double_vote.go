@@ -3,6 +3,8 @@ package e2e
 import (
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -24,20 +26,27 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 
 	valset := s.consumerChain.Vals
 	valIndex := int32(0)
+	// doc
+	chainID := s.consumerChain.ChainID
 	_, val := valset.GetByIndex(valIndex)
 	blockID := makeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
 	blockID2 := makeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
 
 	// create two votes using the cons
-	vote := s.makeVote(*val, s.consumerChain.ChainID, valIndex, consumerLastHeader.Header.Height, 2, 1, blockID, consumerLastHeader.Header.Time)
-	badVote := s.makeVote(*val, s.consumerChain.ChainID, valIndex, consumerLastHeader.Header.Height, 2, 1, blockID2, consumerLastHeader.Header.Time)
+	vote := s.makeVote(*val, chainID, valIndex, consumerLastHeader.Header.Height, 2, 1, blockID, consumerLastHeader.Header.Time)
+	badVote := s.makeVote(*val, chainID, valIndex, consumerLastHeader.Header.Height, 2, 1, blockID2, consumerLastHeader.Header.Time)
 
 	// create signing info for all the provider chain's validators
 	// Note that converting a validator consensus address from consumer to provider
 	// is more accurate but more verbose too.
-	for _, v := range s.providerChain.Vals.Validators {
-		s.setDefaultValSigningInfo(*v)
-	}
+	consuAddr := sdk.ConsAddress(val.Address.Bytes())
+	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), chainID, consuAddr)
+	provVal, ok := s.providerApp.GetE2eStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), provAddr)
+	s.Require().True(ok)
+
+	tmVal, err := teststaking.ToTmValidator(provVal, sdk.DefaultPowerReduction)
+	s.Require().NoError(err)
+	s.setDefaultValSigningInfo(*tmVal)
 
 	testCases := []struct {
 		name     string
@@ -45,7 +54,6 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		evidence *tmproto.DuplicateVoteEvidence
 		epxPass  bool
 	}{
-
 		{
 			"infraction header cannot be nil",
 			nil,
@@ -104,7 +112,11 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			if !tc.epxPass {
 				s.Require().Error(err)
 			} else {
+				val, ok := s.providerApp.GetE2eStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), provAddr)
 				s.Require().NoError(err)
+				s.Require().True(ok)
+				s.Require().True(val.Jailed)
+				s.Require().True(s.providerApp.GetE2eSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr))
 			}
 		})
 	}

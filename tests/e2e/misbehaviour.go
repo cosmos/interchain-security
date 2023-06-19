@@ -66,6 +66,7 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	s.NoError(err)
 
 	for _, v := range altValset.Validators {
+		// TODO: refactor this into a func
 		consuAddr := sdk.ConsAddress(v.Address.Bytes())
 		provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
 		val, ok := s.providerApp.GetE2eStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), provAddr)
