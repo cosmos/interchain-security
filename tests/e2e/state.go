@@ -759,5 +759,5 @@ func (tr TestRun) curlJsonRPCRequest(method, params, address string) {
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
 
 	verbosity := false
-	executeCommandWithVerbosity(cmd, "curlJsonRPCRequest", &verbosity)
+	executeCommandWithVerbosity(cmd, "curlJsonRPCRequest", verbosity)
 }

@@ -174,9 +174,6 @@ func (tr *TestRun) startChain(
 	}, verbose)
 
 	// store the fact that we started the chain
-	if tr.runningChains == nil {
-		tr.runningChains = make(map[chainID]bool)
-	}
 	tr.runningChains[action.chain] = true
 	fmt.Println("Started chain", action.chain)
 	if tr.timeOffset != 0 {
@@ -1259,6 +1256,7 @@ func executeCommandWithVerbosity(cmd *exec.Cmd, cmdName string, verbose bool) {
 	}
 }
 
+// Executes a command with verbosity specified by CLI flag
 func executeCommand(cmd *exec.Cmd, cmdName string) {
 	executeCommandWithVerbosity(cmd, cmdName, *verbose)
 }
