@@ -1047,8 +1047,8 @@ func (tr TestRun) transferChannelComplete(
 	executeCommand(chanOpenConfirmCmd, "transferChanOpenConfirm")
 }
 
-func executeCommandWithVerbosity(cmd *exec.Cmd, cmdName string, verbose *bool) {
-	if verbose != nil && *verbose {
+func executeCommandWithVerbosity(cmd *exec.Cmd, cmdName string, verbose bool) {
+	if verbose {
 		fmt.Println(cmdName+" cmd:", cmd.String())
 	}
 
@@ -1066,7 +1066,7 @@ func executeCommandWithVerbosity(cmd *exec.Cmd, cmdName string, verbose *bool) {
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		if verbose != nil && *verbose {
+		if verbose {
 			fmt.Println(cmdName + ": " + out)
 		}
 	}
@@ -1076,7 +1076,7 @@ func executeCommandWithVerbosity(cmd *exec.Cmd, cmdName string, verbose *bool) {
 }
 
 func executeCommand(cmd *exec.Cmd, cmdName string) {
-	executeCommandWithVerbosity(cmd, cmdName, verbose)
+	executeCommandWithVerbosity(cmd, cmdName, *verbose)
 }
 
 type relayPacketsAction struct {
