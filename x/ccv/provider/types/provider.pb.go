@@ -1597,8 +1597,8 @@ func (m *GlobalSlashEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		dAtA[i] = 0x12
 	}
 	n7, err7 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.RecvTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.RecvTime):])
-	if err8 != nil {
-		return 0, err8
+	if err7 != nil {
+		return 0, err7
 	}
 	i -= n7
 	i = encodeVarintProvider(dAtA, i, uint64(n7))

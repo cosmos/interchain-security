@@ -876,7 +876,7 @@ func (s *CCVTestSuite) TestVscMaturedHandledPerBlockLimit() {
 		for i := 100; i < 150; i++ {
 			ibcSeqNum := uint64(i)
 			packet := s.constructSlashPacketFromConsumer(*bundle,
-				*s.providerChain.Vals.Validators[0], stakingtypes.Downtime, ibcSeqNum)
+				*s.providerChain.Vals.Validators[0], stakingtypes.Infraction_INFRACTION_DOWNTIME, ibcSeqNum)
 			packetData := ccvtypes.ConsumerPacketData{}
 			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetData)
 			providerKeeper.OnRecvSlashPacket(s.providerCtx(),

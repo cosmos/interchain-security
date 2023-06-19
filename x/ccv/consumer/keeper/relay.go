@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	errorsmod "cosmossdk.io/errors"
-	sdkerrors "cosmossdk.io/errors"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"

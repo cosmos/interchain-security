@@ -64,7 +64,7 @@ func (vdt SlashPacketData) ValidateBasic() error {
 		return errorsmod.Wrap(ErrInvalidPacketData, "validator fields cannot be empty")
 	}
 
-	if vdt.Infraction == stakingtypes.InfractionEmpty {
+	if vdt.Infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
 		return errorsmod.Wrap(ErrInvalidPacketData, "invalid infraction type")
 	}
 

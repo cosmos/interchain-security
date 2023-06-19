@@ -1307,7 +1307,7 @@ func (tr TestRun) relayPacketsGorelayer(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	tr.waitBlocks(action.chain, 2, 60*time.Second)
+	tr.waitBlocks(action.chainA, 1, 30*time.Second)
 }
 
 func (tr TestRun) relayPacketsHermes(

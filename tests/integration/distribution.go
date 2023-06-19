@@ -24,7 +24,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.providerChain.NextBlock()
 
 	// register a consumer reward denom
-	params := s.consumerApp.GetConsumerKeeper().GetParams(s.consumerCtx())
+	params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
 	params.RewardDenoms = []string{sdk.DefaultBondDenom}
 	s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
 
@@ -127,7 +127,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	// Check that the delAddr has the right amount less money in it after paying the fee
 	senderCoins2 := providerBankKeeper.GetAllBalances(s.providerCtx(), delAddr)
 	consumerRewardDenomRegistrationFee := s.providerApp.GetProviderKeeper().GetConsumerRewardDenomRegistrationFee(s.providerCtx())
-	s.Require().Equal(senderCoins1.Sub(senderCoins2), sdk.NewCoins(consumerRewardDenomRegistrationFee))
+	s.Require().Equal(senderCoins1.Sub(senderCoins2...), sdk.NewCoins(consumerRewardDenomRegistrationFee))
 
 	s.providerChain.NextBlock()
 
@@ -153,7 +153,7 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 	s.providerChain.NextBlock()
 
 	// Register denom on consumer chain
-	params := s.consumerApp.GetConsumerKeeper().GetParams(s.consumerCtx())
+	params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
 	params.RewardDenoms = []string{sdk.DefaultBondDenom}
 	s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
 
@@ -282,7 +282,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		s.providerChain.NextBlock()
 
 		if tc.denomRegistered {
-			params := s.consumerApp.GetConsumerKeeper().GetParams(s.consumerCtx())
+			params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
 			params.RewardDenoms = []string{sdk.DefaultBondDenom}
 			s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
 		}
