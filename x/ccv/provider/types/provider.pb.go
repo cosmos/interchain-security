@@ -6,7 +6,7 @@ package types
 import (
 	fmt "fmt"
 	crypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	types3 "github.com/cosmos/cosmos-sdk/types"
+	types2 "github.com/cosmos/cosmos-sdk/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
@@ -355,7 +355,7 @@ type Params struct {
 	// that can be queued for a single consumer before the provider chain halts.
 	MaxThrottledPackets int64 `protobuf:"varint,8,opt,name=max_throttled_packets,json=maxThrottledPackets,proto3" json:"max_throttled_packets,omitempty"`
 	// The fee required to be paid to add a reward denom
-	ConsumerRewardDenomRegistrationFee types3.Coin `protobuf:"bytes,9,opt,name=consumer_reward_denom_registration_fee,json=consumerRewardDenomRegistrationFee,proto3" json:"consumer_reward_denom_registration_fee"`
+	ConsumerRewardDenomRegistrationFee types2.Coin `protobuf:"bytes,9,opt,name=consumer_reward_denom_registration_fee,json=consumerRewardDenomRegistrationFee,proto3" json:"consumer_reward_denom_registration_fee"`
 }
 
 func (m *Params) Reset()         { *m = Params{} }
@@ -447,11 +447,11 @@ func (m *Params) GetMaxThrottledPackets() int64 {
 	return 0
 }
 
-func (m *Params) GetConsumerRewardDenomRegistrationFee() types3.Coin {
+func (m *Params) GetConsumerRewardDenomRegistrationFee() types2.Coin {
 	if m != nil {
 		return m.ConsumerRewardDenomRegistrationFee
 	}
-	return types3.Coin{}
+	return types2.Coin{}
 }
 
 type HandshakeMetadata struct {

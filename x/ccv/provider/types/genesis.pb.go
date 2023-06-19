@@ -10,7 +10,6 @@ import (
 	proto "github.com/cosmos/gogoproto/proto"
 	types1 "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	types "github.com/cosmos/interchain-security/v2/x/ccv/types"
-
 	io "io"
 	math "math"
 	math_bits "math/bits"
