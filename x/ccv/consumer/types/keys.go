@@ -97,7 +97,9 @@ const (
 	// PrevStandaloneChainByteKey is the byte storing the flag marking whether this chain was previously standalone
 	PrevStandaloneChainByteKey
 
-	PendingPacketsIndexBytePrefix
+	// PendingPacketsIndexBytePrefix is the single byte key to the pending packets index.
+	// This index is used for implementing a FIFO queue of pending packets in the KV store.
+	PendingPacketsIndexByteKey
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
@@ -209,8 +211,10 @@ func PrevStandaloneChainKey() []byte {
 	return []byte{PrevStandaloneChainByteKey}
 }
 
+// PendingPacketsIndexKey returns the key to the pending packets index.
+// This index is used for implementing a FIFO queue of pending packets in the KV store.
 func PendingPacketsIndexKey() []byte {
-	return []byte{PendingPacketsIndexBytePrefix}
+	return []byte{PendingPacketsIndexByteKey}
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go

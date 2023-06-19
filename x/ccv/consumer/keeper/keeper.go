@@ -571,6 +571,8 @@ func PendingDataPacketsIterator(store sdk.KVStore) sdk.Iterator {
 	return sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
 }
 
+// getAndIncrementPendingPacketsIdx returns the current pending packets index and increments it.
+// This index is used for implementing a FIFO queue of pending packets in the KV store.
 func (k Keeper) getAndIncrementPendingPacketsIdx(ctx sdk.Context) (toReturn uint64) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingPacketsIndexKey())
@@ -613,8 +615,6 @@ func (k Keeper) DeletePendingDataPackets(ctx sdk.Context, idxs ...uint64) {
 
 func (k Keeper) DeleteAllPendingDataPackets(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
-	// See consistency with PendingDataPacketsKey().
 	iterator := PendingDataPacketsIterator(store)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {

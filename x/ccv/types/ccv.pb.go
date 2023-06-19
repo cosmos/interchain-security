@@ -428,8 +428,10 @@ func (*ConsumerPacketData) XXX_OneofWrappers() []interface{} {
 	}
 }
 
-// [Depreciated] favor using []ConsumerPacketData directly.
+// [Depreciated] favor using []ConsumerPacketData directly, which can be stored more efficiently.
+//
 // ConsumerPacketDataList is a list of consumer packet data packets.
+// It is only used for genesis to ensure backwards compatibility with older versions of ICS.
 type ConsumerPacketDataList struct {
 	List []ConsumerPacketData `protobuf:"bytes,1,rep,name=list,proto3" json:"list"`
 }

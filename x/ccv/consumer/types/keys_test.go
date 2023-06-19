@@ -41,7 +41,7 @@ func getAllKeyPrefixes() []byte {
 		InitGenesisHeightByteKey,
 		StandaloneTransferChannelIDByteKey,
 		PrevStandaloneChainByteKey,
-		PendingPacketsIndexBytePrefix,
+		PendingPacketsIndexByteKey,
 	}
 }
 
