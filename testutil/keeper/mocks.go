@@ -49,7 +49,7 @@ func (m *MockStakingKeeper) EXPECT() *MockStakingKeeperMockRecorder {
 }
 
 // BondDenom mocks base method.
-func (m *MockStakingKeeper) BondDenom(ctx types.Context) string {
+func (m *MockStakingKeeper) BondDenom(ctx types0.Context) string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BondDenom", ctx)
 	ret0, _ := ret[0].(string)
@@ -112,6 +112,13 @@ func (m *MockStakingKeeper) GetLastValidators(ctx types0.Context) []types5.Valid
 	return ret0
 }
 
+// GetLastValidators indicates an expected call of GetLastValidators.
+func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidators", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidators), ctx)
+}
+
+// GetUnbondingType mocks base method.
 func (m *MockStakingKeeper) GetUnbondingType(ctx types0.Context, id uint64) (types5.UnbondingType, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUnbondingType", ctx, id)
@@ -120,10 +127,10 @@ func (m *MockStakingKeeper) GetUnbondingType(ctx types0.Context, id uint64) (typ
 	return ret0, ret1
 }
 
-// GetLastValidators indicates an expected call of GetLastValidators.
-func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gomock.Call {
+// GetUnbondingType indicates an expected call of GetUnbondingType.
+func (mr *MockStakingKeeperMockRecorder) GetUnbondingType(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidators", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidators), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUnbondingType", reflect.TypeOf((*MockStakingKeeper)(nil).GetUnbondingType), ctx, id)
 }
 
 // GetValidator mocks base method.
@@ -789,7 +796,7 @@ func (m *MockDistributionKeeper) EXPECT() *MockDistributionKeeperMockRecorder {
 }
 
 // FundCommunityPool mocks base method.
-func (m *MockDistributionKeeper) FundCommunityPool(ctx types.Context, amount types.Coins, sender types.AccAddress) error {
+func (m *MockDistributionKeeper) FundCommunityPool(ctx types0.Context, amount types0.Coins, sender types0.AccAddress) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FundCommunityPool", ctx, amount, sender)
 	ret0, _ := ret[0].(error)
