@@ -221,12 +221,14 @@ func (tr TestRun) submitTextProposal(
 }
 
 type submitConsumerAdditionProposalAction struct {
-	chain         chainID
-	from          validatorID
-	deposit       uint
-	consumerChain chainID
-	spawnTime     uint
-	initialHeight clienttypes.Height
+	preCCV              bool
+	chain               chainID
+	from                validatorID
+	deposit             uint
+	consumerChain       chainID
+	spawnTime           uint
+	initialHeight       clienttypes.Height
+	distributionChannel string
 }
 
 func (tr TestRun) submitConsumerAdditionProposal(
@@ -250,6 +252,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
 		UnbondingPeriod:                   params.UnbondingPeriod,
 		Deposit:                           fmt.Sprint(action.deposit) + `stake`,
+		DistributionTransmissionChannel:   action.distributionChannel,
 	}
 
 	bz, err := json.Marshal(prop)
@@ -577,6 +580,133 @@ func (tr *TestRun) startConsumerChain(
 	}, verbose)
 }
 
+type ChangeoverChainAction struct {
+	sovereignChain chainID
+	providerChain  chainID
+	validators     []StartChainValidator
+	genesisChanges string
+}
+
+func (tr TestRun) changeoverChain(
+	action ChangeoverChainAction,
+	verbose bool,
+) {
+	// sleep until the consumer chain genesis is ready on consumer
+	time.Sleep(5 * time.Second)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.providerChain].binaryName,
+
+		"query", "provider", "consumer-genesis",
+		string(tr.chainConfigs[action.sovereignChain].chainId),
+
+		`--node`, tr.getQueryNode(action.providerChain),
+		`-o`, `json`,
+	)
+
+	if verbose {
+		log.Println("changeoverChain cmd: ", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
+	consumerGenesisChanges := tr.chainConfigs[action.sovereignChain].genesisChanges
+	if consumerGenesisChanges != "" {
+		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges + " | " + action.genesisChanges
+	}
+
+	tr.startChangeover(ChangeoverChainAction{
+		validators:     action.validators,
+		genesisChanges: consumerGenesis,
+	}, verbose)
+}
+
+func (tr TestRun) startChangeover(
+	action ChangeoverChainAction,
+	verbose bool,
+) {
+	chainConfig := tr.chainConfigs[chainID("sover")]
+	type jsonValAttrs struct {
+		Mnemonic         string `json:"mnemonic"`
+		Allocation       string `json:"allocation"`
+		Stake            string `json:"stake"`
+		ValId            string `json:"val_id"`
+		PrivValidatorKey string `json:"priv_validator_key"`
+		NodeKey          string `json:"node_key"`
+		IpSuffix         string `json:"ip_suffix"`
+
+		ConsumerMnemonic         string `json:"consumer_mnemonic"`
+		ConsumerPrivValidatorKey string `json:"consumer_priv_validator_key"`
+		StartWithConsumerKey     bool   `json:"start_with_consumer_key"`
+	}
+
+	var validators []jsonValAttrs
+	for _, val := range action.validators {
+		validators = append(validators, jsonValAttrs{
+			Mnemonic:         tr.validatorConfigs[val.id].mnemonic,
+			NodeKey:          tr.validatorConfigs[val.id].nodeKey,
+			ValId:            fmt.Sprint(val.id),
+			PrivValidatorKey: tr.validatorConfigs[val.id].privValidatorKey,
+			Allocation:       fmt.Sprint(val.allocation) + "stake",
+			Stake:            fmt.Sprint(val.stake) + "stake",
+			IpSuffix:         tr.validatorConfigs[val.id].ipSuffix,
+
+			ConsumerMnemonic:         tr.validatorConfigs[val.id].consumerMnemonic,
+			ConsumerPrivValidatorKey: tr.validatorConfigs[val.id].consumerPrivValidatorKey,
+			// if true node will be started with consumer key for each consumer chain
+			StartWithConsumerKey: tr.validatorConfigs[val.id].useConsumerKey,
+		})
+	}
+
+	vals, err := json.Marshal(validators)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Concat genesis changes defined in chain config, with any custom genesis changes for this chain instantiation
+	var genesisChanges string
+	if action.genesisChanges != "" {
+		genesisChanges = chainConfig.genesisChanges + " | " + action.genesisChanges
+	} else {
+		genesisChanges = chainConfig.genesisChanges
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
+		"/testnet-scripts/start-changeover.sh", chainConfig.upgradeBinary, string(vals),
+		"sover", chainConfig.ipPrefix, genesisChanges,
+		tr.tendermintConfigOverride,
+	)
+
+	cmdReader, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(cmdReader)
+
+	for scanner.Scan() {
+		out := scanner.Text()
+		if verbose {
+			fmt.Println("startChangeover: " + out)
+		}
+		if out == done {
+			break
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal("startChangeover died", err)
+	}
+}
+
 type addChainToRelayerAction struct {
 	chain     chainID
 	validator validatorID
@@ -695,6 +825,7 @@ func (tr TestRun) addChainToHermes(
 		keyName,
 		rpcAddr,
 		wsAddr,
+		// action.consumer,
 	)
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, "/root/.hermes/config.toml")
@@ -817,6 +948,51 @@ func (tr TestRun) addIbcConnectionGorelayer(
 	tr.waitBlocks(action.chainB, 1, 10*time.Second)
 }
 
+type createIbcClientsAction struct {
+	chainA chainID
+	chainB chainID
+}
+
+// if clients are not provided hermes will first
+// create new clients and then a new connection
+// otherwise, it would use client provided as CLI argument (-a-client)
+func (tr TestRun) createIbcClientsHermes(
+	action createIbcClientsAction,
+	verbose bool,
+) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
+		"create", "connection",
+		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--b-chain", string(tr.chainConfigs[action.chainB].chainId),
+	)
+
+	cmdReader, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(cmdReader)
+
+	for scanner.Scan() {
+		out := scanner.Text()
+		if verbose {
+			fmt.Println("createIbcClientsHermes: " + out)
+		}
+		if out == done {
+			break
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func (tr TestRun) addIbcConnectionHermes(
 	action addIbcConnectionAction,
 	verbose bool,
@@ -862,6 +1038,7 @@ type addIbcChannelAction struct {
 	portA       string
 	portB       string
 	order       string
+	version     string
 }
 
 type startRelayerAction struct{}
@@ -948,6 +1125,13 @@ func (tr TestRun) addIbcChannelHermes(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
+	// if version is not specified, use the default version when creating ccv connections
+	// otherwise, use the provided version schema (usually it is ICS20-1 for IBC transfer)
+	chanVersion := action.version
+	if chanVersion == "" {
+		chanVersion = tr.containerConfig.ccvVersion
+	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"create", "channel",
@@ -955,7 +1139,7 @@ func (tr TestRun) addIbcChannelHermes(
 		"--a-connection", "connection-"+fmt.Sprint(action.connectionA),
 		"--a-port", action.portA,
 		"--b-port", action.portB,
-		"--channel-version", tr.containerConfig.ccvVersion,
+		"--channel-version", chanVersion,
 		"--order", action.order,
 	)
 
