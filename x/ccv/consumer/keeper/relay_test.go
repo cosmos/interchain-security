@@ -17,6 +17,7 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -290,9 +291,9 @@ func TestSendPacketsFailure(t *testing.T) {
 	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
 
 	// Set some pending packets
-	consumerKeeper.SetPendingPackets(ctx, types.ConsumerPacketDataList{List: []types.ConsumerPacketData{
-		{}, {}, {},
-	}})
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &ccv.ConsumerPacketData_VscMaturedPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, types.SlashPacket, &ccv.ConsumerPacketData_SlashPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &ccv.ConsumerPacketData_VscMaturedPacketData{})
 
 	// Mock the channel keeper to return an error
 	gomock.InOrder(
@@ -302,5 +303,5 @@ func TestSendPacketsFailure(t *testing.T) {
 
 	// No panic should occur, pending packets should not be cleared
 	consumerKeeper.SendPackets(ctx)
-	require.Equal(t, 3, len(consumerKeeper.GetPendingPackets(ctx).List))
+	require.Equal(t, 3, len(consumerKeeper.GetPendingPackets(ctx)))
 }
