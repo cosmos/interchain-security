@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	tmev "github.com/tendermint/tendermint/evidence"
@@ -8,20 +10,27 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
+// header infraction heaader
 func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmproto.DuplicateVoteEvidence, header *ibctmtypes.Header) error {
 
 	// TODO: check header against consumer chain client
 
-	ev, err := tmtypes.DuplicateVoteEvidenceFromProto(evidence)
-	if err != nil {
-		return err
+	if header == nil {
+		return fmt.Errorf("infraction header cannot be nil")
+
 	}
+
 	valset, err := tmtypes.ValidatorSetFromProto(header.TrustedValidators)
 	if err != nil {
 		return err
 	}
 
-	// TODO: figure out if the evidence age must also be checked
+	ev, err := tmtypes.DuplicateVoteEvidenceFromProto(evidence)
+	if err != nil {
+		return err
+	}
+
+	// TODO: figure out if the evidence age must be checked
 	if err := tmev.VerifyDuplicateVote(ev, header.Header.ChainID, valset); err != nil {
 		return err
 	}

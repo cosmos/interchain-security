@@ -163,7 +163,7 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 	}
 
 	if msg.InfractionBlockHeader.Header == nil {
-		return fmt.Errorf("double-vote evidence Header cannot be nil")
+		return fmt.Errorf("double-vote evidence header cannot be nil")
 	}
 
 	return nil
