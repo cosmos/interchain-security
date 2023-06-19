@@ -7,6 +7,7 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-pd
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cd
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cdd
+		go install $(BUILD_FLAGS) ./cmd/interchain-security-sd
 
 # run all tests: unit, integration, diff, and E2E
 test: 
@@ -117,6 +118,22 @@ proto-gen:
 	@echo "Generating Protobuf files"
 	@if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoGen}$$"; then docker start -a $(containerProtoGen); else docker run --name $(containerProtoGen) -v $(CURDIR):/workspace --workdir /workspace $(containerProtoImage) \
 		sh ./scripts/protocgen.sh; fi
+
+proto-check:
+	@if git diff --quiet; then \
+		echo "No files were modified before running 'make proto-gen'."; \
+	else \
+		echo "Error: Uncommitted changes exist before running 'make proto-gen'. Please commit or stash your changes."; \
+		exit 1; \
+	fi
+	@$(MAKE) proto-gen
+	@if git diff --quiet; then \
+		echo "No files were modified after running 'make proto-gen'. Pass!"; \
+	else \
+		echo "Error: Files were modified after running 'make proto-gen'. Please commit changes to .pb files"; \
+		exit 1; \
+	fi
+
 
 proto-format:
 	@echo "Formatting Protobuf files"

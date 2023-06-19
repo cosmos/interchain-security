@@ -6,16 +6,15 @@ import (
 	"testing"
 	"time"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-
-	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+
+	ibcsimapp "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp"
+	cryptotestutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 
 	"github.com/stretchr/testify/require"
 )

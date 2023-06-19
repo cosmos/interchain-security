@@ -1,14 +1,15 @@
 package keeper_test
 
 import (
+	"strings"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	"github.com/golang/mock/gomock"
 )
 
@@ -64,4 +65,26 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 	res := consumerKeeper.GetEstimatedNextFeeDistribution(ctx)
 	require.NotEmpty(t, res)
 	require.EqualValues(t, expect, res, "fee distribution data does not match")
+}
+
+func TestAllowedRewardDenoms(t *testing.T) {
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	ctx := keeperParams.Ctx
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mocks := testkeeper.NewMockedKeepers(ctrl)
+	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
+	params := types.DefaultParams()
+	params.RewardDenoms = []string{"ustake"}
+	params.ProviderRewardDenoms = []string{"uatom"}
+	consumerKeeper.SetParams(ctx, params)
+
+	transferChannelID := "channel-5"
+	consumerKeeper.SetDistributionTransmissionChannel(ctx, transferChannelID)
+
+	allowedDenoms := consumerKeeper.AllowedRewardDenoms(ctx)
+	require.Len(t, allowedDenoms, 2)
+	require.Equal(t, allowedDenoms[0], "ustake")
+	require.True(t, strings.HasPrefix(allowedDenoms[1], "ibc/"))
 }

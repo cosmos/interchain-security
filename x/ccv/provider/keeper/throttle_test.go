@@ -6,17 +6,19 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/golang/mock/gomock"
 
 	tmtypes "github.com/cometbft/cometbft/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
+
+	cryptoutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // TestHandlePacketDataForChain tests the HandlePacketDataForChain function. Note: Only one consumer is tested here,
@@ -135,7 +137,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 			handledData = append(handledData, data)
 		}
 
-		providerKeeper.HandlePacketDataForChain(ctx, tc.chainID, slashHandleCounter, vscMaturedHandleCounter)
+		providerKeeper.HandlePacketDataForChain(ctx, tc.chainID, slashHandleCounter, vscMaturedHandleCounter, 0)
 
 		// Assert number of handled data instances matches expected number
 		require.Equal(t, len(tc.expectedHandledIndexes), len(handledData))

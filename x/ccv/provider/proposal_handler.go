@@ -1,12 +1,13 @@
 package provider
 
 import (
-	sdkerrors "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrorstypes "github.com/cosmos/cosmos-sdk/types/errors"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+
+	errorsmod "cosmossdk.io/errors"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 )
 
 // NewProviderProposalHandler defines the handler for consumer addition,
@@ -22,7 +23,7 @@ func NewProviderProposalHandler(k keeper.Keeper) govv1beta1.Handler {
 		case *types.EquivocationProposal:
 			return k.HandleEquivocationProposal(ctx, c)
 		default:
-			return sdkerrors.Wrapf(sdkerrorstypes.ErrUnknownRequest, "unrecognized ccv proposal content type: %T", c)
+			return errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized ccv proposal content type: %T", c)
 		}
 	}
 }

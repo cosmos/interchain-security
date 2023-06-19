@@ -3,7 +3,7 @@ package types
 import (
 	"fmt"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	abci "github.com/cometbft/cometbft/abci/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -19,10 +19,10 @@ func NewValidatorSetChangePacketData(valUpdates []abci.ValidatorUpdate, valUpdat
 // ValidateBasic is used for validating the CCV packet data.
 func (vsc ValidatorSetChangePacketData) ValidateBasic() error {
 	if len(vsc.ValidatorUpdates) == 0 {
-		return sdkerrors.Wrap(ErrInvalidPacketData, "validator updates cannot be empty")
+		return errorsmod.Wrap(ErrInvalidPacketData, "validator updates cannot be empty")
 	}
 	if vsc.ValsetUpdateId == 0 {
-		return sdkerrors.Wrap(ErrInvalidPacketData, "valset update id cannot be equal to zero")
+		return errorsmod.Wrap(ErrInvalidPacketData, "valset update id cannot be equal to zero")
 	}
 	return nil
 }
@@ -41,7 +41,7 @@ func NewVSCMaturedPacketData(valUpdateID uint64) *VSCMaturedPacketData {
 // ValidateBasic is used for validating the VSCMatured packet data.
 func (mat VSCMaturedPacketData) ValidateBasic() error {
 	if mat.ValsetUpdateId == 0 {
-		return sdkerrors.Wrap(ErrInvalidPacketData, "vscId cannot be equal to zero")
+		return errorsmod.Wrap(ErrInvalidPacketData, "vscId cannot be equal to zero")
 	}
 	return nil
 }
@@ -61,11 +61,11 @@ func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, infraction
 
 func (vdt SlashPacketData) ValidateBasic() error {
 	if len(vdt.Validator.Address) == 0 || vdt.Validator.Power == 0 {
-		return sdkerrors.Wrap(ErrInvalidPacketData, "validator fields cannot be empty")
+		return errorsmod.Wrap(ErrInvalidPacketData, "validator fields cannot be empty")
 	}
 
-	if vdt.Infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
-		return sdkerrors.Wrap(ErrInvalidPacketData, "invalid infraction type")
+	if vdt.Infraction == stakingtypes.InfractionEmpty {
+		return errorsmod.Wrap(ErrInvalidPacketData, "invalid infraction type")
 	}
 
 	return nil

@@ -2,11 +2,11 @@ package main
 
 import "time"
 
-// start hermes so that all messages are relayed
-func stepsStartHermes() []Step {
+// start relayer so that all messages are relayed
+func stepsStartRelayer() []Step {
 	return []Step{
 		{
-			action: startHermesAction{},
+			action: startRelayerAction{},
 			state:  State{},
 		},
 	}

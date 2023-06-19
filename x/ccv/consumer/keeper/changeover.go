@@ -48,5 +48,6 @@ func (k Keeper) ChangeoverToConsumer(ctx sdk.Context) (initialValUpdates []abci.
 	// Therefore we set the PreCCV state to false so the endblocker caller doesn't call this method again.
 	k.DeletePreCCV(ctx)
 
+	k.Logger(ctx).Info("ICS changeover complete - you are now a consumer chain!")
 	return initialValUpdates
 }

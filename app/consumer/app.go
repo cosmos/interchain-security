@@ -90,18 +90,18 @@ import (
 	"github.com/spf13/cast"
 
 	tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	ibcconsumer "github.com/cosmos/interchain-security/x/ccv/consumer"
-	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	ibcconsumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	ibcconsumer "github.com/cosmos/interchain-security/v2/x/ccv/consumer"
+	ibcconsumerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/consumer/keeper"
+	ibcconsumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
+	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
 )
 
 const (
 	AppName              = "interchain-security-c"
-	upgradeName          = "v07-Theta"
+	upgradeName          = "ics-v1-to-v2"
 	AccountAddressPrefix = "cosmos"
 )
 
@@ -380,7 +380,7 @@ func New(
 
 	// register slashing module Slashing hooks to the consumer keeper
 	app.ConsumerKeeper = *app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
-	consumerModule := ibcconsumer.NewAppModule(app.ConsumerKeeper)
+	consumerModule := ibcconsumer.NewAppModule(app.ConsumerKeeper, app.GetSubspace(ibcconsumertypes.ModuleName))
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
@@ -553,6 +553,8 @@ func New(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
+	// Note this upgrade handler is just an example and may not be exactly what you need to implement.
+	// See https://docs.cosmos.network/v0.45/building-modules/upgrade.html
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
 		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {

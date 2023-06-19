@@ -170,8 +170,9 @@ Then:
 4. Be sure to include a relevant changelog entry in the `Unreleased` section of `CHANGELOG.md` (see file for log format). The entry should be on top of all others changes in the section.
 
 PRs must have a category prefix that is based on the type of changes being made (for example, `fix`, `feat`,
-`refactor`, `docs`, and so on). The *type* must be included in the PR title as a prefix (for example,
-`fix: <description>`). This convention ensures that all changes that are committed to the base branch follow the
+`refactor`, `docs`, and so on). The [type](https://github.com/commitizen/conventional-commit-types/blob/v3.0.0/index.json) 
+must be included in the PR title as a prefix (for example, `fix: <description>`). 
+This convention ensures that all changes that are committed to the base branch follow the
 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
 Additionally, **each PR should only address a single issue**.
 
@@ -179,10 +180,11 @@ Additionally, **each PR should only address a single issue**.
 
 ### Pull Request Templates
 
-There are three PR templates. The [default template](./.github/PULL_REQUEST_TEMPLATE.md) is for types `fix`, `feat`, and `refactor`. We also have a [docs template](./.github/PULL_REQUEST_TEMPLATE/docs.md) for documentation changes and an [other template](./.github/PULL_REQUEST_TEMPLATE/other.md) for changes that do not affect production code. When previewing a PR before it has been opened, you can change the template by adding one of the following parameters to the url:
+There are three PR templates. The [default template](./.github/PULL_REQUEST_TEMPLATE.md) contains links to the three templates. Please go the the `Preview` tab and select the appropriate sub-template:
 
-* `template=docs.md`
-* `template=other.md`
+- The [production template](./.github/PULL_REQUEST_TEMPLATE/production.md) is for types `fix`, `feat`, and `refactor`. 
+- The [docs template](./.github/PULL_REQUEST_TEMPLATE/docs.md) is for documentation changes.
+- The [others template](./.github/PULL_REQUEST_TEMPLATE/others.md) is for changes that do not affect production code. 
 
 ### Requesting Reviews
 
@@ -195,7 +197,7 @@ that you would like early feedback and tagging whoever you would like to receive
 Codeowners are marked automatically as the reviewers.
 
 All PRs require at least two review approvals before they can be merged (one review might be acceptable in
-the case of minor changes to [docs](./.github/PULL_REQUEST_TEMPLATE/docs.md) or [other](./.github/PULL_REQUEST_TEMPLATE/other.md) changes that do not affect production code). Each PR template has a reviewers checklist that must be completed before the PR can be merged. Each reviewer is responsible
+the case of minor changes to [docs](./.github/PULL_REQUEST_TEMPLATE/docs.md) or [others](./.github/PULL_REQUEST_TEMPLATE/others.md) changes that do not affect production code). Each PR template has a reviewers checklist that must be completed before the PR can be merged. Each reviewer is responsible
 for all checked items unless they have indicated otherwise by leaving their handle next to specific
 items. In addition, use the following review explanations:
 

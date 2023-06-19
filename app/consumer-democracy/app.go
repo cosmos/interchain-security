@@ -16,7 +16,7 @@ import (
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	appparams "github.com/cosmos/interchain-security/app/params"
+	appparams "github.com/cosmos/interchain-security/v2/app/params"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -87,27 +87,27 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
-	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	ibctestingcore "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
-	ccvdistr "github.com/cosmos/interchain-security/x/ccv/democracy/distribution"
+	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
+	ccvdistr "github.com/cosmos/interchain-security/v2/x/ccv/democracy/distribution"
 
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ccvstaking "github.com/cosmos/interchain-security/x/ccv/democracy/staking"
+	ccvstaking "github.com/cosmos/interchain-security/v2/x/ccv/democracy/staking"
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	ccvgov "github.com/cosmos/interchain-security/x/ccv/democracy/governance"
+	ccvgov "github.com/cosmos/interchain-security/v2/x/ccv/democracy/governance"
 
 	// add mint
 	mint "github.com/cosmos/cosmos-sdk/x/mint"
@@ -116,9 +116,9 @@ import (
 
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	consumer "github.com/cosmos/interchain-security/x/ccv/consumer"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumer "github.com/cosmos/interchain-security/v2/x/ccv/consumer"
+	consumerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -126,7 +126,7 @@ import (
 
 const (
 	AppName              = "interchain-security-cd"
-	upgradeName          = "v07-Theta" // arbitrary name, define your own appropriately named upgrade
+	upgradeName          = "sovereign-changeover" // arbitrary name, define your own appropriately named upgrade
 	AccountAddressPrefix = "cosmos"
 )
 
@@ -493,7 +493,7 @@ func New(
 
 	// register slashing module StakingHooks to the consumer keeper
 	app.ConsumerKeeper = *app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
-	consumerModule := consumer.NewAppModule(app.ConsumerKeeper)
+	consumerModule := consumer.NewAppModule(app.ConsumerKeeper, app.GetSubspace(consumertypes.ModuleName))
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
@@ -691,6 +691,8 @@ func New(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
+	// Note this upgrade handler is just an example and may not be exactly what you need to implement.
+	// See https://docs.cosmos.network/v0.45/building-modules/upgrade.html
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
 		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
@@ -708,12 +710,6 @@ func New(
 			// For a new consumer chain, this code (together with the entire SetUpgradeHandler) is not needed at all,
 			// upgrade handler code is application specific. However, as an example, standalone to consumer
 			// changeover chains should utilize customized upgrade handler code similar to below.
-
-			// Setting the standalone transfer channel ID is only needed for standalone to consumer changeover chains
-			// who wish to preserve existing IBC transfer denoms. Here's an example.
-			//
-			// Note: This setter needs to execute before the ccv channel handshake is initiated.
-			app.ConsumerKeeper.SetStandaloneTransferChannelID(ctx, "hardcoded-existing-channel-id")
 
 			// TODO: should have a way to read from current node home
 			userHomeDir, err := os.UserHomeDir()

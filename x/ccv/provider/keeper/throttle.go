@@ -7,19 +7,29 @@ import (
 	"cosmossdk.io/math"
 	tmtypes "github.com/cometbft/cometbft/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // This file contains functionality relevant to the throttling of slash and vsc matured packets, aka circuit breaker logic.
 
+const vscMaturedHandledPerBlockLimit = 100
+
 // HandleThrottleQueues iterates over the global slash entry queue, and
 // handles all or some portion of throttled (slash and/or VSC matured) packet data received from
 // consumer chains. The slash meter is decremented appropriately in this method.
-func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
+func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context, vscMaturedHandledThisBlock int) {
 	meter := k.GetSlashMeter(ctx)
 	// Return if meter is negative in value
 	if meter.IsNegative() {
+		return
+	}
+
+	// Return if vsc matured handle limit was already reached this block, during HandleLeadingVSCMaturedPackets.
+	// It makes no practical difference for throttling logic to execute next block.
+	// By doing this, we assure that all leading vsc matured packets were handled before any slash packets.
+	if vscMaturedHandledThisBlock >= vscMaturedHandledPerBlockLimit {
 		return
 	}
 
@@ -30,12 +40,13 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 	for _, globalEntry := range allEntries {
 		// Subtract voting power that will be jailed/tombstoned from the slash meter
-		meter = meter.Sub(k.GetEffectiveValPower(ctx, *globalEntry.ProviderValConsAddr))
+		providerAddr := providertypes.NewProviderConsAddress(globalEntry.ProviderValConsAddr)
+		meter = meter.Sub(k.GetEffectiveValPower(ctx, providerAddr))
 
 		// Handle one slash and any trailing vsc matured packet data instances by passing in
 		// chainID and appropriate callbacks, relevant packet data is deleted in this method.
 
-		k.HandlePacketDataForChain(ctx, globalEntry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
+		k.HandlePacketDataForChain(ctx, globalEntry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket, vscMaturedHandledThisBlock)
 		handledEntries = append(handledEntries, globalEntry)
 
 		// don't handle any more global entries if meter becomes negative in value
@@ -82,18 +93,31 @@ func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
 func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID string,
 	slashPacketHandler func(sdktypes.Context, string, ccvtypes.SlashPacketData),
 	vscMaturedPacketHandler func(sdktypes.Context, string, ccvtypes.VSCMaturedPacketData),
+	vscMaturedHandledThisBlock int,
 ) {
 	// Get slash packet data and trailing vsc matured packet data, handle it all.
 	slashFound, slashData, vscMaturedData, seqNums := k.GetSlashAndTrailingData(ctx, consumerChainID)
+	seqNumsHandled := []uint64{}
 	if slashFound {
 		slashPacketHandler(ctx, consumerChainID, slashData)
+		// Due to HandleLeadingVSCMaturedPackets() running before HandleThrottleQueues(), and the fact that
+		// HandleThrottleQueues() will return until all leading vsc matured have been handled, a slash packet
+		// should always be the first packet in the queue. So we can safely append the first seqNum here.
+		seqNumsHandled = append(seqNumsHandled, seqNums[0])
 	}
-	for _, vscMData := range vscMaturedData {
+	for idx, vscMData := range vscMaturedData {
+		if vscMaturedHandledThisBlock >= vscMaturedHandledPerBlockLimit {
+			// Break from for-loop, DeleteThrottledPacketData will still be called for this consumer
+			break
+		}
 		vscMaturedPacketHandler(ctx, consumerChainID, vscMData)
+		vscMaturedHandledThisBlock++
+		// Append seq num for this vsc matured packet
+		seqNumsHandled = append(seqNumsHandled, seqNums[idx+1]) // Note idx+1, since slash packet is at index 0
 	}
 
 	// Delete handled data after it has all been handled.
-	k.DeleteThrottledPacketData(ctx, consumerChainID, seqNums...)
+	k.DeleteThrottledPacketData(ctx, consumerChainID, seqNumsHandled...)
 }
 
 // InitializeSlashMeter initializes the slash meter to it's max value (also its allowance),
@@ -191,11 +215,7 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) math.Int {
 func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context, entry providertypes.GlobalSlashEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.GlobalSlashEntryKey(entry)
-	bz, err := entry.ProviderValConsAddr.Marshal()
-	if err != nil {
-		// This should never happen, since the provider val cons addr should be a valid sdk address
-		panic(fmt.Sprintf("failed to marshal validator consensus address: %s", err.Error()))
-	}
+	bz := entry.ProviderValConsAddr
 	store.Set(key, bz)
 }
 
@@ -229,12 +249,7 @@ func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.G
 		// MustParseGlobalSlashEntryKey should not panic, since we should be iterating over keys that're
 		// assumed to be correctly serialized in QueueGlobalSlashEntry.
 		recvTime, chainID, ibcSeqNum := providertypes.MustParseGlobalSlashEntryKey(iterator.Key())
-		valAddr := providertypes.ProviderConsAddress{}
-		err := valAddr.Unmarshal(iterator.Value())
-		if err != nil {
-			// This should never happen, provider cons address is assumed to be correctly serialized in QueueGlobalSlashEntry
-			panic(fmt.Sprintf("failed to unmarshal validator consensus address: %s", err.Error()))
-		}
+		valAddr := providertypes.NewProviderConsAddress(iterator.Value())
 		entry := providertypes.NewGlobalSlashEntry(recvTime, chainID, ibcSeqNum, valAddr)
 		entries = append(entries, entry)
 	}

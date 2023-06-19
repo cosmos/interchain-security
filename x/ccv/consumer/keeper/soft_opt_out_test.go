@@ -4,9 +4,11 @@ import (
 	"testing"
 
 	tmtypes "github.com/cometbft/cometbft/types"
-	"github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+
+	"github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+
 	"github.com/stretchr/testify/require"
 )
 

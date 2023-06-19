@@ -6,8 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // GetParams returns the params for the consumer ccv module
@@ -24,6 +24,8 @@ func (k Keeper) GetConsumerParams(ctx sdk.Context) types.Params {
 		k.GetHistoricalEntries(ctx),
 		k.GetUnbondingPeriod(ctx),
 		k.GetSoftOptOutThreshold(ctx),
+		k.GetRewardDenoms(ctx),
+		k.GetProviderRewardDenoms(ctx),
 	)
 }
 
@@ -124,4 +126,16 @@ func (k Keeper) GetSoftOptOutThreshold(ctx sdk.Context) string {
 	var str string
 	k.paramStore.Get(ctx, types.KeySoftOptOutThreshold, &str)
 	return str
+}
+
+func (k Keeper) GetRewardDenoms(ctx sdk.Context) []string {
+	var denoms []string
+	k.paramStore.Get(ctx, types.KeyRewardDenoms, &denoms)
+	return denoms
+}
+
+func (k Keeper) GetProviderRewardDenoms(ctx sdk.Context) []string {
+	var denoms []string
+	k.paramStore.Get(ctx, types.KeyProviderRewardDenoms, &denoms)
+	return denoms
 }

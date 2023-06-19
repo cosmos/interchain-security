@@ -13,9 +13,10 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 )
 
 // TestProviderProposalHandler tests the highest level handler for proposals
@@ -41,6 +42,7 @@ func TestProviderProposalHandler(t *testing.T) {
 				clienttypes.NewHeight(2, 3), []byte("gen_hash"), []byte("bin_hash"), now,
 				"0.75",
 				10,
+				"",
 				10000,
 				100000000000,
 				100000000000,
@@ -58,14 +60,14 @@ func TestProviderProposalHandler(t *testing.T) {
 		},
 		{
 			// no slash log for equivocation
-			name: "invalid equivocation posal",
+			name: "invalid equivocation proposal",
 			content: providertypes.NewEquivocationProposal(
 				"title", "description", []*evidencetypes.Equivocation{equivocation}),
 			blockTime:            hourFromNow,
 			expValidEquivocation: false,
 		},
 		{
-			name: "valid equivocation posal",
+			name: "valid equivocation proposal",
 			content: providertypes.NewEquivocationProposal(
 				"title", "description", []*evidencetypes.Equivocation{equivocation}),
 			blockTime:            hourFromNow,

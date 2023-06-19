@@ -34,7 +34,7 @@ func (suite *CCVTestSuite) TestRecycleTransferChannel() {
 	// Setup state s.t. the consumer keeper emulates a consumer that was previously standalone
 	consumerKeeper.MarkAsPrevStandaloneChain(suite.consumerCtx())
 	suite.Require().True(consumerKeeper.IsPrevStandaloneChain(suite.consumerCtx()))
-	suite.consumerApp.GetConsumerKeeper().SetStandaloneTransferChannelID(suite.consumerCtx(), resp.ChannelId)
+	suite.consumerApp.GetConsumerKeeper().SetDistributionTransmissionChannel(suite.consumerCtx(), resp.ChannelId)
 
 	// Now finish setting up CCV channel
 	suite.ExecuteCCVChannelHandshake(suite.path)

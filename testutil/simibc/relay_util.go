@@ -1,15 +1,15 @@
 package simibc
 
 import (
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	simapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+	simapp "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
 	"github.com/stretchr/testify/require"
 )
 
@@ -160,7 +160,7 @@ func augmentHeader(sender *ibctesting.TestChain, receiver *ibctesting.TestChain,
 		// NextValidatorsHash
 		tmTrustedVals, ok = sender.GetValsAtHeight(int64(trustedHeight.RevisionHeight + 1))
 		if !ok {
-			return sdkerrors.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight)
+			return errorsmod.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight)
 		}
 	}
 	trustedVals, err := tmTrustedVals.ToProto()

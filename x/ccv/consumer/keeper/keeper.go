@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -21,8 +21,9 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // Keeper defines the Cross-Chain Validation Consumer Keeper
@@ -103,6 +104,12 @@ func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
 	k.standaloneStakingKeeper = sk
 }
 
+// SetParamSpace sets the param space for the consumer keeper.
+// Note: this is only used for testing!
+func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
+	k.paramStore = ps
+}
+
 // Validates that the consumer keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
@@ -154,7 +161,7 @@ func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return errorsmod.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	return k.channelKeeper.ChanCloseInit(ctx, portID, channelID, chanCap)
 }
@@ -413,20 +420,20 @@ func (k Keeper) DeletePacketMaturityTimes(ctx sdk.Context, vscId uint64, maturit
 // is the expected provider chain.
 func (k Keeper) VerifyProviderChain(ctx sdk.Context, connectionHops []string) error {
 	if len(connectionHops) != 1 {
-		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
+		return errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
 	}
 	connectionID := connectionHops[0]
 	conn, ok := k.connectionKeeper.GetConnection(ctx, connectionID)
 	if !ok {
-		return sdkerrors.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
+		return errorsmod.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
 	}
 	// Verify that client id is expected clientID
 	expectedClientId, ok := k.GetProviderClientID(ctx)
 	if !ok {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "could not find provider client id")
+		return errorsmod.Wrapf(clienttypes.ErrInvalidClient, "could not find provider client id")
 	}
 	if expectedClientId != conn.ClientId {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "invalid client: %s, channel must be built on top of client: %s", conn.ClientId, expectedClientId)
+		return errorsmod.Wrapf(clienttypes.ErrInvalidClient, "invalid client: %s, channel must be built on top of client: %s", conn.ClientId, expectedClientId)
 	}
 
 	return nil
@@ -637,18 +644,4 @@ func (k Keeper) MarkAsPrevStandaloneChain(ctx sdk.Context) {
 func (k Keeper) IsPrevStandaloneChain(ctx sdk.Context) bool {
 	store := ctx.KVStore(k.storeKey)
 	return store.Has(types.PrevStandaloneChainKey())
-}
-
-// SetStandaloneTransferChannelID sets the channelID of an existing transfer channel,
-// for a chain which used to be a standalone chain.
-func (k Keeper) SetStandaloneTransferChannelID(ctx sdk.Context, channelID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.StandaloneTransferChannelIDKey(), []byte(channelID))
-}
-
-// GetStandaloneTransferChannelID returns the channelID of an existing transfer channel,
-// for a chain which used to be a standalone chain.
-func (k Keeper) GetStandaloneTransferChannelID(ctx sdk.Context) string {
-	store := ctx.KVStore(k.storeKey)
-	return string(store.Get(types.StandaloneTransferChannelIDKey()))
 }
