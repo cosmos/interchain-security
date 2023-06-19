@@ -58,7 +58,7 @@ message MaturedUnbondingOps {
   repeated uint64 ids = 1;
 }
 
-// ConsumerPacketData contains a consumer packet data and a type tag
+// ConsumerPacketData contains a consumer packet data, type tag, and index for storage.
 message ConsumerPacketData {
   ConsumerPacketDataType type = 1; 
 
@@ -66,9 +66,11 @@ message ConsumerPacketData {
     SlashPacketData slashPacketData = 2;
     VSCMaturedPacketData vscMaturedPacketData = 3;
   }
+  uint64 idx = 4;
 }
 
 
+// TODO: remove
 // ConsumerPacketDataList is a list of consumer packet data packets.
 message ConsumerPacketDataList {
   repeated ConsumerPacketData list = 1

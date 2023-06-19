@@ -103,3 +103,17 @@ func (cp ConsumerPacketData) GetBytes() []byte {
 	bytes := ModuleCdc.MustMarshalJSON(&cp)
 	return bytes
 }
+
+// An exported wrapper around the auto generated isConsumerPacketData_Data interface, only for
+// AppendPendingPacket to accept the interface as an argument.
+type ExportedIsConsumerPacketData_Data interface {
+	isConsumerPacketData_Data
+}
+
+func NewConsumerPacketData(cpdType ConsumerPacketDataType, data isConsumerPacketData_Data, idx uint64) ConsumerPacketData {
+	return ConsumerPacketData{
+		Type: cpdType,
+		Data: data,
+		Idx:  idx,
+	}
+}

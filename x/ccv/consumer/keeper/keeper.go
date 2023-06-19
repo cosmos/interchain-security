@@ -565,48 +565,78 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 	return validators
 }
 
-// SetPendingPackets sets the pending CCV packets
-func (k Keeper) SetPendingPackets(ctx sdk.Context, packets ccv.ConsumerPacketDataList) {
-	store := ctx.KVStore(k.storeKey)
-	bz, err := packets.Marshal()
-	if err != nil {
-		// This should never happen
-		panic(fmt.Errorf("failed to marshal ConsumerPacketDataList: %w", err))
-	}
-	store.Set(types.PendingDataPacketsKey(), bz)
+// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
+// See consistency with PendingDataPacketsKey().
+func PendingDataPacketsIterator(store sdk.KVStore) sdk.Iterator {
+	return sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
 }
 
-// GetPendingPackets returns the pending CCV packets from the store
-func (k Keeper) GetPendingPackets(ctx sdk.Context) ccv.ConsumerPacketDataList {
-	var packets ccv.ConsumerPacketDataList
-
+func (k Keeper) getAndIncrementPendingPacketsIdx(ctx sdk.Context) (toReturn uint64) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PendingDataPacketsKey())
+	bz := store.Get(types.PendingPacketsIndexKey())
 	if bz == nil {
-		return packets
+		toReturn = 0
+	} else {
+		toReturn = binary.BigEndian.Uint64(bz)
 	}
+	toStore := toReturn + 1
+	store.Set(types.PendingPacketsIndexKey(), sdk.Uint64ToBigEndian(toStore))
+	return toReturn
+}
 
-	err := packets.Unmarshal(bz)
-	if err != nil {
-		// An error here would indicate something is very wrong,
-		// the PendingPackets are assumed to be correctly serialized in SetPendingPackets.
-		panic(fmt.Errorf("failed to unmarshal pending data packets: %w", err))
+// GetPendingPackets returns ALL the pending CCV packets from the store
+func (k Keeper) GetPendingPackets(ctx sdk.Context) []ccv.ConsumerPacketData {
+	var packets []ccv.ConsumerPacketData
+	store := ctx.KVStore(k.storeKey)
+	iterator := PendingDataPacketsIterator(store)
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		var packet ccv.ConsumerPacketData
+		bz := iterator.Value()
+		err := packet.Unmarshal(bz)
+		if err != nil {
+			// An error here would indicate something is very wrong,
+			panic(fmt.Errorf("failed to unmarshal pending data packet: %w", err))
+		}
+		packets = append(packets, packet)
 	}
-
 	return packets
 }
 
-// DeletePendingDataPackets clears the pending data packets in store
-func (k Keeper) DeletePendingDataPackets(ctx sdk.Context) {
+// DeletePendingDataPackets deletes pending data packets with given indexes
+func (k Keeper) DeletePendingDataPackets(ctx sdk.Context, idxs ...uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.PendingDataPacketsKey())
+	for _, idx := range idxs {
+		store.Delete(types.PendingDataPacketsKey(idx))
+	}
 }
 
-// AppendPendingDataPacket appends the given data packet to the pending data packets in store
-func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...ccv.ConsumerPacketData) {
-	pending := k.GetPendingPackets(ctx)
-	list := append(pending.GetList(), packet...)
-	k.SetPendingPackets(ctx, ccv.ConsumerPacketDataList{List: list})
+func (k Keeper) DeleteAllPendingDataPackets(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
+	// See consistency with PendingDataPacketsKey().
+	iterator := PendingDataPacketsIterator(store)
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		store.Delete(iterator.Key())
+	}
+}
+
+// AppendPendingPacket enqueues the given data packet to the end of the pending data packets queue
+func (k Keeper) AppendPendingPacket(ctx sdk.Context, packetType ccv.ConsumerPacketDataType, data ccv.ExportedIsConsumerPacketData_Data) {
+	cpd := ccv.NewConsumerPacketData(
+		packetType,
+		data,
+		k.getAndIncrementPendingPacketsIdx(ctx),
+	)
+	key := types.PendingDataPacketsKey(cpd.Idx)
+	store := ctx.KVStore(k.storeKey)
+	bz, err := cpd.Marshal()
+	if err != nil {
+		// This should never happen
+		panic(fmt.Errorf("failed to marshal ConsumerPacketData: %w", err))
+	}
+	store.Set(key, bz)
 }
 
 func (k Keeper) MarkAsPrevStandaloneChain(ctx sdk.Context) {

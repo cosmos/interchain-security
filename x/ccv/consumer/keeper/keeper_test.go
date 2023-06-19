@@ -369,7 +369,7 @@ func TestSetPendingPackets(t *testing.T) {
 	consumerKeeper.AppendPendingPacket(ctx, dataPackets[len(dataPackets)-1])
 	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
 	require.NotEmpty(t, storedDataPackets)
-	require.Equal(t, dataPackets, storedDataPackets.List)
+	require.Equal(t, dataPackets, storedDataPackets)
 
 	vscMaturedPakcet := ccv.NewVSCMaturedPacketData(4)
 	dataPackets = append(dataPackets, ccv.ConsumerPacketData{
