@@ -57,6 +57,16 @@ func ValidateString(i interface{}) error {
 	return nil
 }
 
+func ValidateDistributionTransmissionChannel(i interface{}) error {
+	// Accept empty string as valid, since this means a new
+	// distribution transmission channel will be created
+	if i == "" {
+		return nil
+	}
+	// Otherwise validate as usual for a channelID
+	return ValidateChannelIdentifier(i)
+}
+
 func ValidateChannelIdentifier(i interface{}) error {
 	value, ok := i.(string)
 	if !ok {
