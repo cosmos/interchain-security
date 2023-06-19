@@ -17,7 +17,6 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -291,9 +290,9 @@ func TestSendPacketsFailure(t *testing.T) {
 	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
 
 	// Set some pending packets
-	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &ccv.ConsumerPacketData_VscMaturedPacketData{})
-	consumerKeeper.AppendPendingPacket(ctx, types.SlashPacket, &ccv.ConsumerPacketData_SlashPacketData{})
-	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &ccv.ConsumerPacketData_VscMaturedPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, types.SlashPacket, &types.ConsumerPacketData_SlashPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{})
 
 	// Mock the channel keeper to return an error
 	gomock.InOrder(

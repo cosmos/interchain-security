@@ -70,7 +70,7 @@ message ConsumerPacketData {
 }
 
 
-// TODO: remove
+// [Depreciated] favor using []ConsumerPacketData directly.
 // ConsumerPacketDataList is a list of consumer packet data packets.
 message ConsumerPacketDataList {
   repeated ConsumerPacketData list = 1

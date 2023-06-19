@@ -291,7 +291,10 @@ func TestExportGenesis(t *testing.T) {
 				ck.SetCCValidator(ctx, cVal)
 				ck.SetParams(ctx, params)
 
-				ck.AppendPendingPacket(ctx, consPackets.List...)
+				for _, packet := range consPackets.List {
+					ck.AppendPendingPacket(ctx, packet.Type, packet.Data)
+				}
+
 				ck.SetHeightValsetUpdateID(ctx, defaultHeightValsetUpdateIDs[0].Height, defaultHeightValsetUpdateIDs[0].ValsetUpdateId)
 			},
 			consumertypes.NewRestartGenesisState(
@@ -321,7 +324,9 @@ func TestExportGenesis(t *testing.T) {
 				ck.SetHeightValsetUpdateID(ctx, updatedHeightValsetUpdateIDs[0].Height, updatedHeightValsetUpdateIDs[0].ValsetUpdateId)
 				ck.SetHeightValsetUpdateID(ctx, updatedHeightValsetUpdateIDs[1].Height, updatedHeightValsetUpdateIDs[1].ValsetUpdateId)
 
-				ck.AppendPendingPacket(ctx, consPackets.List...)
+				for _, packet := range consPackets.List {
+					ck.AppendPendingPacket(ctx, packet.Type, packet.Data)
+				}
 
 				// populate the required states for an established CCV channel
 				ck.SetPacketMaturityTime(ctx, matPackets[0].VscId, matPackets[0].MaturityTime)

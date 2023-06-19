@@ -428,7 +428,7 @@ func (*ConsumerPacketData) XXX_OneofWrappers() []interface{} {
 	}
 }
 
-// TODO: remove
+// [Depreciated] favor using []ConsumerPacketData directly.
 // ConsumerPacketDataList is a list of consumer packet data packets.
 type ConsumerPacketDataList struct {
 	List []ConsumerPacketData `protobuf:"bytes,1,rep,name=list,proto3" json:"list"`
