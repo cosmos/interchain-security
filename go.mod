@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	cosmossdk.io/math v1.0.0
+	cosmossdk.io/errors v1.0.0-beta.7
 	github.com/cometbft/cometbft v0.37.1
 	github.com/cometbft/cometbft-db v0.8.0
 	github.com/cosmos/cosmos-sdk v0.47.2
@@ -32,8 +33,6 @@ require (
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v2 v2.4.0
 )
-
-require cosmossdk.io/errors v1.0.0-beta.7
 
 require (
 	cloud.google.com/go v0.110.0 // indirect
@@ -151,7 +150,6 @@ require (
 	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.15.0
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
