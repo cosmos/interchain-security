@@ -6,7 +6,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
@@ -81,6 +83,8 @@ func MigrateParamsv1Tov2(ctx sdk.Context, paramsSubspace paramtypes.Subspace) {
 
 // MigrateConsumerPacketData migrates consumer packet data according to
 // https://github.com/cosmos/interchain-security/pull/1037
+//
+// Note an equivalent migration is not required for providers.
 func (k Keeper) MigrateConsumerPacketData(ctx sdk.Context) {
 	// deserialize packet data from old format
 	var depreciatedType ccvtypes.ConsumerPacketDataList
@@ -104,4 +108,23 @@ func (k Keeper) MigrateConsumerPacketData(ctx sdk.Context) {
 	for _, data := range depreciatedType.List {
 		k.AppendPendingPacket(ctx, data.Type, data.Data)
 	}
+}
+
+// TODO: the following hackyness could be removed if we're able to reference older versions of ICS.
+// This would likely require go.mod split, and a testing module that could depend on multiple ICS versions.
+
+func PendingDataPacketsKeyOnlyForTesting() []byte {
+	return []byte{types.PendingDataPacketsBytePrefix} // Assumes keys haven't been shuffled
+}
+
+// Note: a better test of the old functionality would be to directly reference the old ICS version,
+// including the version of ccv.ConsumerPacketDataList has a list of ccv.ConsumerPacketData without indexes.
+func (k Keeper) SetPendingPacketsOnlyForTesting(ctx sdk.Context, packets ccv.ConsumerPacketDataList) {
+	store := ctx.KVStore(k.storeKey)
+	bz, err := packets.Marshal()
+	if err != nil {
+		// This should never happen
+		panic(fmt.Errorf("failed to marshal ConsumerPacketDataList: %w", err))
+	}
+	store.Set(PendingDataPacketsKeyOnlyForTesting(), bz)
 }
