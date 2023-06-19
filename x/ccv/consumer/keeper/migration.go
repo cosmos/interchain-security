@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -76,4 +77,31 @@ func MigrateParamsv1Tov2(ctx sdk.Context, paramsSubspace paramtypes.Subspace) {
 
 	// Persist new params
 	paramsSubspace.SetParamSet(ctx, &newParams)
+}
+
+// MigrateConsumerPacketData migrates consumer packet data according to
+// https://github.com/cosmos/interchain-security/pull/1037
+func (k Keeper) MigrateConsumerPacketData(ctx sdk.Context) {
+	// deserialize packet data from old format
+	var depreciatedType ccvtypes.ConsumerPacketDataList
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get([]byte{consumertypes.PendingDataPacketsBytePrefix})
+	if bz == nil {
+		ctx.Logger().Info("no pending data packets to migrate")
+		return
+	}
+	err := depreciatedType.Unmarshal(bz)
+	if err != nil {
+		// An error here would indicate something is very wrong
+		panic(fmt.Errorf("failed to unmarshal pending data packets: %w", err))
+	}
+
+	// Delete old data
+	store.Delete([]byte{consumertypes.PendingDataPacketsBytePrefix})
+
+	// re-serialize packet data in new format, with the same key prefix,
+	// where indexes are added internally to AppendPendingPacket.
+	for _, data := range depreciatedType.List {
+		k.AppendPendingPacket(ctx, data.Type, data.Data)
+	}
 }
