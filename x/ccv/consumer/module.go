@@ -107,11 +107,6 @@ func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	consumertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
-
-	m := keeper.NewMigrator(am.keeper, am.paramSpace)
-	if err := cfg.RegisterMigration(consumertypes.ModuleName, 1, m.Migratev1Tov2); err != nil {
-		panic(fmt.Sprintf("failed to register migrator: %s", err))
-	}
 }
 
 // InitGenesis performs genesis initialization for the consumer module. It returns

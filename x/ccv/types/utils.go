@@ -67,7 +67,7 @@ func SendIBCPacket(
 ) error {
 	_, ok := channelKeeper.GetChannel(ctx, sourcePortID, sourceChannelID)
 	if !ok {
-		return errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
+		return errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", sourceChannelID)
 	}
 	channelCap, ok := scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(sourcePortID, sourceChannelID))
 	if !ok {

@@ -4,7 +4,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdkerrorstypes "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 func NewCCValidator(address []byte, power int64, pubKey cryptotypes.PubKey) (CrossChainValidator, error) {
