@@ -154,7 +154,7 @@ proto-update-deps:
 	@echo "Updating Protobuf dependencies"
 	$(protoImage) buf mod update
 
-.PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps mocks
+.PHONY: proto-all proto-gen proto-format proto-lint proto-check proto-check-breaking proto-update-deps mocks
 
 ###############################################################################
 ###                              Documentation                              ###
