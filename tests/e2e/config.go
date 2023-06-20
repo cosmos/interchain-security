@@ -246,7 +246,7 @@ func DemocracyTestRun(allowReward bool) TestRun {
 		".app_state.gov.voting_params.voting_period = \"10s\" | " +
 		".app_state.slashing.params.signed_blocks_window = \"10\" | " +
 		".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-		".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+		".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 		".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\""
 
 	if allowReward {
@@ -283,12 +283,7 @@ func DemocracyTestRun(allowReward bool) TestRun {
 				binaryName:     "interchain-security-cdd",
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"20\" | " +
-					".app_state.gov.params.voting_period = \"10s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
-					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+				genesisChanges: consumerGenChanges,
 			},
 		},
 		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
