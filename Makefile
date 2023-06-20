@@ -111,7 +111,6 @@ HTTPS_GIT := https://github.com/cosmos/interchain-security.git
 
 containerProtoVer=0.13.0
 containerProtoImage=ghcr.io/cosmos/proto-builder:$(containerProtoVer)
-containerProtoGen=cosmos-sdk-proto-gen-$(containerProtoVer)
 
 protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(containerProtoImage)
 
