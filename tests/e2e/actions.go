@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -72,7 +73,7 @@ type StartChainValidator struct {
 	stake      uint
 }
 
-func (tr TestRun) startChain(
+func (tr *TestRun) startChain(
 	action StartChainAction,
 	verbose bool,
 ) {
@@ -171,6 +172,14 @@ func (tr TestRun) startChain(
 		chain:     action.chain,
 		validator: action.validators[0].id,
 	}, verbose)
+
+	// store the fact that we started the chain
+	tr.runningChains[action.chain] = true
+	fmt.Println("Started chain", action.chain)
+	if tr.timeOffset != 0 {
+		// advance time for this chain so that it is in sync with the rest of the network
+		tr.AdvanceTimeForChain(action.chain, tr.timeOffset)
+	}
 }
 
 type submitTextProposalAction struct {
@@ -209,12 +218,14 @@ func (tr TestRun) submitTextProposal(
 }
 
 type submitConsumerAdditionProposalAction struct {
-	chain         chainID
-	from          validatorID
-	deposit       uint
-	consumerChain chainID
-	spawnTime     uint
-	initialHeight clienttypes.Height
+	preCCV              bool
+	chain               chainID
+	from                validatorID
+	deposit             uint
+	consumerChain       chainID
+	spawnTime           uint
+	initialHeight       clienttypes.Height
+	distributionChannel string
 }
 
 func (tr TestRun) submitConsumerAdditionProposal(
@@ -238,6 +249,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
 		UnbondingPeriod:                   params.UnbondingPeriod,
 		Deposit:                           fmt.Sprint(action.deposit) + `stake`,
+		DistributionTransmissionChannel:   action.distributionChannel,
 	}
 
 	bz, err := json.Marshal(prop)
@@ -486,7 +498,7 @@ type voteGovProposalAction struct {
 	propNumber uint
 }
 
-func (tr TestRun) voteGovProposal(
+func (tr *TestRun) voteGovProposal(
 	action voteGovProposalAction,
 	verbose bool,
 ) {
@@ -518,7 +530,7 @@ func (tr TestRun) voteGovProposal(
 	}
 
 	wg.Wait()
-	time.Sleep(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
+	tr.WaitTime(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
 }
 
 type startConsumerChainAction struct {
@@ -528,7 +540,7 @@ type startConsumerChainAction struct {
 	genesisChanges string
 }
 
-func (tr TestRun) startConsumerChain(
+func (tr *TestRun) startConsumerChain(
 	action startConsumerChainAction,
 	verbose bool,
 ) {
@@ -563,6 +575,133 @@ func (tr TestRun) startConsumerChain(
 		genesisChanges: consumerGenesis,
 		skipGentx:      true,
 	}, verbose)
+}
+
+type ChangeoverChainAction struct {
+	sovereignChain chainID
+	providerChain  chainID
+	validators     []StartChainValidator
+	genesisChanges string
+}
+
+func (tr TestRun) changeoverChain(
+	action ChangeoverChainAction,
+	verbose bool,
+) {
+	// sleep until the consumer chain genesis is ready on consumer
+	time.Sleep(5 * time.Second)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.providerChain].binaryName,
+
+		"query", "provider", "consumer-genesis",
+		string(tr.chainConfigs[action.sovereignChain].chainId),
+
+		`--node`, tr.getQueryNode(action.providerChain),
+		`-o`, `json`,
+	)
+
+	if verbose {
+		log.Println("changeoverChain cmd: ", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
+	consumerGenesisChanges := tr.chainConfigs[action.sovereignChain].genesisChanges
+	if consumerGenesisChanges != "" {
+		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges + " | " + action.genesisChanges
+	}
+
+	tr.startChangeover(ChangeoverChainAction{
+		validators:     action.validators,
+		genesisChanges: consumerGenesis,
+	}, verbose)
+}
+
+func (tr TestRun) startChangeover(
+	action ChangeoverChainAction,
+	verbose bool,
+) {
+	chainConfig := tr.chainConfigs[chainID("sover")]
+	type jsonValAttrs struct {
+		Mnemonic         string `json:"mnemonic"`
+		Allocation       string `json:"allocation"`
+		Stake            string `json:"stake"`
+		ValId            string `json:"val_id"`
+		PrivValidatorKey string `json:"priv_validator_key"`
+		NodeKey          string `json:"node_key"`
+		IpSuffix         string `json:"ip_suffix"`
+
+		ConsumerMnemonic         string `json:"consumer_mnemonic"`
+		ConsumerPrivValidatorKey string `json:"consumer_priv_validator_key"`
+		StartWithConsumerKey     bool   `json:"start_with_consumer_key"`
+	}
+
+	var validators []jsonValAttrs
+	for _, val := range action.validators {
+		validators = append(validators, jsonValAttrs{
+			Mnemonic:         tr.validatorConfigs[val.id].mnemonic,
+			NodeKey:          tr.validatorConfigs[val.id].nodeKey,
+			ValId:            fmt.Sprint(val.id),
+			PrivValidatorKey: tr.validatorConfigs[val.id].privValidatorKey,
+			Allocation:       fmt.Sprint(val.allocation) + "stake",
+			Stake:            fmt.Sprint(val.stake) + "stake",
+			IpSuffix:         tr.validatorConfigs[val.id].ipSuffix,
+
+			ConsumerMnemonic:         tr.validatorConfigs[val.id].consumerMnemonic,
+			ConsumerPrivValidatorKey: tr.validatorConfigs[val.id].consumerPrivValidatorKey,
+			// if true node will be started with consumer key for each consumer chain
+			StartWithConsumerKey: tr.validatorConfigs[val.id].useConsumerKey,
+		})
+	}
+
+	vals, err := json.Marshal(validators)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Concat genesis changes defined in chain config, with any custom genesis changes for this chain instantiation
+	var genesisChanges string
+	if action.genesisChanges != "" {
+		genesisChanges = chainConfig.genesisChanges + " | " + action.genesisChanges
+	} else {
+		genesisChanges = chainConfig.genesisChanges
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
+		"/testnet-scripts/start-changeover.sh", chainConfig.upgradeBinary, string(vals),
+		"sover", chainConfig.ipPrefix, genesisChanges,
+		tr.tendermintConfigOverride,
+	)
+
+	cmdReader, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(cmdReader)
+
+	for scanner.Scan() {
+		out := scanner.Text()
+		if verbose {
+			fmt.Println("startChangeover: " + out)
+		}
+		if out == done {
+			break
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal("startChangeover died", err)
+	}
 }
 
 type addChainToRelayerAction struct {
@@ -683,6 +822,7 @@ func (tr TestRun) addChainToHermes(
 		keyName,
 		rpcAddr,
 		wsAddr,
+		// action.consumer,
 	)
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, "/root/.hermes/config.toml")
@@ -805,6 +945,51 @@ func (tr TestRun) addIbcConnectionGorelayer(
 	tr.waitBlocks(action.chainB, 1, 10*time.Second)
 }
 
+type createIbcClientsAction struct {
+	chainA chainID
+	chainB chainID
+}
+
+// if clients are not provided hermes will first
+// create new clients and then a new connection
+// otherwise, it would use client provided as CLI argument (-a-client)
+func (tr TestRun) createIbcClientsHermes(
+	action createIbcClientsAction,
+	verbose bool,
+) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
+		"create", "connection",
+		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--b-chain", string(tr.chainConfigs[action.chainB].chainId),
+	)
+
+	cmdReader, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(cmdReader)
+
+	for scanner.Scan() {
+		out := scanner.Text()
+		if verbose {
+			fmt.Println("createIbcClientsHermes: " + out)
+		}
+		if out == done {
+			break
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func (tr TestRun) addIbcConnectionHermes(
 	action addIbcConnectionAction,
 	verbose bool,
@@ -850,6 +1035,7 @@ type addIbcChannelAction struct {
 	portA       string
 	portB       string
 	order       string
+	version     string
 }
 
 type startRelayerAction struct{}
@@ -936,6 +1122,13 @@ func (tr TestRun) addIbcChannelHermes(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
+	// if version is not specified, use the default version when creating ccv connections
+	// otherwise, use the provided version schema (usually it is ICS20-1 for IBC transfer)
+	chanVersion := action.version
+	if chanVersion == "" {
+		chanVersion = tr.containerConfig.ccvVersion
+	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"create", "channel",
@@ -943,7 +1136,7 @@ func (tr TestRun) addIbcChannelHermes(
 		"--a-connection", "connection-"+fmt.Sprint(action.connectionA),
 		"--a-port", action.portA,
 		"--b-port", action.portB,
-		"--channel-version", tr.containerConfig.ccvVersion,
+		"--channel-version", chanVersion,
 		"--order", action.order,
 	)
 
@@ -1035,8 +1228,8 @@ func (tr TestRun) transferChannelComplete(
 	executeCommand(chanOpenConfirmCmd, "transferChanOpenConfirm")
 }
 
-func executeCommand(cmd *exec.Cmd, cmdName string) {
-	if verbose != nil && *verbose {
+func executeCommandWithVerbosity(cmd *exec.Cmd, cmdName string, verbose bool) {
+	if verbose {
 		fmt.Println(cmdName+" cmd:", cmd.String())
 	}
 
@@ -1054,13 +1247,18 @@ func executeCommand(cmd *exec.Cmd, cmdName string) {
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		if verbose != nil && *verbose {
+		if verbose {
 			fmt.Println(cmdName + ": " + out)
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// Executes a command with verbosity specified by CLI flag
+func executeCommand(cmd *exec.Cmd, cmdName string) {
+	executeCommandWithVerbosity(cmd, cmdName, *verbose)
 }
 
 type relayPacketsAction struct {
@@ -1100,6 +1298,8 @@ func (tr TestRun) relayPacketsGorelayer(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chainA, 1, 30*time.Second)
 }
 
 func (tr TestRun) relayPacketsHermes(
@@ -1282,11 +1482,27 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chain, 1, 10*time.Second)
 }
 
 type downtimeSlashAction struct {
 	chain     chainID
 	validator validatorID
+}
+
+// takes a string representation of the private key like
+// `{"address":"DF090A4880B54CD57B2A79E64D9E969BD7514B09","pub_key":{"type":"tendermint/PubKeyEd25519","value":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TRJgf7lkTjs/sj43pyweEOanyV7H7fhnVivOi0A4yjW6NjXgCCilX3TshiA8CT/nHxz3brtLh9B/z2fJ4I9N6w=="}}`
+// and returns the value of the "address" field
+func (tr TestRun) getValidatorKeyAddressFromString(keystring string) string {
+	var key struct {
+		Address string `json:"address"`
+	}
+	err := json.Unmarshal([]byte(keystring), &key)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return key.Address
 }
 
 func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) {
@@ -1305,6 +1521,30 @@ func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, dow
 		lastArg = "down"
 	} else {
 		lastArg = "up"
+	}
+
+	if tr.useCometmock {
+		// send set_signing_status either to down or up for validator
+		var validatorAddress string
+		if chain == chainID("provi") {
+			validatorAddress = tr.getValidatorKeyAddressFromString(tr.validatorConfigs[validator].privValidatorKey)
+		} else {
+			var valAddressString string
+			if tr.validatorConfigs[validator].useConsumerKey {
+				valAddressString = tr.validatorConfigs[validator].consumerPrivValidatorKey
+			} else {
+				valAddressString = tr.validatorConfigs[validator].privValidatorKey
+			}
+			validatorAddress = tr.getValidatorKeyAddressFromString(valAddressString)
+		}
+
+		method := "set_signing_status"
+		params := fmt.Sprintf(`{"private_key_address":"%s","status":"%s"}`, validatorAddress, lastArg)
+		address := tr.getQueryNodeRPCAddress(chain)
+
+		tr.curlJsonRPCRequest(method, params, address)
+		tr.waitBlocks(chain, 1, 10*time.Second)
+		return
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -1580,6 +1820,8 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 
 		// TODO: @MSalopek refactor this so test config is not changed at runtime
 		// make the validator use consumer key
+		// @POfftermatt I am currently using this for downtime slashing with cometmock
+		// (I need to find the currently used validator key address)Í
 		valCfg.useConsumerKey = true
 		tr.validatorConfigs[action.validator] = valCfg
 	}
@@ -1643,4 +1885,35 @@ func (tr TestRun) GetPathNameForGorelayer(chainA, chainB chainID) string {
 	}
 
 	return pathName
+}
+
+// WaitTime waits for the given duration.
+// The CometMock version of this takes a pointer to the TestRun as it needs to manipulate
+// information in the testrun that stores how much each chain has waited, to keep times in sync.
+// Be careful that all functions calling WaitTime should therefore also take a pointer to the TestRun.
+func (tr *TestRun) WaitTime(duration time.Duration) {
+	if !tr.useCometmock {
+		time.Sleep(duration)
+	} else {
+		tr.timeOffset += duration
+		for chain, running := range tr.runningChains {
+			if !running {
+				continue
+			}
+			tr.AdvanceTimeForChain(chain, duration)
+		}
+	}
+}
+
+func (tr TestRun) AdvanceTimeForChain(chain chainID, duration time.Duration) {
+	// cometmock avoids sleeping, and instead advances time for all chains
+	method := "advance_time"
+	params := fmt.Sprintf(`{"duration_in_seconds": "%d"}`, int(math.Ceil(duration.Seconds())))
+
+	address := tr.getQueryNodeRPCAddress(chain)
+
+	tr.curlJsonRPCRequest(method, params, address)
+
+	// wait for 1 block of the chain to get a block with the advanced timestamp
+	tr.waitBlocks(chain, 1, time.Minute)
 }

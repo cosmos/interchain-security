@@ -35,6 +35,7 @@ var shortHappyPathSteps = concatSteps(
 	stepsDelegate("consu"),
 	stepsUnbond("consu"),
 	stepsRedelegateShort("consu"),
+	stepsDowntime("consu"),
 	stepsStartRelayer(),
 	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
 	stepsStopChain("consu", 3),                     // stop chain
@@ -71,4 +72,19 @@ var multipleConsumers = concatSteps(
 	stepsMultiConsumerDowntimeFromConsumer("consu", "densu"),
 	stepsMultiConsumerDowntimeFromProvider("consu", "densu"),
 	stepsMultiConsumerDoubleSign("consu", "densu"), // double sign on one of the chains
+)
+
+var changeoverSteps = concatSteps(
+	// start sovereign chain and test delegation operation
+
+	stepRunSovereignChain(),
+	stepStartProviderChain(),
+	stepsSovereignTransferChan(),
+
+	// the chain will halt once upgrade height is reached
+	// after upgrade height is reached, the chain will become a consumer
+	stepsUpgradeChain(),
+	stepsChangeoverToConsumer("sover"),
+
+	stepsPostChangeoverDelegate("sover"),
 )
