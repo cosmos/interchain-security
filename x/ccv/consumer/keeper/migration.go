@@ -6,9 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
@@ -114,12 +112,12 @@ func (k Keeper) MigrateConsumerPacketData(ctx sdk.Context) {
 // This would likely require go.mod split, and a testing module that could depend on multiple ICS versions.
 
 func PendingDataPacketsKeyOnlyForTesting() []byte {
-	return []byte{types.PendingDataPacketsBytePrefix} // Assumes keys haven't been shuffled
+	return []byte{consumertypes.PendingDataPacketsBytePrefix} // Assumes keys haven't been shuffled
 }
 
 // Note: a better test of the old functionality would be to directly reference the old ICS version,
 // including the version of ccv.ConsumerPacketDataList has a list of ccv.ConsumerPacketData without indexes.
-func (k Keeper) SetPendingPacketsOnlyForTesting(ctx sdk.Context, packets ccv.ConsumerPacketDataList) {
+func (k Keeper) SetPendingPacketsOnlyForTesting(ctx sdk.Context, packets ccvtypes.ConsumerPacketDataList) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := packets.Marshal()
 	if err != nil {
