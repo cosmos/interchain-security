@@ -27,9 +27,8 @@ message ValidatorSetChangePacketData {
 
 // List of ccv.ValidatorSetChangePacketData.
 message ValidatorSetChangePackets {
-  repeated ValidatorSetChangePacketData list = 1 [
-    (gogoproto.nullable) = false
-  ];
+  repeated ValidatorSetChangePacketData list = 1
+      [ (gogoproto.nullable) = false ];
 }
 
 // This packet is sent from the consumer chain to the provider chain
@@ -53,14 +52,13 @@ message SlashPacketData {
   cosmos.staking.v1beta1.Infraction infraction = 3;
 }
 
-// MaturedUnbondingOps defines a list of ids corresponding to ids of matured unbonding operations. 
-message MaturedUnbondingOps {
-  repeated uint64 ids = 1;
-}
+// MaturedUnbondingOps defines a list of ids corresponding to ids of matured
+// unbonding operations.
+message MaturedUnbondingOps { repeated uint64 ids = 1; }
 
 // ConsumerPacketData contains a consumer packet data and a type tag
 message ConsumerPacketData {
-  ConsumerPacketDataType type = 1; 
+  ConsumerPacketDataType type = 1;
 
   oneof data {
     SlashPacketData slashPacketData = 2;
@@ -68,22 +66,22 @@ message ConsumerPacketData {
   }
 }
 
-
 // ConsumerPacketDataList is a list of consumer packet data packets.
 message ConsumerPacketDataList {
-  repeated ConsumerPacketData list = 1
-  [ (gogoproto.nullable) = false ];
+  repeated ConsumerPacketData list = 1 [ (gogoproto.nullable) = false ];
 }
-
 
 // ConsumerPacketType indicates interchain security specific packet types.
 enum ConsumerPacketDataType {
   option (gogoproto.goproto_enum_prefix) = false;
 
   // UNSPECIFIED packet type
-  CONSUMER_PACKET_TYPE_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "UnspecifiedPacket"];
+  CONSUMER_PACKET_TYPE_UNSPECIFIED = 0
+      [ (gogoproto.enumvalue_customname) = "UnspecifiedPacket" ];
   // Slash packet
-  CONSUMER_PACKET_TYPE_SLASH = 1 [(gogoproto.enumvalue_customname) = "SlashPacket"];
+  CONSUMER_PACKET_TYPE_SLASH = 1
+      [ (gogoproto.enumvalue_customname) = "SlashPacket" ];
   // VSCMatured packet
-  CONSUMER_PACKET_TYPE_VSCM = 2 [(gogoproto.enumvalue_customname) = "VscMaturedPacket"];
+  CONSUMER_PACKET_TYPE_VSCM = 2
+      [ (gogoproto.enumvalue_customname) = "VscMaturedPacket" ];
 }

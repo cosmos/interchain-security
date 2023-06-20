@@ -33,28 +33,34 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
-// If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time
-// or get slashed. It is recommended that spawn time occurs after the proposal end time.
+// ConsumerAdditionProposal is a governance proposal on the provider chain to
+// spawn a new consumer chain. If it passes, then all validators on the provider
+// chain are expected to validate the consumer chain at spawn time or get
+// slashed. It is recommended that spawn time occurs after the proposal end
+// time.
 type ConsumerAdditionProposal struct {
 	// the title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	// the description of the proposal
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	// the proposed chain-id of the new consumer chain, must be different from all other consumer chain ids of the executing
-	// provider chain.
+	// the proposed chain-id of the new consumer chain, must be different from all
+	// other consumer chain ids of the executing provider chain.
 	ChainId string `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	// the proposed initial height of new consumer chain.
-	// For a completely new chain, this will be {0,1}. However, it may be different if this is a chain that is converting to a consumer chain.
+	// For a completely new chain, this will be {0,1}. However, it may be
+	// different if this is a chain that is converting to a consumer chain.
 	InitialHeight types.Height `protobuf:"bytes,4,opt,name=initial_height,json=initialHeight,proto3" json:"initial_height"`
-	// The hash of the consumer chain genesis state without the consumer CCV module genesis params.
-	// It is used for off-chain confirmation of genesis.json validity by validators and other parties.
+	// The hash of the consumer chain genesis state without the consumer CCV
+	// module genesis params. It is used for off-chain confirmation of
+	// genesis.json validity by validators and other parties.
 	GenesisHash []byte `protobuf:"bytes,5,opt,name=genesis_hash,json=genesisHash,proto3" json:"genesis_hash,omitempty"`
-	// The hash of the consumer chain binary that should be run by validators on chain initialization.
-	// It is used for off-chain confirmation of binary validity by validators and other parties.
+	// The hash of the consumer chain binary that should be run by validators on
+	// chain initialization. It is used for off-chain confirmation of binary
+	// validity by validators and other parties.
 	BinaryHash []byte `protobuf:"bytes,6,opt,name=binary_hash,json=binaryHash,proto3" json:"binary_hash,omitempty"`
-	// spawn time is the time on the provider chain at which the consumer chain genesis is finalized and all validators
-	// will be responsible for starting their consumer chain validator node.
+	// spawn time is the time on the provider chain at which the consumer chain
+	// genesis is finalized and all validators will be responsible for starting
+	// their consumer chain validator node.
 	SpawnTime time.Time `protobuf:"bytes,7,opt,name=spawn_time,json=spawnTime,proto3,stdtime" json:"spawn_time"`
 	// Unbonding period for the consumer,
 	// which should be smaller than that of the provider in general.
@@ -67,8 +73,10 @@ type ConsumerAdditionProposal struct {
 	// during distribution events. The fraction is a string representing a
 	// decimal number. For example "0.75" would represent 75%.
 	ConsumerRedistributionFraction string `protobuf:"bytes,11,opt,name=consumer_redistribution_fraction,json=consumerRedistributionFraction,proto3" json:"consumer_redistribution_fraction,omitempty"`
-	// BlocksPerDistributionTransmission is the number of blocks between ibc-token-transfers from the consumer chain to the provider chain.
-	// On sending transmission event, `consumer_redistribution_fraction` of the accumulated tokens are sent to the consumer redistribution address.
+	// BlocksPerDistributionTransmission is the number of blocks between
+	// ibc-token-transfers from the consumer chain to the provider chain. On
+	// sending transmission event, `consumer_redistribution_fraction` of the
+	// accumulated tokens are sent to the consumer redistribution address.
 	BlocksPerDistributionTransmission int64 `protobuf:"varint,12,opt,name=blocks_per_distribution_transmission,json=blocksPerDistributionTransmission,proto3" json:"blocks_per_distribution_transmission,omitempty"`
 	// The number of historical info entries to persist in store.
 	// This param is a part of the cosmos sdk staking module. In the case of
@@ -77,9 +85,9 @@ type ConsumerAdditionProposal struct {
 	// The ID of a token transfer channel used for the Reward Distribution
 	// sub-protocol. If DistributionTransmissionChannel == "", a new transfer
 	// channel is created on top of the same connection as the CCV channel.
-	// Note that transfer_channel_id is the ID of the channel end on the consumer chain.
-	// it is most relevant for chains performing a sovereign to consumer changeover
-	// in order to maintan the existing ibc transfer channel
+	// Note that transfer_channel_id is the ID of the channel end on the consumer
+	// chain. it is most relevant for chains performing a sovereign to consumer
+	// changeover in order to maintan the existing ibc transfer channel
 	DistributionTransmissionChannel string `protobuf:"bytes,14,opt,name=distribution_transmission_channel,json=distributionTransmissionChannel,proto3" json:"distribution_transmission_channel,omitempty"`
 }
 
@@ -115,9 +123,10 @@ func (m *ConsumerAdditionProposal) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ConsumerAdditionProposal proto.InternalMessageInfo
 
-// ConsumerRemovalProposal is a governance proposal on the provider chain to remove (and stop) a consumer chain.
-// If it passes, all the consumer chain's state is removed from the provider chain. The outstanding unbonding
-// operation funds are released.
+// ConsumerRemovalProposal is a governance proposal on the provider chain to
+// remove (and stop) a consumer chain. If it passes, all the consumer chain's
+// state is removed from the provider chain. The outstanding unbonding operation
+// funds are released.
 type ConsumerRemovalProposal struct {
 	// the title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
@@ -125,7 +134,8 @@ type ConsumerRemovalProposal struct {
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	// the chain-id of the consumer chain to be stopped
 	ChainId string `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	// the time on the provider chain at which all validators are responsible to stop their consumer chain validator node
+	// the time on the provider chain at which all validators are responsible to
+	// stop their consumer chain validator node
 	StopTime time.Time `protobuf:"bytes,4,opt,name=stop_time,json=stopTime,proto3,stdtime" json:"stop_time"`
 }
 
@@ -253,8 +263,9 @@ func (m *EquivocationProposal) GetEquivocations() []*types1.Equivocation {
 	return nil
 }
 
-// A persisted queue entry indicating that a slash packet data instance needs to be handled.
-// This type belongs in the "global" queue, to coordinate slash packet handling times between consumers.
+// A persisted queue entry indicating that a slash packet data instance needs to
+// be handled. This type belongs in the "global" queue, to coordinate slash
+// packet handling times between consumers.
 type GlobalSlashEntry struct {
 	// Block time that slash packet was received by provider chain.
 	// This field is used for store key iteration ordering.
@@ -267,7 +278,8 @@ type GlobalSlashEntry struct {
 	// The provider's consensus address of the validator being slashed.
 	// This field is used to obtain validator power in HandleThrottleQueues.
 	//
-	// This field is not used in the store key, but is persisted in value bytes, see QueueGlobalSlashEntry.
+	// This field is not used in the store key, but is persisted in value bytes,
+	// see QueueGlobalSlashEntry.
 	ProviderValConsAddr []byte `protobuf:"bytes,4,opt,name=provider_val_cons_addr,json=providerValConsAddr,proto3" json:"provider_val_cons_addr,omitempty"`
 }
 
@@ -335,11 +347,13 @@ func (m *GlobalSlashEntry) GetProviderValConsAddr() []byte {
 // Params defines the parameters for CCV Provider module
 type Params struct {
 	TemplateClient *_07_tendermint.ClientState `protobuf:"bytes,1,opt,name=template_client,json=templateClient,proto3" json:"template_client,omitempty"`
-	// TrustingPeriodFraction is used to compute the consumer and provider IBC client's TrustingPeriod from the chain defined UnbondingPeriod
+	// TrustingPeriodFraction is used to compute the consumer and provider IBC
+	// client's TrustingPeriod from the chain defined UnbondingPeriod
 	TrustingPeriodFraction string `protobuf:"bytes,2,opt,name=trusting_period_fraction,json=trustingPeriodFraction,proto3" json:"trusting_period_fraction,omitempty"`
 	// Sent IBC packets will timeout after this duration
 	CcvTimeoutPeriod time.Duration `protobuf:"bytes,3,opt,name=ccv_timeout_period,json=ccvTimeoutPeriod,proto3,stdduration" json:"ccv_timeout_period"`
-	// The channel initialization (IBC channel opening handshake) will timeout after this duration
+	// The channel initialization (IBC channel opening handshake) will timeout
+	// after this duration
 	InitTimeoutPeriod time.Duration `protobuf:"bytes,4,opt,name=init_timeout_period,json=initTimeoutPeriod,proto3,stdduration" json:"init_timeout_period"`
 	// The VSC packets sent by the provider will timeout after this duration.
 	// Note that unlike ccv_timeout_period which is an IBC param,
@@ -348,8 +362,9 @@ type Params struct {
 	VscTimeoutPeriod time.Duration `protobuf:"bytes,5,opt,name=vsc_timeout_period,json=vscTimeoutPeriod,proto3,stdduration" json:"vsc_timeout_period"`
 	// The period for which the slash meter is replenished
 	SlashMeterReplenishPeriod time.Duration `protobuf:"bytes,6,opt,name=slash_meter_replenish_period,json=slashMeterReplenishPeriod,proto3,stdduration" json:"slash_meter_replenish_period"`
-	// The fraction of total voting power that is replenished to the slash meter every replenish period.
-	// This param also serves as a maximum fraction of total voting power that the slash meter can hold.
+	// The fraction of total voting power that is replenished to the slash meter
+	// every replenish period. This param also serves as a maximum fraction of
+	// total voting power that the slash meter can hold.
 	SlashMeterReplenishFraction string `protobuf:"bytes,7,opt,name=slash_meter_replenish_fraction,json=slashMeterReplenishFraction,proto3" json:"slash_meter_replenish_fraction,omitempty"`
 	// The maximum amount of throttled slash or vsc matured packets
 	// that can be queued for a single consumer before the provider chain halts.
@@ -552,7 +567,8 @@ func (m *SlashAcks) GetAddresses() []string {
 	return nil
 }
 
-// ConsumerAdditionProposals holds pending governance proposals on the provider chain to spawn a new chain.
+// ConsumerAdditionProposals holds pending governance proposals on the provider
+// chain to spawn a new chain.
 type ConsumerAdditionProposals struct {
 	// proposals waiting for spawn_time to pass
 	Pending []*ConsumerAdditionProposal `protobuf:"bytes,1,rep,name=pending,proto3" json:"pending,omitempty"`
@@ -598,7 +614,8 @@ func (m *ConsumerAdditionProposals) GetPending() []*ConsumerAdditionProposal {
 	return nil
 }
 
-// ConsumerRemovalProposals holds pending governance proposals on the provider chain to remove (and stop) a consumer chain.
+// ConsumerRemovalProposals holds pending governance proposals on the provider
+// chain to remove (and stop) a consumer chain.
 type ConsumerRemovalProposals struct {
 	// proposals waiting for stop_time to pass
 	Pending []*ConsumerRemovalProposal `protobuf:"bytes,1,rep,name=pending,proto3" json:"pending,omitempty"`
@@ -1015,7 +1032,8 @@ func (m *KeyAssignmentReplacement) GetPower() int64 {
 }
 
 // Used to serialize the ValidatorConsumerPubKey index from key assignment
-// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey tmprotocrypto.PublicKey
+// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey
+// tmprotocrypto.PublicKey
 type ValidatorConsumerPubKey struct {
 	ChainId      string            `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	ProviderAddr []byte            `protobuf:"bytes,2,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty"`
@@ -1077,7 +1095,8 @@ func (m *ValidatorConsumerPubKey) GetConsumerKey() *crypto.PublicKey {
 }
 
 // Used to serialize the ValidatorConsumerAddr index from key assignment
-// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr consAddr
+// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr
+// consAddr
 type ValidatorByConsumerAddr struct {
 	ChainId      string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	ConsumerAddr []byte `protobuf:"bytes,2,opt,name=consumer_addr,json=consumerAddr,proto3" json:"consumer_addr,omitempty"`

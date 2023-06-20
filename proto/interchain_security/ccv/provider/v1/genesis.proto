@@ -11,41 +11,39 @@ import "interchain_security/ccv/consumer/v1/consumer.proto";
 import "interchain_security/ccv/consumer/v1/genesis.proto";
 import "tendermint/crypto/keys.proto";
 
-
 // GenesisState defines the CCV provider chain genesis state
 message GenesisState {
   // strictly positive and set to 1 (DefaultValsetUpdateID) for a new chain
-  uint64 valset_update_id = 1; 
+  uint64 valset_update_id = 1;
   // empty for a new chain
-  repeated ConsumerState consumer_states = 2 [ 
+  repeated ConsumerState consumer_states = 2 [
     (gogoproto.nullable) = false,
     (gogoproto.moretags) = "yaml:\"consumer_states\""
   ];
   // empty for a new chain
   repeated interchain_security.ccv.provider.v1.UnbondingOp unbonding_ops = 3
-  [ (gogoproto.nullable) = false ];
+      [ (gogoproto.nullable) = false ];
   // empty for a new chain
   interchain_security.ccv.v1.MaturedUnbondingOps mature_unbonding_ops = 4;
-    // empty for a new chain
+  // empty for a new chain
   repeated ValsetUpdateIdToHeight valset_update_id_to_height = 5
-  [ (gogoproto.nullable) = false ];
+      [ (gogoproto.nullable) = false ];
   // empty for a new chain
   repeated ConsumerAdditionProposal consumer_addition_proposals = 6
-  [ (gogoproto.nullable) = false ];  
+      [ (gogoproto.nullable) = false ];
   // empty for a new chain
   repeated ConsumerRemovalProposal consumer_removal_proposals = 7
-  [ (gogoproto.nullable) = false ];
-  Params params = 8
-  [ (gogoproto.nullable) = false ];
+      [ (gogoproto.nullable) = false ];
+  Params params = 8 [ (gogoproto.nullable) = false ];
   // empty for a new chain
   repeated ValidatorConsumerPubKey validator_consumer_pubkeys = 9
-  [ (gogoproto.nullable) = false ];
+      [ (gogoproto.nullable) = false ];
   // empty for a new chain
   repeated ValidatorByConsumerAddr validators_by_consumer_addr = 10
-  [ (gogoproto.nullable) = false ];
+      [ (gogoproto.nullable) = false ];
   // empty for a new chain
   repeated ConsumerAddrsToPrune consumer_addrs_to_prune = 11
-  [ (gogoproto.nullable) = false ];
+      [ (gogoproto.nullable) = false ];
 }
 
 // consumer chain
@@ -60,19 +58,21 @@ message ConsumerState {
   uint64 initial_height = 4;
   // ConsumerGenesis defines the initial consumer chain genesis states
   interchain_security.ccv.consumer.v1.GenesisState consumer_genesis = 5
-  [ (gogoproto.nullable) = false ];
-  // PendingValsetChanges defines the pending validator set changes for the consumer chain 
-  repeated interchain_security.ccv.v1.ValidatorSetChangePacketData pending_valset_changes = 6
-  [ (gogoproto.nullable) = false ];
+      [ (gogoproto.nullable) = false ];
+  // PendingValsetChanges defines the pending validator set changes for the
+  // consumer chain
+  repeated interchain_security.ccv.v1.ValidatorSetChangePacketData
+      pending_valset_changes = 6 [ (gogoproto.nullable) = false ];
   repeated string slash_downtime_ack = 7;
-  // UnbondingOpsIndex defines the unbonding operations waiting on this consumer chain
-  repeated interchain_security.ccv.provider.v1.VscUnbondingOps unbonding_ops_index = 8
-  [ (gogoproto.nullable) = false ];
+  // UnbondingOpsIndex defines the unbonding operations waiting on this consumer
+  // chain
+  repeated interchain_security.ccv.provider.v1.VscUnbondingOps
+      unbonding_ops_index = 8 [ (gogoproto.nullable) = false ];
 }
 
-// ValsetUpdateIdToHeight defines the genesis information for the mapping 
+// ValsetUpdateIdToHeight defines the genesis information for the mapping
 // of each valset udpate id to a block height
 message ValsetUpdateIdToHeight {
-    uint64 valset_update_id = 1;
-    uint64 height = 2;
+  uint64 valset_update_id = 1;
+  uint64 height = 2;
 }

@@ -281,7 +281,8 @@ func (m *SlashPacketData) GetInfraction() types1.Infraction {
 	return types1.Infraction_INFRACTION_UNSPECIFIED
 }
 
-// MaturedUnbondingOps defines a list of ids corresponding to ids of matured unbonding operations.
+// MaturedUnbondingOps defines a list of ids corresponding to ids of matured
+// unbonding operations.
 type MaturedUnbondingOps struct {
 	Ids []uint64 `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`
 }

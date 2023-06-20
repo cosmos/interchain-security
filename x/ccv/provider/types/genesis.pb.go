@@ -173,10 +173,12 @@ type ConsumerState struct {
 	InitialHeight uint64 `protobuf:"varint,4,opt,name=initial_height,json=initialHeight,proto3" json:"initial_height,omitempty"`
 	// ConsumerGenesis defines the initial consumer chain genesis states
 	ConsumerGenesis types1.GenesisState `protobuf:"bytes,5,opt,name=consumer_genesis,json=consumerGenesis,proto3" json:"consumer_genesis"`
-	// PendingValsetChanges defines the pending validator set changes for the consumer chain
+	// PendingValsetChanges defines the pending validator set changes for the
+	// consumer chain
 	PendingValsetChanges []types.ValidatorSetChangePacketData `protobuf:"bytes,6,rep,name=pending_valset_changes,json=pendingValsetChanges,proto3" json:"pending_valset_changes"`
 	SlashDowntimeAck     []string                             `protobuf:"bytes,7,rep,name=slash_downtime_ack,json=slashDowntimeAck,proto3" json:"slash_downtime_ack,omitempty"`
-	// UnbondingOpsIndex defines the unbonding operations waiting on this consumer chain
+	// UnbondingOpsIndex defines the unbonding operations waiting on this consumer
+	// chain
 	UnbondingOpsIndex []VscUnbondingOps `protobuf:"bytes,8,rep,name=unbonding_ops_index,json=unbondingOpsIndex,proto3" json:"unbonding_ops_index"`
 }
 

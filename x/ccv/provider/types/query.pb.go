@@ -632,10 +632,11 @@ var xxx_messageInfo_QueryThrottleStateRequest proto.InternalMessageInfo
 type QueryThrottleStateResponse struct {
 	// current slash_meter state
 	SlashMeter int64 `protobuf:"varint,1,opt,name=slash_meter,json=slashMeter,proto3" json:"slash_meter,omitempty"`
-	// allowance of voting power units (int) that the slash meter is given per replenish period
-	// this also serves as the max value for the meter.
+	// allowance of voting power units (int) that the slash meter is given per
+	// replenish period this also serves as the max value for the meter.
 	SlashMeterAllowance int64 `protobuf:"varint,2,opt,name=slash_meter_allowance,json=slashMeterAllowance,proto3" json:"slash_meter_allowance,omitempty"`
-	// next time the slash meter could potentially be replenished, iff it's not full
+	// next time the slash meter could potentially be replenished, iff it's not
+	// full
 	NextReplenishCandidate time.Time `protobuf:"bytes,3,opt,name=next_replenish_candidate,json=nextReplenishCandidate,proto3,stdtime" json:"next_replenish_candidate"`
 	// data relevant to currently throttled slash packets
 	Packets []*ThrottledSlashPacket `protobuf:"bytes,4,rep,name=packets,proto3" json:"packets,omitempty"`
@@ -810,7 +811,8 @@ func (m *QueryThrottledConsumerPacketDataResponse) GetPacketDataInstances() []Th
 	return nil
 }
 
-// A query wrapper type for the global entry and data relevant to a throttled slash packet.
+// A query wrapper type for the global entry and data relevant to a throttled
+// slash packet.
 type ThrottledSlashPacket struct {
 	GlobalEntry GlobalSlashEntry       `protobuf:"bytes,1,opt,name=global_entry,json=globalEntry,proto3" json:"global_entry"`
 	Data        types1.SlashPacketData `protobuf:"bytes,2,opt,name=data,proto3" json:"data"`
@@ -863,7 +865,8 @@ func (m *ThrottledSlashPacket) GetData() types1.SlashPacketData {
 	return types1.SlashPacketData{}
 }
 
-// ThrottledPacketDataWrapper contains either SlashPacketData or VSCMaturedPacketData
+// ThrottledPacketDataWrapper contains either SlashPacketData or
+// VSCMaturedPacketData
 type ThrottledPacketDataWrapper struct {
 	// Types that are valid to be assigned to Data:
 	//	*ThrottledPacketDataWrapper_SlashPacket
@@ -1180,12 +1183,14 @@ type QueryClient interface {
 	// QueryProviderAddr returns the provider chain validator
 	// given a consumer chain validator address
 	QueryValidatorProviderAddr(ctx context.Context, in *QueryValidatorProviderAddrRequest, opts ...grpc.CallOption) (*QueryValidatorProviderAddrResponse, error)
-	// QueryThrottleState returns the main on-chain state relevant to currently throttled slash packets
+	// QueryThrottleState returns the main on-chain state relevant to currently
+	// throttled slash packets
 	QueryThrottleState(ctx context.Context, in *QueryThrottleStateRequest, opts ...grpc.CallOption) (*QueryThrottleStateResponse, error)
-	// QueryThrottledConsumerPacketData returns a list of pending packet data instances
-	// (slash packet and vsc matured) for a single consumer chain
+	// QueryThrottledConsumerPacketData returns a list of pending packet data
+	// instances (slash packet and vsc matured) for a single consumer chain
 	QueryThrottledConsumerPacketData(ctx context.Context, in *QueryThrottledConsumerPacketDataRequest, opts ...grpc.CallOption) (*QueryThrottledConsumerPacketDataResponse, error)
-	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward denoms that are registered
+	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
+	// denoms that are registered
 	QueryRegisteredConsumerRewardDenoms(ctx context.Context, in *QueryRegisteredConsumerRewardDenomsRequest, opts ...grpc.CallOption) (*QueryRegisteredConsumerRewardDenomsResponse, error)
 }
 
@@ -1296,12 +1301,14 @@ type QueryServer interface {
 	// QueryProviderAddr returns the provider chain validator
 	// given a consumer chain validator address
 	QueryValidatorProviderAddr(context.Context, *QueryValidatorProviderAddrRequest) (*QueryValidatorProviderAddrResponse, error)
-	// QueryThrottleState returns the main on-chain state relevant to currently throttled slash packets
+	// QueryThrottleState returns the main on-chain state relevant to currently
+	// throttled slash packets
 	QueryThrottleState(context.Context, *QueryThrottleStateRequest) (*QueryThrottleStateResponse, error)
-	// QueryThrottledConsumerPacketData returns a list of pending packet data instances
-	// (slash packet and vsc matured) for a single consumer chain
+	// QueryThrottledConsumerPacketData returns a list of pending packet data
+	// instances (slash packet and vsc matured) for a single consumer chain
 	QueryThrottledConsumerPacketData(context.Context, *QueryThrottledConsumerPacketDataRequest) (*QueryThrottledConsumerPacketDataResponse, error)
-	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward denoms that are registered
+	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
+	// denoms that are registered
 	QueryRegisteredConsumerRewardDenoms(context.Context, *QueryRegisteredConsumerRewardDenomsRequest) (*QueryRegisteredConsumerRewardDenomsResponse, error)
 }
 

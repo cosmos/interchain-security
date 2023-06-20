@@ -64,13 +64,15 @@ type Params struct {
 	// which should be smaller than that of the provider in general.
 	UnbondingPeriod time.Duration `protobuf:"bytes,9,opt,name=unbonding_period,json=unbondingPeriod,proto3,stdduration" json:"unbonding_period"`
 	// The threshold for the percentage of validators at the bottom of the set who
-	// can opt out of running the consumer chain without being punished. For example, a
-	// value of 0.05 means that the validators in the bottom 5% of the set can opt out
+	// can opt out of running the consumer chain without being punished. For
+	// example, a value of 0.05 means that the validators in the bottom 5% of the
+	// set can opt out
 	SoftOptOutThreshold string `protobuf:"bytes,10,opt,name=soft_opt_out_threshold,json=softOptOutThreshold,proto3" json:"soft_opt_out_threshold,omitempty"`
-	// Reward denoms. These are the denominations which are allowed to be sent to the provider as rewards.
+	// Reward denoms. These are the denominations which are allowed to be sent to
+	// the provider as rewards.
 	RewardDenoms []string `protobuf:"bytes,11,rep,name=reward_denoms,json=rewardDenoms,proto3" json:"reward_denoms,omitempty"`
-	// Provider-originated reward denoms. These are denoms coming from the provider
-	// which are allowed to be used as rewards. e.g. "uatom"
+	// Provider-originated reward denoms. These are denoms coming from the
+	// provider which are allowed to be used as rewards. e.g. "uatom"
 	ProviderRewardDenoms []string `protobuf:"bytes,12,rep,name=provider_reward_denoms,json=providerRewardDenoms,proto3" json:"provider_reward_denoms,omitempty"`
 }
 

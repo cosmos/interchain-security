@@ -152,7 +152,8 @@ func (m *MsgRegisterConsumerRewardDenom) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgRegisterConsumerRewardDenom proto.InternalMessageInfo
 
-// MsgRegisterConsumerRewardDenomResponse defines the Msg/RegisterConsumerRewardDenom response type.
+// MsgRegisterConsumerRewardDenomResponse defines the
+// Msg/RegisterConsumerRewardDenom response type.
 type MsgRegisterConsumerRewardDenomResponse struct {
 }
 
