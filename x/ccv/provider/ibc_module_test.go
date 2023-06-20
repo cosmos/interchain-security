@@ -12,11 +12,11 @@ import (
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider"
-	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
+	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"

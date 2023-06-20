@@ -16,10 +16,10 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
-	consumerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/consumer/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // The interface that any provider app must implement to be compatible with ccv integration tests.

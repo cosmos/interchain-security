@@ -14,11 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 
-	cryptoutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	cryptoutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // TestHandlePacketDataForChain tests the HandlePacketDataForChain function. Note: Only one consumer is tested here,

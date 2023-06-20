@@ -9,8 +9,8 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 )
 

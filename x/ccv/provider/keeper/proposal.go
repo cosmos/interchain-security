@@ -17,9 +17,9 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.

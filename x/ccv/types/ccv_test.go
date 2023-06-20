@@ -6,7 +6,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/interchain-security/v2/x/ccv/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 

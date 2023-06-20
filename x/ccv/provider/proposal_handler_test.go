@@ -14,9 +14,9 @@ import (
 
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // TestProviderProposalHandler tests the highest level handler for proposals

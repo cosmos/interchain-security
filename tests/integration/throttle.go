@@ -8,9 +8,9 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
-	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 const fullSlashMeterString = "1.0"

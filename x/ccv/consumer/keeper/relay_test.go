@@ -17,10 +17,10 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 
-	"github.com/cosmos/interchain-security/v2/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/types"
+	"github.com/cosmos/interchain-security/v3/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/types"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"

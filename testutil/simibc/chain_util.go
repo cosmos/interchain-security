@@ -7,8 +7,8 @@ import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	ibctestingcore "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
+	ibctestingcore "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 )
 
 // BeginBlock updates the current header and calls the app.BeginBlock method.

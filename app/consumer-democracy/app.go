@@ -15,7 +15,7 @@ import (
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	appparams "github.com/cosmos/interchain-security/v2/app/params"
+	appparams "github.com/cosmos/interchain-security/v3/app/params"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -86,25 +86,25 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
-	ibctestingcore "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
+	ibctestingcore "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 	"github.com/spf13/cast"
 
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
-	ccvdistr "github.com/cosmos/interchain-security/v2/x/ccv/democracy/distribution"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
+	ccvdistr "github.com/cosmos/interchain-security/v3/x/ccv/democracy/distribution"
 
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ccvstaking "github.com/cosmos/interchain-security/v2/x/ccv/democracy/staking"
+	ccvstaking "github.com/cosmos/interchain-security/v3/x/ccv/democracy/staking"
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	ccvgov "github.com/cosmos/interchain-security/v2/x/ccv/democracy/governance"
+	ccvgov "github.com/cosmos/interchain-security/v3/x/ccv/democracy/governance"
 
 	// add mint
 	mint "github.com/cosmos/cosmos-sdk/x/mint"
@@ -113,9 +113,9 @@ import (
 
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	consumer "github.com/cosmos/interchain-security/v2/x/ccv/consumer"
-	consumerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	consumer "github.com/cosmos/interchain-security/v3/x/ccv/consumer"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"

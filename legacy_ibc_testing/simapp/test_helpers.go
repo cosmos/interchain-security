@@ -18,7 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp/helpers"
+	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp/helpers"
 )
 
 /*

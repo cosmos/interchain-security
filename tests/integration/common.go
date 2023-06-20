@@ -16,11 +16,11 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
-	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 

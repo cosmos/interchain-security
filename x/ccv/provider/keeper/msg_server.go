@@ -9,8 +9,8 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	errorsmod "cosmossdk.io/errors"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 type msgServer struct {

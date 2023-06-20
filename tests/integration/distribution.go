@@ -8,9 +8,9 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // This test is valid for minimal viable consumer chain

@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/golang/mock/gomock"
 )
 

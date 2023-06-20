@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	"github.com/cosmos/interchain-security/v2/legacy_ibc_testing/core"
+	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -26,8 +26,8 @@ import (
 
 	"github.com/cosmos/ibc-go/v7/modules/core/keeper"
 
-	"github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp"
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
 /*

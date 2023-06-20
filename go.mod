@@ -1,6 +1,6 @@
-module github.com/cosmos/interchain-security/v2
+module github.com/cosmos/interchain-security/v3
 
-go 1.19
+go 1.20
 
 require (
 	cosmossdk.io/errors v1.0.0-beta.7
