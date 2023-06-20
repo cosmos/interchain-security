@@ -17,7 +17,8 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 )
 
 func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
@@ -33,6 +34,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
 				"0.75",
 				10,
+				"",
 				10000,
 				100000000000,
 				100000000000,
@@ -45,6 +47,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
 				"0.0", // fraction can be 0.0 but not empty
 				10,
+				"",
 				10000,
 				100000000000,
 				100000000000,
@@ -56,6 +59,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 			types.NewConsumerAdditionProposal(" ", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
 				"0.75",
 				10,
+				"",
 				10000,
 				100000000000,
 				100000000000,
@@ -67,6 +71,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 			types.NewConsumerAdditionProposal("title", "description", " ", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
 				"0.75",
 				10,
+				"",
 				10000,
 				100000000000,
 				100000000000,
@@ -87,6 +92,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 				CcvTimeoutPeriod:                  100000000000,
 				TransferTimeoutPeriod:             100000000000,
 				ConsumerRedistributionFraction:    "0.75",
+				DistributionTransmissionChannel:   "",
 				HistoricalEntries:                 10000,
 				UnbondingPeriod:                   100000000000,
 			},
@@ -97,6 +103,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte(""), []byte("bin_hash"), time.Now(),
 				"0.75",
 				10,
+				"",
 				10000,
 				100000000000,
 				100000000000,
@@ -108,6 +115,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte(""), time.Now(),
 				"0.75",
 				10,
+				"",
 				10000,
 				100000000000,
 				100000000000,
@@ -119,6 +127,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Time{},
 				"0.75",
 				10,
+				"",
 				10000,
 				100000000000,
 				100000000000,
@@ -130,6 +139,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
 				"", // fraction can be 0.0 but not empty
 				10,
+				"",
 				10000,
 				100000000000,
 				100000000000,
@@ -141,8 +151,21 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
 				"0.75",
 				0,
+				"",
 				100000000000,
 				10000,
+				100000000000,
+				100000000000),
+			false,
+		},
+		{
+			"distribution transmission channel is invalid",
+			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
+				"0.75",
+				10,
+				"badchannel/",
+				10000,
+				100000000000,
 				100000000000,
 				100000000000),
 			false,
@@ -152,6 +175,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
 				"0.75",
 				10,
+				"",
 				-2,
 				100000000000,
 				100000000000,
@@ -163,6 +187,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
 				"0.75",
 				10,
+				"",
 				10000,
 				0,
 				100000000000,
@@ -174,6 +199,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
 				"0.75",
 				10,
+				"",
 				10000,
 				100000000000,
 				0,
@@ -185,6 +211,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
 				"0.75",
 				10,
+				"",
 				10000,
 				100000000000,
 				100000000000,
@@ -208,6 +235,7 @@ func TestMarshalConsumerAdditionProposal(t *testing.T) {
 	content := types.NewConsumerAdditionProposal("title", "description", "chainID", clienttypes.NewHeight(0, 1), []byte("gen_hash"), []byte("bin_hash"), time.Now().UTC(),
 		"0.75",
 		10,
+		"",
 		10000,
 		100000000000,
 		100000000000,
@@ -249,6 +277,7 @@ func TestConsumerAdditionProposalString(t *testing.T) {
 		spawnTime,
 		"0.75",
 		10001,
+		"",
 		500000,
 		100000000000,
 		10000000000,
@@ -264,12 +293,14 @@ func TestConsumerAdditionProposalString(t *testing.T) {
 	SpawnTime: %s
 	ConsumerRedistributionFraction: %s
 	BlocksPerDistributionTransmission: %d
+	DistributionTransmissionChannel: %s
 	HistoricalEntries: %d
 	CcvTimeoutPeriod: %d
 	TransferTimeoutPeriod: %d
 	UnbondingPeriod: %d`, initialHeight, []byte("gen_hash"), []byte("bin_hash"), spawnTime,
 		"0.75",
 		10001,
+		"",
 		500000,
 		100000000000,
 		10000000000,

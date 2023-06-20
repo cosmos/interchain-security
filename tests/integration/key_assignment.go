@@ -6,8 +6,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/ibc-go/v7/testing/mock"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 func (s *CCVTestSuite) TestKeyAssignment() {

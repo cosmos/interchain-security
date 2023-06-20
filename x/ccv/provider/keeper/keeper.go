@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -20,28 +20,30 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 
 	"github.com/cometbft/cometbft/libs/log"
 )
 
 // Keeper defines the Cross-Chain Validation Provider Keeper
 type Keeper struct {
-	storeKey         storetypes.StoreKey
-	cdc              codec.BinaryCodec
-	paramSpace       paramtypes.Subspace
-	scopedKeeper     ccv.ScopedKeeper
-	channelKeeper    ccv.ChannelKeeper
-	portKeeper       ccv.PortKeeper
-	connectionKeeper ccv.ConnectionKeeper
-	accountKeeper    ccv.AccountKeeper
-	clientKeeper     ccv.ClientKeeper
-	stakingKeeper    ccv.StakingKeeper
-	slashingKeeper   ccv.SlashingKeeper
-	evidenceKeeper   ccv.EvidenceKeeper
-	feeCollectorName string
+	storeKey           storetypes.StoreKey
+	cdc                codec.BinaryCodec
+	paramSpace         paramtypes.Subspace
+	scopedKeeper       ccv.ScopedKeeper
+	channelKeeper      ccv.ChannelKeeper
+	portKeeper         ccv.PortKeeper
+	connectionKeeper   ccv.ConnectionKeeper
+	accountKeeper      ccv.AccountKeeper
+	clientKeeper       ccv.ClientKeeper
+	stakingKeeper      ccv.StakingKeeper
+	slashingKeeper     ccv.SlashingKeeper
+	evidenceKeeper     ccv.EvidenceKeeper
+	distributionKeeper ccv.DistributionKeeper
+	bankKeeper         ccv.BankKeeper
+	feeCollectorName   string
 }
 
 // NewKeeper creates a new provider Keeper instance
@@ -51,6 +53,7 @@ func NewKeeper(
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
 	accountKeeper ccv.AccountKeeper, evidenceKeeper ccv.EvidenceKeeper,
+	distributionKeeper ccv.DistributionKeeper, bankKeeper ccv.BankKeeper,
 	feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set
@@ -59,46 +62,56 @@ func NewKeeper(
 	}
 
 	k := Keeper{
-		cdc:              cdc,
-		storeKey:         key,
-		paramSpace:       paramSpace,
-		scopedKeeper:     scopedKeeper,
-		channelKeeper:    channelKeeper,
-		portKeeper:       portKeeper,
-		connectionKeeper: connectionKeeper,
-		accountKeeper:    accountKeeper,
-		clientKeeper:     clientKeeper,
-		stakingKeeper:    stakingKeeper,
-		slashingKeeper:   slashingKeeper,
-		evidenceKeeper:   evidenceKeeper,
-		feeCollectorName: feeCollectorName,
+		cdc:                cdc,
+		storeKey:           key,
+		paramSpace:         paramSpace,
+		scopedKeeper:       scopedKeeper,
+		channelKeeper:      channelKeeper,
+		portKeeper:         portKeeper,
+		connectionKeeper:   connectionKeeper,
+		clientKeeper:       clientKeeper,
+		stakingKeeper:      stakingKeeper,
+		slashingKeeper:     slashingKeeper,
+		accountKeeper:      accountKeeper,
+		evidenceKeeper:     evidenceKeeper,
+		distributionKeeper: distributionKeeper,
+		bankKeeper:         bankKeeper,
+		feeCollectorName:   feeCollectorName,
 	}
 
 	k.mustValidateFields()
 	return k
 }
 
+// SetParamSpace sets the param space for the provider keeper.
+// Note: this is only used for testing!
+func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
+	k.paramSpace = ps
+}
+
 // Validates that the provider keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 13 {
-		panic("number of fields in provider keeper is not 13")
+	if reflect.ValueOf(k).NumField() != 15 {
+		panic("number of fields in provider keeper is not 15")
 	}
 
-	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                           // 1
-	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                 // 2
-	ccv.PanicIfZeroOrNil(k.paramSpace, "paramSpace")             // 3
-	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")         // 4
-	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")       // 5
-	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")             // 6
-	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper") // 7
-	ccv.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")       // 8
-	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")         // 9
-	ccv.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")       // 10
-	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")     // 11
-	ccv.PanicIfZeroOrNil(k.evidenceKeeper, "evidenceKeeper")     // 12
-	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName") // 13
+	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                               // 1
+	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                     // 2
+	ccv.PanicIfZeroOrNil(k.paramSpace, "paramSpace")                 // 3
+	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")             // 4
+	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")           // 5
+	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")                 // 6
+	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")     // 7
+	ccv.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")           // 8
+	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")             // 9
+	ccv.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")           // 10
+	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")         // 11
+	ccv.PanicIfZeroOrNil(k.evidenceKeeper, "evidenceKeeper")         // 12
+	ccv.PanicIfZeroOrNil(k.distributionKeeper, "distributionKeeper") // 13
+	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                 // 14
+	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")     // 15
 }
 
 // Logger returns a module-specific logger.
@@ -273,7 +286,7 @@ func (k Keeper) DeleteConsumerGenesis(ctx sdk.Context, chainID string) {
 // is the expected consumer chain.
 func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectionHops []string) error {
 	if len(connectionHops) != 1 {
-		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
+		return errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
 	}
 	connectionID := connectionHops[0]
 	clientID, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
@@ -282,15 +295,15 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 	}
 	ccvClientId, found := k.GetConsumerClientId(ctx, tmClient.ChainId)
 	if !found {
-		return sdkerrors.Wrapf(ccv.ErrClientNotFound, "cannot find client for consumer chain %s", tmClient.ChainId)
+		return errorsmod.Wrapf(ccv.ErrClientNotFound, "cannot find client for consumer chain %s", tmClient.ChainId)
 	}
 	if ccvClientId != clientID {
-		return sdkerrors.Wrapf(ccv.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
+		return errorsmod.Wrapf(ccv.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
 	}
 
 	// Verify that there isn't already a CCV channel for the consumer chain
 	if prevChannel, ok := k.GetChainToChannel(ctx, tmClient.ChainId); ok {
-		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, tmClient.ChainId)
+		return errorsmod.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, tmClient.ChainId)
 	}
 	return nil
 }
@@ -305,10 +318,10 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	channel, ok := k.channelKeeper.GetChannel(ctx, ccv.ProviderPortID, channelID)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
+		return errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
 	}
 	if len(channel.ConnectionHops) != 1 {
-		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to consumer chain")
+		return errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to consumer chain")
 	}
 	connectionID := channel.ConnectionHops[0]
 	clientID, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
@@ -318,7 +331,7 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	// Verify that there isn't already a CCV channel for the consumer chain
 	chainID := tmClient.ChainId
 	if prevChannelID, ok := k.GetChainToChannel(ctx, chainID); ok {
-		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannelID, chainID)
+		return errorsmod.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannelID, chainID)
 	}
 
 	// the CCV channel is established:
@@ -604,18 +617,18 @@ func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (
 ) {
 	conn, ok := k.connectionKeeper.GetConnection(ctx, connectionID)
 	if !ok {
-		return "", nil, sdkerrors.Wrapf(conntypes.ErrConnectionNotFound,
+		return "", nil, errorsmod.Wrapf(conntypes.ErrConnectionNotFound,
 			"connection not found for connection ID: %s", connectionID)
 	}
 	clientID = conn.ClientId
 	clientState, ok := k.clientKeeper.GetClientState(ctx, clientID)
 	if !ok {
-		return "", nil, sdkerrors.Wrapf(clienttypes.ErrClientNotFound,
+		return "", nil, errorsmod.Wrapf(clienttypes.ErrClientNotFound,
 			"client not found for client ID: %s", conn.ClientId)
 	}
 	tmClient, ok = clientState.(*ibctmtypes.ClientState)
 	if !ok {
-		return "", nil, sdkerrors.Wrapf(clienttypes.ErrInvalidClientType,
+		return "", nil, errorsmod.Wrapf(clienttypes.ErrInvalidClientType,
 			"invalid client type. expected %s, got %s", ibchost.Tendermint, clientState.ClientType())
 	}
 	return clientID, tmClient, nil
@@ -626,7 +639,7 @@ func (k Keeper) chanCloseInit(ctx sdk.Context, channelID string) error {
 	capName := host.ChannelCapabilityPath(ccv.ProviderPortID, channelID)
 	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return errorsmod.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	return k.channelKeeper.ChanCloseInit(ctx, ccv.ProviderPortID, channelID, chanCap)
 }
@@ -1047,4 +1060,8 @@ func (k Keeper) GetSlashLog(
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SlashLogKey(providerAddr))
 	return bz != nil
+}
+
+func (k Keeper) BondDenom(ctx sdk.Context) string {
+	return k.stakingKeeper.BondDenom(ctx)
 }

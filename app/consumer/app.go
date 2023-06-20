@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	stdlog "log"
-	"net/http"
 	"os"
 	"path/filepath"
 
@@ -82,26 +81,24 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
-	appparams "github.com/cosmos/interchain-security/app/params"
-	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-	"github.com/gorilla/mux"
-	"github.com/rakyll/statik/fs"
+	appparams "github.com/cosmos/interchain-security/v2/app/params"
+	ibctestingcore "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
 	"github.com/spf13/cast"
 
 	tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	ibcconsumer "github.com/cosmos/interchain-security/x/ccv/consumer"
-	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	ibcconsumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	ibcconsumer "github.com/cosmos/interchain-security/v2/x/ccv/consumer"
+	ibcconsumerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/consumer/keeper"
+	ibcconsumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
+	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
 )
 
 const (
 	AppName              = "interchain-security-c"
-	upgradeName          = "v07-Theta"
+	upgradeName          = "ics-v1-to-v2"
 	AccountAddressPrefix = "cosmos"
 )
 
@@ -380,7 +377,7 @@ func New(
 
 	// register slashing module Slashing hooks to the consumer keeper
 	app.ConsumerKeeper = *app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
-	consumerModule := ibcconsumer.NewAppModule(app.ConsumerKeeper)
+	consumerModule := ibcconsumer.NewAppModule(app.ConsumerKeeper, app.GetSubspace(ibcconsumertypes.ModuleName))
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
@@ -553,6 +550,8 @@ func New(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
+	// Note this upgrade handler is just an example and may not be exactly what you need to implement.
+	// See https://docs.cosmos.network/v0.45/building-modules/upgrade.html
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
 		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
@@ -771,11 +770,6 @@ func (app *App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig
 
 	// Register grpc query routes.
 	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
-
-	// register swagger API from root so that other applications can override easily
-	if apiConfig.Swagger {
-		RegisterSwaggerAPI(apiSvr.Router)
-	}
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.
@@ -790,17 +784,6 @@ func (app *App) RegisterNodeService(clientCtx client.Context) {
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
 func (app *App) RegisterTendermintService(clientCtx client.Context) {
 	tmservice.RegisterTendermintService(clientCtx, app.BaseApp.GRPCQueryRouter(), app.interfaceRegistry, app.Query)
-}
-
-// RegisterSwaggerAPI registers swagger route with API Server
-func RegisterSwaggerAPI(rtr *mux.Router) {
-	statikFS, err := fs.New()
-	if err != nil {
-		panic(err)
-	}
-
-	staticServer := http.FileServer(statikFS)
-	rtr.PathPrefix("/swagger/").Handler(http.StripPrefix("/swagger/", staticServer))
 }
 
 // GetMaccPerms returns a copy of the module account permissions

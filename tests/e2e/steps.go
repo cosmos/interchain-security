@@ -26,9 +26,20 @@ var happyPathSteps = concatSteps(
 	stepsRejectEquivocationProposal("consu", 2),   // prop to tombstone bob is rejected
 	stepsDoubleSignOnProviderAndConsumer("consu"), // carol double signs on provider, bob double signs on consumer
 	stepsSubmitEquivocationProposal("consu", 2),   // now prop to tombstone bob is submitted and accepted
-	stepsStartHermes(),
+	stepsStartRelayer(),
 	stepsConsumerRemovalPropNotPassing("consu", 3), // submit removal prop but vote no on it - chain should stay
 	stepsStopChain("consu", 4),                     // stop chain
+)
+
+var shortHappyPathSteps = concatSteps(
+	stepsStartChains([]string{"consu"}, false),
+	stepsDelegate("consu"),
+	stepsUnbond("consu"),
+	stepsRedelegateShort("consu"),
+	stepsDowntime("consu"),
+	stepsStartRelayer(),
+	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
+	stepsStopChain("consu", 3),                     // stop chain
 )
 
 var slashThrottleSteps = concatSteps(
@@ -46,6 +57,14 @@ var democracySteps = concatSteps(
 	stepsDemocracy("democ"),
 )
 
+var rewardDenomConsumerSteps = concatSteps(
+	// democracySteps requires a transfer channel
+	stepsStartChains([]string{"democ"}, true),
+	// delegation needs to happen so the first VSC packet can be delivered
+	stepsDelegate("democ"),
+	stepsRewardDenomConsumer("democ"),
+)
+
 var multipleConsumers = concatSteps(
 	stepsStartChains([]string{"consu", "densu"}, false),
 	stepsMultiConsumerDelegate("consu", "densu"),
@@ -54,4 +73,19 @@ var multipleConsumers = concatSteps(
 	stepsMultiConsumerDowntimeFromConsumer("consu", "densu"),
 	stepsMultiConsumerDowntimeFromProvider("consu", "densu"),
 	stepsMultiConsumerDoubleSign("consu", "densu"), // double sign on one of the chains
+)
+
+var changeoverSteps = concatSteps(
+	// start sovereign chain and test delegation operation
+
+	stepRunSovereignChain(),
+	stepStartProviderChain(),
+	stepsSovereignTransferChan(),
+
+	// the chain will halt once upgrade height is reached
+	// after upgrade height is reached, the chain will become a consumer
+	stepsUpgradeChain(),
+	stepsChangeoverToConsumer("sover"),
+
+	stepsPostChangeoverDelegate("sover"),
 )

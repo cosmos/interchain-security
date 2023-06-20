@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -34,8 +34,9 @@ import (
 	"github.com/cosmos/ibc-go/v7/modules/core/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/cosmos/ibc-go/v7/testing/mock"
-	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
-	"github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
+
+	ibctestingcore "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/core"
+	"github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp"
 )
 
 /*
@@ -455,7 +456,7 @@ func (chain *TestChain) ConstructUpdateTMClientHeaderWithTrustedHeight(counterpa
 		// NextValidatorsHash
 		tmTrustedVals, ok = counterparty.GetValsAtHeight(int64(trustedHeight.RevisionHeight + 1))
 		if !ok {
-			return nil, sdkerrors.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight)
+			return nil, errorsmod.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight)
 		}
 	}
 	// inject trusted fields into last header

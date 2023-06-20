@@ -6,8 +6,8 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/testutil/crypto"
-	uthelpers "github.com/cosmos/interchain-security/testutil/keeper"
+	"github.com/cosmos/interchain-security/v2/testutil/crypto"
+	uthelpers "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )

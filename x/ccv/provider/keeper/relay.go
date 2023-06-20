@@ -4,14 +4,15 @@ import (
 	"fmt"
 	"strconv"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // OnRecvVSCMaturedPacket handles a VSCMatured packet
@@ -53,14 +54,25 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 // the "VSC Maturity and Slashing Order" CCV property. If VSC matured packet data DOES NOT
 // trail slash packet data for that consumer, it will be handled in this method,
 // bypassing HandleThrottleQueues.
-func (k Keeper) HandleLeadingVSCMaturedPackets(ctx sdk.Context) {
+func (k Keeper) HandleLeadingVSCMaturedPackets(ctx sdk.Context) (vscMaturedHandledThisBlock int) {
+	vscMaturedHandledThisBlock = 0
 	for _, chain := range k.GetAllConsumerChains(ctx) {
+		// Note: it's assumed the order of the vsc matured slice matches the order of the ibc seq nums slice,
+		// in that a vsc matured packet data at index i is associated with the ibc seq num at index i.
 		leadingVscMatured, ibcSeqNums := k.GetLeadingVSCMaturedData(ctx, chain.ChainId)
-		for _, data := range leadingVscMatured {
+		ibcSeqNumsHandled := []uint64{}
+		for idx, data := range leadingVscMatured {
+			if vscMaturedHandledThisBlock >= vscMaturedHandledPerBlockLimit {
+				// Break from inner for-loop, DeleteThrottledPacketData will still be called for this consumer
+				break
+			}
 			k.HandleVSCMaturedPacket(ctx, chain.ChainId, data)
+			vscMaturedHandledThisBlock++
+			ibcSeqNumsHandled = append(ibcSeqNumsHandled, ibcSeqNums[idx])
 		}
-		k.DeleteThrottledPacketData(ctx, chain.ChainId, ibcSeqNums...)
+		k.DeleteThrottledPacketData(ctx, chain.ChainId, ibcSeqNumsHandled...)
 	}
+	return vscMaturedHandledThisBlock
 }
 
 // HandleVSCMaturedPacket handles a VSCMatured packet.
@@ -135,7 +147,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			// stop consumer chain and release unbonding
 			return k.StopConsumerChain(ctx, chainID, false)
 		}
-		return sdkerrors.Wrapf(providertypes.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
+		return errorsmod.Wrapf(providertypes.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
 	}
 	return nil
 }
@@ -147,7 +159,7 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 	if !found {
 		k.Logger(ctx).Error("packet timeout, unknown channel:", "channelID", packet.SourceChannel)
 		// abort transaction
-		return sdkerrors.Wrap(
+		return errorsmod.Wrap(
 			channeltypes.ErrInvalidChannelState,
 			packet.SourceChannel,
 		)
@@ -204,12 +216,17 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
 				// the client cannot expire during iteration (in the middle of a block)
-				k.Logger(ctx).Debug("IBC client is expired, cannot send VSC, leaving packet data stored:", "chainID", chainID, "vscid", data.ValsetUpdateId)
+				k.Logger(ctx).Info("IBC client is expired, cannot send VSC, leaving packet data stored:", "chainID", chainID, "vscid", data.ValsetUpdateId)
 				return
 			}
-			// TODO do not panic if the send fails
-			// https://github.com/cosmos/interchain-security/issues/649
-			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
+			// Not able to send packet over IBC!
+			k.Logger(ctx).Error("cannot send VSC, removing consumer:", "chainID", chainID, "vscid", data.ValsetUpdateId, "err", err.Error())
+			// If this happens, most likely the consumer is malicious; remove it
+			err := k.StopConsumerChain(ctx, chainID, true)
+			if err != nil {
+				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+			}
+			return
 		}
 		// set the VSC send timestamp for this packet;
 		// note that the VSC send timestamp are set when the packets
@@ -272,13 +289,14 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// - Marshaling and/or store corruption errors.
 	// - Setting invalid slash meter values (see SetSlashMeter).
 	k.CheckForSlashMeterReplenishment(ctx)
+
 	// Handle leading vsc matured packets before throttling logic.
 	//
 	// Note: HandleLeadingVSCMaturedPackets contains panics for the following scenarios, any of which should never occur
 	// if the protocol is correct and external data is properly validated:
 	//
 	// - Marshaling and/or store corruption errors.
-	k.HandleLeadingVSCMaturedPackets(ctx)
+	vscMaturedHandledThisBlock := k.HandleLeadingVSCMaturedPackets(ctx)
 	// Handle queue entries considering throttling logic.
 	//
 	// Note: HandleThrottleQueues contains panics for the following scenarios, any of which should never occur
@@ -287,7 +305,7 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// - SlashMeter has not been set (which should be set in InitGenesis, see InitializeSlashMeter).
 	// - Marshaling and/or store corruption errors.
 	// - Setting invalid slash meter values (see SetSlashMeter).
-	k.HandleThrottleQueues(ctx)
+	k.HandleThrottleQueues(ctx, vscMaturedHandledThisBlock)
 }
 
 // OnRecvSlashPacket delivers a received slash packet, validates it and

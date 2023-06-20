@@ -6,15 +6,17 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	"github.com/golang/mock/gomock"
+
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	"github.com/golang/mock/gomock"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 
 	extra "github.com/oxyno-zeta/gomock-extra-matcher"
 )

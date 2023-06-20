@@ -4,21 +4,20 @@ import (
 	"fmt"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 
 	tmtypes "github.com/cometbft/cometbft/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	keepertestutil "github.com/cosmos/interchain-security/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto/ed25519"
+	keepertestutil "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 )
 
 // TestRelayAndApplyDowntimePacket tests that downtime slash packets can be properly relayed

@@ -7,6 +7,7 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-pd
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cd
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cdd
+		go install $(BUILD_FLAGS) ./cmd/interchain-security-sd
 
 # run all tests: unit, integration, diff, and E2E
 test: 
@@ -105,40 +106,55 @@ $(BUILDDIR)/:
 ###                                Protobuf                                 ###
 ###############################################################################
 
+DOCKER := $(shell which docker)
+HTTPS_GIT := https://github.com/cosmos/interchain-security.git
+
 containerProtoVer=0.13.0
 containerProtoImage=ghcr.io/cosmos/proto-builder:$(containerProtoVer)
-containerProtoGen=cosmos-sdk-proto-gen-$(containerProtoVer)
-containerProtoGenSwagger=cosmos-sdk-proto-gen-swagger-$(containerProtoVer)
-containerProtoFmt=cosmos-sdk-proto-fmt-$(containerProtoVer)
+
+protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(containerProtoImage)
+
 
 proto-all: proto-format proto-lint proto-gen
 
 proto-gen:
 	@echo "Generating Protobuf files"
-	@if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoGen}$$"; then docker start -a $(containerProtoGen); else docker run --name $(containerProtoGen) -v $(CURDIR):/workspace --workdir /workspace $(containerProtoImage) \
-		sh ./scripts/protocgen.sh; fi
+	@$(protoImage) sh ./scripts/protocgen.sh;
+
+proto-check:
+	@if git diff --quiet; then \
+		echo "No files were modified before running 'make proto-gen'."; \
+	else \
+		echo "Error: Uncommitted changes exist before running 'make proto-gen'. Please commit or stash your changes."; \
+		exit 1; \
+	fi
+	@$(MAKE) proto-gen
+	@if git diff --quiet; then \
+		echo "No files were modified after running 'make proto-gen'. Pass!"; \
+	else \
+		echo "Error: Files were modified after running 'make proto-gen'. Please commit changes to .pb files"; \
+		exit 1; \
+	fi
 
 proto-format:
 	@echo "Formatting Protobuf files"
-	@if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoFmt}$$"; then docker start -a $(containerProtoFmt); else docker run --name $(containerProtoFmt) -v $(CURDIR):/workspace --workdir /workspace tendermintdev/docker-build-proto \
-		find ./ -not -path "./third_party/*" -name "*.proto" -exec clang-format -i {} \; ; fi
+	@$(protoImage) find ./ -name "*.proto" -exec clang-format -i {} \;
 
 proto-swagger-gen:
 	@echo "Generating Protobuf Swagger"
-	@if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoGenSwagger}$$"; then docker start -a $(containerProtoGenSwagger); else docker run --name $(containerProtoGenSwagger) -v $(CURDIR):/workspace --workdir /workspace $(containerProtoImage) \
-		sh ./scripts/protoc-swagger-gen.sh; fi
+	@$(protoImage) sh ./scripts/protocgen.sh
 
 proto-lint:
-	@$(DOCKER_BUF) lint --error-format=json
+	@$(protoImage) buf lint --error-format=json
 
 proto-check-breaking:
-	@$(DOCKER_BUF) breaking --against $(HTTPS_GIT)#branch=main
+	@$(protoImage) buf breaking --against $(HTTPS_GIT)#branch=main
 
 proto-update-deps:
 	@echo "Updating Protobuf dependencies"
-	$(DOCKER) run --rm -v $(CURDIR)/proto:/workspace --workdir /workspace $(protoImageName) buf mod update
+	$(protoImage) buf mod update
 
-.PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps mocks
+.PHONY: proto-all proto-gen proto-format proto-lint proto-check proto-check-breaking proto-update-deps mocks
 
 ###############################################################################
 ###                              Documentation                              ###

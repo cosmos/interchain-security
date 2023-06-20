@@ -7,19 +7,19 @@ import (
 
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrorstypes "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
@@ -55,7 +55,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	chainID := prop.ChainId
 	// check that a client for this chain does not exist
 	if _, found := k.GetConsumerClientId(ctx, chainID); found {
-		return sdkerrors.Wrap(ccv.ErrDuplicateConsumerChain,
+		return errorsmod.Wrap(ccv.ErrDuplicateConsumerChain,
 			fmt.Sprintf("cannot create client for existent consumer chain: %s", chainID))
 	}
 
@@ -154,7 +154,7 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan bool) (err error) {
 	// check that a client for chainID exists
 	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
-		return sdkerrors.Wrap(ccv.ErrConsumerChainNotFound,
+		return errorsmod.Wrap(ccv.ErrConsumerChainNotFound,
 			fmt.Sprintf("cannot stop non-existent consumer chain: %s", chainID))
 	}
 
@@ -250,14 +250,14 @@ func (k Keeper) MakeConsumerGenesis(
 	clientState.LatestHeight = height
 	trustPeriod, err := ccv.CalculateTrustPeriod(providerUnbondingPeriod, k.GetTrustingPeriodFraction(ctx))
 	if err != nil {
-		return gen, nil, sdkerrors.Wrapf(sdkerrorstypes.ErrInvalidHeight, "error %s calculating trusting_period for: %s", err, height)
+		return gen, nil, errorsmod.Wrapf(sdkerrors.ErrInvalidHeight, "error %s calculating trusting_period for: %s", err, height)
 	}
 	clientState.TrustingPeriod = trustPeriod
 	clientState.UnbondingPeriod = providerUnbondingPeriod
 
 	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
 	if err != nil {
-		return gen, nil, sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
+		return gen, nil, errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
 	}
 
 	var lastPowers []stakingtypes.LastValidatorPower
@@ -276,7 +276,7 @@ func (k Keeper) MakeConsumerGenesis(
 
 		val, found := k.stakingKeeper.GetValidator(ctx, addr)
 		if !found {
-			return gen, nil, sdkerrors.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers: %s", err)
+			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers: %s", err)
 		}
 
 		tmProtoPk, err := val.TmConsPublicKey()
@@ -303,7 +303,7 @@ func (k Keeper) MakeConsumerGenesis(
 	consumerGenesisParams := consumertypes.NewParams(
 		true,
 		prop.BlocksPerDistributionTransmission,
-		"", // distributionTransmissionChannel
+		prop.DistributionTransmissionChannel,
 		"", // providerFeePoolAddrStr,
 		prop.CcvTimeoutPeriod,
 		prop.TransferTimeoutPeriod,
@@ -311,6 +311,8 @@ func (k Keeper) MakeConsumerGenesis(
 		prop.HistoricalEntries,
 		prop.UnbondingPeriod,
 		"0.05",
+		[]string{},
+		[]string{},
 	)
 
 	gen = *consumertypes.NewInitialGenesisState(

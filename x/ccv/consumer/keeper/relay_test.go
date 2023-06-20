@@ -12,13 +12,16 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	"github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
+
+	"github.com/cosmos/interchain-security/v2/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/types"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -279,4 +282,28 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	ack = channeltypes.NewErrorAcknowledgement(fmt.Errorf("error"))
 	err = consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
 	require.Nil(t, err)
+}
+
+// TestSendPackets tests the SendPackets method failing
+func TestSendPacketsFailure(t *testing.T) {
+	// Keeper setup
+	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
+	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
+
+	// Set some pending packets
+	consumerKeeper.SetPendingPackets(ctx, types.ConsumerPacketDataList{List: []types.ConsumerPacketData{
+		{}, {}, {},
+	}})
+
+	// Mock the channel keeper to return an error
+	gomock.InOrder(
+		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, types.ConsumerPortID,
+			"consumerCCVChannelID").Return(channeltypes.Channel{}, false).Times(1),
+	)
+
+	// No panic should occur, pending packets should not be cleared
+	consumerKeeper.SendPackets(ctx)
+	require.Equal(t, 3, len(consumerKeeper.GetPendingPackets(ctx).List))
 }

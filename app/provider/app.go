@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	stdlog "log"
-	"net/http"
 	"os"
 	"path/filepath"
 
@@ -15,7 +14,7 @@ import (
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
-	appparams "github.com/cosmos/interchain-security/app/params"
+	appparams "github.com/cosmos/interchain-security/v2/app/params"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -93,24 +92,23 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 	tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
+
+	ibctestingcore "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
 
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
-	"github.com/gorilla/mux"
-	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 
-	ibcprovider "github.com/cosmos/interchain-security/x/ccv/provider"
-	ibcproviderclient "github.com/cosmos/interchain-security/x/ccv/provider/client"
-	ibcproviderkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ibcprovider "github.com/cosmos/interchain-security/v2/x/ccv/provider"
+	ibcproviderclient "github.com/cosmos/interchain-security/v2/x/ccv/provider/client"
+	ibcproviderkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
+	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -118,7 +116,7 @@ import (
 
 const (
 	AppName              = "interchain-security-p"
-	upgradeName          = "v07-Theta"
+	upgradeName          = "ics-v1-to-v2"
 	AccountAddressPrefix = "cosmos"
 )
 
@@ -166,13 +164,14 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:     nil,
-		distrtypes.ModuleName:          nil,
-		minttypes.ModuleName:           {authtypes.Minter},
-		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:            {authtypes.Burner},
-		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
+		authtypes.FeeCollectorName:        nil,
+		distrtypes.ModuleName:             nil,
+		minttypes.ModuleName:              {authtypes.Minter},
+		stakingtypes.BondedPoolName:       {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:    {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:               {authtypes.Burner},
+		ibctransfertypes.ModuleName:       {authtypes.Minter, authtypes.Burner},
+		providertypes.ConsumerRewardsPool: nil,
 	}
 )
 
@@ -317,12 +316,12 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	// Remove the fee-pool from the group of blocked recipient addresses in bank
+	// Remove the ConsumerRewardsPool from the group of blocked recipient addresses in bank
 	// this is required for the provider chain to be able to receive tokens from
 	// the consumer chain
 	bankBlockedAddrs := app.ModuleAccountAddrs()
 	delete(bankBlockedAddrs, authtypes.NewModuleAddress(
-		authtypes.FeeCollectorName).String())
+		providertypes.ConsumerRewardsPool).String())
 
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec,
@@ -431,10 +430,12 @@ func New(
 		app.SlashingKeeper,
 		app.AccountKeeper,
 		app.EvidenceKeeper,
+		app.DistrKeeper,
+		app.BankKeeper,
 		authtypes.FeeCollectorName,
 	)
 
-	providerModule := ibcprovider.NewAppModule(&app.ProviderKeeper)
+	providerModule := ibcprovider.NewAppModule(&app.ProviderKeeper, app.GetSubspace(providertypes.ModuleName))
 
 	// register the proposal types
 	govRouter := govv1beta1.NewRouter()
@@ -637,6 +638,8 @@ func New(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
+	// Note this upgrade handler is just an example and may not be exactly what you need to implement.
+	// See https://docs.cosmos.network/v0.45/building-modules/upgrade.html
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
 		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
@@ -812,6 +815,11 @@ func (app *App) GetTestDistributionKeeper() testutil.TestDistributionKeeper {
 	return app.DistrKeeper
 }
 
+// GetTestAccountKeeper implements the ProviderApp interface.
+func (app *App) GetTestAccountKeeper() testutil.TestAccountKeeper {
+	return app.AccountKeeper
+}
+
 // TestingApp functions
 
 // GetBaseApp implements the TestingApp interface.
@@ -877,17 +885,6 @@ func (app *App) RegisterNodeService(clientCtx client.Context) {
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
 func (app *App) RegisterTendermintService(clientCtx client.Context) {
 	tmservice.RegisterTendermintService(clientCtx, app.BaseApp.GRPCQueryRouter(), app.interfaceRegistry, app.Query)
-}
-
-// RegisterSwaggerAPI registers swagger route with API Server
-func RegisterSwaggerAPI(rtr *mux.Router) {
-	statikFS, err := fs.New()
-	if err != nil {
-		panic(err)
-	}
-
-	staticServer := http.FileServer(statikFS)
-	rtr.PathPrefix("/swagger/").Handler(http.StripPrefix("/swagger/", staticServer))
 }
 
 // GetMaccPerms returns a copy of the module account permissions

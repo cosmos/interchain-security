@@ -48,6 +48,20 @@ func (m *MockStakingKeeper) EXPECT() *MockStakingKeeperMockRecorder {
 	return m.recorder
 }
 
+// BondDenom mocks base method.
+func (m *MockStakingKeeper) BondDenom(ctx types0.Context) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BondDenom", ctx)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// BondDenom indicates an expected call of BondDenom.
+func (mr *MockStakingKeeperMockRecorder) BondDenom(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BondDenom", reflect.TypeOf((*MockStakingKeeper)(nil).BondDenom), ctx)
+}
+
 // Delegation mocks base method.
 func (m *MockStakingKeeper) Delegation(ctx types0.Context, addr types0.AccAddress, valAddr types0.ValAddress) types5.DelegationI {
 	m.ctrl.T.Helper()
@@ -98,6 +112,13 @@ func (m *MockStakingKeeper) GetLastValidators(ctx types0.Context) []types5.Valid
 	return ret0
 }
 
+// GetLastValidators indicates an expected call of GetLastValidators.
+func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidators", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidators), ctx)
+}
+
+// GetUnbondingType mocks base method.
 func (m *MockStakingKeeper) GetUnbondingType(ctx types0.Context, id uint64) (types5.UnbondingType, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUnbondingType", ctx, id)
@@ -106,10 +127,10 @@ func (m *MockStakingKeeper) GetUnbondingType(ctx types0.Context, id uint64) (typ
 	return ret0, ret1
 }
 
-// GetLastValidators indicates an expected call of GetLastValidators.
-func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gomock.Call {
+// GetUnbondingType indicates an expected call of GetUnbondingType.
+func (mr *MockStakingKeeperMockRecorder) GetUnbondingType(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidators", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidators), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUnbondingType", reflect.TypeOf((*MockStakingKeeper)(nil).GetUnbondingType), ctx, id)
 }
 
 // GetValidator mocks base method.
@@ -749,6 +770,43 @@ func (m *MockClientKeeper) GetSelfConsensusState(ctx types0.Context, height expo
 func (mr *MockClientKeeperMockRecorder) GetSelfConsensusState(ctx, height interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelfConsensusState", reflect.TypeOf((*MockClientKeeper)(nil).GetSelfConsensusState), ctx, height)
+}
+
+// MockDistributionKeeper is a mock of DistributionKeeper interface.
+type MockDistributionKeeper struct {
+	ctrl     *gomock.Controller
+	recorder *MockDistributionKeeperMockRecorder
+}
+
+// MockDistributionKeeperMockRecorder is the mock recorder for MockDistributionKeeper.
+type MockDistributionKeeperMockRecorder struct {
+	mock *MockDistributionKeeper
+}
+
+// NewMockDistributionKeeper creates a new mock instance.
+func NewMockDistributionKeeper(ctrl *gomock.Controller) *MockDistributionKeeper {
+	mock := &MockDistributionKeeper{ctrl: ctrl}
+	mock.recorder = &MockDistributionKeeperMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockDistributionKeeper) EXPECT() *MockDistributionKeeperMockRecorder {
+	return m.recorder
+}
+
+// FundCommunityPool mocks base method.
+func (m *MockDistributionKeeper) FundCommunityPool(ctx types0.Context, amount types0.Coins, sender types0.AccAddress) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FundCommunityPool", ctx, amount, sender)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// FundCommunityPool indicates an expected call of FundCommunityPool.
+func (mr *MockDistributionKeeperMockRecorder) FundCommunityPool(ctx, amount, sender interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FundCommunityPool", reflect.TypeOf((*MockDistributionKeeper)(nil).FundCommunityPool), ctx, amount, sender)
 }
 
 // MockConsumerHooks is a mock of ConsumerHooks interface.

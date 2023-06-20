@@ -17,7 +17,7 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	"github.com/spf13/cobra"
 )
 
@@ -57,6 +57,7 @@ Where proposal.json contains:
     "spawn_time": "2022-01-27T15:59:50.121607-08:00",
     "blocks_per_distribution_transmission": 1000,
     "consumer_redistribution_fraction": "0.75",
+	"distribution_transmission_channel": "",
     "historical_entries": 10000,
     "transfer_timeout_period": 3600000000000,
     "ccv_timeout_period": 2419200000000000,
@@ -81,7 +82,8 @@ Where proposal.json contains:
 			content := types.NewConsumerAdditionProposal(
 				proposal.Title, proposal.Summary, proposal.ChainId, proposal.InitialHeight,
 				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime,
-				proposal.ConsumerRedistributionFraction, proposal.BlocksPerDistributionTransmission, proposal.HistoricalEntries,
+				proposal.ConsumerRedistributionFraction, proposal.BlocksPerDistributionTransmission,
+				proposal.DistributionTransmissionChannel, proposal.HistoricalEntries,
 				proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod)
 
 			from := clientCtx.GetFromAddress()
@@ -236,6 +238,7 @@ type ConsumerAdditionProposalJSON struct {
 
 	ConsumerRedistributionFraction    string        `json:"consumer_redistribution_fraction"`
 	BlocksPerDistributionTransmission int64         `json:"blocks_per_distribution_transmission"`
+	DistributionTransmissionChannel   string        `json:"distribution_transmission_channel"`
 	HistoricalEntries                 int64         `json:"historical_entries"`
 	CcvTimeoutPeriod                  time.Duration `json:"ccv_timeout_period"`
 	TransferTimeoutPeriod             time.Duration `json:"transfer_timeout_period"`
@@ -257,6 +260,7 @@ type ConsumerAdditionProposalReq struct {
 
 	ConsumerRedistributionFraction    string        `json:"consumer_redistribution_fraction"`
 	BlocksPerDistributionTransmission int64         `json:"blocks_per_distribution_transmission"`
+	DistributionTransmissionChannel   string        `json:"distribution_transmission_channel"`
 	HistoricalEntries                 int64         `json:"historical_entries"`
 	CcvTimeoutPeriod                  time.Duration `json:"ccv_timeout_period"`
 	TransferTimeoutPeriod             time.Duration `json:"transfer_timeout_period"`
@@ -401,7 +405,8 @@ func postConsumerAdditionProposalHandlerFn(clientCtx client.Context) http.Handle
 		content := types.NewConsumerAdditionProposal(
 			req.Title, req.Description, req.ChainId, req.InitialHeight,
 			req.GenesisHash, req.BinaryHash, req.SpawnTime,
-			req.ConsumerRedistributionFraction, req.BlocksPerDistributionTransmission, req.HistoricalEntries,
+			req.ConsumerRedistributionFraction, req.BlocksPerDistributionTransmission,
+			req.DistributionTransmissionChannel, req.HistoricalEntries,
 			req.CcvTimeoutPeriod, req.TransferTimeoutPeriod, req.UnbondingPeriod)
 
 		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)

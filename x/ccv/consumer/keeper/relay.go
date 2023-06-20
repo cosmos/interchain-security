@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"strconv"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
 
 // OnRecvVSCPacket sets the pending validator set changes that will be flushed to ABCI on Endblock
@@ -195,13 +196,17 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 		)
 		if err != nil {
 			if clienttypes.ErrClientNotActive.Is(err) {
-				k.Logger(ctx).Debug("IBC client is inactive, packet remains in queue", "type", p.Type.String())
+				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
+				k.Logger(ctx).Info("IBC client is expired, cannot send IBC packet; leaving packet data stored:", "type", p.Type.String())
 				return
 			}
-			// something went wrong when sending the packet
-			// TODO do not panic if the send fails
-			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
+			// Not able to send packet over IBC!
+			// Leave the packet data stored for the sent to be retried in the next block.
+			// Note that if VSCMaturedPackets are not sent for long enough, the provider
+			// will remove the consumer anyway.
+			k.Logger(ctx).Error("cannot send IBC packet; leaving packet data stored:", "type", p.Type.String(), "err", err.Error())
+			return
 		}
 	}
 
@@ -231,7 +236,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		// check if there is an established CCV channel to provider
 		channelID, found := k.GetProviderChannel(ctx)
 		if !found {
-			return sdkerrors.Wrapf(types.ErrNoProposerChannelId, "recv ErrorAcknowledgement on non-established channel %s", packet.SourceChannel)
+			return errorsmod.Wrapf(types.ErrNoProposerChannelId, "recv ErrorAcknowledgement on non-established channel %s", packet.SourceChannel)
 		}
 		if channelID != packet.SourceChannel {
 			// Close the established CCV channel as well

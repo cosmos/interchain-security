@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -17,10 +19,10 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/consumer/client/cli"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
+	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/client/cli"
+	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/keeper"
 
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 )
 
 var (
@@ -85,13 +87,15 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 // AppModule represents the AppModule for this module
 type AppModule struct {
 	AppModuleBasic
-	keeper keeper.Keeper
+	keeper     keeper.Keeper
+	paramSpace paramtypes.Subspace
 }
 
 // NewAppModule creates a new consumer module
-func NewAppModule(k keeper.Keeper) AppModule {
+func NewAppModule(k keeper.Keeper, paramSpace paramtypes.Subspace) AppModule {
 	return AppModule{
-		keeper: k,
+		keeper:     k,
+		paramSpace: paramSpace,
 	}
 }
 
@@ -101,7 +105,6 @@ func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 }
 
 // RegisterServices registers module services.
-// TODO
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	consumertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
@@ -122,7 +125,14 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 1 }
+func (AppModule) ConsensusVersion() uint64 {
+	// Note that v1.0.0 consumers should technically be on a different consensus version
+	// than v1.2.0-multiden and v2.0.0. However, Neutron was the first consumer to launch
+	// in prod, and they've started on v1.2.0-multiden (which has a ConsensusVersion of 1).
+	//
+	// v1.2.0-multiden and v2.0.0 are consensus compatible, so they need return the same ConsensusVersion of 1.
+	return 1
+}
 
 // BeginBlock implements the AppModule interface
 // Set the VSC ID for the subsequent block to the same value as the current block
