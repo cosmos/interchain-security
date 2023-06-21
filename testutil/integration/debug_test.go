@@ -265,10 +265,6 @@ func TestHandleConsumerMisbehaviour(t *testing.T) {
 	runCCVTestByName(t, "TestHandleConsumerMisbehaviour")
 }
 
-func TestCheckConsumerMisbehaviour(t *testing.T) {
-	runCCVTestByName(t, "TestCheckConsumerMisbehaviour")
-}
-
-func TestGetByzantineValidators(t *testing.T) {
-	runCCVTestByName(t, "TestGetByzantineValidators")
+func TestConstructLigthClientEvidence(t *testing.T) {
+	runCCVTestByName(t, "TestConstructLigthClientEvidence")
 }

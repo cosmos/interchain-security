@@ -678,6 +678,20 @@ func (m *MockClientKeeper) EXPECT() *MockClientKeeperMockRecorder {
 	return m.recorder
 }
 
+// CheckMisbehaviourAndUpdateState mocks base method.
+func (m *MockClientKeeper) CheckMisbehaviourAndUpdateState(ctx types.Context, misbehaviour exported.Misbehaviour) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckMisbehaviourAndUpdateState", ctx, misbehaviour)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CheckMisbehaviourAndUpdateState indicates an expected call of CheckMisbehaviourAndUpdateState.
+func (mr *MockClientKeeperMockRecorder) CheckMisbehaviourAndUpdateState(ctx, misbehaviour interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckMisbehaviourAndUpdateState", reflect.TypeOf((*MockClientKeeper)(nil).CheckMisbehaviourAndUpdateState), ctx, misbehaviour)
+}
+
 // ClientStore mocks base method.
 func (m *MockClientKeeper) ClientStore(ctx types.Context, clientID string) types.KVStore {
 	m.ctrl.T.Helper()
