@@ -592,17 +592,6 @@ func (k Keeper) GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Val
 	return validators
 }
 
-// SetPendingPackets sets the pending CCV packets
-func (k Keeper) SetPendingPackets(ctx sdk.Context, packets ccv.ConsumerPacketDataList) {
-	store := ctx.KVStore(k.storeKey)
-	bz, err := packets.Marshal()
-	if err != nil {
-		// This should never happen
-		panic(fmt.Errorf("failed to marshal ConsumerPacketDataList: %w", err))
-	}
-	store.Set(types.PendingDataPacketsKey(), bz)
-}
-
 // Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
 // See consistency with PendingDataPacketsKey().
 func PendingDataPacketsIterator(store sdk.KVStore) sdk.Iterator {
