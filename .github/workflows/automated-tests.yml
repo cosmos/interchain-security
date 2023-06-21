@@ -24,8 +24,8 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: "1.19" # The Go version to download (if necessary) and use.
-      # - name: Proto Check
-      #   run: make proto-check
+      - name: Proto Check
+        run: make proto-check
       - name: Unit, integration and difference tests
         run: go test ./...
       - name: E2E tests
