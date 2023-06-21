@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"fmt"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -9,12 +8,6 @@ import (
 
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
-)
-
-const (
-	trustingPeriod time.Duration = time.Hour * 24 * 7 * 2
-	ubdPeriod      time.Duration = time.Hour * 24 * 7 * 3
-	maxClockDrift  time.Duration = time.Second * 10
 )
 
 func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
@@ -72,18 +65,9 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 		s.Require().True(val.Jailed)
 		s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.Address))
 	}
-
 }
 
 func (s *CCVTestSuite) TestConstructLigthClientEvidence() {
-
-	// test cases
-	// misbehaviour nil
-	// misbheaviour header 1 nil
-	// misbehaviour header 2 nil
-
-	// misbehaviour no common height
-
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
 	s.SendEmptyVSCPacket()
@@ -94,38 +78,11 @@ func (s *CCVTestSuite) TestConstructLigthClientEvidence() {
 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
 	clientSigners := s.consumerChain.Signers
 
-	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:2])
+	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:3])
 	altSigners := make(map[string]tmtypes.PrivValidator, 1)
 	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
-
-	misb := &ibctmtypes.Misbehaviour{
-		ClientId: s.path.EndpointA.ClientID,
-		Header1: s.consumerChain.CreateTMClientHeader(
-			s.consumerChain.ChainID,
-			int64(clientHeight.RevisionHeight+1),
-			clientHeight,
-			altTime,
-			clientTMValset,
-			clientTMValset,
-			clientTMValset,
-			clientSigners,
-		),
-		Header2: s.consumerChain.CreateTMClientHeader(
-			s.consumerChain.ChainID,
-			int64(clientHeight.RevisionHeight+1),
-			clientHeight,
-			altTime,
-			altValset,
-			altValset,
-			clientTMValset,
-			altSigners,
-		),
-	}
-
-	_ = misb
-
-	// emptyHeader := &ibctmtypes.Header{}
+	altSigners[clientTMValset.Validators[2].Address.String()] = clientSigners[clientTMValset.Validators[2].Address.String()]
 
 	testCases := []struct {
 		name         string
@@ -145,9 +102,11 @@ func (s *CCVTestSuite) TestConstructLigthClientEvidence() {
 					altValset,
 					clientTMValset,
 					altSigners,
-				)},
+				),
+			},
 			false,
-		}, {
+		},
+		{
 			"invalid misbehaviour - Header2 is empty",
 			&ibctmtypes.Misbehaviour{
 				Header1: s.consumerChain.CreateTMClientHeader(
@@ -163,7 +122,8 @@ func (s *CCVTestSuite) TestConstructLigthClientEvidence() {
 				Header2: &ibctmtypes.Header{},
 			},
 			false,
-		}, {
+		},
+		{
 			"invalid misbehaviour - ClientId is empty",
 			&ibctmtypes.Misbehaviour{
 				ClientId: "unknown-client-id",
@@ -216,7 +176,8 @@ func (s *CCVTestSuite) TestConstructLigthClientEvidence() {
 				),
 			},
 			true,
-		}, {
+		},
+		{
 			"light client attack - equivocation",
 			&ibctmtypes.Misbehaviour{
 				ClientId: s.path.EndpointA.ClientID,
@@ -234,7 +195,7 @@ func (s *CCVTestSuite) TestConstructLigthClientEvidence() {
 					s.consumerChain.ChainID,
 					int64(clientHeight.RevisionHeight+1),
 					clientHeight,
-					altTime,
+					altTime.Add(time.Minute),
 					clientTMValset,
 					clientTMValset,
 					clientTMValset,
@@ -245,8 +206,6 @@ func (s *CCVTestSuite) TestConstructLigthClientEvidence() {
 		},
 	}
 
-	// check how it's tested on CometBFTNewExtensionOptionsDecorator
-
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			ev, err := s.providerApp.GetProviderKeeper().ConstructLigthClientEvidence(
@@ -255,21 +214,23 @@ func (s *CCVTestSuite) TestConstructLigthClientEvidence() {
 			)
 			if tc.expPass {
 				s.NoError(err)
-				s.Require().Equal(len(altValset.Validators), len(ev.ByzantineValidators))
-				fmt.Println("headers 2 validators")
+				// For both lunatic and equivocation attack all the validators
+				// who signed the bad header (Header2) should be in returned in the evidence
+				h2Valset := tc.misbehaviour.Header2.ValidatorSet
 
-				for _, v := range tc.misbehaviour.Header2.ValidatorSet.Validators {
-					fmt.Println(v.String())
-				}
-				fmt.Println("byzantine validators")
+				s.Equal(len(h2Valset.Validators), len(ev.ByzantineValidators))
+
+				vs, err := tmtypes.ValidatorSetFromProto(tc.misbehaviour.Header2.ValidatorSet)
+				s.NoError(err)
+
 				for _, v := range ev.ByzantineValidators {
-					fmt.Println(v.String())
+					idx, _ := vs.GetByAddress(v.Address)
+					s.True(idx >= 0)
 				}
-				// TODO: check that the byzantine validators == altValset.Validators
+
 			} else {
 				s.Error(err)
 			}
 		})
 	}
-
 }
