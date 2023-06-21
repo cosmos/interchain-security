@@ -123,9 +123,9 @@ proto-gen:
 
 proto-check:
 	@if git diff --quiet --exit-code main...HEAD -- proto; then \
-		echo "No changes found in /proto directory between the currently checked out branch and main."; \
+		echo "Pass! No committed changes found in /proto directory between the currently checked out branch and main."; \
 	else \
-		echo "Changes found in /proto directory between the currently checked out branch and main."; \
+		echo "Committed changes found in /proto directory between the currently checked out branch and main."; \
 		modified_protos=$$(git diff --name-only main...HEAD proto); \
 		modified_pb_files= ; \
         for proto_file in $${modified_protos}; do \
@@ -133,7 +133,7 @@ proto-check:
             pb_files=$$(find x/ccv -name "$${proto_name}.pb.go"); \
             for pb_file in $${pb_files}; do \
                 if git diff --quiet --exit-code main...HEAD -- "$${pb_file}"; then \
-                    echo "Missing uncommitted changes in $${pb_file}"; \
+                    echo "Missing committed changes in $${pb_file}"; \
 					exit 1; \
                 else \
                     modified_pb_files+="$${pb_file} "; \
