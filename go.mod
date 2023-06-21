@@ -19,7 +19,7 @@ require (
 	github.com/oxyno-zeta/gomock-extra-matcher v1.1.0
 	github.com/rakyll/statik v0.1.7 // indirect
 	github.com/spf13/cast v1.5.1
-	github.com/spf13/cobra v1.6.1
+	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.2
 	github.com/tidwall/gjson v1.14.4
 	golang.org/x/crypto v0.7.0 // indirect
