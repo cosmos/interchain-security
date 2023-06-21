@@ -4,21 +4,20 @@ import (
 	"fmt"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	keepertestutil "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	tmtypes "github.com/tendermint/tendermint/types"
-
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/ed25519"
+	tmtypes "github.com/cometbft/cometbft/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	keepertestutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // TestRelayAndApplyDowntimePacket tests that downtime slash packets can be properly relayed
@@ -67,7 +66,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
 
 	// Send slash packet from the first consumer chain
-	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Downtime, 1)
+	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
 	err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
 	s.Require().NoError(err)
 
@@ -195,7 +194,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
 
 	// Send slash packet from the first consumer chain
-	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.DoubleSign, 1)
+	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, 1)
 	err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
 	s.Require().NoError(err)
 
@@ -289,7 +288,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 		*ccv.NewSlashPacketData(
 			abci.Validator{Address: tmVal.Address, Power: 0},
 			uint64(0),
-			stakingtypes.Downtime,
+			stakingtypes.Infraction_INFRACTION_DOWNTIME,
 		),
 	)
 
@@ -338,7 +337,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	providerKeeper.SetInitChainHeight(ctx, consumerChainID, initChainHeight)
 
 	// now the method will fail at infraction height check.
-	packetData.Infraction = stakingtypes.InfractionEmpty
+	packetData.Infraction = stakingtypes.Infraction_INFRACTION_UNSPECIFIED
 	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
 	suite.Require().False(errAck.Success())
 	errAckCast = errAck.(channeltypes.Acknowledgement)
@@ -366,7 +365,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 		abci.Validator{
 			Address: ed25519.GenPrivKey().PubKey().Address(),
 			Power:   int64(0),
-		}, uint64(0), stakingtypes.Downtime,
+		}, uint64(0), stakingtypes.Infraction_INFRACTION_DOWNTIME,
 	)
 
 	// Set initial block height for consumer chain
@@ -398,7 +397,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	// expect error ack when infraction type in unspecified
 	tmAddr := suite.providerChain.Vals.Validators[1].Address
 	slashingPkt.Validator.Address = tmAddr
-	slashingPkt.Infraction = stakingtypes.InfractionEmpty
+	slashingPkt.Infraction = stakingtypes.Infraction_INFRACTION_UNSPECIFIED
 
 	valInfo.Address = sdk.ConsAddress(tmAddr).String()
 	providerSlashingKeeper.SetValidatorSigningInfo(ctx, sdk.ConsAddress(tmAddr), valInfo)
@@ -411,7 +410,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	suite.Require().Equal(uint64(0), (providerKeeper.GetThrottledPacketDataSize(ctx, consumerChainID)))
 
 	// expect to queue entries for the slash request
-	slashingPkt.Infraction = stakingtypes.Downtime
+	slashingPkt.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
 	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
 	suite.Require().True(ack.Success())
 	suite.Require().Equal(1, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
@@ -460,7 +459,7 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 		abci.Validator{Address: vals[0].Address, Power: valPower},
 		// get the VSC ID mapping the infraction height
 		consumerKeeper.GetHeightValsetUpdateID(ctx, uint64(missedBlockThreshold-sdk.ValidatorUpdateDelay-1)),
-		stakingtypes.Downtime,
+		stakingtypes.Infraction_INFRACTION_DOWNTIME,
 	)
 	expCommit := suite.commitSlashPacket(ctx, *packetData)
 
@@ -564,7 +563,7 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 		abci.Validator{Address: consAddr.Bytes(), Power: power},
 		// get VSC ID mapping to the infraction height with the TM delay subtracted
 		suite.consumerApp.GetConsumerKeeper().GetHeightValsetUpdateID(ctx, uint64(infractionHeight-sdk.ValidatorUpdateDelay)),
-		stakingtypes.DoubleSign,
+		stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
 	)
 	expCommit := suite.commitSlashPacket(ctx, *packetData)
 
@@ -609,11 +608,11 @@ func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 	// and 4 slash request for double-signing
 	type slashedVal struct {
 		validator  abci.Validator
-		infraction stakingtypes.InfractionType
+		infraction stakingtypes.Infraction
 	}
 	slashedVals := []slashedVal{}
 
-	infraction := stakingtypes.Downtime
+	infraction := stakingtypes.Infraction_INFRACTION_DOWNTIME
 	for j := 0; j < 2; j++ {
 		for i := 0; i < 4; i++ {
 			addr := ed25519.GenPrivKey().PubKey().Address()
@@ -623,7 +622,7 @@ func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 			consumerKeeper.QueueSlashPacket(ctx, val, 0, infraction)
 			slashedVals = append(slashedVals, slashedVal{validator: val, infraction: infraction})
 		}
-		infraction = stakingtypes.DoubleSign
+		infraction = stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 	}
 
 	// expect to store a duplicate for each slash request
@@ -676,8 +675,8 @@ func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 	pendingPackets := consumerKeeper.GetPendingPackets(suite.consumerCtx())
 	suite.Require().Len(pendingPackets, 0)
 
-	consumerKeeper.Slash(suite.consumerCtx(), []byte{0x01, 0x02, 0x3},
-		66, 4324, sdk.MustNewDecFromStr("0.05"), stakingtypes.Downtime)
+	consumerKeeper.SlashWithInfractionReason(suite.consumerCtx(), []byte{0x01, 0x02, 0x3},
+		66, 4324, sdk.MustNewDecFromStr("0.05"), stakingtypes.Infraction_INFRACTION_DOWNTIME)
 
 	// Check slash packet was queued
 	pendingPackets = consumerKeeper.GetPendingPackets(suite.consumerCtx())

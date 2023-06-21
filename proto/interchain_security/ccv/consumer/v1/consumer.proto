@@ -32,11 +32,11 @@ message Params {
   string provider_fee_pool_addr_str = 4;
   // Sent CCV related IBC packets will timeout after this duration
   google.protobuf.Duration ccv_timeout_period = 5
-      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
   // Sent transfer related IBC packets will timeout after this duration
   google.protobuf.Duration transfer_timeout_period = 6
-      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
   // The fraction of tokens allocated to the consumer redistribution address
   // during distribution events. The fraction is a string representing a
@@ -44,25 +44,27 @@ message Params {
   string consumer_redistribution_fraction = 7;
 
   // The number of historical info entries to persist in store.
-  // This param is a part of the cosmos sdk staking module. In the case of 
+  // This param is a part of the cosmos sdk staking module. In the case of
   // a ccv enabled consumer chain, the ccv module acts as the staking module.
   int64 historical_entries = 8;
 
   // Unbonding period for the consumer,
   // which should be smaller than that of the provider in general.
   google.protobuf.Duration unbonding_period = 9
-      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
   // The threshold for the percentage of validators at the bottom of the set who
-  // can opt out of running the consumer chain without being punished. For example, a
-  // value of 0.05 means that the validators in the bottom 5% of the set can opt out
+  // can opt out of running the consumer chain without being punished. For
+  // example, a value of 0.05 means that the validators in the bottom 5% of the
+  // set can opt out
   string soft_opt_out_threshold = 10;
 
-  // Reward denoms. These are the denominations which are allowed to be sent to the provider as rewards.
+  // Reward denoms. These are the denominations which are allowed to be sent to
+  // the provider as rewards.
   repeated string reward_denoms = 11;
 
-  // Provider-originated reward denoms. These are denoms coming from the provider 
-  // which are allowed to be used as rewards. e.g. "uatom"
+  // Provider-originated reward denoms. These are denoms coming from the
+  // provider which are allowed to be used as rewards. e.g. "uatom"
   repeated string provider_reward_denoms = 12;
 }
 
@@ -84,5 +86,6 @@ message CrossChainValidator {
 // MaturingVSCPacket contains the maturing time of a received VSCPacket
 message MaturingVSCPacket {
   uint64 vscId = 1;
-  google.protobuf.Timestamp maturity_time = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp maturity_time = 2
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 }

@@ -2,10 +2,10 @@ package types
 
 import (
 	errorsmod "cosmossdk.io/errors"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
-	abci "github.com/tendermint/tendermint/abci/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // NewInitialGenesisState returns a consumer GenesisState for a completely new consumer chain.

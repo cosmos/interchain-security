@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
+	abci "github.com/cometbft/cometbft/abci/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 func NewValidatorSetChangePacketData(valUpdates []abci.ValidatorUpdate, valUpdateID uint64, slashAcks []string) ValidatorSetChangePacketData {
@@ -51,7 +51,7 @@ func (mat VSCMaturedPacketData) GetBytes() []byte {
 	return bytes
 }
 
-func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, infractionType stakingtypes.InfractionType) *SlashPacketData {
+func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, infractionType stakingtypes.Infraction) *SlashPacketData {
 	return &SlashPacketData{
 		Validator:      validator,
 		ValsetUpdateId: valUpdateId,
@@ -64,7 +64,7 @@ func (vdt SlashPacketData) ValidateBasic() error {
 		return errorsmod.Wrap(ErrInvalidPacketData, "validator fields cannot be empty")
 	}
 
-	if vdt.Infraction == stakingtypes.InfractionEmpty {
+	if vdt.Infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
 		return errorsmod.Wrap(ErrInvalidPacketData, "invalid infraction type")
 	}
 
