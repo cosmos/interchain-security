@@ -4,6 +4,7 @@ set -eo pipefail
 
 echo "Generating gogo proto code"
 cd proto
+ls ../ -alh
 proto_dirs=$(find ./interchain_security -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
 generated_files=""
 for dir in $proto_dirs; do
@@ -15,8 +16,9 @@ for dir in $proto_dirs; do
     fi
   done
 done
-
+ls -alh
 cd ..
+ls -alh
 
 files=$(find . -type f -name '*.pb.go')
 if [ -n "$files" ]; then
