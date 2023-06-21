@@ -5,14 +5,14 @@ package types
 
 import (
 	fmt "fmt"
-	types3 "github.com/cosmos/cosmos-sdk/types"
+	crypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	types2 "github.com/cosmos/cosmos-sdk/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	types "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	types2 "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	_ "github.com/gogo/protobuf/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
-	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
-	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	_ "github.com/cosmos/gogoproto/gogoproto"
+	proto "github.com/cosmos/gogoproto/proto"
+	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
+	types "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	_07_tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
@@ -33,28 +33,34 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
-// If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time
-// or get slashed. It is recommended that spawn time occurs after the proposal end time.
+// ConsumerAdditionProposal is a governance proposal on the provider chain to
+// spawn a new consumer chain. If it passes, then all validators on the provider
+// chain are expected to validate the consumer chain at spawn time or get
+// slashed. It is recommended that spawn time occurs after the proposal end
+// time.
 type ConsumerAdditionProposal struct {
 	// the title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	// the description of the proposal
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	// the proposed chain-id of the new consumer chain, must be different from all other consumer chain ids of the executing
-	// provider chain.
+	// the proposed chain-id of the new consumer chain, must be different from all
+	// other consumer chain ids of the executing provider chain.
 	ChainId string `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	// the proposed initial height of new consumer chain.
-	// For a completely new chain, this will be {0,1}. However, it may be different if this is a chain that is converting to a consumer chain.
+	// For a completely new chain, this will be {0,1}. However, it may be
+	// different if this is a chain that is converting to a consumer chain.
 	InitialHeight types.Height `protobuf:"bytes,4,opt,name=initial_height,json=initialHeight,proto3" json:"initial_height"`
-	// The hash of the consumer chain genesis state without the consumer CCV module genesis params.
-	// It is used for off-chain confirmation of genesis.json validity by validators and other parties.
+	// The hash of the consumer chain genesis state without the consumer CCV
+	// module genesis params. It is used for off-chain confirmation of
+	// genesis.json validity by validators and other parties.
 	GenesisHash []byte `protobuf:"bytes,5,opt,name=genesis_hash,json=genesisHash,proto3" json:"genesis_hash,omitempty"`
-	// The hash of the consumer chain binary that should be run by validators on chain initialization.
-	// It is used for off-chain confirmation of binary validity by validators and other parties.
+	// The hash of the consumer chain binary that should be run by validators on
+	// chain initialization. It is used for off-chain confirmation of binary
+	// validity by validators and other parties.
 	BinaryHash []byte `protobuf:"bytes,6,opt,name=binary_hash,json=binaryHash,proto3" json:"binary_hash,omitempty"`
-	// spawn time is the time on the provider chain at which the consumer chain genesis is finalized and all validators
-	// will be responsible for starting their consumer chain validator node.
+	// spawn time is the time on the provider chain at which the consumer chain
+	// genesis is finalized and all validators will be responsible for starting
+	// their consumer chain validator node.
 	SpawnTime time.Time `protobuf:"bytes,7,opt,name=spawn_time,json=spawnTime,proto3,stdtime" json:"spawn_time"`
 	// Unbonding period for the consumer,
 	// which should be smaller than that of the provider in general.
@@ -67,8 +73,10 @@ type ConsumerAdditionProposal struct {
 	// during distribution events. The fraction is a string representing a
 	// decimal number. For example "0.75" would represent 75%.
 	ConsumerRedistributionFraction string `protobuf:"bytes,11,opt,name=consumer_redistribution_fraction,json=consumerRedistributionFraction,proto3" json:"consumer_redistribution_fraction,omitempty"`
-	// BlocksPerDistributionTransmission is the number of blocks between ibc-token-transfers from the consumer chain to the provider chain.
-	// On sending transmission event, `consumer_redistribution_fraction` of the accumulated tokens are sent to the consumer redistribution address.
+	// BlocksPerDistributionTransmission is the number of blocks between
+	// ibc-token-transfers from the consumer chain to the provider chain. On
+	// sending transmission event, `consumer_redistribution_fraction` of the
+	// accumulated tokens are sent to the consumer redistribution address.
 	BlocksPerDistributionTransmission int64 `protobuf:"varint,12,opt,name=blocks_per_distribution_transmission,json=blocksPerDistributionTransmission,proto3" json:"blocks_per_distribution_transmission,omitempty"`
 	// The number of historical info entries to persist in store.
 	// This param is a part of the cosmos sdk staking module. In the case of
@@ -77,9 +85,9 @@ type ConsumerAdditionProposal struct {
 	// The ID of a token transfer channel used for the Reward Distribution
 	// sub-protocol. If DistributionTransmissionChannel == "", a new transfer
 	// channel is created on top of the same connection as the CCV channel.
-	// Note that transfer_channel_id is the ID of the channel end on the consumer chain.
-	// it is most relevant for chains performing a sovereign to consumer changeover
-	// in order to maintan the existing ibc transfer channel
+	// Note that transfer_channel_id is the ID of the channel end on the consumer
+	// chain. it is most relevant for chains performing a sovereign to consumer
+	// changeover in order to maintan the existing ibc transfer channel
 	DistributionTransmissionChannel string `protobuf:"bytes,14,opt,name=distribution_transmission_channel,json=distributionTransmissionChannel,proto3" json:"distribution_transmission_channel,omitempty"`
 }
 
@@ -115,9 +123,10 @@ func (m *ConsumerAdditionProposal) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ConsumerAdditionProposal proto.InternalMessageInfo
 
-// ConsumerRemovalProposal is a governance proposal on the provider chain to remove (and stop) a consumer chain.
-// If it passes, all the consumer chain's state is removed from the provider chain. The outstanding unbonding
-// operation funds are released.
+// ConsumerRemovalProposal is a governance proposal on the provider chain to
+// remove (and stop) a consumer chain. If it passes, all the consumer chain's
+// state is removed from the provider chain. The outstanding unbonding operation
+// funds are released.
 type ConsumerRemovalProposal struct {
 	// the title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
@@ -125,7 +134,8 @@ type ConsumerRemovalProposal struct {
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	// the chain-id of the consumer chain to be stopped
 	ChainId string `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	// the time on the provider chain at which all validators are responsible to stop their consumer chain validator node
+	// the time on the provider chain at which all validators are responsible to
+	// stop their consumer chain validator node
 	StopTime time.Time `protobuf:"bytes,4,opt,name=stop_time,json=stopTime,proto3,stdtime" json:"stop_time"`
 }
 
@@ -253,8 +263,9 @@ func (m *EquivocationProposal) GetEquivocations() []*types1.Equivocation {
 	return nil
 }
 
-// A persisted queue entry indicating that a slash packet data instance needs to be handled.
-// This type belongs in the "global" queue, to coordinate slash packet handling times between consumers.
+// A persisted queue entry indicating that a slash packet data instance needs to
+// be handled. This type belongs in the "global" queue, to coordinate slash
+// packet handling times between consumers.
 type GlobalSlashEntry struct {
 	// Block time that slash packet was received by provider chain.
 	// This field is used for store key iteration ordering.
@@ -267,7 +278,8 @@ type GlobalSlashEntry struct {
 	// The provider's consensus address of the validator being slashed.
 	// This field is used to obtain validator power in HandleThrottleQueues.
 	//
-	// This field is not used in the store key, but is persisted in value bytes, see QueueGlobalSlashEntry.
+	// This field is not used in the store key, but is persisted in value bytes,
+	// see QueueGlobalSlashEntry.
 	ProviderValConsAddr []byte `protobuf:"bytes,4,opt,name=provider_val_cons_addr,json=providerValConsAddr,proto3" json:"provider_val_cons_addr,omitempty"`
 }
 
@@ -334,12 +346,14 @@ func (m *GlobalSlashEntry) GetProviderValConsAddr() []byte {
 
 // Params defines the parameters for CCV Provider module
 type Params struct {
-	TemplateClient *types2.ClientState `protobuf:"bytes,1,opt,name=template_client,json=templateClient,proto3" json:"template_client,omitempty"`
-	// TrustingPeriodFraction is used to compute the consumer and provider IBC client's TrustingPeriod from the chain defined UnbondingPeriod
+	TemplateClient *_07_tendermint.ClientState `protobuf:"bytes,1,opt,name=template_client,json=templateClient,proto3" json:"template_client,omitempty"`
+	// TrustingPeriodFraction is used to compute the consumer and provider IBC
+	// client's TrustingPeriod from the chain defined UnbondingPeriod
 	TrustingPeriodFraction string `protobuf:"bytes,2,opt,name=trusting_period_fraction,json=trustingPeriodFraction,proto3" json:"trusting_period_fraction,omitempty"`
 	// Sent IBC packets will timeout after this duration
 	CcvTimeoutPeriod time.Duration `protobuf:"bytes,3,opt,name=ccv_timeout_period,json=ccvTimeoutPeriod,proto3,stdduration" json:"ccv_timeout_period"`
-	// The channel initialization (IBC channel opening handshake) will timeout after this duration
+	// The channel initialization (IBC channel opening handshake) will timeout
+	// after this duration
 	InitTimeoutPeriod time.Duration `protobuf:"bytes,4,opt,name=init_timeout_period,json=initTimeoutPeriod,proto3,stdduration" json:"init_timeout_period"`
 	// The VSC packets sent by the provider will timeout after this duration.
 	// Note that unlike ccv_timeout_period which is an IBC param,
@@ -348,14 +362,15 @@ type Params struct {
 	VscTimeoutPeriod time.Duration `protobuf:"bytes,5,opt,name=vsc_timeout_period,json=vscTimeoutPeriod,proto3,stdduration" json:"vsc_timeout_period"`
 	// The period for which the slash meter is replenished
 	SlashMeterReplenishPeriod time.Duration `protobuf:"bytes,6,opt,name=slash_meter_replenish_period,json=slashMeterReplenishPeriod,proto3,stdduration" json:"slash_meter_replenish_period"`
-	// The fraction of total voting power that is replenished to the slash meter every replenish period.
-	// This param also serves as a maximum fraction of total voting power that the slash meter can hold.
+	// The fraction of total voting power that is replenished to the slash meter
+	// every replenish period. This param also serves as a maximum fraction of
+	// total voting power that the slash meter can hold.
 	SlashMeterReplenishFraction string `protobuf:"bytes,7,opt,name=slash_meter_replenish_fraction,json=slashMeterReplenishFraction,proto3" json:"slash_meter_replenish_fraction,omitempty"`
 	// The maximum amount of throttled slash or vsc matured packets
 	// that can be queued for a single consumer before the provider chain halts.
 	MaxThrottledPackets int64 `protobuf:"varint,8,opt,name=max_throttled_packets,json=maxThrottledPackets,proto3" json:"max_throttled_packets,omitempty"`
 	// The fee required to be paid to add a reward denom
-	ConsumerRewardDenomRegistrationFee types3.Coin `protobuf:"bytes,9,opt,name=consumer_reward_denom_registration_fee,json=consumerRewardDenomRegistrationFee,proto3" json:"consumer_reward_denom_registration_fee"`
+	ConsumerRewardDenomRegistrationFee types2.Coin `protobuf:"bytes,9,opt,name=consumer_reward_denom_registration_fee,json=consumerRewardDenomRegistrationFee,proto3" json:"consumer_reward_denom_registration_fee"`
 }
 
 func (m *Params) Reset()         { *m = Params{} }
@@ -391,7 +406,7 @@ func (m *Params) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Params proto.InternalMessageInfo
 
-func (m *Params) GetTemplateClient() *types2.ClientState {
+func (m *Params) GetTemplateClient() *_07_tendermint.ClientState {
 	if m != nil {
 		return m.TemplateClient
 	}
@@ -447,11 +462,11 @@ func (m *Params) GetMaxThrottledPackets() int64 {
 	return 0
 }
 
-func (m *Params) GetConsumerRewardDenomRegistrationFee() types3.Coin {
+func (m *Params) GetConsumerRewardDenomRegistrationFee() types2.Coin {
 	if m != nil {
 		return m.ConsumerRewardDenomRegistrationFee
 	}
-	return types3.Coin{}
+	return types2.Coin{}
 }
 
 type HandshakeMetadata struct {
@@ -552,7 +567,8 @@ func (m *SlashAcks) GetAddresses() []string {
 	return nil
 }
 
-// ConsumerAdditionProposals holds pending governance proposals on the provider chain to spawn a new chain.
+// ConsumerAdditionProposals holds pending governance proposals on the provider
+// chain to spawn a new chain.
 type ConsumerAdditionProposals struct {
 	// proposals waiting for spawn_time to pass
 	Pending []*ConsumerAdditionProposal `protobuf:"bytes,1,rep,name=pending,proto3" json:"pending,omitempty"`
@@ -598,7 +614,8 @@ func (m *ConsumerAdditionProposals) GetPending() []*ConsumerAdditionProposal {
 	return nil
 }
 
-// ConsumerRemovalProposals holds pending governance proposals on the provider chain to remove (and stop) a consumer chain.
+// ConsumerRemovalProposals holds pending governance proposals on the provider
+// chain to remove (and stop) a consumer chain.
 type ConsumerRemovalProposals struct {
 	// proposals waiting for stop_time to pass
 	Pending []*ConsumerRemovalProposal `protobuf:"bytes,1,rep,name=pending,proto3" json:"pending,omitempty"`
@@ -1015,7 +1032,8 @@ func (m *KeyAssignmentReplacement) GetPower() int64 {
 }
 
 // Used to serialize the ValidatorConsumerPubKey index from key assignment
-// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey tmprotocrypto.PublicKey
+// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey
+// tmprotocrypto.PublicKey
 type ValidatorConsumerPubKey struct {
 	ChainId      string            `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	ProviderAddr []byte            `protobuf:"bytes,2,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty"`
@@ -1077,7 +1095,8 @@ func (m *ValidatorConsumerPubKey) GetConsumerKey() *crypto.PublicKey {
 }
 
 // Used to serialize the ValidatorConsumerAddr index from key assignment
-// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr consAddr
+// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr
+// consAddr
 type ValidatorByConsumerAddr struct {
 	ChainId      string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	ConsumerAddr []byte `protobuf:"bytes,2,opt,name=consumer_addr,json=consumerAddr,proto3" json:"consumer_addr,omitempty"`
@@ -1374,7 +1393,7 @@ func (m *ConsumerAdditionProposal) MarshalToSizedBuffer(dAtA []byte) (int, error
 		i--
 		dAtA[i] = 0x5a
 	}
-	n1, err1 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.TransferTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.TransferTimeoutPeriod):])
+	n1, err1 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.TransferTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.TransferTimeoutPeriod):])
 	if err1 != nil {
 		return 0, err1
 	}
@@ -1382,7 +1401,7 @@ func (m *ConsumerAdditionProposal) MarshalToSizedBuffer(dAtA []byte) (int, error
 	i = encodeVarintProvider(dAtA, i, uint64(n1))
 	i--
 	dAtA[i] = 0x52
-	n2, err2 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
+	n2, err2 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
 	if err2 != nil {
 		return 0, err2
 	}
@@ -1390,7 +1409,7 @@ func (m *ConsumerAdditionProposal) MarshalToSizedBuffer(dAtA []byte) (int, error
 	i = encodeVarintProvider(dAtA, i, uint64(n2))
 	i--
 	dAtA[i] = 0x4a
-	n3, err3 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.UnbondingPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.UnbondingPeriod):])
+	n3, err3 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.UnbondingPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.UnbondingPeriod):])
 	if err3 != nil {
 		return 0, err3
 	}
@@ -1398,7 +1417,7 @@ func (m *ConsumerAdditionProposal) MarshalToSizedBuffer(dAtA []byte) (int, error
 	i = encodeVarintProvider(dAtA, i, uint64(n3))
 	i--
 	dAtA[i] = 0x42
-	n4, err4 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.SpawnTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.SpawnTime):])
+	n4, err4 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.SpawnTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.SpawnTime):])
 	if err4 != nil {
 		return 0, err4
 	}
@@ -1474,7 +1493,7 @@ func (m *ConsumerRemovalProposal) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	_ = i
 	var l int
 	_ = l
-	n6, err6 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.StopTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.StopTime):])
+	n6, err6 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.StopTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.StopTime):])
 	if err6 != nil {
 		return 0, err6
 	}
@@ -1596,7 +1615,7 @@ func (m *GlobalSlashEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	n7, err7 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.RecvTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.RecvTime):])
+	n7, err7 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.RecvTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.RecvTime):])
 	if err7 != nil {
 		return 0, err7
 	}
@@ -1649,7 +1668,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x3a
 	}
-	n9, err9 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.SlashMeterReplenishPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.SlashMeterReplenishPeriod):])
+	n9, err9 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.SlashMeterReplenishPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.SlashMeterReplenishPeriod):])
 	if err9 != nil {
 		return 0, err9
 	}
@@ -1657,7 +1676,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i = encodeVarintProvider(dAtA, i, uint64(n9))
 	i--
 	dAtA[i] = 0x32
-	n10, err10 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.VscTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.VscTimeoutPeriod):])
+	n10, err10 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.VscTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.VscTimeoutPeriod):])
 	if err10 != nil {
 		return 0, err10
 	}
@@ -1665,7 +1684,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i = encodeVarintProvider(dAtA, i, uint64(n10))
 	i--
 	dAtA[i] = 0x2a
-	n11, err11 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.InitTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.InitTimeoutPeriod):])
+	n11, err11 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.InitTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.InitTimeoutPeriod):])
 	if err11 != nil {
 		return 0, err11
 	}
@@ -1673,7 +1692,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i = encodeVarintProvider(dAtA, i, uint64(n11))
 	i--
 	dAtA[i] = 0x22
-	n12, err12 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
+	n12, err12 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
 	if err12 != nil {
 		return 0, err12
 	}
@@ -2053,7 +2072,7 @@ func (m *VscSendTimestamp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	n16, err16 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.Timestamp, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.Timestamp):])
+	n16, err16 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.Timestamp, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Timestamp):])
 	if err16 != nil {
 		return 0, err16
 	}
@@ -2295,13 +2314,13 @@ func (m *ConsumerAdditionProposal) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.SpawnTime)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.SpawnTime)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.UnbondingPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.UnbondingPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.CcvTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.TransferTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.TransferTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
 	l = len(m.ConsumerRedistributionFraction)
 	if l > 0 {
@@ -2338,7 +2357,7 @@ func (m *ConsumerRemovalProposal) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.StopTime)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.StopTime)
 	n += 1 + l + sovProvider(uint64(l))
 	return n
 }
@@ -2372,7 +2391,7 @@ func (m *GlobalSlashEntry) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.RecvTime)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.RecvTime)
 	n += 1 + l + sovProvider(uint64(l))
 	l = len(m.ConsumerChainID)
 	if l > 0 {
@@ -2402,13 +2421,13 @@ func (m *Params) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.CcvTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.InitTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.InitTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.VscTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.VscTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.SlashMeterReplenishPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.SlashMeterReplenishPeriod)
 	n += 1 + l + sovProvider(uint64(l))
 	l = len(m.SlashMeterReplenishFraction)
 	if l > 0 {
@@ -2578,7 +2597,7 @@ func (m *VscSendTimestamp) Size() (n int) {
 	if m.VscId != 0 {
 		n += 1 + sovProvider(uint64(m.VscId))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.Timestamp)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Timestamp)
 	n += 1 + l + sovProvider(uint64(l))
 	return n
 }
@@ -2926,7 +2945,7 @@ func (m *ConsumerAdditionProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.SpawnTime, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.SpawnTime, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2959,7 +2978,7 @@ func (m *ConsumerAdditionProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.UnbondingPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.UnbondingPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2992,7 +3011,7 @@ func (m *ConsumerAdditionProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.CcvTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.CcvTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3025,7 +3044,7 @@ func (m *ConsumerAdditionProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.TransferTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.TransferTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3306,7 +3325,7 @@ func (m *ConsumerRemovalProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.StopTime, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.StopTime, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3537,7 +3556,7 @@ func (m *GlobalSlashEntry) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.RecvTime, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.RecvTime, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3706,7 +3725,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.TemplateClient == nil {
-				m.TemplateClient = &types2.ClientState{}
+				m.TemplateClient = &_07_tendermint.ClientState{}
 			}
 			if err := m.TemplateClient.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -3773,7 +3792,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.CcvTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.CcvTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3806,7 +3825,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.InitTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.InitTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3839,7 +3858,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.VscTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.VscTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3872,7 +3891,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.SlashMeterReplenishPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.SlashMeterReplenishPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4965,7 +4984,7 @@ func (m *VscSendTimestamp) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.Timestamp, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.Timestamp, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

@@ -5,12 +5,12 @@ package types
 
 import (
 	fmt "fmt"
-	_ "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	types "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	types2 "github.com/cosmos/interchain-security/v2/x/ccv/types"
-	_ "github.com/gogo/protobuf/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
-	types1 "github.com/tendermint/tendermint/abci/types"
+	types "github.com/cometbft/cometbft/abci/types"
+	_ "github.com/cosmos/gogoproto/gogoproto"
+	proto "github.com/cosmos/gogoproto/proto"
+	_ "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	_07_tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	types1 "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	io "io"
 	math "math"
@@ -35,19 +35,19 @@ type GenesisState struct {
 	ProviderChannelId string `protobuf:"bytes,3,opt,name=provider_channel_id,json=providerChannelId,proto3" json:"provider_channel_id,omitempty"`
 	NewChain          bool   `protobuf:"varint,4,opt,name=new_chain,json=newChain,proto3" json:"new_chain,omitempty"`
 	// ProviderClientState filled in on new chain, nil on restart.
-	ProviderClientState *types.ClientState `protobuf:"bytes,5,opt,name=provider_client_state,json=providerClientState,proto3" json:"provider_client_state,omitempty"`
+	ProviderClientState *_07_tendermint.ClientState `protobuf:"bytes,5,opt,name=provider_client_state,json=providerClientState,proto3" json:"provider_client_state,omitempty"`
 	// ProviderConsensusState filled in on new chain, nil on restart.
-	ProviderConsensusState *types.ConsensusState `protobuf:"bytes,6,opt,name=provider_consensus_state,json=providerConsensusState,proto3" json:"provider_consensus_state,omitempty"`
+	ProviderConsensusState *_07_tendermint.ConsensusState `protobuf:"bytes,6,opt,name=provider_consensus_state,json=providerConsensusState,proto3" json:"provider_consensus_state,omitempty"`
 	// MaturingPackets nil on new chain, filled in on restart.
 	MaturingPackets []MaturingVSCPacket `protobuf:"bytes,7,rep,name=maturing_packets,json=maturingPackets,proto3" json:"maturing_packets"`
 	// InitialValset filled in on new chain and on restart.
-	InitialValSet []types1.ValidatorUpdate `protobuf:"bytes,8,rep,name=initial_val_set,json=initialValSet,proto3" json:"initial_val_set"`
+	InitialValSet []types.ValidatorUpdate `protobuf:"bytes,8,rep,name=initial_val_set,json=initialValSet,proto3" json:"initial_val_set"`
 	// HeightToValsetUpdateId nil on new chain, filled in on restart.
 	HeightToValsetUpdateId []HeightToValsetUpdateID `protobuf:"bytes,9,rep,name=height_to_valset_update_id,json=heightToValsetUpdateId,proto3" json:"height_to_valset_update_id"`
 	// OutstandingDowntimes nil on new chain, filled  in on restart.
 	OutstandingDowntimeSlashing []OutstandingDowntime `protobuf:"bytes,10,rep,name=outstanding_downtime_slashing,json=outstandingDowntimeSlashing,proto3" json:"outstanding_downtime_slashing"`
 	// PendingConsumerPackets nil on new chain, filled in on restart.
-	PendingConsumerPackets types2.ConsumerPacketDataList `protobuf:"bytes,11,opt,name=pending_consumer_packets,json=pendingConsumerPackets,proto3" json:"pending_consumer_packets"`
+	PendingConsumerPackets types1.ConsumerPacketDataList `protobuf:"bytes,11,opt,name=pending_consumer_packets,json=pendingConsumerPackets,proto3" json:"pending_consumer_packets"`
 	// LastTransmissionBlockHeight nil on new chain, filled in on restart.
 	LastTransmissionBlockHeight LastTransmissionBlockHeight `protobuf:"bytes,12,opt,name=last_transmission_block_height,json=lastTransmissionBlockHeight,proto3" json:"last_transmission_block_height"`
 	PreCCV                      bool                        `protobuf:"varint,13,opt,name=preCCV,proto3" json:"preCCV,omitempty"`
@@ -114,14 +114,14 @@ func (m *GenesisState) GetNewChain() bool {
 	return false
 }
 
-func (m *GenesisState) GetProviderClientState() *types.ClientState {
+func (m *GenesisState) GetProviderClientState() *_07_tendermint.ClientState {
 	if m != nil {
 		return m.ProviderClientState
 	}
 	return nil
 }
 
-func (m *GenesisState) GetProviderConsensusState() *types.ConsensusState {
+func (m *GenesisState) GetProviderConsensusState() *_07_tendermint.ConsensusState {
 	if m != nil {
 		return m.ProviderConsensusState
 	}
@@ -135,7 +135,7 @@ func (m *GenesisState) GetMaturingPackets() []MaturingVSCPacket {
 	return nil
 }
 
-func (m *GenesisState) GetInitialValSet() []types1.ValidatorUpdate {
+func (m *GenesisState) GetInitialValSet() []types.ValidatorUpdate {
 	if m != nil {
 		return m.InitialValSet
 	}
@@ -156,11 +156,11 @@ func (m *GenesisState) GetOutstandingDowntimeSlashing() []OutstandingDowntime {
 	return nil
 }
 
-func (m *GenesisState) GetPendingConsumerPackets() types2.ConsumerPacketDataList {
+func (m *GenesisState) GetPendingConsumerPackets() types1.ConsumerPacketDataList {
 	if m != nil {
 		return m.PendingConsumerPackets
 	}
-	return types2.ConsumerPacketDataList{}
+	return types1.ConsumerPacketDataList{}
 }
 
 func (m *GenesisState) GetLastTransmissionBlockHeight() LastTransmissionBlockHeight {
@@ -853,7 +853,7 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.ProviderClientState == nil {
-				m.ProviderClientState = &types.ClientState{}
+				m.ProviderClientState = &_07_tendermint.ClientState{}
 			}
 			if err := m.ProviderClientState.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -889,7 +889,7 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.ProviderConsensusState == nil {
-				m.ProviderConsensusState = &types.ConsensusState{}
+				m.ProviderConsensusState = &_07_tendermint.ConsensusState{}
 			}
 			if err := m.ProviderConsensusState.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -958,7 +958,7 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.InitialValSet = append(m.InitialValSet, types1.ValidatorUpdate{})
+			m.InitialValSet = append(m.InitialValSet, types.ValidatorUpdate{})
 			if err := m.InitialValSet[len(m.InitialValSet)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}

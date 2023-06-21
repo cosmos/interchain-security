@@ -129,6 +129,97 @@ func stepsUnbond(consumerName string) []Step {
 	}
 }
 
+// stepsCancelUnbond canceling unbonding operation for delegator and validator combination
+// the steps perform a full unbonding where the unbonding delegation is removed from the unbonding queue
+func stepsCancelUnbond(consumerName string) []Step {
+	return []Step{
+		{
+			action: unbondTokensAction{
+				chain:      chainID("provi"),
+				unbondFrom: validatorID("alice"),
+				sender:     validatorID("alice"),
+				amount:     1000000,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+				chainID("consu"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						// Voting power on consumer should not be affected yet
+						validatorID("alice"): 510,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: relayPacketsAction{
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID("consu"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: cancelUnbondTokensAction{
+				chain:     chainID("provi"),
+				delegator: validatorID("alice"),
+				validator: validatorID("alice"),
+				amount:    1000000, // cancel unbonding the full amount
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 510, // power restored
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+				chainID("consu"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						// Voting power on consumer should not be affected yet
+						validatorID("alice"): 509,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: relayPacketsAction{
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID("consu"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 510, // power restored on consumer
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+	}
+}
+
 // stepsRedelegateForOptOut tests redelegation, and sets up voting powers s.t
 // alice will have less than 5% of the total voting power. This is needed to
 // test opt-out functionality.

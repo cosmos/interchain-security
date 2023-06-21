@@ -3,10 +3,10 @@ package core
 import (
 	"strconv"
 
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	"github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 )
 
 /*
@@ -20,7 +20,7 @@ These files will be deprecated once ICS is able to upgrade to ibc-go v5.
 func ReconstructPacketFromEvent(event abci.Event) (packet types.Packet, err error) {
 	attrMap := make(map[string][]byte)
 	for _, attr := range event.Attributes {
-		attrMap[string(attr.Key)] = attr.Value
+		attrMap[string(attr.Key)] = []byte(attr.Value)
 	}
 
 	sequence, err := strconv.Atoi(string(attrMap[string(types.AttributeKeySequence)]))

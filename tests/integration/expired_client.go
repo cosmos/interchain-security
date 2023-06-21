@@ -3,15 +3,16 @@ package integration
 import (
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
-	abci "github.com/tendermint/tendermint/abci/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // TestVSCPacketSendWithExpiredClient tests queueing of VSCPackets when the consumer client is expired.
@@ -127,11 +128,11 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	// try to send slash packet for downtime infraction
 	addr := ed25519.GenPrivKey().PubKey().Address()
 	val := abci.Validator{Address: addr}
-	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 2, stakingtypes.Downtime)
+	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 2, stakingtypes.Infraction_INFRACTION_DOWNTIME)
 	// try to send slash packet for the same downtime infraction
-	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.Downtime)
+	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.Infraction_INFRACTION_DOWNTIME)
 	// try to send slash packet for the double-sign infraction
-	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.DoubleSign)
+	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
 
 	// check that the packets were added to the list of pending data packets
 	consumerPackets = consumerKeeper.GetPendingPackets(s.consumerCtx())

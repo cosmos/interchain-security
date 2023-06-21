@@ -1,6 +1,6 @@
 package main
 
-import clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+import clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 
 // this creates new clients on both chains and a connection (connection-0) between them
 // connection-0 is used to create a transfer channel between the chains

@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,14 +33,14 @@ func TestParams(t *testing.T) {
 		provideRewardDenoms,
 	) // these are the default params, IBC suite independently sets enabled=true
 
-	params := consumerKeeper.GetParams(ctx)
+	params := consumerKeeper.GetConsumerParams(ctx)
 	require.Equal(t, expParams, params)
 
 	newParams := types.NewParams(false, 1000,
 		"channel-2", "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
 		7*24*time.Hour, 25*time.Hour, "0.5", 500, 24*21*time.Hour, "0.05", []string{"untrn"}, []string{"uatom"})
 	consumerKeeper.SetParams(ctx, newParams)
-	params = consumerKeeper.GetParams(ctx)
+	params = consumerKeeper.GetConsumerParams(ctx)
 	require.Equal(t, newParams, params)
 
 	consumerKeeper.SetBlocksPerDistributionTransmission(ctx, 10)

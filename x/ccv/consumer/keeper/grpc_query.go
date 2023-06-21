@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -34,7 +34,7 @@ func (k Keeper) QueryParams(c context.Context,
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	p := k.GetParams(ctx)
+	p := k.GetConsumerParams(ctx)
 
 	return &types.QueryParamsResponse{Params: p}, nil
 }
