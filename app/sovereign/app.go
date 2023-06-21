@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	appparams "github.com/cosmos/interchain-security/v2/app/params"
+	appparams "github.com/cosmos/interchain-security/v3/app/params"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -82,14 +82,14 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
-	ibctestingcore "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
+	ibctestingcore "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 	"github.com/spf13/cast"
 
 	sdkdistr "github.com/cosmos/cosmos-sdk/x/distribution"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
 
 	sdkstaking "github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"

@@ -11,13 +11,13 @@ import (
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	cryptotestutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
+	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/stretchr/testify/require"
 
-	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	"github.com/golang/mock/gomock"
 )
 

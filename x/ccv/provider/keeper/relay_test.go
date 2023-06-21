@@ -12,12 +12,12 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 
-	ibcsimapp "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp"
-	cryptotestutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	ibcsimapp "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
+	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/require"

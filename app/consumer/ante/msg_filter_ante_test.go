@@ -6,8 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	"github.com/cosmos/interchain-security/v2/app/consumer/ante"
-	"github.com/cosmos/interchain-security/v2/app/params"
+	"github.com/cosmos/interchain-security/v3/app/consumer/ante"
+	"github.com/cosmos/interchain-security/v3/app/params"
 	"github.com/stretchr/testify/require"
 )
 

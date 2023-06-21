@@ -28,8 +28,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-	"github.com/cosmos/interchain-security/v2/app/params"
-	sovereignApp "github.com/cosmos/interchain-security/v2/app/sovereign"
+	"github.com/cosmos/interchain-security/v3/app/params"
+	sovereignApp "github.com/cosmos/interchain-security/v3/app/sovereign"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the

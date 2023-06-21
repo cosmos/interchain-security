@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	testutil "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )

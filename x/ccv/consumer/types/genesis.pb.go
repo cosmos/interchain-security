@@ -10,7 +10,7 @@ import (
 	proto "github.com/cosmos/gogoproto/proto"
 	_ "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	_07_tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	types1 "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	types1 "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	io "io"
 	math "math"

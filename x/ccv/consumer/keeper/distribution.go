@@ -11,8 +11,8 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
-	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // EndBlockRD executes EndBlock logic for the Reward Distribution sub-protocol.

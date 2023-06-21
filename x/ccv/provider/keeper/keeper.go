@@ -20,9 +20,9 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 
 	"github.com/cometbft/cometbft/libs/log"
 )

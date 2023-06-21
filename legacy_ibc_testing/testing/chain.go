@@ -35,8 +35,8 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/cosmos/ibc-go/v7/testing/mock"
 
-	ibctestingcore "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/core"
-	"github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp"
+	ibctestingcore "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
+	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
 )
 
 /*

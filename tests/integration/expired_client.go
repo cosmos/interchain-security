@@ -11,8 +11,8 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
-	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // TestVSCPacketSendWithExpiredClient tests queueing of VSCPackets when the consumer client is expired.

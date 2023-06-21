@@ -29,8 +29,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 
-	cdd "github.com/cosmos/interchain-security/v2/app/consumer-democracy"
-	"github.com/cosmos/interchain-security/v2/app/params"
+	cdd "github.com/cosmos/interchain-security/v3/app/consumer-democracy"
+	"github.com/cosmos/interchain-security/v3/app/params"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the

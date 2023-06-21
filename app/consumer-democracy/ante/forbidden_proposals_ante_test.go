@@ -10,8 +10,8 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	app "github.com/cosmos/interchain-security/v2/app/consumer-democracy"
-	"github.com/cosmos/interchain-security/v2/app/consumer-democracy/ante"
+	app "github.com/cosmos/interchain-security/v3/app/consumer-democracy"
+	"github.com/cosmos/interchain-security/v3/app/consumer-democracy/ante"
 	"github.com/stretchr/testify/require"
 
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"

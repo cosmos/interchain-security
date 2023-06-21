@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 
