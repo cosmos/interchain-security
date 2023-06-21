@@ -7,9 +7,9 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
@@ -78,7 +78,7 @@ func (k Keeper) DistributeRewardsInternally(ctx sdk.Context) {
 	// tokens do not go through the consumer redistribute split twice in the
 	// event that the transfer fails the tokens are returned to the consumer
 	// chain.
-	remainingTokens := fpTokens.Sub(consRedistrTokens)
+	remainingTokens := fpTokens.Sub(consRedistrTokens...)
 	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
 		types.ConsumerToSendToProviderName, remainingTokens)
 	if err != nil {
@@ -113,7 +113,6 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 		timeoutTimestamp := uint64(ctx.BlockTime().Add(transferTimeoutPeriod).UnixNano())
 
 		sentCoins := sdk.NewCoins()
-
 		// iterate over all whitelisted reward denoms
 		for _, denom := range k.AllowedRewardDenoms(ctx) {
 			// get the balance of the denom in the toSendToProviderTokens address
@@ -121,16 +120,17 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 
 			// if the balance is not zero,
 			if !balance.IsZero() {
-				// send the balance to the provider
-				err := k.ibcTransferKeeper.SendTransfer(ctx,
-					transfertypes.PortID,
-					ch,
-					balance,
-					tstProviderAddr,
-					providerAddr,
-					timeoutHeight,
-					timeoutTimestamp,
-				)
+				packetTransfer := &transfertypes.MsgTransfer{
+					SourcePort:       transfertypes.PortID,
+					SourceChannel:    ch,
+					Token:            balance,
+					Sender:           tstProviderAddr.String(), // consumer address to send from
+					Receiver:         providerAddr,             // provider fee pool address to send to
+					TimeoutHeight:    timeoutHeight,            // timeout height disabled
+					TimeoutTimestamp: timeoutTimestamp,
+					Memo:             "consumer chain rewards distribution",
+				}
+				_, err := k.ibcTransferKeeper.Transfer(ctx, packetTransfer)
 				if err != nil {
 					return err
 				}
@@ -250,7 +250,7 @@ func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) types.NextFeeDi
 	totalTokens := sdk.NewDecCoinsFromCoins(total...)
 	// truncated decimals are implicitly added to provider
 	consumerTokens, _ := totalTokens.MulDec(frac).TruncateDecimal()
-	providerTokens := total.Sub(consumerTokens)
+	providerTokens := total.Sub(consumerTokens...)
 
 	return types.NextFeeDistributionEstimate{
 		CurrentHeight:        ctx.BlockHeight(),

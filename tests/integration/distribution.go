@@ -6,7 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+
 	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
@@ -23,7 +24,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.providerChain.NextBlock()
 
 	// register a consumer reward denom
-	params := s.consumerApp.GetConsumerKeeper().GetParams(s.consumerCtx())
+	params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
 	params.RewardDenoms = []string{sdk.DefaultBondDenom}
 	s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
 
@@ -53,7 +54,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	frac, err := sdk.NewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
 	s.Require().NoError(err)
 	consumerExpectedRewards, _ := sdk.NewDecCoinsFromCoins(feePoolTokens...).MulDec(frac).TruncateDecimal()
-	providerExpectedRewards := feePoolTokens.Sub(consumerExpectedRewards)
+	providerExpectedRewards := feePoolTokens.Sub(consumerExpectedRewards...)
 	s.consumerChain.NextBlock()
 
 	// amount from the fee pool is divided between consumer redistribute address and address reserved for provider chain
@@ -126,7 +127,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	// Check that the delAddr has the right amount less money in it after paying the fee
 	senderCoins2 := providerBankKeeper.GetAllBalances(s.providerCtx(), delAddr)
 	consumerRewardDenomRegistrationFee := s.providerApp.GetProviderKeeper().GetConsumerRewardDenomRegistrationFee(s.providerCtx())
-	s.Require().Equal(senderCoins1.Sub(senderCoins2), sdk.NewCoins(consumerRewardDenomRegistrationFee))
+	s.Require().Equal(senderCoins1.Sub(senderCoins2...), sdk.NewCoins(consumerRewardDenomRegistrationFee))
 
 	s.providerChain.NextBlock()
 
@@ -152,7 +153,7 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 	s.providerChain.NextBlock()
 
 	// Register denom on consumer chain
-	params := s.consumerApp.GetConsumerKeeper().GetParams(s.consumerCtx())
+	params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
 	params.RewardDenoms = []string{sdk.DefaultBondDenom}
 	s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
 
@@ -281,7 +282,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		s.providerChain.NextBlock()
 
 		if tc.denomRegistered {
-			params := s.consumerApp.GetConsumerKeeper().GetParams(s.consumerCtx())
+			params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
 			params.RewardDenoms = []string{sdk.DefaultBondDenom}
 			s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
 		}

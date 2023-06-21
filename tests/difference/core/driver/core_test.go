@@ -8,7 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibctestingcore "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/core"
 	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
 
@@ -66,7 +66,7 @@ func (s *CoreSuite) consumerChain() *ibctesting.TestChain {
 }
 
 func (b *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).StakingKeeper
+	return *b.providerChain().App.(*appProvider.App).StakingKeeper
 }
 
 func (b *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {
@@ -152,7 +152,8 @@ func (s *CoreSuite) delegatorBalance() int64 {
 
 // delegate delegates amt tokens to validator val
 func (s *CoreSuite) delegate(val, amt int64) {
-	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
+	providerStaking := s.providerStakingKeeper()
+	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
@@ -164,7 +165,8 @@ func (s *CoreSuite) delegate(val, amt int64) {
 
 // undelegate undelegates amt tokens from validator val
 func (s *CoreSuite) undelegate(val, amt int64) {
-	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
+	providerStaking := s.providerStakingKeeper()
+	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
@@ -177,13 +179,13 @@ func (s *CoreSuite) undelegate(val, amt int64) {
 // consumerSlash simulates a slash event occurring on the consumer chain.
 // It can be for a downtime or doublesign.
 func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
-	kind := stakingtypes.DoubleSign
+	kind := stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 	if isDowntime {
-		kind = stakingtypes.Downtime
+		kind = stakingtypes.Infraction_INFRACTION_DOWNTIME
 	}
 	ctx := s.ctx(C)
 	before := len(ctx.EventManager().Events())
-	s.consumerKeeper().Slash(ctx, val, h, 0, sdk.Dec{}, kind)
+	s.consumerKeeper().SlashWithInfractionReason(ctx, val, h, 0, sdk.Dec{}, kind)
 	// consumer module emits packets on slash, so these must be collected.
 	evts := ctx.EventManager().ABCIEvents()
 	for _, e := range evts[before:] {

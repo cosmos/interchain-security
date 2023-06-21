@@ -6,17 +6,19 @@ import (
 	"testing"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
+
+	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	"github.com/cosmos/interchain-security/v2/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 )
@@ -336,7 +338,7 @@ func TestSetPendingPackets(t *testing.T) {
 				SlashPacketData: ccv.NewSlashPacketData(
 					abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(), Power: int64(0)},
 					3,
-					stakingtypes.DoubleSign,
+					stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
 				),
 			},
 		},
@@ -359,7 +361,7 @@ func TestSetPendingPackets(t *testing.T) {
 			Power:   int64(2),
 		},
 		uint64(4),
-		stakingtypes.Downtime,
+		stakingtypes.Infraction_INFRACTION_DOWNTIME,
 	)
 	dataPackets = append(dataPackets, ccv.ConsumerPacketData{
 		Type: ccv.SlashPacket,

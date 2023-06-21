@@ -3,18 +3,18 @@ package integration
 import (
 	"testing"
 
+	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/ibc-go/v4/testing/mock"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/cosmos/ibc-go/v7/testing/mock"
 	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
-	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
 
 	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
 	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
 
 	"github.com/stretchr/testify/suite"
@@ -160,6 +160,7 @@ func initConsumerChain(
 	// run CCV module init genesis
 	s.NotPanics(func() {
 		consumerKeeper := bundle.GetKeeper()
+		// this will set the initial valset on consumer
 		consumerKeeper.InitGenesis(bundle.GetCtx(), genesisState)
 	})
 

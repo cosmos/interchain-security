@@ -7,9 +7,10 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+
 	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
 )
@@ -114,8 +115,18 @@ func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
 		// Attempt to complete unbonding in staking module
 		err := k.stakingKeeper.UnbondingCanComplete(ctx, id)
 		if err != nil {
-			// UnbondingCanComplete fails if the unbonding operation was not found,
-			// which means that the state of the x/staking module of cosmos-sdk is invalid.
+			if stakingtypes.ErrUnbondingNotFound.Is(err) {
+				// The unbonding was not found.
+				unbondingType, found := k.stakingKeeper.GetUnbondingType(ctx, id)
+				if found && unbondingType == stakingtypes.UnbondingType_UnbondingDelegation {
+					// If this is an unbonding delegation, it may have been removed
+					// after through a CancelUnbondingDelegation message
+					k.Logger(ctx).Debug("unbonding delegation was already removed:", "unbondingID", id)
+					continue
+				}
+			}
+			// UnbondingCanComplete failing means that the state of the x/staking module
+			// of cosmos-sdk is invalid. An exception is the case handled above
 			panic(fmt.Sprintf("could not complete unbonding op: %s", err.Error()))
 		}
 		k.Logger(ctx).Debug("unbonding operation matured on all consumers", "opID", id)
@@ -327,7 +338,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	consumerConsAddr := providertypes.NewConsumerConsAddress(data.Validator.Address)
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
-	if data.Infraction == stakingtypes.DoubleSign {
+	if data.Infraction == stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN {
 		// getMappedInfractionHeight is already checked in ValidateSlashPacket
 		infractionHeight, _ := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 
@@ -382,7 +393,7 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 			"the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
-	if data.Infraction != stakingtypes.DoubleSign && data.Infraction != stakingtypes.Downtime {
+	if data.Infraction != stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN && data.Infraction != stakingtypes.Infraction_INFRACTION_DOWNTIME {
 		return fmt.Errorf("invalid infraction type: %s", data.Infraction)
 	}
 
