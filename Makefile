@@ -122,17 +122,17 @@ proto-gen:
 	@$(protoImage) sh ./scripts/protocgen.sh;
 
 proto-check:
-	@if git diff --quiet --exit-code -- proto; then \
-		echo "No uncommitted changes in proto."; \
+	@if git diff --quiet --exit-code main...HEAD -- proto; then \
+		echo "No changes found in /proto directory between the currently checked out branch and main."; \
 	else \
-		echo "Uncommitted changes found in proto."; \
-		modified_protos=$$(git diff --name-only proto); \
+		echo "Changes found in /proto directory between the currently checked out branch and main."; \
+		modified_protos=$$(git diff --name-only main...HEAD proto); \
 		modified_pb_files= ; \
         for proto_file in $${modified_protos}; do \
             proto_name=$$(basename "$${proto_file}" .proto); \
             pb_files=$$(find x/ccv -name "$${proto_name}.pb.go"); \
             for pb_file in $${pb_files}; do \
-                if git diff --quiet --exit-code -- "$${pb_file}"; then \
+                if git diff --quiet --exit-code main...HEAD -- "$${pb_file}"; then \
                     echo "Missing uncommitted changes in $${pb_file}"; \
 					exit 1; \
                 else \
