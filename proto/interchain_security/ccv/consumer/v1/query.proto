@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package interchain_security.ccv.consumer.v1;
+import "interchain_security/ccv/v1/shared_consumer.proto";
 option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types";
 
 import "gogoproto/gogo.proto";
@@ -50,5 +51,5 @@ message QueryParamsRequest {}
 // QueryParamsResponse is response type for the Query/Params RPC method.
 message QueryParamsResponse {
   // params holds all the parameters of this module.
-  Params params = 1 [ (gogoproto.nullable) = false ];
+  interchain_security.ccv.v1.Params params = 1 [ (gogoproto.nullable) = false ];
 }

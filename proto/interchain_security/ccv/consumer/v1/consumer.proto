@@ -1,7 +1,7 @@
 syntax = "proto3";
 package interchain_security.ccv.consumer.v1;
 
-import "interchain_security/ccv/v1/ccv.proto";
+import "interchain_security/ccv/v1/wire.proto";
 
 option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types";
 

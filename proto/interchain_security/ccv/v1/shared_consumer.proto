@@ -10,6 +10,7 @@ import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "ibc/core/channel/v1/channel.proto";
 import "google/protobuf/duration.proto";
 import "gogoproto/gogo.proto";
+import "interchain_security/ccv/v1/wire.proto";
 
 //
 // Note any type defined in this file is referenced/persisted in both the consumer and provider CCV modules,
@@ -116,3 +117,15 @@ message GenesisState {
     bool preCCV = 13; // flag indicating whether the consumer CCV module starts in
                       // pre-CCV state
 }
+
+// HeightValsetUpdateID represents a mapping internal to the consumer CCV module
+// AND used in shared consumer genesis state, which links a block height to each recv valset update id.
+message HeightToValsetUpdateID {
+    uint64 height = 1;
+    uint64 valset_update_id = 2;
+}
+
+// OutstandingDowntime defines the type used internally to the consumer CCV module,
+// AND used in shared consumer genesis state, in order to not send multiple slashing 
+// requests for the same downtime infraction.
+message OutstandingDowntime { string validator_consensus_address = 1; }

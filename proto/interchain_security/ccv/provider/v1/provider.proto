@@ -4,6 +4,8 @@ package interchain_security.ccv.provider.v1;
 
 option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/provider/types";
 
+import "interchain_security/ccv/v1/shared_consumer.proto";
+import "interchain_security/ccv/v1/wire.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
@@ -247,7 +249,7 @@ message VscSendTimestamp {
 // 
 // Note this type is only used internally to the provider CCV module.
 message ValidatorSetChangePackets {
-  repeated ValidatorSetChangePacketData list = 1
+  repeated interchain_security.ccv.v1.ValidatorSetChangePacketData list = 1
       [ (gogoproto.nullable) = false ];
 }
 
