@@ -109,9 +109,6 @@ import (
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
-
-	// unnamed import of statik for swagger UI support
-	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 )
 
 const (
