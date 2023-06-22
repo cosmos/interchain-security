@@ -1395,7 +1395,7 @@ func (tr TestRun) delegateTokens(
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(action.chain, 1, 10*time.Second)
+	tr.waitBlocks(action.chain, 2, 10*time.Second)
 }
 
 type unbondTokensAction struct {
