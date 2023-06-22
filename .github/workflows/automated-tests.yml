@@ -23,9 +23,15 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
+<<<<<<< HEAD
           go-version: "1.19" # The Go version to download (if necessary) and use.
       # - name: Proto Check
       #   run: make proto-check
+=======
+          go-version: "1.20" # The Go version to download (if necessary) and use.
+      - name: Proto Check
+        run: make proto-check
+>>>>>>> acc494f (fix: re-enable make proto-check and update proto options (#1060))
       - name: Unit, integration and difference tests
         run: go test ./...
       - name: E2E tests
