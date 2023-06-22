@@ -18,6 +18,8 @@ import "cosmos/base/v1beta1/coin.proto";
 // chain are expected to validate the consumer chain at spawn time or get
 // slashed. It is recommended that spawn time occurs after the proposal end
 // time.
+// 
+// Note this type is only used internally to the provider CCV module. 
 message ConsumerAdditionProposal {
   option (gogoproto.goproto_getters) = false;
   option (gogoproto.goproto_stringer) = false;
@@ -83,6 +85,8 @@ message ConsumerAdditionProposal {
 // remove (and stop) a consumer chain. If it passes, all the consumer chain's
 // state is removed from the provider chain. The outstanding unbonding operation
 // funds are released.
+// 
+// Note this type is only used internally to the provider CCV module. 
 message ConsumerRemovalProposal {
   // the title of the proposal
   string title = 1;
@@ -96,6 +100,10 @@ message ConsumerRemovalProposal {
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 }
 
+// EquivocationProposal is a governance proposal on the provider chain to
+// punish a validator for equivocation on a consumer chain.
+// 
+// This type is only used internally to the consumer CCV module.  
 message EquivocationProposal {
   // the title of the proposal
   string title = 1;
@@ -108,6 +116,8 @@ message EquivocationProposal {
 // A persisted queue entry indicating that a slash packet data instance needs to
 // be handled. This type belongs in the "global" queue, to coordinate slash
 // packet handling times between consumers.
+//
+// Soon to be depreicated
 message GlobalSlashEntry {
   // Block time that slash packet was received by provider chain.
   // This field is used for store key iteration ordering.
@@ -127,6 +137,8 @@ message GlobalSlashEntry {
 }
 
 // Params defines the parameters for CCV Provider module
+// 
+// Note this type is only used internally to the provider CCV module. 
 message Params {
   ibc.lightclients.tendermint.v1.ClientState template_client = 1;
   // TrustingPeriodFraction is used to compute the consumer and provider IBC
@@ -164,17 +176,16 @@ message Params {
       [ (gogoproto.nullable) = false ];
 }
 
-message HandshakeMetadata {
-  string provider_fee_pool_addr = 1;
-  string version = 2;
-}
-
 // SlashAcks contains cons addresses of consumer chain validators
-// successfully slashed on the provider chain
+// successfully slashed on the provider chain. 
+// 
+// Note this type is only used internally to the provider CCV module.
 message SlashAcks { repeated string addresses = 1; }
 
 // ConsumerAdditionProposals holds pending governance proposals on the provider
 // chain to spawn a new chain.
+// 
+// Note this type is only used internally to the provider CCV module.
 message ConsumerAdditionProposals {
   // proposals waiting for spawn_time to pass
   repeated ConsumerAdditionProposal pending = 1;
@@ -182,14 +193,19 @@ message ConsumerAdditionProposals {
 
 // ConsumerRemovalProposals holds pending governance proposals on the provider
 // chain to remove (and stop) a consumer chain.
+// 
+// Note this type is only used internally to the provider CCV module.
 message ConsumerRemovalProposals {
   // proposals waiting for stop_time to pass
   repeated ConsumerRemovalProposal pending = 1;
 }
 
 // AddressList contains a list of consensus addresses
+// 
+// Note this type is only used internally to the provider CCV module.
 message AddressList { repeated bytes addresses = 1; }
 
+// Note this type is only used internally to the provider CCV module.
 message ChannelToChain {
   string channel_id = 1;
   string chain_id = 2;
@@ -197,6 +213,8 @@ message ChannelToChain {
 
 // VscUnbondingOps contains the IDs of unbonding operations that are waiting for
 // at least one VSCMaturedPacket with vscID from a consumer chain
+// 
+// Note this type is only used internally to the provider CCV module  .
 message VscUnbondingOps {
   uint64 vsc_id = 1;
   repeated uint64 unbonding_op_ids = 2;
@@ -204,17 +222,21 @@ message VscUnbondingOps {
 
 // UnbondingOp contains the ids of consumer chains that need to unbond before
 // the unbonding operation with the given ID can unbond
+// 
+// Note this type is only used internally to the provider CCV module.
 message UnbondingOp {
   uint64 id = 1;
   // consumer chains that are still unbonding
   repeated string unbonding_consumer_chains = 2;
 }
 
+// Note this type is only used internally to the provider CCV module.
 message InitTimeoutTimestamp {
   string chain_id = 1;
   uint64 timestamp = 2;
 }
 
+// Note this type is only used internally to the provider CCV module.
 message VscSendTimestamp {
   uint64 vsc_id = 1;
   google.protobuf.Timestamp timestamp = 2
@@ -225,6 +247,7 @@ message VscSendTimestamp {
 // Key assignment section
 //
 
+// Note this type is only used internally to the provider CCV module.
 message KeyAssignmentReplacement {
   bytes provider_addr = 1;
   tendermint.crypto.PublicKey prev_c_key = 2;
@@ -234,6 +257,8 @@ message KeyAssignmentReplacement {
 // Used to serialize the ValidatorConsumerPubKey index from key assignment
 // ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey
 // tmprotocrypto.PublicKey
+//
+// Note this type is only used internally to the provider CCV module.
 message ValidatorConsumerPubKey {
   string chain_id = 1;
   bytes provider_addr = 2;
@@ -243,6 +268,8 @@ message ValidatorConsumerPubKey {
 // Used to serialize the ValidatorConsumerAddr index from key assignment
 // ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr
 // consAddr
+// 
+// Note this type is only used internally to the provider CCV module.
 message ValidatorByConsumerAddr {
   string chain_id = 1;
   bytes consumer_addr = 2;
@@ -251,6 +278,8 @@ message ValidatorByConsumerAddr {
 
 // Used to serialize the ConsumerAddrsToPrune index from key assignment
 // ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrs AddressList
+//
+// Note this type is only used internally to the provider CCV module.
 message ConsumerAddrsToPrune {
   string chain_id = 1;
   uint64 vsc_id = 2;

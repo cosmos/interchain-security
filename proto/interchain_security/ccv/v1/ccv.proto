@@ -85,3 +85,9 @@ enum ConsumerPacketDataType {
   CONSUMER_PACKET_TYPE_VSCM = 2
       [ (gogoproto.enumvalue_customname) = "VscMaturedPacket" ];
 }
+
+// Note this type is used during IBC handshake methods for both the consumer and provider
+message HandshakeMetadata {
+  string provider_fee_pool_addr = 1;
+  string version = 2;
+}
