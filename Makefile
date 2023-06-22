@@ -122,19 +122,27 @@ proto-gen:
 	@$(protoImage) sh ./scripts/protocgen.sh;
 
 proto-check:
-	@if git diff --quiet; then \
-		echo "No files were modified before running 'make proto-gen'."; \
+	@if git diff --quiet --exit-code main...HEAD -- proto; then \
+		echo "Pass! No committed changes found in /proto directory between the currently checked out branch and main."; \
 	else \
-		echo "Error: Uncommitted changes exist before running 'make proto-gen'. Please commit or stash your changes."; \
-		exit 1; \
-	fi
-	@$(MAKE) proto-gen
-	@if git diff --quiet; then \
-		echo "No files were modified after running 'make proto-gen'. Pass!"; \
-	else \
-		echo "Error: Files were modified after running 'make proto-gen'. Please commit changes to .pb files"; \
-		exit 1; \
-	fi
+		echo "Committed changes found in /proto directory between the currently checked out branch and main."; \
+		modified_protos=$$(git diff --name-only main...HEAD proto); \
+		modified_pb_files= ; \
+        for proto_file in $${modified_protos}; do \
+            proto_name=$$(basename "$${proto_file}" .proto); \
+            pb_files=$$(find x/ccv -name "$${proto_name}.pb.go"); \
+            for pb_file in $${pb_files}; do \
+                if git diff --quiet --exit-code main...HEAD -- "$${pb_file}"; then \
+                    echo "Missing committed changes in $${pb_file}"; \
+					exit 1; \
+                else \
+                    modified_pb_files+="$${pb_file} "; \
+                fi \
+            done \
+        done; \
+		echo "Pass! Correctly modified pb files: "; \
+		echo $${modified_pb_files}; \
+    fi
 
 proto-format:
 	@echo "Formatting Protobuf files"
