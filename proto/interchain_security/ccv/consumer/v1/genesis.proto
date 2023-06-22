@@ -13,6 +13,9 @@ import "google/protobuf/duration.proto";
 import "gogoproto/gogo.proto";
 
 // GenesisState defines the CCV consumer chain genesis state
+// 
+// Note this type is referenced in both the consumer and provider CCV modules,
+// and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis.
 message GenesisState {
   Params params = 1 [ (gogoproto.nullable) = false ];
   string provider_client_id = 2; // empty for a new chain, filled in on restart.
@@ -46,13 +49,13 @@ message GenesisState {
                     // pre-CCV state
 }
 
-// HeightValsetUpdateID defines the genesis information for the mapping
-// of each block height to a valset update id
+// HeightValsetUpdateID represents a mapping internal to the consumer CCV module
+// which links a block height to each recv valset update id.
 message HeightToValsetUpdateID {
   uint64 height = 1;
   uint64 valset_update_id = 2;
 }
 
-// OutstandingDowntime defines the genesis information for each validator
-// flagged with an outstanding downtime slashing.
+// OutstandingDowntime defines the type used internally to the consumer CCV module,
+// in order to not send multiple slashing requests for the same downtime infraction.
 message OutstandingDowntime { string validator_consensus_address = 1; }

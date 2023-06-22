@@ -11,7 +11,10 @@ import "cosmos_proto/cosmos.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
-// Params defines the parameters for CCV consumer module
+// Params defines the parameters for CCV consumer module.
+// 
+// Note this type is referenced in both the consumer and provider CCV modules,
+// and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis. 
 message Params {
   // TODO: Remove enabled flag and find a better way to setup integration tests
   // See: https://github.com/cosmos/interchain-security/issues/339
@@ -69,10 +72,15 @@ message Params {
 }
 
 // LastTransmissionBlockHeight is the last time validator holding
-// pools were transmitted to the provider chain
+// pools were transmitted to the provider chain.
+//
+// This type is only used internally to the consumer CCV module. 
 message LastTransmissionBlockHeight { int64 height = 1; }
 
-// CrossChainValidator defines the validators for CCV consumer module
+// CrossChainValidator defines the type used to store validator information internal 
+// to the consumer CCV module.  Note one cross chain validator entry is persisted for
+// each consumer validator, where incoming VSC packets update this data, which is eventually
+// forwarded to comet for consumer chain consensus. 
 message CrossChainValidator {
   bytes address = 1;
   int64 power = 2;
@@ -83,7 +91,9 @@ message CrossChainValidator {
   ];
 }
 
-// MaturingVSCPacket contains the maturing time of a received VSCPacket
+// MaturingVSCPacket represents a vsc packet that is maturing internal to the
+// consumer CCV module, where the consumer has not yet relayed a VSCMatured packet
+// back to the provider. 
 message MaturingVSCPacket {
   uint64 vscId = 1;
   google.protobuf.Timestamp maturity_time = 2
