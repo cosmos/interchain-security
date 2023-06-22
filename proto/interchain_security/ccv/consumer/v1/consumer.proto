@@ -9,13 +9,6 @@ import "google/protobuf/any.proto";
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "google/protobuf/duration.proto";
-import "google/protobuf/timestamp.proto";
-
-// LastTransmissionBlockHeight is the last time validator holding
-// pools were transmitted to the provider chain.
-//
-// This type is only used internally to the consumer CCV module. 
-message LastTransmissionBlockHeight { int64 height = 1; }
 
 // CrossChainValidator defines the type used to store validator information internal 
 // to the consumer CCV module.  Note one cross chain validator entry is persisted for
@@ -29,13 +22,4 @@ message CrossChainValidator {
     (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey",
     (gogoproto.moretags) = "yaml:\"consensus_pubkey\""
   ];
-}
-
-// MaturingVSCPacket represents a vsc packet that is maturing internal to the
-// consumer CCV module, where the consumer has not yet relayed a VSCMatured packet
-// back to the provider. 
-message MaturingVSCPacket {
-  uint64 vscId = 1;
-  google.protobuf.Timestamp maturity_time = 2
-      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 }

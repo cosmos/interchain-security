@@ -4,13 +4,13 @@ package interchain_security.ccv.v1;
 
 option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/types";
 
-import "interchain_security/ccv/consumer/v1/consumer.proto";
 import "tendermint/abci/types.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "ibc/core/channel/v1/channel.proto";
 import "google/protobuf/duration.proto";
 import "gogoproto/gogo.proto";
 import "interchain_security/ccv/v1/wire.proto";
+import "google/protobuf/timestamp.proto";
 
 //
 // Note any type defined in this file is referenced/persisted in both the consumer and provider CCV modules,
@@ -97,7 +97,7 @@ message GenesisState {
     // ProviderConsensusState filled in on new chain, nil on restart.
     ibc.lightclients.tendermint.v1.ConsensusState provider_consensus_state = 6;
     // MaturingPackets nil on new chain, filled in on restart.
-    repeated interchain_security.ccv.consumer.v1.MaturingVSCPacket
+    repeated MaturingVSCPacket
         maturing_packets = 7 [ (gogoproto.nullable) = false ];
     // InitialValset filled in on new chain and on restart.
     repeated .tendermint.abci.ValidatorUpdate initial_val_set = 8
@@ -112,7 +112,7 @@ message GenesisState {
     interchain_security.ccv.v1.ConsumerPacketDataList pending_consumer_packets =
         11 [ (gogoproto.nullable) = false ];
     // LastTransmissionBlockHeight nil on new chain, filled in on restart.
-    interchain_security.ccv.consumer.v1.LastTransmissionBlockHeight
+    LastTransmissionBlockHeight
         last_transmission_block_height = 12 [ (gogoproto.nullable) = false ];
     bool preCCV = 13; // flag indicating whether the consumer CCV module starts in
                       // pre-CCV state
@@ -129,3 +129,18 @@ message HeightToValsetUpdateID {
 // AND used in shared consumer genesis state, in order to not send multiple slashing 
 // requests for the same downtime infraction.
 message OutstandingDowntime { string validator_consensus_address = 1; }
+
+// LastTransmissionBlockHeight is the last time validator holding
+// pools were transmitted to the provider chain. This type is used internally 
+// to the consumer CCV module AND used in shared consumer genesis state.
+message LastTransmissionBlockHeight { int64 height = 1; }
+
+// MaturingVSCPacket represents a vsc packet that is maturing internal to the
+// consumer CCV module, where the consumer has not yet relayed a VSCMatured packet
+// back to the provider.  This type is used internally to the consumer CCV module
+// AND used in shared consumer genesis state.
+message MaturingVSCPacket {
+    uint64 vscId = 1;
+    google.protobuf.Timestamp maturity_time = 2
+        [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+}
