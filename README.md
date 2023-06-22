@@ -18,8 +18,8 @@ For more details on the Replicated Security protocol, take a look at the [docs](
 ```bash
 ## For OSX or Linux
 
-# go 1.18 (https://formulae.brew.sh/formula/go)
-brew install go@1.19
+# go 1.20 (https://formulae.brew.sh/formula/go)
+brew install go@1.20
 # jq (optional, for testnet) (https://formulae.brew.sh/formula/jq)
 brew install jq
 # docker (optional, for integration tests, testnet) (https://docs.docker.com/get-docker/)
