@@ -243,6 +243,20 @@ message VscSendTimestamp {
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 }
 
+// ValidatorSetChangePackets is a pb list of ccv.ValidatorSetChangePacketData.
+// 
+// Note this type is only used internally to the provider CCV module.
+message ValidatorSetChangePackets {
+  repeated ValidatorSetChangePacketData list = 1
+      [ (gogoproto.nullable) = false ];
+}
+
+// MaturedUnbondingOps defines a list of ids corresponding to ids of matured
+// unbonding operations.
+// 
+// Note this type is only used internally to the provider CCV module.
+message MaturedUnbondingOps { repeated uint64 ids = 1; }
+
 //
 // Key assignment section
 //

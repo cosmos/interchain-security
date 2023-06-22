@@ -9,6 +9,11 @@ import "cosmos/staking/v1beta1/staking.proto";
 import "gogoproto/gogo.proto";
 import "tendermint/abci/types.proto";
 
+//
+// Note any type defined in this file is used by both the consumer and provider
+// AND SENT OVER THE WIRE. Ideally these schemas should never change. 
+// 
+
 // This packet is sent from provider chain to consumer chain if the validator
 // set for consumer chain changes (due to new bonding/unbonding messages or
 // slashing events) A VSCMatured packet from consumer chain will be sent
@@ -23,12 +28,6 @@ message ValidatorSetChangePacketData {
   // consensus address of consumer chain validators
   // successfully slashed on the provider chain
   repeated string slash_acks = 3;
-}
-
-// List of ccv.ValidatorSetChangePacketData.
-message ValidatorSetChangePackets {
-  repeated ValidatorSetChangePacketData list = 1
-      [ (gogoproto.nullable) = false ];
 }
 
 // This packet is sent from the consumer chain to the provider chain
@@ -52,10 +51,6 @@ message SlashPacketData {
   cosmos.staking.v1beta1.Infraction infraction = 3;
 }
 
-// MaturedUnbondingOps defines a list of ids corresponding to ids of matured
-// unbonding operations.
-message MaturedUnbondingOps { repeated uint64 ids = 1; }
-
 // ConsumerPacketData contains a consumer packet data and a type tag
 message ConsumerPacketData {
   ConsumerPacketDataType type = 1;
@@ -66,6 +61,7 @@ message ConsumerPacketData {
   }
 }
 
+// TODO: to be removed altogether in https://github.com/cosmos/interchain-security/pull/1037
 // ConsumerPacketDataList is a list of consumer packet data packets.
 message ConsumerPacketDataList {
   repeated ConsumerPacketData list = 1 [ (gogoproto.nullable) = false ];
