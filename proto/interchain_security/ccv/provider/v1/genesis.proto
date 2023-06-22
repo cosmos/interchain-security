@@ -46,7 +46,9 @@ message GenesisState {
       [ (gogoproto.nullable) = false ];
 }
 
-// consumer chain
+// The provider CCV module's knowledge of consumer state. 
+//
+// Note this type is only used internally to the provider CCV module.
 message ConsumerState {
   // ChainID defines the chain ID for the consumer chain
   string chain_id = 1;

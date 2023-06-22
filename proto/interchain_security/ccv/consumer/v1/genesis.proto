@@ -12,42 +12,6 @@ import "ibc/core/channel/v1/channel.proto";
 import "google/protobuf/duration.proto";
 import "gogoproto/gogo.proto";
 
-// GenesisState defines the CCV consumer chain genesis state
-// 
-// Note this type is referenced in both the consumer and provider CCV modules,
-// and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis.
-message GenesisState {
-  Params params = 1 [ (gogoproto.nullable) = false ];
-  string provider_client_id = 2; // empty for a new chain, filled in on restart.
-  string provider_channel_id =
-      3; // empty for a new chain, filled in on restart.
-  bool new_chain =
-      4; // true for new chain GenesisState, false for chain restart.
-  // ProviderClientState filled in on new chain, nil on restart.
-  ibc.lightclients.tendermint.v1.ClientState provider_client_state = 5;
-  // ProviderConsensusState filled in on new chain, nil on restart.
-  ibc.lightclients.tendermint.v1.ConsensusState provider_consensus_state = 6;
-  // MaturingPackets nil on new chain, filled in on restart.
-  repeated interchain_security.ccv.consumer.v1.MaturingVSCPacket
-      maturing_packets = 7 [ (gogoproto.nullable) = false ];
-  // InitialValset filled in on new chain and on restart.
-  repeated .tendermint.abci.ValidatorUpdate initial_val_set = 8
-      [ (gogoproto.nullable) = false ];
-  // HeightToValsetUpdateId nil on new chain, filled in on restart.
-  repeated HeightToValsetUpdateID height_to_valset_update_id = 9
-      [ (gogoproto.nullable) = false ];
-  // OutstandingDowntimes nil on new chain, filled  in on restart.
-  repeated OutstandingDowntime outstanding_downtime_slashing = 10
-      [ (gogoproto.nullable) = false ];
-  // PendingConsumerPackets nil on new chain, filled in on restart.
-  interchain_security.ccv.v1.ConsumerPacketDataList pending_consumer_packets =
-      11 [ (gogoproto.nullable) = false ];
-  // LastTransmissionBlockHeight nil on new chain, filled in on restart.
-  interchain_security.ccv.consumer.v1.LastTransmissionBlockHeight
-      last_transmission_block_height = 12 [ (gogoproto.nullable) = false ];
-  bool preCCV = 13; // flag indicating whether the consumer CCV module starts in
-                    // pre-CCV state
-}
 
 // HeightValsetUpdateID represents a mapping internal to the consumer CCV module
 // which links a block height to each recv valset update id.
