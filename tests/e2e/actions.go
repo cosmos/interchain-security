@@ -1760,7 +1760,6 @@ func (tr TestRun) registerConsumerRewardDenom(action registerConsumerRewardDenom
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--gas`, "9000000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
 
@@ -1771,6 +1770,8 @@ func (tr TestRun) registerConsumerRewardDenom(action registerConsumerRewardDenom
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chain, 2, 10*time.Second)
 }
 
 // Creates an additional node on selected chain
