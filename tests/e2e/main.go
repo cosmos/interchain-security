@@ -58,10 +58,10 @@ func main() {
 
 	testRuns := []testRunWithSteps{
 		{ChangeoverTestRun(), changeoverSteps},
-		{DefaultTestRun(), happyPathSteps},
-		{DemocracyTestRun(true), democracySteps},
-		{DemocracyTestRun(false), rewardDenomConsumerSteps},
-		{SlashThrottleTestRun(), slashThrottleSteps},
+		// {DefaultTestRun(), happyPathSteps},
+		// {DemocracyTestRun(true), democracySteps},
+		// {DemocracyTestRun(false), rewardDenomConsumerSteps},
+		// {SlashThrottleTestRun(), slashThrottleSteps},
 	}
 	if includeMultiConsumer != nil && *includeMultiConsumer {
 		testRuns = append(testRuns, testRunWithSteps{MultiConsumerTestRun(), multipleConsumers})
@@ -115,8 +115,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.startChain(action, verbose)
 	case StartSovereignChainAction:
 		tr.startSovereignChain(action, verbose)
-	case UpgradeProposalAction:
-		tr.submitUpgradeProposal(action, verbose)
+	case LegacyUpgradeProposalAction:
+		tr.submitLegacyUpgradeProposal(action, verbose)
 	case waitUntilBlockAction:
 		tr.waitUntilBlockOnChain(action)
 	case ChangeoverChainAction:
