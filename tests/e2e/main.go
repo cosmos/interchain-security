@@ -58,10 +58,10 @@ func main() {
 
 	testRuns := []testRunWithSteps{
 		{ChangeoverTestRun(), changeoverSteps},
-		// {DefaultTestRun(), happyPathSteps},
-		// {DemocracyTestRun(true), democracySteps},
-		// {DemocracyTestRun(false), rewardDenomConsumerSteps},
-		// {SlashThrottleTestRun(), slashThrottleSteps},
+		{DefaultTestRun(), happyPathSteps},
+		{DemocracyTestRun(true), democracySteps},
+		{DemocracyTestRun(false), rewardDenomConsumerSteps},
+		{SlashThrottleTestRun(), slashThrottleSteps},
 	}
 	if includeMultiConsumer != nil && *includeMultiConsumer {
 		testRuns = append(testRuns, testRunWithSteps{MultiConsumerTestRun(), multipleConsumers})
