@@ -784,8 +784,9 @@ func TestGlobalSlashEntryDeletion(t *testing.T) {
 
 	// Instantiate shuffled copy of above slice
 	shuffledEntries := append([]providertypes.GlobalSlashEntry{}, entries...)
-	rand.Seed(now.UnixNano())
-	rand.Shuffle(len(shuffledEntries), func(i, j int) {
+	seed := time.Now().UnixNano()
+	rng := rand.New(rand.NewSource(seed))
+	rng.Shuffle(len(shuffledEntries), func(i, j int) {
 		shuffledEntries[i], shuffledEntries[j] = shuffledEntries[j], shuffledEntries[i]
 	})
 
@@ -1192,7 +1193,8 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		defaultParams.MaxThrottledPackets = tc.max
 		providerKeeper.SetParams(ctx, defaultParams)
 
-		rand.Seed(time.Now().UnixNano())
+		seed := time.Now().UnixNano()
+		rng := rand.New(rand.NewSource(seed))
 
 		// Queuing up a couple data instances for another chain shouldn't matter
 		err := providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 0, testkeeper.GetNewSlashPacketData())
@@ -1203,7 +1205,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		// Queue packet data instances until we reach the max (some slash packets, some VSC matured packets)
 		reachedMax := false
 		for i := 0; i < int(tc.max); i++ {
-			randBool := rand.Intn(2) == 0
+			randBool := rng.Intn(2) == 0
 			var data interface{}
 			if randBool {
 				data = testkeeper.GetNewSlashPacketData()
