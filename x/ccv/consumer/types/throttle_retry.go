@@ -1,6 +1,6 @@
 package types
 
-import ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+import ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 
 func NewBouncingSlash(slashPacketData ccvtypes.ConsumerPacketData) (bouncingSlash BouncingSlash, ok bool) {
 	if slashPacketData.Type != ccvtypes.SlashPacket {

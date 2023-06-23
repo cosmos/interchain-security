@@ -3,9 +3,9 @@ package keeper_test
 import (
 	"testing"
 
-	testutil "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 

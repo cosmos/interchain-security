@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // TODO: Adjust SendPackets in relay.go
