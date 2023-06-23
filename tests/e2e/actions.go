@@ -13,11 +13,11 @@ import (
 	"time"
 
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/client"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/client"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	"github.com/tidwall/gjson"
 )
 
@@ -47,7 +47,6 @@ func (tr TestRun) sendTokens(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	)
 	if verbose {
@@ -57,6 +56,9 @@ func (tr TestRun) sendTokens(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 2, 30*time.Second)
 }
 
 type StartChainAction struct {
@@ -186,7 +188,6 @@ type submitTextProposalAction struct {
 	chain       chainID
 	from        validatorID
 	deposit     uint
-	propType    string
 	title       string
 	description string
 }
@@ -195,26 +196,26 @@ func (tr TestRun) submitTextProposal(
 	action submitTextProposalAction,
 	verbose bool,
 ) {
+	// TEXT PROPOSAL
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-
-		"tx", "gov", "submit-proposal",
+		"tx", "gov", "submit-legacy-proposal",
 		`--title`, action.title,
 		`--description`, action.description,
-		`--type`, action.propType,
 		`--deposit`, fmt.Sprint(action.deposit)+`stake`,
-
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 1, 10*time.Second)
 }
 
 type submitConsumerAdditionProposalAction struct {
@@ -236,7 +237,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	params := consumertypes.DefaultParams()
 	prop := client.ConsumerAdditionProposalJSON{
 		Title:                             "Propose the addition of a new chain",
-		Description:                       "Gonna be a great chain",
+		Summary:                           "Gonna be a great chain",
 		ChainId:                           string(tr.chainConfigs[action.consumerChain].chainId),
 		InitialHeight:                     action.initialHeight,
 		GenesisHash:                       []byte("gen_hash"),
@@ -271,24 +272,24 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// CONSUMER ADDITION PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-
-		"tx", "gov", "submit-proposal", "consumer-addition",
-		"/temp-proposal.json",
-
+		"tx", "gov", "submit-legacy-proposal", "consumer-addition", "/temp-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--gas`, `900000`,
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(chainID("provi"), 2, 10*time.Second)
 }
 
 type submitConsumerRemovalProposalAction struct {
@@ -305,11 +306,11 @@ func (tr TestRun) submitConsumerRemovalProposal(
 ) {
 	stopTime := tr.containerConfig.now.Add(action.stopTimeOffset)
 	prop := client.ConsumerRemovalProposalJSON{
-		Title:       fmt.Sprintf("Stop the %v chain", action.consumerChain),
-		Description: "It was a great chain",
-		ChainId:     string(tr.chainConfigs[action.consumerChain].chainId),
-		StopTime:    stopTime,
-		Deposit:     fmt.Sprint(action.deposit) + `stake`,
+		Title:    fmt.Sprintf("Stop the %v chain", action.consumerChain),
+		Summary:  "It was a great chain",
+		ChainId:  string(tr.chainConfigs[action.consumerChain].chainId),
+		StopTime: stopTime,
+		Deposit:  fmt.Sprint(action.deposit) + `stake`,
 	}
 
 	bz, err := json.Marshal(prop)
@@ -331,26 +332,27 @@ func (tr TestRun) submitConsumerRemovalProposal(
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// CONSUMER REMOVAL PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-
-		"tx", "gov", "submit-proposal", "consumer-removal",
-		"/temp-proposal.json",
-
+		"tx", "gov", "submit-legacy-proposal", "consumer-removal", "/temp-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(chainID("provi"), 2, 20*time.Second)
 }
 
-type submitParamChangeProposalAction struct {
+type submitParamChangeLegacyProposalAction struct {
 	chain    chainID
 	from     validatorID
 	deposit  uint
@@ -361,6 +363,7 @@ type submitParamChangeProposalAction struct {
 
 type paramChangeProposalJSON struct {
 	Title       string            `json:"title"`
+	Summary     string            `json:"summary"`
 	Description string            `json:"description"`
 	Changes     []paramChangeJSON `json:"changes"`
 	Deposit     string            `json:"deposit"`
@@ -373,12 +376,13 @@ type paramChangeJSON struct {
 }
 
 func (tr TestRun) submitParamChangeProposal(
-	action submitParamChangeProposalAction,
+	action submitParamChangeLegacyProposalAction,
 	verbose bool,
 ) {
 	prop := paramChangeProposalJSON{
-		Title:       "Param change",
-		Description: "Changing module params",
+		Title:       "Legacy Param change",
+		Summary:     "Changing legacy module params",
+		Description: "Changing legacy module params",
 		Changes:     []paramChangeJSON{{Subspace: action.subspace, Key: action.key, Value: action.value}},
 		Deposit:     fmt.Sprint(action.deposit) + `stake`,
 	}
@@ -402,24 +406,25 @@ func (tr TestRun) submitParamChangeProposal(
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-
-		"tx", "gov", "submit-proposal", "param-change",
-		"/params-proposal.json",
-
+	// PARAM CHANGE PROPOSAL // we should be able to make these all one command which will be cool
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+		"tx", "gov", "submit-legacy-proposal", "param-change", "/params-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
-	).CombinedOutput()
+	)
 
+	bz, err = cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 2, 60*time.Second)
 }
 
 type submitEquivocationProposalAction struct {
@@ -437,6 +442,7 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	providerChain := tr.chainConfigs[chainID("provi")]
 
 	prop := client.EquivocationProposalJSON{
+		Summary: "Validator equivocation!",
 		EquivocationProposal: types.EquivocationProposal{
 			Title:       "Validator equivocation!",
 			Description: fmt.Sprintf("Validator: %s has committed an equivocation infraction on chainID: %s", action.validator, action.chain),
@@ -471,24 +477,24 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// EQUIVOCATION PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, providerChain.binaryName,
-
-		"tx", "gov", "submit-proposal", "equivocation",
-		"/equivocation-proposal.json",
-
+		"tx", "gov", "submit-legacy-proposal", "equivocation", "/equivocation-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(providerChain.chainId),
 		`--home`, tr.getValidatorHome(providerChain.chainId, action.from),
 		`--node`, tr.getValidatorNode(providerChain.chainId, action.from),
 		`--gas`, "9000000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(chainID("provi"), 2, 30*time.Second)
 }
 
 type voteGovProposalAction struct {
@@ -520,7 +526,6 @@ func (tr *TestRun) voteGovProposal(
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
 				`--gas`, "900000",
-				`-b`, `block`,
 				`-y`,
 			).CombinedOutput()
 			if err != nil {
@@ -530,7 +535,9 @@ func (tr *TestRun) voteGovProposal(
 	}
 
 	wg.Wait()
-	tr.WaitTime(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 1, 10*time.Second)
+	time.Sleep(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
 }
 
 type startConsumerChainAction struct {
@@ -727,7 +734,7 @@ websocket_addr = "%s"
 
 [chains.gas_price]
 	denom = "stake"
-	price = 0.00
+	price = 0.000
 
 [chains.trust_threshold]
 	denominator = "3"
@@ -1212,6 +1219,7 @@ func (tr TestRun) transferChannelComplete(
 		"--dst-channel", "channel-"+fmt.Sprint(action.channelA),
 		"--src-channel", "channel-"+fmt.Sprint(action.channelB),
 	)
+
 	executeCommand(chanOpenAckCmd, "transferChanOpenAck")
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenConfirmCmd arguments.
@@ -1374,9 +1382,9 @@ func (tr TestRun) delegateTokens(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	)
+
 	if verbose {
 		fmt.Println("delegate cmd:", cmd.String())
 	}
@@ -1386,7 +1394,8 @@ func (tr TestRun) delegateTokens(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	tr.waitBlocks(action.chain, 1, 10*time.Second)
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 2, 10*time.Second)
 }
 
 type unbondTokensAction struct {
@@ -1418,9 +1427,9 @@ func (tr TestRun) unbondTokens(
 		`--node`, tr.getValidatorNode(action.chain, action.sender),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	)
+
 	if verbose {
 		fmt.Println("unbond cmd:", cmd.String())
 	}
@@ -1430,7 +1439,76 @@ func (tr TestRun) unbondTokens(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	tr.waitBlocks(action.chain, 1, 10*time.Second)
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 2, 20*time.Second)
+}
+
+type cancelUnbondTokensAction struct {
+	chain     chainID
+	delegator validatorID
+	validator validatorID
+	amount    uint
+}
+
+func (tr TestRun) cancelUnbondTokens(
+	action cancelUnbondTokensAction,
+	verbose bool,
+) {
+	validator := tr.validatorConfigs[action.validator].valoperAddress
+	if tr.validatorConfigs[action.validator].useConsumerKey {
+		validator = tr.validatorConfigs[action.validator].consumerValoperAddress
+	}
+
+	// get creation-height from state
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+		"q", "staking", "unbonding-delegation",
+		tr.validatorConfigs[action.delegator].delAddress,
+		validator,
+		`--home`, tr.getValidatorHome(action.chain, action.delegator),
+		`--node`, tr.getValidatorNode(action.chain, action.delegator),
+		`-o`, `json`,
+	)
+	if verbose {
+		fmt.Println("get unbonding delegations cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+	creationHeight := gjson.Get(string(bz), "entries.0.creation_height").Int()
+	if creationHeight == 0 {
+		log.Fatal("invalid creation height")
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+		"tx", "staking", "cancel-unbond",
+		validator,
+		fmt.Sprint(action.amount)+`stake`,
+		fmt.Sprint(creationHeight),
+		`--from`, `validator`+fmt.Sprint(action.delegator),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--home`, tr.getValidatorHome(action.chain, action.delegator),
+		`--node`, tr.getValidatorNode(action.chain, action.delegator),
+		`--gas`, "900000",
+		`--keyring-backend`, `test`,
+		`-o`, `json`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("unbond cmd:", cmd.String())
+	}
+
+	bz, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 2, 20*time.Second)
 }
 
 type redelegateTokensAction struct {
@@ -1470,7 +1548,6 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 		// Need to manually set gas limit past default (200000), since redelegate has a lot of operations
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	)
 
@@ -1483,7 +1560,8 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	tr.waitBlocks(action.chain, 1, 10*time.Second)
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 2, 10*time.Second)
 }
 
 type downtimeSlashAction struct {
@@ -1509,7 +1587,7 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 	// Bring validator down
 	tr.setValidatorDowntime(action.chain, action.validator, true, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
-	tr.waitBlocks(action.chain, 12, 2*time.Minute)
+	tr.waitBlocks(action.chain, 10, 3*time.Minute)
 	// Bring validator back up
 	tr.setValidatorDowntime(action.chain, action.validator, false, verbose)
 }
@@ -1577,7 +1655,7 @@ type unjailValidatorAction struct {
 // Sends an unjail transaction to the provider chain
 func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 	// wait a block to be sure downtime_jail_duration has elapsed
-	tr.waitBlocks(action.provider, 1, time.Minute)
+	time.Sleep(61 * time.Second)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
@@ -1591,9 +1669,9 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		`--node`, tr.getValidatorNode(action.provider, action.validator),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	)
+
 	if verbose {
 		fmt.Println("unjail cmd:", cmd.String())
 	}
@@ -1605,7 +1683,7 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 
 	// wait for 1 blocks to make sure that tx got included
 	// in a block and packets committed before proceeding
-	tr.waitBlocks(action.provider, 1, time.Minute)
+	tr.waitBlocks(action.provider, 2, time.Minute)
 }
 
 type registerRepresentativeAction struct {
@@ -1651,12 +1729,14 @@ func (tr TestRun) registerRepresentative(
 				`--home`, tr.getValidatorHome(action.chain, val),
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
-				`-b`, `block`,
 				`-y`,
 			).CombinedOutput()
 			if err != nil {
 				log.Fatal(err, "\n", string(bz))
 			}
+
+			// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+			tr.waitBlocks(action.chain, 1, 10*time.Second)
 		}(val, stake)
 	}
 
@@ -1680,7 +1760,6 @@ func (tr TestRun) registerConsumerRewardDenom(action registerConsumerRewardDenom
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--gas`, "9000000",
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
 
@@ -1691,6 +1770,8 @@ func (tr TestRun) registerConsumerRewardDenom(action registerConsumerRewardDenom
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chain, 2, 10*time.Second)
 }
 
 // Creates an additional node on selected chain
@@ -1738,7 +1819,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	valCfg := tr.validatorConfigs[action.validator]
 
 	assignKey := fmt.Sprintf(
-		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 900000 --keyring-backend test -b block -y -o json`,
+		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 90000 --keyring-backend test -y -o json`,
 		tr.chainConfigs[chainID("provi")].binaryName,
 		string(tr.chainConfigs[action.chain].chainId),
 		action.consumerPubkey,
@@ -1747,6 +1828,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		tr.getValidatorHome(chainID("provi"), action.validator),
 		tr.getValidatorNode(chainID("provi"), action.validator),
 	)
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
 		tr.containerConfig.instanceName,
@@ -1759,21 +1841,13 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	}
 
 	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	jsonStr := string(bz)
-	code := gjson.Get(jsonStr, "code")
-	rawLog := gjson.Get(jsonStr, "raw_log")
-	if !action.expectError && code.Int() != 0 {
-		log.Fatalf("unexpected error during key assignment - code: %s, output: %s", code, jsonStr)
+	if err != nil && !action.expectError {
+		log.Fatalf("unexpected error during key assignment - output: %s, err: %s", string(bz), err)
 	}
 
 	if action.expectError {
-		if code.Int() == 0 {
-		} else if verbose {
-			fmt.Printf("got expected error during key assignment | code: %v | log: %s\n", code, rawLog)
+		if verbose {
+			fmt.Printf("got expected error during key assignment | err: %s \n", err.Error())
 		}
 	}
 
@@ -1825,6 +1899,9 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		valCfg.useConsumerKey = true
 		tr.validatorConfigs[action.validator] = valCfg
 	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(chainID("provi"), 2, 30*time.Second)
 }
 
 // slashThrottleDequeue polls slash queue sizes until nextQueueSize is achieved

@@ -6,12 +6,12 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	types "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	types1 "github.com/cosmos/interchain-security/v2/x/ccv/types"
-	_ "github.com/gogo/protobuf/gogoproto"
-	grpc1 "github.com/gogo/protobuf/grpc"
-	proto "github.com/gogo/protobuf/proto"
-	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
+	_ "github.com/cosmos/gogoproto/gogoproto"
+	grpc1 "github.com/cosmos/gogoproto/grpc"
+	proto "github.com/cosmos/gogoproto/proto"
+	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
+	types "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	types1 "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -632,10 +632,11 @@ var xxx_messageInfo_QueryThrottleStateRequest proto.InternalMessageInfo
 type QueryThrottleStateResponse struct {
 	// current slash_meter state
 	SlashMeter int64 `protobuf:"varint,1,opt,name=slash_meter,json=slashMeter,proto3" json:"slash_meter,omitempty"`
-	// allowance of voting power units (int) that the slash meter is given per replenish period
-	// this also serves as the max value for the meter.
+	// allowance of voting power units (int) that the slash meter is given per
+	// replenish period this also serves as the max value for the meter.
 	SlashMeterAllowance int64 `protobuf:"varint,2,opt,name=slash_meter_allowance,json=slashMeterAllowance,proto3" json:"slash_meter_allowance,omitempty"`
-	// next time the slash meter could potentially be replenished, iff it's not full
+	// next time the slash meter could potentially be replenished, iff it's not
+	// full
 	NextReplenishCandidate time.Time `protobuf:"bytes,3,opt,name=next_replenish_candidate,json=nextReplenishCandidate,proto3,stdtime" json:"next_replenish_candidate"`
 	// data relevant to currently throttled slash packets
 	Packets []*ThrottledSlashPacket `protobuf:"bytes,4,rep,name=packets,proto3" json:"packets,omitempty"`
@@ -810,7 +811,8 @@ func (m *QueryThrottledConsumerPacketDataResponse) GetPacketDataInstances() []Th
 	return nil
 }
 
-// A query wrapper type for the global entry and data relevant to a throttled slash packet.
+// A query wrapper type for the global entry and data relevant to a throttled
+// slash packet.
 type ThrottledSlashPacket struct {
 	GlobalEntry GlobalSlashEntry       `protobuf:"bytes,1,opt,name=global_entry,json=globalEntry,proto3" json:"global_entry"`
 	Data        types1.SlashPacketData `protobuf:"bytes,2,opt,name=data,proto3" json:"data"`
@@ -863,7 +865,8 @@ func (m *ThrottledSlashPacket) GetData() types1.SlashPacketData {
 	return types1.SlashPacketData{}
 }
 
-// ThrottledPacketDataWrapper contains either SlashPacketData or VSCMaturedPacketData
+// ThrottledPacketDataWrapper contains either SlashPacketData or
+// VSCMaturedPacketData
 type ThrottledPacketDataWrapper struct {
 	// Types that are valid to be assigned to Data:
 	//	*ThrottledPacketDataWrapper_SlashPacket
@@ -1147,9 +1150,9 @@ var fileDescriptor_422512d7b7586cd7 = []byte{
 	0x2c, 0xc3, 0xc5, 0xc1, 0x76, 0xf8, 0x4d, 0xc4, 0x96, 0x23, 0x3e, 0xc7, 0x34, 0xa2, 0x78, 0x52,
 	0xbd, 0xf3, 0x78, 0x37, 0x2f, 0x3d, 0xd9, 0xcd, 0x4b, 0x7f, 0xee, 0xe6, 0xa5, 0x87, 0x7b, 0xf9,
 	0xcc, 0x93, 0xbd, 0x7c, 0xe6, 0xd9, 0x5e, 0x3e, 0xf3, 0xd1, 0x7c, 0xcd, 0x66, 0x5b, 0x8d, 0x4d,
-	0xd5, 0x24, 0x75, 0xcd, 0x24, 0xb4, 0x4e, 0x68, 0x5b, 0xbf, 0x77, 0x9a, 0xfd, 0x82, 0x92, 0x76,
-	0x7f, 0xdf, 0xfc, 0xed, 0x78, 0x98, 0x6e, 0x4e, 0xf0, 0xaf, 0x95, 0xcb, 0xff, 0x07, 0x00, 0x00,
-	0xff, 0xff, 0xb7, 0x37, 0x44, 0xeb, 0x42, 0x13, 0x00, 0x00,
+	0xd5, 0x24, 0x75, 0xcd, 0x24, 0xb4, 0x4e, 0x68, 0x5b, 0xbf, 0x77, 0x9a, 0xfd, 0x82, 0xcb, 0xda,
+	0xfd, 0x7d, 0xf3, 0xb7, 0xe3, 0x61, 0xba, 0x39, 0xc1, 0xbf, 0x56, 0x2e, 0xff, 0x1f, 0x00, 0x00,
+	0xff, 0xff, 0xbf, 0xd4, 0x24, 0xd7, 0x42, 0x13, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1180,12 +1183,14 @@ type QueryClient interface {
 	// QueryProviderAddr returns the provider chain validator
 	// given a consumer chain validator address
 	QueryValidatorProviderAddr(ctx context.Context, in *QueryValidatorProviderAddrRequest, opts ...grpc.CallOption) (*QueryValidatorProviderAddrResponse, error)
-	// QueryThrottleState returns the main on-chain state relevant to currently throttled slash packets
+	// QueryThrottleState returns the main on-chain state relevant to currently
+	// throttled slash packets
 	QueryThrottleState(ctx context.Context, in *QueryThrottleStateRequest, opts ...grpc.CallOption) (*QueryThrottleStateResponse, error)
-	// QueryThrottledConsumerPacketData returns a list of pending packet data instances
-	// (slash packet and vsc matured) for a single consumer chain
+	// QueryThrottledConsumerPacketData returns a list of pending packet data
+	// instances (slash packet and vsc matured) for a single consumer chain
 	QueryThrottledConsumerPacketData(ctx context.Context, in *QueryThrottledConsumerPacketDataRequest, opts ...grpc.CallOption) (*QueryThrottledConsumerPacketDataResponse, error)
-	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward denoms that are registered
+	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
+	// denoms that are registered
 	QueryRegisteredConsumerRewardDenoms(ctx context.Context, in *QueryRegisteredConsumerRewardDenomsRequest, opts ...grpc.CallOption) (*QueryRegisteredConsumerRewardDenomsResponse, error)
 }
 
@@ -1296,12 +1301,14 @@ type QueryServer interface {
 	// QueryProviderAddr returns the provider chain validator
 	// given a consumer chain validator address
 	QueryValidatorProviderAddr(context.Context, *QueryValidatorProviderAddrRequest) (*QueryValidatorProviderAddrResponse, error)
-	// QueryThrottleState returns the main on-chain state relevant to currently throttled slash packets
+	// QueryThrottleState returns the main on-chain state relevant to currently
+	// throttled slash packets
 	QueryThrottleState(context.Context, *QueryThrottleStateRequest) (*QueryThrottleStateResponse, error)
-	// QueryThrottledConsumerPacketData returns a list of pending packet data instances
-	// (slash packet and vsc matured) for a single consumer chain
+	// QueryThrottledConsumerPacketData returns a list of pending packet data
+	// instances (slash packet and vsc matured) for a single consumer chain
 	QueryThrottledConsumerPacketData(context.Context, *QueryThrottledConsumerPacketDataRequest) (*QueryThrottledConsumerPacketDataResponse, error)
-	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward denoms that are registered
+	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
+	// denoms that are registered
 	QueryRegisteredConsumerRewardDenoms(context.Context, *QueryRegisteredConsumerRewardDenomsRequest) (*QueryRegisteredConsumerRewardDenomsResponse, error)
 }
 
@@ -2015,7 +2022,7 @@ func (m *QueryThrottleStateResponse) MarshalToSizedBuffer(dAtA []byte) (int, err
 			dAtA[i] = 0x22
 		}
 	}
-	n4, err4 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.NextReplenishCandidate, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.NextReplenishCandidate):])
+	n4, err4 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.NextReplenishCandidate, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.NextReplenishCandidate):])
 	if err4 != nil {
 		return 0, err4
 	}
@@ -2488,7 +2495,7 @@ func (m *QueryThrottleStateResponse) Size() (n int) {
 	if m.SlashMeterAllowance != 0 {
 		n += 1 + sovQuery(uint64(m.SlashMeterAllowance))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.NextReplenishCandidate)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.NextReplenishCandidate)
 	n += 1 + l + sovQuery(uint64(l))
 	if len(m.Packets) > 0 {
 		for _, e := range m.Packets {
@@ -3836,7 +3843,7 @@ func (m *QueryThrottleStateResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.NextReplenishCandidate, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.NextReplenishCandidate, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
