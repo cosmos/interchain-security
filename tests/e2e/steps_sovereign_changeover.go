@@ -192,7 +192,7 @@ func stepRunSovereignChain() []Step {
 func stepsUpgradeChain() []Step {
 	return []Step{
 		{
-			action: UpgradeProposalAction{
+			action: LegacyUpgradeProposalAction{
 				chainID:       chainID("sover"),
 				upgradeTitle:  "sovereign-changeover",
 				proposer:      validatorID("alice"),
