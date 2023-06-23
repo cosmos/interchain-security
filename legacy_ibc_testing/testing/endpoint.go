@@ -6,13 +6,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	connectiontypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	connectiontypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 )
 
 /*
@@ -86,7 +86,7 @@ func (endpoint *Endpoint) CreateClient() (err error) {
 		height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
 		clientState = ibctmtypes.NewClientState(
 			endpoint.Counterparty.Chain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
-			height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
+			height, commitmenttypes.GetSDKSpecs(), UpgradePath,
 		)
 		consensusState = endpoint.Counterparty.Chain.LastHeader.ConsensusState()
 	case exported.Solomachine:
@@ -124,7 +124,7 @@ func (endpoint *Endpoint) UpdateClient() (err error) {
 	// ensure counterparty has committed state
 	endpoint.Chain.Coordinator.CommitBlock(endpoint.Counterparty.Chain)
 
-	var header exported.Header
+	var header *ibctmtypes.Header
 
 	switch endpoint.ClientConfig.GetClientType() {
 	case exported.Tendermint:
@@ -364,8 +364,18 @@ func (endpoint *Endpoint) ChanCloseInit() error {
 func (endpoint *Endpoint) SendPacket(packet exported.PacketI) error {
 	channelCap := endpoint.Chain.GetChannelCapability(packet.GetSourcePort(), packet.GetSourceChannel())
 
+	timeoutHeight := clienttypes.Height{
+		RevisionNumber: packet.GetTimeoutHeight().GetRevisionNumber(),
+		RevisionHeight: packet.GetTimeoutHeight().GetRevisionHeight(),
+	}
+
 	// no need to send message, acting as a module
-	err := endpoint.Chain.App.GetIBCKeeper().ChannelKeeper.SendPacket(endpoint.Chain.GetContext(), channelCap, packet)
+	_, err := endpoint.Chain.App.GetIBCKeeper().ChannelKeeper.SendPacket(endpoint.Chain.GetContext(),
+		channelCap, packet.GetSourcePort(),
+		packet.GetSourceChannel(),
+		timeoutHeight,
+		packet.GetTimeoutTimestamp(),
+		packet.GetData())
 	if err != nil {
 		return err
 	}

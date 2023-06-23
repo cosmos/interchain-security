@@ -7,18 +7,18 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
-	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 
-	tmtypes "github.com/tendermint/tendermint/types"
+	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v2/testutil/crypto"
+	"github.com/cosmos/interchain-security/v3/testutil/crypto"
 
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -47,7 +47,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 	valHash := valSet.Hash()
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(valSet)
 
-	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath, false, false)
+	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath)
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
 
 	params := types.DefaultParams()
@@ -285,7 +285,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 			SlashPacketData: ccv.NewSlashPacketData(
 				abci.Validator{Address: pubKey.Address(), Power: int64(1)},
 				1,
-				stakingtypes.Downtime),
+				stakingtypes.Infraction_INFRACTION_DOWNTIME),
 		},
 	}
 
@@ -294,7 +294,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		{Height: 0, ValsetUpdateId: 0},
 	}
 
-	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath, false, false)
+	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath)
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
 
 	params := types.DefaultParams()

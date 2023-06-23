@@ -6,7 +6,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // A validator's consensus address on the provider chain.

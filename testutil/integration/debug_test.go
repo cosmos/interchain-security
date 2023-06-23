@@ -6,11 +6,11 @@ import (
 	"reflect"
 	"testing"
 
-	appConsumer "github.com/cosmos/interchain-security/v2/app/consumer"
-	appDemocracy "github.com/cosmos/interchain-security/v2/app/democracy"
-	appProvider "github.com/cosmos/interchain-security/v2/app/provider"
-	integr "github.com/cosmos/interchain-security/v2/tests/integration"
-	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
+	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/v3/app/democracy"
+	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
+	integr "github.com/cosmos/interchain-security/v3/tests/integration"
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 )
 
 // runCCVTestByName runs a single CCV integration test by name, using a CCVTestSuite
@@ -25,13 +25,13 @@ func runCCVTestByName(t *testing.T, methodName string) {
 	findAndCallMethod(t, suite, methodName)
 }
 
-// runDemocracyTestByName runs a single consumer democracy integration test by name,
-// using a DemocracyTestSuite initialized with the dummy
+// runConsumerDemocracyTestByName runs a single consumer democracy integration test by name,
+// using a ConsumerDemocracyTestSuite initialized with the dummy
 // democracy consumer defined in this repo.
-func runDemocracyTestByName(t *testing.T, methodName string) {
+func runConsumerDemocracyTestByName(t *testing.T, methodName string) {
 	t.Helper()
-	suite := integr.NewDemocracyTestSuite[*appDemocracy.App](
-		icstestingutils.DemocracyAppIniter)
+	suite := integr.NewDemocracyTestSuite[*appConsumerDemocracy.App](
+		icstestingutils.DemocracyConsumerAppIniter)
 	suite.SetT(t)
 	suite.SetupTest()
 
@@ -62,11 +62,11 @@ func TestInitTimeout(t *testing.T) {
 //
 
 func TestDemocracyRewardsDistribution(t *testing.T) {
-	runDemocracyTestByName(t, "TestDemocracyRewardsDistribution")
+	runConsumerDemocracyTestByName(t, "TestDemocracyRewardsDistribution")
 }
 
 func TestDemocracyGovernanceWhitelisting(t *testing.T) {
-	runDemocracyTestByName(t, "TestDemocracyGovernanceWhitelisting")
+	runConsumerDemocracyTestByName(t, "TestDemocracyGovernanceWhitelisting")
 }
 
 //

@@ -3,11 +3,11 @@ package integration_test
 import (
 	"testing"
 
-	appConsumer "github.com/cosmos/interchain-security/v2/app/consumer"
-	appDemocracy "github.com/cosmos/interchain-security/v2/app/democracy"
-	appProvider "github.com/cosmos/interchain-security/v2/app/provider"
-	intg "github.com/cosmos/interchain-security/v2/tests/integration"
-	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
+	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
+	appDemocracy "github.com/cosmos/interchain-security/v3/app/democracy"
+	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
+	intg "github.com/cosmos/interchain-security/v3/tests/integration"
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -40,7 +40,7 @@ func TestDemocracyCCVTestSuite(t *testing.T) {
 		// Pass in ibctesting.AppIniter for provider and democracy consumer.
 		// TestRewardsDistribution needs to be skipped since the democracy specific distribution test is in DemocracyTestSuite,
 		// while this one tests consumer app without minter
-		icstestingutils.ProviderAppIniter, icstestingutils.DemocracyAppIniter, []string{"TestRewardsDistribution"})
+		icstestingutils.ProviderAppIniter, icstestingutils.DemocracyConsumerAppIniter, []string{"TestRewardsDistribution"})
 
 	// Run tests
 	suite.Run(t, democSuite)
@@ -54,7 +54,7 @@ func TestDemocracyTestSuite(t *testing.T) {
 	// concrete app type returned by the relevant app initer.
 	democSuite := intg.NewDemocracyTestSuite[*appDemocracy.App](
 		// Pass in ibctesting.AppIniter for democracy consumer.
-		icstestingutils.DemocracyAppIniter)
+		icstestingutils.DemocracyConsumerAppIniter)
 
 	// Run tests
 	suite.Run(t, democSuite)

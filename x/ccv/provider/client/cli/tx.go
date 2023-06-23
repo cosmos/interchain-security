@@ -12,7 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // GetTxCmd returns the transaction commands for this module
@@ -42,8 +42,11 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 				return err
 			}
 
-			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).
-				WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
 			providerValAddr := clientCtx.GetFromAddress()
 

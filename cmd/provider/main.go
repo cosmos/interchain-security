@@ -5,14 +5,14 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	app "github.com/cosmos/interchain-security/v2/app/provider"
-	"github.com/cosmos/interchain-security/v2/cmd/provider/cmd"
+	app "github.com/cosmos/interchain-security/v3/app/provider"
+	"github.com/cosmos/interchain-security/v3/cmd/provider/cmd"
 )
 
 func main() {
-	rootCmd, _ := cmd.NewRootCmd()
+	rootCmd := cmd.NewRootCmd()
 
-	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
+	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:
 			os.Exit(e.Code)

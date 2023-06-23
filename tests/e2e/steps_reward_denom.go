@@ -60,13 +60,14 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 			},
 		},
 		{
-			action: submitParamChangeProposalAction{
+			// whitelisted legacy proposal can only handle ibctransfer.SendEnabled/ReceiveEnabled
+			action: submitParamChangeLegacyProposalAction{
 				chain:    chainID(consumerName),
 				from:     validatorID("alice"),
 				deposit:  10000001,
-				subspace: "staking",
-				key:      "MaxValidators",
-				value:    105,
+				subspace: "transfer",
+				key:      "SendEnabled",
+				value:    true,
 			},
 			state: State{
 				chainID(consumerName): ChainState{
@@ -78,9 +79,9 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 						1: ParamsProposal{
 							Deposit:  10000001,
 							Status:   "PROPOSAL_STATUS_VOTING_PERIOD",
-							Subspace: "staking",
-							Key:      "MaxValidators",
-							Value:    "105",
+							Subspace: "transfer",
+							Key:      "SendEnabled",
+							Value:    "true",
 						},
 					},
 				},
@@ -97,11 +98,11 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 			state: State{
 				chainID(consumerName): ChainState{
 					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 9899999999,
+						validatorID("alice"): 9889999998,
 						validatorID("bob"):   9960000001,
 					},
 					// Check that the parameter is changed on gov-consumer chain
-					Params: &([]Param{{Subspace: "staking", Key: "MaxValidators", Value: "105"}}),
+					Params: &([]Param{{Subspace: "transfer", Key: "SendEnabled", Value: "true"}}),
 				},
 			},
 		},

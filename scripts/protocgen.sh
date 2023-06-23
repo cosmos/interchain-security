@@ -16,7 +16,6 @@ done
 cd ..
 
 # move proto files to the right places
-cp -r github.com/cosmos/interchain-security/v2/* ./
+cp -r github.com/cosmos/interchain-security/v3/* ./
 rm -rf github.com
 
-go mod tidy -compat=1.19

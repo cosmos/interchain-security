@@ -42,8 +42,8 @@ consumer tendermint show-validator # {"@type":"/cosmos.crypto.ed25519.PubKey","k
 
 Then, make an `assign-consensus-key` transaction on the provider chain in order to inform the provider chain about the consensus key you will be using for a specific consumer chain.
 
-```
-gaiad tx provider assign-consensus-key <consumer-chain-id> '<pubkey>' --from <tx-signer> --home <home_dir> --gas 900000 -b block -y -o json
+```bash
+gaiad tx provider assign-consensus-key <consumer-chain-id> '<pubkey>' --from <tx-signer> --home <home_dir> --gas 900000 -b sync -y -o json
 ```
 
 - `consumer-chain-id` is the string identifier of the consumer chain, as assigned on the provider chain

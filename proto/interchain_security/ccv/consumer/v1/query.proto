@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package interchain_security.ccv.consumer.v1;
-option go_package = "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types";
+option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types";
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
@@ -39,10 +39,10 @@ message NextFeeDistributionEstimate {
   string toConsumer = 7;
 }
 
-message QueryNextFeeDistributionEstimateRequest { }
+message QueryNextFeeDistributionEstimateRequest {}
 
 message QueryNextFeeDistributionEstimateResponse {
-  NextFeeDistributionEstimate data = 1;  
+  NextFeeDistributionEstimate data = 1;
 }
 
 message QueryParamsRequest {}
@@ -50,5 +50,5 @@ message QueryParamsRequest {}
 // QueryParamsResponse is response type for the Query/Params RPC method.
 message QueryParamsResponse {
   // params holds all the parameters of this module.
-  Params params = 1 [(gogoproto.nullable) = false];
+  Params params = 1 [ (gogoproto.nullable) = false ];
 }
