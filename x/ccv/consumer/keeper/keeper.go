@@ -592,12 +592,6 @@ func (k Keeper) GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Val
 	return validators
 }
 
-// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
-// See consistency with PendingDataPacketsKey().
-func PendingDataPacketsIterator(store sdk.KVStore) sdk.Iterator {
-	return sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
-}
-
 // getAndIncrementPendingPacketsIdx returns the current pending packets index and increments it.
 // This index is used for implementing a FIFO queue of pending packets in the KV store.
 func (k Keeper) getAndIncrementPendingPacketsIdx(ctx sdk.Context) (toReturn uint64) {
@@ -606,7 +600,7 @@ func (k Keeper) getAndIncrementPendingPacketsIdx(ctx sdk.Context) (toReturn uint
 	if bz == nil {
 		toReturn = 0
 	} else {
-		toReturn = binary.BigEndian.Uint64(bz)
+		toReturn = sdk.BigEndianToUint64(bz)
 	}
 	toStore := toReturn + 1
 	store.Set(types.PendingPacketsIndexKey(), sdk.Uint64ToBigEndian(toStore))
@@ -617,7 +611,9 @@ func (k Keeper) getAndIncrementPendingPacketsIdx(ctx sdk.Context) (toReturn uint
 func (k Keeper) GetPendingPackets(ctx sdk.Context) []ccv.ConsumerPacketData {
 	var packets []ccv.ConsumerPacketData
 	store := ctx.KVStore(k.storeKey)
-	iterator := PendingDataPacketsIterator(store)
+	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
+	// See consistency with PendingDataPacketsKey().
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		var packet ccv.ConsumerPacketData
@@ -642,10 +638,16 @@ func (k Keeper) DeletePendingDataPackets(ctx sdk.Context, idxs ...uint64) {
 
 func (k Keeper) DeleteAllPendingDataPackets(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := PendingDataPacketsIterator(store)
+	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
+	// See consistency with PendingDataPacketsKey().
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	keysToDel := [][]byte{}
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		store.Delete(iterator.Key())
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	for _, key := range keysToDel {
+		store.Delete(key)
 	}
 }
 
