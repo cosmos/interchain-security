@@ -1,5 +1,5 @@
 {
-  "genesis_time": "2023-06-19T21:06:09.696739416Z",
+  "genesis_time": "2023-06-22T15:55:00.982713586Z",
   "chain_id": "sover",
   "initial_height": "1",
   "consensus_params": {
@@ -35,12 +35,15 @@
       "accounts": [
         {
           "@type": "/cosmos.auth.v1beta1.BaseAccount",
-          "address": "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
+          "address": "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
           "pub_key": null,
           "account_number": "0",
           "sequence": "0"
         }
       ]
+    },
+    "authz": {
+      "authorization": []
     },
     "bank": {
       "params": {
@@ -98,6 +101,9 @@
     },
     "evidence": {
       "evidence": []
+    },
+    "feegrant": {
+      "allowances": []
     },
     "genutil": {
       "gen_txs": [
@@ -160,7 +166,7 @@
             "tip": null
           },
           "signatures": [
-            "D06i2qqq2HathlT7cy+PDLTDuYKAmzw5Ne+Ehvzr9bVy3jpm2h8deDGeSXTSrhdP04UpFXerSn+zIPth5TKNrg=="
+            "c7aD9dWzb85fn+Aq0ijMdhyJNJSOsOcFLvJt8ctvdxAAbwdrzKPVFbq9IYf1qCwKmfmQUrlFy40qiuQeXaZ8pg=="
           ]
         }
       ]
@@ -199,7 +205,8 @@
         "params": {
           "allowed_clients": [
             "06-solomachine",
-            "07-tendermint"
+            "07-tendermint",
+            "09-localhost"
           ]
         },
         "create_localhost": false,
@@ -239,6 +246,12 @@
       }
     },
     "params": null,
+    "provider": {
+      "params": {
+        "slash_meter_replenish_fraction": "1.0",
+        "slash_meter_replenish_period": "3s"
+      }
+    },
     "slashing": {
       "params": {
         "signed_blocks_window": "10",
@@ -273,7 +286,8 @@
       "params": {
         "send_enabled": true,
         "receive_enabled": true
-      }
+      },
+      "total_escrowed": []
     },
     "upgrade": {},
     "vesting": {}
