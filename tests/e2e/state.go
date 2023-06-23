@@ -426,8 +426,8 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			},
 		}
 	case "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal":
-		height := gjson.Get(string(bz), `content.plan.height`).Uint()
-		title := gjson.Get(string(bz), `content.plan.name`).String()
+		height := gjson.Get(string(bz), `messages.0.content.plan.height`).Uint()
+		title := gjson.Get(string(bz), `messages.0.content.plan.name`).String()
 		return UpgradeProposal{
 			Deposit:       uint(deposit),
 			Status:        status,
