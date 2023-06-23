@@ -1,88 +1,27 @@
 package keeper
 
 import (
-	"fmt"
-
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // TODO: Adjust SendPackets in relay.go
 
-func (k Keeper) GetPacketsToSend(ctx sdktypes.Context) ccvtypes.ConsumerPacketDataList {
-	// TODO: incorporate retry delay
-
-	// Handle retries for bouncing slash packet if one exists
-	bouncingSlashExists, bouncingSlash := k.GetBouncingSlash(ctx)
-	if bouncingSlashExists {
-		// Note if bouncing slash exists, return is always hit.
-		// Ie. we block sending of all other packets until bouncing slash is handled by provider.
-
-		// If retry of bouncing slash is allowed, return bouncing slash packet to be sent.
-		if bouncingSlash.RetryAllowed {
-			// Another retry will not be allowed until current retry result is received from provider.
-			bouncingSlash.RetryAllowed = false
-			k.SetBouncingSlash(ctx, bouncingSlash)
-			return ccvtypes.ConsumerPacketDataList{List: []ccvtypes.ConsumerPacketData{*bouncingSlash.SlashPacketData}}
-		} else {
-			// If slash retry not allowed, return empty list. We still need to hear back from provider.
-			return ccvtypes.ConsumerPacketDataList{}
-		}
-	}
-	// If control flow reaches here, no bouncing slash packet exists.
-
-	pending := k.GetPendingPackets(ctx)
-	toSend := ccvtypes.ConsumerPacketDataList{}
-	for _, packet := range pending.List {
-		// switch over packet type, using if-statements to break out of loop in a readable way
-		if packet.Type == ccvtypes.VscMaturedPacket {
-			toSend.List = append(toSend.List, packet)
-		} else if packet.Type == ccvtypes.SlashPacket {
-			toSend.List = append(toSend.List, packet)
-			bouncingSlash, ok := consumertypes.NewBouncingSlash(packet)
-			if !ok {
-				ctx.Logger().Error("corrupted slash packet data")
-				break
-			}
-			k.SetBouncingSlash(ctx, bouncingSlash)
-
-			// Break for-loop. No more packets are sent until the bouncing slash packet is handled by provider.
-			break
-		} else {
-			panic("unknown packet type")
-		}
-	}
-	return toSend
-}
+// TODO: incorporate retry delay
 
 // TODO: will need good integration tests making sure this state is properly init, cleared, etc.
 
-func (k Keeper) SetBouncingSlash(ctx sdktypes.Context, bouncingSlash consumertypes.BouncingSlash) {
+func (k Keeper) GetWaitingOnBouncingSlash(ctx sdktypes.Context) bool {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := bouncingSlash.Marshal()
-	if err != nil {
-		// This should never happen
-		panic(fmt.Errorf("failed to marshal bouncing slash: %w", err))
-	}
-	store.Set(consumertypes.BouncingSlashKey(), bz)
+	return store.Has(consumertypes.WaitingOnBouncingSlashKey())
 }
 
-func (k Keeper) GetBouncingSlash(ctx sdktypes.Context) (found bool, bouncingSlash consumertypes.BouncingSlash) {
+func (k Keeper) SetWaitingOnBouncingSlash(ctx sdktypes.Context) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(consumertypes.BouncingSlashKey())
-	if bz == nil {
-		return false, bouncingSlash
-	}
-	err := bouncingSlash.Unmarshal(bz)
-	if err != nil {
-		// An error here would indicate something is very wrong,
-		panic(fmt.Errorf("failed to unmarshal bouncing slash: %w", err))
-	}
-	return true, bouncingSlash
+	store.Set(consumertypes.WaitingOnBouncingSlashKey(), []byte{1})
 }
 
-func (k Keeper) DeleteBouncingSlash(ctx sdktypes.Context) {
+func (k Keeper) ClearWaitingOnBouncingSlash(ctx sdktypes.Context) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(consumertypes.BouncingSlashKey())
+	store.Delete(consumertypes.WaitingOnBouncingSlashKey())
 }

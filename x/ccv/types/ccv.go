@@ -107,8 +107,13 @@ func (cp ConsumerPacketData) GetBytes() []byte {
 type PacketAckResult []byte
 
 var ( // slice types can't be const
-	NoOpResult               = PacketAckResult([]byte{byte(1)})
+
+	// No-op result ack. These are sent by the provider to indicate that the packet was received,
+	// and no actions are required by the consumer. Throttling v1 always sends this ack for slash and VSCMatured packets.
+	NoOpResult = PacketAckResult([]byte{byte(1)})
+	// Slash packet handled result ack, sent by the provider to indicate that a bouncing slash packet was handled.
 	SlashPacketHandledResult = PacketAckResult([]byte{byte(2)})
+	// Slash packet bounced result ack, sent by the provider to indicate that a bouncing slash packet was NOT handled.
 	SlashPacketBouncedResult = PacketAckResult([]byte{byte(3)})
 )
 

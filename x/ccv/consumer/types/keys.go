@@ -101,9 +101,7 @@ const (
 	// This index is used for implementing a FIFO queue of pending packets in the KV store.
 	PendingPacketsIndexByteKey
 
-	BouncingSlashByteKey
-
-	RetryAllowedByteKey
+	WaitingOnBouncingSlashByteKey
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
@@ -215,12 +213,8 @@ func PrevStandaloneChainKey() []byte {
 	return []byte{PrevStandaloneChainByteKey}
 }
 
-func BouncingSlashKey() []byte {
-	return []byte{BouncingSlashByteKey}
-}
-
-func RetryAllowedKey() []byte {
-	return []byte{RetryAllowedByteKey}
+func WaitingOnBouncingSlashKey() []byte {
+	return []byte{WaitingOnBouncingSlashByteKey}
 }
 
 // PendingPacketsIndexKey returns the key to the pending packets index.

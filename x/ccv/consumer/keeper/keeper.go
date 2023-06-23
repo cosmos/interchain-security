@@ -607,6 +607,18 @@ func (k Keeper) getAndIncrementPendingPacketsIdx(ctx sdk.Context) (toReturn uint
 	return toReturn
 }
 
+// DeleteHeadOfPendingPackets deletes the head of the pending packets queue.
+// TODO: UTs
+func (k Keeper) DeleteHeadOfPendingPackets(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	defer iterator.Close()
+	if !iterator.Valid() { // TODO: needed?
+		return
+	}
+	store.Delete(iterator.Key())
+}
+
 // GetPendingPackets returns ALL the pending CCV packets from the store
 func (k Keeper) GetPendingPackets(ctx sdk.Context) []ccv.ConsumerPacketData {
 	var packets []ccv.ConsumerPacketData

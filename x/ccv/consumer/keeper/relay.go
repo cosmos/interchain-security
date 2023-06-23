@@ -184,8 +184,12 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 
 	pending := k.GetPendingPackets(ctx)
 	for _, p := range pending {
+		if k.GetWaitingOnBouncingSlash(ctx) {
+			// If we are waiting on the resp of the provider for a bouncing slash, don't send any more packets.
+			return
+		}
 
-		// send packet over IBC
+		// Send packet over IBC
 		err := ccv.SendIBCPacket(
 			ctx,
 			k.scopedKeeper,
@@ -209,9 +213,15 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			k.Logger(ctx).Error("cannot send IBC packet; leaving packet data stored:", "type", p.Type.String(), "err", err.Error())
 			return
 		}
+		// If the packet that was just sent was a Slash packet, set the waiting on bouncing slash flag.
+		// This flag will be toggled false again when consumer hears back from provider. See OnAcknowledgementPacket below.
+		if p.Type == ccv.SlashPacket {
+			k.SetWaitingOnBouncingSlash(ctx)
+			// Return so bouncing slash stays at head of queue.
+			return
+		}
+		k.DeletePendingDataPackets(ctx, p.Idx) // Can be it's own PR
 	}
-
-	k.DeleteAllPendingDataPackets(ctx)
 }
 
 // OnAcknowledgementPacket executes application logic for acknowledgments of sent VSCMatured and Slash packets
@@ -226,24 +236,13 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		}
 		switch res[0] {
 		case ccv.NoOpResult[0]:
-			// No-op result ack. These are sent by the provider to indicate that the packet was received,
-			// and no actions are required by the consumer. Throttling v1 always sends this ack for slash and VSCMatured packets.
 			k.Logger(ctx).Info("recv no-op ack", "channel", packet.SourceChannel, "ack", res)
 		case ccv.SlashPacketHandledResult[0]:
-			// Slash packet handled result ack, sent by the provider to indicate that the bouncing slash packet was handled.
-			// Queued packets will now be unblocked from sending.
-			k.DeleteBouncingSlash(ctx)
+			k.ClearWaitingOnBouncingSlash(ctx) // Unblock sending of pending packets.
+			k.DeleteHeadOfPendingPackets(ctx)  // Remove bouncing slash from head of queue. It's been handled.
 		case ccv.SlashPacketBouncedResult[0]:
-			// Slash packet bounced result ack, sent by the provider to indicate that the bouncing slash packet was NOT handled.
-			found, bouncingSlash := k.GetBouncingSlash(ctx)
-			if !found {
-				k.Logger(ctx).Error("recv invalid result ack; expected bouncing slash to be set",
-					"channel", packet.SourceChannel, "ack", res)
-				break
-			}
-			// Bouncing slash should be found in consumer state, retry is now allowed
-			bouncingSlash.RetryAllowed = true
-			k.SetBouncingSlash(ctx, bouncingSlash)
+			k.ClearWaitingOnBouncingSlash(ctx) // Unblock sending of pending packets.
+			// Note bouncing slash is still at head of queue and will now be retried.
 		default:
 			k.Logger(ctx).Error("recv invalid result ack; expected 1, 2, or 3", "channel", packet.SourceChannel, "ack", res)
 		}
