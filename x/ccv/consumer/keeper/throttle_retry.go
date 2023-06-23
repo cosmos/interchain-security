@@ -11,7 +11,6 @@ import (
 // TODO: Adjust SendPackets in relay.go
 
 func (k Keeper) GetPacketsToSend(ctx sdktypes.Context) ccvtypes.ConsumerPacketDataList {
-
 	// TODO: incorporate retry delay
 
 	// Handle retries for bouncing slash packet if one exists
@@ -39,7 +38,6 @@ func (k Keeper) GetPacketsToSend(ctx sdktypes.Context) ccvtypes.ConsumerPacketDa
 		// switch over packet type, using if-statements to break out of loop in a readable way
 		if packet.Type == ccvtypes.VscMaturedPacket {
 			toSend.List = append(toSend.List, packet)
-
 		} else if packet.Type == ccvtypes.SlashPacket {
 			toSend.List = append(toSend.List, packet)
 			bouncingSlash, ok := consumertypes.NewBouncingSlash(packet)

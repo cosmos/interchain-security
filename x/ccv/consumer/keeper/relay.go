@@ -218,7 +218,6 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 // in conjunction with the ibc module's execution of "acknowledgePacket",
 // according to https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
-
 	// TODO: integration test for enum being handled correctly
 
 	if res := ack.GetResult(); res != nil {
