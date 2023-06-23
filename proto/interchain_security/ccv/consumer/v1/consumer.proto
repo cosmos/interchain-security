@@ -89,8 +89,3 @@ message MaturingVSCPacket {
   google.protobuf.Timestamp maturity_time = 2
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 }
-
-message BouncingSlash {
-  interchain_security.ccv.v1.ConsumerPacketData slash_packet_data = 1;
-  bool retry_allowed = 2;
-}
