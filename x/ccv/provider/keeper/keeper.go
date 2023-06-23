@@ -986,6 +986,7 @@ func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSen
 		}
 
 		vscSendTimestamps = append(vscSendTimestamps, types.VscSendTimestamp{
+			ChainId:   chainID,
 			VscId:     vscID,
 			Timestamp: ts,
 		})

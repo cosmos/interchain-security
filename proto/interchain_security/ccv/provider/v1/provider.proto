@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package interchain_security.ccv.provider.v1;
 
-option go_package = "github.com/cosmos/interchain-security/v2/x/ccv/provider/types";
+option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/provider/types";
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
@@ -216,8 +216,9 @@ message InitTimeoutTimestamp {
 }
 
 message VscSendTimestamp {
-  uint64 vsc_id = 1;
-  google.protobuf.Timestamp timestamp = 2
+  string chain_id = 1;
+  uint64 vsc_id = 2;
+  google.protobuf.Timestamp timestamp = 3
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 }
 
