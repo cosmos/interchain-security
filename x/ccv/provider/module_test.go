@@ -109,6 +109,8 @@ func TestInitGenesis(t *testing.T) {
 			nil,
 			nil,
 			nil,
+			nil,
+			nil,
 		)
 
 		cdc := keeperParams.Cdc

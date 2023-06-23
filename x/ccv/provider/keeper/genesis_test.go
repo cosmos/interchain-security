@@ -35,6 +35,8 @@ func TestInitAndExportGenesis(t *testing.T) {
 	consumerTmPubKey := consumerCryptoId.TMProtoCryptoPublicKey()
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
 
+	initTimeoutTime := uint64(time.Now().UTC().UnixNano()) + 10
+	vscSendTime := time.Now().Add(-30 * time.Minute)
 	// create genesis struct
 	provGenesis := providertypes.NewGenesisState(vscID,
 		[]providertypes.ValsetUpdateIdToHeight{{ValsetUpdateId: vscID, Height: initHeight}},
@@ -95,6 +97,19 @@ func TestInitAndExportGenesis(t *testing.T) {
 				ChainId:       cChainIDs[0],
 				VscId:         vscID,
 				ConsumerAddrs: &providertypes.AddressList{Addresses: [][]byte{consumerConsAddr.ToSdkConsAddr()}},
+			},
+		},
+		[]providertypes.InitTimeoutTimestamp{
+			{
+				ChainId:   cChainIDs[0],
+				Timestamp: initTimeoutTime,
+			},
+		},
+		[]providertypes.VscSendTimestamp{
+			{
+				ChainId:   cChainIDs[0],
+				VscId:     vscID,
+				Timestamp: vscSendTime,
 			},
 		},
 	)
@@ -163,6 +178,14 @@ func TestInitAndExportGenesis(t *testing.T) {
 
 	// check the exported genesis
 	require.Equal(t, provGenesis, pk.ExportGenesis(ctx))
+
+	initTimeoutTimestamp, found := pk.GetInitTimeoutTimestamp(ctx, cChainIDs[0])
+	require.Equal(t, initTimeoutTimestamp, initTimeoutTime)
+	require.True(t, found)
+
+	vscSendTimestamp, found := pk.GetVscSendTimestamp(ctx, cChainIDs[0], vscID)
+	require.Equal(t, vscSendTimestamp, vscSendTime)
+	require.True(t, found)
 }
 
 func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, consumerStates ...providertypes.ConsumerState) {
