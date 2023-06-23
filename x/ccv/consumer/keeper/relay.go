@@ -101,10 +101,10 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 		// Append VSCMatured packet to pending packets.
 		// Sending packets is attempted each EndBlock.
 		// Unsent packets remain in the queue until sent.
-		k.AppendPendingPacket(ctx, ccv.ConsumerPacketData{
-			Type: ccv.VscMaturedPacket,
-			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscPacket},
-		})
+		k.AppendPendingPacket(ctx,
+			ccv.VscMaturedPacket,
+			&ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscPacket},
+		)
 
 		k.DeletePacketMaturityTimes(ctx, maturityTime.VscId, maturityTime.MaturityTime)
 
@@ -144,12 +144,12 @@ func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, vals
 
 	// append the Slash packet data to pending data packets
 	// to be sent once the CCV channel is established
-	k.AppendPendingPacket(ctx, ccv.ConsumerPacketData{
-		Type: ccv.SlashPacket,
-		Data: &ccv.ConsumerPacketData_SlashPacketData{
+	k.AppendPendingPacket(ctx,
+		ccv.SlashPacket,
+		&ccv.ConsumerPacketData_SlashPacketData{
 			SlashPacketData: slashPacket,
 		},
-	})
+	)
 
 	k.Logger(ctx).Info("SlashPacket enqueued",
 		"vscID", slashPacket.ValsetUpdateId,
@@ -183,7 +183,8 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 	}
 
 	pending := k.GetPendingPackets(ctx)
-	for _, p := range pending.GetList() {
+	for _, p := range pending {
+
 		// send packet over IBC
 		err := ccv.SendIBCPacket(
 			ctx,
@@ -210,8 +211,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 		}
 	}
 
-	// clear pending data packets
-	k.DeletePendingDataPackets(ctx) // TODO: only delete packets that were sent
+	k.DeleteAllPendingDataPackets(ctx)
 }
 
 // OnAcknowledgementPacket executes application logic for acknowledgments of sent VSCMatured and Slash packets

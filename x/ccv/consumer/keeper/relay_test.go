@@ -293,9 +293,9 @@ func TestSendPacketsFailure(t *testing.T) {
 	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
 
 	// Set some pending packets
-	consumerKeeper.SetPendingPackets(ctx, types.ConsumerPacketDataList{List: []types.ConsumerPacketData{
-		{}, {}, {},
-	}})
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, types.SlashPacket, &types.ConsumerPacketData_SlashPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{})
 
 	// Mock the channel keeper to return an error
 	gomock.InOrder(
@@ -305,5 +305,5 @@ func TestSendPacketsFailure(t *testing.T) {
 
 	// No panic should occur, pending packets should not be cleared
 	consumerKeeper.SendPackets(ctx)
-	require.Equal(t, 3, len(consumerKeeper.GetPendingPackets(ctx).List))
+	require.Equal(t, 3, len(consumerKeeper.GetPendingPackets(ctx)))
 }

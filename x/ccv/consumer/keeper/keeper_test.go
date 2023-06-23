@@ -314,23 +314,25 @@ func TestGetAllCCValidator(t *testing.T) {
 	require.Equal(t, result, expectedGetAllOrder)
 }
 
-func TestSetPendingPackets(t *testing.T) {
+func TestPendingPackets(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	// prepare test setup
-	dataPackets := []ccv.ConsumerPacketData{
+	// Instantiate some expected packet data
+	packetData := []ccv.ConsumerPacketData{
 		{
 			Type: ccv.VscMaturedPacket,
 			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 				VscMaturedPacketData: ccv.NewVSCMaturedPacketData(1),
 			},
+			Idx: 0, // Note these are expected idxs, we don't pass this data to the keeper
 		},
 		{
 			Type: ccv.VscMaturedPacket,
 			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 				VscMaturedPacketData: ccv.NewVSCMaturedPacketData(2),
 			},
+			Idx: 1,
 		},
 		{
 			Type: ccv.SlashPacket,
@@ -341,19 +343,24 @@ func TestSetPendingPackets(t *testing.T) {
 					stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
 				),
 			},
+			Idx: 2,
 		},
 		{
 			Type: ccv.VscMaturedPacket,
 			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 				VscMaturedPacketData: ccv.NewVSCMaturedPacketData(3),
 			},
+			Idx: 3,
 		},
 	}
-	consumerKeeper.SetPendingPackets(ctx, ccv.ConsumerPacketDataList{List: dataPackets})
 
-	storedDataPackets := consumerKeeper.GetPendingPackets(ctx)
-	require.NotEmpty(t, storedDataPackets)
-	require.Equal(t, dataPackets, storedDataPackets.List)
+	// Append all packets to the queue
+	for _, data := range packetData {
+		consumerKeeper.AppendPendingPacket(ctx, data.Type, data.Data)
+	}
+	storedPacketData := consumerKeeper.GetPendingPackets(ctx)
+	require.NotEmpty(t, storedPacketData)
+	require.Equal(t, packetData, storedPacketData)
 
 	slashPacket := ccv.NewSlashPacketData(
 		abci.Validator{
@@ -363,31 +370,50 @@ func TestSetPendingPackets(t *testing.T) {
 		uint64(4),
 		stakingtypes.Infraction_INFRACTION_DOWNTIME,
 	)
-	dataPackets = append(dataPackets, ccv.ConsumerPacketData{
+	// Append slash packet to expected packet data
+	packetData = append(packetData, ccv.ConsumerPacketData{
 		Type: ccv.SlashPacket,
-		Data: &ccv.ConsumerPacketData_SlashPacketData{SlashPacketData: slashPacket},
-	},
-	)
-	consumerKeeper.AppendPendingPacket(ctx, dataPackets[len(dataPackets)-1])
-	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
-	require.NotEmpty(t, storedDataPackets)
-	require.Equal(t, dataPackets, storedDataPackets.List)
+		Data: &ccv.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: slashPacket,
+		},
+		Idx: 4,
+	})
 
-	vscMaturedPakcet := ccv.NewVSCMaturedPacketData(4)
-	dataPackets = append(dataPackets, ccv.ConsumerPacketData{
+	toAppend := packetData[len(packetData)-1]
+	consumerKeeper.AppendPendingPacket(ctx, toAppend.Type, toAppend.Data)
+	storedPacketData = consumerKeeper.GetPendingPackets(ctx)
+	require.NotEmpty(t, storedPacketData)
+	require.Equal(t, packetData, storedPacketData)
+
+	vscMaturedPacket := ccv.NewVSCMaturedPacketData(4)
+	packetData = append(packetData, ccv.ConsumerPacketData{
 		Type: ccv.VscMaturedPacket,
-		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscMaturedPakcet},
-	},
-	)
-	consumerKeeper.AppendPendingPacket(ctx, dataPackets[len(dataPackets)-1])
-	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
-	require.NotEmpty(t, storedDataPackets)
-	require.Equal(t, dataPackets, storedDataPackets.List)
+		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
+			VscMaturedPacketData: vscMaturedPacket,
+		},
+		Idx: 5,
+	})
+	toAppend = packetData[len(packetData)-1]
+	consumerKeeper.AppendPendingPacket(ctx, toAppend.Type, toAppend.Data)
 
-	consumerKeeper.DeletePendingDataPackets(ctx)
-	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
-	require.Empty(t, storedDataPackets)
-	require.Len(t, storedDataPackets.List, 0)
+	storedPacketData = consumerKeeper.GetPendingPackets(ctx)
+	require.NotEmpty(t, storedPacketData)
+	require.Equal(t, packetData, storedPacketData)
+
+	// Delete packet with idx 5 (final index)
+	consumerKeeper.DeletePendingDataPackets(ctx, 5)
+	storedPacketData = consumerKeeper.GetPendingPackets(ctx)
+	require.Equal(t, packetData[:len(packetData)-1], storedPacketData)
+
+	// Delete packet with idx 0 (first index)
+	consumerKeeper.DeletePendingDataPackets(ctx, 0)
+	storedPacketData = consumerKeeper.GetPendingPackets(ctx)
+	require.Equal(t, packetData[1:len(packetData)-1], storedPacketData)
+
+	// Delete all packets
+	consumerKeeper.DeleteAllPendingDataPackets(ctx)
+	storedPacketData = consumerKeeper.GetPendingPackets(ctx)
+	require.Empty(t, storedPacketData)
 }
 
 // TestVerifyProviderChain tests the VerifyProviderChain method for the consumer keeper

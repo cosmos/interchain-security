@@ -150,7 +150,7 @@ func TestSlash(t *testing.T) {
 	// If we call slash with infraction type empty, no slash packet will be queued
 	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
 	pendingPackets := consumerKeeper.GetPendingPackets(ctx)
-	require.Len(t, pendingPackets.List, 0)
+	require.Len(t, pendingPackets, 0)
 
 	// Consumer keeper from test setup should return false for IsPrevStandaloneChain()
 	require.False(t, consumerKeeper.IsPrevStandaloneChain(ctx))
@@ -161,7 +161,7 @@ func TestSlash(t *testing.T) {
 	// Call slash with valid infraction type and confirm 1 slash packet is queued
 	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.Infraction_INFRACTION_DOWNTIME)
 	pendingPackets = consumerKeeper.GetPendingPackets(ctx)
-	require.Len(t, pendingPackets.List, 1)
+	require.Len(t, pendingPackets, 1)
 
 	// Next, we set a value for the standalone staking keeper,
 	// and mark the consumer keeper as being from a previous standalone chain

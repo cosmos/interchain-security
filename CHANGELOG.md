@@ -4,6 +4,8 @@
 
 Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
 
+* (feat!) optimize pending packets storage on consumer, with migration! [#1037](https://github.com/cosmos/interchain-security/pull/1037)
+
 ## v3.0.0
 
 Date: June 21st, 2023
