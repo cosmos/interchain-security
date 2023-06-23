@@ -4,7 +4,6 @@ run:
   sort-results: true
   allow-parallel-runners: true
   skip-dirs:
-    - 'legacy_ibc_testing'
     - 'testutil'
 
 linters:
