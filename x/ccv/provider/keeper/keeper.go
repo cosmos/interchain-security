@@ -1033,6 +1033,7 @@ func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSe
 		}
 
 		return types.VscSendTimestamp{
+			ChainId:   chainID,
 			VscId:     vscID,
 			Timestamp: ts,
 		}, true
