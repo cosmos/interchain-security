@@ -46,10 +46,10 @@ COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/
 COPY --from=cometmock-builder /usr/local/bin/cometmock /usr/local/bin/cometmock
 COPY --from=gorelayer-builder /bin/rly /usr/local/bin/
 
-COPY --from=is-builder /go/bin/provider /usr/local/bin/provider
-COPY --from=is-builder /go/bin/consumer /usr/local/bin/consumer
-COPY --from=is-builder /go/bin/democracy /usr/local/bin/democracy
-COPY --from=is-builder /go/bin/sovereign /usr/local/bin/sovereign
+COPY --from=is-builder /go/bin/providerd /usr/local/bin/providerd
+COPY --from=is-builder /go/bin/consumerd /usr/local/bin/consumerd
+COPY --from=is-builder /go/bin/democracyd /usr/local/bin/democracyd
+COPY --from=is-builder /go/bin/sovereignd /usr/local/bin/sovereignd
 
 
 
