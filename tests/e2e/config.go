@@ -361,7 +361,7 @@ func ChangeoverTestRun() TestRun {
 		chainConfigs: map[chainID]ChainConfig{
 			chainID("provi"): {
 				chainId:        chainID("provi"),
-				binaryName:     "interchain-security-pd",
+				binaryName:     "providerd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -376,8 +376,8 @@ func ChangeoverTestRun() TestRun {
 			},
 			chainID("sover"): {
 				chainId:        chainID("sover"),
-				binaryName:     "interchain-security-sd",
-				upgradeBinary:  "interchain-security-cdd",
+				binaryName:     "sovereignd",
+				upgradeBinary:  "consumerd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
