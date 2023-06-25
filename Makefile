@@ -4,10 +4,10 @@ install: go.sum
 		export GOFLAGS='-buildmode=pie'
 		export CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2"
 		export CGO_LDFLAGS="-Wl,-z,relro,-z,now -fstack-protector"
-		go install $(BUILD_FLAGS) ./cmd/provider
-		go install $(BUILD_FLAGS) ./cmd/consumer
-		go install $(BUILD_FLAGS) ./cmd/democracy
-		go install $(BUILD_FLAGS) ./cmd/sovereign
+		go install $(BUILD_FLAGS) ./cmd/providerd
+		go install $(BUILD_FLAGS) ./cmd/consumerd
+		go install $(BUILD_FLAGS) ./cmd/democracyd
+		go install $(BUILD_FLAGS) ./cmd/sovereignd
 
 
 
