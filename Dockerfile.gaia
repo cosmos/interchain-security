@@ -68,7 +68,7 @@ RUN dnf update -y
 RUN dnf install -y which iproute iputils procps-ng vim-minimal tmux net-tools htop jq
 USER root
 
-COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/
+COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/hermes
 
 # swap interchain-security-pd binary with gaia binary but keep the name
 COPY --from=gaia-builder /go/gaia/build/gaiad /usr/local/bin/interchain-security-pd
