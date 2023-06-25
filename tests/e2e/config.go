@@ -164,7 +164,7 @@ func SlashThrottleTestRun() TestRun {
 		chainConfigs: map[chainID]ChainConfig{
 			chainID("provi"): {
 				chainId:        chainID("provi"),
-				binaryName:     "providerd",
+				binaryName:     "provider",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -179,7 +179,7 @@ func SlashThrottleTestRun() TestRun {
 			},
 			chainID("consu"): {
 				chainId:        chainID("consu"),
-				binaryName:     "consumerd",
+				binaryName:     "consumer",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -209,7 +209,7 @@ func DefaultTestRun() TestRun {
 		chainConfigs: map[chainID]ChainConfig{
 			chainID("provi"): {
 				chainId:        chainID("provi"),
-				binaryName:     "providerd",
+				binaryName:     "provider",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -224,7 +224,7 @@ func DefaultTestRun() TestRun {
 			},
 			chainID("consu"): {
 				chainId:        chainID("consu"),
-				binaryName:     "consumerd",
+				binaryName:     "consumer",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -255,7 +255,7 @@ func DemocracyTestRun(allowReward bool) TestRun {
 	}
 
 	tr := TestRun{
-		name: "democracyd",
+		name: "democracy",
 		containerConfig: ContainerConfig{
 			containerName: "interchain-security-democ-container",
 			instanceName:  "interchain-security-democ-instance",
@@ -266,7 +266,7 @@ func DemocracyTestRun(allowReward bool) TestRun {
 		chainConfigs: map[chainID]ChainConfig{
 			chainID("provi"): {
 				chainId:        chainID("provi"),
-				binaryName:     "providerd",
+				binaryName:     "provider",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -280,7 +280,7 @@ func DemocracyTestRun(allowReward bool) TestRun {
 			},
 			chainID("democ"): {
 				chainId:        chainID("democ"),
-				binaryName:     "democracyd",
+				binaryName:     "democracy",
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 20,
 				genesisChanges: consumerGenChanges,
@@ -306,7 +306,7 @@ func MultiConsumerTestRun() TestRun {
 		chainConfigs: map[chainID]ChainConfig{
 			chainID("provi"): {
 				chainId:        chainID("provi"),
-				binaryName:     "providerd",
+				binaryName:     "provider",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"30s\" | " +
@@ -320,7 +320,7 @@ func MultiConsumerTestRun() TestRun {
 			},
 			chainID("consu"): {
 				chainId:        chainID("consu"),
-				binaryName:     "consumerd",
+				binaryName:     "consumer",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
@@ -331,7 +331,7 @@ func MultiConsumerTestRun() TestRun {
 			},
 			chainID("densu"): {
 				chainId:        chainID("densu"),
-				binaryName:     "consumerd",
+				binaryName:     "consumer",
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
