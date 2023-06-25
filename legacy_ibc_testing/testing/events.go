@@ -69,7 +69,7 @@ func ParseAckFromEvents(events sdk.Events) ([]byte, error) {
 	for _, ev := range events {
 		if ev.Type == channeltypes.EventTypeWriteAck {
 			for _, attr := range ev.Attributes {
-				if attr.Key == channeltypes.AttributeKeyAckHex {
+				if attr.Key == channeltypes.AttributeKeyAck { //nolint:staticcheck // data
 					return []byte(attr.Value), nil
 				}
 			}
