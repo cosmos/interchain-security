@@ -3,13 +3,16 @@ package keeper_test
 import (
 	"testing"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/v3/testutil/crypto"
-	uthelpers "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
+	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+
+	"github.com/cosmos/interchain-security/v3/testutil/crypto"
+	uthelpers "github.com/cosmos/interchain-security/v3/testutil/keeper"
 )
 
 func TestChangeoverToConsumer(t *testing.T) {

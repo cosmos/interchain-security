@@ -5,14 +5,11 @@ import (
 	"io"
 	"os"
 
-	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
-	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	rosettaCmd "cosmossdk.io/tools/rosetta/cmd"
-	tmcfg "github.com/cometbft/cometbft/config"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
@@ -21,6 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/pruning"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/server"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -28,6 +26,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+
+	dbm "github.com/cometbft/cometbft-db"
+	tmcfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/log"
 
 	cdd "github.com/cosmos/interchain-security/v3/app/consumer-democracy"
 	"github.com/cosmos/interchain-security/v3/app/params"

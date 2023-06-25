@@ -3,23 +3,22 @@ package provider_test
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-
 	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
-
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
 )
 
 // TestOnChanOpenInit tests the provider's OnChanOpenInit method against spec.

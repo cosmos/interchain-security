@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"strconv"
 
-	errorsmod "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+
+	errorsmod "cosmossdk.io/errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"

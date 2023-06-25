@@ -3,10 +3,12 @@ package integration
 import (
 	"time"
 
-	tmtypes "github.com/cometbft/cometbft/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+
+	tmtypes "github.com/cometbft/cometbft/types"
 
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"

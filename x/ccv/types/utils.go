@@ -5,14 +5,17 @@ import (
 	"sort"
 	"time"
 
-	errorsmod "cosmossdk.io/errors"
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+
+	errorsmod "cosmossdk.io/errors"
+
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
 func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci.ValidatorUpdate {

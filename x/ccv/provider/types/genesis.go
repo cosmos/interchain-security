@@ -3,9 +3,11 @@ package types
 import (
 	"fmt"
 
-	errorsmod "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+
+	errorsmod "cosmossdk.io/errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )

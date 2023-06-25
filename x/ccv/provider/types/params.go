@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
