@@ -42,7 +42,7 @@ func getAllKeyPrefixes() []byte {
 		StandaloneTransferChannelIDByteKey,
 		PrevStandaloneChainByteKey,
 		PendingPacketsIndexByteKey,
-		WaitingOnBouncingSlashByteKey,
+		SlashRecordByteKey,
 	}
 }
 
@@ -80,6 +80,6 @@ func getAllFullyDefinedKeys() [][]byte {
 		StandaloneTransferChannelIDKey(),
 		PrevStandaloneChainKey(),
 		PendingPacketsIndexKey(),
-		WaitingOnBouncingSlashKey(),
+		SlashRecordKey(),
 	}
 }

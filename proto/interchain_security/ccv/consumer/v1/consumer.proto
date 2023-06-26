@@ -89,3 +89,11 @@ message MaturingVSCPacket {
   google.protobuf.Timestamp maturity_time = 2
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 }
+
+// A record storing the state of a slash packet sent to the provider chain
+// which maybe bounced back and forth until handled by the provider.
+message SlashRecord {
+  bool waiting_on_reply = 1;
+  google.protobuf.Timestamp send_time = 2
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+}

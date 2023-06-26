@@ -184,8 +184,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 
 	pending := k.GetPendingPackets(ctx)
 	for _, p := range pending {
-		if k.GetWaitingOnBouncingSlash(ctx) {
-			// If we are waiting on the resp of the provider for a bouncing slash, don't send any more packets.
+		if !k.PacketSendingPermitted(ctx) {
 			return
 		}
 
@@ -213,11 +212,11 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			k.Logger(ctx).Error("cannot send IBC packet; leaving packet data stored:", "type", p.Type.String(), "err", err.Error())
 			return
 		}
-		// If the packet that was just sent was a Slash packet, set the waiting on bouncing slash flag.
+		// If the packet that was just sent was a Slash packet, set the waiting on slash reply flag.
 		// This flag will be toggled false again when consumer hears back from provider. See OnAcknowledgementPacket below.
 		if p.Type == ccv.SlashPacket {
-			k.SetWaitingOnBouncingSlash(ctx)
-			// Return so bouncing slash stays at head of queue.
+			k.UpdateSlashRecordOnSend(ctx)
+			// Return so slash stays at head of queue.
 			return
 		}
 		k.DeletePendingDataPackets(ctx, p.Idx) // Can be it's own PR
@@ -238,11 +237,11 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		case ccv.NoOpResult[0]:
 			k.Logger(ctx).Info("recv no-op ack", "channel", packet.SourceChannel, "ack", res)
 		case ccv.SlashPacketHandledResult[0]:
-			k.ClearWaitingOnBouncingSlash(ctx) // Unblock sending of pending packets.
-			k.DeleteHeadOfPendingPackets(ctx)  // Remove bouncing slash from head of queue. It's been handled.
+			k.ClearSlashRecord(ctx)           // Clears slash record state, unblocks sending of pending packets.
+			k.DeleteHeadOfPendingPackets(ctx) // Remove slash from head of queue. It's been handled.
 		case ccv.SlashPacketBouncedResult[0]:
-			k.ClearWaitingOnBouncingSlash(ctx) // Unblock sending of pending packets.
-			// Note bouncing slash is still at head of queue and will now be retried.
+			k.UpdateSlashRecordOnReply(ctx)
+			// Note slash is still at head of queue and will now be retried after appropriate delay period.
 		default:
 			k.Logger(ctx).Error("recv invalid result ack; expected 1, 2, or 3", "channel", packet.SourceChannel, "ack", res)
 		}
