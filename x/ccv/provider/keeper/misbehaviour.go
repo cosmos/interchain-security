@@ -13,7 +13,7 @@ import (
 )
 
 // HandleConsumerMisbehaviour checks whether the given IBC misbehaviour is valid and, if they are, the misbehaving
-// CheckConsumerMisbehaviour check that the given IBC misbehaviour headers forms a valid light client attck evidence.
+// CheckConsumerMisbehaviour check that the given IBC misbehaviour headers forms a valid light client attack evidence.
 // proceed to the jailing and tombstoning of the bzyantine validators.
 func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
 	logger := ctx.Logger()
@@ -27,7 +27,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	// isn't too old. see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 
 	// construct a ligth client attack evidence
-	evidence, err := k.ConstructLigthClientEvidence(ctx, misbehaviour)
+	evidence, err := k.ConstructLightClientEvidence(ctx, misbehaviour)
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	for _, v := range evidence.ByzantineValidators {
 		// convert consumer consensus address
 		consuAddr := sdk.ConsAddress(v.Address.Bytes())
-		provAddr := k.GetProviderAddrFromConsumerAddr(ctx, misbehaviour.Header1.Header.ChainID, types.ConsumerConsAddress{consuAddr})
+		provAddr := k.GetProviderAddrFromConsumerAddr(ctx, misbehaviour.Header1.Header.ChainID, types.NewConsumerConsAddress(consuAddr))
 		k.stakingKeeper.ValidatorByConsAddr(ctx, consuAddr)
 		val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, provAddr.Address)
 
@@ -67,9 +67,9 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	return nil
 }
 
-// ConstructLigthClientEvidence constructs and returns a CometBFT Ligth Client Attack(LCA) evidence struct
+// ConstructLightClientEvidence constructs and returns a CometBFT Ligth Client Attack(LCA) evidence struct
 // from the given misbehaviour
-func (k Keeper) ConstructLigthClientEvidence(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) (*tmtypes.LightClientAttackEvidence, error) {
+func (k Keeper) ConstructLightClientEvidence(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) (*tmtypes.LightClientAttackEvidence, error) {
 
 	// construct the trusted and conflicetd ligth blocks
 	trusted, err := headerToLightBlock(*misbehaviour.Header1)

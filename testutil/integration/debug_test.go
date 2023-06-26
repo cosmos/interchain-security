@@ -265,6 +265,6 @@ func TestHandleConsumerMisbehaviour(t *testing.T) {
 	runCCVTestByName(t, "TestHandleConsumerMisbehaviour")
 }
 
-func TestConstructLigthClientEvidence(t *testing.T) {
-	runCCVTestByName(t, "TestConstructLigthClientEvidence")
+func TestConstructLightClientEvidence(t *testing.T) {
+	runCCVTestByName(t, "TestConstructLightClientEvidence")
 }

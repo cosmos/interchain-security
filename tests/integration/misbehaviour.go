@@ -59,7 +59,7 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 
 	for _, v := range altValset.Validators {
 		consuAddr := sdk.ConsAddress(v.Address.Bytes())
-		provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, types.ConsumerConsAddress{consuAddr})
+		provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, types.NewConsumerConsAddress(consuAddr))
 		val, ok := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), provAddr.Address)
 		s.Require().True(ok)
 		s.Require().True(val.Jailed)
@@ -67,7 +67,7 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	}
 }
 
-func (s *CCVTestSuite) TestConstructLigthClientEvidence() {
+func (s *CCVTestSuite) TestConstructLightClientEvidence() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
 	s.SendEmptyVSCPacket()
@@ -208,7 +208,7 @@ func (s *CCVTestSuite) TestConstructLigthClientEvidence() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			ev, err := s.providerApp.GetProviderKeeper().ConstructLigthClientEvidence(
+			ev, err := s.providerApp.GetProviderKeeper().ConstructLightClientEvidence(
 				s.providerCtx(),
 				*tc.misbehaviour,
 			)

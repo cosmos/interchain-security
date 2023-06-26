@@ -8,7 +8,6 @@ import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "google/protobuf/any.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
-import "tendermint/types/evidence.proto";
 
 // Msg defines the Msg service.
 service Msg {
@@ -46,10 +45,10 @@ message MsgRegisterConsumerRewardDenom {
 
 // MsgRegisterConsumerRewardDenomResponse defines the Msg/RegisterConsumerRewardDenom response type.
 message MsgRegisterConsumerRewardDenomResponse {}
-// MsgSubmitConsumerMisbehaviour reports a consumer chain Misbehaviour
 
 // MsgSubmitConsumerMisbehaviour defines a message that reports a misbehaviour
 // observed on a consumer chain
+// Note that the misbheaviour' headers must contain the same trusted states
 message MsgSubmitConsumerMisbehaviour {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
