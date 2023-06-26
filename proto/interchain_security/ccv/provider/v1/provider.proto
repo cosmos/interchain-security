@@ -216,10 +216,16 @@ message InitTimeoutTimestamp {
 }
 
 message VscSendTimestamp {
-  string chain_id = 1;
-  uint64 vsc_id = 2;
-  google.protobuf.Timestamp timestamp = 3
+  uint64 vsc_id = 1;
+  google.protobuf.Timestamp timestamp = 2
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+}
+
+// ExportedVscSendTimestamps is VscSendTimestamp with chainID info for exporting to genesis
+message ExportedVscSendTimestamp {
+  string chain_id = 1;
+  VscSendTimestamp vsc_send_timestamp = 2
+    [ (gogoproto.nullable) = false ];
 }
 
 //

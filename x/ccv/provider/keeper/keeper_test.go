@@ -357,7 +357,7 @@ func TestVscSendTimestamp(t *testing.T) {
 	expectedGetAllOrder := []types.VscSendTimestamp{}
 	for _, tc := range testCases {
 		if tc.chainID == chainID {
-			expectedGetAllOrder = append(expectedGetAllOrder, types.VscSendTimestamp{ChainId: tc.chainID, VscId: tc.vscID, Timestamp: tc.ts})
+			expectedGetAllOrder = append(expectedGetAllOrder, types.VscSendTimestamp{VscId: tc.vscID, Timestamp: tc.ts})
 		}
 	}
 	// sorting by vscID

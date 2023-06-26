@@ -94,8 +94,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		k.SetInitTimeoutTimestamp(ctx, item.ChainId, item.Timestamp)
 	}
 
-	for _, item := range genState.VscSendTimestamps {
-		k.SetVscSendTimestamp(ctx, item.ChainId, item.VscId, item.Timestamp)
+	for _, item := range genState.ExportedVscSendTimestamps {
+		k.SetVscSendTimestamp(ctx, item.ChainId, item.VscSendTimestamp.VscId, item.VscSendTimestamp.Timestamp)
 	}
 
 	k.SetParams(ctx, genState.Params)
@@ -107,7 +107,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	// get a list of all registered consumer chains
 	registeredChains := k.GetAllConsumerChains(ctx)
 
-	var vscSendTimestamps []types.VscSendTimestamp
+	var exportedVscSendTimestamps []types.ExportedVscSendTimestamp
 	// export states for each consumer chains
 	var consumerStates []types.ConsumerState
 	for _, chain := range registeredChains {
@@ -138,7 +138,10 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		cs.PendingValsetChanges = k.GetPendingVSCPackets(ctx, chain.ChainId)
 		consumerStates = append(consumerStates, cs)
 
-		vscSendTimestamps = append(vscSendTimestamps, k.GetAllVscSendTimestamps(ctx, chain.ChainId)...)
+		vscSendTimestamps := k.GetAllVscSendTimestamps(ctx, chain.ChainId)
+		for _, vscSendTimestamp := range vscSendTimestamps {
+			exportedVscSendTimestamps = append(exportedVscSendTimestamps, types.ExportedVscSendTimestamp{ChainId: chain.ChainId, VscSendTimestamp: vscSendTimestamp})
+		}
 	}
 
 	// ConsumerAddrsToPrune are added only for registered consumer chains
@@ -162,6 +165,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.GetAllValidatorsByConsumerAddr(ctx, nil),
 		consumerAddrsToPrune,
 		k.GetAllInitTimeoutTimestamps(ctx),
-		vscSendTimestamps,
+		exportedVscSendTimestamps,
 	)
 }

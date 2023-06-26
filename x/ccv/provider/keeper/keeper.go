@@ -986,7 +986,6 @@ func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSen
 		}
 
 		vscSendTimestamps = append(vscSendTimestamps, types.VscSendTimestamp{
-			ChainId:   chainID,
 			VscId:     vscID,
 			Timestamp: ts,
 		})
@@ -1033,7 +1032,6 @@ func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSe
 		}
 
 		return types.VscSendTimestamp{
-			ChainId:   chainID,
 			VscId:     vscID,
 			Timestamp: ts,
 		}, true
