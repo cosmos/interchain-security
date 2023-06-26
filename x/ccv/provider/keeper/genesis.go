@@ -95,7 +95,10 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	}
 
 	for _, item := range genState.ExportedVscSendTimestamps {
-		k.SetVscSendTimestamp(ctx, item.ChainId, item.VscSendTimestamp.VscId, item.VscSendTimestamp.Timestamp)
+		for _, vscSendTimestamp := range item.VscSendTimestamps {
+			k.SetVscSendTimestamp(ctx, item.ChainId, vscSendTimestamp.VscId, vscSendTimestamp.Timestamp)
+
+		}
 	}
 
 	k.SetParams(ctx, genState.Params)
@@ -139,9 +142,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		consumerStates = append(consumerStates, cs)
 
 		vscSendTimestamps := k.GetAllVscSendTimestamps(ctx, chain.ChainId)
-		for _, vscSendTimestamp := range vscSendTimestamps {
-			exportedVscSendTimestamps = append(exportedVscSendTimestamps, types.ExportedVscSendTimestamp{ChainId: chain.ChainId, VscSendTimestamp: vscSendTimestamp})
-		}
+		exportedVscSendTimestamps = append(exportedVscSendTimestamps, types.ExportedVscSendTimestamp{ChainId: chain.ChainId, VscSendTimestamps: vscSendTimestamps})
 	}
 
 	// ConsumerAddrsToPrune are added only for registered consumer chains
