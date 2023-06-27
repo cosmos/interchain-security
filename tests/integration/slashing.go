@@ -255,7 +255,7 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))
 	s.Require().NoError(err)
 
-	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewErrorAcknowledgement(fmt.Errorf("another error")))
+	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, ccv.NewErrorAcknowledgementWithLog(s.consumerCtx(), fmt.Errorf("another error")))
 	s.Require().Error(err)
 }
 
@@ -330,7 +330,8 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	errAck := providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
 	suite.Require().False(errAck.Success())
 	errAckCast := errAck.(channeltypes.Acknowledgement)
-	// TODO: see if there's a way to get error reason like before
+	// Error strings in err acks are now thrown out by IBC core to prevent app hash.
+	// Hence a generic error string is expected.
 	suite.Require().Equal("ABCI code: 1: error handling packet: see events for details", errAckCast.GetError())
 
 	// Restore init chain height
@@ -341,7 +342,6 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
 	suite.Require().False(errAck.Success())
 	errAckCast = errAck.(channeltypes.Acknowledgement)
-	// TODO: see if there's a way to get error reason like before
 	suite.Require().Equal("ABCI code: 1: error handling packet: see events for details", errAckCast.GetError())
 
 	// save current VSC ID
@@ -357,7 +357,6 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
 	suite.Require().False(errAck.Success())
 	errAckCast = errAck.(channeltypes.Acknowledgement)
-	// TODO: see if there's a way to get error reason like before
 	suite.Require().Equal("ABCI code: 1: error handling packet: see events for details", errAckCast.GetError())
 
 	// construct slashing packet with non existing validator
