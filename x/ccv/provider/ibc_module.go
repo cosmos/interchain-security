@@ -177,9 +177,12 @@ func (am AppModule) OnRecvPacket(
 		ack            ibcexported.Acknowledgement
 		consumerPacket ccv.ConsumerPacketData
 	)
-	// unmarshall consumer packet
+	// unmarshal consumer packet
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacket); err != nil {
-		errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("cannot unmarshal CCV packet data"))
+		errMsg := "cannot unmarshal CCV packet data from JSON"
+		// errMsg thrown out by IBC core, hence we log instead
+		ctx.Logger().Error(errMsg, "err", err)
+		errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf(errMsg))
 		ack = &errAck
 	} else {
 		// TODO: call ValidateBasic method on consumer packet data
@@ -193,7 +196,11 @@ func (am AppModule) OnRecvPacket(
 			// handle SlashPacket
 			ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
 		default:
-			errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type))
+			errMsg := fmt.Sprintf("invalid consumer packet type: %q, valid types are: %q, %q",
+				consumerPacket.Type, ccv.VscMaturedPacket, ccv.SlashPacket)
+			// errMsg thrown out by IBC core, hence we log instead
+			ctx.Logger().Error(errMsg)
+			errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf(errMsg))
 			ack = &errAck
 		}
 	}
