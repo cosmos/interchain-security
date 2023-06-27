@@ -21,6 +21,7 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -306,4 +307,21 @@ func TestSendPacketsFailure(t *testing.T) {
 	// No panic should occur, pending packets should not be cleared
 	consumerKeeper.SendPackets(ctx)
 	require.Equal(t, 3, len(consumerKeeper.GetPendingPackets(ctx).List))
+}
+
+func TestSlashPacketDataJSON(t *testing.T) {
+	spd := types.NewSlashPacketData(
+		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)},
+		uint64(1),
+		stakingtypes.Infraction_INFRACTION_DOWNTIME,
+	)
+	cpd := ccv.ConsumerPacketData{
+		Type: ccv.SlashPacket,
+		Data: &ccv.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: spd,
+		},
+	}
+	bz := cpd.GetBytes()
+	str := string(bz)
+	fmt.Println(str)
 }

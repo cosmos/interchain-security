@@ -1,7 +1,9 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	errorsmod "cosmossdk.io/errors"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -101,5 +103,38 @@ func (cp ConsumerPacketData) ValidateBasic() (err error) {
 
 func (cp ConsumerPacketData) GetBytes() []byte {
 	bytes := ModuleCdc.MustMarshalJSON(&cp)
+
+	if cp.Type == SlashPacket {
+		type Validator struct {
+			Address string `json:"address"`
+			Power   string `json:"power"`
+		}
+		type SlashPacketData struct {
+			Validator      Validator `json:"validator"`
+			ValsetUpdateID string    `json:"valset_update_id"`
+			// Same as protbuf generated type, but infraction is string instead of enum
+			Infraction string `json:"infraction"`
+		}
+		type NewSchema struct {
+			Type            string          `json:"type"`
+			SlashPacketData SlashPacketData `json:"slashPacketData"`
+		}
+		// Unmarshal the JSON string into the struct
+		var data NewSchema
+		err := json.Unmarshal(bytes, &data)
+		if err != nil {
+			panic(err)
+		}
+
+		// Modify the value of the "infraction" field By adding "TYPE" after first underscore
+		data.SlashPacketData.Infraction = strings.Replace(
+			data.SlashPacketData.Infraction, "_", "_TYPE_", 1)
+
+		// Replace bytes with modified JSON string
+		bytes, err = json.Marshal(data)
+		if err != nil {
+			return nil
+		}
+	}
 	return bytes
 }
