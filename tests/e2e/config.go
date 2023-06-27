@@ -167,7 +167,7 @@ func SlashThrottleTestRun() TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
@@ -212,7 +212,7 @@ func DefaultTestRun() TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
@@ -269,7 +269,7 @@ func DemocracyTestRun(allowReward bool) TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
@@ -309,7 +309,7 @@ func MultiConsumerTestRun() TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"30s\" | " +
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"30s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
@@ -364,7 +364,7 @@ func ChangeoverTestRun() TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
