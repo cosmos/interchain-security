@@ -12,7 +12,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -280,7 +279,7 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 		).Return(nil).Times(1),
 	)
 
-	ack = ccvtypes.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("error"))
+	ack = types.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("error"))
 	err = consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
 	require.Nil(t, err)
 }
