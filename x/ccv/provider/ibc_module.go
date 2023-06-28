@@ -175,30 +175,33 @@ func (am AppModule) OnRecvPacket(
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
 	var (
-		ack              ibcexported.Acknowledgement
-		consumerPacket   ccv.ConsumerPacketData
-		consumerPacketV1 ccv.ConsumerPacketDataV1
-		isV1Packet       bool
+		ack            ibcexported.Acknowledgement
+		consumerPacket ccv.ConsumerPacketData
 	)
 
 	// unmarshall consumer packet
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacket); err != nil {
 		// retry for v1 packet type
-		errV1 := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacketV1)
+		var v1Packet ccv.ConsumerPacketDataV1
+		errV1 := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &v1Packet)
 		if errV1 != nil {
 			errAck := ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("cannot unmarshal CCV packet data"))
 			ack = &errAck
-
-			ctx.EventManager().EmitEvent(
-				sdk.NewEvent(
-					ccv.EventTypePacket,
-					sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
-					sdk.NewAttribute(ccv.AttributeKeyAckSuccess, "true"),
-				),
-			)
 			return ack
 		}
-		isV1Packet = true
+
+		if v1Packet.Type == ccv.VscMaturedPacket {
+			errAck := ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("unexpected VSCMaturedPacket packet type"))
+			ack = &errAck
+			return ack
+		}
+
+		consumerPacket = ccv.ConsumerPacketData{
+			Type: v1Packet.Type,
+			Data: &ccv.ConsumerPacketData_SlashPacketData{
+				SlashPacketData: v1Packet.GetSlashPacketData().FromV1(),
+			},
+		}
 	}
 
 	// TODO: call ValidateBasic method on consumer packet data
@@ -210,11 +213,7 @@ func (am AppModule) OnRecvPacket(
 		ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, *consumerPacket.GetVscMaturedPacketData())
 	case ccv.SlashPacket:
 		// handle SlashPacket
-		if isV1Packet {
-			ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacketV1.GetSlashPacketData().FromV1())
-		} else {
-			ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
-		}
+		ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
 	default:
 		errAck := ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type))
 		ack = &errAck
