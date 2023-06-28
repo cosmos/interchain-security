@@ -228,7 +228,7 @@ func (am AppModule) OnRecvPacket(
 		data types.ValidatorSetChangePacketData
 	)
 	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("cannot unmarshal CCV packet data"))
+		errAck := types.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("cannot unmarshal CCV packet data"))
 		ack = &errAck
 	} else {
 		ack = am.keeper.OnRecvVSCPacket(ctx, packet, data)
