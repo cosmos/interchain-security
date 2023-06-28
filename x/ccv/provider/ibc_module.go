@@ -193,7 +193,7 @@ func (am AppModule) OnRecvPacket(
 				sdk.NewEvent(
 					ccv.EventTypePacket,
 					sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
-					sdk.NewAttribute(ccv.AttributeKeyAckSuccess, fmt.Sprintf("%t", ack != nil)),
+					sdk.NewAttribute(ccv.AttributeKeyAckSuccess, "true"),
 				),
 			)
 			return ack

@@ -81,7 +81,8 @@ func TestProviderProposalHandler(t *testing.T) {
 		{
 			name: "unsupported proposal type",
 			// lint rule disabled because this is a test case for an unsupported proposal type
-			content: &distributiontypes.CommunityPoolSpendProposal{ // nolint:staticcheck
+			// nolint:staticcheck
+			content: &distributiontypes.CommunityPoolSpendProposal{
 				Title:       "title",
 				Description: "desc",
 				Recipient:   "",
