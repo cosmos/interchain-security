@@ -85,6 +85,11 @@ func SendIBCPacket(
 	return err
 }
 
+func NewErrorAcknowledgementWithLog(ctx sdk.Context, err error) channeltypes.Acknowledgement {
+	ctx.Logger().Error("IBC ErrorAcknowledgement constructed", "error", err)
+	return channeltypes.NewErrorAcknowledgement(err)
+}
+
 // AppendMany appends a variable number of byte slices together
 func AppendMany(byteses ...[]byte) (out []byte) {
 	for _, bytes := range byteses {
