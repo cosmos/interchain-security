@@ -4,6 +4,8 @@
 
 Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
 
+* (fix) [#720](https://github.com/cosmos/interchain-security/issues/720) Fix the attribute `AttributeDistributionTotal` value in `FeeDistribution` event emit.
+
 ## v3.0.0
 
 Date: June 21st, 2023
