@@ -211,7 +211,7 @@ func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context, ltbh types.LastT
 }
 
 func (k Keeper) ChannelOpenInit(ctx sdk.Context, msg *channeltypes.MsgChannelOpenInit) (
-		*channeltypes.MsgChannelOpenInitResponse, error,
+	*channeltypes.MsgChannelOpenInitResponse, error,
 ) {
 	return k.ibcCoreKeeper.ChannelOpenInit(sdk.WrapSDKContext(ctx), msg)
 }
