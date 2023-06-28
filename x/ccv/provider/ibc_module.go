@@ -175,28 +175,49 @@ func (am AppModule) OnRecvPacket(
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
 	var (
-		ack            ibcexported.Acknowledgement
-		consumerPacket ccv.ConsumerPacketData
+		ack              ibcexported.Acknowledgement
+		consumerPacket   ccv.ConsumerPacketData
+		consumerPacketV1 ccv.ConsumerPacketDataV1
+		isV1Packet       bool
 	)
+
 	// unmarshall consumer packet
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacket); err != nil {
-		errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("cannot unmarshal CCV packet data"))
-		ack = &errAck
-	} else {
-		// TODO: call ValidateBasic method on consumer packet data
-		// See: https://github.com/cosmos/interchain-security/issues/634
-
-		switch consumerPacket.Type {
-		case ccv.VscMaturedPacket:
-			// handle VSCMaturedPacket
-			ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, *consumerPacket.GetVscMaturedPacketData())
-		case ccv.SlashPacket:
-			// handle SlashPacket
-			ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
-		default:
-			errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type))
+		// retry for v1 packet type
+		errV1 := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacketV1)
+		if errV1 != nil {
+			errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("cannot unmarshal CCV packet data"))
 			ack = &errAck
+
+			ctx.EventManager().EmitEvent(
+				sdk.NewEvent(
+					ccv.EventTypePacket,
+					sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
+					sdk.NewAttribute(ccv.AttributeKeyAckSuccess, fmt.Sprintf("%t", ack != nil)),
+				),
+			)
+			return ack
 		}
+		isV1Packet = true
+	}
+
+	// TODO: call ValidateBasic method on consumer packet data
+	// See: https://github.com/cosmos/interchain-security/issues/634
+
+	switch consumerPacket.Type {
+	case ccv.VscMaturedPacket:
+		// handle VSCMaturedPacket
+		ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, *consumerPacket.GetVscMaturedPacketData())
+	case ccv.SlashPacket:
+		// handle SlashPacket
+		if isV1Packet {
+			ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacketV1.GetSlashPacketData().FromV1())
+		} else {
+			ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
+		}
+	default:
+		errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type))
+		ack = &errAck
 	}
 
 	ctx.EventManager().EmitEvent(

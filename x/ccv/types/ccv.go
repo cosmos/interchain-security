@@ -93,6 +93,10 @@ func (vdt SlashPacketData) GetBytes() []byte {
 	return valDowntimeBytes
 }
 
+func (vdt SlashPacketData) ToV1() *SlashPacketDataV1 {
+	return NewSlashPacketDataV1(vdt.Validator, vdt.ValsetUpdateId, vdt.Infraction)
+}
+
 func (cp ConsumerPacketData) ValidateBasic() (err error) {
 	switch cp.Type {
 	case VscMaturedPacket:
@@ -139,4 +143,22 @@ func (cp ConsumerPacketData) ToV1Bytes() []byte {
 	}
 	bytes := ModuleCdc.MustMarshalJSON(&cpv1)
 	return bytes
+}
+
+// FromV1 converts SlashPacketDataV1 to SlashPacketData.
+// Provider must handle both V1 and later versions of the SlashPacketData.
+func (vdt1 SlashPacketDataV1) FromV1() *SlashPacketData {
+	newType := stakingtypes.Infraction_INFRACTION_UNSPECIFIED
+	switch vdt1.Infraction {
+	case Downtime:
+		newType = stakingtypes.Infraction_INFRACTION_DOWNTIME
+	case DoubleSign:
+		newType = stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
+	}
+
+	return &SlashPacketData{
+		Validator:      vdt1.Validator,
+		ValsetUpdateId: vdt1.ValsetUpdateId,
+		Infraction:     newType,
+	}
 }

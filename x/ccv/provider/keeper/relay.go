@@ -400,6 +400,26 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 	return nil
 }
 
+// ValidateV1SlashPacket validates a recv slash packet compatible with v1 before it is
+// handled or persisted in store. An error is returned if the packet is invalid,
+// and an error ack should be relayed to the sender.
+func (k Keeper) ValidateV1SlashPacket(ctx sdk.Context, chainID string,
+	packet channeltypes.Packet, data ccv.SlashPacketDataV1,
+) error {
+	_, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
+	// return error if we cannot find infraction height matching the validator update id
+	if !found {
+		return fmt.Errorf("cannot find infraction height matching "+
+			"the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
+	}
+
+	if data.Infraction != ccv.DoubleSign && data.Infraction != ccv.Downtime {
+		return fmt.Errorf("invalid infraction type: %s", data.Infraction)
+	}
+
+	return nil
+}
+
 // HandleSlashPacket potentially jails a misbehaving validator for a downtime infraction.
 // This method should NEVER be called with a double-sign infraction.
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
