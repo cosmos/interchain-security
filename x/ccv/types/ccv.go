@@ -59,6 +59,23 @@ func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, infraction
 	}
 }
 
+// NewSlashPacketDataV1 creates a new SlashPacketDataV1 that uses ccv.InfractionTypes to maintain backward compatibility.
+func NewSlashPacketDataV1(validator abci.Validator, valUpdateId uint64, infractionType stakingtypes.Infraction) *SlashPacketDataV1 {
+	v1Type := InfractionEmpty
+	switch infractionType {
+	case stakingtypes.Infraction_INFRACTION_DOWNTIME:
+		v1Type = Downtime
+	case stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN:
+		v1Type = DoubleSign
+	}
+
+	return &SlashPacketDataV1{
+		Validator:      validator,
+		ValsetUpdateId: valUpdateId,
+		Infraction:     v1Type,
+	}
+}
+
 func (vdt SlashPacketData) ValidateBasic() error {
 	if len(vdt.Validator.Address) == 0 || vdt.Validator.Power == 0 {
 		return errorsmod.Wrap(ErrInvalidPacketData, "validator fields cannot be empty")
@@ -99,7 +116,27 @@ func (cp ConsumerPacketData) ValidateBasic() (err error) {
 	return
 }
 
+// Convert to bytes while maintaining over the wire compatibility with previous versions.
 func (cp ConsumerPacketData) GetBytes() []byte {
-	bytes := ModuleCdc.MustMarshalJSON(&cp)
+	return cp.ToV1Bytes()
+}
+
+// ToV1Bytes converts the ConsumerPacketData to JSON byte array compatible
+// with the format used by ICS versions using cosmos-sdk v45 (ICS v1 and ICS v2).
+func (cp ConsumerPacketData) ToV1Bytes() []byte {
+	if cp.Type != SlashPacket {
+		bytes := ModuleCdc.MustMarshalJSON(&cp)
+		return bytes
+	}
+
+	sp := cp.GetSlashPacketData()
+	spdv1 := NewSlashPacketDataV1(sp.Validator, sp.ValsetUpdateId, sp.Infraction)
+	cpv1 := ConsumerPacketDataV1{
+		Type: cp.Type,
+		Data: &ConsumerPacketDataV1_SlashPacketData{
+			SlashPacketData: spdv1,
+		},
+	}
+	bytes := ModuleCdc.MustMarshalJSON(&cpv1)
 	return bytes
 }
