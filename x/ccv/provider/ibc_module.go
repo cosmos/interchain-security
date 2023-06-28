@@ -180,7 +180,7 @@ func (am AppModule) OnRecvPacket(
 	)
 	// unmarshall consumer packet
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacket); err != nil {
-		errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("cannot unmarshal CCV packet data"))
+		errAck := ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("cannot unmarshal CCV packet data"))
 		ack = &errAck
 	} else {
 		// TODO: call ValidateBasic method on consumer packet data
@@ -194,7 +194,7 @@ func (am AppModule) OnRecvPacket(
 			// handle SlashPacket
 			ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
 		default:
-			errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type))
+			errAck := ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type))
 			ack = &errAck
 		}
 	}
