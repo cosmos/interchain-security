@@ -30,6 +30,7 @@ func (k Keeper) RegisterConsumerRewardDenom(ctx sdk.Context, denom string, sende
 	return nil
 }
 
+// GetConsumerRewardDenomRegistrationFee returns the consumer reward pool account address
 func (k Keeper) GetConsumerRewardsPoolAddressStr(ctx sdk.Context) string {
 	return k.accountKeeper.GetModuleAccount(
 		ctx, types.ConsumerRewardsPool).GetAddress().String()
