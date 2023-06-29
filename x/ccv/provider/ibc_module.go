@@ -174,7 +174,6 @@ func (am AppModule) OnRecvPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-
 	consumerPacket, err := UnmarshalConsumerPacket(packet)
 	if err != nil {
 		errAck := ccv.NewErrorAcknowledgementWithLog(ctx, err)
