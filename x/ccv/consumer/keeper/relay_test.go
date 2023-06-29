@@ -279,7 +279,7 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 		).Return(nil).Times(1),
 	)
 
-	ack = channeltypes.NewErrorAcknowledgement(fmt.Errorf("error"))
+	ack = types.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("error"))
 	err = consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
 	require.Nil(t, err)
 }
