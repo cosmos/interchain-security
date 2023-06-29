@@ -209,15 +209,17 @@ func (am AppModule) OnRecvPacket(
 }
 
 func UnmarshalConsumerPacket(packet channeltypes.Packet) (consumerPacket ccv.ConsumerPacketData, err error) {
-	// First try unmarshaling into ccv.ConsumerPacketData var, consumerPacket
+	// First try unmarshaling into ccv.ConsumerPacketData type
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacket); err != nil {
-		// If failed, retry for v1 packet type
+		// If failed, packet should be a v1 slash packet, retry for ConsumerPacketDataV1 packet type
 		var v1Packet ccv.ConsumerPacketDataV1
 		errV1 := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &v1Packet)
 		if errV1 != nil {
+			// If neither worked, return error
 			return ccv.ConsumerPacketData{}, errV1
 		}
 
+		// VSC matured packets should not be unmarshaled as v1 packets
 		if v1Packet.Type == ccv.VscMaturedPacket {
 			return ccv.ConsumerPacketData{}, fmt.Errorf("VSC matured packets should be correctly unmarshaled")
 		}
