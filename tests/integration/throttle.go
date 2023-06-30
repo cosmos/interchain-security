@@ -9,6 +9,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
@@ -314,15 +315,9 @@ func (s *CCVTestSuite) TestPacketSpam() {
 
 	// Recv 500 packets from consumer to provider in same block
 	for _, packet := range packets {
-		consumerPacketData := ccvtypes.ConsumerPacketData{}
-		consumerPacketDataV1 := ccvtypes.ConsumerPacketDataV1{}
-		err := ccvtypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacketData)
-		if err == nil {
-			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
-		} else {
-			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketDataV1)
-			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketDataV1.GetSlashPacketData().FromV1())
-		}
+		consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+		s.Require().NoError(err)
+		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
 	// Execute block to handle packets in endblock
@@ -374,15 +369,9 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 
 	// Recv 500 packets from consumer to provider in same block
 	for _, packet := range packets {
-		consumerPacketData := ccvtypes.ConsumerPacketData{}
-		consumerPacketDataV1 := ccvtypes.ConsumerPacketDataV1{}
-		err := ccvtypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacketData)
-		if err == nil {
-			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
-		} else {
-			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketDataV1)
-			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketDataV1.GetSlashPacketData().FromV1())
-		}
+		consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+		s.Require().NoError(err)
+		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
 	// Execute block to handle packets in endblock
@@ -476,18 +465,10 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 
 	// Recv 500 packets from consumer to provider in same block
 	for i, packet := range packets {
-		consumerPacketData := ccvtypes.ConsumerPacketData{}
-		consumerPacketDataV1 := ccvtypes.ConsumerPacketDataV1{}
-		err := ccvtypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacketData)
-		if err != nil {
-			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketDataV1)
-			consumerPacketData = ccvtypes.ConsumerPacketData{
-				Type: consumerPacketDataV1.Type,
-				Data: &ccvtypes.ConsumerPacketData_SlashPacketData{
-					SlashPacketData: consumerPacketDataV1.GetSlashPacketData().FromV1(),
-				},
-			}
-		}
+
+		consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+		s.Require().NoError(err)
+
 		// Type depends on index packets were appended from above
 		if (i+5)%10 == 0 {
 			vscMaturedPacketData := consumerPacketData.GetVscMaturedPacketData()
@@ -700,15 +681,9 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 
 	// Recv and queue all slash packets.
 	for _, packet := range packets {
-		consumerPacketData := ccvtypes.ConsumerPacketData{}
-		consumerPacketDataV1 := ccvtypes.ConsumerPacketDataV1{}
-		err := ccvtypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacketData)
-		if err == nil {
-			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
-		} else {
-			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketDataV1)
-			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketDataV1.GetSlashPacketData().FromV1())
-		}
+		consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+		s.Require().NoError(err)
+		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
 	// We should have 6 pending slash packet entries queued.
@@ -767,15 +742,9 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 
 	// Recv and queue all slash packets.
 	for _, packet := range packets {
-		consumerPacketData := ccvtypes.ConsumerPacketData{}
-		consumerPacketDataV1 := ccvtypes.ConsumerPacketDataV1{}
-		err := ccvtypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacketData)
-		if err == nil {
-			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
-		} else {
-			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketDataV1)
-			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketDataV1.GetSlashPacketData().FromV1())
-		}
+		consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+		s.Require().NoError(err)
+		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
 	// We should have 24 pending slash packet entries queued.
@@ -820,15 +789,9 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 			ibcSeqNum := uint64(i)
 			packet := s.constructSlashPacketFromConsumer(*bundle,
 				*s.providerChain.Vals.Validators[0], stakingtypes.Infraction_INFRACTION_DOWNTIME, ibcSeqNum)
-			packetData := ccvtypes.ConsumerPacketData{}
-			packetDataV1 := ccvtypes.ConsumerPacketDataV1{}
-			err := ccvtypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &packetData)
-			if err == nil {
-				providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *packetData.GetSlashPacketData())
-			} else {
-				ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetDataV1)
-				providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *packetDataV1.GetSlashPacketData().FromV1())
-			}
+			consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+			s.Require().NoError(err)
+			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 		}
 	}
 
@@ -916,15 +879,9 @@ func (s *CCVTestSuite) TestVscMaturedHandledPerBlockLimit() {
 			ibcSeqNum := uint64(i)
 			packet := s.constructSlashPacketFromConsumer(*bundle,
 				*s.providerChain.Vals.Validators[0], stakingtypes.Infraction_INFRACTION_DOWNTIME, ibcSeqNum)
-			packetData := ccvtypes.ConsumerPacketData{}
-			packetDataV1 := ccvtypes.ConsumerPacketDataV1{}
-			err := ccvtypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &packetData)
-			if err == nil {
-				providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *packetData.GetSlashPacketData())
-			} else {
-				ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetDataV1)
-				providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *packetDataV1.GetSlashPacketData().FromV1())
-			}
+			consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+			s.Require().NoError(err)
+			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 		}
 	}
 
