@@ -45,17 +45,17 @@ func TestConsumerPacketDataMarshalling(t *testing.T) {
 	require.NotZero(t, oldPacketFormatBytes, "oldPacketFormatBytes should not be zero")
 
 	// allow visually confirming that these are the same bytes
-	t.Log("oldPacketFormatBytes", oldPacketFormatBytes)
-	t.Log("newPacketFormatBytes", newPacketFormatBytes)
-
+	t.Log("oldPacketFormatBytes", oldPacketFormatBytes) // [8 1 18 8 10 2 24 1 16 1 24 2] -> same byte array
+	t.Log("newPacketFormatBytes", newPacketFormatBytes) // [8 1 18 8 10 2 24 1 16 1 24 2] -> same byte array
 	// check that the old packet format is the same as the new packet format
 	require.Equal(t, newPacketFormatBytes, oldPacketFormatBytes, "oldPacketFormatBytes should be the same as newPacketFormatBytes")
 
 	// compare JSON strings
 	newPacketFormatJSON := ModuleCdc.MustMarshalJSON(&newPacketFormat)
 	oldPacketFormatJSON := ModuleCdc.MustMarshalJSON(&oldPacketFormat)
-	t.Log("oldPacketFormatJSON", string(newPacketFormatJSON))
-	t.Log("newPacketFormatJSON", string(oldPacketFormatJSON))
+
+	t.Log("oldPacketFormatJSON", string(newPacketFormatJSON)) // {"type":"CONSUMER_PACKET_TYPE_SLASH","slashPacketData":{"validator":{"address":"","power":"1"},"valset_update_id":"1","infraction":"INFRACTION_DOWNTIME"}} -> different byte array
+	t.Log("newPacketFormatJSON", string(oldPacketFormatJSON)) // {"type":"CONSUMER_PACKET_TYPE_SLASH","slashPacketData":{"validator":{"address":null,"power":"1"},"valset_update_id":"1","infraction":"INFRACTION_TYPE_DOWNTIME"}} -> different byte array
 
 	require.NotEqual(t, newPacketFormatJSON, oldPacketFormatJSON, "oldPacketFormatJSON and newPacketFormatJSON are the same")
 }
