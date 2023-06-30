@@ -18,8 +18,6 @@ Implemented
 
 ## Decision
 
-
-
 ### Process
 
 Prior to the changeover, the consumer chain will have an existing staking keeper and validator set, these may be referred to as the "standalone staking keeper" and "standalone validator set respectively".  
