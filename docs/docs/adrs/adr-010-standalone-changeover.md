@@ -20,17 +20,17 @@ Implemented
 
 ### Process
 
-Prior to the changeover, the consumer chain will have an existing staking keeper and validator set, these may be referred to as the "standalone staking keeper" and "standalone validator set respectively".  
+Prior to the changeover, the consumer chain will have an existing staking keeper and validator set, these may be referred to as the "standalone staking keeper" and "standalone validator set" respectively.  
 
-The first step in the changeover process is to submit a ConsumerAdditionProposal. If the proposal passes, the provider will create a new IBC client for the consumer at spawn time, with the provider's validator set. A consumer genesis will also be constructed for validators to query. Within this consumer genesis contains the initial validator set for the consumer to apply after the changeover.
+The first step in the changeover process is to submit a ConsumerAdditionProposal. If the proposal passes, the provider will create a new IBC client for the consumer at spawn time, with the provider's validator set. A consumer genesis will also be constructed by the provider for validators to query. Within this consumer genesis contains the initial validator set for the consumer to apply after the changeover.
 
-The consumer will have to align it's upgrade height to happen after the provider has created the new IBC client. Any replicated security validators who will run the consumer binary, but are not a part of the sovereign validator set, must sync up a full node at this time. The disc state of said full node will be used to run the consumer chain after the changeover has completed.
+The consumer upgrade height must be reached after the provider has created the new IBC client. Any replicated security validators who will run the consumer, but are not a part of the sovereign validator set, must sync up a full node before the consumer upgrade height is reached. The disc state of said full node will be used to run the consumer chain after the changeover has completed.
 
-Next, the standalone consumer chain runs an upgrade which adds the CCV module, and is properly setup to execute changeover logic within endblocker.
+Next, the standalone consumer chain runs an upgrade which adds the CCV module, and is properly setup to execute changeover logic.
 
-The meat of the changeover logic is that the consumer chain validator set is updated to that which was specified by the provider. Validators which were a part of the old set, but not the new set, are given zero power. Once these validator updates are given to Comet, the set is committed, and in effect 2 blocks later (see [FirstConsumerHeight](../../../x/ccv/consumer/keeper/changeover.go#L19)).
+The meat of the changeover logic is that the consumer chain validator set is updated to that which was specified by the provider via the queried consumer genesis. Validators which were a part of the old set, but not the new set, are given zero voting power. Once these validator updates are given to Comet, the set is committed, and in effect 2 blocks later (see [FirstConsumerHeight](../../../x/ccv/consumer/keeper/changeover.go#L19)).
 
-A relayer then establishes the new IBC connection between the provider and consumer. The CCV channel handshake is then started on top of this new connection. Once the CCV channel is established and VSC packets are being relayed, the consumer chain is officially secured by the provider.
+A relayer then establishes the new IBC connection between the provider and consumer. The CCV channel handshake is started on top of this connection. Once the CCV channel is established and VSC packets are being relayed, the consumer chain is secured by the provider.
 
 ### Changes to CCV Protocol
 
