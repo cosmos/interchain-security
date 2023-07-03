@@ -9,6 +9,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
@@ -314,8 +315,8 @@ func (s *CCVTestSuite) TestPacketSpam() {
 
 	// Recv 500 packets from consumer to provider in same block
 	for _, packet := range packets {
-		consumerPacketData := ccvtypes.ConsumerPacketData{}
-		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketData)
+		consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+		s.Require().NoError(err)
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
@@ -368,8 +369,8 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 
 	// Recv 500 packets from consumer to provider in same block
 	for _, packet := range packets {
-		consumerPacketData := ccvtypes.ConsumerPacketData{}
-		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketData)
+		consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+		s.Require().NoError(err)
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
@@ -464,8 +465,10 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 
 	// Recv 500 packets from consumer to provider in same block
 	for i, packet := range packets {
-		consumerPacketData := ccvtypes.ConsumerPacketData{}
-		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketData)
+
+		consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+		s.Require().NoError(err)
+
 		// Type depends on index packets were appended from above
 		if (i+5)%10 == 0 {
 			vscMaturedPacketData := consumerPacketData.GetVscMaturedPacketData()
@@ -678,8 +681,8 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 
 	// Recv and queue all slash packets.
 	for _, packet := range packets {
-		consumerPacketData := ccvtypes.ConsumerPacketData{}
-		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketData)
+		consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+		s.Require().NoError(err)
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
@@ -739,8 +742,8 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 
 	// Recv and queue all slash packets.
 	for _, packet := range packets {
-		consumerPacketData := ccvtypes.ConsumerPacketData{}
-		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketData)
+		consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+		s.Require().NoError(err)
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
@@ -786,10 +789,9 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 			ibcSeqNum := uint64(i)
 			packet := s.constructSlashPacketFromConsumer(*bundle,
 				*s.providerChain.Vals.Validators[0], stakingtypes.Infraction_INFRACTION_DOWNTIME, ibcSeqNum)
-			packetData := ccvtypes.ConsumerPacketData{}
-			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetData)
-			providerKeeper.OnRecvSlashPacket(s.providerCtx(),
-				packet, *packetData.GetSlashPacketData())
+			consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+			s.Require().NoError(err)
+			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 		}
 	}
 
@@ -877,10 +879,9 @@ func (s *CCVTestSuite) TestVscMaturedHandledPerBlockLimit() {
 			ibcSeqNum := uint64(i)
 			packet := s.constructSlashPacketFromConsumer(*bundle,
 				*s.providerChain.Vals.Validators[0], stakingtypes.Infraction_INFRACTION_DOWNTIME, ibcSeqNum)
-			packetData := ccvtypes.ConsumerPacketData{}
-			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetData)
-			providerKeeper.OnRecvSlashPacket(s.providerCtx(),
-				packet, *packetData.GetSlashPacketData())
+			consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+			s.Require().NoError(err)
+			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 		}
 	}
 

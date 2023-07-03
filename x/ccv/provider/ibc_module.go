@@ -174,29 +174,26 @@ func (am AppModule) OnRecvPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-	var (
-		ack            ibcexported.Acknowledgement
-		consumerPacket ccv.ConsumerPacketData
-	)
-	// unmarshall consumer packet
-	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacket); err != nil {
-		errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("cannot unmarshal CCV packet data"))
-		ack = &errAck
-	} else {
-		// TODO: call ValidateBasic method on consumer packet data
-		// See: https://github.com/cosmos/interchain-security/issues/634
+	consumerPacket, err := UnmarshalConsumerPacket(packet)
+	if err != nil {
+		errAck := ccv.NewErrorAcknowledgementWithLog(ctx, err)
+		return &errAck
+	}
 
-		switch consumerPacket.Type {
-		case ccv.VscMaturedPacket:
-			// handle VSCMaturedPacket
-			ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, *consumerPacket.GetVscMaturedPacketData())
-		case ccv.SlashPacket:
-			// handle SlashPacket
-			ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
-		default:
-			errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type))
-			ack = &errAck
-		}
+	// TODO: call ValidateBasic method on consumer packet data
+	// See: https://github.com/cosmos/interchain-security/issues/634
+
+	var ack ibcexported.Acknowledgement
+	switch consumerPacket.Type {
+	case ccv.VscMaturedPacket:
+		// handle VSCMaturedPacket
+		ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, *consumerPacket.GetVscMaturedPacketData())
+	case ccv.SlashPacket:
+		// handle SlashPacket
+		ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
+	default:
+		errAck := ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type))
+		ack = &errAck
 	}
 
 	ctx.EventManager().EmitEvent(
@@ -208,6 +205,33 @@ func (am AppModule) OnRecvPacket(
 	)
 
 	return ack
+}
+
+func UnmarshalConsumerPacket(packet channeltypes.Packet) (consumerPacket ccv.ConsumerPacketData, err error) {
+	// First try unmarshaling into ccv.ConsumerPacketData type
+	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacket); err != nil {
+		// If failed, packet should be a v1 slash packet, retry for ConsumerPacketDataV1 packet type
+		var v1Packet ccv.ConsumerPacketDataV1
+		errV1 := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &v1Packet)
+		if errV1 != nil {
+			// If neither worked, return error
+			return ccv.ConsumerPacketData{}, errV1
+		}
+
+		// VSC matured packets should not be unmarshaled as v1 packets
+		if v1Packet.Type == ccv.VscMaturedPacket {
+			return ccv.ConsumerPacketData{}, fmt.Errorf("VSC matured packets should be correctly unmarshaled")
+		}
+
+		// Convert from v1 packet type
+		consumerPacket = ccv.ConsumerPacketData{
+			Type: v1Packet.Type,
+			Data: &ccv.ConsumerPacketData_SlashPacketData{
+				SlashPacketData: v1Packet.GetSlashPacketData().FromV1(),
+			},
+		}
+	}
+	return consumerPacket, nil
 }
 
 // OnAcknowledgementPacket implements the IBCModule interface
