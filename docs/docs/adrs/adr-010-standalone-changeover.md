@@ -24,9 +24,9 @@ Prior to the changeover, the consumer chain will have an existing staking keeper
 
 The first step in the changeover process is to submit a ConsumerAdditionProposal. If the proposal passes, the provider will create a new IBC client for the consumer at spawn time, with the provider's validator set. A consumer genesis will also be constructed by the provider for validators to query. Within this consumer genesis contains the initial validator set for the consumer to apply after the changeover.
 
-The consumer upgrade height must be reached after the provider has created the new IBC client. Any replicated security validators who will run the consumer, but are not a part of the sovereign validator set, must sync up a full node before the consumer upgrade height is reached. The disc state of said full node will be used to run the consumer chain after the changeover has completed.
-
 Next, the standalone consumer chain runs an upgrade which adds the CCV module, and is properly setup to execute changeover logic.
+
+The consumer upgrade height must be reached after the provider has created the new IBC client. Any replicated security validators who will run the consumer, but are not a part of the sovereign validator set, must sync up a full node before the consumer upgrade height is reached. The disc state of said full node will be used to run the consumer chain after the changeover has completed.
 
 The meat of the changeover logic is that the consumer chain validator set is updated to that which was specified by the provider via the queried consumer genesis. Validators which were a part of the old set, but not the new set, are given zero voting power. Once these validator updates are given to Comet, the set is committed, and in effect 2 blocks later (see [FirstConsumerHeight](../../../x/ccv/consumer/keeper/changeover.go#L19)).
 
