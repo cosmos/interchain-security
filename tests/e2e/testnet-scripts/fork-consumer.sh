@@ -99,18 +99,8 @@ EOF
 
 echo $VAL_MNEMONIC > mnemonic.txt
 
-# Connecting new peers to Hermes relayer requires somehow to add the account keys again
-# hermes keys add --mnemonic-file mnemonic.txt --chain consu --overwrite
-
-# sleep 1
-
-hermes keys add --mnemonic-file mnemonic.txt --chain provi --overwrite
-
-sleep 1
-
-
-# Start validator forking the consumer chain by
-# reuse the consumer sybil IP allocation
+# Start the validator forking the consumer chain
+# using the sybil IP allocation
 ip netns exec $CHAIN_ID-sybil $BIN \
         --home $FORK_NODE_DIR \
         --address tcp://$CONS_CHAIN_PREFIX.252:26655 \
