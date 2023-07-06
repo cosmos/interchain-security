@@ -113,10 +113,12 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 		timeoutTimestamp := uint64(ctx.BlockTime().Add(transferTimeoutPeriod).UnixNano())
 
 		sentCoins := sdk.NewCoins()
+		var allBalances sdk.Coins
 		// iterate over all whitelisted reward denoms
 		for _, denom := range k.AllowedRewardDenoms(ctx) {
 			// get the balance of the denom in the toSendToProviderTokens address
 			balance := k.bankKeeper.GetBalance(ctx, tstProviderAddr, denom)
+			allBalances = allBalances.Add(balance)
 
 			// if the balance is not zero,
 			if !balance.IsZero() {
@@ -138,11 +140,8 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 			}
 		}
 
-		consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
-		fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
-
 		k.Logger(ctx).Info("sent block rewards to provider",
-			"total fee pool", fpTokens.String(),
+			"total fee pool", allBalances.String(),
 			"sent", sentCoins.String(),
 		)
 		currentHeight := ctx.BlockHeight()
@@ -153,7 +152,7 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 				sdk.NewAttribute(ccv.AttributeDistributionCurrentHeight, strconv.Itoa(int(currentHeight))),
 				sdk.NewAttribute(ccv.AttributeDistributionNextHeight, strconv.Itoa(int(currentHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
 				sdk.NewAttribute(ccv.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
-				sdk.NewAttribute(ccv.AttributeDistributionTotal, fpTokens.String()),
+				sdk.NewAttribute(ccv.AttributeDistributionTotal, allBalances.String()),
 				sdk.NewAttribute(ccv.AttributeDistributionToProvider, sentCoins.String()),
 			),
 		)
