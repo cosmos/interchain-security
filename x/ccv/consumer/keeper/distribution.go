@@ -113,11 +113,7 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 		timeoutTimestamp := uint64(ctx.BlockTime().Add(transferTimeoutPeriod).UnixNano())
 
 		sentCoins := sdk.NewCoins()
-<<<<<<< HEAD
-
-=======
 		var allBalances sdk.Coins
->>>>>>> d16c766 (fix: `AttributeDistributionTotal` in event emit (#1097))
 		// iterate over all whitelisted reward denoms
 		for _, denom := range k.AllowedRewardDenoms(ctx) {
 			// get the balance of the denom in the toSendToProviderTokens address

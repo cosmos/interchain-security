@@ -1,8 +1,5 @@
 # CHANGELOG
 
-<<<<<<< HEAD
-## v.2.0.0
-=======
 ## [Unreleased]
 
 Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
@@ -25,7 +22,6 @@ Interchain Security v3 uses SDK 0.47 and IBC 7.
 * `[x/ccv/democracy]` (feat) [#1019](https://github.com/cosmos/interchain-security/pull/1019) Whitelisting non-legacy params in the "democracy module" require the entire module to be whitelisted. 
 
 ## v2.0.0
->>>>>>> d16c766 (fix: `AttributeDistributionTotal` in event emit (#1097))
 
 Date: June 1st, 2023
 
