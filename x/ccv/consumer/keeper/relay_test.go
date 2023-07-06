@@ -307,3 +307,67 @@ func TestSendPacketsFailure(t *testing.T) {
 	consumerKeeper.SendPackets(ctx)
 	require.Equal(t, 3, len(consumerKeeper.GetPendingPackets(ctx)))
 }
+
+func TestSendPackets(t *testing.T) {
+	// Keeper setup
+	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
+	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
+
+	// No slash record should exist
+	_, found := consumerKeeper.GetSlashRecord(ctx)
+	require.False(t, found)
+
+	// Queue up two vsc matured, followed by slash, followed by vsc matured
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
+		VscMaturedPacketData: &types.VSCMaturedPacketData{
+			ValsetUpdateId: 77,
+		},
+	})
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
+		VscMaturedPacketData: &types.VSCMaturedPacketData{
+			ValsetUpdateId: 90,
+		},
+	})
+	consumerKeeper.AppendPendingPacket(ctx, types.SlashPacket, &types.ConsumerPacketData_SlashPacketData{
+		SlashPacketData: &types.SlashPacketData{
+			Validator:      abci.Validator{},
+			ValsetUpdateId: 88,
+			Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
+		},
+	})
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
+		VscMaturedPacketData: &types.VSCMaturedPacketData{
+			ValsetUpdateId: 99,
+		},
+	})
+
+	// First vsc matured and slash should be sent, 3 total
+	gomock.InAnyOrder(
+		testkeeper.GetMocksForSendIBCPacket(ctx, mocks, "consumerCCVChannelID", 3),
+	)
+	consumerKeeper.SendPackets(ctx)
+	ctrl.Finish()
+
+	// First two packets should be deleted, slash should be at head of queue
+	pendingPackets := consumerKeeper.GetPendingPackets(ctx)
+	require.Equal(t, 2, len(pendingPackets))
+	require.Equal(t, types.SlashPacket, pendingPackets[0].Type)
+	require.Equal(t, types.VscMaturedPacket, pendingPackets[1].Type)
+
+	// Now delete slash record as would be done by a recv SlashPacketHandledResult
+	// then confirm last vsc matured is sent
+	consumerKeeper.ClearSlashRecord(ctx)
+	consumerKeeper.DeleteHeadOfPendingPackets(ctx)
+
+	gomock.InAnyOrder(
+		testkeeper.GetMocksForSendIBCPacket(ctx, mocks, "consumerCCVChannelID", 1),
+	)
+
+	consumerKeeper.SendPackets(ctx)
+	ctrl.Finish()
+
+	// No packets should be left
+	pendingPackets = consumerKeeper.GetPendingPackets(ctx)
+	require.Equal(t, 0, len(pendingPackets))
+}

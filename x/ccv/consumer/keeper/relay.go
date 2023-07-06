@@ -183,6 +183,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 	}
 
 	pending := k.GetPendingPackets(ctx)
+	toDelete := []uint64{}
 	for _, p := range pending {
 		if !k.PacketSendingPermitted(ctx) {
 			return
@@ -216,10 +217,15 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 		// This flag will be toggled false again when consumer hears back from provider. See OnAcknowledgementPacket below.
 		if p.Type == ccv.SlashPacket {
 			k.UpdateSlashRecordOnSend(ctx)
-			// Return so slash stays at head of queue.
-			return
+			// Break so slash stays at head of queue
+			break
+		} else {
+			// Otherwise the vsc matured will be deleted
+			toDelete = append(toDelete, p.Idx)
 		}
-		k.DeletePendingDataPackets(ctx, p.Idx) // Can be it's own PR
+	}
+	for _, idx := range toDelete {
+		k.DeletePendingDataPackets(ctx, idx)
 	}
 }
 
@@ -240,7 +246,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			k.ClearSlashRecord(ctx)           // Clears slash record state, unblocks sending of pending packets.
 			k.DeleteHeadOfPendingPackets(ctx) // Remove slash from head of queue. It's been handled.
 		case ccv.SlashPacketBouncedResult[0]:
-			k.UpdateSlashRecordOnReply(ctx)
+			k.UpdateSlashRecordOnBounce(ctx)
 			// Note slash is still at head of queue and will now be retried after appropriate delay period.
 		default:
 			k.Logger(ctx).Error("recv invalid result ack; expected 1, 2, or 3", "channel", packet.SourceChannel, "ack", res)

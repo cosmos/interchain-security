@@ -39,7 +39,7 @@ func (k Keeper) UpdateSlashRecordOnSend(ctx sdktypes.Context) {
 	k.SetSlashRecord(ctx, record)
 }
 
-func (k Keeper) UpdateSlashRecordOnReply(ctx sdktypes.Context) {
+func (k Keeper) UpdateSlashRecordOnBounce(ctx sdktypes.Context) {
 	record, found := k.GetSlashRecord(ctx)
 	if !found {
 		// This should never happen
