@@ -5,7 +5,7 @@ import (
 )
 
 // starts a provider chain and a consumer chain with two validators,
-// where the voting power distributed in order that the smallest validator
+// where the voting power is distributed in order that the smallest validator
 // can soft opt-out of validating the consumer chain.
 func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 	s := []Step{

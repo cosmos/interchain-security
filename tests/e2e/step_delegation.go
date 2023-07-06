@@ -14,13 +14,32 @@ func stepsDelegate(consumerName string) []Step {
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   20,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
 					},
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 500,
-						validatorID("bob"):   20,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: SendTokensAction{
+				chain:  chainID(consumerName),
+				from:   validatorID("alice"),
+				to:     validatorID("bob"),
+				amount: 1,
+			},
+			state: State{
+				chainID(consumerName): ChainState{
+					// Tx should not go through, ICS channel is not setup until first VSC packet has been relayed to consumer
+					ValBalances: &map[validatorID]uint{
+						validatorID("alice"): 10000000000,
+						validatorID("bob"):   10000000000,
 					},
 				},
 			},
@@ -36,7 +55,25 @@ func stepsDelegate(consumerName string) []Step {
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   20,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: SendTokensAction{
+				chain:  chainID(consumerName),
+				from:   validatorID("alice"),
+				to:     validatorID("bob"),
+				amount: 1,
+			},
+			state: State{
+				chainID(consumerName): ChainState{
+					// Now tx should execute
+					ValBalances: &map[validatorID]uint{
+						validatorID("alice"): 9999999999,
+						validatorID("bob"):   10000000001,
 					},
 				},
 			},
