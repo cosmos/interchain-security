@@ -10,7 +10,32 @@ import (
 
 // TODO: will need good integration tests making sure this state is properly init, cleared, etc.
 
-// TODO: note on FSM design
+//
+// Throttling with retries follows a FSM design:
+//
+// 1. "No slash": If no slash record exists, the consumer is permitted to send packets from the pending packets queue.
+// The consumer starts in this state from genesis.
+//
+// 2. On the event that a slash packet is obtained from the head of the pending packets queue and sent,
+// a consumer transitions from "No Slash" to "Standby". A slash record is created upon entry to this state,
+// and the consumer is now restricted from sending anymore packets.
+//
+// The slash packet remains at the head of the pending packets queue within the "Standby" state.
+//
+// - If the consumer receives a reply from the provider that the slash packet was successfully handled,
+// the consumer transitions from "Standby" to "No Slash". The slash record is cleared upon this transition,
+// and the slash packet is popped from the pending packets queue.
+//
+// - Else if the consumer receives a reply from the provider that the slash packet was bounced (not handled),
+// then SlashRecord.WaitingOnReply is set false, and the consumer retries sending the slash packet after a delay period.
+//
+// Once a retry is sent, the consumer enters a new cycle of the "Standby" state and the process repeats.
+//
+// Once the slash packet is successfully handled, the consumer transitions from "Standby" to "No Slash",
+// the slash record is cleared upon this transition, and the slash packet is popped from the pending packets queue.
+//
+// This design is implemented below, and in relay.go under SendPackets() and OnAcknowledgementPacket().
+//
 
 func (k Keeper) PacketSendingPermitted(ctx sdktypes.Context) bool {
 	record, found := k.GetSlashRecord(ctx)
