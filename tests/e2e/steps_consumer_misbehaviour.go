@@ -198,14 +198,14 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 	return s
 }
 
-// stepsCauseConsumerMisbehaviour causes a consumer chain to misbehave by creating a fork,
-// and relays the light client attack evidence to the provider
+// stepsCauseConsumerMisbehaviour forks a consumer chain in order to cause a ICS misbehaviour.
+// The malicious validator behind the attack gets jailed and the consumer client freezed on the provider.
 func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 	consumerClientID := "07-tendermint-0"
 	forkRelayerConfig := "/root/.hermes/config_fork.toml"
-
 	return []Step{
 		{
+			// start a consumer chain's validator clone
 			action: forkConsumerChainAction{
 				consumerChain: chainID(consumerName),
 				providerChain: chainID("provi"),
@@ -215,6 +215,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			state: State{},
 		},
 		{
+			// start relayer to detect ICS misbehaviour
 			action: startRelayerAction{},
 			state: State{
 				// The consumer client shouldn't be frozen on the provider yet since
@@ -230,6 +231,8 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			},
 		},
 		{
+			// update the consumer client hosted on the provider
+			// using the consumer fork as the primary node
 			action: updateLightClientAction{
 				hostChain:     chainID("provi"),
 				relayerConfig: forkRelayerConfig,
