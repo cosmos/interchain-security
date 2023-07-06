@@ -317,6 +317,7 @@ func TestSendPackets(t *testing.T) {
 	// No slash record should exist
 	_, found := consumerKeeper.GetSlashRecord(ctx)
 	require.False(t, found)
+	require.True(t, consumerKeeper.PacketSendingPermitted(ctx))
 
 	// Queue up two vsc matured, followed by slash, followed by vsc matured
 	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
@@ -342,7 +343,7 @@ func TestSendPackets(t *testing.T) {
 		},
 	})
 
-	// First vsc matured and slash should be sent, 3 total
+	// First two vsc matured and slash should be sent, 3 total
 	gomock.InAnyOrder(
 		testkeeper.GetMocksForSendIBCPacket(ctx, mocks, "consumerCCVChannelID", 3),
 	)
@@ -355,10 +356,16 @@ func TestSendPackets(t *testing.T) {
 	require.Equal(t, types.SlashPacket, pendingPackets[0].Type)
 	require.Equal(t, types.VscMaturedPacket, pendingPackets[1].Type)
 
+	// Packet sending not permitted
+	require.False(t, consumerKeeper.PacketSendingPermitted(ctx))
+
 	// Now delete slash record as would be done by a recv SlashPacketHandledResult
 	// then confirm last vsc matured is sent
 	consumerKeeper.ClearSlashRecord(ctx)
 	consumerKeeper.DeleteHeadOfPendingPackets(ctx)
+
+	// Packet sending permitted
+	require.True(t, consumerKeeper.PacketSendingPermitted(ctx))
 
 	gomock.InAnyOrder(
 		testkeeper.GetMocksForSendIBCPacket(ctx, mocks, "consumerCCVChannelID", 1),
