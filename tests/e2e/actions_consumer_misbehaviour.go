@@ -12,12 +12,11 @@ type forkConsumerChainAction struct {
 	consumerChain chainID
 	providerChain chainID
 	validator     validatorID
+	relayerConfig string
 }
 
 func (tr TestRun) forkConsumerChain(action forkConsumerChainAction, verbose bool) {
 	valCfg := tr.validatorConfigs[action.validator]
-
-	fmt.Println(valCfg.mnemonic)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	configureNodeCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
@@ -26,6 +25,7 @@ func (tr TestRun) forkConsumerChain(action forkConsumerChainAction, verbose bool
 		tr.chainConfigs[action.consumerChain].ipPrefix,
 		tr.chainConfigs[action.providerChain].ipPrefix,
 		valCfg.mnemonic,
+		action.relayerConfig,
 	)
 
 	if verbose {
@@ -61,9 +61,9 @@ func (tr TestRun) forkConsumerChain(action forkConsumerChainAction, verbose bool
 }
 
 type updateLightClientAction struct {
-	hostChain    chainID
-	hermesConfig string
-	clientID     string
+	hostChain     chainID
+	relayerConfig string
+	clientID      string
 }
 
 func (tr TestRun) updateLightClient(
@@ -73,7 +73,7 @@ func (tr TestRun) updateLightClient(
 	// hermes clear packets ibc0 transfer channel-13
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
-		"--config", action.hermesConfig,
+		"--config", action.relayerConfig,
 		"update",
 		"client",
 		"--client", action.clientID,
@@ -88,5 +88,5 @@ func (tr TestRun) updateLightClient(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	tr.waitBlocks(action.hostChain, 1, 30*time.Second)
+	tr.waitBlocks(action.hostChain, 5, 30*time.Second)
 }

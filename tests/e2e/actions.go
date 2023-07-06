@@ -281,6 +281,8 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chain, 1, 5*time.Second)
 }
 
 type submitConsumerRemovalProposalAction struct {
@@ -522,7 +524,7 @@ func (tr TestRun) voteGovProposal(
 	}
 
 	wg.Wait()
-	time.Sleep((time.Duration(tr.chainConfigs[action.chain].votingWaitTime) + 5) * time.Second)
+	time.Sleep((time.Duration(tr.chainConfigs[action.chain].votingWaitTime)) * time.Second)
 }
 
 type startConsumerChainAction struct {
@@ -830,7 +832,16 @@ func (tr TestRun) addChainToHermes(
 	}
 
 	// Save mnemonic to file within container
-	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, tr.validatorConfigs[action.validator].mnemonic, "/root/.hermes/mnemonic.txt")
+	var mnemonic string
+	if tr.validatorConfigs[action.validator].useConsumerKey && action.consumer {
+		mnemonic = tr.validatorConfigs[action.validator].consumerMnemonic
+	} else {
+		mnemonic = tr.validatorConfigs[action.validator].mnemonic
+	}
+
+	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, mnemonic, "/root/.hermes/mnemonic.txt")
+	fmt.Println("Add to hermes", action.validator)
+	fmt.Println(mnemonic)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
 		saveMnemonicCommand,
@@ -1667,7 +1678,7 @@ func (tr TestRun) invokeDoublesignSlash(
 		string(chainConfig.chainId), chainConfig.ipPrefix).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
-
+	}
 	tr.waitBlocks("provi", 10, 2*time.Minute)
 }
 
@@ -1770,6 +1781,8 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		valCfg.useConsumerKey = true
 		tr.validatorConfigs[action.validator] = valCfg
 	}
+
+	time.Sleep(1 * time.Second)
 }
 
 // slashThrottleDequeue polls slash queue sizes until nextQueueSize is achieved

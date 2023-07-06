@@ -18,6 +18,8 @@ PROV_CHAIN_PREFIX=$5
 
 VAL_MNEMONIC=$6
 
+FORK_HERMES_CONFIG=$7
+
 FORK_NODE_DIR=/$CHAIN_ID/validatorfork
 
 # create directory for forking/double-signing node
@@ -28,7 +30,7 @@ cp -r /$CHAIN_ID/validator$VAL_ID/* $FORK_NODE_DIR
 rm -f $FORK_NODE_DIR/addrbook.json
 
 # add fork to hermes relayer
-tee ~/.hermes/config_fork.toml<<EOF
+tee $FORK_HERMES_CONFIG<<EOF
 [global]
 log_level = "debug"
 

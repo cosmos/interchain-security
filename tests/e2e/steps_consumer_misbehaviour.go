@@ -1,6 +1,8 @@
 package main
 
-import clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+import (
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+)
 
 // starts a provider chain and a consumer chain with two validators,
 // where the voting power distributed in order that the smallest validator
@@ -49,6 +51,29 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 							Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
 						},
+					},
+				},
+			},
+		},
+		// add a consumer key before the chain starts
+		// the key will be present in consumer genesis initial_val_set
+		{
+			action: assignConsumerPubKeyAction{
+				chain:          chainID(consumerName),
+				validator:      validatorID("alice"),
+				consumerPubkey: `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="}`,
+				// consumer chain has not started
+				// we don't need to reconfigure the node
+				// since it will start with consumer key
+				reconfigureNode: false,
+			},
+			state: State{
+				chainID(consumerName): ChainState{
+					AssignedKeys: &map[validatorID]string{
+						validatorID("alice"): "cosmosvalcons1muys5jyqk4xd27e208nym85kn0t4zjcfeu63fe",
+					},
+					ProviderKeys: &map[validatorID]string{
+						validatorID("alice"): "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
 					},
 				},
 			},
@@ -176,32 +201,52 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 // stepsCauseConsumerMisbehaviour causes a consumer chain to misbehave by creating a fork,
 // and relays the light client attack evidence to the provider
 func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
+	consumerClientID := "07-tendermint-0"
+	forkRelayerConfig := "/root/.hermes/config_fork.toml"
+
 	return []Step{
 		{
 			action: forkConsumerChainAction{
 				consumerChain: chainID(consumerName),
 				providerChain: chainID("provi"),
 				validator:     validatorID("alice"),
+				relayerConfig: forkRelayerConfig,
 			},
 			state: State{},
 		},
 		{
 			action: startRelayerAction{},
-			state:  State{},
+			state: State{
+				// The consumer client shouldn't be frozen on the provider yet since
+				// no client update packet was sent by the fork yet
+				chainID("provi"): ChainState{
+					ClientsFrozenHeights: &map[string]clienttypes.Height{
+						"07-tendermint-0": {
+							RevisionNumber: 0,
+							RevisionHeight: 0,
+						},
+					},
+				},
+			},
 		},
 		{
 			action: updateLightClientAction{
-				hostChain:    chainID("provi"),
-				hermesConfig: "/root/.hermes/config_fork.toml",
-				clientID:     "07-tendermint-0",
+				hostChain:     chainID("provi"),
+				relayerConfig: forkRelayerConfig,
+				clientID:      consumerClientID,
 			},
 			state: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
+						validatorID("alice"): 0,
 						validatorID("bob"):   20,
 					},
-					// TODO check client is frozen
+					ClientsFrozenHeights: &map[string]clienttypes.Height{
+						"07-tendermint-0": {
+							RevisionNumber: 0,
+							RevisionHeight: 1,
+						},
+					},
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
