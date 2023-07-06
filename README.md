@@ -34,7 +34,7 @@ make install
 # run provider
 providerd
 # run consumer
-consumer
+consumerd
 # (if the above fail, ensure ~/go/bin on $PATH)
 export PATH=$PATH:$(go env GOPATH)/bin
 ```
