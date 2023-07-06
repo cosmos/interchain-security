@@ -28,6 +28,7 @@ type ChainState struct {
 	ConsumerChainQueueSizes        *map[chainID]uint
 	GlobalSlashQueueSize           *uint
 	RegisteredConsumerRewardDenoms *[]string
+	// ClientState                    ibctmtypes.ClientState.
 }
 
 type Proposal interface {

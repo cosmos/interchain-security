@@ -19,9 +19,10 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	logger := ctx.Logger()
 
 	if err := k.clientKeeper.CheckMisbehaviourAndUpdateState(ctx, &misbehaviour); err != nil {
+		logger.Info("Misbehaviour rejected", err.Error())
+
 		return err
 	}
-
 	// Since the misbehaviour packet was received within the trusting period
 	// w.r.t to the last trusted consensus it entails that the infraction age
 	// isn't too old. see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
@@ -31,6 +32,8 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	if err != nil {
 		return err
 	}
+
+	logger.Info("ConstructLightClientEvidence", fmt.Sprintf("%#+v\n", evidence))
 
 	// jail and tombstone the byzantine validators
 	for _, v := range evidence.ByzantineValidators {
