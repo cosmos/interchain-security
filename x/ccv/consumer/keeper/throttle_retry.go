@@ -37,6 +37,7 @@ import (
 // This design is implemented below, and in relay.go under SendPackets() and OnAcknowledgementPacket().
 //
 
+// TODO: UT
 func (k Keeper) PacketSendingPermitted(ctx sdktypes.Context) bool {
 	record, found := k.GetSlashRecord(ctx)
 	if !found {
@@ -47,6 +48,7 @@ func (k Keeper) PacketSendingPermitted(ctx sdktypes.Context) bool {
 		// We are waiting on a reply from provider, block sending
 		return false
 	}
+	// TODO: implement retry delay period as param
 	// retryDelayPeriod := k.GetParams(ctx).RetryDelayPeriod
 	retryDelayPeriod := time.Hour
 	timeSinceSend := ctx.BlockTime().Sub(record.SendTime)
