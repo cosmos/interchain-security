@@ -15,7 +15,7 @@ import (
 func (k Keeper) PacketSendingPermitted(ctx sdktypes.Context) bool {
 	record, found := k.GetSlashRecord(ctx)
 	if !found {
-		// no bouncing slash exists, send permitted
+		// no bouncing slash exists, send is permitted
 		return true
 	}
 	if record.WaitingOnReply {
