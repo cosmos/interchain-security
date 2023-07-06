@@ -31,13 +31,13 @@ Validators can use a different key for each consumer chain.
 First, create a new node on the consumer chain using the equivalent:
 
 ```bash
-consumer init <moniker>
+consumerd init <moniker>
 ```
 
 Then query your node for the consensus key.
 
 ```bash
-consumer tendermint show-validator # {"@type":"/cosmos.crypto.ed25519.PubKey","key":"<key>"}
+consumerd tendermint show-validator # {"@type":"/cosmos.crypto.ed25519.PubKey","key":"<key>"}
 ```
 
 Then, make an `assign-consensus-key` transaction on the provider chain in order to inform the provider chain about the consensus key you will be using for a specific consumer chain.
