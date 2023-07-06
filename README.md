@@ -32,7 +32,7 @@ brew install jq
 # install provider and consumer binaries
 make install
 # run provider
-provider
+providerd
 # run consumer
 consumer
 # (if the above fail, ensure ~/go/bin on $PATH)
