@@ -100,9 +100,9 @@ EOF
 echo $VAL_MNEMONIC > mnemonic.txt
 
 # Connecting new peers to Hermes relayer requires somehow to add the account keys again
-hermes keys add --mnemonic-file mnemonic.txt --chain consu --overwrite
+# hermes keys add --mnemonic-file mnemonic.txt --chain consu --overwrite
 
-sleep 1
+# sleep 1
 
 hermes keys add --mnemonic-file mnemonic.txt --chain provi --overwrite
 

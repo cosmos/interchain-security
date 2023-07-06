@@ -1,0 +1,238 @@
+=============== building misbehaviour testRun ===============
+startDocker: + CONTAINER_NAME=interchain-security-container
+startDocker: + INSTANCE_NAME=interchain-security-instance
+startDocker: + LOCAL_SDK_PATH=default
+startDocker: + USE_GAIA_PROVIDER=false
+startDocker: + USE_GAIA_TAG=
+startDocker: + set +e
+startDocker: + docker rm -f interchain-security-instance
+startDocker: Error: No such container: interchain-security-instance
+startDocker: + set -e
+startDocker: + '[' -d ./cosmos-sdk ']'
+startDocker: + [[ default != \d\e\f\a\u\l\t ]]
+startDocker: + printf '\n\nUsing default sdk version\n\n\n'
+startDocker: 
+startDocker: 
+startDocker: Using default sdk version
+startDocker: 
+startDocker: 
+startDocker: + [[ false = \t\r\u\e ]]
+startDocker: + printf '\n\nUsing ICS provider app as provider\n\n\n'
+startDocker: 
+startDocker: 
+startDocker: Using ICS provider app as provider
+startDocker: 
+startDocker: 
+startDocker: + docker build -f Dockerfile -t interchain-security-container .
+startDocker: #1 [internal] load build definition from Dockerfile
+startDocker: #1 sha256:a0cee17e78737057a68d25b4fd49811c89dc8afcadafdd1978b58d35b3c0da1c
+startDocker: #1 transferring dockerfile: 37B done
+startDocker: #1 DONE 0.0s
+startDocker: 
+startDocker: #2 [internal] load .dockerignore
+startDocker: #2 sha256:4c4a3b3312107dd6ab7a39c973b7650daef786e96bf7e7f90e4f84afc3cd1ffb
+startDocker: #2 transferring context: 2B done
+startDocker: #2 DONE 0.0s
+startDocker: 
+startDocker: #3 resolve image config for docker.io/docker/dockerfile:1
+startDocker: #3 sha256:5511bf222770ecb09bae16a5e9dc6ddaf6633b05719203c5e2b00644727cd62f
+startDocker: #3 ...
+startDocker: 
+startDocker: #4 [auth] docker/dockerfile:pull token for registry-1.docker.io
+startDocker: #4 sha256:30fc96cb12100d8493a24d77ed92e49a75e81d80bc2ad263760bc9d91e119c18
+startDocker: #4 DONE 0.0s
+startDocker: 
+startDocker: #3 resolve image config for docker.io/docker/dockerfile:1
+startDocker: #3 sha256:5511bf222770ecb09bae16a5e9dc6ddaf6633b05719203c5e2b00644727cd62f
+startDocker: #3 DONE 1.4s
+startDocker: 
+startDocker: #5 docker-image://docker.io/docker/dockerfile:1@sha256:39b85bbfa7536a5feceb7372a0817649ecb2724562a38360f4d6a7782a409b14
+startDocker: #5 sha256:9a158a4603558c8d1260a1837f34e5dcdc934c3e44e35af38132f4449f9ebf12
+startDocker: #5 CACHED
+startDocker: 
+startDocker: #6 [internal] load build definition from Dockerfile
+startDocker: #6 sha256:d6915fd1e878024a7f1105667a7027d32b197b81dd06bb0b1aa56f5319f1fff0
+startDocker: #6 DONE 0.0s
+startDocker: 
+startDocker: #7 [internal] load .dockerignore
+startDocker: #7 sha256:507fef730b5510b7762bd5267360b4086c98a34ec3afb696bf3d2d7d21f2e335
+startDocker: #7 DONE 0.0s
+startDocker: 
+startDocker: #12 [internal] load metadata for docker.io/library/golang:1.19-alpine
+startDocker: #12 sha256:db341117c17817e8ff2360c3624eceaf927c5431ea3a1010182351ebafcce418
+startDocker: #12 ...
+startDocker: 
+startDocker: #13 [auth] otacrew/hermes-ics:pull token for registry-1.docker.io
+startDocker: #13 sha256:6ed335be6e0b794f59599ba8f783918f21a3bff490550210b7c34e3756e3e195
+startDocker: #13 DONE 0.0s
+startDocker: 
+startDocker: #11 [internal] load metadata for docker.io/informalofftermatt/gorelayer:nogas
+startDocker: #11 sha256:30a212e25818399fd4de4628ba986abb3f9acfd2726260309d56d93987463b56
+startDocker: #11 ...
+startDocker: 
+startDocker: #14 [auth] informalofftermatt/cometmock:pull token for registry-1.docker.io
+startDocker: #14 sha256:5fe3f6fa6d571d44b170a802e970087617b30812cb8b6ae792e3f39f2562eaad
+startDocker: #14 DONE 0.0s
+startDocker: 
+startDocker: #15 [auth] informalofftermatt/gorelayer:pull token for registry-1.docker.io
+startDocker: #15 sha256:d3c3cea6f1547c6f57b1357cc69c68aa48bd5cc5daeb0a706258abed13ebbffd
+startDocker: #15 DONE 0.0s
+startDocker: 
+startDocker: #16 [auth] library/golang:pull token for registry-1.docker.io
+startDocker: #16 sha256:1c552d38b1c261b51b57ea468bcaf9cc5ef0af53c871cf41a32432c988d71224
+startDocker: #16 DONE 0.0s
+startDocker: 
+startDocker: #17 [auth] library/fedora:pull token for registry-1.docker.io
+startDocker: #17 sha256:6e505c3f2bcd08fe61c4a2357be97910227d3968c871825298b6a084b8f4f8da
+startDocker: #17 DONE 0.0s
+startDocker: 
+startDocker: #10 [internal] load metadata for docker.io/informalofftermatt/cometmock:latest
+startDocker: #10 sha256:a32af4bf747a6e3115819b8c6d8c80abeeab270d805016bddd63d8f85c61be0b
+startDocker: #10 ...
+startDocker: 
+startDocker: #8 [internal] load metadata for docker.io/otacrew/hermes-ics:latest
+startDocker: #8 sha256:1619a8f499c95bd5af09b73b1d3a2ab9c6d7d6780852f9a079269b6c182f3235
+startDocker: #8 DONE 1.5s
+startDocker: 
+startDocker: #9 [internal] load metadata for docker.io/library/fedora:36
+startDocker: #9 sha256:73cd5a5ed47fc791d26860a9f6452dd61c51470638f517e9fa5cdca15792d916
+startDocker: #9 DONE 2.0s
+startDocker: 
+startDocker: #11 [internal] load metadata for docker.io/informalofftermatt/gorelayer:nogas
+startDocker: #11 sha256:30a212e25818399fd4de4628ba986abb3f9acfd2726260309d56d93987463b56
+startDocker: #11 DONE 2.2s
+startDocker: 
+startDocker: #10 [internal] load metadata for docker.io/informalofftermatt/cometmock:latest
+startDocker: #10 sha256:a32af4bf747a6e3115819b8c6d8c80abeeab270d805016bddd63d8f85c61be0b
+startDocker: #10 DONE 2.3s
+startDocker: 
+startDocker: #12 [internal] load metadata for docker.io/library/golang:1.19-alpine
+startDocker: #12 sha256:db341117c17817e8ff2360c3624eceaf927c5431ea3a1010182351ebafcce418
+startDocker: #12 DONE 2.3s
+startDocker: 
+startDocker: #23 [cometmock-builder 1/1] FROM docker.io/informalofftermatt/cometmock:latest@sha256:c8f54f54b14fda1ffa737fb6ab02fe3b8423cfc308f99bdace7539f920a14682
+startDocker: #23 sha256:5b578f98ce1950c9b6ae50ca290be9f6ee3a5b7249a23285ac729337998afa36
+startDocker: #23 DONE 0.0s
+startDocker: 
+startDocker: #21 [hermes-builder 1/1] FROM docker.io/otacrew/hermes-ics:latest@sha256:36806114ec58b4dca2173974f09d73cd4b9ff02d81ba882f6f152cba02bae139
+startDocker: #21 sha256:a9171665a53c60610d8881bfbfc46df6ba80ba890eb5fd04bd66c9cb7ae6622e
+startDocker: #21 DONE 0.0s
+startDocker: 
+startDocker: #25 [gorelayer-builder 1/1] FROM docker.io/informalofftermatt/gorelayer:nogas@sha256:07c8ccd57ade48a407be6e2f503e5f12bf6f5c61e8deafd402ff8c15b04ab8a1
+startDocker: #25 sha256:8a76aed9c101ebff920e322f3580b0413fc7630dafbf47400ab561109204de5c
+startDocker: #25 DONE 0.0s
+startDocker: 
+startDocker: #27 [is-builder  1/10] FROM docker.io/library/golang:1.19-alpine@sha256:470c8d0638c5b7007a6118baee531c30e0516a18e45b35bff1f8ab92cf8f896d
+startDocker: #27 sha256:5223bfcab5806439b55371a6102f93203b8b4171a586251c641310088838642c
+startDocker: #27 DONE 0.0s
+startDocker: 
+startDocker: #18 [stage-4  1/12] FROM docker.io/library/fedora:36@sha256:64cd00a0e2b92d527c0a0954162a73e85f160e3a53c38325b51e87d6aab4e266
+startDocker: #18 sha256:5031400c012ded166194f592f4fbbc517b0a7051caa9252048f537694d4110e9
+startDocker: #18 DONE 0.0s
+startDocker: 
+startDocker: #29 [internal] load build context
+startDocker: #29 sha256:9858b29b84f4e1025f7cc79d42ba1f3504a9ce43ae34349f9e2d53f8c0ce5356
+startDocker: #29 transferring context: 4.10MB 0.7s done
+startDocker: #29 DONE 0.7s
+startDocker: 
+startDocker: #28 [is-builder  2/10] RUN apk add --no-cache curl make git libc-dev bash gcc linux-headers
+startDocker: #28 sha256:fc221a60c9fdcdff81c09910439fb67a92187557122616a1e063d42019cb7b7a
+startDocker: #28 CACHED
+startDocker: 
+startDocker: #30 [is-builder  3/10] COPY go.mod /go.mod
+startDocker: #30 sha256:e15d65a5e35ce272d87314eeb9ff6402cf320438dc4853f28107e0eee5cee485
+startDocker: #30 CACHED
+startDocker: 
+startDocker: #31 [is-builder  4/10] COPY go.sum /go.sum
+startDocker: #31 sha256:c17d002021834ee7c7b0f764463fc18efdc4330da247e5eaad14400772d3b4f3
+startDocker: #31 CACHED
+startDocker: 
+startDocker: #32 [is-builder  5/10] RUN go mod download
+startDocker: #32 sha256:d71b3adff54b3875295530a71bb43ecc276eb17cda3b7c2f410ca8ce6b1f680c
+startDocker: #32 CACHED
+startDocker: 
+startDocker: #33 [is-builder  6/10] ADD . /interchain-security
+startDocker: #33 sha256:a0e52ca9b60725e98f4f8e3f86cb21bc0dddda7ac1660bebd3e9c8f0f995d849
+startDocker: #33 DONE 5.1s
+startDocker: 
+startDocker: #34 [is-builder  7/10] WORKDIR /interchain-security
+startDocker: #34 sha256:56097d24d06233dc29e88cc2a6cca993360742f2111f4dc337b7bcbc4e8632e8
+startDocker: #34 DONE 0.0s
+startDocker: 
+startDocker: #35 [is-builder  8/10] RUN if [ -d "./cosmos-sdk" ]; then go mod edit -replace github.com/cosmos/cosmos-sdk=./cosmos-sdk; fi
+startDocker: #35 sha256:187bbf219916465d89aeccab99de791859cc9ee8aaf1b44d603fb805f3d0a60d
+startDocker: #35 DONE 0.2s
+startDocker: 
+startDocker: #36 [is-builder  9/10] RUN go mod tidy
+startDocker: #36 sha256:a195eb6dbcba834e5ea847fa85ec1789a834a2a40720905c6286f0d2f884d121
+startDocker: #36 1.148 go: downloading github.com/frankban/quicktest v1.14.4
+startDocker: #36 1.148 go: downloading github.com/otiai10/copy v1.6.0
+startDocker: #36 1.215 go: downloading gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
+startDocker: #36 1.233 go: downloading github.com/google/go-cmp v0.5.9
+startDocker: #36 1.335 go: downloading github.com/pascaldekloe/goe v0.1.0
+startDocker: #36 1.336 go: downloading github.com/btcsuite/btcd/btcutil v1.1.2
+startDocker: #36 1.337 go: downloading github.com/jhump/protoreflect v1.13.1-0.20220928232736-101791cb1b4c
+startDocker: #36 1.367 go: downloading github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c
+startDocker: #36 1.380 go: downloading github.com/btcsuite/btcd v0.22.1
+startDocker: #36 1.455 go: downloading github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1
+startDocker: #36 1.479 go: downloading github.com/fortytw2/leaktest v1.3.0
+startDocker: #36 1.545 go: downloading github.com/regen-network/gocuke v0.6.2
+startDocker: #36 1.560 go: downloading gotest.tools/v3 v3.4.0
+startDocker: #36 1.592 go: downloading gotest.tools v2.2.0+incompatible
+startDocker: #36 1.633 go: downloading github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f
+startDocker: #36 1.646 go: downloading github.com/adlio/schema v1.3.3
+startDocker: #36 1.652 go: downloading github.com/ory/dockertest v3.3.5+incompatible
+startDocker: #36 1.671 go: downloading github.com/stretchr/objx v0.5.0
+startDocker: #36 1.693 go: downloading github.com/facebookgo/stack v0.0.0-20160209184415-751773369052
+startDocker: #36 1.695 go: downloading github.com/facebookgo/subset v0.0.0-20200203212716-c811ad88dec4
+startDocker: #36 1.708 go: downloading github.com/decred/dcrd/crypto/blake256 v1.0.0
+startDocker: #36 1.712 go: downloading github.com/VividCortex/gohistogram v1.0.0
+startDocker: #36 1.728 go: downloading github.com/cucumber/common/gherkin/go/v22 v22.0.0
+startDocker: #36 1.728 go: downloading github.com/cockroachdb/apd/v3 v3.1.0
+startDocker: #36 1.731 go: downloading github.com/cucumber/common/messages/go/v17 v17.1.1
+startDocker: #36 1.735 go: downloading pgregory.net/rapid v0.5.3
+startDocker: #36 1.761 go: downloading github.com/gin-gonic/gin v1.8.1
+startDocker: #36 1.784 go: downloading golang.org/x/sync v0.1.0
+startDocker: #36 1.790 go: downloading github.com/nxadm/tail v1.4.8
+startDocker: #36 1.790 go: downloading github.com/cenkalti/backoff v2.2.1+incompatible
+startDocker: #36 1.795 go: downloading github.com/Microsoft/go-winio v0.6.0
+startDocker: #36 1.797 go: downloading github.com/docker/go-units v0.5.0
+startDocker: #36 1.804 go: downloading github.com/OneOfOne/xxhash v1.2.2
+startDocker: #36 1.805 go: downloading github.com/spaolacci/murmur3 v1.1.0
+startDocker: #36 1.820 go: downloading github.com/alecthomas/participle/v2 v2.0.0-alpha7
+startDocker: #36 1.821 go: downloading github.com/gofrs/uuid v4.3.0+incompatible
+startDocker: #36 1.822 go: downloading github.com/gobwas/httphead v0.1.0
+startDocker: #36 1.840 go: downloading github.com/gobwas/pool v0.2.1
+startDocker: #36 1.840 go: downloading gonum.org/v1/gonum v0.8.2
+startDocker: #36 1.850 go: downloading github.com/gin-contrib/sse v0.1.0
+startDocker: #36 1.852 go: downloading gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
+startDocker: #36 1.855 go: downloading github.com/sirupsen/logrus v1.9.0
+startDocker: #36 1.861 go: downloading github.com/opencontainers/runc v1.1.3
+startDocker: #36 1.864 go: downloading github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5
+startDocker: #36 1.877 go: downloading github.com/opencontainers/image-spec v1.1.0-rc2
+startDocker: #36 1.909 go: downloading golang.org/x/tools v0.4.0
+startDocker: #36 1.927 go: downloading github.com/go-errors/errors v1.4.2
+startDocker: #36 1.954 go: downloading github.com/pingcap/errors v0.11.4
+startDocker: #36 2.063 go: downloading github.com/go-playground/validator/v10 v10.11.1
+startDocker: #36 2.067 go: downloading github.com/ugorji/go/codec v1.2.7
+startDocker: #36 2.224 go: downloading github.com/goccy/go-json v0.9.11
+startDocker: #36 2.226 go: downloading github.com/ugorji/go v1.1.7
+startDocker: #36 2.250 go: downloading github.com/json-iterator/go v1.1.12
+startDocker: #36 2.272 go: downloading github.com/docker/go-connections v0.4.0
+startDocker: #36 2.288 go: downloading github.com/containerd/continuity v0.3.0
+startDocker: #36 2.291 go: downloading github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1
+startDocker: #36 2.309 go: downloading github.com/opencontainers/go-digest v1.0.0
+startDocker: #36 2.321 go: downloading github.com/go-playground/universal-translator v0.18.0
+startDocker: #36 2.323 go: downloading github.com/leodido/go-urn v1.2.1
+startDocker: #36 2.337 go: downloading github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+startDocker: #36 2.338 go: downloading github.com/modern-go/reflect2 v1.0.2
+startDocker: #36 2.376 go: downloading github.com/go-playground/locales v0.14.0
+startDocker: #36 2.421 go: downloading golang.org/x/mod v0.7.0
+startDocker: #36 DONE 3.2s
+startDocker: 
+startDocker: #37 [is-builder 10/10] RUN make install
+startDocker: #37 sha256:c8211a74abcd858f0148b5eca1e5aaf2c3530e39a4ef15c0544480913264cb86
+startDocker: #37 0.326 export GOFLAGS='-buildmode=pie'
+startDocker: #37 0.327 export CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2"
+startDocker: #37 0.327 export CGO_LDFLAGS="-Wl,-z,relro,-z,now -fstack-protector"
+startDocker: #37 0.328 go install  ./cmd/interchain-security-pd
