@@ -35,7 +35,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	}
 
 	if err := k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data); err != nil {
-		return channeltypes.NewErrorAcknowledgement(fmt.Errorf(
+		return ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf(
 			"failed to queue VSCMatured packet data: %s", err.Error()))
 	}
 
@@ -332,7 +332,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 			"vscID", data.ValsetUpdateId,
 			"infractionType", data.Infraction,
 		)
-		return channeltypes.NewErrorAcknowledgement(err)
+		return ccv.NewErrorAcknowledgementWithLog(ctx, err)
 	}
 
 	// The slash packet validator address may be known only on the consumer chain,
@@ -368,7 +368,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
 	// to enforce order of handling between the two packet data types.
 	if err := k.QueueThrottledSlashPacketData(ctx, chainID, packet.Sequence, data); err != nil {
-		return channeltypes.NewErrorAcknowledgement(fmt.Errorf("failed to queue slash packet data: %s", err.Error()))
+		return ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("failed to queue slash packet data: %s", err.Error()))
 	}
 
 	k.Logger(ctx).Info("slash packet received and enqueued",
