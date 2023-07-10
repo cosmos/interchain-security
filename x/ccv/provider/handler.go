@@ -2,8 +2,10 @@ package provider
 
 import (
 	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
