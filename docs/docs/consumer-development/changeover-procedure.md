@@ -207,7 +207,7 @@ Example of a consumer chain addition proposal.
 	// Note that transfer_channel_id is the ID of the channel end on the consumer chain.
     // it is most relevant for chains performing a sovereign to consumer changeover
     // in order to maintan the existing ibc transfer channel
-    "distribution_transmission_channel": "channel-123"  // NOTE: use existing transfer channel if possible
+    "distribution_transmission_channel": "channel-123"  // NOTE: use existing transfer channel if available
 }
 ```
 
