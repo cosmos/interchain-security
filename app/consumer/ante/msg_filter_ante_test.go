@@ -3,12 +3,14 @@ package ante_test
 import (
 	"testing"
 
+	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"github.com/stretchr/testify/require"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+
 	"github.com/cosmos/interchain-security/v3/app/consumer/ante"
 	"github.com/cosmos/interchain-security/v3/app/params"
-	"github.com/stretchr/testify/require"
 )
 
 type consumerKeeper struct {
