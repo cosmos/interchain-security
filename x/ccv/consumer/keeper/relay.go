@@ -239,7 +239,16 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			k.Logger(ctx).Error("recv invalid ack; expected length 1", "channel", packet.SourceChannel, "ack", res)
 		}
 		switch res[0] {
-		case ccv.NoOpResult[0]:
+		case ccv.V1Result[0]:
+			// If slash record is found, slash packet is at head of queue.
+			// But provider is running v1 throttling and has queued the slash packet itself.
+			// Therefore we can clear the slash record and delete the slash packet from the queue, unblocking packet sending.
+			// TODO: tests for this scenario with vsc matured.
+			_, found := k.GetSlashRecord(ctx)
+			if found {
+				k.ClearSlashRecord(ctx)
+				k.DeleteHeadOfPendingPackets(ctx)
+			}
 			k.Logger(ctx).Info("recv no-op ack", "channel", packet.SourceChannel, "ack", res)
 		case ccv.SlashPacketHandledResult[0]:
 			k.ClearSlashRecord(ctx)           // Clears slash record state, unblocks sending of pending packets.

@@ -393,7 +393,7 @@ func TestOnAcknowledgementPacketResult(t *testing.T) {
 	require.Equal(t, types.SlashPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
 
 	// No-op result shouldn't do anything
-	ack := channeltypes.NewResultAcknowledgement(types.NoOpResult)
+	ack := channeltypes.NewResultAcknowledgement(types.V1Result)
 	err := consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
 	require.Nil(t, err)
 	_, found = consumerKeeper.GetSlashRecord(ctx)

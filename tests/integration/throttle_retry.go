@@ -8,9 +8,12 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
-// Note we don't fully test IBC integration in favor of being able to test ack results better
+// TestSlashRetries tests the throttling v2 retry logic. Without provider changes,
+// the consumer will queue up a slash packet, the provider will return a v1 result,
+// and the consumer will never need to retry.
 //
-// See FSM explanation in throttle_retry.go
+// Once provider changes are made (slash packet queuing is removed), the consumer may retry packets
+// via new result acks from the provider.
 //
 // TODO: This test will need updating once provider changes are made.
 func (s *CCVTestSuite) TestSlashRetries() {
@@ -42,7 +45,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	s.Require().False(found)
 
 	//
-	// Test section
+	// Test section: See FSM explanation in throttle_retry.go
 	//
 
 	// Construct a mock slash packet from consumer
@@ -58,10 +61,10 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	consumerKeeper.UpdateSlashRecordOnSend(s.consumerCtx())
 	s.Require().Len(consumerKeeper.GetPendingPackets(s.consumerCtx()), 1)
 
-	// Recv packet on provider and assert ack. Provider should return no-op result since packet is handled.
+	// Recv packet on provider and assert ack. Provider should return v1 result.
 	ack := providerModule.OnRecvPacket(s.providerCtx(), packet1, nil)
-	expectedNoOpAck := channeltypes.NewResultAcknowledgement([]byte(ccvtypes.NoOpResult))
-	s.Require().Equal(expectedNoOpAck.Acknowledgement(), ack.Acknowledgement())
+	expectedv1Ack := channeltypes.NewResultAcknowledgement([]byte(ccvtypes.V1Result))
+	s.Require().Equal(expectedv1Ack.Acknowledgement(), ack.Acknowledgement())
 
 	// Couple blocks pass on provider for staking keeper to process jailing
 	s.providerChain.NextBlock()
@@ -72,19 +75,28 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	s.Require().True(vals[1].IsJailed())
 	s.Require().Equal(int64(0),
 		s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), vals[1].GetOperator()))
+	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(s.providerCtx(),
+		s.getFirstBundle().Chain.ChainID))
 
 	// Now slash meter should be negative on provider
 	s.Require().True(s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx()).IsNegative())
 
 	// Apply ack back on consumer
-	ackForConsumer := expectedNoOpAck
+	ackForConsumer := expectedv1Ack
 	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet1, ackForConsumer)
 	s.Require().NoError(err)
 
 	// Slash record should have been deleted, head of pending packets should have been popped
+	// Since provider has handled the packet
 	_, found = consumerKeeper.GetSlashRecord(s.consumerCtx())
 	s.Require().False(found)
 	s.Require().Empty(consumerKeeper.GetPendingPackets(s.consumerCtx()))
+
+	// pass two blocks on provider and consumer for good measure
+	s.providerChain.NextBlock()
+	s.providerChain.NextBlock()
+	s.consumerChain.NextBlock()
+	s.consumerChain.NextBlock()
 
 	// Construct and mock the sending of a second packet on consumer
 	tmval2 := s.providerChain.Vals.Validators[2]
@@ -102,26 +114,32 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	s.Require().Len(consumerKeeper.GetPendingPackets(s.consumerCtx()), 1)
 
 	// Recv 2nd slash packet on provider for different validator.
-	// Provider should return bounce result since packet is not handled.
+	// Provider should return the same v1 result ack even tho the packet was queued.
 	ack = providerModule.OnRecvPacket(s.providerCtx(), packet2, nil)
-	expectedBouncedAck := channeltypes.NewResultAcknowledgement([]byte(ccvtypes.SlashPacketBouncedResult))
-	s.Require().Equal(expectedBouncedAck.Acknowledgement(), ack.Acknowledgement())
+	expectedv1Ack = channeltypes.NewResultAcknowledgement([]byte(ccvtypes.V1Result))
+	s.Require().Equal(expectedv1Ack.Acknowledgement(), ack.Acknowledgement())
 
-	// Val shouldn't be jailed on provider
+	// Couple blocks pass on provider for staking keeper to process jailings
+	s.providerChain.NextBlock()
+	s.providerChain.NextBlock()
+
+	// Val shouldn't be jailed on provider. Slash packet was queued
 	s.Require().False(vals[2].IsJailed())
 	s.Require().Equal(int64(1000),
 		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[2].GetOperator()))
+	s.Require().Equal(uint64(1), providerKeeper.GetThrottledPacketDataSize(s.providerCtx(),
+		s.getFirstBundle().Chain.ChainID))
 
 	// Apply ack on consumer
-	ackForConsumer = channeltypes.NewResultAcknowledgement(ack.Acknowledgement()) // Shim since provider uses a different type
+	ackForConsumer = expectedv1Ack
 	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet2, ackForConsumer)
 	s.Require().NoError(err)
 
-	// slashRecord.WaitingOnReply should have been updated to false
-	slashRecord, found = consumerKeeper.GetSlashRecord(s.consumerCtx())
-	s.Require().True(found)
-	s.Require().False(slashRecord.WaitingOnReply)
+	// TODO: when provider changes are made, slashRecord.WaitingOnReply should have been updated to false. Packet still in queue
 
-	// Packet still in queue
-	s.Require().Len(consumerKeeper.GetPendingPackets(s.consumerCtx()), 1)
+	// Slash record should have been deleted, head of pending packets should have been popped
+	// Since provider has handled the packet
+	_, found = consumerKeeper.GetSlashRecord(s.consumerCtx())
+	s.Require().False(found)
+	s.Require().Empty(consumerKeeper.GetPendingPackets(s.consumerCtx()))
 }
