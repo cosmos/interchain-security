@@ -9,6 +9,43 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestPacketSendingPermitted(t *testing.T) {
+	consumerKeeper, ctx, ctrl, _ := testutil.GetConsumerKeeperAndCtx(t, testutil.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	ctx = ctx.WithBlockTime(time.Now())
+
+	// No slash record exists, send is permitted
+	slashRecord, found := consumerKeeper.GetSlashRecord(ctx)
+	require.False(t, found)
+	require.Zero(t, slashRecord)
+	require.True(t, consumerKeeper.PacketSendingPermitted(ctx))
+
+	// Update slash record on sending of slash packet
+	consumerKeeper.UpdateSlashRecordOnSend(ctx)
+	slashRecord, found = consumerKeeper.GetSlashRecord(ctx)
+	require.True(t, found)
+	require.True(t, slashRecord.WaitingOnReply)
+
+	// Packet sending not permitted since we're waiting on a reply from provider
+	require.False(t, consumerKeeper.PacketSendingPermitted(ctx))
+
+	// Call update that happens when provider bounces slash packet
+	consumerKeeper.UpdateSlashRecordOnBounce(ctx)
+	slashRecord, found = consumerKeeper.GetSlashRecord(ctx)
+	require.True(t, found)
+	require.False(t, slashRecord.WaitingOnReply)
+
+	// Packet sending still not permitted since retry delay period has not elapsed
+	require.False(t, consumerKeeper.PacketSendingPermitted(ctx))
+
+	// Elapse retry delay period
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(2 * time.Hour))
+
+	// Now packet sending is permitted again
+	require.True(t, consumerKeeper.PacketSendingPermitted(ctx))
+}
+
 func TestThrottleRetryCRUD(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testutil.GetConsumerKeeperAndCtx(t, testutil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()

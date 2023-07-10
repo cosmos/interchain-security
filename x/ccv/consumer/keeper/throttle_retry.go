@@ -37,11 +37,12 @@ import (
 // This design is implemented below, and in relay.go under SendPackets() and OnAcknowledgementPacket().
 //
 
-// TODO: UT
+// PacketSendingPermitted returns whether the consumer is allowed to send packets
+// from the pending packets queue.
 func (k Keeper) PacketSendingPermitted(ctx sdktypes.Context) bool {
 	record, found := k.GetSlashRecord(ctx)
 	if !found {
-		// no bouncing slash exists, send is permitted
+		// no slash record exists, send is permitted
 		return true
 	}
 	if record.WaitingOnReply {
