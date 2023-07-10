@@ -382,7 +382,6 @@ func TestOnAcknowledgementPacketResult(t *testing.T) {
 	// Setup
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
-	ack := channeltypes.NewResultAcknowledgement(types.NoOpResult)
 	packet := channeltypes.Packet{}
 
 	setupSlashBeforeVscMatured(ctx, &consumerKeeper)
@@ -394,6 +393,7 @@ func TestOnAcknowledgementPacketResult(t *testing.T) {
 	require.Equal(t, types.SlashPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
 
 	// No-op result shouldn't do anything
+	ack := channeltypes.NewResultAcknowledgement(types.NoOpResult)
 	err := consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
 	require.Nil(t, err)
 	_, found = consumerKeeper.GetSlashRecord(ctx)

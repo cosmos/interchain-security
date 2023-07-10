@@ -8,8 +8,6 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
-// TODO: more UTs which look at the return values of handlers
-
 // Note we don't fully test IBC integration in favor of being able to test ack results better
 func (s *CCVTestSuite) TestSlashRetries() {
 	s.SetupAllCCVChannels()
