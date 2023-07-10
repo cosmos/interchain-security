@@ -4,11 +4,13 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
