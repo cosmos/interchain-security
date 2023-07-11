@@ -3,9 +3,10 @@ package keeper_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	testutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMigrateConsumerPacketData(t *testing.T) {
