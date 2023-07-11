@@ -96,7 +96,7 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 		// NOTE: @MSalopek
 		// need more info about stakingtypes.Delegation.ValidatorBond flag usage
 		// setting this to both true or false does not affect the test results
-		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec(), true))
+		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec()))
 	}
 
 	// set validators and delegations
