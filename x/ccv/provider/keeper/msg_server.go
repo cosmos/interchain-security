@@ -7,7 +7,6 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
@@ -130,13 +129,7 @@ func (k msgServer) RegisterConsumerRewardDenom(goCtx context.Context, msg *types
 
 func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.MsgSubmitConsumerMisbehaviour) (*types.MsgSubmitConsumerMisbehaviourResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	misbehaviour, err := clienttypes.UnpackMisbehaviour(msg.Misbehaviour)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := k.Keeper.HandleConsumerMisbehaviour(ctx, misbehaviour); err != nil {
+	if err := k.Keeper.HandleConsumerMisbehaviour(ctx, *msg.Misbehaviour); err != nil {
 		return &types.MsgSubmitConsumerMisbehaviourResponse{}, err
 	}
 

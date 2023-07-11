@@ -12,7 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 )
 
@@ -117,12 +117,12 @@ func NewSubmitConsumerMisbehaviourCmd() *cobra.Command {
 				WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
 			submitter := clientCtx.GetFromAddress()
-			var misbehaviour exported.Misbehaviour
-			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[1]), misbehaviour); err != nil {
+			var misbehavior ibctmtypes.Misbehaviour
+			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[1]), &misbehavior); err != nil {
 				return err
 			}
 
-			msg, err := types.NewMsgSubmitConsumerMisbehaviour(submitter, misbehaviour)
+			msg, err := types.NewMsgSubmitConsumerMisbehaviour(submitter, &misbehavior)
 			if err != nil {
 				return err
 			}

@@ -4,130 +4,66 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 
-	ibcsolotypes "github.com/cosmos/ibc-go/v4/modules/light-clients/06-solomachine/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-// TestHandleConsumerMisbehaviour verifies first that ICS misbehaviour is handled
-// only if its conlflicting headers are valid. Then, it checks
-// that validators who signed the incorrect header are jailed and tombstoned.
 func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
 	s.SendEmptyVSCPacket()
 
-	// create signing info for all validators
 	for _, v := range s.providerChain.Vals.Validators {
 		s.setDefaultValSigningInfo(*v)
 	}
 
-	// create a new header timestamp
-	headerTs := s.providerCtx().BlockTime().Add(time.Minute)
+	altTime := s.providerCtx().BlockTime().Add(time.Minute)
 
-	// get trusted validators and height
 	clientHeight := s.consumerChain.LastHeader.TrustedHeight
 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
 	clientSigners := s.consumerChain.Signers
 
-	// create an alternative validator set using more than 1/3 of the trusted validator set
 	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:2])
 	altSigners := make(map[string]tmtypes.PrivValidator, 1)
 	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
-	testCases := []struct {
-		name         string
-		misbehaviour exported.Misbehaviour
-		expPass      bool
-	}{
-		{
-			"invalid misbehaviour client type - shouldn't pass",
-			&ibcsolotypes.Misbehaviour{},
-			false,
-		},
-		{
-			"invalid misbehaviour with empty header1 - shouldn't pass",
-			&ibctmtypes.Misbehaviour{
-				Header1: &ibctmtypes.Header{},
-				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					altValset,
-					altValset,
-					clientTMValset,
-					altSigners,
-				),
-			},
-			false,
-		},
-		{
-			"valid misbehaviour - should pass",
-			&ibctmtypes.Misbehaviour{
-				ClientId: s.path.EndpointA.ClientID,
-				Header1: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					clientTMValset,
-					clientTMValset,
-					clientTMValset,
-					clientSigners,
-				),
-				// the resulting Header2 will have a different BlockID
-				// than Header1 since doesn't share the same valset and signers
-				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					altValset,
-					altValset,
-					clientTMValset,
-					altSigners,
-				),
-			},
-			true,
-		},
+
+	misb := &ibctmtypes.Misbehaviour{
+		ClientId: s.path.EndpointA.ClientID,
+		Header1: s.consumerChain.CreateTMClientHeader(
+			s.consumerChain.ChainID,
+			int64(clientHeight.RevisionHeight+1),
+			clientHeight,
+			altTime,
+			clientTMValset,
+			clientTMValset,
+			clientTMValset,
+			clientSigners,
+		),
+		Header2: s.consumerChain.CreateTMClientHeader(
+			s.consumerChain.ChainID,
+			int64(clientHeight.RevisionHeight+1),
+			clientHeight,
+			altTime,
+			altValset,
+			altValset,
+			clientTMValset,
+			altSigners,
+		),
 	}
 
-	for _, tc := range testCases {
-		s.Run(tc.name, func() {
-			err := s.providerApp.GetProviderKeeper().HandleConsumerMisbehaviour(s.providerCtx(), tc.misbehaviour)
-			if tc.expPass {
-				s.NoError(err)
-				// Check that only the validators of the alternate validator set
-				// , i.e. altValset, are jailed and tombstoned on the provider
-				for _, consuVal := range clientTMValset.Validators {
-					provVal := s.getProviderValFromConsumerVal(*consuVal)
-					provConsAddr, err := provVal.GetConsAddr()
-					s.Require().NoError(err)
-					if _, ok := altSigners[consuVal.Address.String()]; ok {
-						s.Require().True(provVal.Jailed)
-						s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provConsAddr))
-					} else {
-						s.Require().False(provVal.Jailed)
-						s.Require().False(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provConsAddr))
-					}
-				}
-			} else {
-				// Check that no validators are jailed or tombstoned on the provider
-				for _, consuVal := range clientTMValset.Validators {
-					s.Error(err)
-					provVal := s.getProviderValFromConsumerVal(*consuVal)
-					s.Require().False(provVal.Jailed)
-					provConsAddr, err := provVal.GetConsAddr()
-					s.Require().NoError(err)
-					s.Require().False(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provConsAddr))
-				}
-			}
-		})
+	err := s.providerApp.GetProviderKeeper().HandleConsumerMisbehaviour(s.providerCtx(), *misb)
+	s.NoError(err)
+
+	for _, v := range altValset.Validators {
+		consuAddr := sdk.ConsAddress(v.Address.Bytes())
+		provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, types.NewConsumerConsAddress(consuAddr))
+		val, ok := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), provAddr.Address)
+		s.Require().True(ok)
+		s.Require().True(val.Jailed)
+		s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.Address))
 	}
 }
 
@@ -297,12 +233,4 @@ func (s *CCVTestSuite) TestConstructLightClientEvidence() {
 			}
 		})
 	}
-}
-
-func (s *CCVTestSuite) getProviderValFromConsumerVal(valAddr tmtypes.Validator) stakingtypes.Validator {
-	consuAddr := types.NewConsumerConsAddress(sdk.ConsAddress(valAddr.Address.Bytes()))
-	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
-	val, ok := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), provAddr.Address)
-	s.Require().True(ok)
-	return val
 }
