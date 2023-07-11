@@ -148,7 +148,6 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 		// x/upgrade module of cosmos-sdk.
 		channelClosedMsg := fmt.Sprintf("CCV channel %q was closed - shutdown consumer chain since it is not secured anymore", channelID)
 		am.keeper.Logger(ctx).Error(channelClosedMsg)
-		panic(channelClosedMsg)
 	}
 
 	// map next block height to the vscID of the current block height
