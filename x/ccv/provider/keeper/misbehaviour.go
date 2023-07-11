@@ -8,6 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -15,20 +16,25 @@ import (
 // HandleConsumerMisbehaviour checks whether the given IBC misbehaviour is valid and, if they are, the misbehaving
 // CheckConsumerMisbehaviour check that the given IBC misbehaviour headers forms a valid light client attack evidence.
 // proceed to the jailing and tombstoning of the bzyantine validators.
-func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
+func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour exported.Misbehaviour) error {
 	logger := ctx.Logger()
 
-	if err := k.clientKeeper.CheckMisbehaviourAndUpdateState(ctx, &misbehaviour); err != nil {
+	// Check that the validity of the misbehaviour
+	if err := k.clientKeeper.CheckMisbehaviourAndUpdateState(ctx, misbehaviour); err != nil {
 		logger.Info("Misbehaviour rejected", err.Error())
 
 		return err
 	}
+
+	// Assign the Tendermint client misbehaviour concrete type
+	tmMisbehaviour := misbehaviour.(*ibctmtypes.Misbehaviour)
+
 	// Since the misbehaviour packet was received within the trusting period
 	// w.r.t to the last trusted consensus it entails that the infraction age
 	// isn't too old. see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 
 	// construct a ligth client attack evidence
-	evidence, err := k.ConstructLightClientEvidence(ctx, misbehaviour)
+	evidence, err := k.ConstructLightClientEvidence(ctx, *tmMisbehaviour)
 	if err != nil {
 		return err
 	}
@@ -39,7 +45,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	for _, v := range evidence.ByzantineValidators {
 		// convert consumer consensus address
 		consuAddr := sdk.ConsAddress(v.Address.Bytes())
-		provAddr := k.GetProviderAddrFromConsumerAddr(ctx, misbehaviour.Header1.Header.ChainID, types.NewConsumerConsAddress(consuAddr))
+		provAddr := k.GetProviderAddrFromConsumerAddr(ctx, tmMisbehaviour.Header1.Header.ChainID, types.NewConsumerConsAddress(consuAddr))
 		k.stakingKeeper.ValidatorByConsAddr(ctx, consuAddr)
 		val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, provAddr.Address)
 
