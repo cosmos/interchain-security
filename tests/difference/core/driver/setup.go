@@ -4,7 +4,6 @@ import (
 	"bytes"
 	cryptoEd25519 "crypto/ed25519"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -193,9 +192,9 @@ func (b *Builder) getAppBytesAndSenders(
 		stakingValidators = append(stakingValidators, validator)
 
 		// Store delegation from the model delegator account
-		delegations = append(delegations, stakingtypes.NewDelegation(accounts[0].GetAddress(), val.Address.Bytes(), delShares, true))
+		delegations = append(delegations, stakingtypes.NewDelegation(accounts[0].GetAddress(), val.Address.Bytes(), delShares))
 		// Remaining delegation is from extra account
-		delegations = append(delegations, stakingtypes.NewDelegation(accounts[1].GetAddress(), val.Address.Bytes(), sumShares.Sub(delShares), false))
+		delegations = append(delegations, stakingtypes.NewDelegation(accounts[1].GetAddress(), val.Address.Bytes(), sumShares.Sub(delShares)))
 	}
 
 	bondDenom := sdk.DefaultBondDenom
@@ -384,14 +383,12 @@ func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
 
 // delegate is used to delegate tokens to newly created
 // validators in the setup process.
-func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64, validatorBond bool) {
+func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	d := b.provider().SenderAccounts[del].SenderAccount.GetAddress()
 	coins := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	msg := stakingtypes.NewMsgDelegate(d, val, coins)
 	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
-	// if validatorBond {
 	_, err := pskServer.Delegate(sdk.WrapSDKContext(b.providerCtx()), msg)
-	fmt.Println("## ERRORED ON DELEGATE ##", err)
 	b.suite.Require().NoError(err)
 }
 
@@ -443,19 +440,14 @@ func (b *Builder) addExtraProviderValidators() {
 
 	b.ensureValidatorLexicographicOrderingMatchesModel()
 
-	fmt.Println("#ADDING EXTRA VALIDATORS")
 	for i := range b.initState.ValStates.Status {
 		if b.initState.ValStates.Status[i] == stakingtypes.Unbonded {
 			del := b.initState.ValStates.Delegation[i]
 			extra := b.initState.ValStates.ValidatorExtraTokens[i]
-			fmt.Println("## ATTEMPT TO DELEGATE #", b.validator(int64(i)), int64(del))
-			b.delegate(0, b.validator(int64(i)), int64(del), false)
-			fmt.Println("## DELEGATED ##", i, del)
-			b.delegate(1, b.validator(int64(i)), int64(extra), false)
-			fmt.Println("## DELEGATED EXTRA ##", i, extra)
+			b.delegate(0, b.validator(int64(i)), int64(del))
+			b.delegate(1, b.validator(int64(i)), int64(extra))
 		}
 	}
-	fmt.Println("# DONE ADDING EXTRA VALIDATORS")
 }
 
 func (b *Builder) setProviderParams() {
