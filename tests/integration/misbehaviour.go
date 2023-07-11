@@ -5,8 +5,10 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 
+	ibcsolotypes "github.com/cosmos/ibc-go/v4/modules/light-clients/06-solomachine/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -39,9 +41,14 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
 	testCases := []struct {
 		name         string
-		misbehaviour *ibctmtypes.Misbehaviour
+		misbehaviour exported.Misbehaviour
 		expPass      bool
 	}{
+		{
+			"invalid misbehaviour client type - shouldn't pass",
+			&ibcsolotypes.Misbehaviour{},
+			false,
+		},
 		{
 			"invalid misbehaviour with empty header1 - shouldn't pass",
 			&ibctmtypes.Misbehaviour{
