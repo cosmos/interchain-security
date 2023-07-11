@@ -7,6 +7,14 @@ Add an entry to the unreleased section whenever merging a PR to main that is not
 * (fix) [#720](https://github.com/cosmos/interchain-security/issues/720) Fix the attribute `AttributeDistributionTotal` value in `FeeDistribution` event emit.
 * (deps) [#1119](https://github.com/cosmos/interchain-security/pull/1119) bump cometbft from `v0.37.1` to `0.37.2`.
 
+## v3.1.0
+
+Date July 11th, 2023
+
+A minor upgrade to v3.0.0, which removes the panic in the consumer ccv module which would occur in an emergency scenario where the ccv channel is closed.
+
+* (feat) [#1127](https://github.com/cosmos/interchain-security/pull/1127) Remove consumer panic when ccv channel is closed
+
 ## v3.0.0
 
 Date: June 21st, 2023
