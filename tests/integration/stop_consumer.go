@@ -4,7 +4,10 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+<<<<<<< HEAD
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+=======
+>>>>>>> 1412923 (feat: remove consumer panic when ccv channel is closed  (#1127))
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -210,31 +213,4 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 	slashData, vscMaturedData, _, _ := providerKeeper.GetAllThrottledPacketData(s.providerCtx(), chainID)
 	s.Require().Empty(slashData)
 	s.Require().Empty(vscMaturedData)
-}
-
-// TestProviderChannelClosed checks that a consumer chain panics
-// when the provider channel was established and then closed
-func (suite *CCVTestSuite) TestProviderChannelClosed() {
-	suite.SetupCCVChannel(suite.path)
-	// establish provider channel with a first VSC packet
-	suite.SendEmptyVSCPacket()
-
-	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
-
-	channelID, found := consumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
-	suite.Require().True(found)
-
-	// close provider channel
-	err := consumerKeeper.ChanCloseInit(suite.consumerChain.GetContext(), ccv.ConsumerPortID, channelID)
-	suite.Require().NoError(err)
-	suite.Require().True(consumerKeeper.IsChannelClosed(suite.consumerChain.GetContext(), channelID))
-
-	// assert begin blocker did panics
-	defer func() {
-		if r := recover(); r != nil {
-			return
-		}
-		suite.Require().Fail("Begin blocker did not panic with a closed channel")
-	}()
-	suite.consumerApp.BeginBlocker(suite.consumerChain.GetContext(), abci.RequestBeginBlock{})
 }
