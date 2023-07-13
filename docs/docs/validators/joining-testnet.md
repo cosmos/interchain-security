@@ -180,9 +180,7 @@ gaiad tx provider assign-consensus-key consumer-1 '<consumer_pubkey>' --from <ke
 After this step, you are ready to copy the consumer genesis into your nodes's `/config` folder, start your consumer chain node and catch up to the network.
 
 ## Baryon
-
-You can find the onboarding repo instructions for the Baryon chain [here](https://github.com/cosmos/testnets/blob/master/replicated-security/baryon-1/README.md)
+You can find the onboarding repo instructions for the Baryon chain [here](https://github.com/cosmos/testnets/blob/master/replicated-security/stopped/baryon-1/README.md)
 
 ## Noble
-
-You can find the onboarding repo instructions for the Noble chain [here](https://github.com/cosmos/testnets/blob/master/replicated-security/noble-1/README.md)
+You can find the onboarding repo instructions for the Noble chain [here](https://github.com/cosmos/testnets/blob/master/replicated-security/stopped/noble-1/README.md)
