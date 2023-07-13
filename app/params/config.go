@@ -31,5 +31,5 @@ func SetAddressPrefixes() {
 }
 
 func init() {
-	SetAddressPrefixes()
+	// SetAddressPrefixes()
 }
