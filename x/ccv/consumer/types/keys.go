@@ -98,6 +98,10 @@ const (
 	// PrevStandaloneChainByteKey is the byte storing the flag marking whether this chain was previously standalone
 	PrevStandaloneChainByteKey
 
+	// PendingPacketsIndexBytePrefix is the single byte key to the pending packets index.
+	// This index is used for implementing a FIFO queue of pending packets in the KV store.
+	PendingPacketsIndexByteKey
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -172,11 +176,13 @@ func CrossChainValidatorKey(addr []byte) []byte {
 	return append([]byte{CrossChainValidatorBytePrefix}, addr...)
 }
 
-// PendingDataPacketsKey returns the key for storing a list of data packets
-// that cannot be sent yet to the provider chain either because the CCV channel
-// is not established or because the client is expired.
-func PendingDataPacketsKey() []byte {
-	return []byte{PendingDataPacketsBytePrefix}
+// PendingDataPacketsKey returns the key for storing a queue of data packets to be sent to the provider.
+// Packets in this queue will not be sent on the next endblocker if:
+// - the CCV channel is not yet established
+// - the client is expired
+// - A slash packet is being bounced between consumer and provider (not yet implemented)
+func PendingDataPacketsKey(idx uint64) []byte {
+	return append([]byte{PendingDataPacketsBytePrefix}, sdk.Uint64ToBigEndian(idx)...)
 }
 
 func PreCCVKey() []byte {
@@ -204,6 +210,12 @@ func StandaloneTransferChannelIDKey() []byte {
 // PrevStandaloneChainKey returns the key to the flag marking whether this chain was previously standalone
 func PrevStandaloneChainKey() []byte {
 	return []byte{PrevStandaloneChainByteKey}
+}
+
+// PendingPacketsIndexKey returns the key to the pending packets index.
+// This index is used for implementing a FIFO queue of pending packets in the KV store.
+func PendingPacketsIndexKey() []byte {
+	return []byte{PendingPacketsIndexByteKey}
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go
