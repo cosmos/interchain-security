@@ -4,9 +4,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	testutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	"github.com/stretchr/testify/require"
 )
 
 func TestPacketSendingPermitted(t *testing.T) {

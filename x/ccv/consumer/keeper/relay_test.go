@@ -378,7 +378,6 @@ func TestOnAcknowledgementPacketError(t *testing.T) {
 // TestOnAcknowledgementPacketResult tests application logic for RESULT acknowledgments of sent VSCMatured and Slash packets
 // in conjunction with the ibc module's execution of "acknowledgePacket",
 func TestOnAcknowledgementPacketResult(t *testing.T) {
-
 	// Setup
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -429,7 +428,6 @@ func TestOnAcknowledgementPacketResult(t *testing.T) {
 }
 
 func setupSlashBeforeVscMatured(ctx sdk.Context, k *consumerkeeper.Keeper) {
-
 	// clear old state
 	k.ClearSlashRecord(ctx)
 	k.DeleteAllPendingDataPackets(ctx)

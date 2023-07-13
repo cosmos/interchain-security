@@ -1,8 +1,10 @@
 package integration
 
 import (
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	provider "github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
