@@ -8,7 +8,9 @@ import (
 	"cosmossdk.io/math"
 	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
 
+	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -17,6 +19,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -57,6 +60,13 @@ type TestingApp interface {
 	// Implemented by BaseApp
 	LastCommitID() storetypes.CommitID
 	LastBlockHeight() int64
+}
+
+func SetupTestingApp() (TestingApp, map[string]json.RawMessage) {
+	db := dbm.NewMemDB()
+	encCdc := simapp.MakeTestEncodingConfig()
+	app := simapp.NewSimApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encCdc, simtestutil.EmptyAppOptions{})
+	return app, simapp.NewDefaultGenesisState(encCdc.Marshaler)
 }
 
 // SetupWithGenesisValSet initializes a new SimApp with a validator set and genesis accounts
