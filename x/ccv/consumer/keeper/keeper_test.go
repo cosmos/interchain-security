@@ -6,21 +6,21 @@ import (
 	"testing"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
 	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
-	"github.com/cosmos/interchain-security/v3/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
-	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+
+	"github.com/cosmos/interchain-security/v3/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper

@@ -1,9 +1,11 @@
 package types
 
 import (
-	errorsmod "cosmossdk.io/errors"
-	abci "github.com/cometbft/cometbft/abci/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
+	errorsmod "cosmossdk.io/errors"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )

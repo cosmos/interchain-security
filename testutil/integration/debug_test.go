@@ -157,10 +157,6 @@ func TestStopConsumerOnChannelClosed(t *testing.T) {
 	runCCVTestByName(t, "TestStopConsumerOnChannelClosed")
 }
 
-func TestProviderChannelClosed(t *testing.T) {
-	runCCVTestByName(t, "TestProviderChannelClosed")
-}
-
 //
 // Throttle tests
 //
