@@ -186,7 +186,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 	}
 
 	pending := k.GetPendingPackets(ctx)
-	toDelete := []uint64{}
+	idxsForDeletion := []uint64{}
 	for _, p := range pending {
 		if !k.PacketSendingPermitted(ctx) {
 			return
@@ -207,14 +207,14 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
 				k.Logger(ctx).Info("IBC client is expired, cannot send IBC packet; leaving packet data stored:", "type", p.Type.String())
-				return
+				break
 			}
 			// Not able to send packet over IBC!
 			// Leave the packet data stored for the sent to be retried in the next block.
 			// Note that if VSCMaturedPackets are not sent for long enough, the provider
 			// will remove the consumer anyway.
 			k.Logger(ctx).Error("cannot send IBC packet; leaving packet data stored:", "type", p.Type.String(), "err", err.Error())
-			return
+			break
 		}
 		// If the packet that was just sent was a Slash packet, set the waiting on slash reply flag.
 		// This flag will be toggled false again when consumer hears back from provider. See OnAcknowledgementPacket below.
@@ -224,12 +224,11 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			break
 		} else {
 			// Otherwise the vsc matured will be deleted
-			toDelete = append(toDelete, p.Idx)
+			idxsForDeletion = append(idxsForDeletion, p.Idx)
 		}
 	}
-	for _, idx := range toDelete {
-		k.DeletePendingDataPackets(ctx, idx)
-	}
+	// Delete pending packets that were successfully sent and did not return an error from SendIBCPacket
+	k.DeletePendingDataPackets(ctx, idxsForDeletion...)
 }
 
 // OnAcknowledgementPacket executes application logic for acknowledgments of sent VSCMatured and Slash packets
