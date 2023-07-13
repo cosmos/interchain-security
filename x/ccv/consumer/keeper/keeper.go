@@ -598,9 +598,7 @@ func (k Keeper) GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Val
 func (k Keeper) getAndIncrementPendingPacketsIdx(ctx sdk.Context) (toReturn uint64) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingPacketsIndexKey())
-	if bz == nil {
-		toReturn = 0
-	} else {
+	if bz != nil {
 		toReturn = sdk.BigEndianToUint64(bz)
 	}
 	toStore := toReturn + 1
