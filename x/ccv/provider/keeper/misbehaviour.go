@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	ibctypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -78,21 +78,18 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour exporte
 	return nil
 }
 
-func (k Keeper) CheckMisbehaviourAndUpdateState(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
-
-	clientState, found := k.clientKeeper.GetClientState(ctx, misbehaviour.GetClientID())
-	if !found {
-		return sdkerrors.Wrapf(types.ErrClientNotFound, "cannot check misbehaviour for client with ID %s", misbehaviour.GetClientID())
+// CheckMisbehaviourAndUpdateState checks for client misbehaviour and freeze the client if it's still active.
+// Note that this method changes the original CheckMisbehaviourAndUpdateState method in ibc-go ibc-go/modules/core/02-client/keeper/client.go
+func (k Keeper) CheckMisbehaviourAndUpdateState(ctx sdk.Context, misbehaviour exported.Misbehaviour) error {
+	if err := misbehaviour.ValidateBasic(); err != nil {
+		return err
 	}
 
 	clientStore := k.clientKeeper.ClientStore(ctx, misbehaviour.GetClientID())
 
-	if status := clientState.Status(ctx, clientStore, k.cdc); status != exported.Active {
-		return sdkerrors.Wrapf(ibctypes.ErrClientNotActive, "cannot process misbehaviour for client (%s) with status %s", misbehaviour.GetClientID(), status)
-	}
-
-	if err := misbehaviour.ValidateBasic(); err != nil {
-		return err
+	clientState, found := k.clientKeeper.GetClientState(ctx, misbehaviour.GetClientID())
+	if !found {
+		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot check misbehaviour for client with ID %s", misbehaviour.GetClientID())
 	}
 
 	clientState, err := clientState.CheckMisbehaviourAndUpdateState(ctx, k.cdc, clientStore, misbehaviour)
@@ -100,8 +97,12 @@ func (k Keeper) CheckMisbehaviourAndUpdateState(ctx sdk.Context, misbehaviour ib
 		return err
 	}
 
-	k.SetClientState(ctx, misbehaviour.GetClientID(), clientState)
-	k.Logger(ctx).Info("client frozen due to misbehaviour", "client-id", misbehaviour.GetClientID())
+	if status := clientState.Status(ctx, clientStore, k.cdc); status == exported.Active {
+		k.clientKeeper.SetClientState(ctx, misbehaviour.GetClientID(), clientState)
+		k.Logger(ctx).Info("client frozen due to misbehaviour", "client-id", misbehaviour.GetClientID())
+	}
+
+	return nil
 }
 
 // ConstructLightClientEvidence constructs and returns a CometBFT Ligth Client Attack(LCA) evidence struct
