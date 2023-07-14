@@ -239,26 +239,31 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		if len(res) != 1 {
 			k.Logger(ctx).Error("recv invalid ack; expected length 1", "channel", packet.SourceChannel, "ack", res)
 		}
+
+		// Unmarshal into V1 consumer packet data type. We trust data is formed correctly
+		// as it was originally marshalled by this module, and consumers must trust the provider
+		// did not tamper with the data. Note ConsumerPacketData.GetBytes() always JSON marshals to the
+		// ConsumerPacketDataV1 type which is sent over the wire.
+		var consumerPacket ccv.ConsumerPacketDataV1
+		ccv.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacket)
+		// If this ack is regarding a provider handling a vsc matured packet, there's nothing to do.
+		// As vsc matured packets are popped from the consumer pending packets queue on send.
+		if consumerPacket.Type == ccv.VscMaturedPacket {
+			return nil
+		}
+
+		// Otherwise we handle the result of the slash packet acknowledgement.
 		switch res[0] {
+		// We treat a v1 result as the provider successfully queuing the slash packet w/o need for retry.
 		case ccv.V1Result[0]:
-			// If slash record is found, slash packet is at head of queue.
-			// But provider is running v1 throttling and has queued the slash packet itself.
-			// Therefore we can clear the slash record and delete the slash packet from the queue, unblocking packet sending.
-			// TODO: tests for this scenario with vsc matured.
-			_, found := k.GetSlashRecord(ctx)
-			if found {
-				k.ClearSlashRecord(ctx)
-				k.DeleteHeadOfPendingPackets(ctx)
-			}
-			k.Logger(ctx).Info("recv no-op ack", "channel", packet.SourceChannel, "ack", res)
+			k.ClearSlashRecord(ctx)           // Clears slash record state, unblocks sending of pending packets.
+			k.DeleteHeadOfPendingPackets(ctx) // Remove slash from head of queue. It's been handled.
 		case ccv.SlashPacketHandledResult[0]:
 			k.ClearSlashRecord(ctx)           // Clears slash record state, unblocks sending of pending packets.
 			k.DeleteHeadOfPendingPackets(ctx) // Remove slash from head of queue. It's been handled.
 		case ccv.SlashPacketBouncedResult[0]:
 			k.UpdateSlashRecordOnBounce(ctx)
 			// Note slash is still at head of queue and will now be retried after appropriate delay period.
-		case ccv.VSCMaturedPacketHandledResult[0]:
-			// VSC matured are deleted upon sending, nothing to do here.
 		default:
 			k.Logger(ctx).Error("recv invalid result ack; expected 1, 2, or 3", "channel", packet.SourceChannel, "ack", res)
 		}

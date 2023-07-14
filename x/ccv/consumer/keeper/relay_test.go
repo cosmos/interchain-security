@@ -381,18 +381,19 @@ func TestOnAcknowledgementPacketResult(t *testing.T) {
 	// Setup
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
-	packet := channeltypes.Packet{}
 
 	setupSlashBeforeVscMatured(ctx, &consumerKeeper)
 
 	// Slash record found, 2 pending packets, slash is at head of queue
 	_, found := consumerKeeper.GetSlashRecord(ctx)
 	require.True(t, found)
-	require.Len(t, consumerKeeper.GetPendingPackets(ctx), 2)
-	require.Equal(t, types.SlashPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
+	pendingPackets := consumerKeeper.GetPendingPackets(ctx)
+	require.Len(t, pendingPackets, 2)
+	require.Equal(t, types.SlashPacket, pendingPackets[0].Type)
 
 	// v1 result should delete slash record and head of pending packets. Vsc matured remains
 	ack := channeltypes.NewResultAcknowledgement(types.V1Result)
+	packet := channeltypes.Packet{Data: pendingPackets[0].GetBytes()}
 	err := consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
 	require.Nil(t, err)
 	_, found = consumerKeeper.GetSlashRecord(ctx)
@@ -402,6 +403,8 @@ func TestOnAcknowledgementPacketResult(t *testing.T) {
 
 	// refresh state
 	setupSlashBeforeVscMatured(ctx, &consumerKeeper)
+	pendingPackets = consumerKeeper.GetPendingPackets(ctx)
+	packet = channeltypes.Packet{Data: pendingPackets[0].GetBytes()}
 
 	// Slash packet handled result should delete slash record and head of pending packets
 	ack = channeltypes.NewResultAcknowledgement(types.SlashPacketHandledResult)
@@ -414,6 +417,8 @@ func TestOnAcknowledgementPacketResult(t *testing.T) {
 
 	// refresh state
 	setupSlashBeforeVscMatured(ctx, &consumerKeeper)
+	pendingPackets = consumerKeeper.GetPendingPackets(ctx)
+	packet = channeltypes.Packet{Data: pendingPackets[0].GetBytes()}
 
 	slashRecordBefore, found := consumerKeeper.GetSlashRecord(ctx)
 	require.True(t, found)
