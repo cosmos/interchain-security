@@ -26,7 +26,6 @@ import (
 // - If the consumer receives a V1Result ack from the provider, the consumer checks for a slash record,
 // and if found, the consumer transitions from "Standby" to "No Slash". The slash record is cleared upon this transition,
 // and the slash packet is popped from the pending packets queue.
-// TODO: Make note of above design for v1 throttling providers in the ADR, and explain that consumers must upgrade first in prod (where double queueing may exist for some time).
 //
 // - Else if the consumer receives a reply from the provider that the slash packet was successfully handled,
 // the consumer transitions from "Standby" to "No Slash". The slash record is cleared upon this transition,
