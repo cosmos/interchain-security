@@ -465,17 +465,17 @@ func TestSendPacketsDeletion(t *testing.T) {
 	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
 	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
 
-	// Queue two pending packets
+	// Queue two pending packets. Note VSC matured enqueued first since slash packets block further sending
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
+		VscMaturedPacketData: &types.VSCMaturedPacketData{
+			ValsetUpdateId: 90,
+		},
+	})
 	consumerKeeper.AppendPendingPacket(ctx, types.SlashPacket, &types.ConsumerPacketData_SlashPacketData{ // Slash appears first
 		SlashPacketData: &types.SlashPacketData{
 			Validator:      abci.Validator{},
 			ValsetUpdateId: 88,
 			Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
-		},
-	})
-	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
-		VscMaturedPacketData: &types.VSCMaturedPacketData{
-			ValsetUpdateId: 90,
 		},
 	})
 
@@ -489,6 +489,6 @@ func TestSendPacketsDeletion(t *testing.T) {
 	consumerKeeper.SendPackets(ctx)
 
 	// Expect the first successfully sent packet to be popped from queue
-	require.Equal(t, 1, len(consumerKeeper.GetPendingPackets(ctx)))
-	require.Equal(t, types.VscMaturedPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
+	require.Len(t, consumerKeeper.GetPendingPackets(ctx), 1)
+	require.Equal(t, types.SlashPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
 }
