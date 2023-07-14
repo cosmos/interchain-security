@@ -171,10 +171,9 @@ type ExportedIsConsumerPacketData_Data interface {
 	isConsumerPacketData_Data
 }
 
-func NewConsumerPacketData(cpdType ConsumerPacketDataType, data isConsumerPacketData_Data, idx uint64) ConsumerPacketData {
+func NewConsumerPacketData(cpdType ConsumerPacketDataType, data isConsumerPacketData_Data) ConsumerPacketData {
 	return ConsumerPacketData{
 		Type: cpdType,
 		Data: data,
-		Idx:  idx,
 	}
 }

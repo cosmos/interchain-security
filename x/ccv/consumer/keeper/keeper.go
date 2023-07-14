@@ -652,13 +652,10 @@ func (k Keeper) DeleteAllPendingDataPackets(ctx sdk.Context) {
 
 // AppendPendingPacket enqueues the given data packet to the end of the pending data packets queue
 func (k Keeper) AppendPendingPacket(ctx sdk.Context, packetType ccv.ConsumerPacketDataType, data ccv.ExportedIsConsumerPacketData_Data) {
-	cpd := ccv.NewConsumerPacketData(
-		packetType,
-		data,
-		k.getAndIncrementPendingPacketsIdx(ctx),
-	)
-	key := types.PendingDataPacketsKey(cpd.Idx)
+	idx := k.getAndIncrementPendingPacketsIdx(ctx) // for FIFO queue
+	key := types.PendingDataPacketsKey(idx)
 	store := ctx.KVStore(k.storeKey)
+	cpd := ccv.NewConsumerPacketData(packetType, data)
 	bz, err := cpd.Marshal()
 	if err != nil {
 		// This should never happen

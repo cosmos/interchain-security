@@ -325,14 +325,12 @@ func TestPendingPackets(t *testing.T) {
 			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 				VscMaturedPacketData: ccv.NewVSCMaturedPacketData(1),
 			},
-			Idx: 0, // Note these are expected idxs, we don't pass this data to the keeper
 		},
 		{
 			Type: ccv.VscMaturedPacket,
 			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 				VscMaturedPacketData: ccv.NewVSCMaturedPacketData(2),
 			},
-			Idx: 1,
 		},
 		{
 			Type: ccv.SlashPacket,
@@ -343,14 +341,12 @@ func TestPendingPackets(t *testing.T) {
 					stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
 				),
 			},
-			Idx: 2,
 		},
 		{
 			Type: ccv.VscMaturedPacket,
 			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 				VscMaturedPacketData: ccv.NewVSCMaturedPacketData(3),
 			},
-			Idx: 3,
 		},
 	}
 
@@ -376,7 +372,6 @@ func TestPendingPackets(t *testing.T) {
 		Data: &ccv.ConsumerPacketData_SlashPacketData{
 			SlashPacketData: slashPacket,
 		},
-		Idx: 4,
 	})
 
 	toAppend := packetData[len(packetData)-1]
@@ -391,7 +386,6 @@ func TestPendingPackets(t *testing.T) {
 		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 			VscMaturedPacketData: vscMaturedPacket,
 		},
-		Idx: 5,
 	})
 	toAppend = packetData[len(packetData)-1]
 	consumerKeeper.AppendPendingPacket(ctx, toAppend.Type, toAppend.Data)
