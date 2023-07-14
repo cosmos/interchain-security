@@ -348,7 +348,6 @@ func (s *CCVTestSuite) TestMsgSubmitConsumerMisbehaviourHandler() {
 			false,
 		},
 		{
-
 			"valid MsgSubmitMisbehaviour should pass",
 			&ibctmtypes.Misbehaviour{
 				ClientId: s.path.EndpointA.ClientID,
