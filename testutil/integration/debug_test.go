@@ -272,3 +272,7 @@ func TestConstructLightClientEvidence(t *testing.T) {
 func TestMsgSubmitConsumerMisbehaviourHandler(t *testing.T) {
 	runCCVTestByName(t, "TestMsgSubmitConsumerMisbehaviourHandler")
 }
+
+func TestCheckMisbehaviourAndUpdateState(t *testing.T) {
+	runCCVTestByName(t, "TestCheckMisbehaviourAndUpdateState")
+}

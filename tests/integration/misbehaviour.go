@@ -102,7 +102,7 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 		s.Run(tc.name, func() {
 			err := s.providerApp.GetProviderKeeper().HandleConsumerMisbehaviour(s.providerCtx(), tc.misbehaviour)
 			// get clienstate
-			cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointB.ClientID)
+			cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointA.ClientID)
 			s.Require().True(ok)
 
 			if tc.expPass {
@@ -392,6 +392,167 @@ func (s *CCVTestSuite) TestMsgSubmitConsumerMisbehaviourHandler() {
 				s.Require().NoError(err)
 			} else {
 				s.Require().Error(err)
+			}
+		})
+	}
+}
+
+func (s *CCVTestSuite) TestCheckMisbehaviourAndUpdateState() {
+	s.SetupCCVChannel(s.path)
+	// required to have the consumer client revision height greater than 0
+	s.SendEmptyVSCPacket()
+
+	// create signing info for all validators
+	for _, v := range s.providerChain.Vals.Validators {
+		s.setDefaultValSigningInfo(*v)
+	}
+
+	// create a new header timestamp
+	headerTs := s.providerCtx().BlockTime().Add(time.Minute)
+
+	// get trusted validators and height
+	clientHeight := s.consumerChain.LastHeader.TrustedHeight
+	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
+	clientSigners := s.consumerChain.Signers
+
+	// create an alternative validator set using more than 1/3 of the trusted validator set
+	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:2])
+	altSigners := make(map[string]tmtypes.PrivValidator, 1)
+	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
+	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
+	testCases := []struct {
+		name         string
+		misbehaviour exported.Misbehaviour
+		expPass      bool
+	}{
+		{
+			"invalid misbehaviour client type - shouldn't pass",
+			&ibcsolotypes.Misbehaviour{},
+			false,
+		},
+		{
+			"client state not found - shouldn' pass",
+			&ibctmtypes.Misbehaviour{
+				ClientId: "clientID",
+				Header1: s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					headerTs,
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				),
+				// the resulting Header2 will have a different BlockID
+				// than Header1 since doesn't share the same valset and signers
+				Header2: s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					headerTs,
+					altValset,
+					altValset,
+					clientTMValset,
+					altSigners,
+				),
+			},
+			false,
+		},
+		{
+			"invalid misbehaviour with empty header1 - shouldn't pass",
+			&ibctmtypes.Misbehaviour{
+				Header1: &ibctmtypes.Header{},
+				Header2: s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					headerTs,
+					altValset,
+					altValset,
+					clientTMValset,
+					altSigners,
+				),
+			},
+			false,
+		},
+		{
+			"valid misbehaviour  - should pass",
+			&ibctmtypes.Misbehaviour{
+				ClientId: s.path.EndpointA.ClientID,
+				Header1: s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					headerTs,
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				),
+				// the resulting Header2 will have a different BlockID
+				// than Header1 since doesn't share the same valset and signers
+				Header2: s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					headerTs,
+					altValset,
+					altValset,
+					clientTMValset,
+					altSigners,
+				),
+			},
+			true,
+		},
+		{
+			"valid misbehaviour with already frozen client - should pass",
+			&ibctmtypes.Misbehaviour{
+				ClientId: s.path.EndpointA.ClientID,
+				Header1: s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					headerTs,
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				),
+				// the resulting Header2 will have a different BlockID
+				// than Header1 since doesn't share the same valset and signers
+				Header2: s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					headerTs,
+					altValset,
+					altValset,
+					clientTMValset,
+					altSigners,
+				),
+			},
+			true,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			err := s.providerApp.GetProviderKeeper().CheckMisbehaviourAndUpdateState(s.providerCtx(), tc.misbehaviour)
+			// get clienstate
+			cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointA.ClientID)
+			s.Require().True(ok)
+
+			if tc.expPass {
+				s.NoError(err)
+
+				// verify that the client was frozen
+				s.Require().NotZero(cs.(*ibctmtypes.ClientState).FrozenHeight)
+			} else {
+				s.Error(err)
+
+				// verify that the client wasn't frozen
+				s.Require().Zero(cs.(*ibctmtypes.ClientState).FrozenHeight)
 			}
 		})
 	}

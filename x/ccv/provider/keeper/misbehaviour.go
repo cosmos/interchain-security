@@ -24,7 +24,6 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour exporte
 	// Check that the validity of the misbehaviour
 	if err := k.clientKeeper.CheckMisbehaviourAndUpdateState(ctx, misbehaviour); err != nil {
 		logger.Info("Misbehaviour rejected", err.Error())
-
 		return err
 	}
 
@@ -85,21 +84,24 @@ func (k Keeper) CheckMisbehaviourAndUpdateState(ctx sdk.Context, misbehaviour ex
 		return err
 	}
 
-	clientStore := k.clientKeeper.ClientStore(ctx, misbehaviour.GetClientID())
-
+	// get client state
 	clientState, found := k.clientKeeper.GetClientState(ctx, misbehaviour.GetClientID())
 	if !found {
 		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot check misbehaviour for client with ID %s", misbehaviour.GetClientID())
 	}
 
-	clientState, err := clientState.CheckMisbehaviourAndUpdateState(ctx, k.cdc, clientStore, misbehaviour)
+	clientStore := k.clientKeeper.ClientStore(ctx, misbehaviour.GetClientID())
+
+	// note that if this check succeed the returned client state status is updated to "Frozen"
+	updatedClientState, err := clientState.CheckMisbehaviourAndUpdateState(ctx, k.cdc, clientStore, misbehaviour)
 	if err != nil {
 		return err
 	}
 
+	// update the client state if the status transitioned from "Active" to "Frozen"
 	if status := clientState.Status(ctx, clientStore, k.cdc); status == exported.Active {
-		k.clientKeeper.SetClientState(ctx, misbehaviour.GetClientID(), clientState)
-		k.Logger(ctx).Info("client frozen due to misbehaviour", "client-id", misbehaviour.GetClientID())
+		k.clientKeeper.SetClientState(ctx, misbehaviour.GetClientID(), updatedClientState)
+		k.Logger(ctx).Info("client frozen due to a consumer chain misbehaviour", "client-id", misbehaviour.GetClientID())
 	}
 
 	return nil
