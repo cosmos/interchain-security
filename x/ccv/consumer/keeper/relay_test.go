@@ -391,14 +391,17 @@ func TestOnAcknowledgementPacketResult(t *testing.T) {
 	require.Len(t, consumerKeeper.GetPendingPackets(ctx), 2)
 	require.Equal(t, types.SlashPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
 
-	// No-op result shouldn't do anything
+	// v1 result should delete slash record and head of pending packets. Vsc matured remains
 	ack := channeltypes.NewResultAcknowledgement(types.V1Result)
 	err := consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
 	require.Nil(t, err)
 	_, found = consumerKeeper.GetSlashRecord(ctx)
-	require.True(t, found)
-	require.Len(t, consumerKeeper.GetPendingPackets(ctx), 2)
-	require.Equal(t, types.SlashPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
+	require.False(t, found)
+	require.Len(t, consumerKeeper.GetPendingPackets(ctx), 1)
+	require.Equal(t, types.VscMaturedPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
+
+	// refresh state
+	setupSlashBeforeVscMatured(ctx, &consumerKeeper)
 
 	// Slash packet handled result should delete slash record and head of pending packets
 	ack = channeltypes.NewResultAcknowledgement(types.SlashPacketHandledResult)

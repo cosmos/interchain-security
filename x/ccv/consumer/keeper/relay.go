@@ -257,6 +257,8 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		case ccv.SlashPacketBouncedResult[0]:
 			k.UpdateSlashRecordOnBounce(ctx)
 			// Note slash is still at head of queue and will now be retried after appropriate delay period.
+		case ccv.VSCMaturedPacketHandledResult[0]:
+			// VSC matured are deleted upon sending, nothing to do here.
 		default:
 			k.Logger(ctx).Error("recv invalid result ack; expected 1, 2, or 3", "channel", packet.SourceChannel, "ack", res)
 		}
