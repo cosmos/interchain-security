@@ -9,7 +9,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
-// TODO: will need good integration tests making sure this state is properly init, cleared, etc.
+// TODO: e2e tests
 
 //
 // Throttling with retries follows a FSM design:

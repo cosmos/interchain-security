@@ -61,6 +61,9 @@ func (s *CCVTestSuite) TestSlashRetries() {
 		},
 	)
 	consumerKeeper.UpdateSlashRecordOnSend(s.consumerCtx())
+	slashRecord, found := consumerKeeper.GetSlashRecord(s.consumerCtx())
+	s.Require().True(found)
+	s.Require().True(slashRecord.WaitingOnReply)
 	s.Require().Len(consumerKeeper.GetPendingPackets(s.consumerCtx()), 1)
 
 	// Recv packet on provider and assert ack. Provider should return v1 result.
@@ -68,7 +71,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	expectedv1Ack := channeltypes.NewResultAcknowledgement([]byte(ccvtypes.V1Result))
 	s.Require().Equal(expectedv1Ack.Acknowledgement(), ack.Acknowledgement())
 
-	// Couple blocks pass on provider for staking keeper to process jailing
+	// Couple blocks pass on provider for provider staking keeper to process jailing
 	s.providerChain.NextBlock()
 	s.providerChain.NextBlock()
 
@@ -110,7 +113,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 		},
 	)
 	consumerKeeper.UpdateSlashRecordOnSend(s.consumerCtx())
-	slashRecord, found := consumerKeeper.GetSlashRecord(s.consumerCtx())
+	slashRecord, found = consumerKeeper.GetSlashRecord(s.consumerCtx())
 	s.Require().True(found)
 	s.Require().True(slashRecord.WaitingOnReply)
 	s.Require().Len(consumerKeeper.GetPendingPackets(s.consumerCtx()), 1)
@@ -137,7 +140,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet2, ackForConsumer)
 	s.Require().NoError(err)
 
-	// TODO: when provider changes are made, slashRecord.WaitingOnReply should have been updated to false. Packet still in queue
+	// TODO: when provider changes are made, slashRecord.WaitingOnReply should have been updated to false on consumer. Slash Packet will still be in consumer's pending packets queue.
 
 	// Slash record should have been deleted, head of pending packets should have been popped
 	// Since provider has handled the packet
