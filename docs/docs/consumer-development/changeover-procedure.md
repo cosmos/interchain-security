@@ -4,20 +4,22 @@ sidebar_position: 5
 
 # Changeover Procedure
 
-Chains that were not initially launched as consumers of replicated security can still participate in the protocol and leverage the economic security of the provider chain. The process where a sovereign chain transitions to being a replicated consumer chain is called the **changeover procedure** and is part of the interchain security protocol. After the changeover, the new consumer chain will retain all existing state, including the IBC clients, connections and channels already established by the chain.
+Chains that were not initially launched as consumers of replicated security can still participate in the protocol and leverage the economic security of the provider chain. The process where a standalone chain transitions to being a replicated consumer chain is called the **changeover procedure** and is part of the interchain security protocol. After the changeover, the new consumer chain will retain all existing state, including the IBC clients, connections and channels already established by the chain.
 
-The relevant protocol specification is available [here](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#channel-initialization-existing-chains).
+The relevant protocol specifications are available below:
+* [ICS-28 with existing chains](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#channel-initialization-existing-chains).
+* [ADR in ICS repo](../adrs/adr-010-standalone-changeover.md)
 
 ## Overview
 
-Sovereign to consumer changeover procedure can rougly be separated into 4 parts:
+Standalone to consumer changeover procedure can rougly be separated into 4 parts:
 
 ### 1. ConsumerAddition proposal submitted to the `provider` chain
-The proposal is equivalen to the "normal" ConsumerAddition proposal submitted by new consumer chains.
+The proposal is equivalent to the "normal" ConsumerAddition proposal submitted by new consumer chains.
 
-However, here are the most important notes and differences between a new consumer chain and a sovereign chain performing a changeover:
+However, here are the most important notes and differences between a new consumer chain and a standalone chain performing a changeover:
 
-* `chain_id` must be equal to the sovereign chain id
+* `chain_id` must be equal to the standalone chain id
 * `initial_height` field has additional rules to abide by:
 
 :::caution
@@ -25,12 +27,12 @@ However, here are the most important notes and differences between a new consume
 {
 ...
     "initial_height" : {
-        // must correspond to current revision number of sovereign chain
+        // must correspond to current revision number of standalone chain
         // e.g. stride-1 => "revision_number": 1
         "revision_number": 1,
 
         // must correspond to a height that is at least 1 block after the upgrade
-        // that will add the `consumer` module to the sovereign chain
+        // that will add the `consumer` module to the standalone chain
         // e.g. "upgrade_height": 100 => "revision_height": 101
         "revision_height": 1,
     },
@@ -40,21 +42,21 @@ However, here are the most important notes and differences between a new consume
 RevisionNumber: 0, RevisionHeight: 111
 :::
 
-* `genesis_hash` can be safely ignored because the chain is already running. A hash of the sovereign chain's initial genesis may be used
+* `genesis_hash` can be safely ignored because the chain is already running. A hash of the standalone chain's initial genesis may be used
 
 * `binary_hash` may not be available ahead of time. All chains performing the changeover go through rigorous testing - if bugs are caught and fixed the hash listed in the proposal may not be the most recent one.
 
-* `spawn_time` listed in the proposal MUST be before the `upgrade_height` listed in the the upgrade proposal on the sovereign chain.
+* `spawn_time` listed in the proposal MUST be before the `upgrade_height` listed in the the upgrade proposal on the standalone chain.
 :::caution
-`spawn_time` must occur before the `upgrade_height` on the sovereign chain is reached becasue the `provider` chain must generate the `ConsumerGenesis` that contains the **validator set** that will be used after the changeover.
+`spawn_time` must occur before the `upgrade_height` on the standalone chain is reached becasue the `provider` chain must generate the `ConsumerGenesis` that contains the **validator set** that will be used after the changeover.
 :::
 
-* `unbonding_period` must correspond to the value used on the sovereign chain. Otherwise, the clients used for the ccv protocol may be incorrectly initialized.
+* `unbonding_period` must correspond to the value used on the standalone chain. Otherwise, the clients used for the ccv protocol may be incorrectly initialized.
 
 * `distribution_transmission_channel` **should be set**.
 
 :::note
-Populating `distribution_transmission_channel` will enable the sovereign chain to re-use one of the existing channels to the provider for consumer chain rewards distribution. This will preserve the `ibc denom` that may already be in use.
+Populating `distribution_transmission_channel` will enable the standalone chain to re-use one of the existing channels to the provider for consumer chain rewards distribution. This will preserve the `ibc denom` that may already be in use.
 
 If the parameter is not set, a new channel will be created.
 :::
@@ -70,9 +72,9 @@ If the parameter is not set, a new channel will be created.
 * `historical_entries` has no important notes
 
 
-### 2. upgrade proposal on sovereign chain
+### 2. upgrade proposal on standalone chain
 
-The sovereign chain creates an upgrade proposal to include the `interchain-security/x/ccv/consumer` module.
+The standalone chain creates an upgrade proposal to include the `interchain-security/x/ccv/consumer` module.
 
 :::caution
 The upgrade height in the proposal should correspond to a height that is after the `spawn_time` in the consumer addition proposal submitted to the `provider` chain.
@@ -82,27 +84,27 @@ Otherwise, the upgrade is indistinguishable from a regular on-chain upgrade prop
 
 ### 3. spawn time is reached
 
-When the `spawn_time` is reached on the `provider` it will generate a `ConsumerGenesis` that contains the validator set that will supercede the `sovereign` validator set.
+When the `spawn_time` is reached on the `provider` it will generate a `ConsumerGenesis` that contains the validator set that will supercede the `standalone` validator set.
 
-This `ConsumerGenesis` must be available on the sovereign chain during the on-chain upgrade.
+This `ConsumerGenesis` must be available on the standalone chain during the on-chain upgrade.
 
-### 4. sovereign chain upgrade
+### 4. standalone chain upgrade
 
-Performing the on-chain upgrade on the sovereign chain will add the `ccv/consumer` module and allow the chain to become a `consumer` of replicated security.
+Performing the on-chain upgrade on the standalone chain will add the `ccv/consumer` module and allow the chain to become a `consumer` of replicated security.
 
 :::caution
-The `ConsumerGenesis` must be exported to a file called `genesis.json` and placed in the following folder on the sovereign chain before the upgade: `<CURRENT_USER_DIR>/.sovereign/config/genesis.json` (`<CURRENT_USER>` is the home directory of the user executing the chain process)
+The `ConsumerGenesis` must be exported to a file called `genesis.json` and placed in the following folder on the standalone chain before the upgade: `<CURRENT_USER_DIR>/.sovereign/config/genesis.json` (`<CURRENT_USER>` is the home directory of the user executing the chain process)
 
 The file must be placed at the exact specified location, otherwise the upgrade will not be executed correctly.
 :::
 
-After the `genesis.json` file has been made available, the process is equivalent to a normal on-chain upgrade. The sovereign validator set will sign the next couple of blocks before transferring control to `provider` validator set.
+After the `genesis.json` file has been made available, the process is equivalent to a normal on-chain upgrade. The standalone validator set will sign the next couple of blocks before transferring control to `provider` validator set.
 
-The sovereign validator set can still be slashed for any infractions if evidence is submitted within the `unboding_period`.
+The standalone validator set can still be slashed for any infractions if evidence is submitted within the `unboding_period`.
 
 #### Notes
 
-The changeover procedure may be updated in the future to create a seamless way of providing the validator set information to the sovereign chain.
+The changeover procedure may be updated in the future to create a seamless way of providing the validator set information to the standalone chain.
 
 ## Onboarding Checklist
 
@@ -148,35 +150,35 @@ Additionally, reach out to the community via the [forum](https://forum.cosmos.ne
 Example of a consumer chain addition proposal.
 
 ```js
-// ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain or add a sovereign chain.
+// ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain or add a standalone chain.
 // If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time.
-// It is recommended that spawn time occurs after the proposal end time and that it is scheduled to happen before the sovereign chain upgrade
+// It is recommended that spawn time occurs after the proposal end time and that it is scheduled to happen before the standalone chain upgrade
 // that sill introduce the ccv module.
 {
     // Title of the proposal
-    "title": "Changeover Sovereign chain",
+    "title": "Changeover Standalone chain",
     // Description of the proposal
     // format the text as a .md file and include the file in your onboarding repository
     "description": ".md description of your chain and all other relevant information",
     // Proposed chain-id of the new consumer chain.
     // Must be unique from all other consumer chain ids of the executing provider chain.
-    "chain_id": "sovereign-1",
+    "chain_id": "standalone-1",
     // Initial height of new consumer chain.
     // For a completely new chain, this will be {0,1}.
     "initial_height" : {
-        // must correspond to current revision number of sovereign chain
-        // e.g. sovereign-1 => "revision_number": 1
+        // must correspond to current revision number of standalone chain
+        // e.g. standalone-1 => "revision_number": 1
         "revision_number": 1,
 
         // must correspond to a height that is at least 1 block after the upgrade
-        // that will add the `consumer` module to the sovereign chain
+        // that will add the `consumer` module to the standalone chain
         // e.g. "upgrade_height": 100 => "revision_height": 101
         "revision_number": 1,
     },
     // Hash of the consumer chain genesis state without the consumer CCV module genesis params.
     // => not relevant for changeover procedure
     "genesis_hash": "d86d756e10118e66e6805e9cc476949da2e750098fcc7634fd0cc77f57a0b2b0",
-    // Hash of the consumer chain binary that should be run by validators on sovereign chain upgrade
+    // Hash of the consumer chain binary that should be run by validators on standalone chain upgrade
     // => not relevant for changeover procedure as it may become stale
     "binary_hash": "376cdbd3a222a3d5c730c9637454cd4dd925e2f9e2e0d0f3702fc922928583f1",
     // Time on the provider chain at which the consumer chain genesis is finalized and all validators
@@ -205,7 +207,7 @@ Example of a consumer chain addition proposal.
 	// sub-protocol. If DistributionTransmissionChannel == "", a new transfer
 	// channel is created on top of the same connection as the CCV channel.
 	// Note that transfer_channel_id is the ID of the channel end on the consumer chain.
-    // it is most relevant for chains performing a sovereign to consumer changeover
+    // it is most relevant for chains performing a standalone to consumer changeover
     // in order to maintan the existing ibc transfer channel
     "distribution_transmission_channel": "channel-123"  // NOTE: use existing transfer channel if available
 }
@@ -224,7 +226,7 @@ This proposal should add the ccv `consumer` module to your chain.
 - [ ] after `spawn_time`, request `ConsumerGenesis` from the `provider` and place it in `<CURRENT_USER_HOME_DIR>/.sovereign/config/genesis.json`
 - [ ] upgrade the binary to the one listed in your `UpgradeProposal`
 
-The chain starts after at least 66.67% of sovereign voting power comes online. The consumer chain is considered interchain secured once the "old" validator set signs a couple of blocks and transfers control to the `provider` validator set.
+The chain starts after at least 66.67% of standalone voting power comes online. The consumer chain is considered interchain secured once the "old" validator set signs a couple of blocks and transfers control to the `provider` validator set.
 
 - [ ] provide a repo with onboarding instructions for validators (it should already be listed in the proposal)
 - [ ] genesis.json after `spawn_time` obtained from `provider` (MUST contain the initial validator set)
