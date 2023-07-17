@@ -12,13 +12,14 @@ import (
 	"sync"
 	"time"
 
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"github.com/tidwall/gjson"
+
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/client"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	"github.com/tidwall/gjson"
 )
 
 type SendTokensAction struct {

@@ -5,8 +5,10 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	tmtypes "github.com/cometbft/cometbft/types"
+
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+
+	tmtypes "github.com/cometbft/cometbft/types"
 
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"

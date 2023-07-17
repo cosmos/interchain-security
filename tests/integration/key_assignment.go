@@ -1,11 +1,13 @@
 package integration
 
 import (
-	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
-	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	"github.com/cosmos/ibc-go/v7/testing/mock"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/ibc-go/v7/testing/mock"
+
+	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"

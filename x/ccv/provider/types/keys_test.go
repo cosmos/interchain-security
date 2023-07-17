@@ -4,10 +4,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	cryptoutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	"github.com/stretchr/testify/require"
 )
 
 // Tests that all singular keys, or prefixes to fully resolves keys are non duplicate byte values.

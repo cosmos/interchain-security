@@ -4,13 +4,16 @@ import (
 	"fmt"
 	"strconv"
 
-	errorsmod "cosmossdk.io/errors"
-	abci "github.com/cometbft/cometbft/abci/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+
+	errorsmod "cosmossdk.io/errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -101,10 +104,10 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 		// Append VSCMatured packet to pending packets.
 		// Sending packets is attempted each EndBlock.
 		// Unsent packets remain in the queue until sent.
-		k.AppendPendingPacket(ctx, ccv.ConsumerPacketData{
-			Type: ccv.VscMaturedPacket,
-			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscPacket},
-		})
+		k.AppendPendingPacket(ctx,
+			ccv.VscMaturedPacket,
+			&ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscPacket},
+		)
 
 		k.DeletePacketMaturityTimes(ctx, maturityTime.VscId, maturityTime.MaturityTime)
 
@@ -144,12 +147,12 @@ func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, vals
 
 	// append the Slash packet data to pending data packets
 	// to be sent once the CCV channel is established
-	k.AppendPendingPacket(ctx, ccv.ConsumerPacketData{
-		Type: ccv.SlashPacket,
-		Data: &ccv.ConsumerPacketData_SlashPacketData{
+	k.AppendPendingPacket(ctx,
+		ccv.SlashPacket,
+		&ccv.ConsumerPacketData_SlashPacketData{
 			SlashPacketData: slashPacket,
 		},
-	})
+	)
 
 	k.Logger(ctx).Info("SlashPacket enqueued",
 		"vscID", slashPacket.ValsetUpdateId,
@@ -183,7 +186,9 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 	}
 
 	pending := k.GetPendingPackets(ctx)
-	for _, p := range pending.GetList() {
+	idxsForDeletion := []uint64{}
+	for _, p := range pending {
+
 		// send packet over IBC
 		err := ccv.SendIBCPacket(
 			ctx,
@@ -199,19 +204,19 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
 				k.Logger(ctx).Info("IBC client is expired, cannot send IBC packet; leaving packet data stored:", "type", p.Type.String())
-				return
+				break
 			}
 			// Not able to send packet over IBC!
 			// Leave the packet data stored for the sent to be retried in the next block.
 			// Note that if VSCMaturedPackets are not sent for long enough, the provider
 			// will remove the consumer anyway.
 			k.Logger(ctx).Error("cannot send IBC packet; leaving packet data stored:", "type", p.Type.String(), "err", err.Error())
-			return
+			break
 		}
+		idxsForDeletion = append(idxsForDeletion, p.Idx)
 	}
-
-	// clear pending data packets
-	k.DeletePendingDataPackets(ctx)
+	// Delete pending packets that were successfully sent and did not return an error from SendIBCPacket
+	k.DeletePendingDataPackets(ctx, idxsForDeletion...)
 }
 
 // OnAcknowledgementPacket executes application logic for acknowledgments of sent VSCMatured and Slash packets

@@ -5,14 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
-
-	tmtypes "github.com/cometbft/cometbft/types"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
+
+	"cosmossdk.io/math"
+
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
+
+	tmtypes "github.com/cometbft/cometbft/types"
 
 	cryptoutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"

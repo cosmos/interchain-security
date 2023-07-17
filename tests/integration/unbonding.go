@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"

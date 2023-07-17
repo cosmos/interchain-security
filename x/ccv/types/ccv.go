@@ -4,8 +4,10 @@ import (
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
-	abci "github.com/cometbft/cometbft/abci/types"
+
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 func NewValidatorSetChangePacketData(valUpdates []abci.ValidatorUpdate, valUpdateID uint64, slashAcks []string) ValidatorSetChangePacketData {
@@ -160,5 +162,19 @@ func (vdt1 SlashPacketDataV1) FromV1() *SlashPacketData {
 		Validator:      vdt1.Validator,
 		ValsetUpdateId: vdt1.ValsetUpdateId,
 		Infraction:     newType,
+	}
+}
+
+// An exported wrapper around the auto generated isConsumerPacketData_Data interface, only for
+// AppendPendingPacket to accept the interface as an argument.
+type ExportedIsConsumerPacketData_Data interface {
+	isConsumerPacketData_Data
+}
+
+func NewConsumerPacketData(cpdType ConsumerPacketDataType, data isConsumerPacketData_Data, idx uint64) ConsumerPacketData {
+	return ConsumerPacketData{
+		Type: cpdType,
+		Data: data,
+		Idx:  idx,
 	}
 }

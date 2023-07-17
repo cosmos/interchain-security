@@ -8,6 +8,7 @@ title: Throttle with retries
 ## Changelog
 
 * 6/9/23: Initial draft
+* 6/22/23: added note on consumer pending packets storage optimization
 
 ## Status
 
@@ -45,6 +46,21 @@ Note to prevent weird edge case behavior, a retry would not be attempted until e
 With the behavior described, we maintain very similar behavior to the current throttling mechanism regarding the timing that slash and vsc matured packets are handled on the provider. Obviously the queueing and blocking logic is moved, and the two chains would have to send more messages between one another (only in the case the throttling mechanism is triggered).
 
 In the normal case, when no or a few slash packets are being sent, the VSCMaturedPackets will not be delayed, and hence unbonding will not be delayed.
+
+### Consumer pending packets storage optimization
+
+In addition to the mentioned consumer changes above. An optimization will need to be made to the consumer's pending packets storage to properly implement the feature from this ADR.
+
+The consumer ccv module previously queued "pending packets" to be sent on each endblocker in [SendPackets](https://github.com/cosmos/interchain-security/blob/3bc4e7135066d848aac60b0787364c07157fd36d/x/ccv/consumer/keeper/relay.go#L178). These packets are queued in state with a protobuf list of `ConsumerPacketData`. For a single append operation, the entire list is deserialized, then a packet is appended to that list, and the list is serialized again. See older version of [AppendPendingPacket](https://github.com/cosmos/interchain-security/blob/05c2dae7c6372b1252b9e97215d07c6aa7618f33/x/ccv/consumer/keeper/keeper.go#L606). That is, a single append operation has O(N) complexity, where N is the size of the list.
+
+This poor append performance isn't a problem when the pending packets list is small. But with this ADR being implemented, the pending packets list could potentially grow to the order of thousands of entries, in the scenario that a slash packet is bouncing.
+
+We can improve the append time for this queue by converting it from a protobuf-esq list, to a queue implemented with sdk-esq code. The idea is to persist an uint64 index that will be incremented each time you queue up a packet. You can think of this as storing the tail of the queue. Then, packet data will be keyed by that index, making the data naturally ordered byte-wise for sdk's iterator. The index will also be stored in the packet data value bytes, so that the index can later be used to delete certain packets from the queue.
+
+Two things are achieved with this approach:
+
+* More efficient packet append/enqueue times
+* The ability to delete select packets from the queue (previously all packets were deleted at once)
 
 ### Provider changes
 
