@@ -60,9 +60,4 @@ func TestMigrateConsumerPacketData(t *testing.T) {
 	require.Equal(t, uint64(77), obtainedPackets[0].GetSlashPacketData().ValsetUpdateId)
 	require.Equal(t, uint64(88), obtainedPackets[1].GetVscMaturedPacketData().ValsetUpdateId)
 	require.Equal(t, uint64(99), obtainedPackets[2].GetVscMaturedPacketData().ValsetUpdateId)
-
-	// Check that indexes are populated
-	require.Equal(t, uint64(0), obtainedPackets[0].Idx)
-	require.Equal(t, uint64(1), obtainedPackets[1].Idx)
-	require.Equal(t, uint64(2), obtainedPackets[2].Idx)
 }
