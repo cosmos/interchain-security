@@ -4,12 +4,13 @@ import (
 	"strings"
 	"testing"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/cosmos/interchain-security/v3/testutil/crypto"
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -99,7 +100,6 @@ func TestMarshalPacketData(t *testing.T) {
 // TestVSCPacketDataWireBytes is a regression test that the JSON schema
 // for ValidatorSetChangePacketData (sent over the wire) does not change.
 func TestVSCPacketDataWireBytes(t *testing.T) {
-
 	cId1 := crypto.NewCryptoIdentityFromIntSeed(4732894)
 	cId2 := crypto.NewCryptoIdentityFromIntSeed(4732895)
 
@@ -152,12 +152,13 @@ func TestVSCPacketDataWireBytes(t *testing.T) {
 // TestSlashPacketDataWireBytes is a regression test that the JSON schema
 // for SlashPacketData (sent over the wire) does not change.
 func TestSlashPacketDataWireBytes(t *testing.T) {
-
 	// Construct consumer packet data wrapping slash packet data
 	cId := crypto.NewCryptoIdentityFromIntSeed(4732894342)
 	slashPacketData := types.NewSlashPacketData(
-		abci.Validator{Address: cId.SDKValConsAddress(),
-			Power: int64(4328)},
+		abci.Validator{
+			Address: cId.SDKValConsAddress(),
+			Power:   int64(4328),
+		},
 		uint64(894732),
 		stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
 	)
@@ -197,7 +198,6 @@ func TestSlashPacketDataWireBytes(t *testing.T) {
 // TestVSCMaturedPacketDataWireBytes is a regression test that the JSON schema
 // for VSCMaturedPacketData (sent over the wire) does not change.
 func TestVSCMaturedPacketDataWireBytes(t *testing.T) {
-
 	// Construct consumer packet data wrapping vsc matured packet data
 	cpd := types.ConsumerPacketData{
 		Type: types.VscMaturedPacket,
