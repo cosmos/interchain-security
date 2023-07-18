@@ -185,7 +185,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 		return
 	}
 
-	pending := k.GetPendingPackets(ctx)
+	pending := k.GetAllPendingPacketsWithIdx(ctx)
 	idxsForDeletion := []uint64{}
 	for _, p := range pending {
 		if !k.PacketSendingPermitted(ctx) {
@@ -226,6 +226,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			// Otherwise the vsc matured will be deleted
 			idxsForDeletion = append(idxsForDeletion, p.Idx)
 		}
+		idxsForDeletion = append(idxsForDeletion, p.Idx)
 	}
 	// Delete pending packets that were successfully sent and did not return an error from SendIBCPacket
 	k.DeletePendingDataPackets(ctx, idxsForDeletion...)

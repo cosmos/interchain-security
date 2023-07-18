@@ -262,16 +262,12 @@ func TestExportGenesis(t *testing.T) {
 				Data: &ccv.ConsumerPacketData_SlashPacketData{
 					SlashPacketData: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Infraction_INFRACTION_DOWNTIME),
 				},
-				Idx: 0,
 			},
 			{
 				Type: ccv.VscMaturedPacket,
 				Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 					VscMaturedPacketData: ccv.NewVSCMaturedPacketData(vscID),
 				},
-				// This idx is a part of the expected genesis state.
-				// If the keeper is correctly storing consumer packet data, indexes should be populated.
-				Idx: 1,
 			},
 		},
 	}

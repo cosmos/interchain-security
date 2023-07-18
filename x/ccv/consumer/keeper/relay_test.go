@@ -492,3 +492,39 @@ func TestSendPacketsDeletion(t *testing.T) {
 	require.Len(t, consumerKeeper.GetPendingPackets(ctx), 1)
 	require.Equal(t, types.SlashPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
 }
+
+// Regression test for https://github.com/cosmos/interchain-security/issues/1145
+func TestSendPacketsDeletion(t *testing.T) {
+	// Keeper setup
+	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
+	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
+
+	// Queue two pending packets
+	consumerKeeper.AppendPendingPacket(ctx, types.SlashPacket, &types.ConsumerPacketData_SlashPacketData{ // Slash appears first
+		SlashPacketData: &types.SlashPacketData{
+			Validator:      abci.Validator{},
+			ValsetUpdateId: 88,
+			Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
+		},
+	})
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
+		VscMaturedPacketData: &types.VSCMaturedPacketData{
+			ValsetUpdateId: 90,
+		},
+	})
+
+	// Get mocks for a successful SendPacket call that does NOT return an error
+	expectations := testkeeper.GetMocksForSendIBCPacket(ctx, mocks, "consumerCCVChannelID", 1)
+	// Append mocks for a failed SendPacket call, which returns an error
+	expectations = append(expectations, mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, types.ConsumerPortID,
+		"consumerCCVChannelID").Return(channeltypes.Channel{}, false).Times(1))
+	gomock.InOrder(expectations...)
+
+	consumerKeeper.SendPackets(ctx)
+
+	// Expect the first successfully sent packet to be popped from queue
+	require.Equal(t, 1, len(consumerKeeper.GetPendingPackets(ctx)))
+	require.Equal(t, types.VscMaturedPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
+}

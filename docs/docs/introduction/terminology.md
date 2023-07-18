@@ -8,7 +8,7 @@ You may have heard of one or multiple buzzwords thrown around in the cosmos and 
 
 ## Shared Security
 
-Shared security is a family of technologies that include optimistic rollups, zk-rollups, sharding and Interchain Security. Ie. any protocol or technology that can allow one blockchain to lend/share it's proof-of-stake security with another blockchain or off-chain process.
+Shared security is a family of technologies that include optimistic rollups, zk-rollups, sharding and Interchain Security. Ie. any protocol or technology that can allow one blockchain to lend/share its proof-of-stake security with another blockchain or off-chain process.
 
 ## Interchain Security
 
