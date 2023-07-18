@@ -465,7 +465,12 @@ func TestSendPacketsDeletion(t *testing.T) {
 	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
 	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
 
-	// Queue two pending packets
+	// Queue two pending packets, vsc matured first
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
+		VscMaturedPacketData: &types.VSCMaturedPacketData{
+			ValsetUpdateId: 90,
+		},
+	})
 	consumerKeeper.AppendPendingPacket(ctx, types.SlashPacket, &types.ConsumerPacketData_SlashPacketData{ // Slash appears first
 		SlashPacketData: &types.SlashPacketData{
 			Validator:      abci.Validator{},
@@ -473,15 +478,10 @@ func TestSendPacketsDeletion(t *testing.T) {
 			Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
 		},
 	})
-	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
-		VscMaturedPacketData: &types.VSCMaturedPacketData{
-			ValsetUpdateId: 90,
-		},
-	})
 
-	// Get mocks for a successful SendPacket call that does NOT return an error
+	// Get mocks for the (first) successful SendPacket call that does NOT return an error
 	expectations := testkeeper.GetMocksForSendIBCPacket(ctx, mocks, "consumerCCVChannelID", 1)
-	// Append mocks for a failed SendPacket call, which returns an error
+	// Append mocks for the (second) failed SendPacket call, which returns an error
 	expectations = append(expectations, mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, types.ConsumerPortID,
 		"consumerCCVChannelID").Return(channeltypes.Channel{}, false).Times(1))
 	gomock.InOrder(expectations...)
@@ -490,5 +490,7 @@ func TestSendPacketsDeletion(t *testing.T) {
 
 	// Expect the first successfully sent packet to be popped from queue
 	require.Equal(t, 1, len(consumerKeeper.GetPendingPackets(ctx)))
-	require.Equal(t, types.VscMaturedPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
+
+	// Expect the slash packet to remain
+	require.Equal(t, types.SlashPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
 }
