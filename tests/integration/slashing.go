@@ -676,12 +676,20 @@ func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 	pendingPackets := consumerKeeper.GetPendingPackets(suite.consumerCtx())
 	suite.Require().Len(pendingPackets, 0)
 
+	// No slash record found (no slash sent)
+	_, found := consumerKeeper.GetSlashRecord(suite.consumerCtx())
+	suite.Require().False(found)
+
 	consumerKeeper.SlashWithInfractionReason(suite.consumerCtx(), []byte{0x01, 0x02, 0x3},
 		66, 4324, sdk.MustNewDecFromStr("0.05"), stakingtypes.Infraction_INFRACTION_DOWNTIME)
 
 	// Check slash packet was queued
 	pendingPackets = consumerKeeper.GetPendingPackets(suite.consumerCtx())
 	suite.Require().Len(pendingPackets, 1)
+
+	// but slash packet is not yet sent
+	_, found = consumerKeeper.GetSlashRecord(suite.consumerCtx())
+	suite.Require().False(found)
 
 	// Pass 5 blocks, confirming the consumer doesn't panic
 	for i := 0; i < 5; i++ {
@@ -699,5 +707,8 @@ func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 	// Pass one more block, and confirm the packet is sent now that ccv channel is established
 	suite.consumerChain.NextBlock()
 	pendingPackets = consumerKeeper.GetPendingPackets(suite.consumerCtx())
-	suite.Require().Len(pendingPackets, 0)
+
+	// Slash record should now be found (slash sent)
+	_, found = consumerKeeper.GetSlashRecord(suite.consumerCtx())
+	suite.Require().True(found)
 }
