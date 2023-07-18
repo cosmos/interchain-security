@@ -8,7 +8,7 @@ slug: /faq
 
 VSR simply means that the same validator set is used to secure both the provider and consumer chains. VSR is ensured through ICS protocol which keeps consumers up to date with the validator set of the provider.
 
-## What even is a consumer chain?
+## What is a consumer chain?
 
 Consumer chain is blockchain operated by the same validator operators as the provider chain. The ICS protocol ensures the validator set replication properties (informs consumer chain about the current state of the validator set on the provider)
 

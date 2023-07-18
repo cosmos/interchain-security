@@ -221,7 +221,7 @@ This proposal should add the ccv `consumer` module to your chain.
 - [ ] advise validators about the exact procedure for your chain and point them to your onboarding repository
 
 
-## 5. Upgrade time 🚀
+## 4. Upgrade time 🚀
 
 - [ ] after `spawn_time`, request `ConsumerGenesis` from the `provider` and place it in `<CURRENT_USER_HOME_DIR>/.sovereign/config/genesis.json`
 - [ ] upgrade the binary to the one listed in your `UpgradeProposal`

@@ -1,11 +1,6 @@
 ---
 sidebar_position: 6
 ---
-
-https://app.excalidraw.com/l/9UFOCMAZLAI/5EVLj0WJcwt
-
-https://github.com/Stride-Labs/mainnet/tree/main/ics-instructions
-
 # Joining Stride
 
 Stride is the first consumer chain to perform the standalone to consumer changeover procedure and transition from a standalone validator set to using `cosmoshub-4` validator set.
@@ -20,5 +15,6 @@ Stride is the first consumer chain to perform the standalone to consumer changeo
 Stride re-uses an existing `transfer` channel to send consumer rewards to the provider chain, in order to preserve existing transfer IBC denom between `stride-1` and `cosmoshub-4`.
 
 ## Resources
-* [docs](https://docs.stride.zone/docs)
-* [changeover procedure timeline](https://app.excalidraw.com/l/9UFOCMAZLAI/5EVLj0WJcwt)
+* [Stride docs](https://docs.stride.zone/docs)
+* [Changeover procedure timeline](https://app.excalidraw.com/l/9UFOCMAZLAI/5EVLj0WJcwt)
+* [Changeover upgrade docs](https://github.com/Stride-Labs/mainnet/tree/main/ics-instructions)
