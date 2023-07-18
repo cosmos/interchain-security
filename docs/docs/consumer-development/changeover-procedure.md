@@ -93,9 +93,12 @@ This `ConsumerGenesis` must be available on the standalone chain during the on-c
 Performing the on-chain upgrade on the standalone chain will add the `ccv/consumer` module and allow the chain to become a `consumer` of replicated security.
 
 :::caution
-The `ConsumerGenesis` must be exported to a file called `genesis.json` and placed in the following folder on the standalone chain before the upgade: `<CURRENT_USER_DIR>/.sovereign/config/genesis.json` (`<CURRENT_USER>` is the home directory of the user executing the chain process)
+The `ConsumerGenesis` must be exported to a file and placed in the correct folder on the standalone chain before the upgade.
 
 The file must be placed at the exact specified location, otherwise the upgrade will not be executed correctly.
+
+Usually the file is placed in `$NODE_HOME/config`, but the file name and the exact directory is dictated by the upgrade code on the `standalone` chain.
+* please check exact instructions provided by the `standalone` chain team
 :::
 
 After the `genesis.json` file has been made available, the process is equivalent to a normal on-chain upgrade. The standalone validator set will sign the next couple of blocks before transferring control to `provider` validator set.
