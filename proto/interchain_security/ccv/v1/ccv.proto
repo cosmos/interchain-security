@@ -64,7 +64,6 @@ message ConsumerPacketData {
     SlashPacketData slashPacketData = 2;
     VSCMaturedPacketData vscMaturedPacketData = 3;
   }
-  uint64 idx = 4;
 }
 
 

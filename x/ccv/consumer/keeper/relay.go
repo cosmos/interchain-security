@@ -185,7 +185,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 		return
 	}
 
-	pending := k.GetPendingPackets(ctx)
+	pending := k.GetAllPendingPacketsWithIdx(ctx)
 	idxsForDeletion := []uint64{}
 	for _, p := range pending {
 
