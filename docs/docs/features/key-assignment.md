@@ -49,7 +49,7 @@ gaiad tx provider assign-consensus-key <consumer-chain-id> '<pubkey>' --from <tx
 - `consumer-chain-id` is the string identifier of the consumer chain, as assigned on the provider chain
 - `consumer-pub-key` has the following format `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"<key>"}`
 
-Check that the key was assigned correcly by querying the provider:
+Check that the key was assigned correctly by querying the provider:
 
 ```bash
 gaiad query provider validator-consumer-key <consumer-chain-id> cosmosvalcons1e....3xsj3ayzf4uv6
