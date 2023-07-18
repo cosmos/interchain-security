@@ -234,13 +234,21 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	// Set an established provider channel for later in test
 	consumerKeeper.SetProviderChannel(ctx, channelIDToProvider)
 
-	packetData := types.NewSlashPacketData(
+	slashPacketData := types.NewSlashPacketData(
 		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Infraction_INFRACTION_DOWNTIME,
+	)
+
+	// The type that'd be JSON marshaled and sent over the wire
+	consumerPacketData := types.NewConsumerPacketData(
+		types.SlashPacket,
+		&types.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: slashPacketData,
+		},
 	)
 
 	// AcknowledgePacket is in reference to a packet originally sent from this (consumer) module.
 	packet := channeltypes.NewPacket(
-		packetData.GetBytes(),
+		consumerPacketData.GetBytes(),
 		1,
 		types.ConsumerPortID, // Source port
 		channelIDToDestChain, // Source channel
