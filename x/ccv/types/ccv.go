@@ -29,6 +29,8 @@ func (vsc ValidatorSetChangePacketData) ValidateBasic() error {
 	return nil
 }
 
+// GetBytes marshals the ValidatorSetChangePacketData into JSON string bytes
+// to be sent over the wire with IBC.
 func (vsc ValidatorSetChangePacketData) GetBytes() []byte {
 	valUpdateBytes := ModuleCdc.MustMarshalJSON(&vsc)
 	return valUpdateBytes
@@ -46,11 +48,6 @@ func (mat VSCMaturedPacketData) ValidateBasic() error {
 		return errorsmod.Wrap(ErrInvalidPacketData, "vscId cannot be equal to zero")
 	}
 	return nil
-}
-
-func (mat VSCMaturedPacketData) GetBytes() []byte {
-	bytes := ModuleCdc.MustMarshalJSON(&mat)
-	return bytes
 }
 
 func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, infractionType stakingtypes.Infraction) *SlashPacketData {
@@ -88,11 +85,6 @@ func (vdt SlashPacketData) ValidateBasic() error {
 	}
 
 	return nil
-}
-
-func (vdt SlashPacketData) GetBytes() []byte {
-	valDowntimeBytes := ModuleCdc.MustMarshalJSON(&vdt)
-	return valDowntimeBytes
 }
 
 func (vdt SlashPacketData) ToV1() *SlashPacketDataV1 {
