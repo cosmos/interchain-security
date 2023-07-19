@@ -3,21 +3,21 @@ package integration
 import (
 	"testing"
 
-	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	"github.com/cosmos/ibc-go/v7/testing/mock"
-	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
-
-	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
-
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
-
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/cosmos/ibc-go/v7/testing/mock"
 	"github.com/stretchr/testify/suite"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
+
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // Callback for instantiating a new coordinator with a provider test chains

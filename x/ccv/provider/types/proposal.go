@@ -6,10 +6,12 @@ import (
 	"strings"
 	time "time"
 
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+
 	errorsmod "cosmossdk.io/errors"
+
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )

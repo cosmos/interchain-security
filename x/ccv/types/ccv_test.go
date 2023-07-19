@@ -3,11 +3,14 @@ package types_test
 import (
 	"testing"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/stretchr/testify/require"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
-	"github.com/stretchr/testify/require"
 )
 
 func TestPacketDataValidateBasic(t *testing.T) {

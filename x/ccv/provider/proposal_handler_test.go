@@ -4,14 +4,13 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
@@ -81,7 +80,8 @@ func TestProviderProposalHandler(t *testing.T) {
 		{
 			name: "unsupported proposal type",
 			// lint rule disabled because this is a test case for an unsupported proposal type
-			content: &distributiontypes.CommunityPoolSpendProposal{ // nolint:staticcheck
+			// nolint:staticcheck
+			content: &distributiontypes.CommunityPoolSpendProposal{
 				Title:       "title",
 				Description: "desc",
 				Recipient:   "",

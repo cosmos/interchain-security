@@ -3,10 +3,11 @@ package app_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer-democracy"
 	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
-	"github.com/stretchr/testify/require"
 )
 
 func TestDemocracyGovernanceWhitelistingKeys(t *testing.T) {

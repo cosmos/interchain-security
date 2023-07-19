@@ -7,6 +7,7 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 

@@ -1,3 +1,7 @@
+---
+sidebar_position: 3
+---
+
 # Withdrawing consumer chain validator rewards
 
 Here are example steps for withdrawing rewards from consumer chains in the provider chain
