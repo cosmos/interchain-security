@@ -247,6 +247,7 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	s.SetupCCVChannel(s.path)
 	s.SetupTransferChannel()
 
+	// Mock a proper slash packet from consumer
 	spd := keepertestutil.GetNewSlashPacketData()
 	cpd := ccv.NewConsumerPacketData(ccv.SlashPacket,
 		&ccv.ConsumerPacketData_SlashPacketData{
@@ -502,9 +503,15 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 	// clear queue, commit packets
 	suite.consumerApp.GetConsumerKeeper().SendPackets(ctx)
 
-	// check queue was cleared
+	// Check slash record is created
+	slashRecord, found := suite.consumerApp.GetConsumerKeeper().GetSlashRecord(suite.consumerCtx())
+	suite.Require().True(found, "slash record not found")
+	suite.Require().True(slashRecord.WaitingOnReply)
+	suite.Require().Equal(slashRecord.SendTime, suite.consumerCtx().BlockTime())
+
+	// check queue is not cleared, since no ack has been received from provider
 	pendingPackets = suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)
-	suite.Require().Empty(pendingPackets, "pending packets NOT empty")
+	suite.Require().Len(pendingPackets, 1, "pending packets len should be 1 is %d", len(pendingPackets))
 
 	// verify that the slash packet was sent
 	gotCommit := consumerIBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq)
@@ -589,9 +596,15 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	// clear queue, commit packets
 	suite.consumerApp.GetConsumerKeeper().SendPackets(ctx)
 
-	// check queue was cleared
+	// Check slash record is created
+	slashRecord, found := suite.consumerApp.GetConsumerKeeper().GetSlashRecord(suite.consumerCtx())
+	suite.Require().True(found, "slash record not found")
+	suite.Require().True(slashRecord.WaitingOnReply)
+	suite.Require().Equal(slashRecord.SendTime, suite.consumerCtx().BlockTime())
+
+	// check queue is not cleared, since no ack has been received from provider
 	pendingPackets = suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)
-	suite.Require().Empty(pendingPackets, "pending packets NOT empty")
+	suite.Require().Len(pendingPackets, 1, "pending packets len should be 1 is %d", len(pendingPackets))
 
 	// check slash packet is sent
 	gotCommit := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq)
