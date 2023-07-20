@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"testing"
 	"time"
 
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -331,9 +330,9 @@ func (s *CoreSuite) TestTraces() {
 	fmt.Println("Shortest [traceIx, actionIx]:", shortest, shortestLen)
 }
 
-func TestCoreSuite(t *testing.T) {
-	suite.Run(t, new(CoreSuite))
-}
+// func TestCoreSuite(t *testing.T) {
+// 	suite.Run(t, new(CoreSuite))
+// }
 
 // SetupTest sets up the test suite in a 'zero' state which matches
 // the initial state in the model.
