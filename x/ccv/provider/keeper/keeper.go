@@ -722,8 +722,6 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId ui
 }
 
 // SetSlashAcks sets the slash acks under the given chain ID
-//
-// See https://github.com/cosmos/interchain-security/issues/728
 func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -740,8 +738,6 @@ func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 }
 
 // GetSlashAcks returns the slash acks stored under the given chain ID
-//
-// See https://github.com/cosmos/interchain-security/issues/728
 func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SlashAcksKey(chainID))
