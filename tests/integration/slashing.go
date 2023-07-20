@@ -706,7 +706,6 @@ func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 
 	// Pass one more block, and confirm the packet is sent now that ccv channel is established
 	suite.consumerChain.NextBlock()
-	pendingPackets = consumerKeeper.GetPendingPackets(suite.consumerCtx())
 
 	// Slash record should now be found (slash sent)
 	_, found = consumerKeeper.GetSlashRecord(suite.consumerCtx())
