@@ -247,12 +247,22 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	s.SetupCCVChannel(s.path)
 	s.SetupTransferChannel()
 
-	packet := channeltypes.NewPacket([]byte{}, 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
+	spd := keepertestutil.GetNewSlashPacketData()
+	cpd := ccv.NewConsumerPacketData(ccv.SlashPacket,
+		&ccv.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: &spd,
+		},
+	)
+	packet := channeltypes.NewPacket(cpd.GetBytes(), // Consumer always sends v1 packet data
+		1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
 		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, 0)
 
-	ack := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet,
-		keepertestutil.GetNewSlashPacketData())
+	// Map infraction height on provider so validation passes and provider returns valid ack result
+	providerKeeper.SetValsetUpdateBlockHeight(s.providerCtx(), spd.ValsetUpdateId, 47923)
+
+	ack := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, spd)
 	s.Require().NotNil(ack)
+	s.Require().True(ack.Success())
 
 	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))
 	s.Require().NoError(err)
@@ -644,10 +654,12 @@ func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 	// establish ccv channel by sending an empty VSC packet to consumer endpoint
 	suite.SendEmptyVSCPacket()
 
-	// check that each pending data packet is sent once
+	// check that each pending data packet is sent once, as long as the prev slash packet was relayed/acked.
+	// Note that consumer throttling blocks packet sending until a slash packet is successfully acked by the provider.
 	for i := 0; i < 12; i++ {
 		commit := consumerIBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq+uint64(i))
 		suite.Require().NotNil(commit)
+		relayAllCommittedPackets(suite, suite.consumerChain, suite.path, ccv.ConsumerPortID, channelID, 1)
 	}
 
 	// check that outstanding downtime flags
@@ -658,6 +670,7 @@ func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 	}
 
 	// send all pending packets - only slash packets should be queued in this test
+	// TODO: the following call can be removed
 	consumerKeeper.SendPackets(ctx)
 
 	// check that pending data packets got cleared
