@@ -9,8 +9,6 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
-// TODO: e2e tests
-
 //
 // Throttling with retries follows a FSM design:
 //
@@ -54,8 +52,7 @@ func (k Keeper) PacketSendingPermitted(ctx sdktypes.Context) bool {
 		// We are waiting on a reply from provider, block sending
 		return false
 	}
-	// TODO: implement retry delay period as param
-	// retryDelayPeriod := k.GetParams(ctx).RetryDelayPeriod
+	// Retry delay period could be implemented as a param, but 1 hour is reasonable
 	retryDelayPeriod := time.Hour
 	timeSinceSend := ctx.BlockTime().Sub(record.SendTime)
 	// If retry delay period has elapsed, we can send again
