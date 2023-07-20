@@ -723,7 +723,6 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId ui
 
 // SetSlashAcks sets the slash acks under the given chain ID
 //
-// TODO: SlashAcks should be persisted as a list of ConsumerConsAddr types, not strings.
 // See https://github.com/cosmos/interchain-security/issues/728
 func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 	store := ctx.KVStore(k.storeKey)
@@ -742,7 +741,6 @@ func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 
 // GetSlashAcks returns the slash acks stored under the given chain ID
 //
-// TODO: SlashAcks should be persisted as a list of ConsumerConsAddr types, not strings.
 // See https://github.com/cosmos/interchain-security/issues/728
 func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	store := ctx.KVStore(k.storeKey)
@@ -779,7 +777,7 @@ func (k Keeper) DeleteSlashAcks(ctx sdk.Context, chainID string) {
 
 // AppendSlashAck appends the given slash ack to the given chain ID slash acks in store
 func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID,
-	ack string, // TODO: consumer cons addr should be accepted here, see https://github.com/cosmos/interchain-security/issues/728
+	ack string,
 ) {
 	acks := k.GetSlashAcks(ctx, chainID)
 	acks = append(acks, ack)
