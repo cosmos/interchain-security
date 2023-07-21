@@ -109,7 +109,7 @@ func NewSubmitConsumerMisbehaviourCmd() *cobra.Command {
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Submit a IBC misbehaviour detected on a consumer chain.
 A IBC misbehaviour contains two conflicting IBC client headers, which are used to form a light client attack evidence.
-The misbehaviour type definition can be found in the IBC client messages, see ibc-go/proto/ibc/core/client/v1/tx.proto`.
+The misbehaviour type definition can be found in the IBC client messages, see ibc-go/proto/ibc/core/client/v1/tx.proto.
 
 Examples:
 %s tx provider submit-consumer-misbehaviour [path/to/misbehaviour.json] --from node0 --home ../node0 --chain-id $CID

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
@@ -16,7 +17,7 @@ import (
 // CheckConsumerMisbehaviour check that the given IBC misbehaviour headers forms a valid light client attack evidence.
 // proceed to the jailing and tombstoning of the bzyantine validators.
 func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
-	logger := ctx.Logger()
+	logger := k.Logger(ctx)
 
 	if err := k.clientKeeper.CheckMisbehaviourAndUpdateState(ctx, &misbehaviour); err != nil {
 		return err
@@ -111,18 +112,23 @@ func (k Keeper) ConstructLightClientEvidence(ctx sdk.Context, misbehaviour ibctm
 // GetCommonFromMisbehaviour checks whether the given ibc misbehaviour's headers share common trusted height
 // and that a consensus state exists for this height. In this case, it returns the associated trusted height, timestamp and valset.
 func (k Keeper) GetTrustedInfoFromMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) (int64, time.Time, *tmtypes.ValidatorSet, error) {
-	// a common trusted height is required
+	// a common trusted validator set and height is required
 	commonHeight := misbehaviour.Header1.TrustedHeight
 	if !commonHeight.EQ(misbehaviour.Header2.TrustedHeight) {
 		return 0, time.Time{}, nil, fmt.Errorf("misbehaviour headers have different trusted height: %v , %v", commonHeight, misbehaviour.Header2.TrustedHeight)
 	}
 
-	cs, ok := k.clientKeeper.GetClientConsensusState(ctx, misbehaviour.GetClientID(), misbehaviour.Header1.TrustedHeight)
+	commonValset := misbehaviour.Header1.TrustedValidators
+	if !reflect.DeepEqual(commonValset.Validators, misbehaviour.Header2.TrustedValidators.Validators) {
+		return 0, time.Time{}, nil, fmt.Errorf("misbehaviour headers have different trusted validator set: %v , %v", commonHeight, misbehaviour.Header2.TrustedHeight)
+	}
+
+	cs, ok := k.clientKeeper.GetClientConsensusState(ctx, misbehaviour.GetClientID(), commonHeight)
 	if !ok {
 		return 0, time.Time{}, nil, fmt.Errorf("cannot find consensus state at trusted height %d for client %s", commonHeight, misbehaviour.GetClientID())
 	}
 
-	vs, err := tmtypes.ValidatorSetFromProto(misbehaviour.Header1.ValidatorSet)
+	vs, err := tmtypes.ValidatorSetFromProto(commonValset)
 	if err != nil {
 		return 0, time.Time{}, nil, err
 	}
