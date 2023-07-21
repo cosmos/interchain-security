@@ -765,12 +765,9 @@ func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []types.
 		return
 	}
 
-	for _, address := range addresses {
-		consAddr, err := sdk.ConsAddressFromBech32(address)
-		if err != nil {
-			// todo
-		}
-		acks = append(acks, types.NewConsumerConsAddress(consAddr))
+	acks, err := StrToConsumerConsAddress(addresses)
+	if err != nil {
+		// todo
 	}
 
 	store := ctx.KVStore(k.storeKey)
@@ -790,8 +787,12 @@ func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID string,
 	ack types.ConsumerConsAddress,
 ) {
 	acks := k.GetSlashAcks(ctx, chainID)
-
-	k.SetSlashAcks(ctx, chainID, acks)
+	consAddresses, err := StrToConsumerConsAddress(acks)
+	if err != nil {
+		// todo
+	}
+	consAddresses = append(consAddresses, ack)
+	k.SetSlashAcks(ctx, chainID, consAddresses)
 }
 
 // SetInitChainHeight sets the provider block height when the given consumer chain was initiated
@@ -1073,4 +1074,18 @@ func (k Keeper) GetSlashLog(
 
 func (k Keeper) BondDenom(ctx sdk.Context) string {
 	return k.stakingKeeper.BondDenom(ctx)
+}
+
+// helper func
+func StrToConsumerConsAddress(addresses []string) ([]types.ConsumerConsAddress, error) {
+	consAddresses := []types.ConsumerConsAddress{}
+	for _, address := range addresses {
+		// reverse of ConsumerConsAddress.String()
+		consAddr, err := sdk.ConsAddressFromBech32(address)
+		if err != nil {
+			return []types.ConsumerConsAddress{}, err
+		}
+		consAddresses = append(consAddresses, types.NewConsumerConsAddress(consAddr))
+	}
+	return consAddresses, nil
 }
