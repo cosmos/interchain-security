@@ -722,7 +722,7 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId ui
 }
 
 // SetSlashAcks sets the slash acks under the given chain ID
-func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
+func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []types.ConsumerConsAddress) {
 	store := ctx.KVStore(k.storeKey)
 
 	sa := types.SlashAcks{
