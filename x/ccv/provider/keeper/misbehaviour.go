@@ -34,7 +34,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour exporte
 	// w.r.t to the last trusted consensus it entails that the infraction age
 	// isn't too old. see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 
-	// construct a ligth client attack evidence
+	// construct a light client attack evidence
 	evidence, err := k.ConstructLightClientEvidence(ctx, *tmMisbehaviour)
 	if err != nil {
 		return err
@@ -92,15 +92,19 @@ func (k Keeper) CheckMisbehaviourAndUpdateState(ctx sdk.Context, misbehaviour ex
 
 	clientStore := k.clientKeeper.ClientStore(ctx, misbehaviour.GetClientID())
 
-	// note that if this check succeed the returned client state status is updated to "Frozen"
-	updatedClientState, err := clientState.CheckMisbehaviourAndUpdateState(ctx, k.cdc, clientStore, misbehaviour)
+	// check the IBC misbehaviour
+	_, err := clientState.CheckMisbehaviourAndUpdateState(ctx, k.cdc, clientStore, misbehaviour)
 	if err != nil {
 		return err
 	}
 
-	// update the client state if the status transitioned from "Active" to "Frozen"
-	if status := clientState.Status(ctx, clientStore, k.cdc); status == exported.Active {
-		k.clientKeeper.SetClientState(ctx, misbehaviour.GetClientID(), updatedClientState)
+	// Check that the client's status isn't Expired
+	consState, err := ibctmtypes.GetConsensusState(clientStore, k.cdc, clientState.GetLatestHeight())
+	if err != nil {
+		return err
+	}
+
+	if !clientState.(*ibctmtypes.ClientState).IsExpired(consState.Timestamp, ctx.BlockTime()) {
 		k.Logger(ctx).Info("client frozen due to a consumer chain misbehaviour", "client-id", misbehaviour.GetClientID())
 	}
 
