@@ -742,7 +742,7 @@ func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []types.Consu
 }
 
 // GetSlashAcks returns the slash acks stored under the given chain ID
-func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []types.ConsumerConsAddress {
+func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SlashAcksKey(chainID))
 	if bz == nil {
@@ -755,26 +755,26 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []types.ConsumerCo
 		panic(fmt.Errorf("failed to unmarshal SlashAcks: %w", err))
 	}
 
-	slashAcks := make([]types.ConsumerConsAddress, len(acks.Addresses))
-	for _, ack := range acks.Addresses {
-		// the reverse of ConsumerConsAddress.String()
-		consAddr, err := sdk.ConsAddressFromBech32(ack)
-		if err != nil {
-			// todo
-		}
-		slashAcks = append(slashAcks, types.NewConsumerConsAddress(consAddr))
-	}
-
-	return slashAcks
+	return acks.GetAddresses()
 }
 
 // ConsumeSlashAcks empties and returns the slash acks for a given chain ID
 func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []types.ConsumerConsAddress) {
-	acks = k.GetSlashAcks(ctx, chainID)
-	if len(acks) < 1 {
+	addresses := k.GetSlashAcks(ctx, chainID)
+	if len(addresses) < 1 {
 		return
 	}
+
+	for _, address := range addresses {
+		consAddr, err := sdk.ConsAddressFromBech32(address)
+		if err != nil {
+			// todo
+		}
+		acks = append(acks, types.NewConsumerConsAddress(consAddr))
+	}
+
 	store := ctx.KVStore(k.storeKey)
+
 	store.Delete(types.SlashAcksKey(chainID))
 	return
 }
