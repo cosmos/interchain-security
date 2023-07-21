@@ -765,7 +765,7 @@ func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []types.
 		return
 	}
 
-	acks, err := StrToConsumerConsAddress(addresses)
+	acks, err := StrToConsumerConsAddresses(addresses)
 	if err != nil {
 		// todo
 	}
@@ -787,7 +787,7 @@ func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID string,
 	ack types.ConsumerConsAddress,
 ) {
 	acks := k.GetSlashAcks(ctx, chainID)
-	consAddresses, err := StrToConsumerConsAddress(acks)
+	consAddresses, err := StrToConsumerConsAddresses(acks)
 	if err != nil {
 		// todo
 	}
@@ -1077,7 +1077,7 @@ func (k Keeper) BondDenom(ctx sdk.Context) string {
 }
 
 // helper func
-func StrToConsumerConsAddress(addresses []string) ([]types.ConsumerConsAddress, error) {
+func StrToConsumerConsAddresses(addresses []string) ([]types.ConsumerConsAddress, error) {
 	consAddresses := []types.ConsumerConsAddress{}
 	for _, address := range addresses {
 		// reverse of ConsumerConsAddress.String()
