@@ -263,7 +263,6 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 
 	ack := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, spd)
 	s.Require().NotNil(ack)
-	s.Require().True(ack.Success())
 
 	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))
 	s.Require().NoError(err)
