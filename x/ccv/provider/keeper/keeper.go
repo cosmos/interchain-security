@@ -724,9 +724,13 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId ui
 // SetSlashAcks sets the slash acks under the given chain ID
 func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []types.ConsumerConsAddress) {
 	store := ctx.KVStore(k.storeKey)
+	addresses := make([]string, len(acks))
+	for _, ack := range acks {
+		addresses = append(addresses, ack.String())
+	}
 
 	sa := types.SlashAcks{
-		Addresses: acks,
+		Addresses: addresses,
 	}
 	bz, err := sa.Marshal()
 	if err != nil {
@@ -738,7 +742,7 @@ func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []types.Consu
 }
 
 // GetSlashAcks returns the slash acks stored under the given chain ID
-func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
+func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []types.ConsumerConsAddress {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SlashAcksKey(chainID))
 	if bz == nil {
@@ -751,11 +755,21 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 		panic(fmt.Errorf("failed to unmarshal SlashAcks: %w", err))
 	}
 
-	return acks.GetAddresses()
+	slashAcks := make([]types.ConsumerConsAddress, len(acks.Addresses))
+	for _, ack := range acks.Addresses {
+		// the reverse of ConsumerConsAddress.String()
+		consAddr, err := sdk.ConsAddressFromBech32(ack)
+		if err != nil {
+			// todo
+		}
+		slashAcks = append(slashAcks, types.NewConsumerConsAddress(consAddr))
+	}
+
+	return slashAcks
 }
 
 // ConsumeSlashAcks empties and returns the slash acks for a given chain ID
-func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []string) {
+func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []types.ConsumerConsAddress) {
 	acks = k.GetSlashAcks(ctx, chainID)
 	if len(acks) < 1 {
 		return
@@ -772,11 +786,11 @@ func (k Keeper) DeleteSlashAcks(ctx sdk.Context, chainID string) {
 }
 
 // AppendSlashAck appends the given slash ack to the given chain ID slash acks in store
-func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID,
-	ack types.ConsumerConsAddress, 
+func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID string,
+	ack types.ConsumerConsAddress,
 ) {
 	acks := k.GetSlashAcks(ctx, chainID)
-	acks = append(acks, ack)
+
 	k.SetSlashAcks(ctx, chainID, acks)
 }
 
