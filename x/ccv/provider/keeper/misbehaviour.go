@@ -22,7 +22,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour exporte
 	logger := ctx.Logger()
 
 	// Check that the validity of the misbehaviour
-	if err := k.clientKeeper.CheckMisbehaviourAndUpdateState(ctx, misbehaviour); err != nil {
+	if err := k.CheckMisbehaviourAndUpdateState(ctx, misbehaviour); err != nil {
 		logger.Info("Misbehaviour rejected", err.Error())
 		return err
 	}
