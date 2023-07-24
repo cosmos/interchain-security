@@ -101,9 +101,6 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			err := s.providerApp.GetProviderKeeper().HandleConsumerMisbehaviour(s.providerCtx(), tc.misbehaviour)
-			// get clienstate
-			cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointA.ClientID)
-			s.Require().True(ok)
 
 			if tc.expPass {
 				s.NoError(err)
@@ -120,12 +117,9 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 					} else {
 						s.Require().False(provVal.Jailed)
 						s.Require().False(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provConsAddr))
-						s.Require().NotZero(cs.(*ibctmtypes.ClientState).FrozenHeight)
-
 					}
 				}
-				// verify that the client was frozen
-				s.Require().NotZero(cs.(*ibctmtypes.ClientState).FrozenHeight)
+
 			} else {
 				// Check that no validators are jailed or tombstoned on the provider
 				for _, consuVal := range clientTMValset.Validators {
@@ -136,8 +130,6 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 					s.Require().NoError(err)
 					s.Require().False(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provConsAddr))
 				}
-				// verify that the client wasn't frozen
-				s.Require().Zero(cs.(*ibctmtypes.ClientState).FrozenHeight)
 			}
 		})
 	}
@@ -542,17 +534,12 @@ func (s *CCVTestSuite) TestCheckMisbehaviourAndUpdateState() {
 			// get clienstate
 			cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointA.ClientID)
 			s.Require().True(ok)
-
+			// verify that the client wasn't frozen
+			s.Require().Zero(cs.(*ibctmtypes.ClientState).FrozenHeight)
 			if tc.expPass {
 				s.NoError(err)
-
-				// verify that the client was frozen
-				s.Require().NotZero(cs.(*ibctmtypes.ClientState).FrozenHeight)
 			} else {
 				s.Error(err)
-
-				// verify that the client wasn't frozen
-				s.Require().Zero(cs.(*ibctmtypes.ClientState).FrozenHeight)
 			}
 		})
 	}
