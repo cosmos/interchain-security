@@ -198,7 +198,6 @@ do
         #'s/foo/bar/;s/abc/def/'
         sed -i "$TENDERMINT_CONFIG_TRANSFORM" $CHAIN_ID/validator$VAL_ID/config/config.toml
     fi
-
 done
 
 
@@ -258,13 +257,9 @@ do
         fi
     done
 
+    # Remove leading comma and concat to flag
+    PERSISTENT_PEERS="--p2p.persistent_peers ${PERSISTENT_PEERS:1}"
     
-    if [ "$PERSISTENT_PEERS" != "" ]; then
-        # Remove leading comma and concat to flag
-        PERSISTENT_PEERS="--p2p.persistent_peers ${PERSISTENT_PEERS:1}"
-    fi
-   
-
     ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
     if [[ "$USE_COMETMOCK" == "true" ]]; then
         # to start with CometMock, ensure ABCI server  uses grpc (--transport=grpc) and the app is started without in-process CometBFT (--with-tendermint=false)
