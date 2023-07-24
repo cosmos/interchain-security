@@ -813,6 +813,7 @@ func (tr TestRun) addChainToHermes(
 		keyName,
 		rpcAddr,
 		wsAddr,
+		// action.consumer,
 	)
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, "/root/.hermes/config.toml")
@@ -826,7 +827,6 @@ func (tr TestRun) addChainToHermes(
 	}
 
 	// Save mnemonic to file within container
-
 	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, tr.validatorConfigs[action.validator].mnemonic, "/root/.hermes/mnemonic.txt")
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
