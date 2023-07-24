@@ -105,7 +105,7 @@ func (k Keeper) CheckMisbehaviourAndUpdateState(ctx sdk.Context, misbehaviour ex
 	}
 
 	if !clientState.(*ibctmtypes.ClientState).IsExpired(consState.Timestamp, ctx.BlockTime()) {
-		k.Logger(ctx).Info("client frozen due to a consumer chain misbehaviour", "client-id", misbehaviour.GetClientID())
+		k.Logger(ctx).Info("client is expired", "client-id", misbehaviour.GetClientID())
 	}
 
 	return nil
