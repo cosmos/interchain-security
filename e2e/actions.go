@@ -447,14 +447,12 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 		EquivocationProposal: types.EquivocationProposal{
 			Title:       "Validator equivocation!",
 			Description: fmt.Sprintf("Validator: %s has committed an equivocation infraction on chainID: %s", action.validator, action.chain),
-			Equivocations: []*evidencetypes.Equivocation{
-				{
-					Height:           action.height,
-					Time:             action.time,
-					Power:            action.power,
-					ConsensusAddress: val.valconsAddress,
-				},
-			},
+			Equivocations: []*evidencetypes.Equivocation{&evidencetypes.Equivocation{
+				Height:           action.height,
+				Time:             action.time,
+				Power:            action.power,
+				ConsensusAddress: val.valconsAddress,
+			}},
 		},
 		Deposit: fmt.Sprint(action.deposit) + `stake`,
 	}
