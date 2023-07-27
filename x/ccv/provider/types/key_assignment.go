@@ -8,6 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -103,4 +104,23 @@ func KeyAssignmentValidateBasic(
 		}
 	}
 	return nil
+}
+
+func StrsToConsumerConsAddresses(addresses []string) ([]ConsumerConsAddress, error) {
+	consAddresses := []ConsumerConsAddress{}
+	for _, address := range addresses {
+		// reverse of ConsumerConsAddress.String()
+		consAddr, err := sdk.ConsAddressFromBech32(address)
+		if err != nil {
+			return []ConsumerConsAddress{}, err
+		}
+		consAddresses = append(consAddresses, NewConsumerConsAddress(consAddr))
+	}
+	return consAddresses, nil
+}
+
+func NewRandConsumerConsAddress() ConsumerConsAddress {
+	addr := secp256k1.GenPrivKey().PubKey().Address()
+	cons := sdk.ConsAddress(addr)
+	return NewConsumerConsAddress(cons)
 }

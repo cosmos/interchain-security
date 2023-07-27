@@ -63,6 +63,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	exportedVscSendTimeStampsAll = append(exportedVscSendTimeStampsAll, exportedVscSendTimeStampsC0)
 	exportedVscSendTimeStampsAll = append(exportedVscSendTimeStampsAll, exportedVscSendTimeStampsC1)
 
+	consAddr := providertypes.NewRandConsumerConsAddress()
 	// create genesis struct
 	provGenesis := providertypes.NewGenesisState(vscID,
 		[]providertypes.ValsetUpdateIdToHeight{{ValsetUpdateId: vscID, Height: initHeight}},
@@ -77,7 +78,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 					{VscId: vscID, UnbondingOpIds: ubdIndex},
 				},
 				[]ccv.ValidatorSetChangePacketData{},
-				[]string{"slashedValidatorConsAddress"},
+				[]string{consAddr.String()},
 			),
 			providertypes.NewConsumerStates(
 				cChainIDs[1],

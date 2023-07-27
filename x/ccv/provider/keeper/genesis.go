@@ -66,7 +66,11 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 			k.SetChannelToChain(ctx, cs.ChannelId, chainID)
 			k.SetChainToChannel(ctx, chainID, cs.ChannelId)
 			k.SetInitChainHeight(ctx, chainID, cs.InitialHeight)
-			k.SetSlashAcks(ctx, cs.ChainId, cs.SlashDowntimeAck)
+			addresses, err := types.StrsToConsumerConsAddresses(cs.SlashDowntimeAck)
+			if err != nil {
+				// todo
+			}
+			k.SetSlashAcks(ctx, cs.ChainId, addresses)
 		} else {
 			k.AppendPendingVSCPackets(ctx, chainID, cs.PendingValsetChanges...)
 		}

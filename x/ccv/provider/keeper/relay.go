@@ -256,7 +256,12 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 		unbondingOps := k.GetUnbondingOpsFromIndex(ctx, chain.ChainId, valUpdateID)
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 			// construct validator set change packet data
-			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chain.ChainId))
+			acks := k.ConsumeSlashAcks(ctx, chain.ChainId)
+			addresses := []string{}
+			for _, ack := range acks {
+				addresses = append(addresses, ack.String())
+			}
+			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, addresses)
 			k.AppendPendingVSCPackets(ctx, chain.ChainId, packet)
 			k.Logger(ctx).Info("VSCPacket enqueued:",
 				"chainID", chain.ChainId,
@@ -452,8 +457,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// for double-signing infractions are already dropped when received
 
 	// append the validator address to the slash ack for its chain id
-	// TODO: consumer cons address should be accepted here
-	k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
+	k.AppendSlashAck(ctx, chainID, consumerConsAddr)
 
 	// jail validator
 	if !validator.IsJailed() {

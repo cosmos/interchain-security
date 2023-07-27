@@ -75,7 +75,19 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 		},
 		{
 			func(suite *CCVTestSuite) error {
-				providerKeeper.SetSlashAcks(s.providerCtx(), firstBundle.Chain.ChainID, []string{"validator-1", "validator-2", "validator-3"})
+				addr0 := types.NewRandConsumerConsAddress()
+				addr1 := types.NewRandConsumerConsAddress()
+				addr2 := types.NewRandConsumerConsAddress()
+				acks, err := types.StrsToConsumerConsAddresses([]string{
+					addr0.String(),
+					addr1.String(),
+					addr2.String(),
+				})
+				if err != nil {
+					return err
+				}
+
+				providerKeeper.SetSlashAcks(s.providerCtx(), firstBundle.Chain.ChainID, acks)
 				providerKeeper.AppendPendingVSCPackets(s.providerCtx(), firstBundle.Chain.ChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
 				return nil
 			},

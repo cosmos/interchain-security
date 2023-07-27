@@ -99,8 +99,17 @@ func TestSlashAcks(t *testing.T) {
 	acks := providerKeeper.GetSlashAcks(ctx, chainID)
 	require.Nil(t, acks)
 
-	p := []string{"alice", "bob", "charlie"}
-	providerKeeper.SetSlashAcks(ctx, chainID, p)
+	addr0 := types.NewRandConsumerConsAddress()
+	addr1 := types.NewRandConsumerConsAddress()
+	addr2 := types.NewRandConsumerConsAddress()
+	p := []string{
+		addr0.String(),
+		addr1.String(),
+		addr2.String(),
+	}
+	ack, err := types.StrsToConsumerConsAddresses(p)
+	require.NoError(t, err)
+	providerKeeper.SetSlashAcks(ctx, chainID, ack)
 
 	acks = providerKeeper.GetSlashAcks(ctx, chainID)
 	require.NotNil(t, acks)
@@ -115,7 +124,9 @@ func TestSlashAcks(t *testing.T) {
 	chains := []string{"c1", "c2", "c3"}
 
 	for _, c := range chains {
-		providerKeeper.SetSlashAcks(ctx, c, p)
+		ack, err := types.StrsToConsumerConsAddresses(p)
+		require.NoError(t, err)
+		providerKeeper.SetSlashAcks(ctx, c, ack)
 	}
 
 	for _, c := range chains {
@@ -131,16 +142,25 @@ func TestAppendSlashAck(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	p := []string{"alice", "bob", "charlie"}
+	addr0 := types.NewRandConsumerConsAddress()
+	addr1 := types.NewRandConsumerConsAddress()
+	addr2 := types.NewRandConsumerConsAddress()
+	p := []string{
+		addr0.String(),
+		addr1.String(),
+		addr2.String(),
+	}
 	chains := []string{"c1", "c2"}
-	providerKeeper.SetSlashAcks(ctx, chains[0], p)
+	ack, err := types.StrsToConsumerConsAddresses(p)
+	require.NoError(t, err)
+	providerKeeper.SetSlashAcks(ctx, chains[0], ack)
 
-	providerKeeper.AppendSlashAck(ctx, chains[0], p[0])
+	providerKeeper.AppendSlashAck(ctx, chains[0], ack[0])
 	acks := providerKeeper.GetSlashAcks(ctx, chains[0])
 	require.NotNil(t, acks)
 	require.Len(t, acks, len(p)+1)
 
-	providerKeeper.AppendSlashAck(ctx, chains[1], p[0])
+	providerKeeper.AppendSlashAck(ctx, chains[1], ack[0])
 	acks = providerKeeper.GetSlashAcks(ctx, chains[1])
 	require.NotNil(t, acks)
 	require.Len(t, acks, 1)
