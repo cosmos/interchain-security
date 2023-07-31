@@ -62,6 +62,7 @@ func main() {
 		{DemocracyTestRun(true), democracySteps},
 		{DemocracyTestRun(false), rewardDenomConsumerSteps},
 		{SlashThrottleTestRun(), slashThrottleSteps},
+		{ConsumerMisbehaviourTestRun(), consumerMisbehaviourSteps},
 	}
 	if includeMultiConsumer != nil && *includeMultiConsumer {
 		testRuns = append(testRuns, testRunWithSteps{MultiConsumerTestRun(), multipleConsumers})
@@ -173,6 +174,10 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.startRelayer(action, verbose)
 	case registerConsumerRewardDenomAction:
 		tr.registerConsumerRewardDenom(action, verbose)
+	case forkConsumerChainAction:
+		tr.forkConsumerChain(action, verbose)
+	case updateLightClientAction:
+		tr.updateLightClient(action, verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", tr.name, action)
 	}

@@ -87,3 +87,10 @@ var changeoverSteps = concatSteps(
 
 	stepsPostChangeoverDelegate("sover"),
 )
+
+var consumerMisbehaviourSteps = concatSteps(
+	// start provider and consumer chain
+	stepsStartChainsWithSoftOptOut("consu"),
+	// make consumer validator to misbehave and get jail
+	stepsCauseConsumerMisbehaviour("consu"),
+)
