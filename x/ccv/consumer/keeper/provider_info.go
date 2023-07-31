@@ -4,20 +4,33 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 func (k Keeper) GetProviderChainInfo(ctx sdk.Context) (*types.QueryProviderInfoResponse, error) {
-	providerClientID, found := k.GetProviderClientID(ctx)
+	consumerChannelID, found := k.GetProviderChannel(ctx)
+	consumerChannel, _ := k.channelKeeper.GetChannel(ctx, ccvtypes.ConsumerPortID, consumerChannelID)
+	providerChannelID := consumerChannel.GetCounterparty().GetChannelID()
+
+	_, consumerConnection, err := k.connectionKeeper.GetChannelConnection(ctx, ccvtypes.ConsumerPortID, consumerChannelID)
+	if err != nil {
+		return nil, err
+	}
+
+	providerConnection := consumerConnection.GetCounterparty()
+
+	providerClientState, found := k.clientKeeper.GetClientState(ctx, providerConnection.GetClientID())
 	if !found {
+		// todo if return err?
 		return nil, nil
 	}
-	clientState, found := k.clientKeeper.GetClientState(ctx, providerClientID)
-	if !found {
-		return nil, nil
-	}
-	providerChainID := clientState.(*ibctm.ClientState).ChainId
+	providerChainID := providerClientState.(*ibctm.ClientState).ChainId
+
 	resp := types.QueryProviderInfoResponse{
-		ChainID: providerChainID,
+		ChainID:      providerChainID,
+		ClientID:     providerConnection.GetClientID(),
+		ConnectionID: providerConnection.GetConnectionID(),
+		ChannelID:    providerChannelID,
 	}
 
 	return &resp, nil

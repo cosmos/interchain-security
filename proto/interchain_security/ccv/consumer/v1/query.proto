@@ -61,4 +61,7 @@ message QueryProviderInfoRequest {}
 
 message QueryProviderInfoResponse {
   string ChainID = 1;
+  string ClientID = 2;
+  string ConnectionID = 3;
+  string ChannelID = 4;
 }

@@ -92,6 +92,7 @@ type PortKeeper interface {
 // ConnectionKeeper defines the expected IBC connection keeper
 type ConnectionKeeper interface {
 	GetConnection(ctx sdk.Context, connectionID string) (conntypes.ConnectionEnd, bool)
+	GetChannelConnection(ctx sdk.Context, portID, channelID string) (string, ibcexported.ConnectionI, error)
 }
 
 // ClientKeeper defines the expected IBC client keeper
