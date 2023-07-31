@@ -235,7 +235,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			// using the consumer fork as the primary node
 			action: updateLightClientAction{
 				hostChain:     chainID("provi"),
-				relayerConfig: forkRelayerConfig,
+				relayerConfig: forkRelayerConfig, // this relayer config uses the "forked" consumer
 				clientID:      consumerClientID,
 			},
 			state: State{

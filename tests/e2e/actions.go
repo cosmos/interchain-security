@@ -63,7 +63,7 @@ type StartChainAction struct {
 	validators []StartChainValidator
 	// Genesis changes specific to this action, appended to genesis changes defined in chain config
 	genesisChanges string
-	consumerCfg    bool
+	isConsumer     bool
 }
 
 type StartChainValidator struct {
@@ -133,7 +133,7 @@ func (tr TestRun) startChain(
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/start-chain.sh", chainConfig.binaryName, string(vals),
 		string(chainConfig.chainId), chainConfig.ipPrefix, genesisChanges,
-		fmt.Sprint(action.consumerCfg),
+		fmt.Sprint(action.isConsumer),
 		// override config/config.toml for each node on chain
 		// usually timeout_commit and peer_gossip_sleep_duration are changed to vary the test run duration
 		// lower timeout_commit means the blocks are produced faster making the test run shorter
@@ -170,7 +170,7 @@ func (tr TestRun) startChain(
 	tr.addChainToRelayer(addChainToRelayerAction{
 		chain:     action.chain,
 		validator: action.validators[0].id,
-		consumer:  action.consumerCfg,
+		consumer:  action.isConsumer,
 	}, verbose)
 }
 
@@ -567,7 +567,7 @@ func (tr TestRun) startConsumerChain(
 		chain:          action.consumerChain,
 		validators:     action.validators,
 		genesisChanges: consumerGenesis,
-		consumerCfg:    true,
+		isConsumer:     true,
 	}, verbose)
 }
 
