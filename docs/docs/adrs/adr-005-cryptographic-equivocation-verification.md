@@ -6,7 +6,7 @@ title: Cryptographic verification of equivocation evidence
 
 ## Changelog
 * 5/1/2023: First draft
-* 7/23/23: Add light attack handling
+* 7/23/23: Add light client attacks handling
 
 ## Status
 
@@ -96,4 +96,4 @@ could be corrupted and the ore cannot be used for slashing purposes.
 ## References
 
 * [ICS misbehaviour handling PR](https://github.com/cosmos/interchain-security/pull/826/files)
-* [Architecture plan](https://docs.google.com/document/d/1fe1uSJl1ZIYWXoME3Yf4Aodvz7V597Ric875JH-rigM/edit#heading=h.rv4t8i6d6jfn)
+* [Architectural diagrams](https://docs.google.com/document/d/1fe1uSJl1ZIYWXoME3Yf4Aodvz7V597Ric875JH-rigM/edit#heading=h.rv4t8i6d6jfn)
