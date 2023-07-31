@@ -73,7 +73,6 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 // ConstructLightClientEvidence constructs and returns a CometBFT Ligth Client Attack(LCA) evidence struct
 // from the given misbehaviour
 func (k Keeper) ConstructLightClientEvidence(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) (*tmtypes.LightClientAttackEvidence, error) {
-
 	// construct the trusted and conflicetd ligth blocks
 	trusted, err := headerToLightBlock(*misbehaviour.Header1)
 	if err != nil {
@@ -114,7 +113,6 @@ func (k Keeper) ConstructLightClientEvidence(ctx sdk.Context, misbehaviour ibctm
 // GetCommonFromMisbehaviour checks whether the given ibc misbehaviour's headers share common trusted height
 // and that a consensus state exists for this height. In this case, it returns the associated trusted height, timestamp and valset.
 func (k Keeper) GetTrustedInfoFromMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) (int64, time.Time, *tmtypes.ValidatorSet, error) {
-
 	// a common trusted height is required
 	commonHeight := misbehaviour.Header1.TrustedHeight
 	if !commonHeight.EQ(misbehaviour.Header2.TrustedHeight) {
