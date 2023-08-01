@@ -1655,8 +1655,8 @@ type unjailValidatorAction struct {
 
 // Sends an unjail transaction to the provider chain
 func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
-	// wait a block to be sure downtime_jail_duration has elapsed
-	time.Sleep(61 * time.Second)
+	// wait until downtime_jail_duration has elapsed, to make sure the validator can be unjailed
+	tr.WaitTime(61 * time.Second)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
