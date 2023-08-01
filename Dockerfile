@@ -32,10 +32,10 @@ RUN make install
 FROM ghcr.io/informalsystems/hermes:1.4.1 AS hermes-builder
 
 # Get CometMock
-FROM informalofftermatt/cometmock:latest as cometmock-builder
+FROM ghcr.io/informalsystems/cometmock:v0.37.2-2@sha256:16083c647b029d4b341d47619286478d34328940239b2a747f66515157927102 as cometmock-builder
 
 # Get GoRelayer
-FROM informalofftermatt/gorelayer:nogas AS gorelayer-builder
+FROM ghcr.io/informalsystems/relayer-no-gas-sim:v2.3.0-rc4-no-gas-sim@sha256:24fef51c3e8a1682ea80fd1a7917728b997736244642ad206c8be21357879c9c AS gorelayer-builder
 
 FROM --platform=linux/amd64 fedora:36
 RUN dnf update -y
