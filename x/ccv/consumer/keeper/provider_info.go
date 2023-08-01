@@ -8,23 +8,31 @@ import (
 )
 
 func (k Keeper) GetProviderChainInfo(ctx sdk.Context) (*types.QueryProviderInfoResponse, error) {
+	//  get the channelID for the channel to the provider.
 	consumerChannelID, found := k.GetProviderChannel(ctx)
-	consumerChannel, _ := k.channelKeeper.GetChannel(ctx, ccvtypes.ConsumerPortID, consumerChannelID)
-	providerChannelID := consumerChannel.GetCounterparty().GetChannelID()
+	if !found {
+		return nil, nil
+	}
+	consumerChannel, found := k.channelKeeper.GetChannel(ctx, ccvtypes.ConsumerPortID, consumerChannelID)
+	if !found {
+		return nil, nil
+	}
 
-	_, consumerConnection, err := k.connectionKeeper.GetChannelConnection(ctx, ccvtypes.ConsumerPortID, consumerChannelID)
+	// from channel get connection
+	_, consumerConnection, err := k.channelKeeper.GetChannelConnection(ctx, ccvtypes.ConsumerPortID, consumerChannelID)
 	if err != nil {
 		return nil, err
 	}
 
+	providerChannelID := consumerChannel.GetCounterparty().GetChannelID()
 	providerConnection := consumerConnection.GetCounterparty()
 
-	providerClientState, found := k.clientKeeper.GetClientState(ctx, providerConnection.GetClientID())
+	consumerClientState, found := k.clientKeeper.GetClientState(ctx, consumerConnection.GetClientID())
 	if !found {
 		// todo if return err?
 		return nil, nil
 	}
-	providerChainID := providerClientState.(*ibctm.ClientState).ChainId
+	providerChainID := consumerClientState.(*ibctm.ClientState).ChainId
 
 	resp := types.QueryProviderInfoResponse{
 		ChainID:      providerChainID,
