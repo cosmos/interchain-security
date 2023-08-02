@@ -13,29 +13,30 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-// HandleConsumerMisbehaviour checks whether the given IBC misbehaviour is valid and, if they are, the misbehaving
-// CheckConsumerMisbehaviour check that the given IBC misbehaviour headers forms a valid light client attack evidence.
-// proceed to the jailing and tombstoning of the bzyantine validators.
+// HandleConsumerMisbehaviour checks if the given IBC misbehaviour corresponds to an equivocation light client attack
+// and in this case jail and tombstone the Byzantine validators
 func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
 	logger := k.Logger(ctx)
 
+	// Check that the misbehaviour is valid and that the client isn't expired
 	if err := k.clientKeeper.CheckMisbehaviourAndUpdateState(ctx, &misbehaviour); err != nil {
 		logger.Info("Misbehaviour rejected", err.Error())
 
 		return err
 	}
+
 	// Since the misbehaviour packet was received within the trusting period
 	// w.r.t to the last trusted consensus it entails that the infraction age
 	// isn't too old. see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 
 	// Get Byzantine validators from the conflicting headers
-	// Note that it only handle equivocation light client attacks
+	// Note that it returns an error if the misbehaviour doesn't correspond to an equivocation
 	byzantineValidators, err := k.GetByzantineValidators(ctx, misbehaviour)
 	if err != nil {
 		return err
 	}
 
-	// jail and tombstone the byzantine validators
+	// jail and tombstone the Byzantine validators
 	for _, v := range byzantineValidators {
 		// convert consumer consensus address
 		consuAddr := sdk.ConsAddress(v.Address.Bytes())
