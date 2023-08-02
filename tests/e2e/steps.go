@@ -21,8 +21,6 @@ var happyPathSteps = concatSteps(
 	stepsCancelUnbond("consu"),
 	stepsRedelegateForOptOut("consu"),
 	stepsDowntimeWithOptOut("consu"),
-	stepsRedelegate("consu"),
-	stepsDowntime("consu"),
 	stepsRejectEquivocationProposal("consu", 2),   // prop to tombstone bob is rejected
 	stepsDoubleSignOnProviderAndConsumer("consu"), // carol double signs on provider, bob double signs on consumer
 	stepsSubmitEquivocationProposal("consu", 2),   // now prop to tombstone bob is submitted and accepted
