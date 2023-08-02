@@ -22,9 +22,10 @@ var happyPathSteps = concatSteps(
 	stepsRedelegateForOptOut("consu"),
 	stepsDowntimeWithOptOut("consu"),
 	stepsRedelegate("consu"),
-	stepsDoubleSignOnProviderAndConsumerAfterOptOut("consu"), // carol double signs on provider, bob double signs on consumer
-	stepsSubmitEquivocationProposal("consu", 2),              // now prop to tombstone bob is submitted and accepted
-	stepsStopChain("consu", 3),                               // stop chain
+	stepsRejectEquivocationProposal("consu", 2),   // prop to tombstone bob is rejected
+	stepsDoubleSignOnProviderAndConsumer("consu"), // carol double signs on provider, bob double signs on consumer
+	stepsSubmitEquivocationProposal("consu", 2),   // now prop to tombstone bob is submitted and accepted
+	stepsStopChain("consu", 3),                    // stop chain
 )
 
 var shortHappyPathSteps = concatSteps(
