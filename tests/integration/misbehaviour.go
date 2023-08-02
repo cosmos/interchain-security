@@ -10,8 +10,8 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-// TestHandleConsumerMisbehaviour tests that handling a valid misbehaviour
-// ,with conflicting headers forming an equivocation, results in the jailing and tombstoning of the validators
+// TestHandleConsumerMisbehaviour tests that handling a valid misbehaviour,
+// with conflicting headers forming an equivocation, results in the jailing and tombstoning of the validators
 // TODO: figure out how to signed headers with a subset a the validator set.
 func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	s.SetupCCVChannel(s.path)
@@ -86,6 +86,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
 	altSigners[clientTMValset.Validators[2].Address.String()] = clientSigners[clientTMValset.Validators[2].Address.String()]
 
+	// TODO: figure out how to test an amnesia cases for "amnesia" attack
 	testCases := []struct {
 		name         string
 		misbehaviour *ibctmtypes.Misbehaviour
@@ -109,7 +110,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 			false,
 		},
 		{
-			"invalid misbehaviour - Header2 is empty",
+			"invalid headers - Header2 is empty",
 			&ibctmtypes.Misbehaviour{
 				Header1: s.consumerChain.CreateTMClientHeader(
 					s.consumerChain.ChainID,
@@ -126,7 +127,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 			false,
 		},
 		{
-			"invalid misbehaviour - ClientId is empty",
+			"invalid headers - ClientId is empty",
 			&ibctmtypes.Misbehaviour{
 				ClientId: "unknown-client-id",
 				Header1: s.consumerChain.CreateTMClientHeader(
@@ -153,7 +154,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 			false,
 		},
 		{
-			"light client attack - lunatic attack",
+			"invalid light client attack - lunatic attack",
 			&ibctmtypes.Misbehaviour{
 				ClientId: s.path.EndpointA.ClientID,
 				Header1: s.consumerChain.CreateTMClientHeader(
@@ -177,10 +178,10 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 					altSigners,
 				),
 			},
-			true,
+			false,
 		},
 		{
-			"light client attack - equivocation",
+			"valid light client attack - equivocation",
 			&ibctmtypes.Misbehaviour{
 				ClientId: s.path.EndpointA.ClientID,
 				Header1: s.consumerChain.CreateTMClientHeader(
@@ -210,7 +211,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			ev, err := s.providerApp.GetProviderKeeper().GetByzantineValidators(
+			byzantineValidators, err := s.providerApp.GetProviderKeeper().GetByzantineValidators(
 				s.providerCtx(),
 				*tc.misbehaviour,
 			)
@@ -220,12 +221,12 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 				// who signed the bad header (Header2) should be in returned in the evidence
 				h2Valset := tc.misbehaviour.Header2.ValidatorSet
 
-				s.Equal(len(h2Valset.Validators), len(ev.ByzantineValidators))
+				s.Equal(len(h2Valset.Validators), len(byzantineValidators))
 
 				vs, err := tmtypes.ValidatorSetFromProto(tc.misbehaviour.Header2.ValidatorSet)
 				s.NoError(err)
 
-				for _, v := range ev.ByzantineValidators {
+				for _, v := range byzantineValidators {
 					idx, _ := vs.GetByAddress(v.Address)
 					s.True(idx >= 0)
 				}

@@ -30,13 +30,13 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 
 	// Get Byzantine validators from the conflicting headers
 	// Note that it only handle equivocation light client attacks
-	evidence, err := k.GetByzantineValidators(ctx, misbehaviour)
+	byzantineValidators, err := k.GetByzantineValidators(ctx, misbehaviour)
 	if err != nil {
 		return err
 	}
 
 	// jail and tombstone the byzantine validators
-	for _, v := range evidence.ByzantineValidators {
+	for _, v := range byzantineValidators {
 		// convert consumer consensus address
 		consuAddr := sdk.ConsAddress(v.Address.Bytes())
 		provAddr := k.GetProviderAddrFromConsumerAddr(ctx, misbehaviour.Header1.Header.ChainID, types.NewConsumerConsAddress(consuAddr))
@@ -64,16 +64,15 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 
 	logger.Info(
 		"confirmed equivocation",
-		"byzantine validators", evidence.ByzantineValidators,
+		"byzantine validators", byzantineValidators,
 	)
 
 	return nil
 }
 
-// GetByzantineValidators return the Byzantine validators from a given misbehaviour. Note that it only
-// handles the equivocation light client attack and therefore will return an error an error the
-// conflicting headers commit aren't for the same round.
-func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) (*tmtypes.LightClientAttackEvidence, error) {
+// GetByzantineValidators returns the Byzantine validators from a given misbehaviour
+// with the condition that it corresponds to an equivocation light client attack
+func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) ([]*tmtypes.Validator, error) {
 	// construct the trusted and conflicted light blocks
 	header1, err := headerToLightBlock(*misbehaviour.Header1)
 	if err != nil {
@@ -86,11 +85,11 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 
 	var validators []*tmtypes.Validator
 
-	// Check if the light client attack correspond to a "equivocation"
-	// in this case return the validators that signed both headers
-
-	if headersHaveConflictingStatesTransitions(header1, header2) {
+	// If the headers transitions states aren't equal this is a "lunatic" attack
+	if !headersStatesTransitionsAreEqual(header1, header2) {
 		return nil, fmt.Errorf("cannot get Byzantine validators; headers have conflicting states transitions; possible lunatic attack detected")
+		// Both headers' commit are in the round so it's an "equivocation"
+		// and we return the validators that signed both headers
 	} else if header1.Commit.Round == header2.Commit.Round {
 		for i := 0; i < len(header2.Commit.Signatures); i++ {
 			sigA := header2.Commit.Signatures[i]
@@ -107,15 +106,12 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 			validators = append(validators, val)
 		}
 		sort.Sort(tmtypes.ValidatorsByVotingPower(validators))
+		// If the two previous conditions aren't satisfied, we have an "amnesia" attack
 	} else {
 		return nil, fmt.Errorf("cannot get Byzantine validators; misbehaviour is for an amnesia attack")
 	}
 
-	ev := tmtypes.LightClientAttackEvidence{
-		ByzantineValidators: validators,
-	}
-
-	return &ev, nil
+	return validators, nil
 }
 
 // headerToLightBlock returns a CometBFT light block from the given IBC header
@@ -136,10 +132,10 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 	}, nil
 }
 
-func headersHaveConflictingStatesTransitions(header1, header2 *tmtypes.LightBlock) bool {
-	return !bytes.Equal(header1.ValidatorsHash, header2.ValidatorsHash) ||
-		!bytes.Equal(header1.NextValidatorsHash, header2.NextValidatorsHash) ||
-		!bytes.Equal(header1.ConsensusHash, header2.ConsensusHash) ||
-		!bytes.Equal(header1.AppHash, header2.AppHash) ||
-		!bytes.Equal(header1.LastResultsHash, header2.LastResultsHash)
+func headersStatesTransitionsAreEqual(header1, header2 *tmtypes.LightBlock) bool {
+	return bytes.Equal(header1.ValidatorsHash, header2.ValidatorsHash) &&
+		bytes.Equal(header1.NextValidatorsHash, header2.NextValidatorsHash) &&
+		bytes.Equal(header1.ConsensusHash, header2.ConsensusHash) &&
+		bytes.Equal(header1.AppHash, header2.AppHash) &&
+		bytes.Equal(header1.LastResultsHash, header2.LastResultsHash)
 }
