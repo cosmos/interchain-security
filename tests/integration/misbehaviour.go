@@ -10,6 +10,9 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
+// TestHandleConsumerMisbehaviour tests that handling a valid misbehaviour
+// ,with conflicting headers forming an equivocation, results in the jailing and tombstoning of the validators
+// TODO: figure out how to signed headers with a subset a the validator set.
 func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
@@ -25,11 +28,6 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
 	clientSigners := s.consumerChain.Signers
 
-	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:2])
-	altSigners := make(map[string]tmtypes.PrivValidator, 1)
-	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
-	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
-
 	misb := &ibctmtypes.Misbehaviour{
 		ClientId: s.path.EndpointA.ClientID,
 		Header1: s.consumerChain.CreateTMClientHeader(
@@ -42,22 +40,25 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 			clientTMValset,
 			clientSigners,
 		),
+		// create a different header by changing the header timestamp only
+		// in order to create an equivocation, i.e. both headers have the same deterministic states
 		Header2: s.consumerChain.CreateTMClientHeader(
 			s.consumerChain.ChainID,
 			int64(clientHeight.RevisionHeight+1),
 			clientHeight,
-			altTime,
-			altValset,
-			altValset,
+			altTime.Add(10*time.Second),
 			clientTMValset,
-			altSigners,
+			clientTMValset,
+			clientTMValset,
+			clientSigners,
 		),
 	}
 
 	err := s.providerApp.GetProviderKeeper().HandleConsumerMisbehaviour(s.providerCtx(), *misb)
 	s.NoError(err)
 
-	for _, v := range altValset.Validators {
+	// verify that validators are jailed and tombstoned
+	for _, v := range clientTMValset.Validators {
 		consuAddr := sdk.ConsAddress(v.Address.Bytes())
 		provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, types.NewConsumerConsAddress(consuAddr))
 		val, ok := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), provAddr.Address)
@@ -65,9 +66,10 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 		s.Require().True(val.Jailed)
 		s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.Address))
 	}
+
 }
 
-func (s *CCVTestSuite) TestConstructLightClientEvidence() {
+func (s *CCVTestSuite) TestGetByzantineValidators() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
 	s.SendEmptyVSCPacket()
@@ -208,7 +210,7 @@ func (s *CCVTestSuite) TestConstructLightClientEvidence() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			ev, err := s.providerApp.GetProviderKeeper().ConstructLightClientEvidence(
+			ev, err := s.providerApp.GetProviderKeeper().GetByzantineValidators(
 				s.providerCtx(),
 				*tc.misbehaviour,
 			)

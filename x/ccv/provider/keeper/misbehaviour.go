@@ -1,9 +1,9 @@
 package keeper
 
 import (
+	"bytes"
 	"fmt"
-	"reflect"
-	"time"
+	"sort"
 
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 
@@ -28,13 +28,12 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	// w.r.t to the last trusted consensus it entails that the infraction age
 	// isn't too old. see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 
-	// construct a light client attack evidence
-	evidence, err := k.ConstructLightClientEvidence(ctx, misbehaviour)
+	// Get Byzantine validators from the conflicting headers
+	// Note that it only handle equivocation light client attacks
+	evidence, err := k.GetByzantineValidators(ctx, misbehaviour)
 	if err != nil {
 		return err
 	}
-
-	logger.Info("ConstructLightClientEvidence", fmt.Sprintf("%#+v\n", evidence))
 
 	// jail and tombstone the byzantine validators
 	for _, v := range evidence.ByzantineValidators {
@@ -71,71 +70,52 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	return nil
 }
 
-// ConstructLightClientEvidence constructs and returns a CometBFT Light Client Attack(LCA) evidence struct
-// from the given misbehaviour
-func (k Keeper) ConstructLightClientEvidence(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) (*tmtypes.LightClientAttackEvidence, error) {
+// GetByzantineValidators return the Byzantine validators from a given misbehaviour. Note that it only
+// handles the equivocation light client attack and therefore will return an error an error the
+// conflicting headers commit aren't for the same round.
+func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) (*tmtypes.LightClientAttackEvidence, error) {
 	// construct the trusted and conflicted light blocks
-	trusted, err := headerToLightBlock(*misbehaviour.Header1)
+	header1, err := headerToLightBlock(*misbehaviour.Header1)
 	if err != nil {
 		return nil, err
 	}
-	conflicted, err := headerToLightBlock(*misbehaviour.Header2)
-	if err != nil {
-		return nil, err
-	}
-
-	// get common header using the IBC misbehaviour
-	commonHeight, commonTs, commonValset, err := k.GetTrustedInfoFromMisbehaviour(ctx, misbehaviour)
+	header2, err := headerToLightBlock(*misbehaviour.Header2)
 	if err != nil {
 		return nil, err
 	}
 
-	// construct the LCA evidence by copying the CometBFT constructor
-	// see newLightClientAttackEvidence() in tendermint/light/detector.go
-	ev := tmtypes.LightClientAttackEvidence{
-		ConflictingBlock: conflicted,
-	}
+	var validators []*tmtypes.Validator
 
-	if ev.ConflictingHeaderIsInvalid(trusted.Header) {
-		ev.CommonHeight = commonHeight
-		ev.Timestamp = commonTs
-		ev.TotalVotingPower = commonValset.TotalVotingPower()
+	// Check if the light client attack correspond to a "equivocation"
+	// in this case return the validators that signed both headers
+
+	if headersHaveConflictingStatesTransitions(header1, header2) {
+		return nil, fmt.Errorf("cannot get Byzantine validators; headers have conflicting states transitions; possible lunatic attack detected")
+	} else if header1.Commit.Round == header2.Commit.Round {
+		for i := 0; i < len(header2.Commit.Signatures); i++ {
+			sigA := header2.Commit.Signatures[i]
+			if sigA.Absent() {
+				continue
+			}
+
+			sigB := header1.Commit.Signatures[i]
+			if sigB.Absent() {
+				continue
+			}
+
+			_, val := header2.ValidatorSet.GetByAddress(sigA.ValidatorAddress)
+			validators = append(validators, val)
+		}
+		sort.Sort(tmtypes.ValidatorsByVotingPower(validators))
 	} else {
-		ev.CommonHeight = trusted.Header.Height
-		ev.Timestamp = trusted.Header.Time
-		ev.TotalVotingPower = trusted.ValidatorSet.TotalVotingPower()
+		return nil, fmt.Errorf("cannot get Byzantine validators; misbehaviour is for an amnesia attack")
 	}
 
-	ev.ByzantineValidators = ev.GetByzantineValidators(commonValset, trusted.SignedHeader)
+	ev := tmtypes.LightClientAttackEvidence{
+		ByzantineValidators: validators,
+	}
 
 	return &ev, nil
-}
-
-// GetCommonFromMisbehaviour checks whether the given ibc misbehaviour's headers share common trusted height
-// and that a consensus state exists for this height. In this case, it returns the associated trusted height, timestamp and valset.
-func (k Keeper) GetTrustedInfoFromMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) (int64, time.Time, *tmtypes.ValidatorSet, error) {
-	// a common trusted validator set and height is required
-	commonHeight := misbehaviour.Header1.TrustedHeight
-	if !commonHeight.EQ(misbehaviour.Header2.TrustedHeight) {
-		return 0, time.Time{}, nil, fmt.Errorf("misbehaviour headers have different trusted height: %v , %v", commonHeight, misbehaviour.Header2.TrustedHeight)
-	}
-
-	commonValset := misbehaviour.Header1.TrustedValidators
-	if !reflect.DeepEqual(commonValset.Validators, misbehaviour.Header2.TrustedValidators.Validators) {
-		return 0, time.Time{}, nil, fmt.Errorf("misbehaviour headers have different trusted validator set: %v , %v", commonHeight, misbehaviour.Header2.TrustedHeight)
-	}
-
-	cs, ok := k.clientKeeper.GetClientConsensusState(ctx, misbehaviour.GetClientID(), commonHeight)
-	if !ok {
-		return 0, time.Time{}, nil, fmt.Errorf("cannot find consensus state at trusted height %d for client %s", commonHeight, misbehaviour.GetClientID())
-	}
-
-	vs, err := tmtypes.ValidatorSetFromProto(commonValset)
-	if err != nil {
-		return 0, time.Time{}, nil, err
-	}
-
-	return int64(commonHeight.RevisionHeight), time.Unix(0, int64(cs.GetTimestamp())), vs, nil
 }
 
 // headerToLightBlock returns a CometBFT light block from the given IBC header
@@ -154,4 +134,12 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 		SignedHeader: sh,
 		ValidatorSet: vs,
 	}, nil
+}
+
+func headersHaveConflictingStatesTransitions(header1, header2 *tmtypes.LightBlock) bool {
+	return !bytes.Equal(header1.ValidatorsHash, header2.ValidatorsHash) ||
+		!bytes.Equal(header1.NextValidatorsHash, header2.NextValidatorsHash) ||
+		!bytes.Equal(header1.ConsensusHash, header2.ConsensusHash) ||
+		!bytes.Equal(header1.AppHash, header2.AppHash) ||
+		!bytes.Equal(header1.LastResultsHash, header2.LastResultsHash)
 }
