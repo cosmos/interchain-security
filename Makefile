@@ -33,6 +33,11 @@ test-diff:
 test-e2e-short:
 	go run ./tests/e2e/... --happy-path-only
 
+# run only happy path E2E tests with cometmock
+# this set of traces does not test equivocation but it does check downtime
+test-e2e-short-cometmock:
+	go run ./tests/e2e/... --short-happy-path --use-cometmock --use-gorelayer
+
 # run full E2E tests in sequence (including multiconsumer)
 test-e2e-multi-consumer:
 	go run ./tests/e2e/... --include-multi-consumer
