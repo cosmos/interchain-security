@@ -43,11 +43,11 @@ For details, see the [CometBFT specification](https://github.com/cometbft/cometb
 
 When a light client agent detects two conflicting headers, it will initially verify their traces (see [cometBFT detector](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/light/detector.go#L28)) using its primary and witness nodes.
 If these headers pass successful verification, the Byzantine validators will be identified based on the header's commit signatures
-and the type of light client attack. The agent will then transmit this information to its nodes using a [`LightClientAttackEvidence`](https://github.com/cometbft/cometbft/blob/feed0ddf564e113a840c4678505601256b93a8bc/docs/architecture/adr-047-handling-evidence-from-light-client.md) to be eventually voted and committed it to a block.
+and the type of light client attack. The agent will then transmit this information to its nodes using a [`LightClientAttackEvidence`](https://github.com/cometbft/cometbft/blob/feed0ddf564e113a840c4678505601256b93a8bc/docs/architecture/adr-047-handling-evidence-from-light-client.md) to be eventually voted on and added to a block.
 Note that from a light client agent perspective, it is not possible to establish whether a primary or a witness node, or both, are malicious.
- Therefore, it will create two LightClientAttackEvidence: one against the primary (sent to the witness), and one against the witness (sent to the primary).
+ Therefore, it will create and send two `LightClientAttackEvidence`: one against the primary (sent to the witness), and one against the witness (sent to the primary).
   Both nodes will then verify it before broadcasting it and adding it to the [evidence pool](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/evidence/pool.go#L28).
-Finally, one of the two LightClientAttackEvidence produced will be added to a block and executed by the chain's evidence module, which will jail and slash the validators responsible for the light client attack.
+If a `LightClientAttackEvidence` is finally committed to a block, the chain's evidence module will execute it, resulting in the jailing and the slashing of the validators responsible for the light client attack.
 
 
 Light clients are a core component of IBC. In the event of a light client attack, IBC relayers notify the affected chains by submitting an [IBC misbehavior message]((https://github.com/cosmos/ibc-go/blob/2b7c969066fbcb18f90c7f5bd256439ca12535c7/proto/ibc/lightclients/tendermint/v1/tendermint.proto#L79)).
