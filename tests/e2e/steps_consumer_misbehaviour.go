@@ -198,14 +198,13 @@ func stepsStartChainsWithSoftOptOut(consumerName string) []Step {
 	return s
 }
 
-// stepsCauseConsumerMisbehaviour forks a consumer chain in order to cause a ICS misbehaviour.
-// The malicious validator behind the attack gets jailed and the consumer client freezed on the provider.
+// stepsCauseConsumerMisbehaviour causes a ICS misbehaviour by forking a consumer chain.
 func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 	consumerClientID := "07-tendermint-0"
 	forkRelayerConfig := "/root/.hermes/config_fork.toml"
 	return []Step{
 		{
-			// start a consumer chain's validator clone
+			// fork the consumer chain by cloning of its validator node
 			action: forkConsumerChainAction{
 				consumerChain: chainID(consumerName),
 				providerChain: chainID("provi"),
@@ -217,21 +216,10 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 		{
 			// start relayer to detect ICS misbehaviour
 			action: startRelayerAction{},
-			state: State{
-				// The consumer client shouldn't be frozen on the provider yet since
-				// no client update packet was sent by the fork yet
-				chainID("provi"): ChainState{
-					ClientsFrozenHeights: &map[string]clienttypes.Height{
-						"07-tendermint-0": {
-							RevisionNumber: 0,
-							RevisionHeight: 0,
-						},
-					},
-				},
-			},
+			state:  State{},
 		},
 		{
-			// update the consumer client hosted on the provider
+			// update the consumer light client hosted on the provider
 			// using the consumer fork as the primary node
 			action: updateLightClientAction{
 				hostChain:     chainID("provi"),
@@ -240,14 +228,17 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			},
 			state: State{
 				chainID("provi"): ChainState{
+					// No jailing should have occurred since a consumer fork triggers a ICS misbehaviour
+					// that can't be handled by a provider chain, see HandleConsumerMisbehaviour() x/ccv/provider/keeper/misbehaviour.go.
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 0,
+						validatorID("alice"): 511,
 						validatorID("bob"):   20,
 					},
+					// The consumer light client shouldn't be frozen
 					ClientsFrozenHeights: &map[string]clienttypes.Height{
 						"07-tendermint-0": {
 							RevisionNumber: 0,
-							RevisionHeight: 1,
+							RevisionHeight: 0,
 						},
 					},
 				},
