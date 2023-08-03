@@ -1846,11 +1846,11 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		log.Fatalf("unexpected error during key assignment - output: %s, err: %s", string(bz), err)
 	}
 
-	// if action.expectError {
-	// 	if verbose {
-	// 		fmt.Printf("got expected error during key assignment | err: %s \n", err.Error())
-	// 	}
-	// }
+	if action.expectError {
+	 	if verbose {
+	 		fmt.Printf("got expected error during key assignment | err: %s \n", err.Error())
+	 	}
+	}
 
 	// node was started with provider key
 	// we swap the nodes's keys for consumer keys and restart it
