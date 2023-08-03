@@ -37,7 +37,7 @@ For instance, if a light client receives header `A` from the primary and header 
 and both headers are successfully verified, it indicates a light client attack.
 Note that it this case, either the primary and/or witness nodes are malicious.
 
-To orchestrate a light client attack, Byzantine actors create a header with incorrect states that must be signed by ⅓+ of the voting power.
+To orchestrate a light client attack, Byzantine actors create a header with incorrect state transitions that must be signed by ⅓+ of the voting power.
 The types of light client attacks are defined by analyzing the differences between the conflicting headers.
 If at least one deterministic states isn't equal, i.e. a state resulting from a previous block
 (see [CometBFT spec.](https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md#header)),
