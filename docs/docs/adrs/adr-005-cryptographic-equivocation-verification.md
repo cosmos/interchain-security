@@ -70,7 +70,7 @@ as a light client agent detector. Therefore, the endpoint will ensure that the t
 the headers in the misbehaviour message have the same block height, and
 the light client isn’t expired.
 
-After having successfully verified a misbehaviour, the endpoint will execute the jailing and slashing of the malicious validators similarly as in the evidence module (TODO: code ref). 
+After having successfully verified a misbehaviour, the endpoint will execute the jailing and slashing of the malicious validators similarly as in the evidence module. 
 
 ### Current limitations:
 
