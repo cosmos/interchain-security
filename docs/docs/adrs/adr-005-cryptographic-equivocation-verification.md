@@ -39,6 +39,8 @@ Note that in this case, either the primary or the witness or both are malicious.
 
 To orchestrate a light client attack, Byzantine actors create a header with incorrect state transitions that must be signed by ⅓+ of the voting power.
 The types of light client attacks are defined by analyzing the differences between the conflicting headers.
+There are three types of light client attacks: lunatic attack, equivocation attack, and amnesia attack. 
+For details, see the [CometBFT specification](https://github.com/cometbft/cometbft/blob/main/spec/light-client/attacks/notes-on-evidence-handling.md#evidence-handling).
 If at least one deterministic states isn't equal, i.e. a state resulting from a previous block
 (see [CometBFT spec.](https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md#header)),
 it is referred to a “lunatic attack”. Conversely, in the opposite case, it is termed an “equivocation”, (see [CometBFT spec](https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md)).
