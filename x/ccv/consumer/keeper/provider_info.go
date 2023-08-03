@@ -36,7 +36,7 @@ func (k Keeper) GetProviderChainInfo(ctx sdk.Context) (*types.QueryProviderInfoR
 
 	resp := types.QueryProviderInfoResponse{
 		Consumer: types.ChainInfo{
-			ChainID:      "",
+			ChainID:      ctx.ChainID(),
 			ClientID:     consumerConnection.GetClientID(),
 			ConnectionID: consumerConnectionID,
 			ChannelID:    consumerChannelID,
