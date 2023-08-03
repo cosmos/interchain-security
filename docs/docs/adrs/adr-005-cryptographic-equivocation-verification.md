@@ -41,9 +41,6 @@ To orchestrate a light client attack, Byzantine actors create a header with inco
 The types of light client attacks are defined by analyzing the differences between the conflicting headers.
 There are three types of light client attacks: lunatic attack, equivocation attack, and amnesia attack. 
 For details, see the [CometBFT specification](https://github.com/cometbft/cometbft/blob/main/spec/light-client/attacks/notes-on-evidence-handling.md#evidence-handling).
-If at least one deterministic states isn't equal, i.e. a state resulting from a previous block
-(see [CometBFT spec.](https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md#header)),
-it is referred to a “lunatic attack”. Conversely, in the opposite case, it is termed an “equivocation”, (see [CometBFT spec](https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md)).
 
 When a light client agent detects two conflicting headers, it will initially verify their traces (see [cometBFT detector](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/light/detector.go#L28)) using its primary and witness nodes.
 If these headers pass successful verification, the Byzantine validators will be identified based on the header's commit signatures
