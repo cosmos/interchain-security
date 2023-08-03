@@ -35,7 +35,7 @@ A light client attack occurs when a Byzantine validator sends invalid headers to
 As the light client doesn't execute transactions, it can be deceived into trusting corrupted application state transitions.
 For instance, if a light client receives header `A` from the primary and header `B` from a witness for the same block height `H`,
 and both headers are successfully verified, it indicates a light client attack.
-Note that it this case, either the primary and/or witness nodes are malicious.
+Note that in this case, either the primary or the witness or both are malicious.
 
 To orchestrate a light client attack, Byzantine actors create a header with incorrect state transitions that must be signed by ⅓+ of the voting power.
 The types of light client attacks are defined by analyzing the differences between the conflicting headers.
