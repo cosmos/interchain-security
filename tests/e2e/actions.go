@@ -1847,9 +1847,9 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	}
 
 	if action.expectError {
-	 if verbose {
-	 	fmt.Printf("got expected error during key assignment | err: %s \n", err.Error())
-	 }
+		if verbose {
+			fmt.Printf("got expected error during key assignment | err: %s \n", err.Error())
+		}
 	}
 
 	// node was started with provider key
