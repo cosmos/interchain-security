@@ -60,6 +60,11 @@ message QueryParamsResponse {
 message QueryProviderInfoRequest {}
 
 message QueryProviderInfoResponse {
+  ChainInfo consumer = 1 [ (gogoproto.nullable) = false ];
+  ChainInfo provider = 2 [ (gogoproto.nullable) = false ];
+}
+
+message ChainInfo {
   string ChainID = 1;
   string ClientID = 2;
   string ConnectionID = 3;

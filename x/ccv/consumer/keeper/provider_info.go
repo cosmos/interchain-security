@@ -19,7 +19,7 @@ func (k Keeper) GetProviderChainInfo(ctx sdk.Context) (*types.QueryProviderInfoR
 	}
 
 	// from channel get connection
-	_, consumerConnection, err := k.channelKeeper.GetChannelConnection(ctx, ccvtypes.ConsumerPortID, consumerChannelID)
+	consumerConnectionID, consumerConnection, err := k.channelKeeper.GetChannelConnection(ctx, ccvtypes.ConsumerPortID, consumerChannelID)
 	if err != nil {
 		return nil, err
 	}
@@ -35,10 +35,19 @@ func (k Keeper) GetProviderChainInfo(ctx sdk.Context) (*types.QueryProviderInfoR
 	providerChainID := consumerClientState.(*ibctm.ClientState).ChainId
 
 	resp := types.QueryProviderInfoResponse{
-		ChainID:      providerChainID,
-		ClientID:     providerConnection.GetClientID(),
-		ConnectionID: providerConnection.GetConnectionID(),
-		ChannelID:    providerChannelID,
+		Consumer: types.ChainInfo{
+			ChainID:      "",
+			ClientID:     consumerConnection.GetClientID(),
+			ConnectionID: consumerConnectionID,
+			ChannelID:    consumerChannelID,
+		},
+
+		Provider: types.ChainInfo{
+			ChainID:      providerChainID,
+			ClientID:     providerConnection.GetClientID(),
+			ConnectionID: providerConnection.GetConnectionID(),
+			ChannelID:    providerChannelID,
+		},
 	}
 
 	return &resp, nil
