@@ -25,10 +25,9 @@ In a nutshell, the light client is a process that solely verifies a specific sta
 consensus without executing the transactions. The light clients get new headers by querying
 multiple nodes, called primary and witness nodes. 
 
-Headers can be verified in two ways: sequentially, where verification occurs in order of block height,
-and each new header must be signed by ⅔+ of the voting power from the last trusted header validators;
-or using skipping, where intermediate headers are verified and must be signed by ⅓+ of the voting power
-from the last trusted header validators. The latter is the default method, as it is faster in most cases.
+Light clients download new headers committed on chain from a primary. Headers can be verified in two ways: sequentially,
+where the block height of headers is serial, or using skipping. This second verification method allows light clients to download headers
+with nonconsecutive block height, where some intermediate headers are skipped (see [Tendermint Light Client, Figure 1 and Figure 3](https://arxiv.org/pdf/2010.07031.pdf)).
 Additionally, light clients are cross-checking new headers obtained from a primary with witnesses to ensure all nodes share the same state.
 
 A light client attack occurs when a Byzantine validator sends invalid headers to a light client.
@@ -44,10 +43,14 @@ For details, see the [CometBFT specification](https://github.com/cometbft/cometb
 
 When a light client agent detects two conflicting headers, it will initially verify their traces (see [cometBFT detector](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/light/detector.go#L28)) using its primary and witness nodes.
 If these headers pass successful verification, the Byzantine validators will be identified based on the header's commit signatures
-and the type of light client attack. The agent will then transmit this information to its nodes using a [`LightClientAttackEvidence`](https://github.com/cometbft/cometbft/blob/feed0ddf564e113a840c4678505601256b93a8bc/docs/architecture/adr-047-handling-evidence-from-light-client.md) to be eventually voted and committed it to a block. In this scenario, the chain's evidence module will execute the jailing and the slashing of the validators responsible for the light client attack.
+and the type of light client attack. The agent will then transmit this information to its nodes using a [`LightClientAttackEvidence`](https://github.com/cometbft/cometbft/blob/feed0ddf564e113a840c4678505601256b93a8bc/docs/architecture/adr-047-handling-evidence-from-light-client.md) to be eventually voted and committed it to a block.
+Note that from a light client agent perspective, it is not possible to establish whether a primary or a witness node, or both, are malicious.
+ Therefore, it will create two LightClientAttackEvidence: one against the primary (sent to the witness), and one against the witness (sent to the primary).
+  Both nodes will then verify it before broadcasting it and adding it to the [evidence pool](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/evidence/pool.go#L28).
+Finally, one of the two LightClientAttackEvidence produced will be added to a block and executed by the chain's evidence module, which will jail and slash the validators responsible for the light client attack.
 
-Light clients are a core component of IBC.  
-In the event of a light client attack, IBC relayers notify the affected chains by submitting an [IBC misbehavior message]((https://github.com/cosmos/ibc-go/blob/2b7c969066fbcb18f90c7f5bd256439ca12535c7/proto/ibc/lightclients/tendermint/v1/tendermint.proto#L79)).
+
+Light clients are a core component of IBC. In the event of a light client attack, IBC relayers notify the affected chains by submitting an [IBC misbehavior message]((https://github.com/cosmos/ibc-go/blob/2b7c969066fbcb18f90c7f5bd256439ca12535c7/proto/ibc/lightclients/tendermint/v1/tendermint.proto#L79)).
 A misbehavior message includes the conflicting headers that constitute a `LightClientAttackEvidence`. Upon receiving such a message,
 a chain will first verify whether these headers would have convinced its light client. This verification is achieved by checking
 the header states against the light client consensus states (see [IBC misbehaviour handler](https://github.com/cosmos/ibc-go/blob/2b7c969066fbcb18f90c7f5bd256439ca12535c7/modules/light-clients/07-tendermint/types/misbehaviour_handle.go#L101)). If the misbehaviour is successfully verified, the chain will then "freeze" the
@@ -85,12 +88,8 @@ could be corrupted and the ore cannot be used for slashing purposes.
 
 
 ## Consequences
-
-### Positive
 - After this ADR is applied, it will be possible for the provider chain to tombstone validators who committed a light client attack.
 
-### Negative
-- The misbehaviour verification process requires to copy a lot of unexposed IBC methods.
 
 ## References
 
