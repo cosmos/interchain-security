@@ -33,7 +33,7 @@ Additionally, light clients are cross-checking new headers obtained from a prima
 
 A light client attack occurs when a Byzantine validator sends invalid headers to a light client.
 As the light client doesn't execute transactions, it can be deceived into trusting corrupted application state transitions.
-For instance, if a light client receives header A from the primary and header `B` from the witness for the same block height `H`,
+For instance, if a light client receives header `A` from the primary and header `B` from a witness for the same block height `H`,
 and both headers are successfully verified, it indicates a light client attack.
 Note that it this case, either the primary and/or witness nodes are malicious.
 
