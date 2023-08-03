@@ -47,8 +47,8 @@ When a light client agent detects two conflicting headers, it will initially ver
 If these headers pass successful verification, the Byzantine validators will be identified based on the header's commit signatures
 and the type of light client attack. The agent will then transmit this information to its nodes using a [`LightClientAttackEvidence`](https://github.com/cometbft/cometbft/blob/feed0ddf564e113a840c4678505601256b93a8bc/docs/architecture/adr-047-handling-evidence-from-light-client.md) to be eventually voted and committed it to a block. In this scenario, the chain's evidence module will execute the jailing and the slashing of the validators responsible for the light client attack.
 
-In the event of an attack against one of its light clients, the counter-party chains implement necessary measures.
-The IBC relayers facilitate a way to notify these chains of a detected light client attack by submitting an [IBC misbehavior message]((https://github.com/cosmos/ibc-go/blob/2b7c969066fbcb18f90c7f5bd256439ca12535c7/proto/ibc/lightclients/tendermint/v1/tendermint.proto#L79)).
+Light clients are a core component of IBC.  
+In the event of a light client attack, IBC relayers notify the affected chains by submitting an [IBC misbehavior message]((https://github.com/cosmos/ibc-go/blob/2b7c969066fbcb18f90c7f5bd256439ca12535c7/proto/ibc/lightclients/tendermint/v1/tendermint.proto#L79)).
 A misbehavior message includes the conflicting headers that constitute a `LightClientAttackEvidence`. Upon receiving such a message,
 a chain will first verify whether these headers would have convinced its light client. This verification is achieved by checking
 the header states against the light client consensus states (see [IBC misbehaviour handler](https://github.com/cosmos/ibc-go/blob/2b7c969066fbcb18f90c7f5bd256439ca12535c7/modules/light-clients/07-tendermint/types/misbehaviour_handle.go#L101)). If the misbehaviour is successfully verified, the chain will then "freeze" the
