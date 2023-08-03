@@ -33,6 +33,9 @@ test-diff:
 test-e2e-short:
 	go run ./tests/e2e/... --happy-path-only
 
+test-e2e-cometmock:
+	go run ./tests/e2e/... --short-happy-path --use-cometmock --use-gorelayer
+
 # run full E2E tests in sequence (including multiconsumer)
 test-e2e-multi-consumer:
 	go run ./tests/e2e/... --include-multi-consumer
