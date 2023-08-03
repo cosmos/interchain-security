@@ -29,7 +29,7 @@ Headers can be verified in two ways: sequentially, where verification occurs in 
 and each new header must be signed by ⅔+ of the voting power from the last trusted header validators;
 or using skipping, where intermediate headers are verified and must be signed by ⅓+ of the voting power
 from the last trusted header validators. The latter is the default method, as it is faster in most cases.
-Additionally, light clients are cross-checking new headers obtained from a primary with witnesses to ensure all nodes share the same states.
+Additionally, light clients are cross-checking new headers obtained from a primary with witnesses to ensure all nodes share the same state.
 
 A light client attack occurs when a Byzantine validator sends incorrect states to a light client.
 As the light client doesn't execute transactions, it can be deceived into trusting corrupted application states.
