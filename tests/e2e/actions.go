@@ -538,7 +538,7 @@ func (tr *TestRun) voteGovProposal(
 	wg.Wait()
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(action.chain, 1, 10*time.Second)
-	time.Sleep(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
+	tr.WaitTime(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
 }
 
 type startConsumerChainAction struct {
@@ -1846,11 +1846,11 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		log.Fatalf("unexpected error during key assignment - output: %s, err: %s", string(bz), err)
 	}
 
-	if action.expectError {
-		if verbose {
-			fmt.Printf("got expected error during key assignment | err: %s \n", err.Error())
-		}
-	}
+	// if action.expectError {
+	// 	if verbose {
+	// 		fmt.Printf("got expected error during key assignment | err: %s \n", err.Error())
+	// 	}
+	// }
 
 	// node was started with provider key
 	// we swap the nodes's keys for consumer keys and restart it
@@ -1966,6 +1966,8 @@ func (tr TestRun) GetPathNameForGorelayer(chainA, chainB chainID) string {
 }
 
 // WaitTime waits for the given duration.
+// To make sure that the new timestamp is visible on-chain, it also waits until at least one block has been
+// produced on each chain after waiting.
 // The CometMock version of this takes a pointer to the TestRun as it needs to manipulate
 // information in the testrun that stores how much each chain has waited, to keep times in sync.
 // Be careful that all functions calling WaitTime should therefore also take a pointer to the TestRun.
@@ -1979,6 +1981,7 @@ func (tr *TestRun) WaitTime(duration time.Duration) {
 				continue
 			}
 			tr.AdvanceTimeForChain(chain, duration)
+			tr.waitBlocks(chain, 1, 2*time.Second)
 		}
 	}
 }
