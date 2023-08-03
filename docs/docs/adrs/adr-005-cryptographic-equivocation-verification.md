@@ -65,7 +65,7 @@ share the same validator set, as it is the case with Replicated Security.
 This endpoint will reuse the IBC client libraries to verify that the misbehaviour headers would have fool the light client.
 Additionally, it’s crucial that the endpoint logic result in the slashing and jailing of validators under the same conditions
 as a light client agent detector. Therefore, the endpoint will ensure that the two conditions are met:
-the misbehaviour’s header contains the same block height, and
+the headers in the misbehaviour message have the same block height, and
 the light client isn’t expired.
 
 After having successfully verified a misbehaviour, the endpoint will execute the jailing and slashing of the malicious validators similarly as in the evidence module (TODO: code ref). 
