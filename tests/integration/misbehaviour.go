@@ -66,7 +66,6 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 		s.Require().True(val.Jailed)
 		s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.Address))
 	}
-
 }
 
 func (s *CCVTestSuite) TestGetByzantineValidators() {
