@@ -82,7 +82,7 @@ In a nutshell, consumer heights are mapped to provider heights through VSCPacket
 When an infraction occurs on the consumer, a SlashPacket containing the vscID obtained from mapping the consumer infraction height
 is sent to the provider. Upon receiving the packet, the provider maps the consumer infraction height to a local infraction height,
 which is used to slash the misbehaving validator. In the context of untrusted consumer chains, all their states, including vscIDs,
-could be corrupted and the ore cannot be used for slashing purposes.
+could be corrupted and therefore cannot be used for slashing purposes.
 
 - Currently, the endpoint can only handle "equivocation" light client attacks. This is because the "lunatic" attacks require the endpoint to possess the ability to dissociate which header is conflicted or trusted upon receiving a misbehavior message. Without this information, it's not possible to define the Byzantine validators from the conflicting headers (see [comment](https://github.com/cosmos/interchain-security/pull/826#discussion_r1268668684)).
 
