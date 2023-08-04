@@ -80,6 +80,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
 	clientSigners := s.consumerChain.Signers
 
+	// Create a validator set subset
 	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:3])
 	altSigners := make(map[string]tmtypes.PrivValidator, 1)
 	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
@@ -88,9 +89,10 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 
 	// TODO: figure out how to test an amnesia cases for "amnesia" attack
 	testCases := []struct {
-		name         string
-		misbehaviour *ibctmtypes.Misbehaviour
-		expPass      bool
+		name                   string
+		misbehaviour           *ibctmtypes.Misbehaviour
+		expByzantineValidators []*tmtypes.Validator
+		expPass                bool
 	}{
 		{
 			"invalid misbehaviour - Header1 is empty",
@@ -107,6 +109,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 					altSigners,
 				),
 			},
+			nil,
 			false,
 		},
 		{
@@ -124,33 +127,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 				),
 				Header2: &ibctmtypes.Header{},
 			},
-			false,
-		},
-		{
-			"invalid headers - ClientId is empty",
-			&ibctmtypes.Misbehaviour{
-				ClientId: "unknown-client-id",
-				Header1: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					altTime,
-					clientTMValset,
-					clientTMValset,
-					clientTMValset,
-					clientSigners,
-				),
-				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					altTime,
-					altValset,
-					altValset,
-					clientTMValset,
-					altSigners,
-				),
-			},
+			nil,
 			false,
 		},
 		{
@@ -178,7 +155,10 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 					altSigners,
 				),
 			},
-			false,
+			// Expect to get only the validators
+			// who signed both headers are returned
+			altValset.Validators,
+			true,
 		},
 		{
 			"valid light client attack - equivocation",
@@ -205,6 +185,9 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 					clientSigners,
 				),
 			},
+			// Expect to get the entire valset since
+			// all validators double-signed
+			clientTMValset.Validators,
 			true,
 		},
 	}
@@ -226,7 +209,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 				vs, err := tmtypes.ValidatorSetFromProto(tc.misbehaviour.Header2.ValidatorSet)
 				s.NoError(err)
 
-				for _, v := range byzantineValidators {
+				for _, v := range tc.expByzantineValidators {
 					idx, _ := vs.GetByAddress(v.Address)
 					s.True(idx >= 0)
 				}

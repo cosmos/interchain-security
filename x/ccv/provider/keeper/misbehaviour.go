@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"bytes"
-	"fmt"
 	"sort"
 
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
@@ -86,32 +85,55 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 
 	var validators []*tmtypes.Validator
 
-	// If the headers transitions states aren't equal this is a "lunatic" attack
-	if !headersStatesTransitionsAreEqual(header1, header2) {
-		return nil, fmt.Errorf("cannot get Byzantine validators; headers have conflicting states transitions; possible lunatic attack detected")
-		// Both headers' commit are in the round so it's an "equivocation"
-		// and we return the validators that signed both headers
-	} else if header1.Commit.Round == header2.Commit.Round {
-		for i := 0; i < len(header2.Commit.Signatures); i++ {
-			sigA := header2.Commit.Signatures[i]
-			if sigA.Absent() {
-				continue
-			}
+	// // If the headers transitions states aren't equal this is a "lunatic" attack
+	// // both we still return the validators which double signed
+	// if !headersStatesTransitionsAreEqual(header1, header2) {
 
-			sigB := header1.Commit.Signatures[i]
-			if sigB.Absent() {
-				continue
-			}
-
-			_, val := header2.ValidatorSet.GetByAddress(sigA.ValidatorAddress)
-			validators = append(validators, val)
+	// compare the signatures in the headers
+	// and return the intersection of validators who signed both
+	// create a map with the validators that signed header1
+	header1Signers := map[string]struct{}{}
+	for _, sign := range header1.Commit.Signatures {
+		if sign.Absent() {
+			continue
 		}
-		sort.Sort(tmtypes.ValidatorsByVotingPower(validators))
-		// If the two previous conditions aren't satisfied, we have an "amnesia" attack
-	} else {
-		return nil, fmt.Errorf("cannot get Byzantine validators; misbehaviour is for an amnesia attack")
+		header1Signers[sign.ValidatorAddress.String()] = struct{}{}
 	}
 
+	// iterate over the header2 signers
+	// and check if they also signed header1
+	for _, sign := range header2.Commit.Signatures {
+		if sign.Absent() {
+			continue
+		}
+		if _, ok := header1Signers[sign.ValidatorAddress.String()]; ok {
+			_, val := header1.ValidatorSet.GetByAddress(sign.ValidatorAddress)
+			validators = append(validators, val)
+		}
+	}
+	// } else if header1.Commit.Round == header2.Commit.Round { // Is it still required to compare the rounds here?
+	// 	// This is an equivocation attack as both commits are in the same round.
+	// 	// We then find the validators that voted for the both headers.
+	// 	//
+	// 	// Validator hashes are the same therefore the indexing order of validators are the same and thus we
+	// 	// only need a single loop to find the validators that voted twice.
+	// 	for i := 0; i < len(header1.Commit.Signatures); i++ {
+	// 		sigA := header1.Commit.Signatures[i]
+	// 		if sigA.Absent() {
+	// 			continue
+	// 		}
+
+	// 		sigB := header2.Commit.Signatures[i]
+	// 		if sigB.Absent() {
+	// 			continue
+	// 		}
+
+	// 		_, val := header1.ValidatorSet.GetByAddress(sigA.ValidatorAddress)
+	// 		validators = append(validators, val)
+	// 	}
+	// }
+
+	sort.Sort(tmtypes.ValidatorsByVotingPower(validators))
 	return validators, nil
 }
 
