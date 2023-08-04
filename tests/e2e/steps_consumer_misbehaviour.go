@@ -228,9 +228,9 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			},
 			state: State{
 				chainID("provi"): ChainState{
-					// validator should be jailed
+					// validator should be jailed on the provider
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
+						validatorID("alice"): 0,
 						validatorID("bob"):   20,
 					},
 					// The consumer light client should be frozen
