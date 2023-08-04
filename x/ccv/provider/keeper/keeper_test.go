@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
