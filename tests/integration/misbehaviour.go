@@ -379,7 +379,6 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-
 			err := s.providerApp.GetProviderKeeper().CheckMisbehaviour(s.providerCtx(), *tc.misbehaviour)
 			cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointA.ClientID)
 			s.Require().True(ok)

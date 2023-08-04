@@ -147,7 +147,6 @@ func (msg MsgRegisterConsumerRewardDenom) ValidateBasic() error {
 }
 
 func NewMsgSubmitConsumerMisbehaviour(submitter sdk.AccAddress, misbehaviour *ibctmtypes.Misbehaviour) (*MsgSubmitConsumerMisbehaviour, error) {
-
 	return &MsgSubmitConsumerMisbehaviour{Submitter: submitter.String(), Misbehaviour: misbehaviour}, nil
 }
 
