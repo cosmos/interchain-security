@@ -2,9 +2,28 @@
 module common {
     type Validator = str
     type Chain = str
-    type Packet = int
 
     type Timestamp = int
+
+    type ValidatorUpdate = {validator: Validator, newPower: int64}
+    }
+
+module ibc {
+    import common.*
+
+
+    type Packet = int
+
+    // An unordered channel consists of two sets of outstanding packets,
+    // one for each direction.
+    type UnorderedChannel = (Set[Packet], Set[Packet])
+    // An ordered channel consists of two lists of outstanding packets,
+    // one for each direction.
+    type OrderedChannel = (Set[Packet], Set[Packet])
+
+    var UnorderedChannels: (Chain, Chain) -> UnorderedChannel
+    var OrderedChannels: (Chain, Chain) -> OrderedChannel
+    
     }
 
 // Staking models the staking module with a single delegator, but multiple validators.
@@ -46,7 +65,18 @@ module staking {
 module ccv_consumer {
     import common.*
 
-    
+    type VSCPacketData =
+    {
+        id: uint64,
+        // validator updates
+        updates: List[ValidatorUpdate],
+        // downtime slash requests acknowledgements, 
+        // i.e., list of validator addresses
+        downtimeSlashAcks: List[string],
+    }
+
+    var outstandingDowntime: Validator -> bool
+    var receivedVSCs: List[VSCPacketData]
 
     action ConsumerInitiatedSlash(validator: Validator, infractionHeight: int, slashType: str): bool = true
         
