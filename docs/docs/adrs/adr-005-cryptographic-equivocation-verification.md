@@ -64,7 +64,7 @@ The main idea is to leverage the current IBC misbehaviour handling and update it
 performed a light client attack. This update will be made under the assumption that the chains connected via this light client
 share the same validator set, as it is the case with Replicated Security. 
 
-This endpoint will reuse the IBC client libraries to verify that the misbehaviour headers would have fool the light client.
+This endpoint will reuse the IBC client libraries to verify that the misbehaviour headers would have fooled the light client.
 Additionally, it’s crucial that the endpoint logic result in the slashing and jailing of validators under the same conditions
 as a light client agent detector. Therefore, the endpoint will ensure that the two conditions are met:
 the headers in the misbehaviour message have the same block height, and
