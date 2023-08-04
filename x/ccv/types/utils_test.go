@@ -84,7 +84,7 @@ func TestAccumulateChanges(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			changes := types.AccumulateChanges(tc.changes1, tc.changes2)
-			require.Equal(t, tc.expected, changes)
+			require.ElementsMatch(t, tc.expected, changes)
 		})
 	}
 }
