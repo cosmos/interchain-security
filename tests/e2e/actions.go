@@ -63,7 +63,7 @@ type StartChainAction struct {
 	validators []StartChainValidator
 	// Genesis changes specific to this action, appended to genesis changes defined in chain config
 	genesisChanges string
-	skipGentx      bool
+	isConsumer     bool
 }
 
 type StartChainValidator struct {
@@ -133,7 +133,7 @@ func (tr TestRun) startChain(
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/start-chain.sh", chainConfig.binaryName, string(vals),
 		string(chainConfig.chainId), chainConfig.ipPrefix, genesisChanges,
-		fmt.Sprint(action.skipGentx),
+		fmt.Sprint(action.isConsumer),
 		// override config/config.toml for each node on chain
 		// usually timeout_commit and peer_gossip_sleep_duration are changed to vary the test run duration
 		// lower timeout_commit means the blocks are produced faster making the test run shorter
@@ -170,6 +170,7 @@ func (tr TestRun) startChain(
 	tr.addChainToRelayer(addChainToRelayerAction{
 		chain:     action.chain,
 		validator: action.validators[0].id,
+		consumer:  action.isConsumer,
 	}, verbose)
 }
 
@@ -280,6 +281,8 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chain, 1, 5*time.Second)
 }
 
 type submitConsumerRemovalProposalAction struct {
@@ -521,7 +524,7 @@ func (tr TestRun) voteGovProposal(
 	}
 
 	wg.Wait()
-	time.Sleep(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
+	time.Sleep((time.Duration(tr.chainConfigs[action.chain].votingWaitTime)) * time.Second)
 }
 
 type startConsumerChainAction struct {
@@ -564,7 +567,7 @@ func (tr TestRun) startConsumerChain(
 		chain:          action.consumerChain,
 		validators:     action.validators,
 		genesisChanges: consumerGenesis,
-		skipGentx:      true,
+		isConsumer:     true,
 	}, verbose)
 }
 
@@ -698,6 +701,7 @@ func (tr TestRun) startChangeover(
 type addChainToRelayerAction struct {
 	chain     chainID
 	validator validatorID
+	consumer  bool
 }
 
 const hermesChainConfigTemplate = `
@@ -715,6 +719,7 @@ rpc_timeout = "10s"
 store_prefix = "ibc"
 trusting_period = "14days"
 websocket_addr = "%s"
+ccv_consumer_chain = %v
 
 [chains.gas_price]
 	denom = "stake"
@@ -813,7 +818,7 @@ func (tr TestRun) addChainToHermes(
 		keyName,
 		rpcAddr,
 		wsAddr,
-		// action.consumer,
+		action.consumer,
 	)
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, "/root/.hermes/config.toml")
@@ -827,7 +832,16 @@ func (tr TestRun) addChainToHermes(
 	}
 
 	// Save mnemonic to file within container
-	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, tr.validatorConfigs[action.validator].mnemonic, "/root/.hermes/mnemonic.txt")
+	var mnemonic string
+	if tr.validatorConfigs[action.validator].useConsumerKey && action.consumer {
+		mnemonic = tr.validatorConfigs[action.validator].consumerMnemonic
+	} else {
+		mnemonic = tr.validatorConfigs[action.validator].mnemonic
+	}
+
+	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, mnemonic, "/root/.hermes/mnemonic.txt")
+	fmt.Println("Add to hermes", action.validator)
+	fmt.Println(mnemonic)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
 		saveMnemonicCommand,
@@ -1767,6 +1781,8 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		valCfg.useConsumerKey = true
 		tr.validatorConfigs[action.validator] = valCfg
 	}
+
+	time.Sleep(1 * time.Second)
 }
 
 // slashThrottleDequeue polls slash queue sizes until nextQueueSize is achieved

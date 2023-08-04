@@ -7,6 +7,8 @@ import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "google/protobuf/any.proto";
+import "ibc/lightclients/tendermint/v1/tendermint.proto";
+
 
 // Msg defines the Msg service.
 service Msg {
@@ -54,7 +56,7 @@ message MsgSubmitConsumerMisbehaviour {
   string submitter = 1;
   // The Misbehaviour of the consumer chain wrapping 
   // two conflicting IBC headers 
-  google.protobuf.Any misbehaviour = 2;
+  ibc.lightclients.tendermint.v1.Misbehaviour misbehaviour = 2;
 }
 
 message MsgSubmitConsumerMisbehaviourResponse {}
