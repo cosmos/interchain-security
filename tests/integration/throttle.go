@@ -329,7 +329,7 @@ func (s *CCVTestSuite) TestPacketSpam() {
 		timeoutTimestamp = uint64(firstBundle.GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
 	)
 	for sequence, data := range packetsData {
-		consumerPacketData, err := provider.UnmarshalConsumerPacket(channeltypes.Packet{Data: data}) // Same func used by provider's OnRecvPacket
+		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
 		packet := channeltypes.NewPacket(data, uint64(sequence),
 			firstBundle.Path.EndpointA.ChannelConfig.PortID, firstBundle.Path.EndpointA.ChannelID,
@@ -391,7 +391,7 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 		timeoutTimestamp = uint64(firstBundle.GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
 	)
 	for sequence, data := range packetsData {
-		consumerPacketData, err := provider.UnmarshalConsumerPacket(channeltypes.Packet{Data: data}) // Same func used by provider's OnRecvPacket
+		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
 		packet := channeltypes.NewPacket(data, uint64(sequence),
 			firstBundle.Path.EndpointA.ChannelConfig.PortID, firstBundle.Path.EndpointA.ChannelID,
@@ -499,7 +499,7 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 		timeoutTimestamp = uint64(firstBundle.GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
 	)
 	for i, data := range packetsData {
-		consumerPacketData, err := provider.UnmarshalConsumerPacket(channeltypes.Packet{Data: data}) // Same func used by provider's OnRecvPacket
+		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
 		packet := channeltypes.NewPacket(data, ibcSeqs[i],
 			firstBundle.Path.EndpointA.ChannelConfig.PortID, firstBundle.Path.EndpointA.ChannelID,
@@ -725,7 +725,7 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
 	)
 	for i, data := range packetsData {
-		consumerPacketData, err := provider.UnmarshalConsumerPacket(channeltypes.Packet{Data: data}) // Same func used by provider's OnRecvPacket
+		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
 		packet := channeltypes.NewPacket(data, uint64(i),
 			s.getFirstBundle().Path.EndpointA.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointA.ChannelID,
@@ -767,16 +767,12 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 	// The packets to be recv in a single block, ordered as they will be recv.
 	var packetsData [][]byte
 
-	// Track and increment ibc seq num for each packet, since these need to be unique.
-	ibcSeqNum := uint64(1)
-
 	// Instantiate a slash packet for each validator,
 	// these first 4 packets should jail 100% of the total power.
 	for _, val := range s.providerChain.Vals.Validators {
 		s.setDefaultValSigningInfo(*val)
 		packetsData = append(packetsData, s.constructSlashPacketFromConsumer(
 			s.getFirstBundle(), *val, stakingtypes.Infraction_INFRACTION_DOWNTIME))
-		ibcSeqNum++
 	}
 
 	// add 5 more slash packets for each validator, that will be handled in the same block.
@@ -784,7 +780,6 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 		for i := 0; i < 5; i++ {
 			packetsData = append(packetsData, s.constructSlashPacketFromConsumer(
 				s.getFirstBundle(), *val, stakingtypes.Infraction_INFRACTION_DOWNTIME))
-			ibcSeqNum++
 		}
 	}
 
@@ -794,9 +789,10 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
 	)
 	for i, data := range packetsData {
-		consumerPacketData, err := provider.UnmarshalConsumerPacket(channeltypes.Packet{Data: data}) // Same func used by provider's OnRecvPacket
+		ibcSeqNum := uint64(i)
+		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
-		packet := channeltypes.NewPacket(data, uint64(i),
+		packet := channeltypes.NewPacket(data, ibcSeqNum,
 			s.getFirstBundle().Path.EndpointA.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointA.ChannelID,
 			s.getFirstBundle().Path.EndpointB.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointB.ChannelID,
 			timeoutHeight, timeoutTimestamp)
@@ -836,7 +832,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 		for i := 0; i < 50; i++ {
 			ibcSeqNum := uint64(i)
 			data := s.constructVSCMaturedPacketFromConsumer(*bundle)
-			packetData, err := provider.UnmarshalConsumerPacket(channeltypes.Packet{Data: data}) // Same func used by provider's OnRecvPacket
+			packetData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 			s.Require().NoError(err)
 			packet := channeltypes.NewPacket(data, ibcSeqNum,
 				ccvtypes.ConsumerPortID, bundle.Path.EndpointA.ChannelID,
@@ -853,7 +849,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 			ibcSeqNum := uint64(i)
 			data := s.constructSlashPacketFromConsumer(*bundle,
 				*s.providerChain.Vals.Validators[0], stakingtypes.Infraction_INFRACTION_DOWNTIME)
-			packetData, err := provider.UnmarshalConsumerPacket(channeltypes.Packet{Data: data}) // Same func used by provider's OnRecvPacket
+			packetData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 			s.Require().NoError(err)
 			packet := channeltypes.NewPacket(data, ibcSeqNum,
 				ccvtypes.ConsumerPortID, bundle.Path.EndpointA.ChannelID,
@@ -960,13 +956,13 @@ func (s *CCVTestSuite) TestVscMaturedHandledPerBlockLimit() {
 			ibcSeqNum := uint64(i)
 			data := s.constructSlashPacketFromConsumer(*bundle,
 				*s.providerChain.Vals.Validators[0], stakingtypes.Infraction_INFRACTION_DOWNTIME)
-			packetData := ccvtypes.ConsumerPacketData{}
-			ccvtypes.ModuleCdc.MustUnmarshalJSON(data, &packetData)
+			consumderPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
+			s.Require().NoError(err)
 			packet := channeltypes.NewPacket(data, ibcSeqNum,
 				ccvtypes.ConsumerPortID, bundle.Path.EndpointA.ChannelID,
 				ccvtypes.ProviderPortID, bundle.Path.EndpointB.ChannelID,
 				timeoutHeight, timeoutTimestamp)
-			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *packetData.GetSlashPacketData())
+			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumderPacketData.GetSlashPacketData())
 		}
 	}
 
