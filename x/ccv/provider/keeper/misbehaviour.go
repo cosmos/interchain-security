@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"bytes"
 	"sort"
 
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
@@ -131,14 +130,6 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 		SignedHeader: sh,
 		ValidatorSet: vs,
 	}, nil
-}
-
-func headersStatesTransitionsAreEqual(header1, header2 *tmtypes.LightBlock) bool {
-	return bytes.Equal(header1.ValidatorsHash, header2.ValidatorsHash) &&
-		bytes.Equal(header1.NextValidatorsHash, header2.NextValidatorsHash) &&
-		bytes.Equal(header1.ConsensusHash, header2.ConsensusHash) &&
-		bytes.Equal(header1.AppHash, header2.AppHash) &&
-		bytes.Equal(header1.LastResultsHash, header2.LastResultsHash)
 }
 
 // CheckMisbehaviourAndUpdateState checks that headers in the given misbehaviour forms

@@ -9,7 +9,6 @@ import "cosmos_proto/cosmos.proto";
 import "google/protobuf/any.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
 
-
 // Msg defines the Msg service.
 service Msg {
   rpc AssignConsumerKey(MsgAssignConsumerKey) returns (MsgAssignConsumerKeyResponse);
