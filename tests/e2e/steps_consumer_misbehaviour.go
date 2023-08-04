@@ -219,8 +219,8 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			state:  State{},
 		},
 		{
-			// update the consumer light client hosted on the provider
-			// using the consumer fork as the primary node
+			// update the fork consumer client to create a light client attack
+			// which should trigger a ICS misbehaviour message
 			action: updateLightClientAction{
 				hostChain:     chainID("provi"),
 				relayerConfig: forkRelayerConfig, // this relayer config uses the "forked" consumer
@@ -228,17 +228,17 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			},
 			state: State{
 				chainID("provi"): ChainState{
-					// No jailing should have occurred since a consumer fork triggers a ICS misbehaviour
-					// that can't be handled by a provider chain, see HandleConsumerMisbehaviour() x/ccv/provider/keeper/misbehaviour.go.
+					// validator should be jailed
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
 						validatorID("bob"):   20,
 					},
-					// The consumer light client shouldn't be frozen
+					// The consumer light client should be frozen
+					// TODO: to be changed when merging PR #1148
 					ClientsFrozenHeights: &map[string]clienttypes.Height{
 						"07-tendermint-0": {
 							RevisionNumber: 0,
-							RevisionHeight: 0,
+							RevisionHeight: 1,
 						},
 					},
 				},

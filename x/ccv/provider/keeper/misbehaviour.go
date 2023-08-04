@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"bytes"
 	"sort"
 
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
@@ -85,13 +84,10 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 
 	var validators []*tmtypes.Validator
 
-	// // If the headers transitions states aren't equal this is a "lunatic" attack
-	// // both we still return the validators which double signed
-	// if !headersStatesTransitionsAreEqual(header1, header2) {
-
-	// compare the signatures in the headers
+	// compare the signatures of the headers
 	// and return the intersection of validators who signed both
-	// create a map with the validators that signed header1
+
+	// create a map with the validators' address that signed header1
 	header1Signers := map[string]struct{}{}
 	for _, sign := range header1.Commit.Signatures {
 		if sign.Absent() {
@@ -101,7 +97,7 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 	}
 
 	// iterate over the header2 signers
-	// and check if they also signed header1
+	// and check if they s signed header1
 	for _, sign := range header2.Commit.Signatures {
 		if sign.Absent() {
 			continue
@@ -111,27 +107,6 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 			validators = append(validators, val)
 		}
 	}
-	// } else if header1.Commit.Round == header2.Commit.Round { // Is it still required to compare the rounds here?
-	// 	// This is an equivocation attack as both commits are in the same round.
-	// 	// We then find the validators that voted for the both headers.
-	// 	//
-	// 	// Validator hashes are the same therefore the indexing order of validators are the same and thus we
-	// 	// only need a single loop to find the validators that voted twice.
-	// 	for i := 0; i < len(header1.Commit.Signatures); i++ {
-	// 		sigA := header1.Commit.Signatures[i]
-	// 		if sigA.Absent() {
-	// 			continue
-	// 		}
-
-	// 		sigB := header2.Commit.Signatures[i]
-	// 		if sigB.Absent() {
-	// 			continue
-	// 		}
-
-	// 		_, val := header1.ValidatorSet.GetByAddress(sigA.ValidatorAddress)
-	// 		validators = append(validators, val)
-	// 	}
-	// }
 
 	sort.Sort(tmtypes.ValidatorsByVotingPower(validators))
 	return validators, nil
@@ -153,12 +128,4 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 		SignedHeader: sh,
 		ValidatorSet: vs,
 	}, nil
-}
-
-func headersStatesTransitionsAreEqual(header1, header2 *tmtypes.LightBlock) bool {
-	return bytes.Equal(header1.ValidatorsHash, header2.ValidatorsHash) &&
-		bytes.Equal(header1.NextValidatorsHash, header2.NextValidatorsHash) &&
-		bytes.Equal(header1.ConsensusHash, header2.ConsensusHash) &&
-		bytes.Equal(header1.AppHash, header2.AppHash) &&
-		bytes.Equal(header1.LastResultsHash, header2.LastResultsHash)
 }
