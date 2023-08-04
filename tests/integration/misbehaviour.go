@@ -12,7 +12,6 @@ import (
 
 // TestHandleConsumerMisbehaviour tests that handling a valid misbehaviour,
 // with conflicting headers forming an equivocation, results in the jailing and tombstoning of the validators
-// TODO: figure out how to signed headers with a subset a the validator set.
 func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
