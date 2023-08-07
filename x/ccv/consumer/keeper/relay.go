@@ -220,7 +220,9 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 		// This flag will be toggled false again when consumer hears back from provider. See OnAcknowledgementPacket below.
 		if p.Type == ccv.SlashPacket {
 			k.UpdateSlashRecordOnSend(ctx)
-			// Break so slash stays at head of queue
+			// Break so slash stays at head of queue.
+			// This blocks the sending of any other packet until the leading slash packet is handled.
+			// Also see OnAcknowledgementPacket below which will eventually delete the leading slash packet.
 			break
 		}
 		// Otherwise the vsc matured will be deleted
