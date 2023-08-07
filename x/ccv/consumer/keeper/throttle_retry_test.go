@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	testutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
@@ -41,7 +42,7 @@ func TestPacketSendingPermitted(t *testing.T) {
 	require.False(t, consumerKeeper.PacketSendingPermitted(ctx))
 
 	// Elapse retry delay period
-	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(2 * time.Hour))
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(2 * consumerkeeper.RETRY_DELAY_PERIOD))
 
 	// Now packet sending is permitted again
 	require.True(t, consumerKeeper.PacketSendingPermitted(ctx))

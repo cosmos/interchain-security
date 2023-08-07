@@ -34,6 +34,9 @@ import (
 // This design is implemented below, and in relay.go under SendPackets() and OnAcknowledgementPacket().
 //
 
+// Retry delay period could be implemented as a param, but 1 hour is reasonable
+const RETRY_DELAY_PERIOD = time.Hour
+
 // PacketSendingPermitted returns whether the consumer is allowed to send packets
 // from the pending packets queue.
 func (k Keeper) PacketSendingPermitted(ctx sdktypes.Context) bool {
@@ -46,10 +49,8 @@ func (k Keeper) PacketSendingPermitted(ctx sdktypes.Context) bool {
 		// We are waiting on a reply from provider, block sending
 		return false
 	}
-	// Retry delay period could be implemented as a param, but 1 hour is reasonable
-	retryDelayPeriod := time.Hour
 	// If retry delay period has elapsed, we can send again
-	return ctx.BlockTime().After(record.SendTime.Add(retryDelayPeriod))
+	return ctx.BlockTime().After(record.SendTime.Add(RETRY_DELAY_PERIOD))
 }
 
 func (k Keeper) UpdateSlashRecordOnSend(ctx sdktypes.Context) {
