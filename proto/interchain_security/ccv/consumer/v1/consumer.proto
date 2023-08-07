@@ -91,7 +91,7 @@ message MaturingVSCPacket {
 }
 
 // A record storing the state of a slash packet sent to the provider chain
-// which maybe bounced back and forth until handled by the provider.
+// which may bounce back and forth until handled by the provider.
 message SlashRecord {
   bool waiting_on_reply = 1;
   google.protobuf.Timestamp send_time = 2

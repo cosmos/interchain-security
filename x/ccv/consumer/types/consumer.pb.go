@@ -355,7 +355,7 @@ func (m *MaturingVSCPacket) GetMaturityTime() time.Time {
 }
 
 // A record storing the state of a slash packet sent to the provider chain
-// which maybe bounced back and forth until handled by the provider.
+// which may bounce back and forth until handled by the provider.
 type SlashRecord struct {
 	WaitingOnReply bool      `protobuf:"varint,1,opt,name=waiting_on_reply,json=waitingOnReply,proto3" json:"waiting_on_reply,omitempty"`
 	SendTime       time.Time `protobuf:"bytes,2,opt,name=send_time,json=sendTime,proto3,stdtime" json:"send_time"`
