@@ -153,7 +153,7 @@ require (
 )
 
 replace (
-	github.com/cosmos/cosmos-sdk => github.com/iqlusioninc/cosmos-sdk v0.45.17-0.20230801193606-81ef370eed6a
+	github.com/cosmos/cosmos-sdk => github.com/iqlusioninc/cosmos-sdk v0.45.17-0.20230803192832-aab739edf2ca
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.28
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
