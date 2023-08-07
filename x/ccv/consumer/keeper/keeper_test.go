@@ -605,5 +605,4 @@ func TestDeleteHeadOfPendingPackets(t *testing.T) {
 	pp = consumerKeeper.GetPendingPackets(ctx)
 	require.Len(t, pp, 1)
 	require.Equal(t, pp[0].Type, ccv.VscMaturedPacket)
-
 }
