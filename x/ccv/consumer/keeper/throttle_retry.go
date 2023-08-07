@@ -10,7 +10,7 @@ import (
 )
 
 //
-// Throttling with retries follows a FSM design:
+// Throttling with retries follows a finite-state machine design:
 //
 // 1. "No slash": If no slash record exists, the consumer is permitted to send packets from the pending packets queue.
 // The consumer starts in this state from genesis.
