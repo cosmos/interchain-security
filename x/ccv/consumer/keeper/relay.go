@@ -222,10 +222,8 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			k.UpdateSlashRecordOnSend(ctx)
 			// Break so slash stays at head of queue
 			break
-		} else {
-			// Otherwise the vsc matured will be deleted
-			idxsForDeletion = append(idxsForDeletion, p.Idx)
 		}
+		// Otherwise the vsc matured will be deleted
 		idxsForDeletion = append(idxsForDeletion, p.Idx)
 	}
 	// Delete pending packets that were successfully sent and did not return an error from SendIBCPacket
