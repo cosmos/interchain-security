@@ -1,10 +1,11 @@
 package cli
 
 import (
+	"github.com/spf13/cobra"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	"github.com/spf13/cobra"
 )
 
 // NewQueryCmd returns a root CLI command handler for all x/ccv/provider query commands.

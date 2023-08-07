@@ -5,13 +5,16 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+
 	abci "github.com/cometbft/cometbft/abci/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
@@ -69,13 +72,13 @@ type ChannelKeeper interface {
 	GetChannel(ctx sdk.Context, srcPort, srcChan string) (channel channeltypes.Channel, found bool)
 	GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool)
 	SendPacket(
-		ctx sdk.Context,
-		chanCap *capabilitytypes.Capability,
-		sourcePort string,
-		sourceChannel string,
-		timeoutHeight clienttypes.Height,
-		timeoutTimestamp uint64,
-		data []byte,
+			ctx sdk.Context,
+			chanCap *capabilitytypes.Capability,
+			sourcePort string,
+			sourceChannel string,
+			timeoutHeight clienttypes.Height,
+			timeoutTimestamp uint64,
+			data []byte,
 	) (sequence uint64, err error)
 	WriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet ibcexported.PacketI, acknowledgement ibcexported.Acknowledgement) error
 	ChanCloseInit(ctx sdk.Context, portID, channelID string, chanCap *capabilitytypes.Capability) error
@@ -132,8 +135,8 @@ type IBCTransferKeeper interface {
 // channel
 type IBCCoreKeeper interface {
 	ChannelOpenInit(
-		goCtx context.Context,
-		msg *channeltypes.MsgChannelOpenInit,
+			goCtx context.Context,
+			msg *channeltypes.MsgChannelOpenInit,
 	) (*channeltypes.MsgChannelOpenInitResponse, error)
 }
 
