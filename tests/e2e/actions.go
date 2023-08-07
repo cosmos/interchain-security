@@ -1819,8 +1819,9 @@ type assignConsumerPubKeyAction struct {
 func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbose bool) {
 	valCfg := tr.validatorConfigs[action.validator]
 
+	// Note: to get error response reported back from this command '--gas auto' needs to be set.
 	assignKey := fmt.Sprintf(
-		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 90000 --keyring-backend test -y -o json`,
+		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas auto --keyring-backend test -y -o json`,
 		tr.chainConfigs[chainID("provi")].binaryName,
 		string(tr.chainConfigs[action.chain].chainId),
 		action.consumerPubkey,
@@ -1847,6 +1848,10 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	}
 
 	if action.expectError {
+		if err == nil {
+			log.Fatalf("expected error not raised: %s", string(bz))
+		}
+
 		if verbose {
 			fmt.Printf("got expected error during key assignment | err: %s \n", err.Error())
 		}
