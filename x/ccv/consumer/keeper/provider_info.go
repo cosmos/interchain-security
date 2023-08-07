@@ -3,15 +3,13 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	//nolint:typecheck
-	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint" //nolint:typecheck
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
-//nolint:typecheck
-func (k Keeper) GetProviderChainInfo(ctx sdk.Context) (*types.QueryProviderInfoResponse, error) {
+func (k Keeper) GetProviderChainInfo(ctx sdk.Context) (*types.QueryProviderInfoResponse, error) { //nolint:typecheck
 	//  get the channelID for the channel to the provider.
 	consumerChannelID, found := k.GetProviderChannel(ctx)
 	if !found {

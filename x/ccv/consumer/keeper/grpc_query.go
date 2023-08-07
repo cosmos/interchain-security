@@ -9,11 +9,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-//nolint:typecheck
-var _ types.QueryServer = Keeper{}
+var _ types.QueryServer = Keeper{} //nolint:typecheck
 
-//nolint:typecheck
-func (k Keeper) QueryNextFeeDistribution(c context.Context,
+func (k Keeper) QueryNextFeeDistribution(c context.Context, //nolint:typecheck
 	req *types.QueryNextFeeDistributionEstimateRequest,
 ) (*types.QueryNextFeeDistributionEstimateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
@@ -27,8 +25,7 @@ func (k Keeper) QueryNextFeeDistribution(c context.Context,
 	return &types.QueryNextFeeDistributionEstimateResponse{Data: &nextDist}, nil
 }
 
-//nolint:typecheck
-func (k Keeper) QueryParams(c context.Context,
+func (k Keeper) QueryParams(c context.Context, //nolint:typecheck
 	req *types.QueryParamsRequest,
 ) (*types.QueryParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
@@ -42,8 +39,7 @@ func (k Keeper) QueryParams(c context.Context,
 	return &types.QueryParamsResponse{Params: p}, nil
 }
 
-//nolint:typecheck
-func (k Keeper) QueryProviderChainInfo(c context.Context,
+func (k Keeper) QueryProviderChainInfo(c context.Context, //nolint:typecheck
 	req *types.QueryProviderInfoRequest,
 ) (*types.QueryProviderInfoResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
