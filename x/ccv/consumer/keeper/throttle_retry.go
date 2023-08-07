@@ -21,21 +21,15 @@ import (
 //
 // The slash packet remains at the head of the pending packets queue within the "Standby" state.
 //
-// - If the consumer receives a V1Result ack from the provider, the consumer checks for a slash record,
-// and if found, the consumer transitions from "Standby" to "No Slash". The slash record is cleared upon this transition,
-// and the slash packet is popped from the pending packets queue.
+// - If the consumer receives a V1Result ack from the provider,
+// OR if the consumer receives an ack from the provider that the slash packet was successfully handled,
+// the consumer transitions from "Standby" to "No Slash".
+// The slash record is cleared upon this transition, and the slash packet is popped from the pending packets queue.
 //
-// - Else if the consumer receives a reply from the provider that the slash packet was successfully handled,
-// the consumer transitions from "Standby" to "No Slash". The slash record is cleared upon this transition,
-// and the slash packet is popped from the pending packets queue.
-//
-// - Else if the consumer receives a reply from the provider that the slash packet was bounced (not handled),
+// - Else if the consumer receives an ack from the provider that the slash packet was bounced (not handled),
 // then SlashRecord.WaitingOnReply is set false, and the consumer retries sending the slash packet after a delay period.
 //
 // Once a retry is sent, the consumer enters a new cycle of the "Standby" state and the process repeats.
-//
-// Once the slash packet is successfully handled, the consumer transitions from "Standby" to "No Slash",
-// the slash record is cleared upon this transition, and the slash packet is popped from the pending packets queue.
 //
 // This design is implemented below, and in relay.go under SendPackets() and OnAcknowledgementPacket().
 //
