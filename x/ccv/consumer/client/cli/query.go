@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
