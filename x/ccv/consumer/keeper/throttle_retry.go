@@ -48,10 +48,8 @@ func (k Keeper) PacketSendingPermitted(ctx sdktypes.Context) bool {
 	}
 	// Retry delay period could be implemented as a param, but 1 hour is reasonable
 	retryDelayPeriod := time.Hour
-	timeSinceSend := ctx.BlockTime().Sub(record.SendTime)
 	// If retry delay period has elapsed, we can send again
-	retryPeriodElapsed := timeSinceSend >= retryDelayPeriod
-	return retryPeriodElapsed
+	return ctx.BlockTime().After(record.SendTime.Add(retryDelayPeriod))
 }
 
 func (k Keeper) UpdateSlashRecordOnSend(ctx sdktypes.Context) {
