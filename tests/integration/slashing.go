@@ -681,9 +681,8 @@ func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 		suite.Require().True(consumerKeeper.OutstandingDowntime(ctx, consAddr))
 	}
 
-	// send all pending packets - only slash packets should be queued in this test
-	// TODO: the following call can be removed
-	consumerKeeper.SendPackets(ctx)
+	// SendPackets method should have already been called during
+	// endblockers in relayAllCommittedPackets above
 
 	// check that pending data packets got cleared
 	dataPackets = consumerKeeper.GetPendingPackets(ctx)
