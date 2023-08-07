@@ -564,7 +564,7 @@ func (m *MockChannelKeeper) GetChannel(ctx types0.Context, srcPort, srcChan stri
 	return ret0, ret1
 }
 
-func (m *MockChannelKeeper)	GetChannelConnection(ctx types0.Context, portID, channelID string) (string, exported.ConnectionI, error) {
+func (m *MockChannelKeeper) GetChannelConnection(ctx types0.Context, portID, channelID string) (string, exported.ConnectionI, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetChannelConnection", ctx, portID, channelID)
 	ret0, _ := ret[0].(string)
