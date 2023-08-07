@@ -579,3 +579,31 @@ func TestPrevStandaloneChainFlag(t *testing.T) {
 	ck.MarkAsPrevStandaloneChain(ctx)
 	require.True(t, ck.IsPrevStandaloneChain(ctx))
 }
+
+func TestDeleteHeadOfPendingPackets(t *testing.T) {
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// append some pending packets
+	consumerKeeper.AppendPendingPacket(ctx, ccv.VscMaturedPacket, &ccv.ConsumerPacketData_VscMaturedPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, ccv.SlashPacket, &ccv.ConsumerPacketData_SlashPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, ccv.VscMaturedPacket, &ccv.ConsumerPacketData_VscMaturedPacketData{})
+
+	// Check there's 3 pending packets, vsc matured at head
+	pp := consumerKeeper.GetPendingPackets(ctx)
+	require.Len(t, pp, 3)
+	require.Equal(t, pp[0].Type, ccv.VscMaturedPacket)
+
+	// Delete the head, confirm slash packet is now at head
+	consumerKeeper.DeleteHeadOfPendingPackets(ctx)
+	pp = consumerKeeper.GetPendingPackets(ctx)
+	require.Len(t, pp, 2)
+	require.Equal(t, pp[0].Type, ccv.SlashPacket)
+
+	// Delete the head, confirm vsc matured packet is now at head
+	consumerKeeper.DeleteHeadOfPendingPackets(ctx)
+	pp = consumerKeeper.GetPendingPackets(ctx)
+	require.Len(t, pp, 1)
+	require.Equal(t, pp[0].Type, ccv.VscMaturedPacket)
+
+}
