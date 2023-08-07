@@ -331,8 +331,8 @@ func (tr TestRun) submitConsumerRemovalProposal(
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--gas`, `auto`,
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
 
