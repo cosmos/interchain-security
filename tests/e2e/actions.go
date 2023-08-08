@@ -1853,7 +1853,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		}
 
 		if verbose {
-			fmt.Printf("got expected error during key assignment | err: %s | output: %s \n", err, string(bz)) 
+			fmt.Printf("got expected error during key assignment | err: %s | output: %s \n", err, string(bz))
 		}
 	}
 
