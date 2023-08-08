@@ -15,10 +15,28 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
+// The list of test cases to be executed
+type TestSet []string
+
+func (t *TestSet) Set(value string) (err error) {
+	// Check and skip duplicates
+	for _, v := range *t {
+		if v == value {
+			return
+		}
+	}
+	*t = append(*t, value)
+	return
+}
+
+func (t *TestSet) String() string {
+	return fmt.Sprint(*t)
+}
+
 var (
-	verbose                      = flag.Bool("verbose", false, "turn verbose logging on/off")
-	happyPathOnly                = flag.Bool("happy-path-only", false, "run happy path tests only")
-	cometmockCompatibleHappyPath = flag.Bool("cometmock-happy-path", false, `run cometmock compatible happy path tests only.
+	verbose                       = flag.Bool("verbose", false, "turn verbose logging on/off")
+	happyPathOnly                 = flag.Bool("happy-path-only", false, "run happy path tests only")
+	kcometmockCompatibleHappyPath = flag.Bool("cometmock-happy-path", false, `run cometmock compatible happy path tests only.
 This is like the happy path, but skips steps
 that involve starting or stopping nodes for the same chain outside of the chain setup or teardown.
 This is suited for CometMock+Gorelayer testing`)
@@ -35,59 +53,122 @@ var (
 	gaiaTag = flag.String("gaia-tag", "", "gaia tag to use - default is latest")
 )
 
-// runs E2E tests
-// all docker containers are built sequentially to avoid race conditions when using local cosmos-sdk
-// after building docker containers, all tests are run in parallel using their respective docker containers
-func main() {
+var (
+	testSelection TestSet
+	testMap       map[string]*testRunWithSteps = map[string]*testRunWithSteps{
+		"happy-path-short": {testRun: DefaultTestRun(), steps: shortHappyPathSteps,
+			description: `run abridged happy path tests only.
+		This is like the happy path, but skips steps
+		that involve starting or stopping nodes for the same chain outside of the chain setup or teardown.
+		In particular, this skips steps related to downtime and double signing.
+		This is suited for CometMock+Gorelayer testing`},
+		"happy-path":            {testRun: DefaultTestRun(), steps: happyPathSteps, description: "happy path tests"},
+		"happy-path-softoptout": {testRun: DefaultTestRun(), steps: happyPathSoftOptOutSteps, description: "happy path with soft opt-out downtime"},
+		"changeover":            {testRun: ChangeoverTestRun(), steps: changeoverSteps, description: "changeover tests"},
+		"democracy-reward":      {testRun: DemocracyTestRun(true), steps: democracySteps, description: "democracy tests allowing rewards"},
+		"democracy":             {testRun: DemocracyTestRun(false), steps: rewardDenomConsumerSteps, description: "democracy tests"}, //TODO: clarify why rewardsteps are with arg "reward=false" ???
+		"slash-throttle":        {testRun: SlashThrottleTestRun(), steps: slashThrottleSteps, description: "slash throttle tests"},
+		"multiconsumer":         {testRun: MultiConsumerTestRun(), steps: multipleConsumers, description: "multi-consumer tests"},
+	}
+)
+
+func executeTests(tests []testRunWithSteps) (err error) {
+	if parallel != nil && *parallel {
+		fmt.Println("=============== running all tests in parallel ===============")
+	}
+
+	var wg sync.WaitGroup
+	for _, testCase := range tests {
+		if parallel != nil && *parallel {
+			wg.Add(1)
+			go func(run testRunWithSteps) {
+				defer wg.Done()
+				run.testRun.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag)
+			}(testCase)
+		} else {
+			log.Printf("=============== running %s ===============\n", testCase.testRun.name)
+			testCase.testRun.Run(testCase.steps, *localSdkPath, *useGaia, *gaiaTag)
+		}
+	}
+
+	if parallel != nil && *parallel {
+		wg.Wait()
+	}
+	return
+}
+
+func parseArguments() (err error) {
+	flag.Var(&testSelection, "tc",
+		fmt.Sprintf("Selection of test cases to be executed:\n%s,\n%s",
+			func() string {
+				var keys []string
+				for k, v := range testMap {
+					keys = append(keys, fmt.Sprintf("- %s : %s", k, v.description))
+				}
+				return strings.Join(keys, "\n")
+			}(),
+			"Example: -tc multiconsumer -tc happy-path "))
 	flag.Parse()
 
-	if cometmockCompatibleHappyPath != nil && *cometmockCompatibleHappyPath {
-		fmt.Println("=============== running short happy path only ===============")
-		tr := DefaultTestRun()
-		tr.Run(cometmockCompatibleHappyPathSteps, *localSdkPath, *useGaia, *gaiaTag)
+	// check if specified test case exists
+	for _, tc := range testSelection {
+		if _, hasKey := testMap[tc]; !hasKey {
+			err := fmt.Errorf("unknown test case '%s'", tc)
+			return err
+		}
+	}
+	return
+}
+
+func getTestCases(selection TestSet) (tests []testRunWithSteps) {
+
+	if shortHappyPathOnly != nil && *shortHappyPathOnly {
+		tests = append(tests, *testMap["happy-path-short"])
 		return
 	}
 
 	if happyPathOnly != nil && *happyPathOnly {
-		fmt.Println("=============== running happy path only ===============")
-		tr := DefaultTestRun()
-		tr.Run(happyPathSteps, *localSdkPath, *useGaia, *gaiaTag)
+		tests = append(tests, *testMap["happy-path"])
 		return
 	}
 
-	testRuns := []testRunWithSteps{
-		{ChangeoverTestRun(), changeoverSteps},
-		{DefaultTestRun(), happyPathSteps},
-		{DemocracyTestRun(true), democracySteps},
-		{DemocracyTestRun(false), rewardDenomConsumerSteps},
-		{SlashThrottleTestRun(), slashThrottleSteps},
+	// Run default tests if no test cases were selected
+	if len(selection) == 0 {
+		selection = TestSet{"changeover", "happy-path",
+			"democracy-reward", "democracy", "slash-throttle"}
+		if includeMultiConsumer != nil && *includeMultiConsumer {
+			selection = append(selection, "multiconsumer")
+		}
 	}
-	if includeMultiConsumer != nil && *includeMultiConsumer {
-		testRuns = append(testRuns, testRunWithSteps{MultiConsumerTestRun(), multipleConsumers})
+
+	// Get tests from selection
+	tests = []testRunWithSteps{}
+	for _, tc := range selection {
+		if _, exists := testMap[tc]; !exists {
+			log.Fatalf("Test case '%s' not found", tc)
+		}
+		tests = append(tests, *testMap[tc])
 	}
+	return
+}
+
+// runs E2E tests
+// all docker containers are built sequentially to avoid race conditions when using local cosmos-sdk
+// after building docker containers, all tests are run in parallel using their respective docker containers
+func main() {
+	if err := parseArguments(); err != nil {
+		flag.Usage()
+		log.Fatalf("Error parsing command arguments %s\n", err)
+	}
+
+	testCases := getTestCases(testSelection)
 
 	start := time.Now()
-	if parallel != nil && *parallel {
-		fmt.Println("=============== running all tests in parallel ===============")
-		var wg sync.WaitGroup
-		for _, run := range testRuns {
-			wg.Add(1)
-			go func(run testRunWithSteps) {
-				defer wg.Done()
-				tr := run.testRun
-				tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag)
-			}(run)
-		}
-		wg.Wait()
-		fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
-		return
+	err := executeTests(testCases)
+	if err != nil {
+		log.Fatalf("Test execution failed '%s'", err)
 	}
-
-	for _, run := range testRuns {
-		tr := run.testRun
-		tr.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag)
-	}
-	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
+	log.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
 }
 
 // Run sets up docker container and executes the steps in the test run.
@@ -104,8 +185,9 @@ func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag 
 }
 
 type testRunWithSteps struct {
-	testRun TestRun
-	steps   []Step
+	testRun     TestRun
+	steps       []Step
+	description string
 }
 
 func (tr *TestRun) runStep(step Step, verbose bool) {

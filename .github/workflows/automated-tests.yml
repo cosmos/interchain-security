@@ -11,7 +11,7 @@ on:
       - release/v*
       - feat/*
 jobs:
-  Automated_Tests:
+  Unit_Integration_Tests:
     runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
