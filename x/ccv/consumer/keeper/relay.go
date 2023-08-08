@@ -189,7 +189,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 	idxsForDeletion := []uint64{}
 	for _, p := range pending {
 		if !k.PacketSendingPermitted(ctx) {
-			return
+			break
 		}
 
 		// Send packet over IBC
