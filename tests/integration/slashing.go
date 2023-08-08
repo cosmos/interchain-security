@@ -249,6 +249,11 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 
 	// Mock a proper slash packet from consumer
 	spd := keepertestutil.GetNewSlashPacketData()
+
+	// We don't want truly randomized fields, infraction needs to be specified
+	if spd.Infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
+		spd.Infraction = stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
+	}
 	cpd := ccv.NewConsumerPacketData(ccv.SlashPacket,
 		&ccv.ConsumerPacketData_SlashPacketData{
 			SlashPacketData: &spd,
