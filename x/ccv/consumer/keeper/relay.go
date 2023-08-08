@@ -238,7 +238,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if res := ack.GetResult(); res != nil {
 		if len(res) != 1 {
-			k.Logger(ctx).Error("recv invalid ack; expected length 1", "channel", packet.SourceChannel, "ack", res)
+			return fmt.Errorf("acknowledgement result length must be 1, got %d", len(res))
 		}
 
 		// Unmarshal into V1 consumer packet data type. We trust data is formed correctly
@@ -266,7 +266,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			k.UpdateSlashRecordOnBounce(ctx)
 			// Note slash is still at head of queue and will now be retried after appropriate delay period.
 		default:
-			k.Logger(ctx).Error("recv invalid result ack; expected 1, 2, or 3", "channel", packet.SourceChannel, "ack", res)
+			return fmt.Errorf("unrecognized acknowledgement result: %c", res[0])
 		}
 	}
 
