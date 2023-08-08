@@ -20,7 +20,7 @@ service Query {
     option (google.api.http).get = "/interchain_security/ccv/consumer/params";
   }
 
-  rpc QueryProviderChainInfo(QueryProviderInfoRequest) returns (QueryProviderInfoResponse) {
+  rpc QueryProviderInfo(QueryProviderInfoRequest) returns (QueryProviderInfoResponse) {
     option (google.api.http).get = "/interchain_security/ccv/consumer/provider-info";
   }
 }
