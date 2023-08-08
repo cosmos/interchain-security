@@ -14,7 +14,7 @@ import (
 var _ types.QueryServer = Keeper{} //nolint:golint
 
 func (k Keeper) QueryNextFeeDistribution(c context.Context, //nolint:golint
-		req *types.QueryNextFeeDistributionEstimateRequest,
+	req *types.QueryNextFeeDistributionEstimateRequest,
 ) (*types.QueryNextFeeDistributionEstimateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
@@ -28,7 +28,7 @@ func (k Keeper) QueryNextFeeDistribution(c context.Context, //nolint:golint
 }
 
 func (k Keeper) QueryParams(c context.Context, //nolint:golint
-		req *types.QueryParamsRequest,
+	req *types.QueryParamsRequest,
 ) (*types.QueryParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
@@ -42,12 +42,12 @@ func (k Keeper) QueryParams(c context.Context, //nolint:golint
 }
 
 func (k Keeper) QueryProviderInfo(c context.Context, //nolint:golint
-		req *types.QueryProviderInfoRequest,
+	req *types.QueryProviderInfoRequest,
 ) (*types.QueryProviderInfoResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	return k.GetProviderChainInfo(ctx)
+	return k.GetProviderInfo(ctx)
 }

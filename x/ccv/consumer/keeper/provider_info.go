@@ -9,8 +9,7 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
-func (k Keeper) GetProviderChainInfo(ctx sdk.Context) (*types.QueryProviderInfoResponse, error) { //nolint:golint
-	//  get the channelID for the channel to the provider.
+func (k Keeper) GetProviderInfo(ctx sdk.Context) (*types.QueryProviderInfoResponse, error) { //nolint:golint
 	consumerChannelID, found := k.GetProviderChannel(ctx)
 	if !found {
 		return nil, ccvtypes.ErrChannelNotFound
