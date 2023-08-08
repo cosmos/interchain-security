@@ -261,10 +261,15 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	// Map infraction height on provider so validation passes and provider returns valid ack result
 	providerKeeper.SetValsetUpdateBlockHeight(s.providerCtx(), spd.ValsetUpdateId, 47923)
 
-	ack := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, spd)
-	s.Require().NotNil(ack)
+	exportedAck := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, spd)
+	s.Require().NotNil(exportedAck)
 
-	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))
+	// Unmarshal ack to struct that's compatible with consumer. IBC does this automatically
+	ack := channeltypes.Acknowledgement{}
+	err := channeltypes.SubModuleCdc.UnmarshalJSON(exportedAck.Acknowledgement(), &ack)
+	s.Require().NoError(err)
+
+	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, ack)
 	s.Require().NoError(err)
 
 	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, ccv.NewErrorAcknowledgementWithLog(s.consumerCtx(), fmt.Errorf("another error")))
