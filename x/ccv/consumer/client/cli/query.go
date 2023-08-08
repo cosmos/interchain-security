@@ -67,7 +67,7 @@ func CmdProviderInfo() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			req := &types.QueryProviderInfoRequest{}
-			res, err := queryClient.QueryProviderChainInfo(cmd.Context(), req)
+			res, err := queryClient.QueryProviderInfo(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
