@@ -10,8 +10,18 @@ module common {
 
     type ValidatorUpdate = {validator: Validator, newPower: int64}
 
-     val curTime: int = 0
+    // Generic state for a chain.
+    type ChainState = {
+        height: int,
+        time: Timestamp,
     }
+
+    // State for the provider chain.
+    val providerState: ChainState = {height: 0, time: 0}
+
+    // State for the consumer chain.
+    val consumerState: ChainState = {height: 0, time: 0}
+}
 
 module ccv_packets {
     import common.*
@@ -45,9 +55,19 @@ module ccv_packets {
     }
 }
 
+module ccv_common {
+    import common.* 
+
+    type VscId = int
+    type UnbondingId = int
+    type UnbondingOperation = 
+        {id: int}
+}
+
 module ibc {
     import common.*
     import ccv_packets.*
+
 
     // Since Quint does not support sum types yet, this is a workaround
     // to allow a packet to be one of the various types of packets.
@@ -80,6 +100,15 @@ module ibc {
     var ConsumerToProviderChannel: List[Packet]
     // Queue of outstanding packets from the provider to the consumer.
     var ProviderToConsumerChannel: List[Packet]
+
+    // description taken from the old difftest model:
+    // noop. We do not explicitly model the client update process
+    // but we must call this function at appropriate times in order
+    // to test the SUT using this model. This is because
+    // if we allow too much time to elapse between updates, the light
+    // clients in the SUT will expire, and the test will fail.
+    action UpdateClient(chain: Chain): bool = true
+
     
 }
 
@@ -89,6 +118,10 @@ module staking {
 
     type Undelegation = {validator: Validator, amount: int, startTime: Timestamp}
 
+    val Bonded: str = "Bonded"
+    val Unbonded: str = "Unbonded"
+    val Unbonding: str = "Unbonding"
+
     // The amount of unbonded tokens of the single delegator.
     var delegatorTokens: int
     // The total stake of the validator. Includes, but may exceed, the delegationAmount (e.g. validators can have self-delegations).
@@ -97,6 +130,8 @@ module staking {
     var validatorPower: Validator -> int
      // A queue of pending undelegations (i.e. unbondings).
     var undelegationsQueue: List[Undelegation]
+
+    var validatorStatus: Validator -> string
 
 
     // Constructor for undelegations.
@@ -125,13 +160,63 @@ module staking {
             // reduce the delegated amount immediately
             delegationAmounts' = delegationAmounts.setBy(validator, (oldDelegation => oldDelegation - undelegationAmount)),
             // keep the undelegation in the queue until unbonding is complete
-            undelegationsQueue' = undelegationsQueue.append(NewUndelegation(validator, undelegationAmount, curTime)),
+            undelegationsQueue' = 
+                undelegationsQueue.append(NewUndelegation(validator, undelegationAmount, providerState.time)),
             // TODO: call hooks for undelegate
         }
     }
+}
 
+module slashing {
+    import common.*
 
+    // Stores, for each validator, until when it is jailed.
+    // If this is less than the current time, the validator is not jailed.
+    var jailed: Validator -> int
 
+    val jailTime: int = 50
+
+    // For now, just jails the validator.
+    action SlashValidator(validator: Validator): bool = all {
+        JailUntil(validator, providerState.time + jailTime)
+    }
+
+    action JailUntil(validator: Validator, time: Timestamp): bool = 
+        jailed' = jailed.set(validator, time)
+
+    action __slashing_noop(): bool = 
+        jailed' = jailed
+}
+
+module ccv_provider {
+    import common.*
+    import ibc.*
+    import ccv_packets.*
+    import ccv_common.*
+    import basicSpells.* from "./basicSpells"
+    import extraSpells.* from "./extraSpells"
+
+    // Enables accessing, for every unbonding operation,
+    // the set of consumer chains that are still unbonding.
+    var unbondingOps: UnbondingId -> UnbondingOperation
+
+    // Enables the provider CCV module to match a VSCMaturedPacket{vscId},
+    // received from a consumer chain with chainId,
+    // with the corresponding unbonding operations.
+    var vscToUnbondingOps: VscId -> Set[UnbondingId]
+
+    var matureUnbondingOps: Set[UnbondingId]
+
+    // Matures all unbondings associated with the vscId of the given VSCMaturedPacketData.
+    // Remove the unbonding operations from the unbondingOps map.
+    // Add the 
+    action OnRecvVSCMaturedPacket(data: VSCMaturedPacketData): bool = all {
+        matureUnbondingOps' = matureUnbondingOps.union(vscToUnbondingOps.get(data.id)),
+        unbondingOps'  = unbondingOps.mapRemoveAll(vscToUnbondingOps.get(data.id)),
+        vscToUnbondingOps' = vscToUnbondingOps.mapRemove(data.id),
+    }
+        
+        
 }
 
 
@@ -139,8 +224,8 @@ module ccv_consumer {
     import common.*
     import ibc.*
     import ccv_packets.*
-
-    var validatorPower: Validator -> int
+    import staking.*
+    import slashing.*
 
     // outstandingDowntime.get(valAddr) = true entails that the consumer chain sent a request to slash for downtime the validator with address valAddr.
     // outstandingDowntime.get(valAddr) is set to false once the consumer chain receives a confirmation that the downtime slash request was received by the provider chain, 
@@ -158,26 +243,91 @@ module ccv_consumer {
     any {
         all {
             // it is a downtime slash but we already have outstanding downtime for that validator, so do nothing
-            isDowntime,
+            isDowntime == true,
+            outstandingDowntime.get(validator) == true,
             ConsumerToProviderChannel' = ConsumerToProviderChannel,
+            outstandingDowntime' = outstandingDowntime,
         },
         all {
+            // it is not a downtime slash or we don't have outstanding downtime for that validator, so send a downtime slash request
+            isDowntime == false or outstandingDowntime.get(validator) == false,
             // we need to put a slash packet
             ConsumerToProviderChannel' = ConsumerToProviderChannel.append(
                 newSlashPacket(validator, validatorPower.get(validator), HtoVSC.get(infractionHeight),
-            isDowntime))
+            isDowntime)),
+            if (isDowntime == true) {
+                outstandingDowntime' = outstandingDowntime.setBy(validator, (oldOutstandingDowntime => true))
+            } else {
+                outstandingDowntime' = outstandingDowntime
+            }
         }
     }
+
+    action OnRecvVSC(data: VSCPacketData): bool = all {
+        HtoVSC' = HtoVSC.put(consumerState.height + 1, data.id),
+        receivedVSCs' = receivedVSCs.append(data),
+    }
+
+    action OnRecvSlash(data: SlashPacketData): bool = all {
+        // TODO: soft opt out https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/adr-009-soft-opt-out.md
+        if(validatorStatus.get(data.validator) == Unbonded) {
+            // noop, the validator is unbonded so cannot be slashed anymore
+            __slashing_noop()
+        } else {
+            // tell the slashing module to slash the validator
+            // SlashValidator(data.validator)
+            jailed' = jailed.set(data.validator, 50)
+        }
+    }
+
 }
 
 module main {
     import common.*
-    import ibc.Packet
+    import ibc.*
+    import ccv_consumer.*
+    import ccv_provider.*
+
+     // Delivers the next pending packet to the given chain.
+    action DeliverPacket(receiver: Chain): bool = all {
+        receiver == Provider or receiver == Consumer,
+        if(receiver == Provider) {
+            all {
+                ConsumerToProviderChannel' = ConsumerToProviderChannel.tail(),
+                ProviderToConsumerChannel' = ProviderToConsumerChannel,
+                DeliverPacketToChain(receiver, ConsumerToProviderChannel.head())
+            }
+        } else { // receiver == Consumer
+            all {
+                ProviderToConsumerChannel' = ProviderToConsumerChannel.tail(),
+                ConsumerToProviderChannel' = ConsumerToProviderChannel,
+                DeliverPacketToChain(receiver, ConsumerToProviderChannel.head())
+            }
+        }
+    }
+
+    // Delivers a specific packet to the given chain.
+    action DeliverPacketToChain(receiver: Chain, packet: Packet): bool = all {
+        if(packet.isVscPacket) {
+            all {
+                receiver == Consumer,
+                OnRecvVSC(packet.vscPacketData)
+            }
+        } else if(packet.isSlashPacket) {
+            all {
+                receiver == Provider,
+                // DeliverSlashPacket(receiver, packet.slashPacketData)
+            }
+        } else { // packet.isVSCMaturedPacket
+            all {
+                receiver == Provider,
+                // DeliverVSCMaturedPacket(receiver, packet.vscMaturedPacketData)
+            }
+        }
+    }
 
     pure val SlashTypes = Set("downtime", "equivocation")
 
-    action UpdateClient(chain: Chain): bool = true
-    action DeliverPacket(chain: Chain, packet: Packet): bool = true
     action endAndBeginBlock(chain: Chain): bool = true
 
 }
