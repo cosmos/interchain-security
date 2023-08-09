@@ -10,8 +10,8 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-sd
 
 # run all tests: unit, integration, diff, and E2E
-test: 
-	go test ./... && go run ./tests/e2e/... 
+test:
+	go test ./... && go run ./tests/e2e/...
 
 # run all unit tests
 test-unit:
@@ -36,7 +36,7 @@ test-e2e-short:
 # run only happy path E2E tests with cometmock
 # this set of traces does not test equivocation but it does check downtime
 test-e2e-short-cometmock:
-	go run ./tests/e2e/... --cometmock-happy-path --use-cometmock --use-gorelayer
+	go run ./tests/e2e/... --tc happy-path-short --use-cometmock --use-gorelayer
 
 # run full E2E tests in sequence (including multiconsumer)
 test-e2e-multi-consumer:
