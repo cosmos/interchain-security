@@ -6,11 +6,13 @@ module weird_parsing {
     any {
         all {
             boolean == MyTrue,
-            channel' = channel
+            channel' = channel.append(1)
         },
         all {
             not(boolean),
             channel' = channel
         }
     }
+
+    action init = channel' = []
 }
