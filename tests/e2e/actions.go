@@ -1812,14 +1812,16 @@ type assignConsumerPubKeyAction struct {
 	// reconfigureNode will change keys the node uses and restart
 	reconfigureNode bool
 	// executing the action should raise an error
-	expectError bool
+	expectError   bool
+	expectedError string
 }
 
 func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbose bool) {
 	valCfg := tr.validatorConfigs[action.validator]
 
+	// Note: to get error response reported back from this command '--gas auto' needs to be set.
 	assignKey := fmt.Sprintf(
-		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 90000 --keyring-backend test -y -o json`,
+		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas auto --keyring-backend test -y -o json`,
 		tr.chainConfigs[chainID("provi")].binaryName,
 		string(tr.chainConfigs[action.chain].chainId),
 		action.consumerPubkey,
@@ -1845,9 +1847,13 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		log.Fatalf("unexpected error during key assignment - output: %s, err: %s", string(bz), err)
 	}
 
-	if action.expectError {
+	if action.expectError && !tr.useCometmock { // error report ony works with --gas auto, which does not work with CometMock, so ignore
+		if err == nil || !strings.Contains(string(bz), action.expectedError) {
+			log.Fatalf("expected error not raised: expected: '%s', got '%s'", action.expectedError, (bz))
+		}
+
 		if verbose {
-			fmt.Printf("got expected error during key assignment | err: %s \n", err.Error())
+			fmt.Printf("got expected error during key assignment | err: %s | output: %s \n", err, string(bz))
 		}
 	}
 
