@@ -1,7 +1,6 @@
 package main
 
-// Steps that make carol double sign on the provider, and bob double sign on a single consumer.
-// These steps happen after opt-out downtime traces have executed.
+// Steps that make carol double sign on the provider, and bob double sign on a single consumer
 func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 	return []Step{
 		{
@@ -23,7 +22,7 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   500,
-						validatorID("carol"): 501, // not tombstoned on consumerName yet
+						validatorID("carol"): 495, // not tombstoned on consumerName yet
 					},
 				},
 			},

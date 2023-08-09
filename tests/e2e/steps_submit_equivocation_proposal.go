@@ -21,7 +21,7 @@ func stepsRejectEquivocationProposal(consumerName string, propNumber uint) []Ste
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+						validatorID("carol"): 495,
 					},
 					ValBalances: &map[validatorID]uint{
 						validatorID("bob"): 9500000000,
@@ -35,7 +35,7 @@ func stepsRejectEquivocationProposal(consumerName string, propNumber uint) []Ste
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+						validatorID("carol"): 495,
 					},
 				},
 			},
