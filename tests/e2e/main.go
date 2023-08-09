@@ -51,17 +51,19 @@ var (
 var (
 	testSelection TestSet
 	testMap       map[string]*testRunWithSteps = map[string]*testRunWithSteps{
-		"happy-path-short": {testRun: DefaultTestRun(), steps: shortHappyPathSteps,
+		"happy-path-short": {
+			testRun: DefaultTestRun(), steps: shortHappyPathSteps,
 			description: `run abridged happy path tests only.
 		This is like the happy path, but skips steps
 		that involve starting or stopping nodes for the same chain outside of the chain setup or teardown.
 		In particular, this skips steps related to downtime and double signing.
-		This is suited for CometMock+Gorelayer testing`},
+		This is suited for CometMock+Gorelayer testing`,
+		},
 		"happy-path":            {testRun: DefaultTestRun(), steps: happyPathSteps, description: "happy path tests"},
 		"happy-path-softoptout": {testRun: DefaultTestRun(), steps: happyPathSoftOptOutSteps, description: "happy path with soft opt-out downtime"},
 		"changeover":            {testRun: ChangeoverTestRun(), steps: changeoverSteps, description: "changeover tests"},
 		"democracy-reward":      {testRun: DemocracyTestRun(true), steps: democracySteps, description: "democracy tests allowing rewards"},
-		"democracy":             {testRun: DemocracyTestRun(false), steps: rewardDenomConsumerSteps, description: "democracy tests"}, //TODO: clarify why rewardsteps are with arg "reward=false" ???
+		"democracy":             {testRun: DemocracyTestRun(false), steps: rewardDenomConsumerSteps, description: "democracy tests"}, // TODO: clarify why rewardsteps are with arg "reward=false" ???
 		"slash-throttle":        {testRun: SlashThrottleTestRun(), steps: slashThrottleSteps, description: "slash throttle tests"},
 		"multiconsumer":         {testRun: MultiConsumerTestRun(), steps: multipleConsumers, description: "multi-consumer tests"},
 	}
@@ -118,8 +120,10 @@ func parseArguments() (err error) {
 func getTestCases(selection TestSet) (tests []testRunWithSteps) {
 	// Run default tests if no test cases were selected
 	if len(selection) == 0 {
-		selection = TestSet{"changeover", "happy-path",
-			"democracy-reward", "democracy", "slash-throttle"}
+		selection = TestSet{
+			"changeover", "happy-path",
+			"democracy-reward", "democracy", "slash-throttle",
+		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selection = append(selection, "multiconsumer")
 		}
