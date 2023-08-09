@@ -8,6 +8,7 @@ Add an entry to the unreleased section whenever merging a PR to main that is not
 * (fix!) revert consumer packet data changes from #1037 [#1150](https://github.com/cosmos/interchain-security/pull/1150)
 * (fix!) proper deletion of pending packets [#1146](https://github.com/cosmos/interchain-security/pull/1146)
 * (feat!) optimize pending packets storage on consumer, with migration! [#1037](https://github.com/cosmos/interchain-security/pull/1037)
+* (feat) introduce the gRPC query `/interchain_security/ccv/consumer/provider-info` and CLI command `interchain-security-cd q ccvconsumer provider-info`to retrieve provider info from the consumer chain.
 
 ## v3.1.0
 
