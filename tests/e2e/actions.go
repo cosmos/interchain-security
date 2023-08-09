@@ -1604,18 +1604,7 @@ func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, dow
 
 	if tr.useCometmock {
 		// send set_signing_status either to down or up for validator
-		var validatorAddress string
-		if chain == chainID("provi") {
-			validatorAddress = tr.getValidatorKeyAddressFromString(tr.validatorConfigs[validator].privValidatorKey)
-		} else {
-			var valAddressString string
-			if tr.validatorConfigs[validator].useConsumerKey {
-				valAddressString = tr.validatorConfigs[validator].consumerPrivValidatorKey
-			} else {
-				valAddressString = tr.validatorConfigs[validator].privValidatorKey
-			}
-			validatorAddress = tr.getValidatorKeyAddressFromString(valAddressString)
-		}
+		validatorAddress := tr.GetValidatorAddress(chain, validator)
 
 		method := "set_signing_status"
 		params := fmt.Sprintf(`{"private_key_address":"%s","status":"%s"}`, validatorAddress, lastArg)
@@ -1646,6 +1635,22 @@ func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, dow
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+}
+
+func (tr TestRun) GetValidatorAddress(chain chainID, validator validatorID) string {
+	var validatorAddress string
+	if chain == chainID("provi") {
+		validatorAddress = tr.getValidatorKeyAddressFromString(tr.validatorConfigs[validator].privValidatorKey)
+	} else {
+		var valAddressString string
+		if tr.validatorConfigs[validator].useConsumerKey {
+			valAddressString = tr.validatorConfigs[validator].consumerPrivValidatorKey
+		} else {
+			valAddressString = tr.validatorConfigs[validator].privValidatorKey
+		}
+		validatorAddress = tr.getValidatorKeyAddressFromString(valAddressString)
+	}
+	return validatorAddress
 }
 
 type unjailValidatorAction struct {
@@ -1795,15 +1800,28 @@ func (tr TestRun) invokeDoublesignSlash(
 	action doublesignSlashAction,
 	verbose bool,
 ) {
-	chainConfig := tr.chainConfigs[action.chain]
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
-		"/testnet-scripts/cause-doublesign.sh", chainConfig.binaryName, string(action.validator),
-		string(chainConfig.chainId), chainConfig.ipPrefix).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
+	if !tr.useCometmock {
+		chainConfig := tr.chainConfigs[action.chain]
+		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+		bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
+			"/testnet-scripts/cause-doublesign.sh", chainConfig.binaryName, string(action.validator),
+			string(chainConfig.chainId), chainConfig.ipPrefix).CombinedOutput()
+		if err != nil {
+			log.Fatal(err, "\n", string(bz))
+		}
+		tr.waitBlocks("provi", 10, 2*time.Minute)
+	} else { // tr.useCometMock
+		validatorAddress := tr.GetValidatorAddress(action.chain, action.validator)
+
+		method := "cause_double_sign"
+		params := fmt.Sprintf(`{"private_key_address":"%s"}`, validatorAddress)
+
+		address := tr.getQueryNodeRPCAddress(action.chain)
+
+		tr.curlJsonRPCRequest(method, params, address)
+		tr.waitBlocks(action.chain, 1, 10*time.Second)
+		return
 	}
-	tr.waitBlocks("provi", 10, 2*time.Minute)
 }
 
 type assignConsumerPubKeyAction struct {
