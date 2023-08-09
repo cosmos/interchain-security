@@ -1813,7 +1813,8 @@ type assignConsumerPubKeyAction struct {
 	// reconfigureNode will change keys the node uses and restart
 	reconfigureNode bool
 	// executing the action should raise an error
-	expectError bool
+	expectError   bool
+	expectedError string
 }
 
 func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbose bool) {
@@ -1848,8 +1849,8 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	}
 
 	if action.expectError {
-		if err == nil {
-			log.Fatalf("expected error not raised: %s", string(bz))
+		if err == nil || !strings.Contains(string(bz), action.expectedError) {
+			log.Fatalf("expected error not raised: expected: '%s', got '%s'", action.expectedError, (bz))
 		}
 
 		if verbose {
