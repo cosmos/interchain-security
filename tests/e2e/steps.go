@@ -28,7 +28,7 @@ var happyPathSteps = concatSteps(
 	stepsSubmitEquivocationProposal("consu", 2),   // now prop to tombstone bob is submitted and accepted
 	stepsStartRelayer(),
 	stepsConsumerRemovalPropNotPassing("consu", 3), // submit removal prop but vote no on it - chain should stay
-	stepsStopChain("consu", 4),
+	stepsStopChain("consu", 4),                     // stop chain
 )
 
 var shortHappyPathSteps = concatSteps(
