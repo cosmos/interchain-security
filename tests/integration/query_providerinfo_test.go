@@ -1,6 +1,6 @@
 package integration
 
-func (s *CCVTestSuite) TestAQueryProviderInfo() {
+func (s *CCVTestSuite) TestQueryProviderInfo() {
 	s.SetupCCVChannel(s.path)
 	s.SendEmptyVSCPacket()
 
