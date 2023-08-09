@@ -34,12 +34,7 @@ func (t *TestSet) String() string {
 }
 
 var (
-	verbose                       = flag.Bool("verbose", false, "turn verbose logging on/off")
-	happyPathOnly                 = flag.Bool("happy-path-only", false, "run happy path tests only")
-	kcometmockCompatibleHappyPath = flag.Bool("cometmock-happy-path", false, `run cometmock compatible happy path tests only.
-This is like the happy path, but skips steps
-that involve starting or stopping nodes for the same chain outside of the chain setup or teardown.
-This is suited for CometMock+Gorelayer testing`)
+	verbose              = flag.Bool("verbose", false, "turn verbose logging on/off")
 	includeMultiConsumer = flag.Bool("include-multi-consumer", false, "include multiconsumer tests in run")
 	parallel             = flag.Bool("parallel", false, "run all tests in parallel")
 	localSdkPath         = flag.String("local-sdk-path", "",
@@ -121,17 +116,6 @@ func parseArguments() (err error) {
 }
 
 func getTestCases(selection TestSet) (tests []testRunWithSteps) {
-
-	if shortHappyPathOnly != nil && *shortHappyPathOnly {
-		tests = append(tests, *testMap["happy-path-short"])
-		return
-	}
-
-	if happyPathOnly != nil && *happyPathOnly {
-		tests = append(tests, *testMap["happy-path"])
-		return
-	}
-
 	// Run default tests if no test cases were selected
 	if len(selection) == 0 {
 		selection = TestSet{"changeover", "happy-path",
