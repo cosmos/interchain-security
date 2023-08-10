@@ -65,7 +65,7 @@ var (
 		"democracy-reward":      {testRun: DemocracyTestRun(true), steps: democracySteps, description: "democracy tests allowing rewards"},
 		"democracy":             {testRun: DemocracyTestRun(false), steps: rewardDenomConsumerSteps, description: "democracy tests"}, // TODO: clarify why rewardsteps are with arg "reward=false" ???
 		"slash-throttle":        {testRun: SlashThrottleTestRun(), steps: slashThrottleSteps, description: "slash throttle tests"},
-		"multiconsumer":         {testRun: MultiConsumerTestRun(), steps: multipleConsumers, description: "multi-consumer tests"},
+		"multiconsumer":         {testRun: MultiConsumerTestRun(), steps: multipleConsumers, description: "multi consumer tests"},
 	}
 )
 
