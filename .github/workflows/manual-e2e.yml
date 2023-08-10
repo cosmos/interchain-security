@@ -9,16 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/setup-go@v4
-        with:
-          go-version: "1.20"
-      - uses: actions/checkout@v3
-      - name: Checkout LFS objects
-        run: git lfs checkout
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: "1.20" # The Go version to download (if necessary) and use.
+      - name: Check out repo
+        uses: actions/checkout@v3
+      - name: E2E Setup
+        uses: ./.github/actions/action-e2e-setup
       - name: E2E happy-path test
         run: go run ./tests/e2e/... --tc happy-path
   changeover-test:
