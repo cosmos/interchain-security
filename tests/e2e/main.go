@@ -108,7 +108,9 @@ func parseArguments() (err error) {
 	// Enforce go-relayer in case of cometmock as hermes is not yet supported
 	if useCometmock != nil && *useCometmock && (useGorelayer == nil || !*useGorelayer) {
 		fmt.Println("Enforcing go-relayer as cometmock is requested")
-		flag.Set("use-gorelayer", "true")
+		if err = flag.Set("use-gorelayer", "true"); err != nil {
+			return
+		}
 	}
 	// check if specified test case exists
 	for _, tc := range testSelection {
