@@ -12,6 +12,16 @@ import (
 //
 // Throttling with retries follows a finite-state machine design:
 //
+// 2 states: "No Slash" and "Standby".
+// Initial State: "No Slash"
+// Transition Event: ("No Slash", Slash packet sent) => ("Standby")
+// Transition Event: ("Standby", V1Result ack received) => ("No Slash")
+// Transition Event: ("Standby", Slash packet successfully handled) => ("No Slash")
+// Internal Transition Event: ("Standby", Slash packet bounced) => ("Standby", with SlashRecord.WaitingOnReply = false)
+// Transition Event: ("Standby", Retry sent) => ("Standby", new cycle)
+//
+// Description in words:
+//
 // 1. "No slash": If no slash record exists, the consumer is permitted to send packets from the pending packets queue.
 // The consumer starts in this state from genesis.
 //
