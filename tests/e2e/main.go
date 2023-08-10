@@ -53,16 +53,15 @@ var (
 	testMap       map[string]*testRunWithSteps = map[string]*testRunWithSteps{
 		"happy-path-short": {
 			testRun: DefaultTestRun(), steps: shortHappyPathSteps,
-			description: `run abridged happy path tests only.
-		This is like the happy path, but skips steps
-		that involve starting or stopping nodes for the same chain outside of the chain setup or teardown.
-		In particular, this skips steps related to downtime and double signing.
-		This is suited for CometMock+Gorelayer testing`,
+			description: `This is like the happy path, but skips steps
+that involve starting or stopping nodes for the same chain outside of the chain setup or teardown.
+In particular, this skips steps related to downtime and double signing.
+This is suited for CometMock+Gorelayer testing`,
 		},
 		"happy-path":       {testRun: DefaultTestRun(), steps: happyPathSteps, description: "happy path tests"},
 		"changeover":       {testRun: ChangeoverTestRun(), steps: changeoverSteps, description: "changeover tests"},
 		"democracy-reward": {testRun: DemocracyTestRun(true), steps: democracySteps, description: "democracy tests allowing rewards"},
-		"democracy":        {testRun: DemocracyTestRun(false), steps: rewardDenomConsumerSteps, description: "democracy tests"}, // TODO: clarify why rewardsteps are with arg "reward=false" ???
+		"democracy":        {testRun: DemocracyTestRun(false), steps: rewardDenomConsumerSteps, description: "democracy tests"},
 		"slash-throttle":   {testRun: SlashThrottleTestRun(), steps: slashThrottleSteps, description: "slash throttle tests"},
 		"multiconsumer":    {testRun: MultiConsumerTestRun(), steps: multipleConsumers, description: "multi consumer tests"},
 	}
