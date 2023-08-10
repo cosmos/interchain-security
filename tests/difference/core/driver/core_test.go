@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"testing"
 	"time"
 
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -331,9 +330,12 @@ func (s *CoreSuite) TestTraces() {
 	fmt.Println("Shortest [traceIx, actionIx]:", shortest, shortestLen)
 }
 
-func TestCoreSuite(t *testing.T) {
-	suite.Run(t, new(CoreSuite))
-}
+// TODO: diff tests will eventually be replaced by quint tests, and all this code could then be deleted.
+// Until that decision is finalized, we'll just comment out the top-level test.
+
+// func TestCoreSuite(t *testing.T) {
+// 	suite.Run(t, new(CoreSuite))
+// }
 
 // SetupTest sets up the test suite in a 'zero' state which matches
 // the initial state in the model.
