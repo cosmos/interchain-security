@@ -31,23 +31,6 @@ var happyPathSteps = concatSteps(
 	stepsStopChain("consu", 4),                     // stop chain
 )
 
-var happyPathSoftOptOutSteps = concatSteps(
-	stepsStartChains([]string{"consu"}, false),
-	stepsDelegate("consu"),
-	stepsAssignConsumerKeyOnStartedChain("consu", "bob"),
-	stepsUnbond("consu"),
-	stepsCancelUnbond("consu"),
-	stepsRedelegateForOptOut("consu"),
-	stepsDowntimeWithOptOut("consu"),
-	stepsRedelegate("consu"),
-	stepsRejectEquivocationProposal("consu", 2),   // prop to tombstone bob is rejected
-	stepsDoubleSignOnProviderAndConsumer("consu"), // carol double signs on provider, bob double signs on consumer
-	stepsSubmitEquivocationProposal("consu", 2),   // now prop to tombstone bob is submitted and accepted
-	stepsStartRelayer(),
-	stepsConsumerRemovalPropNotPassing("consu", 3), // submit removal prop but vote no on it - chain should stay
-	stepsStopChain("consu", 4),                     // stop chain
-)
-
 var shortHappyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),

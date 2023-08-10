@@ -59,13 +59,12 @@ var (
 		In particular, this skips steps related to downtime and double signing.
 		This is suited for CometMock+Gorelayer testing`,
 		},
-		"happy-path":            {testRun: DefaultTestRun(), steps: happyPathSteps, description: "happy path tests"},
-		"happy-path-softoptout": {testRun: DefaultTestRun(), steps: happyPathSoftOptOutSteps, description: "happy path with soft opt-out downtime"},
-		"changeover":            {testRun: ChangeoverTestRun(), steps: changeoverSteps, description: "changeover tests"},
-		"democracy-reward":      {testRun: DemocracyTestRun(true), steps: democracySteps, description: "democracy tests allowing rewards"},
-		"democracy":             {testRun: DemocracyTestRun(false), steps: rewardDenomConsumerSteps, description: "democracy tests"}, // TODO: clarify why rewardsteps are with arg "reward=false" ???
-		"slash-throttle":        {testRun: SlashThrottleTestRun(), steps: slashThrottleSteps, description: "slash throttle tests"},
-		"multiconsumer":         {testRun: MultiConsumerTestRun(), steps: multipleConsumers, description: "multi consumer tests"},
+		"happy-path":       {testRun: DefaultTestRun(), steps: happyPathSteps, description: "happy path tests"},
+		"changeover":       {testRun: ChangeoverTestRun(), steps: changeoverSteps, description: "changeover tests"},
+		"democracy-reward": {testRun: DemocracyTestRun(true), steps: democracySteps, description: "democracy tests allowing rewards"},
+		"democracy":        {testRun: DemocracyTestRun(false), steps: rewardDenomConsumerSteps, description: "democracy tests"}, // TODO: clarify why rewardsteps are with arg "reward=false" ???
+		"slash-throttle":   {testRun: SlashThrottleTestRun(), steps: slashThrottleSteps, description: "slash throttle tests"},
+		"multiconsumer":    {testRun: MultiConsumerTestRun(), steps: multipleConsumers, description: "multi consumer tests"},
 	}
 )
 
@@ -107,6 +106,11 @@ func parseArguments() (err error) {
 			"Example: -tc multiconsumer -tc happy-path "))
 	flag.Parse()
 
+	// Enforce go-relayer in case of cometmock as hermes is not yet supported
+	if useCometmock != nil && *useCometmock && (useGorelayer == nil || !*useGorelayer) {
+		fmt.Println("Enforcing go-relayer as cometmock is requested")
+		flag.Set("use-gorelayer", "true")
+	}
 	// check if specified test case exists
 	for _, tc := range testSelection {
 		if _, hasKey := testMap[tc]; !hasKey {
