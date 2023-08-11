@@ -132,7 +132,7 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 	}, nil
 }
 
-// CheckMisbehaviourAndUpdateState checks that headers in the given misbehaviour forms
+// CheckMisbehaviour checks that headers in the given misbehaviour forms
 // a valid light client attack and that the corresponding light client isn't expired
 func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
 	if err := misbehaviour.ValidateBasic(); err != nil {
