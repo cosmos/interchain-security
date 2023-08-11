@@ -10,9 +10,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/version"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 )
 
@@ -125,12 +125,12 @@ Examples:
 				WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
 			submitter := clientCtx.GetFromAddress()
-			var misbehavior ibctmtypes.Misbehaviour
-			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[1]), &misbehavior); err != nil {
+			var misbehaviour ibctmtypes.Misbehaviour
+			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[1]), &misbehaviour); err != nil {
 				return err
 			}
 
-			msg, err := types.NewMsgSubmitConsumerMisbehaviour(submitter, &misbehavior)
+			msg, err := types.NewMsgSubmitConsumerMisbehaviour(submitter, &misbehaviour)
 			if err != nil {
 				return err
 			}

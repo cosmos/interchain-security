@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 )
 
@@ -147,8 +146,8 @@ func (msg MsgRegisterConsumerRewardDenom) ValidateBasic() error {
 	return nil
 }
 
-func NewMsgSubmitConsumerMisbehaviour(submitter sdk.AccAddress, m *ibctmtypes.Misbehaviour) (*MsgSubmitConsumerMisbehaviour, error) {
-	return &MsgSubmitConsumerMisbehaviour{Submitter: submitter.String(), Misbehaviour: m}, nil
+func NewMsgSubmitConsumerMisbehaviour(submitter sdk.AccAddress, misbehaviour *ibctmtypes.Misbehaviour) (*MsgSubmitConsumerMisbehaviour, error) {
+	return &MsgSubmitConsumerMisbehaviour{Submitter: submitter.String(), Misbehaviour: misbehaviour}, nil
 }
 
 // Route implements the sdk.Msg interface.
@@ -164,6 +163,7 @@ func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
 	if msg.Submitter == "" {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
 	}
+
 	if err := msg.Misbehaviour.ValidateBasic(); err != nil {
 		return err
 	}

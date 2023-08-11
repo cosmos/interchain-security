@@ -233,12 +233,11 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 						validatorID("alice"): 0,
 						validatorID("bob"):   20,
 					},
-					// The consumer light client should be frozen
-					// TODO: to be changed when merging PR #1148
+					// The consumer light client should not be frozen
 					ClientsFrozenHeights: &map[string]clienttypes.Height{
 						"07-tendermint-0": {
 							RevisionNumber: 0,
-							RevisionHeight: 1,
+							RevisionHeight: 0,
 						},
 					},
 				},

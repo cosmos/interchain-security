@@ -268,3 +268,7 @@ func TestHandleConsumerMisbehaviour(t *testing.T) {
 func TestGetByzantineValidators(t *testing.T) {
 	runCCVTestByName(t, "TestGetByzantineValidators")
 }
+
+func TestCheckMisbehaviour(t *testing.T) {
+	runCCVTestByName(t, "TestCheckMisbehaviour")
+}

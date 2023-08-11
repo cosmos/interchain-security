@@ -6,7 +6,9 @@ import (
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -17,7 +19,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	logger := k.Logger(ctx)
 
 	// Check that the misbehaviour is valid and that the client isn't expired
-	if err := k.clientKeeper.CheckMisbehaviourAndUpdateState(ctx, &misbehaviour); err != nil {
+	if err := k.CheckMisbehaviour(ctx, misbehaviour); err != nil {
 		logger.Info("Misbehaviour rejected", err.Error())
 
 		return err
@@ -128,4 +130,36 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 		SignedHeader: sh,
 		ValidatorSet: vs,
 	}, nil
+}
+
+// CheckMisbehaviour checks that headers in the given misbehaviour forms
+// a valid light client attack and that the corresponding light client isn't expired
+func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
+	if err := misbehaviour.ValidateBasic(); err != nil {
+		return err
+	}
+
+	clientState, found := k.clientKeeper.GetClientState(ctx, misbehaviour.GetClientID())
+	if !found {
+		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot check misbehaviour for client with ID %s", misbehaviour.GetClientID())
+	}
+
+	clientStore := k.clientKeeper.ClientStore(ctx, misbehaviour.GetClientID())
+
+	// Check that the headers are at the same height to ensure that
+	// the misbehaviour is for a light client attack and not a time violation,
+	// see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go#L54
+	if !misbehaviour.Header1.GetHeight().EQ(misbehaviour.Header2.GetHeight()) {
+		return sdkerrors.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
+	}
+
+	// CheckMisbehaviourAndUpdateState verifies the misbehaviour against the consensus states
+	// but does NOT update the light client status.
+	// Note CheckMisbehaviourAndUpdateState returns an error if the light client is expired
+	_, err := clientState.CheckMisbehaviourAndUpdateState(ctx, k.cdc, clientStore, &misbehaviour)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
