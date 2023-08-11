@@ -127,8 +127,8 @@ Examples of tests made easier with CometMock are listed below:
 - upgrade tests
 - state-breaking changes
 
-With CometMock, the **matrix test** approach can also be used. The image below illustrates a CometMock setup that can be used to discover non-deterministic behaviour and state-breaking changes.
-![e2e matrix tests](../../figures/cometmock_matrix_tests.png)
+With CometMock, the **matrix test** approach can also be used. The image below illustrates a CometMock setup that can be used to discover non-deterministic behavior and state-breaking changes.
+![e2e matrix tests](../../figures/cometmock_matrix_test.png)
 
 This table explains which versions are tested against each other for the same set of test traces:
 * ✅ marks a passing test
