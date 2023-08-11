@@ -105,7 +105,7 @@ $ %s tx provider register-consumer-reward-denom untrn --from mykey
 func NewSubmitConsumerMisbehaviourCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "submit-consumer-misbehaviour [misbehaviour]",
-		Short: "submit a IBC misbehaviour for a consumer chain",
+		Short: "submit an IBC misbehaviour for a consumer chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Submit a IBC misbehaviour detected on a consumer chain.
 A IBC misbehaviour contains two conflicting IBC client headers, which are used to form a light client attack evidence.
