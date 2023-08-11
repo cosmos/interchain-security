@@ -31,7 +31,7 @@ var happyPathSteps = concatSteps(
 	stepsStopChain("consu", 4),                     // stop chain
 )
 
-var cometmockCompatibleHappyPathSteps = concatSteps(
+var shortHappyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
 	stepsUnbond("consu"),
