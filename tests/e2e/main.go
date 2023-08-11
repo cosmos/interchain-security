@@ -55,7 +55,6 @@ var (
 			testRun: DefaultTestRun(), steps: shortHappyPathSteps,
 			description: `This is like the happy path, but skips steps
 that involve starting or stopping nodes for the same chain outside of the chain setup or teardown.
-In particular, this skips steps related to downtime and double signing.
 This is suited for CometMock+Gorelayer testing`,
 		},
 		"happy-path":       {testRun: DefaultTestRun(), steps: happyPathSteps, description: "happy path tests"},
