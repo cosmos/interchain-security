@@ -1,4 +1,10 @@
 // -*- mode: Bluespec; -*-
+
+// Design notes:
+// The spec is modular.
+// The various modules generally have actions and variables.
+// The internal state may be read, but not modified, by other modules.
+// In turn, *all* public actions of modules should specify behavior for /all/ variables of the module.
 module common {
     type Validator = str
     type Chain = str
@@ -75,7 +81,7 @@ module ibc {
     // 1) Exactly 1 of the "is[X]Packet" fields will be true.
     // 2) If the is[X]Packet field is false, the [x]Data field is an empty set.
     // 3) If the is[X]Packet field is true, the [x]Data field is a singleton set.
-    type Packet = 
+    type Packet =
     {isVscPacket: bool, vscPacketData: Set[VSCPacketData],
     isSlashPacket: bool, slashPacketData: Set[SlashPacketData],
     isVSCMaturedPacket: bool, vscMaturedPacketData: Set[VSCMaturedPacketData]
@@ -96,10 +102,35 @@ module ibc {
         isSlashPacket: false, slashPacketData: Set(),
         isVSCMaturedPacket: true, vscMaturedPacketData: Set({id: id})}
 
+    // Returns the VSCPacketData of a packet.
+    // If the packet is not a VSC packet, this function will give undefined output.
+    pure def GetVSCData(packet: Packet): VSCPacketData =
+        packet.vscPacketData.chooseSome()
+
+    // Returns the SlashPacketData of a packet.
+    // If the packet is not a Slash packet, this function will give undefined output.
+    pure def GetSlashData(packet: Packet): SlashPacketData =
+        packet.slashPacketData.chooseSome()
+
+    // Returns the VSCMaturedPacketData of a packet.
+    // If the packet is not a VSCMatured packet, this function will give undefined output.
+    pure def GetVSCMaturedData(packet: Packet): VSCMaturedPacketData =
+        packet.vscMaturedPacketData.chooseSome()
+
     // Queue of outstanding packets from the consumer to the provider.
     var ConsumerToProviderChannel: List[Packet]
+
+    // Queue of uncommitted packets from the consumer to the provider.
+    // These packets will be put in the ConsumerToProviderChannel when
+    // the consumer ends a block.
+    var UncommitedConsumerToProviderChannel: List[Packet]
+
     // Queue of outstanding packets from the provider to the consumer.
     var ProviderToConsumerChannel: List[Packet]
+
+    // These packets will be put in the ConsumerToProviderChannel when
+    // the provider ends a block.
+    var UncommitedProviderToConsumerChannel: List[Packet]
 
     // description taken from the old difftest model:
     // noop. We do not explicitly model the client update process
@@ -109,11 +140,40 @@ module ibc {
     // clients in the SUT will expire, and the test will fail.
     action UpdateClient(chain: Chain): bool = true
 
-    
+    action QueuePacket(packet: Packet, receiver: Chain): bool =
+        any {
+            all {
+            receiver == Provider,
+            UncommitedConsumerToProviderChannel' = UncommitedConsumerToProviderChannel.append(packet),
+            UncommitedProviderToConsumerChannel' = UncommitedProviderToConsumerChannel
+        },
+        all {
+            receiver == Consumer,
+            UncommitedProviderToConsumerChannel' = UncommitedProviderToConsumerChannel.append(packet),
+            UncommitedConsumerToProviderChannel' = UncommitedConsumerToProviderChannel
+        }
+    }
+
+    // Puts uncomitted packets into their respective
+    // channels and clears the uncommitted channels.
+    action IBC_EndBlock(chain: Chain): bool = all {
+        UncommitedConsumerToProviderChannel' = List(),
+        UncommitedProviderToConsumerChannel' = List(),
+        ConsumerToProviderChannel' = ConsumerToProviderChannel.concat(UncommitedConsumerToProviderChannel),
+        ProviderToConsumerChannel' = ProviderToConsumerChannel.concat(UncommitedProviderToConsumerChannel)
+    }
 }
 
-// Staking models the staking module with a single delegator, but multiple validators.
-module staking {
+module slashing_state {
+    import common.*
+    // Stores, for each validator, until when it is jailed.
+    // If this is less than the current time, the validator is not jailed.
+    var jailed: Validator -> int
+
+    val jailTime: int = 50
+}
+
+module staking_state {
     import common.*
 
     type Undelegation = {validator: Validator, amount: int, startTime: Timestamp}
@@ -124,15 +184,56 @@ module staking {
 
     // The amount of unbonded tokens of the single delegator.
     var delegatorTokens: int
-    // The total stake of the validator. Includes, but may exceed, the delegationAmount (e.g. validators can have self-delegations).
+    // The amount delegated to each validator by the single delegator.
     var delegationAmounts: Validator -> int
     // The total stake of the validator. Includes, but may exceed, the delegationAmount (e.g. validators can have self-delegations).
     var validatorPower: Validator -> int
      // A queue of pending undelegations (i.e. unbondings).
     var undelegationsQueue: List[Undelegation]
-
+    // The status of the validators, either Bonded, Unbonded, or Unbonding.
     var validatorStatus: Validator -> string
 
+    val MaxValidators: int = 100
+
+    var currentValidatorSet: Set[Validator]
+}
+
+module slashing {
+    import common.*
+    import ccv_packets.*
+    import slashing_state.*
+    import staking_state.*
+
+    // For now, just jails the validator.
+    action SlashValidator(validator: Validator): bool = all {
+        JailUntil(validator, providerState.time + jailTime)
+    }
+
+    action JailUntil(validator: Validator, time: Timestamp): bool = 
+        jailed' = jailed.set(validator, time)
+
+    action SlashingNoop(): bool = 
+        jailed' = jailed
+
+    action OnRecvSlash(data: SlashPacketData): bool = all {
+        // TODO: soft opt out https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/adr-009-soft-opt-out.md
+        if(validatorStatus.get(data.validator) == Unbonded) {
+            // noop, the validator is unbonded so cannot be slashed anymore
+            SlashingNoop
+        } else {
+            // tell the slashing module to slash the validator
+            SlashValidator(data.validator)
+        }
+    }
+}
+
+// Staking models the staking module with a single delegator, but multiple validators.
+module staking {
+    import common.*
+    import slashing_state.*
+    import staking_state.*
+    import basicSpells.* from "./basicSpells"
+    import extraSpells.* from "./extraSpells"
 
     // Constructor for undelegations.
     pure def NewUndelegation(validator: Validator, amount: int, startTime: Timestamp): Undelegation =
@@ -140,9 +241,10 @@ module staking {
 
     // Delegates an amount of tokens from the single delegator to the validator
     action Delegate(validator: Validator, amount: int): bool = all {
-        delegatorTokens' = delegatorTokens + amount,
+        delegatorTokens' = delegatorTokens - amount, // unbonded tokens are decreased because we bond tokens
         delegationAmounts' = delegationAmounts.setBy(validator, (oldDelegation => oldDelegation + amount)),
-        validatorPower' = validatorPower.setBy(validator, (oldBalance => oldBalance + amount))
+        validatorPower' = validatorPower.setBy(validator, (oldBalance => oldBalance + amount)),
+        currentValidatorSet' = currentValidatorSet
     }
 
     // Undelegates tokens (delegated by the single delegator) from a validator.
@@ -153,6 +255,7 @@ module staking {
             // thus, the undelegation should not proceed.
             delegationAmounts' = delegationAmounts,
             undelegationsQueue' = undelegationsQueue,
+            currentValidatorSet' = currentValidatorSet
         },
         all {
             // happy path: the undelegation amount is at most the delegated amount.
@@ -162,31 +265,32 @@ module staking {
             // keep the undelegation in the queue until unbonding is complete
             undelegationsQueue' = 
                 undelegationsQueue.append(NewUndelegation(validator, undelegationAmount, providerState.time)),
+            currentValidatorSet' = currentValidatorSet,
             // TODO: call hooks for undelegate
         }
     }
-}
 
-module slashing {
-    import common.*
-
-    // Stores, for each validator, until when it is jailed.
-    // If this is less than the current time, the validator is not jailed.
-    var jailed: Validator -> int
-
-    val jailTime: int = 50
-
-    // For now, just jails the validator.
-    action SlashValidator(validator: Validator): bool = all {
-        JailUntil(validator, providerState.time + jailTime)
+    action Staking_EndBlock(chain: Chain): bool = all {
+        ComputeValUpdates(chain),
+        // ApplyMatureUnbondings(chain),
     }
 
-    action JailUntil(validator: Validator, time: Timestamp): bool = 
-        jailed' = jailed.set(validator, time)
-
-    action __slashing_noop(): bool = 
-        jailed' = jailed
+    action ComputeValUpdates(chain: Chain): bool = 
+        val potentialValidators = 
+            validatorPower.keys().filter(validator => validatorPower.get(validator) > 0 and jailed.getOrElse(validator, 0) <= providerState.time)
+        val potentialValidatorList = potentialValidators.toList()
+        def HasMorePower(this: Validator, other: Validator): bool = validatorPower.get(this) > validatorPower.get(other)
+        val sortedValidatorList = potentialValidatorList.listSorted(HasMorePower)
+        val newValidators = sortedValidatorList.slice(0, MaxValidators)
+        val newValidatorSet = newValidators.toSet()
+        all {
+        currentValidatorSet' = newValidatorSet,
+        // set all new validators to bonded
+        validatorStatus' = validatorStatus.keys().union(newValidatorSet).mapBy(validator => 
+            if(newValidatorSet.contains(validator)) Bonded else validatorStatus.get(validator)),
+    }
 }
+
 
 module ccv_provider {
     import common.*
@@ -195,6 +299,8 @@ module ccv_provider {
     import ccv_common.*
     import basicSpells.* from "./basicSpells"
     import extraSpells.* from "./extraSpells"
+    import slashing.*
+    import staking.*
 
     // Enables accessing, for every unbonding operation,
     // the set of consumer chains that are still unbonding.
@@ -210,13 +316,17 @@ module ccv_provider {
     // Matures all unbondings associated with the vscId of the given VSCMaturedPacketData.
     // Remove the unbonding operations from the unbondingOps map.
     // Add the 
-    action OnRecvVSCMaturedPacket(data: VSCMaturedPacketData): bool = all {
+    action OnRecvVSCMatured(data: VSCMaturedPacketData): bool = all {
         matureUnbondingOps' = matureUnbondingOps.union(vscToUnbondingOps.get(data.id)),
         unbondingOps'  = unbondingOps.mapRemoveAll(vscToUnbondingOps.get(data.id)),
         vscToUnbondingOps' = vscToUnbondingOps.mapRemove(data.id),
     }
-        
-        
+
+    action CCVProviderNoop: bool = all {
+        unbondingOps' = unbondingOps,
+        vscToUnbondingOps' = vscToUnbondingOps,
+        matureUnbondingOps' = matureUnbondingOps,
+    }
 }
 
 
@@ -226,6 +336,7 @@ module ccv_consumer {
     import ccv_packets.*
     import staking.*
     import slashing.*
+    import staking_state.*
 
     // outstandingDowntime.get(valAddr) = true entails that the consumer chain sent a request to slash for downtime the validator with address valAddr.
     // outstandingDowntime.get(valAddr) is set to false once the consumer chain receives a confirmation that the downtime slash request was received by the provider chain, 
@@ -266,27 +377,23 @@ module ccv_consumer {
     action OnRecvVSC(data: VSCPacketData): bool = all {
         HtoVSC' = HtoVSC.put(consumerState.height + 1, data.id),
         receivedVSCs' = receivedVSCs.append(data),
+        outstandingDowntime' = outstandingDowntime,
     }
 
-    action OnRecvSlash(data: SlashPacketData): bool = all {
-        // TODO: soft opt out https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/adr-009-soft-opt-out.md
-        if(validatorStatus.get(data.validator) == Unbonded) {
-            // noop, the validator is unbonded so cannot be slashed anymore
-            __slashing_noop()
-        } else {
-            // tell the slashing module to slash the validator
-            // SlashValidator(data.validator)
-            jailed' = jailed.set(data.validator, 50)
-        }
+    action CCVConsumerNoop(): bool = all {
+        HtoVSC' = HtoVSC,
+        receivedVSCs' = receivedVSCs,
+        outstandingDowntime' = outstandingDowntime,
     }
-
 }
 
+// Actions of the main module always touch all the other modules.
 module main {
     import common.*
     import ibc.*
     import ccv_consumer.*
     import ccv_provider.*
+    import slashing.*
 
      // Delivers the next pending packet to the given chain.
     action DeliverPacket(receiver: Chain): bool = all {
@@ -307,24 +414,30 @@ module main {
     }
 
     // Delivers a specific packet to the given chain.
-    action DeliverPacketToChain(receiver: Chain, packet: Packet): bool = all {
-        if(packet.isVscPacket) {
+    action DeliverPacketToChain(receiver: Chain, packet: Packet): bool =
+        any {
             all {
+                packet.isSlashPacket,
+                receiver == Provider,
+                OnRecvSlash(packet.GetSlashData()),
+                CCVProviderNoop,
+                CCVConsumerNoop
+            },
+            all {
+                packet.isVscPacket,
                 receiver == Consumer,
-                OnRecvVSC(packet.vscPacketData)
-            }
-        } else if(packet.isSlashPacket) {
+                OnRecvVSC(packet.GetVSCData()),
+                SlashingNoop,
+                CCVProviderNoop
+            },
             all {
+                packet.isVSCMaturedPacket,
                 receiver == Provider,
-                // DeliverSlashPacket(receiver, packet.slashPacketData)
-            }
-        } else { // packet.isVSCMaturedPacket
-            all {
-                receiver == Provider,
-                // DeliverVSCMaturedPacket(receiver, packet.vscMaturedPacketData)
+                OnRecvVSCMatured(packet.GetVSCMaturedData()),
+                CCVConsumerNoop,
+                SlashingNoop
             }
         }
-    }
 
     pure val SlashTypes = Set("downtime", "equivocation")
 
