@@ -3,10 +3,10 @@ package core
 import (
 	"strconv"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 /*
