@@ -16,7 +16,7 @@ For an example, see  [Democracy](https://github.com/cosmos/interchain-security/t
 
 ## CosmWasm
 
-There several great DAO and governance frameworks written as CosmWasm contracts. These can be used as the main governance system for a consumer chain. Actions triggered by the CosmWasm governance contracts are able to affect parameters and trigger actions on the consumer chain.
+There are several great DAO and governance frameworks written as CosmWasm contracts. These can be used as the main governance system for a consumer chain. Actions triggered by the CosmWasm governance contracts are able to affect parameters and trigger actions on the consumer chain.
 
 For an example, see [Neutron](https://github.com/neutron-org/neutron/).
 

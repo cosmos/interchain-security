@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
+
 	app "github.com/cosmos/interchain-security/v3/app/democracy"
 	"github.com/cosmos/interchain-security/v3/cmd/democracyd/cmd"
 )

@@ -3,13 +3,15 @@ package integration
 import (
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -123,7 +125,7 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	// check that the packets were added to the list of pending data packets
 	consumerPackets := consumerKeeper.GetPendingPackets(s.consumerCtx())
 	s.Require().NotEmpty(consumerPackets)
-	s.Require().Equal(2, len(consumerPackets.GetList()), "unexpected number of pending data packets")
+	s.Require().Len(consumerPackets, 2, "unexpected number of pending data packets")
 
 	// try to send slash packet for downtime infraction
 	addr := ed25519.GenPrivKey().PubKey().Address()
@@ -137,7 +139,7 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	// check that the packets were added to the list of pending data packets
 	consumerPackets = consumerKeeper.GetPendingPackets(s.consumerCtx())
 	s.Require().NotEmpty(consumerPackets)
-	s.Require().Equal(4, len(consumerPackets.GetList()), "unexpected number of pending data packets")
+	s.Require().Len(consumerPackets, 4, "unexpected number of pending data packets")
 
 	// upgrade expired client to the consumer
 	upgradeExpiredClient(s, Provider)
@@ -148,7 +150,6 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	// check that the list of pending data packets is emptied
 	consumerPackets = consumerKeeper.GetPendingPackets(s.consumerCtx())
 	s.Require().Empty(consumerPackets)
-	s.Require().Equal(0, len(consumerPackets.GetList()), "unexpected number of pending data packets")
 
 	// relay all  packet from consumer to provider
 	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 4)

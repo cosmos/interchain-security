@@ -6,24 +6,24 @@ import (
 	"testing"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/bytes"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/bytes"
 
 	"github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
-
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
 )
 
 // TestOnRecvVSCPacket tests the behavior of OnRecvVSCPacket over various packet scenarios
@@ -293,9 +293,9 @@ func TestSendPacketsFailure(t *testing.T) {
 	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
 
 	// Set some pending packets
-	consumerKeeper.SetPendingPackets(ctx, types.ConsumerPacketDataList{List: []types.ConsumerPacketData{
-		{}, {}, {},
-	}})
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, types.SlashPacket, &types.ConsumerPacketData_SlashPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{})
 
 	// Mock the channel keeper to return an error
 	gomock.InOrder(
@@ -305,5 +305,41 @@ func TestSendPacketsFailure(t *testing.T) {
 
 	// No panic should occur, pending packets should not be cleared
 	consumerKeeper.SendPackets(ctx)
-	require.Equal(t, 3, len(consumerKeeper.GetPendingPackets(ctx).List))
+	require.Equal(t, 3, len(consumerKeeper.GetPendingPackets(ctx)))
+}
+
+// Regression test for https://github.com/cosmos/interchain-security/issues/1145
+func TestSendPacketsDeletion(t *testing.T) {
+	// Keeper setup
+	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
+	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
+
+	// Queue two pending packets
+	consumerKeeper.AppendPendingPacket(ctx, types.SlashPacket, &types.ConsumerPacketData_SlashPacketData{ // Slash appears first
+		SlashPacketData: &types.SlashPacketData{
+			Validator:      abci.Validator{},
+			ValsetUpdateId: 88,
+			Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
+		},
+	})
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
+		VscMaturedPacketData: &types.VSCMaturedPacketData{
+			ValsetUpdateId: 90,
+		},
+	})
+
+	// Get mocks for a successful SendPacket call that does NOT return an error
+	expectations := testkeeper.GetMocksForSendIBCPacket(ctx, mocks, "consumerCCVChannelID", 1)
+	// Append mocks for a failed SendPacket call, which returns an error
+	expectations = append(expectations, mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, types.ConsumerPortID,
+		"consumerCCVChannelID").Return(channeltypes.Channel{}, false).Times(1))
+	gomock.InOrder(expectations...)
+
+	consumerKeeper.SendPackets(ctx)
+
+	// Expect the first successfully sent packet to be popped from queue
+	require.Equal(t, 1, len(consumerKeeper.GetPendingPackets(ctx)))
+	require.Equal(t, types.VscMaturedPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
 }

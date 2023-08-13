@@ -4,13 +4,17 @@ import (
 	"testing"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	ibcsimapp "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
 	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
@@ -18,9 +22,6 @@ import (
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
-	"github.com/golang/mock/gomock"
-
-	"github.com/stretchr/testify/require"
 )
 
 // TestQueueVSCPackets tests queueing validator set updates.

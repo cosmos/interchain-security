@@ -4,19 +4,19 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/types/module"
-
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/cosmos/cosmos-sdk/x/distribution/exported"
 	"github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
 var (

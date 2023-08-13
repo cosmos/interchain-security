@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/base64"
 
-	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	errorsmod "cosmossdk.io/errors"
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
