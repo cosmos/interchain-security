@@ -119,7 +119,7 @@ import (
 )
 
 const (
-	AppName              = "democracy"
+	AppName              = "democracyd"
 	upgradeName          = "sovereign-changeover" // arbitrary name, define your own appropriately named upgrade
 	AccountAddressPrefix = "cosmos"
 )
