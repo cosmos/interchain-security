@@ -1,16 +1,20 @@
 package simibc
 
 import (
-	errorsmod "cosmossdk.io/errors"
-	tmtypes "github.com/cometbft/cometbft/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/stretchr/testify/require"
+
+	errorsmod "cosmossdk.io/errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	tmtypes "github.com/cometbft/cometbft/types"
+
 	simapp "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
 	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
-	"github.com/stretchr/testify/require"
 )
 
 // UpdateReceiverClient DELIVERs a header to the receiving endpoint
