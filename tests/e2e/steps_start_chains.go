@@ -88,6 +88,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				consumerPubkey:  `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
 				reconfigureNode: false,
 				expectError:     true,
+				expectedError:   "a validator has assigned the consumer key already: consumer key is already in use by a validator",
 			},
 			state: State{},
 		},
@@ -100,6 +101,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				consumerPubkey:  `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
 				reconfigureNode: false,
 				expectError:     true,
+				expectedError:   "a validator has assigned the consumer key already: consumer key is already in use by a validator",
 			},
 			state: State{
 				chainID(consumerName): ChainState{

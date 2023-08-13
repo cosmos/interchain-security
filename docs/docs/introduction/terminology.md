@@ -8,7 +8,7 @@ You may have heard of one or multiple buzzwords thrown around in the cosmos and 
 
 ## Shared Security
 
-Shared security is a family of technologies that include optimistic rollups, zk-rollups, sharding and Interchain Security. Ie. any protocol or technology that can allow one blockchain to lend/share it's proof-of-stake security with another blockchain or off-chain process.
+Shared security is a family of technologies that include optimistic rollups, zk-rollups, sharding and Interchain Security. Ie. any protocol or technology that can allow one blockchain to lend/share its proof-of-stake security with another blockchain or off-chain process.
 
 ## Interchain Security
 
@@ -21,3 +21,18 @@ A particular protocol/implementation of Interchain Security that fully replicate
 ## Mesh security
 
 A protocol built on IBC that allows delegators on a cosmos chain to re-delegate their stake to validators in another chain's own validator set, using the original chain's token (which remains bonded on the original chain). For a deeper exploration of mesh security, see [Replicated vs. Mesh Security on the Informal Blog](https://informal.systems/blog/replicated-vs-mesh-security).
+
+## Consumer Chain
+
+Chain that is secured by the validator set of the provider, instead of its own.
+Replicated security allows the provider chain validator set to validate blocks on the consumer chain.
+
+## Standalone Chain
+
+Chain that is secured by its own validator set. This chain does not participate in replicated security.
+
+Standalone chains may sometimes be called "sovereign" - the terms are synonymous.
+
+## Changeover Procedure
+
+Chains that were not initially launched as consumers of replicated security can still participate in the protocol and leverage the economic security of the provider chain. The process where a standalone chain transitions to being a replicated consumer chain is called the **changeover procedure** and is part of the interchain security protocol. After the changeover, the new consumer chain will retain all existing state, including the IBC clients, connections and channels already established by the chain.

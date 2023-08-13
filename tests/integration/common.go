@@ -4,24 +4,28 @@ import (
 	"fmt"
 	"time"
 
-	"cosmossdk.io/math"
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmtypes "github.com/cometbft/cometbft/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
+
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmtypes "github.com/cometbft/cometbft/types"
+
 	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
-	"github.com/stretchr/testify/require"
 )
 
 // ChainType defines the type of chain (either provider or consumer)

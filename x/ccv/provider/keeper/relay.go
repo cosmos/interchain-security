@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"strconv"
 
-	errorsmod "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+
+	errorsmod "cosmossdk.io/errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -42,7 +44,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		"vscID", data.ValsetUpdateId,
 	)
 
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	ack := channeltypes.NewResultAcknowledgement(ccv.V1Result)
 	return ack
 }
 
@@ -353,7 +355,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 		// return successful ack, as an error would result
 		// in the consumer closing the CCV channel
-		return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+		return channeltypes.NewResultAcknowledgement(ccv.V1Result)
 	}
 
 	// Queue a slash entry to the global queue, which will be seen by the throttling logic
@@ -377,7 +379,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		"infractionType", data.Infraction,
 	)
 
-	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	return channeltypes.NewResultAcknowledgement(ccv.V1Result)
 }
 
 // ValidateSlashPacket validates a recv slash packet before it is

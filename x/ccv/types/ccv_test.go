@@ -1,13 +1,19 @@
 package types_test
 
 import (
+	"strings"
 	"testing"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/stretchr/testify/require"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+
+	"github.com/cosmos/interchain-security/v3/testutil/crypto"
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
-	"github.com/stretchr/testify/require"
 )
 
 func TestPacketDataValidateBasic(t *testing.T) {
@@ -89,4 +95,132 @@ func TestMarshalPacketData(t *testing.T) {
 	err = recovered.Unmarshal(bz)
 	require.Nil(t, err)
 	require.Equal(t, vpd, recovered, "unmarshaled packet data does not equal original value")
+}
+
+// TestVSCPacketDataWireBytes is a regression test that the JSON schema
+// for ValidatorSetChangePacketData (sent over the wire) does not change.
+func TestVSCPacketDataWireBytes(t *testing.T) {
+	cId1 := crypto.NewCryptoIdentityFromIntSeed(4732894)
+	cId2 := crypto.NewCryptoIdentityFromIntSeed(4732895)
+
+	pd := types.NewValidatorSetChangePacketData(
+		[]abci.ValidatorUpdate{
+			{
+				PubKey: cId1.TMProtoCryptoPublicKey(),
+				Power:  30,
+			},
+			{
+				PubKey: cId2.TMProtoCryptoPublicKey(),
+				Power:  20,
+			},
+		},
+		73,
+		[]string{"slash", "acks", "example"},
+	)
+
+	jsonBz := pd.GetBytes()
+	str := string(jsonBz)
+
+	// Expected string formatted for human readability
+	expectedStr := `{
+		"validator_updates": [
+			{
+				"pub_key": {
+					"ed25519": "SMxP2pXAuxQC7FmBn4dh4Kt5eYdQFWC/wN7oWobZKds="
+				},
+				"power": "30"
+			},
+			{
+				"pub_key": {
+					"ed25519": "J/nGy0vCXhgVbr8S71B4ZgHi4fsMqtDxDlERZ+gG238="
+				},
+				"power": "20"
+			}
+		],
+		"valset_update_id": "73",
+		"slash_acks": ["slash", "acks", "example"]
+	}`
+
+	// Remove newlines, tabs, and spaces for comparison
+	expectedStr = strings.ReplaceAll(expectedStr, "\n", "")
+	expectedStr = strings.ReplaceAll(expectedStr, "\t", "")
+	expectedStr = strings.ReplaceAll(expectedStr, " ", "")
+
+	require.Equal(t, expectedStr, str)
+}
+
+// TestSlashPacketDataWireBytes is a regression test that the JSON schema
+// for SlashPacketData (sent over the wire) does not change.
+func TestSlashPacketDataWireBytes(t *testing.T) {
+	// Construct consumer packet data wrapping slash packet data
+	cId := crypto.NewCryptoIdentityFromIntSeed(4732894342)
+	slashPacketData := types.NewSlashPacketData(
+		abci.Validator{
+			Address: cId.SDKValConsAddress(),
+			Power:   int64(4328),
+		},
+		uint64(894732),
+		stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
+	)
+
+	// The type that'd be JSON marshaled and sent over the wire
+	cpd := types.NewConsumerPacketData(
+		types.SlashPacket,
+		&types.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: slashPacketData,
+		},
+	)
+
+	jsonBz := cpd.GetBytes()
+	str := string(jsonBz)
+
+	// Expected string formatted for human readability
+	expectedStr := `{
+		"type": "CONSUMER_PACKET_TYPE_SLASH",
+		"slashPacketData": {
+			"validator": {
+				"address": "BP9q4oXCgubvoujOKyxIxd+3IwM=",
+				"power": "4328"
+			},
+			"valset_update_id": "894732",
+			"infraction": "INFRACTION_TYPE_DOUBLE_SIGN"
+		}
+	}`
+
+	// Remove newlines, tabs, and spaces for comparison
+	expectedStr = strings.ReplaceAll(expectedStr, "\n", "")
+	expectedStr = strings.ReplaceAll(expectedStr, "\t", "")
+	expectedStr = strings.ReplaceAll(expectedStr, " ", "")
+
+	require.Equal(t, expectedStr, str)
+}
+
+// TestVSCMaturedPacketDataWireBytes is a regression test that the JSON schema
+// for VSCMaturedPacketData (sent over the wire) does not change.
+func TestVSCMaturedPacketDataWireBytes(t *testing.T) {
+	// Construct consumer packet data wrapping vsc matured packet data
+	cpd := types.ConsumerPacketData{
+		Type: types.VscMaturedPacket,
+		Data: &types.ConsumerPacketData_VscMaturedPacketData{
+			VscMaturedPacketData: types.NewVSCMaturedPacketData(84923),
+		},
+	}
+
+	jsonBz := cpd.GetBytes()
+	str := string(jsonBz)
+
+	// Expected string formatted for human readability
+	expectedStr := `{
+		"type": "CONSUMER_PACKET_TYPE_VSCM",
+		"vscMaturedPacketData": {
+			"valset_update_id": "84923"
+		}	
+	}`
+
+	// Remove newlines, tabs, and spaces for comparison
+	expectedStr = strings.ReplaceAll(expectedStr, "\n", "")
+	expectedStr = strings.ReplaceAll(expectedStr, "\t", "")
+	expectedStr = strings.ReplaceAll(expectedStr, " ", "")
+
+	require.Equal(t, expectedStr, str)
 }

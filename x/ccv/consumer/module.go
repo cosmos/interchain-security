@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-
+	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -17,11 +15,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/client/cli"
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
-
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
@@ -144,12 +143,9 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	channelID, found := am.keeper.GetProviderChannel(ctx)
 	if found && am.keeper.IsChannelClosed(ctx, channelID) {
 		// The CCV channel was established, but it was then closed;
-		// the consumer chain is no longer safe, thus it MUST shut down.
-		// This is achieved by panicking, similar as it's done in the
-		// x/upgrade module of cosmos-sdk.
+		// the consumer chain is not secured anymore, but we allow it to run as a POA chain and log an error.
 		channelClosedMsg := fmt.Sprintf("CCV channel %q was closed - shutdown consumer chain since it is not secured anymore", channelID)
 		am.keeper.Logger(ctx).Error(channelClosedMsg)
-		panic(channelClosedMsg)
 	}
 
 	// map next block height to the vscID of the current block height

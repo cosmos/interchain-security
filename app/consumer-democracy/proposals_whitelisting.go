@@ -1,9 +1,10 @@
 package app
 
 import (
+	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 )
 
 func IsProposalWhitelisted(content v1beta1.Content) bool {

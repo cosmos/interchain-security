@@ -3,9 +3,9 @@ module github.com/cosmos/interchain-security/v3
 go 1.20
 
 require (
-	cosmossdk.io/errors v1.0.0-beta.7
+	cosmossdk.io/errors v1.0.0
 	cosmossdk.io/math v1.0.1
-	github.com/cometbft/cometbft v0.37.1
+	github.com/cometbft/cometbft v0.37.2
 	github.com/cometbft/cometbft-db v0.8.0
 	github.com/cosmos/cosmos-sdk v0.47.3
 	github.com/cosmos/gogoproto v1.4.10
@@ -21,13 +21,13 @@ require (
 	github.com/spf13/cast v1.5.1
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.4
-	github.com/tidwall/gjson v1.14.4
-	golang.org/x/crypto v0.8.0 // indirect
+	github.com/tidwall/gjson v1.15.0
+	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
-	golang.org/x/net v0.9.0 // indirect
-	golang.org/x/sys v0.7.0 // indirect
-	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1
-	google.golang.org/grpc v1.56.1
+	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
+	google.golang.org/genproto v0.0.0-20230629202037-9506855d4529 // indirect
+	google.golang.org/grpc v1.57.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -153,8 +153,8 @@ require (
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/oauth2 v0.7.0 // indirect
-	golang.org/x/term v0.7.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/term v0.10.0 // indirect
+	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.114.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -165,13 +165,18 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-require github.com/spf13/viper v1.15.0
+require (
+	github.com/spf13/viper v1.15.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20230526203410-71b5a4ffd15e
+)
 
 require (
 	cosmossdk.io/log v1.1.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/rs/zerolog v1.29.1 // indirect
+	golang.org/x/sync v0.1.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230706204954-ccb25ca9f130 // indirect
 )
 
 // following versions might cause unexpected behavior

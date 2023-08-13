@@ -361,7 +361,7 @@ func (m *MaturedUnbondingOps) GetIds() []uint64 {
 	return nil
 }
 
-// ConsumerPacketData contains a consumer packet data and a type tag
+// ConsumerPacketData contains a consumer packet data, type tag, and index for storage.
 type ConsumerPacketData struct {
 	Type ConsumerPacketDataType `protobuf:"varint,1,opt,name=type,proto3,enum=interchain_security.ccv.v1.ConsumerPacketDataType" json:"type,omitempty"`
 	// Types that are valid to be assigned to Data:
@@ -456,6 +456,7 @@ func (*ConsumerPacketData) XXX_OneofWrappers() []interface{} {
 }
 
 // ConsumerPacketDataList is a list of consumer packet data packets.
+// NOTE: It is only used for exporting / importing state in InitGenesis and ExportGenesis.
 type ConsumerPacketDataList struct {
 	List []ConsumerPacketData `protobuf:"bytes,1,rep,name=list,proto3" json:"list"`
 }

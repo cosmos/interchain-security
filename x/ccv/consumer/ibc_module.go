@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	errorsmod "cosmossdk.io/errors"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+
+	errorsmod "cosmossdk.io/errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"

@@ -3,18 +3,22 @@ package keeper_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"cosmossdk.io/math"
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmrand "github.com/cometbft/cometbft/libs/rand"
-	tmtypes "github.com/cometbft/cometbft/types"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmrand "github.com/cometbft/cometbft/libs/rand"
+	tmtypes "github.com/cometbft/cometbft/types"
+
 	"github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	"github.com/stretchr/testify/require"
 )
 
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper
@@ -150,7 +154,7 @@ func TestSlash(t *testing.T) {
 	// If we call slash with infraction type empty, no slash packet will be queued
 	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
 	pendingPackets := consumerKeeper.GetPendingPackets(ctx)
-	require.Len(t, pendingPackets.List, 0)
+	require.Len(t, pendingPackets, 0)
 
 	// Consumer keeper from test setup should return false for IsPrevStandaloneChain()
 	require.False(t, consumerKeeper.IsPrevStandaloneChain(ctx))
@@ -161,7 +165,7 @@ func TestSlash(t *testing.T) {
 	// Call slash with valid infraction type and confirm 1 slash packet is queued
 	consumerKeeper.SlashWithInfractionReason(ctx, []byte{0x01, 0x02, 0x03}, 5, 6, sdk.NewDec(9.0), stakingtypes.Infraction_INFRACTION_DOWNTIME)
 	pendingPackets = consumerKeeper.GetPendingPackets(ctx)
-	require.Len(t, pendingPackets.List, 1)
+	require.Len(t, pendingPackets, 1)
 
 	// Next, we set a value for the standalone staking keeper,
 	// and mark the consumer keeper as being from a previous standalone chain
