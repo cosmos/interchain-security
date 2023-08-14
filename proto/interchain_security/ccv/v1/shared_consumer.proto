@@ -11,6 +11,7 @@ import "google/protobuf/duration.proto";
 import "gogoproto/gogo.proto";
 import "interchain_security/ccv/v1/wire.proto";
 import "google/protobuf/timestamp.proto";
+import "interchain_security/ccv/consumer/v1/consumer.proto";
 
 //
 // Note any type defined in this file is referenced/persisted in both the consumer and provider CCV modules,
@@ -109,7 +110,7 @@ message GenesisState {
     repeated OutstandingDowntime outstanding_downtime_slashing = 10
         [ (gogoproto.nullable) = false ];
     // PendingConsumerPackets nil on new chain, filled in on restart.
-    interchain_security.ccv.v1.ConsumerPacketDataList pending_consumer_packets =
+    interchain_security.ccv.consumer.v1.ConsumerPacketDataList pending_consumer_packets =
         11 [ (gogoproto.nullable) = false ];
     // LastTransmissionBlockHeight nil on new chain, filled in on restart.
     LastTransmissionBlockHeight

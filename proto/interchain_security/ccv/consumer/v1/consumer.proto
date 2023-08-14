@@ -9,7 +9,7 @@ import "google/protobuf/any.proto";
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "google/protobuf/duration.proto";
-
+import "google/protobuf/timestamp.proto";
 
 //
 // Note any type defined in this file is ONLY used internally to the consumer CCV module.
@@ -37,7 +37,7 @@ message CrossChainValidator {
 // Note this type is is only used internally to the consumer CCV module 
 // for exporting / importing state in InitGenesis and ExportGenesis. 
 message ConsumerPacketDataList {
-  repeated ConsumerPacketData list = 1 [ (gogoproto.nullable) = false ];
+  repeated interchain_security.ccv.v1.ConsumerPacketData list = 1 [ (gogoproto.nullable) = false ];
 }
 
 // A record storing the state of a slash packet sent to the provider chain
