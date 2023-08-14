@@ -138,6 +138,9 @@ func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.
 			ccvtypes.EventTypeSubmitConsumerMisbehaviour,
 			sdk.NewAttribute(ccvtypes.AttributeConsumerMisbehaviour, msg.Misbehaviour.String()),
 			sdk.NewAttribute(ccvtypes.AttributeSubmitterAddress, msg.Submitter),
+			sdk.NewAttribute(ccvtypes.AttributeMisbehaviourClientId, msg.Misbehaviour.ClientId),
+			sdk.NewAttribute(ccvtypes.AttributeMisbehaviourHeight1, msg.Misbehaviour.Header1.GetHeight().String()),
+			sdk.NewAttribute(ccvtypes.AttributeMisbehaviourHeight2, msg.Misbehaviour.Header2.GetHeight().String()),
 		),
 	})
 
