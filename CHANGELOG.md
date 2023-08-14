@@ -4,6 +4,13 @@
 
 Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
 
+## v4.0.0
+
+Date August 14th, 2023
+
+A standard release of ICS which includes a bump to IBC 7.2.0, and consumer changes related to pending packet storage. Note deployment of this release will require a state migration for consumers! See [upgrading](./upgrading.md) for more details.
+
+* (fix) add upgrade note and increment consumer consensus version [#1201](https://github.com/cosmos/interchain-security/pull/1201)
 * (deps!) [#1196](https://github.com/cosmos/interchain-security/pull/1196) Bump [ibc-go](https://github.com/cosmos/ibc-go) to [v7.2.0](https://github.com/cosmos/ibc-go/releases/tag/v7.2.0).
 * `[x/ccv/provider]` (fix) [#1076](https://github.com/cosmos/interchain-security/pull/1076) Add `InitTimeoutTimestamps` and `ExportedVscSendTimestamps` to exported genesis.
 * (feat!) [#1024](https://github.com/cosmos/interchain-security/pull/1024) throttle with retries, consumer changes  
