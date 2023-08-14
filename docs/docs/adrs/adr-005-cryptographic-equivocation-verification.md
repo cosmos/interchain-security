@@ -89,7 +89,14 @@ could be corrupted and therefore cannot be used for slashing purposes.
 
 
 ## Consequences
+
+### Positive
+
 - After this ADR is applied, it will be possible for the provider chain to tombstone validators who committed a light client attack.
+
+### Negative
+
+- N/A
 
 
 ## References
