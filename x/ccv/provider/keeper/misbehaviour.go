@@ -75,11 +75,11 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 // with the condition that it corresponds to an equivocation light client attack
 func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) ([]*tmtypes.Validator, error) {
 	// construct the trusted and conflicted light blocks
-	header1, err := headerToLightBlock(*misbehaviour.Header1)
+	lightBlock1, err := headerToLightBlock(*misbehaviour.Header1)
 	if err != nil {
 		return nil, err
 	}
-	header2, err := headerToLightBlock(*misbehaviour.Header2)
+	lightBlock2, err := headerToLightBlock(*misbehaviour.Header2)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 
 	// create a map with the validators' address that signed header1
 	header1Signers := map[string]struct{}{}
-	for _, sign := range header1.Commit.Signatures {
+	for _, sign := range lightBlock1.Commit.Signatures {
 		if sign.Absent() {
 			continue
 		}
@@ -100,12 +100,12 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 
 	// iterate over the header2 signers
 	// and check if they s signed header1
-	for _, sign := range header2.Commit.Signatures {
+	for _, sign := range lightBlock2.Commit.Signatures {
 		if sign.Absent() {
 			continue
 		}
 		if _, ok := header1Signers[sign.ValidatorAddress.String()]; ok {
-			_, val := header1.ValidatorSet.GetByAddress(sign.ValidatorAddress)
+			_, val := lightBlock1.ValidatorSet.GetByAddress(sign.ValidatorAddress)
 			validators = append(validators, val)
 		}
 	}
