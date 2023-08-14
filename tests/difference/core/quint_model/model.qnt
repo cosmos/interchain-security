@@ -176,11 +176,15 @@ module slashing_state {
 module staking_state {
     import common.*
 
-    type Undelegation = {validator: Validator, amount: int, startTime: Timestamp}
+    type Undelegation = {validator: Validator, amount: int, completionTime: Timestamp, unbondingHeight: height}
 
     val Bonded: str = "Bonded"
     val Unbonded: str = "Unbonded"
     val Unbonding: str = "Unbonding"
+
+    // params
+    val MaxValidators: int = 100
+    val UnbondingSeconds: int = 5200
 
     // The amount of unbonded tokens of the single delegator.
     var delegatorTokens: int
@@ -192,8 +196,6 @@ module staking_state {
     var undelegationsQueue: List[Undelegation]
     // The status of the validators, either Bonded, Unbonded, or Unbonding.
     var validatorStatus: Validator -> string
-
-    val MaxValidators: int = 100
 
     var currentValidatorSet: Set[Validator]
 }
@@ -236,8 +238,8 @@ module staking {
     import extraSpells.* from "./extraSpells"
 
     // Constructor for undelegations.
-    pure def NewUndelegation(validator: Validator, amount: int, startTime: Timestamp): Undelegation =
-        {validator: validator, amount: amount, startTime: startTime}
+    pure def NewUndelegation(validator: Validator, amount: int, completionTime: Timestamp, currentHeight: height): Undelegation =
+        {validator: validator, amount: amount, completionTime: completionTime, unbondingHeight: currentHeight}
 
     // Delegates an amount of tokens from the single delegator to the validator
     action Delegate(validator: Validator, amount: int): bool = all {
@@ -264,7 +266,11 @@ module staking {
             delegationAmounts' = delegationAmounts.setBy(validator, (oldDelegation => oldDelegation - undelegationAmount)),
             // keep the undelegation in the queue until unbonding is complete
             undelegationsQueue' = 
-                undelegationsQueue.append(NewUndelegation(validator, undelegationAmount, providerState.time)),
+                undelegationsQueue.append(NewUndelegation(
+                        validator, 
+                        undelegationAmount,
+                        providerState.time + UnbondingSeconds,
+                        providerState.height)),
             currentValidatorSet' = currentValidatorSet,
             // TODO: call hooks for undelegate
         }
@@ -274,6 +280,26 @@ module staking {
         ComputeValUpdates(chain),
         // ApplyMatureUnbondings(chain),
     }
+
+    // Computes how to update the status of a given validator.
+    def GetNewValidatorStatus(newValidatorSet: Set[Validator], validator: Validator): str = 
+        if (newValidatorSet.contains(validator)) { 
+            // new validator gets bonded
+            Bonded 
+        } else { 
+            if (currentValidatorSet.contains(validator))
+            { // validator is in current but not in new validator set
+                Unbonding
+            } else {
+                // validator is not in new nor current validator set, so only change might be if unbonding completes
+                if (undelegationsQueue.filter(undelegation => all {
+                    undelegation.completionTime >= providerState.currentTime,
+                    undelegation.completionHeight >= providerState.height,
+                })
+                )
+                validatorStatus.get(validator)
+            }
+        }
 
     action ComputeValUpdates(chain: Chain): bool = 
         val potentialValidators = 
@@ -285,13 +311,8 @@ module staking {
         val newValidatorSet = newValidators.toSet()
         all {
         currentValidatorSet' = newValidatorSet,
-        // set all new validators to bonded
         validatorStatus' = validatorStatus.keys().union(newValidatorSet).mapBy(validator => 
-            if(newValidatorSet.contains(validator))
-            { Bonded }
-            else if (currentValidatorSet.excludes(newValidatorSet).contains(validator))
-            { // validator should become unbonding
-            validatorStatus.get(validator)) },
+            GetNewValidatorStatus(newValidatorSet, validator))
     }
 }
 
