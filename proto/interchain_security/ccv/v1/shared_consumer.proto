@@ -17,7 +17,7 @@ import "google/protobuf/timestamp.proto";
 // but not sent over the wire. These schemas could change, only with careful consideration of effects!
 //
 
-// TODO: rename to ConsumerParams (make issue)
+// TODO: rename to ConsumerParams (or make issue)
 // 
 // Params defines the parameters for CCV consumer module.
 // 

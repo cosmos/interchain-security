@@ -10,6 +10,12 @@ import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "google/protobuf/duration.proto";
 
+
+//
+// Note any type defined in this file is ONLY used internally to the consumer CCV module.
+// These schemas can change with proper consideration of compatibility or migration. 
+// 
+
 // CrossChainValidator defines the type used to store validator information internal 
 // to the consumer CCV module.  Note one cross chain validator entry is persisted for
 // each consumer validator, where incoming VSC packets update this data, which is eventually

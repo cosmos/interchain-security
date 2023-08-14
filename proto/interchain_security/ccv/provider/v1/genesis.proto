@@ -11,6 +11,8 @@ import "interchain_security/ccv/provider/v1/provider.proto";
 import "tendermint/crypto/keys.proto";
 
 // GenesisState defines the CCV provider chain genesis state
+// 
+// TODO: Change to ProviderGenesisState for consistency with consumer, or create issue for this.
 message GenesisState {
   // strictly positive and set to 1 (DefaultValsetUpdateID) for a new chain
   uint64 valset_update_id = 1;

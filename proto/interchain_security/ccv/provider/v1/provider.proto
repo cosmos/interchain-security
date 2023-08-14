@@ -15,6 +15,11 @@ import "tendermint/crypto/keys.proto";
 import "cosmos/evidence/v1beta1/evidence.proto";
 import "cosmos/base/v1beta1/coin.proto";
 
+//
+// Note any type defined in this file is ONLY used internally to the provider CCV module.
+// These schemas can change with proper consideration of compatibility or migration. 
+// 
+
 // ConsumerAdditionProposal is a governance proposal on the provider chain to
 // spawn a new consumer chain. If it passes, then all validators on the provider
 // chain are expected to validate the consumer chain at spawn time or get
@@ -141,6 +146,8 @@ message GlobalSlashEntry {
 // Params defines the parameters for CCV Provider module
 // 
 // Note this type is only used internally to the provider CCV module. 
+//
+// TODO: change to ProviderParams for consistency with consumer, or create issue for this.
 message Params {
   ibc.lightclients.tendermint.v1.ClientState template_client = 1;
   // TrustingPeriodFraction is used to compute the consumer and provider IBC
