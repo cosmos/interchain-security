@@ -10,7 +10,7 @@ title: Cryptographic verification of equivocation evidence
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
