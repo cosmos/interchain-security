@@ -11,7 +11,8 @@ import "tendermint/abci/types.proto";
 
 //
 // Note any type defined in this file is used by both the consumer and provider
-// AND SENT OVER THE WIRE. Ideally these schemas should never change. 
+// AND SENT OVER THE WIRE. Ideally these schemas should never change, or at least 
+// be backwards compatible if ever changed. 
 // 
 
 // This packet is sent from provider chain to consumer chain if the validator
