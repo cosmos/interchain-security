@@ -38,32 +38,32 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	// jail and tombstone the Byzantine validators
 	for _, v := range byzantineValidators {
 		// convert consumer consensus address
-		consuAddr := sdk.ConsAddress(v.Address.Bytes())
-		provAddr := k.GetProviderAddrFromConsumerAddr(ctx, misbehaviour.Header1.Header.ChainID, types.NewConsumerConsAddress(consuAddr))
-		k.stakingKeeper.ValidatorByConsAddr(ctx, consuAddr)
-		val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, provAddr.Address)
+		consumerAddr := types.NewConsumerConsAddress(sdk.ConsAddress(v.Address.Bytes()))
+		providerAddr := k.GetProviderAddrFromConsumerAddr(ctx, misbehaviour.Header1.Header.ChainID, consumerAddr)
+		val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 
 		if !ok || val.IsUnbonded() {
-			logger.Error("validator not found or is unbonded", provAddr.String())
+			logger.Error("validator not found or is unbonded", providerAddr.String())
 			continue
 		}
 
 		// jail validator if not already
 		if !val.IsJailed() {
-			k.stakingKeeper.Jail(ctx, provAddr.Address)
+			k.stakingKeeper.Jail(ctx, providerAddr.ToSdkConsAddr())
 		}
 
 		// tombstone validator if not already
-		if !k.slashingKeeper.IsTombstoned(ctx, provAddr.Address) {
-			k.slashingKeeper.Tombstone(ctx, provAddr.Address)
+		if !k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
+			k.slashingKeeper.Tombstone(ctx, providerAddr.ToSdkConsAddr())
+			k.Logger(ctx).Info("validator tombstoned", "provider cons addr", providerAddr.String())
 		}
 
 		// update jail time to end after double sign jail duration
-		k.slashingKeeper.JailUntil(ctx, provAddr.Address, evidencetypes.DoubleSignJailEndTime)
+		k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
 	}
 
 	logger.Info(
-		"confirmed equivocation",
+		"confirmed equivocation light client attack",
 		"byzantine validators", byzantineValidators,
 	)
 
