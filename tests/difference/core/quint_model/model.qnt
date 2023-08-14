@@ -287,7 +287,11 @@ module staking {
         currentValidatorSet' = newValidatorSet,
         // set all new validators to bonded
         validatorStatus' = validatorStatus.keys().union(newValidatorSet).mapBy(validator => 
-            if(newValidatorSet.contains(validator)) Bonded else validatorStatus.get(validator)),
+            if(newValidatorSet.contains(validator))
+            { Bonded }
+            else if (currentValidatorSet.excludes(newValidatorSet).contains(validator))
+            { // validator should become unbonding
+            validatorStatus.get(validator)) },
     }
 }
 
