@@ -3,12 +3,15 @@ package keeper
 import (
 	"time"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"cosmossdk.io/math"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	abci "github.com/tendermint/tendermint/abci/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
 //
@@ -51,8 +54,11 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 			}
 
 			k.SetCCValidator(ctx, ccVal)
-			k.AfterValidatorBonded(ctx, consAddr, nil)
-
+			err = k.AfterValidatorBonded(ctx, consAddr, nil)
+			if err != nil {
+				// AfterValidatorBonded is called by the Slashing module and should not return an error.
+				panic(err)
+			}
 		} else {
 			// edge case: we received an update for 0 power
 			// but the validator is already deleted. Do not forward
@@ -102,32 +108,40 @@ func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.V
 	return stakingtypes.Validator{}
 }
 
+// Calls SlashWithInfractionReason with Infraction_INFRACTION_UNSPECIFIED.
+// ConsumerKeeper must implement StakingKeeper interface.
+// This function should not be called anywhere
+func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec) math.Int {
+	return k.SlashWithInfractionReason(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
+}
+
 // Slash queues a slashing request for the the provider chain
 // All queued slashing requests will be cleared in EndBlock
-func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec, infraction stakingtypes.InfractionType) {
-	if infraction == stakingtypes.InfractionEmpty {
-		return
+// Called by Slashing keeper in SlashWithInfractionReason
+func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor sdk.Dec, infraction stakingtypes.Infraction) math.Int {
+	if infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
+		return math.NewInt(0)
 	}
 
 	// If this is a previously standalone chain and infraction happened before the changeover was completed,
 	// slash only on the standalone staking keeper.
 	if k.IsPrevStandaloneChain(ctx) && infractionHeight < k.FirstConsumerHeight(ctx) {
-		k.standaloneStakingKeeper.Slash(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.InfractionEmpty)
-		return
+		// Slash for a standalone chain does not require an infraction reason so we pass in Infraction_INFRACTION_UNSPECIFIED
+		return k.standaloneStakingKeeper.SlashWithInfractionReason(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
 	}
 
 	// Otherwise infraction happened after the changeover was completed.
 
 	// if this is a downtime infraction and the validator is allowed to
 	// soft opt out, do not queue a slash packet
-	if infraction == stakingtypes.Downtime {
+	if infraction == stakingtypes.Infraction_INFRACTION_DOWNTIME {
 		if power < k.GetSmallestNonOptOutPower(ctx) {
 			// soft opt out
 			k.Logger(ctx).Debug("soft opt out",
 				"validator", addr,
 				"power", power,
 			)
-			return
+			return math.NewInt(0)
 		}
 	}
 	// get VSC ID for infraction height
@@ -138,6 +152,9 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		"vscID", vscID,
 	)
 
+	// this is the most important step in the function
+	// everything else is just here to implement StakingKeeper interface
+	// IBC packets are created from slash data and sent to the provider during EndBlock
 	k.QueueSlashPacket(
 		ctx,
 		abci.Validator{
@@ -147,6 +164,9 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		vscID,
 		infraction,
 	)
+
+	// Only return to comply with the interface restriction
+	return math.ZeroInt()
 }
 
 // Jail - unimplemented on CCV keeper
@@ -285,4 +305,10 @@ func (k Keeper) MustGetCurrentValidatorsAsABCIUpdates(ctx sdk.Context) []abci.Va
 		valUpdates = append(valUpdates, abci.ValidatorUpdate{PubKey: tmPK, Power: v.Power})
 	}
 	return valUpdates
+}
+
+// implement interface method needed for x/genutil in sdk v47
+// returns empty updates and err
+func (k Keeper) ApplyAndReturnValidatorSetUpdates(sdk.Context) (updates []abci.ValidatorUpdate, err error) {
+	return
 }

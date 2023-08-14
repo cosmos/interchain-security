@@ -39,7 +39,8 @@ func stepsDowntime(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -65,7 +66,8 @@ func stepsDowntime(consumerName string) []Step {
 		// and can now be relayed as packet to consumer
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -106,7 +108,8 @@ func stepsDowntime(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -150,7 +153,8 @@ func stepsDowntime(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -188,7 +192,8 @@ func stepsDowntime(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -236,7 +241,8 @@ func stepsDowntimeWithOptOut(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -272,7 +278,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				validator: validatorID("bob"),
 			},
 			state: State{
-				// powers not affected on either chain yet
+				// slash packet queued on consumer, but powers not affected on either chain yet
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
@@ -281,6 +287,39 @@ func stepsThrottledDowntime(consumerName string) []Step {
 					},
 				},
 				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		// Relay packets so bob is jailed on provider,
+		// and consumer receives ack that provider recv the downtime slash.
+		// The latter is necessary for the consumer to send the second downtime slash.
+		{
+			action: relayPacketsAction{
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   0, // bob is jailed
+						validatorID("carol"): 500,
+					},
+					// no provider throttling engaged yet
+					GlobalSlashQueueSize: uintPointer(0),
+					ConsumerChainQueueSizes: &map[chainID]uint{
+						chainID(consumerName): uint(0),
+					},
+				},
+				chainID(consumerName): ChainState{
+					// VSC packet applying jailing is not yet relayed to consumer
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
 						validatorID("bob"):   500,
@@ -299,11 +338,12 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   500,
+						validatorID("bob"):   0,
 						validatorID("carol"): 500,
 					},
 				},
 				chainID(consumerName): ChainState{
+					// VSC packet applying jailing is not yet relayed to consumer
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
 						validatorID("bob"):   500,
@@ -314,7 +354,8 @@ func stepsThrottledDowntime(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -331,10 +372,9 @@ func stepsThrottledDowntime(consumerName string) []Step {
 					},
 				},
 				chainID(consumerName): ChainState{
-					// no updates received on consumer
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   500,
+						validatorID("bob"):   0,
 						validatorID("carol"): 500,
 					},
 				},
@@ -366,7 +406,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 					// no updates received on consumer
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   500,
+						validatorID("bob"):   0,
 						validatorID("carol"): 500,
 					},
 				},
@@ -376,7 +416,8 @@ func stepsThrottledDowntime(consumerName string) []Step {
 		// and can now be relayed as packet to consumer
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},

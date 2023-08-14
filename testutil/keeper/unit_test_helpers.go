@@ -6,9 +6,12 @@ import (
 	"testing"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 
+	tmdb "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/store"
@@ -16,22 +19,19 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmdb "github.com/tendermint/tm-db"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 )
 
 // Parameters needed to instantiate an in-memory keeper
@@ -50,8 +50,8 @@ func NewInMemKeeperParams(tb testing.TB) InMemKeeperParams {
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
-	stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
+	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
 	require.NoError(tb, stateStore.LoadLatestVersion())
 
 	registry := codectypes.NewInterfaceRegistry()
@@ -88,23 +88,25 @@ type MockedKeepers struct {
 	*MockIBCTransferKeeper
 	*MockIBCCoreKeeper
 	*MockEvidenceKeeper
+	*MockDistributionKeeper
 }
 
 // NewMockedKeepers instantiates a struct with pointers to properly instantiated mocked keepers.
 func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 	return MockedKeepers{
-		MockScopedKeeper:      NewMockScopedKeeper(ctrl),
-		MockChannelKeeper:     NewMockChannelKeeper(ctrl),
-		MockPortKeeper:        NewMockPortKeeper(ctrl),
-		MockConnectionKeeper:  NewMockConnectionKeeper(ctrl),
-		MockClientKeeper:      NewMockClientKeeper(ctrl),
-		MockStakingKeeper:     NewMockStakingKeeper(ctrl),
-		MockSlashingKeeper:    NewMockSlashingKeeper(ctrl),
-		MockAccountKeeper:     NewMockAccountKeeper(ctrl),
-		MockBankKeeper:        NewMockBankKeeper(ctrl),
-		MockIBCTransferKeeper: NewMockIBCTransferKeeper(ctrl),
-		MockIBCCoreKeeper:     NewMockIBCCoreKeeper(ctrl),
-		MockEvidenceKeeper:    NewMockEvidenceKeeper(ctrl),
+		MockScopedKeeper:       NewMockScopedKeeper(ctrl),
+		MockChannelKeeper:      NewMockChannelKeeper(ctrl),
+		MockPortKeeper:         NewMockPortKeeper(ctrl),
+		MockConnectionKeeper:   NewMockConnectionKeeper(ctrl),
+		MockClientKeeper:       NewMockClientKeeper(ctrl),
+		MockStakingKeeper:      NewMockStakingKeeper(ctrl),
+		MockSlashingKeeper:     NewMockSlashingKeeper(ctrl),
+		MockAccountKeeper:      NewMockAccountKeeper(ctrl),
+		MockBankKeeper:         NewMockBankKeeper(ctrl),
+		MockIBCTransferKeeper:  NewMockIBCTransferKeeper(ctrl),
+		MockIBCCoreKeeper:      NewMockIBCCoreKeeper(ctrl),
+		MockEvidenceKeeper:     NewMockEvidenceKeeper(ctrl),
+		MockDistributionKeeper: NewMockDistributionKeeper(ctrl),
 	}
 }
 
@@ -123,6 +125,8 @@ func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) provi
 		mocks.MockSlashingKeeper,
 		mocks.MockAccountKeeper,
 		mocks.MockEvidenceKeeper,
+		mocks.MockDistributionKeeper,
+		mocks.MockBankKeeper,
 		authtypes.FeeCollectorName,
 	)
 }
@@ -191,7 +195,7 @@ func GetNewSlashPacketData() types.SlashPacketData {
 			Power:   int64(binary.BigEndian.Uint64(b1)),
 		},
 		ValsetUpdateId: binary.BigEndian.Uint64(b2),
-		Infraction:     stakingtypes.InfractionType(binary.BigEndian.Uint64(b2) % 3),
+		Infraction:     stakingtypes.Infraction(binary.BigEndian.Uint64(b2) % 3),
 	}
 }
 
@@ -233,6 +237,7 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 		time.Now(),
 		consumertypes.DefaultConsumerRedistributeFrac,
 		consumertypes.DefaultBlocksPerDistributionTransmission,
+		"",
 		consumertypes.DefaultHistoricalEntries,
 		types.DefaultCCVTimeoutPeriod,
 		consumertypes.DefaultTransferTimeoutPeriod,

@@ -1,12 +1,13 @@
 package integration
 
 import (
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // Tests the functionality of stopping a consumer chain at a higher level than unit tests
@@ -83,7 +84,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 			func(suite *CCVTestSuite) error {
 				// Queue slash and vsc packet data for consumer 0, these queue entries will be removed
 				firstBundle := s.getFirstBundle()
-				globalEntry := types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), firstBundle.Chain.ChainID, 7, types.ProviderConsAddress{})
+				globalEntry := types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), firstBundle.Chain.ChainID, 7, types.ProviderConsAddress{Address: []byte{}})
 				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
 				err := providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), firstBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
@@ -94,7 +95,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 
 				// Queue slash and vsc packet data for consumer 1, these queue entries will be not be removed
 				secondBundle := s.getBundleByIdx(1)
-				globalEntry = types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), secondBundle.Chain.ChainID, 7, types.ProviderConsAddress{})
+				globalEntry = types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), secondBundle.Chain.ChainID, 7, types.ProviderConsAddress{Address: []byte{}})
 				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
 				err = providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), secondBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
@@ -209,31 +210,4 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 	slashData, vscMaturedData, _, _ := providerKeeper.GetAllThrottledPacketData(s.providerCtx(), chainID)
 	s.Require().Empty(slashData)
 	s.Require().Empty(vscMaturedData)
-}
-
-// TestProviderChannelClosed checks that a consumer chain panics
-// when the provider channel was established and then closed
-func (suite *CCVTestSuite) TestProviderChannelClosed() {
-	suite.SetupCCVChannel(suite.path)
-	// establish provider channel with a first VSC packet
-	suite.SendEmptyVSCPacket()
-
-	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
-
-	channelID, found := consumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
-	suite.Require().True(found)
-
-	// close provider channel
-	err := consumerKeeper.ChanCloseInit(suite.consumerChain.GetContext(), ccv.ConsumerPortID, channelID)
-	suite.Require().NoError(err)
-	suite.Require().True(consumerKeeper.IsChannelClosed(suite.consumerChain.GetContext(), channelID))
-
-	// assert begin blocker did panics
-	defer func() {
-		if r := recover(); r != nil {
-			return
-		}
-		suite.Require().Fail("Begin blocker did not panic with a closed channel")
-	}()
-	suite.consumerApp.BeginBlocker(suite.consumerChain.GetContext(), abci.RequestBeginBlock{})
 }

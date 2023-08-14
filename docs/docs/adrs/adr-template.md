@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 2
 title: ADR Template
 ---
 # ADR {ADR-NUMBER}: {TITLE}
@@ -36,6 +36,6 @@ If the proposed change will be large, please also indicate a way to do the chang
 
 ## References
 
-> Are there any relevant PR comments, issues that led up to this, or articles referrenced for why we made the given design choice? If so link them here!
+> Are there any relevant PR comments, issues that led up to this, or articles referenced for why we made the given design choice? If so link them here!
 
 * {reference link}

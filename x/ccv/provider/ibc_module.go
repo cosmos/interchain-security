@@ -3,16 +3,20 @@ package provider
 import (
 	"fmt"
 
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // OnChanOpenInit implements the IBCModule interface
@@ -29,7 +33,7 @@ func (am AppModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
-	return version, sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
+	return version, errorsmod.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
 }
 
 // OnChanOpenTry implements the IBCModule interface
@@ -55,13 +59,13 @@ func (am AppModule) OnChanOpenTry(
 
 	// ensure the counterparty port ID matches the expected consumer port ID
 	if counterparty.PortId != ccv.ConsumerPortID {
-		return "", sdkerrors.Wrapf(porttypes.ErrInvalidPort,
+		return "", errorsmod.Wrapf(porttypes.ErrInvalidPort,
 			"invalid counterparty port: %s, expected %s", counterparty.PortId, ccv.ConsumerPortID)
 	}
 
 	// ensure the counter party version matches the expected version
 	if counterpartyVersion != ccv.Version {
-		return "", sdkerrors.Wrapf(
+		return "", errorsmod.Wrapf(
 			ccv.ErrInvalidVersion, "invalid counterparty version: got: %s, expected %s",
 			counterpartyVersion, ccv.Version)
 	}
@@ -84,12 +88,12 @@ func (am AppModule) OnChanOpenTry(
 		// the consumer chain must be excluded from the blocked addresses
 		// blacklist or all all ibc-transfers from the consumer chain to the
 		// provider chain will fail
-		ProviderFeePoolAddr: am.keeper.GetFeeCollectorAddressStr(ctx),
+		ProviderFeePoolAddr: am.keeper.GetConsumerRewardsPoolAddressStr(ctx),
 		Version:             ccv.Version,
 	}
 	mdBz, err := (&md).Marshal()
 	if err != nil {
-		return "", sdkerrors.Wrapf(ccv.ErrInvalidHandshakeMetadata,
+		return "", errorsmod.Wrapf(ccv.ErrInvalidHandshakeMetadata,
 			"error marshalling ibc-try metadata: %v", err)
 	}
 	return string(mdBz), nil
@@ -103,13 +107,13 @@ func validateCCVChannelParams(
 	portID string,
 ) error {
 	if order != channeltypes.ORDERED {
-		return sdkerrors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.ORDERED, order)
+		return errorsmod.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.ORDERED, order)
 	}
 
 	// the port ID must match the port ID the CCV module is bounded to
 	boundPort := keeper.GetPort(ctx)
 	if boundPort != portID {
-		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
+		return errorsmod.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
 	}
 	return nil
 }
@@ -125,7 +129,7 @@ func (am AppModule) OnChanOpenAck(
 	counterpartyChannelID string,
 	counterpartyVersion string,
 ) error {
-	return sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
+	return errorsmod.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
 }
 
 // OnChanOpenConfirm implements the IBCModule interface
@@ -151,7 +155,7 @@ func (am AppModule) OnChanCloseInit(
 	channelID string,
 ) error {
 	// Disallow user-initiated channel closing for provider channels
-	return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
+	return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
 }
 
 // OnChanCloseConfirm implements the IBCModule interface
@@ -171,29 +175,26 @@ func (am AppModule) OnRecvPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-	var (
-		ack            ibcexported.Acknowledgement
-		consumerPacket ccv.ConsumerPacketData
-	)
-	// unmarshall consumer packet
-	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacket); err != nil {
-		errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("cannot unmarshal CCV packet data"))
-		ack = &errAck
-	} else {
-		// TODO: call ValidateBasic method on consumer packet data
-		// See: https://github.com/cosmos/interchain-security/issues/634
+	consumerPacket, err := UnmarshalConsumerPacket(packet)
+	if err != nil {
+		errAck := ccv.NewErrorAcknowledgementWithLog(ctx, err)
+		return &errAck
+	}
 
-		switch consumerPacket.Type {
-		case ccv.VscMaturedPacket:
-			// handle VSCMaturedPacket
-			ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, *consumerPacket.GetVscMaturedPacketData())
-		case ccv.SlashPacket:
-			// handle SlashPacket
-			ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
-		default:
-			errAck := channeltypes.NewErrorAcknowledgement(fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type))
-			ack = &errAck
-		}
+	// TODO: call ValidateBasic method on consumer packet data
+	// See: https://github.com/cosmos/interchain-security/issues/634
+
+	var ack ibcexported.Acknowledgement
+	switch consumerPacket.Type {
+	case ccv.VscMaturedPacket:
+		// handle VSCMaturedPacket
+		ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, *consumerPacket.GetVscMaturedPacketData())
+	case ccv.SlashPacket:
+		// handle SlashPacket
+		ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
+	default:
+		errAck := ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("invalid consumer packet type: %q", consumerPacket.Type))
+		ack = &errAck
 	}
 
 	ctx.EventManager().EmitEvent(
@@ -207,6 +208,33 @@ func (am AppModule) OnRecvPacket(
 	return ack
 }
 
+func UnmarshalConsumerPacket(packet channeltypes.Packet) (consumerPacket ccv.ConsumerPacketData, err error) {
+	// First try unmarshaling into ccv.ConsumerPacketData type
+	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacket); err != nil {
+		// If failed, packet should be a v1 slash packet, retry for ConsumerPacketDataV1 packet type
+		var v1Packet ccv.ConsumerPacketDataV1
+		errV1 := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &v1Packet)
+		if errV1 != nil {
+			// If neither worked, return error
+			return ccv.ConsumerPacketData{}, errV1
+		}
+
+		// VSC matured packets should not be unmarshaled as v1 packets
+		if v1Packet.Type == ccv.VscMaturedPacket {
+			return ccv.ConsumerPacketData{}, fmt.Errorf("VSC matured packets should be correctly unmarshaled")
+		}
+
+		// Convert from v1 packet type
+		consumerPacket = ccv.ConsumerPacketData{
+			Type: v1Packet.Type,
+			Data: &ccv.ConsumerPacketData_SlashPacketData{
+				SlashPacketData: v1Packet.GetSlashPacketData().FromV1(),
+			},
+		}
+	}
+	return consumerPacket, nil
+}
+
 // OnAcknowledgementPacket implements the IBCModule interface
 func (am AppModule) OnAcknowledgementPacket(
 	ctx sdk.Context,
@@ -216,7 +244,7 @@ func (am AppModule) OnAcknowledgementPacket(
 ) error {
 	var ack channeltypes.Acknowledgement
 	if err := ccv.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal provider packet acknowledgement: %v", err)
+		return errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal provider packet acknowledgement: %v", err)
 	}
 
 	if err := am.keeper.OnAcknowledgementPacket(ctx, packet, ack); err != nil {

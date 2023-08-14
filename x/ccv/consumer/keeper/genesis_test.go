@@ -4,23 +4,25 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmtypes "github.com/cometbft/cometbft/types"
+
+	"github.com/cosmos/interchain-security/v3/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // TestInitGenesis tests that a consumer chain is correctly initialised from genesis.
@@ -57,8 +59,6 @@ func TestInitGenesis(t *testing.T) {
 		clienttypes.Height{},
 		commitmenttypes.GetSDKSpecs(),
 		[]string{"upgrade", "upgradedIBCState"},
-		true,
-		true,
 	)
 
 	matPackets := []consumertypes.MaturingVSCPacket{
@@ -72,7 +72,7 @@ func TestInitGenesis(t *testing.T) {
 			{
 				Type: ccv.SlashPacket,
 				Data: &ccv.ConsumerPacketData_SlashPacketData{
-					SlashPacketData: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Downtime),
+					SlashPacketData: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Infraction_INFRACTION_DOWNTIME),
 				},
 			},
 			{
@@ -125,7 +125,7 @@ func TestInitGenesis(t *testing.T) {
 				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 
 				require.Equal(t, validator.Address.Bytes(), ck.GetAllCCValidator(ctx)[0].Address)
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		}, {
 			"restart a chain without an established CCV channel",
@@ -148,11 +148,16 @@ func TestInitGenesis(t *testing.T) {
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
 				assertConsumerPortIsBound(t, ctx, &ck)
 
-				require.Equal(t, pendingDataPackets, ck.GetPendingPackets(ctx))
+				obtainedPendingPackets := ck.GetPendingPackets(ctx)
+				for idx, expectedPacketData := range pendingDataPackets.List {
+					require.Equal(t, expectedPacketData.Type, obtainedPendingPackets[idx].Type)
+					require.Equal(t, expectedPacketData.Data, obtainedPendingPackets[idx].Data)
+				}
+
 				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
 				require.Equal(t, validator.Address.Bytes(), ck.GetAllCCValidator(ctx)[0].Address)
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		}, {
 			"restart a chain with an established CCV channel",
@@ -186,7 +191,12 @@ func TestInitGenesis(t *testing.T) {
 				require.Equal(t, provChannelID, gotChannelID)
 
 				require.True(t, ck.PacketMaturityTimeExists(ctx, matPackets[0].VscId, matPackets[0].MaturityTime))
-				require.Equal(t, pendingDataPackets, ck.GetPendingPackets(ctx))
+
+				obtainedPendingPackets := ck.GetPendingPackets(ctx)
+				for idx, expectedPacketData := range pendingDataPackets.List {
+					require.Equal(t, expectedPacketData.Type, obtainedPendingPackets[idx].Type)
+					require.Equal(t, expectedPacketData.Data, obtainedPendingPackets[idx].Data)
+				}
 
 				require.Equal(t, gs.OutstandingDowntimeSlashing, ck.GetAllOutstandingDowntimes(ctx))
 
@@ -196,7 +206,7 @@ func TestInitGenesis(t *testing.T) {
 				assertHeightValsetUpdateIDs(t, ctx, &ck, updatedHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
 
-				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.Params, ck.GetConsumerParams(ctx))
 			},
 		},
 	}
@@ -250,7 +260,7 @@ func TestExportGenesis(t *testing.T) {
 			{
 				Type: ccv.SlashPacket,
 				Data: &ccv.ConsumerPacketData_SlashPacketData{
-					SlashPacketData: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Downtime),
+					SlashPacketData: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Infraction_INFRACTION_DOWNTIME),
 				},
 			},
 			{
@@ -291,7 +301,10 @@ func TestExportGenesis(t *testing.T) {
 				ck.SetCCValidator(ctx, cVal)
 				ck.SetParams(ctx, params)
 
-				ck.AppendPendingPacket(ctx, consPackets.List...)
+				for _, packet := range consPackets.List {
+					ck.AppendPendingPacket(ctx, packet.Type, packet.Data)
+				}
+
 				ck.SetHeightValsetUpdateID(ctx, defaultHeightValsetUpdateIDs[0].Height, defaultHeightValsetUpdateIDs[0].ValsetUpdateId)
 			},
 			consumertypes.NewRestartGenesisState(
@@ -321,7 +334,9 @@ func TestExportGenesis(t *testing.T) {
 				ck.SetHeightValsetUpdateID(ctx, updatedHeightValsetUpdateIDs[0].Height, updatedHeightValsetUpdateIDs[0].ValsetUpdateId)
 				ck.SetHeightValsetUpdateID(ctx, updatedHeightValsetUpdateIDs[1].Height, updatedHeightValsetUpdateIDs[1].ValsetUpdateId)
 
-				ck.AppendPendingPacket(ctx, consPackets.List...)
+				for _, packet := range consPackets.List {
+					ck.AppendPendingPacket(ctx, packet.Type, packet.Data)
+				}
 
 				// populate the required states for an established CCV channel
 				ck.SetPacketMaturityTime(ctx, matPackets[0].VscId, matPackets[0].MaturityTime)

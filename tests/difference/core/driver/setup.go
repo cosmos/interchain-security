@@ -6,41 +6,40 @@ import (
 	"encoding/json"
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/cosmos/ibc-go/v7/testing/mock"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmtypes "github.com/tendermint/tendermint/types"
-
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/ibc-go/v4/testing/mock"
-
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	simibc "github.com/cosmos/interchain-security/testutil/simibc"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmtypes "github.com/cometbft/cometbft/types"
+
+	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
+	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 type Builder struct {
@@ -68,7 +67,7 @@ func (b *Builder) consumerCtx() sdk.Context {
 }
 
 func (b *Builder) providerStakingKeeper() stakingkeeper.Keeper {
-	return b.provider().App.(*appProvider.App).StakingKeeper
+	return *b.provider().App.(*appProvider.App).StakingKeeper
 }
 
 func (b *Builder) providerSlashingKeeper() slashingkeeper.Keeper {
@@ -156,6 +155,7 @@ func (b *Builder) getAppBytesAndSenders(
 
 	// Sum bonded is needed for BondedPool account
 	sumBonded := sdk.NewInt(0)
+	initValPowers := []abci.ValidatorUpdate{}
 
 	for i, val := range validators.Validators {
 		status := b.initState.ValStates.Status[i]
@@ -195,15 +195,30 @@ func (b *Builder) getAppBytesAndSenders(
 		delegations = append(delegations, stakingtypes.NewDelegation(accounts[0].GetAddress(), val.Address.Bytes(), delShares))
 		// Remaining delegation is from extra account
 		delegations = append(delegations, stakingtypes.NewDelegation(accounts[1].GetAddress(), val.Address.Bytes(), sumShares.Sub(delShares)))
+
+		// add initial validator powers so consumer InitGenesis runs correctly
+		pub, _ := val.ToProto()
+		initValPowers = append(initValPowers, abci.ValidatorUpdate{
+			Power:  val.VotingPower,
+			PubKey: pub.PubKey,
+		})
 	}
 
 	bondDenom := sdk.DefaultBondDenom
 	genesisStaking := stakingtypes.GenesisState{}
+	genesisConsumer := consumertypes.GenesisState{}
 
 	if genesis[stakingtypes.ModuleName] != nil {
 		// If staking module genesis already exists
 		app.AppCodec().MustUnmarshalJSON(genesis[stakingtypes.ModuleName], &genesisStaking)
 		bondDenom = genesisStaking.Params.BondDenom
+	}
+
+	if genesis[consumertypes.ModuleName] != nil {
+		app.AppCodec().MustUnmarshalJSON(genesis[consumertypes.ModuleName], &genesisConsumer)
+		genesisConsumer.InitialValSet = initValPowers
+		genesisConsumer.Params.Enabled = true
+		genesis[consumertypes.ModuleName] = app.AppCodec().MustMarshalJSON(&genesisConsumer)
 	}
 
 	// Set model parameters
@@ -226,7 +241,7 @@ func (b *Builder) getAppBytesAndSenders(
 	})
 
 	// update total funds supply
-	genesisBank := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(), []banktypes.Metadata{})
+	genesisBank := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(), []banktypes.Metadata{}, []banktypes.SendEnabled{})
 	genesis[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(genesisBank)
 
 	stateBytes, err := json.MarshalIndent(genesis, "", " ")
@@ -243,6 +258,8 @@ func (b *Builder) newChain(
 	signers map[string]tmtypes.PrivValidator,
 ) *ibctesting.TestChain {
 	app, genesis := appInit()
+
+	baseapp.SetChainID(chainID)(app.GetBaseApp())
 
 	stateBytes, senderAccounts := b.getAppBytesAndSenders(chainID, app, genesis, validators)
 
@@ -356,7 +373,7 @@ func (b *Builder) setSigningInfos() {
 // Checks that the lexicographic ordering of validator addresses as computed in
 // the staking module match the ordering of validators in the model.
 func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
-	check := func(lesser sdk.ValAddress, greater sdk.ValAddress) {
+	check := func(lesser, greater sdk.ValAddress) {
 		lesserV, _ := b.providerStakingKeeper().GetValidator(b.providerCtx(), lesser)
 		greaterV, _ := b.providerStakingKeeper().GetValidator(b.providerCtx(), greater)
 		lesserKey := stakingtypes.GetValidatorsByPowerIndexKey(lesserV, sdk.DefaultPowerReduction)
@@ -387,7 +404,8 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	d := b.provider().SenderAccounts[del].SenderAccount.GetAddress()
 	coins := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	msg := stakingtypes.NewMsgDelegate(d, val, coins)
-	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
+	providerStaking := b.providerStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	_, err := pskServer.Delegate(sdk.WrapSDKContext(b.providerCtx()), msg)
 	b.suite.Require().NoError(err)
 }
@@ -415,7 +433,8 @@ func (b *Builder) addValidatorToStakingModule(privVal mock.PV) {
 		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
 		sdk.ZeroInt())
 	b.suite.Require().NoError(err)
-	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
+	providerStaking := b.providerStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.providerCtx()), msg)
 }
 
@@ -455,8 +474,10 @@ func (b *Builder) setProviderParams() {
 	slash := b.providerSlashingKeeper().GetParams(b.providerCtx())
 	slash.SlashFractionDoubleSign = b.initState.SlashDoublesign
 	slash.SlashFractionDowntime = b.initState.SlashDowntime
-	b.providerSlashingKeeper().SetParams(b.providerCtx(), slash)
-
+	err := b.providerSlashingKeeper().SetParams(b.providerCtx(), slash)
+	if err != nil {
+		panic(err)
+	}
 	// Set the throttle factors
 	throttle := b.providerKeeper().GetParams(b.providerCtx())
 	throttle.SlashMeterReplenishFraction = "1.0"
@@ -495,7 +516,7 @@ func (b *Builder) createConsumersLocalClientGenesis() *ibctmtypes.ClientState {
 	return ibctmtypes.NewClientState(
 		b.provider().ChainID, tmCfg.TrustLevel, tmCfg.TrustingPeriod, tmCfg.UnbondingPeriod, tmCfg.MaxClockDrift,
 		b.provider().LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
-		[]string{"upgrade", "upgradedIBCState"}, tmCfg.AllowUpdateAfterExpiry, tmCfg.AllowUpdateAfterMisbehaviour,
+		[]string{"upgrade", "upgradedIBCState"},
 	)
 }
 
@@ -514,6 +535,8 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 		consumertypes.DefaultHistoricalEntries,
 		b.initState.UnbondingC,
 		"0", // disable soft opt-out
+		[]string{},
+		[]string{},
 	)
 	return consumertypes.NewInitialGenesisState(client, providerConsState, valUpdates, params)
 }
@@ -525,7 +548,7 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 func GetZeroState(
 	suite *suite.Suite,
 	initState InitState,
-) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted int64, timeLastCommitted int64) {
+) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted, timeLastCommitted int64) {
 	b := Builder{initState: initState, suite: suite}
 
 	b.createProviderAndConsumer()

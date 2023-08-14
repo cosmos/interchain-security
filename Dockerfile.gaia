@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # build latest tagged gaia
-FROM golang:1.19-alpine AS gaia-builder 
+FROM golang:1.20-alpine AS gaia-builder 
 # WORKDIR is set to /go by default
 ARG USE_GAIA_TAG
 ENV GAIA_TAG=${USE_GAIA_TAG}
@@ -43,7 +43,7 @@ RUN go mod tidy
 RUN go list -m github.com/cosmos/cosmos-sdk 
 RUN make build
 
-FROM golang:1.19-alpine AS is-builder
+FROM golang:1.20-alpine AS is-builder
 
 ENV PACKAGES curl make git libc-dev bash gcc linux-headers
 RUN apk add --no-cache $PACKAGES
@@ -61,7 +61,7 @@ WORKDIR /interchain-security
 RUN make install
 
 # Get Hermes build
-FROM informalsystems/hermes:1.2.0 AS hermes-builder
+FROM ghcr.io/informalsystems/hermes:1.4.1 AS hermes-builder
 
 FROM --platform=linux/amd64 fedora:36
 RUN dnf update -y
@@ -74,7 +74,7 @@ COPY --from=hermes-builder /usr/bin/hermes /usr/local/bin/
 COPY --from=gaia-builder /go/gaia/build/gaiad /usr/local/bin/interchain-security-pd
 COPY --from=is-builder /go/bin/interchain-security-cd /usr/local/bin/interchain-security-cd
 COPY --from=is-builder /go/bin/interchain-security-cdd /usr/local/bin/interchain-security-cdd
-
+COPY --from=is-builder /go/bin/interchain-security-sd /usr/local/bin/interchain-security-sd
 
 # Copy in the shell scripts that run the testnet
 ADD ./tests/e2e/testnet-scripts /testnet-scripts

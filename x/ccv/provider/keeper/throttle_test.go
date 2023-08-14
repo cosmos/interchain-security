@@ -5,17 +5,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
+
+	"cosmossdk.io/math"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/stretchr/testify/require"
-	tmtypes "github.com/tendermint/tendermint/types"
-	"golang.org/x/exp/slices"
+
+	tmtypes "github.com/cometbft/cometbft/types"
+
+	cryptoutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // TestHandlePacketDataForChain tests the HandlePacketDataForChain function. Note: Only one consumer is tested here,
@@ -134,7 +138,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 			handledData = append(handledData, data)
 		}
 
-		providerKeeper.HandlePacketDataForChain(ctx, tc.chainID, slashHandleCounter, vscMaturedHandleCounter)
+		providerKeeper.HandlePacketDataForChain(ctx, tc.chainID, slashHandleCounter, vscMaturedHandleCounter, 0)
 
 		// Assert number of handled data instances matches expected number
 		require.Equal(t, len(tc.expectedHandledIndexes), len(handledData))
@@ -179,9 +183,9 @@ func TestSlashMeterReplenishment(t *testing.T) {
 	testCases := []struct {
 		replenishPeriod   time.Duration
 		replenishFraction string
-		totalPower        sdktypes.Int
+		totalPower        math.Int
 		// Replenish fraction * total power, also serves as max slash meter value
-		expectedAllowance sdktypes.Int
+		expectedAllowance math.Int
 	}{
 		{
 			replenishPeriod:   time.Minute,
@@ -451,11 +455,11 @@ func TestTotalVotingPowerChanges(t *testing.T) {
 // voting power becomes lower from slashing.
 func TestNegativeSlashMeter(t *testing.T) {
 	testCases := []struct {
-		slashedPower           sdktypes.Int
-		totalPower             sdktypes.Int
+		slashedPower           math.Int
+		totalPower             math.Int
 		replenishFraction      string
 		numReplenishesTillFull int
-		finalMeterValue        sdktypes.Int
+		finalMeterValue        math.Int
 	}{
 		{
 			// Meter is initialized to a value of: 0.01*1000 = 10.
@@ -566,9 +570,9 @@ func TestNegativeSlashMeter(t *testing.T) {
 func TestGetSlashMeterAllowance(t *testing.T) {
 	testCases := []struct {
 		replenishFraction string
-		totalPower        sdktypes.Int
+		totalPower        math.Int
 		// Replenish fraction * total power
-		expectedAllowance sdktypes.Int
+		expectedAllowance math.Int
 	}{
 		{
 			replenishFraction: "0.00",
@@ -781,8 +785,9 @@ func TestGlobalSlashEntryDeletion(t *testing.T) {
 
 	// Instantiate shuffled copy of above slice
 	shuffledEntries := append([]providertypes.GlobalSlashEntry{}, entries...)
-	rand.Seed(now.UnixNano())
-	rand.Shuffle(len(shuffledEntries), func(i, j int) {
+	seed := time.Now().UnixNano()
+	rng := rand.New(rand.NewSource(seed))
+	rng.Shuffle(len(shuffledEntries), func(i, j int) {
 		shuffledEntries[i], shuffledEntries[j] = shuffledEntries[j], shuffledEntries[i]
 	})
 
@@ -1189,7 +1194,8 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		defaultParams.MaxThrottledPackets = tc.max
 		providerKeeper.SetParams(ctx, defaultParams)
 
-		rand.Seed(time.Now().UnixNano())
+		seed := time.Now().UnixNano()
+		rng := rand.New(rand.NewSource(seed))
 
 		// Queuing up a couple data instances for another chain shouldn't matter
 		err := providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 0, testkeeper.GetNewSlashPacketData())
@@ -1200,7 +1206,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		// Queue packet data instances until we reach the max (some slash packets, some VSC matured packets)
 		reachedMax := false
 		for i := 0; i < int(tc.max); i++ {
-			randBool := rand.Intn(2) == 0
+			randBool := rng.Intn(2) == 0
 			var data interface{}
 			if randBool {
 				data = testkeeper.GetNewSlashPacketData()
@@ -1246,7 +1252,7 @@ func TestThrottledPacketDataSize(t *testing.T) {
 // TestSlashMeter tests the getter and setter for the slash gas meter
 func TestSlashMeter(t *testing.T) {
 	testCases := []struct {
-		meterValue  sdktypes.Int
+		meterValue  math.Int
 		shouldPanic bool
 	}{
 		{meterValue: sdktypes.NewInt(-7999999999999999999), shouldPanic: true},

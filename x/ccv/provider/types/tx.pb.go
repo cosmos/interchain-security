@@ -6,11 +6,11 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	types "github.com/cosmos/cosmos-sdk/codec/types"
-	_ "github.com/gogo/protobuf/gogoproto"
-	grpc1 "github.com/gogo/protobuf/grpc"
-	proto "github.com/gogo/protobuf/proto"
-	_ "github.com/regen-network/cosmos-proto"
+	_ "github.com/cosmos/cosmos-proto"
+	_ "github.com/cosmos/cosmos-sdk/codec/types"
+	_ "github.com/cosmos/gogoproto/gogoproto"
+	grpc1 "github.com/cosmos/gogoproto/grpc"
+	proto "github.com/cosmos/gogoproto/proto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -36,8 +36,10 @@ type MsgAssignConsumerKey struct {
 	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	// The validator address on the provider
 	ProviderAddr string `protobuf:"bytes,2,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty" yaml:"address"`
-	// The consensus public key to use on the consumer
-	ConsumerKey *types.Any `protobuf:"bytes,3,opt,name=consumer_key,json=consumerKey,proto3" json:"consumer_key,omitempty"`
+	// The consensus public key to use on the consumer.
+	// in json string format corresponding to proto-any, ex:
+	// `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`
+	ConsumerKey string `protobuf:"bytes,3,opt,name=consumer_key,json=consumerKey,proto3" json:"consumer_key,omitempty"`
 }
 
 func (m *MsgAssignConsumerKey) Reset()         { *m = MsgAssignConsumerKey{} }
@@ -109,9 +111,92 @@ func (m *MsgAssignConsumerKeyResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgAssignConsumerKeyResponse proto.InternalMessageInfo
 
+// MsgRegisterConsumerRewardDenom allows an account to register
+// a consumer reward denom, i.e., add it to the list of denoms
+// accepted by the provider as rewards.
+type MsgRegisterConsumerRewardDenom struct {
+	Denom     string `protobuf:"bytes,1,opt,name=denom,proto3" json:"denom,omitempty"`
+	Depositor string `protobuf:"bytes,2,opt,name=depositor,proto3" json:"depositor,omitempty"`
+}
+
+func (m *MsgRegisterConsumerRewardDenom) Reset()         { *m = MsgRegisterConsumerRewardDenom{} }
+func (m *MsgRegisterConsumerRewardDenom) String() string { return proto.CompactTextString(m) }
+func (*MsgRegisterConsumerRewardDenom) ProtoMessage()    {}
+func (*MsgRegisterConsumerRewardDenom) Descriptor() ([]byte, []int) {
+	return fileDescriptor_43221a4391e9fbf4, []int{2}
+}
+func (m *MsgRegisterConsumerRewardDenom) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRegisterConsumerRewardDenom) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRegisterConsumerRewardDenom.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRegisterConsumerRewardDenom) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRegisterConsumerRewardDenom.Merge(m, src)
+}
+func (m *MsgRegisterConsumerRewardDenom) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRegisterConsumerRewardDenom) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRegisterConsumerRewardDenom.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRegisterConsumerRewardDenom proto.InternalMessageInfo
+
+// MsgRegisterConsumerRewardDenomResponse defines the
+// Msg/RegisterConsumerRewardDenom response type.
+type MsgRegisterConsumerRewardDenomResponse struct {
+}
+
+func (m *MsgRegisterConsumerRewardDenomResponse) Reset() {
+	*m = MsgRegisterConsumerRewardDenomResponse{}
+}
+func (m *MsgRegisterConsumerRewardDenomResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgRegisterConsumerRewardDenomResponse) ProtoMessage()    {}
+func (*MsgRegisterConsumerRewardDenomResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_43221a4391e9fbf4, []int{3}
+}
+func (m *MsgRegisterConsumerRewardDenomResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgRegisterConsumerRewardDenomResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgRegisterConsumerRewardDenomResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgRegisterConsumerRewardDenomResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgRegisterConsumerRewardDenomResponse.Merge(m, src)
+}
+func (m *MsgRegisterConsumerRewardDenomResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgRegisterConsumerRewardDenomResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgRegisterConsumerRewardDenomResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgRegisterConsumerRewardDenomResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*MsgAssignConsumerKey)(nil), "interchain_security.ccv.provider.v1.MsgAssignConsumerKey")
 	proto.RegisterType((*MsgAssignConsumerKeyResponse)(nil), "interchain_security.ccv.provider.v1.MsgAssignConsumerKeyResponse")
+	proto.RegisterType((*MsgRegisterConsumerRewardDenom)(nil), "interchain_security.ccv.provider.v1.MsgRegisterConsumerRewardDenom")
+	proto.RegisterType((*MsgRegisterConsumerRewardDenomResponse)(nil), "interchain_security.ccv.provider.v1.MsgRegisterConsumerRewardDenomResponse")
 }
 
 func init() {
@@ -119,33 +204,36 @@ func init() {
 }
 
 var fileDescriptor_43221a4391e9fbf4 = []byte{
-	// 406 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x92, 0xbd, 0x8e, 0xd3, 0x40,
-	0x10, 0xc7, 0xbd, 0x9c, 0x04, 0xc7, 0xde, 0x81, 0x84, 0xe5, 0xc2, 0x17, 0x9d, 0x9c, 0x93, 0x69,
-	0xae, 0xe0, 0x76, 0x75, 0xa1, 0x40, 0xa4, 0x73, 0xa8, 0x50, 0x14, 0x09, 0x2c, 0x2a, 0x1a, 0xcb,
-	0x5e, 0x2f, 0x9b, 0x15, 0xf1, 0xae, 0xb5, 0xbb, 0xb6, 0xb2, 0x6f, 0x40, 0x09, 0x25, 0x5d, 0x1e,
-	0x82, 0x77, 0x00, 0x51, 0xa5, 0xa4, 0x42, 0x28, 0x69, 0xa8, 0x79, 0x02, 0x14, 0x7f, 0x10, 0x21,
-	0x52, 0xa0, 0xeb, 0x66, 0xe6, 0x3f, 0x3b, 0xf3, 0x9b, 0x9d, 0x81, 0x8f, 0xb8, 0x30, 0x54, 0x91,
-	0x79, 0xca, 0x45, 0xa2, 0x29, 0xa9, 0x14, 0x37, 0x16, 0x13, 0x52, 0xe3, 0x52, 0xc9, 0x9a, 0xe7,
-	0x54, 0xe1, 0xfa, 0x1a, 0x9b, 0x25, 0x2a, 0x95, 0x34, 0xd2, 0x7d, 0x78, 0x20, 0x1b, 0x11, 0x52,
-	0xa3, 0x3e, 0x1b, 0xd5, 0xd7, 0x83, 0x73, 0x26, 0x25, 0x5b, 0x50, 0x9c, 0x96, 0x1c, 0xa7, 0x42,
-	0x48, 0x93, 0x1a, 0x2e, 0x85, 0x6e, 0x4b, 0x0c, 0x3c, 0x26, 0x99, 0x6c, 0x4c, 0xbc, 0xb3, 0xba,
-	0xe8, 0x19, 0x91, 0xba, 0x90, 0x3a, 0x69, 0x85, 0xd6, 0xe9, 0xa5, 0xae, 0x5c, 0xe3, 0x65, 0xd5,
-	0x1b, 0x9c, 0x0a, 0xdb, 0x4a, 0xe1, 0x67, 0x00, 0xbd, 0x99, 0x66, 0x91, 0xd6, 0x9c, 0x89, 0x67,
-	0x52, 0xe8, 0xaa, 0xa0, 0x6a, 0x4a, 0xad, 0x7b, 0x06, 0x8f, 0x5b, 0x48, 0x9e, 0xfb, 0xe0, 0x02,
-	0x5c, 0xde, 0x8d, 0xef, 0x34, 0xfe, 0xf3, 0xdc, 0x7d, 0x02, 0xef, 0xf5, 0xb0, 0x49, 0x9a, 0xe7,
-	0xca, 0xbf, 0xb5, 0xd3, 0x27, 0xee, 0xaf, 0xef, 0xc3, 0xfb, 0x36, 0x2d, 0x16, 0xe3, 0x70, 0x17,
-	0xa5, 0x5a, 0x87, 0xf1, 0x69, 0x9f, 0x18, 0xe5, 0xb9, 0x72, 0x5f, 0xc2, 0x53, 0xd2, 0xb5, 0x48,
-	0xde, 0x52, 0xeb, 0x1f, 0x5d, 0x80, 0xcb, 0x93, 0x91, 0x87, 0x5a, 0x3c, 0xd4, 0xe3, 0xa1, 0x48,
-	0xd8, 0x89, 0xff, 0xf5, 0xd3, 0x95, 0xd7, 0x4d, 0x41, 0x94, 0x2d, 0x8d, 0x44, 0x2f, 0xaa, 0x6c,
-	0x4a, 0x6d, 0x7c, 0x42, 0xf6, 0x98, 0xe3, 0xe3, 0x77, 0xab, 0xa1, 0xf3, 0x73, 0x35, 0x74, 0xc2,
-	0x00, 0x9e, 0x1f, 0x1a, 0x24, 0xa6, 0xba, 0x94, 0x42, 0xd3, 0xd1, 0x47, 0x00, 0x8f, 0x66, 0x9a,
-	0xb9, 0x1f, 0x00, 0x7c, 0xf0, 0xef, 0xb8, 0x4f, 0xd1, 0x7f, 0xec, 0x05, 0x1d, 0x6a, 0x30, 0x88,
-	0x6e, 0xfc, 0xb4, 0x67, 0x9b, 0xbc, 0xfa, 0xb2, 0x09, 0xc0, 0x7a, 0x13, 0x80, 0x1f, 0x9b, 0x00,
-	0xbc, 0xdf, 0x06, 0xce, 0x7a, 0x1b, 0x38, 0xdf, 0xb6, 0x81, 0xf3, 0x7a, 0xcc, 0xb8, 0x99, 0x57,
-	0x19, 0x22, 0xb2, 0xe8, 0x76, 0x8a, 0xf7, 0xdd, 0xae, 0xfe, 0x9c, 0xdb, 0xf2, 0xef, 0x83, 0x33,
-	0xb6, 0xa4, 0x3a, 0xbb, 0xdd, 0x7c, 0xe8, 0xe3, 0xdf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x78, 0xcb,
-	0x05, 0x85, 0xa1, 0x02, 0x00, 0x00,
+	// 453 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x93, 0x3d, 0x6b, 0x14, 0x41,
+	0x18, 0xc7, 0x77, 0x13, 0xd4, 0x64, 0x8c, 0x82, 0xc3, 0x15, 0x97, 0xf3, 0xd8, 0xd3, 0x15, 0x24,
+	0x85, 0xee, 0x10, 0x53, 0x88, 0x01, 0x8b, 0x4b, 0x6c, 0x24, 0x5c, 0xb3, 0x8d, 0x60, 0xe1, 0xb1,
+	0x37, 0x33, 0x4e, 0x06, 0xb3, 0xf3, 0x2c, 0xf3, 0xcc, 0xad, 0xd9, 0x6f, 0x60, 0xa9, 0x95, 0x6d,
+	0xbe, 0x81, 0x5f, 0x43, 0xb0, 0x49, 0x69, 0x25, 0x72, 0xd7, 0x58, 0xfb, 0x09, 0x64, 0xdf, 0x3c,
+	0xc5, 0xe3, 0x08, 0x92, 0xee, 0x79, 0xdb, 0xff, 0xff, 0xb7, 0x33, 0xf3, 0x90, 0x07, 0xda, 0x38,
+	0x69, 0xf9, 0x71, 0xa2, 0xcd, 0x18, 0x25, 0x9f, 0x5a, 0xed, 0x0a, 0xc6, 0x79, 0xce, 0x32, 0x0b,
+	0xb9, 0x16, 0xd2, 0xb2, 0x7c, 0x97, 0xb9, 0xd3, 0x28, 0xb3, 0xe0, 0x80, 0xde, 0x5b, 0x32, 0x1d,
+	0x71, 0x9e, 0x47, 0xed, 0x74, 0x94, 0xef, 0xf6, 0xfa, 0x0a, 0x40, 0x9d, 0x48, 0x96, 0x64, 0x9a,
+	0x25, 0xc6, 0x80, 0x4b, 0x9c, 0x06, 0x83, 0xb5, 0x44, 0xaf, 0xa3, 0x40, 0x41, 0x15, 0xb2, 0x32,
+	0x6a, 0xaa, 0xdb, 0x1c, 0x30, 0x05, 0x1c, 0xd7, 0x8d, 0x3a, 0x69, 0x5b, 0x8d, 0x5c, 0x95, 0x4d,
+	0xa6, 0xaf, 0x59, 0x62, 0x8a, 0xba, 0x15, 0x7e, 0xf4, 0x49, 0x67, 0x84, 0x6a, 0x88, 0xa8, 0x95,
+	0x39, 0x04, 0x83, 0xd3, 0x54, 0xda, 0x23, 0x59, 0xd0, 0x6d, 0xb2, 0x51, 0x43, 0x6a, 0xd1, 0xf5,
+	0xef, 0xf8, 0x3b, 0x9b, 0xf1, 0xb5, 0x2a, 0x7f, 0x2e, 0xe8, 0x63, 0x72, 0xa3, 0x85, 0x1d, 0x27,
+	0x42, 0xd8, 0xee, 0x5a, 0xd9, 0x3f, 0xa0, 0x3f, 0xbf, 0x0d, 0x6e, 0x16, 0x49, 0x7a, 0xb2, 0x1f,
+	0x96, 0x55, 0x89, 0x18, 0xc6, 0x5b, 0xed, 0xe0, 0x50, 0x08, 0x4b, 0xef, 0x92, 0x2d, 0xde, 0x58,
+	0x8c, 0xdf, 0xc8, 0xa2, 0xbb, 0x5e, 0xe9, 0x5e, 0xe7, 0x0b, 0xdb, 0xfd, 0x8d, 0x77, 0x67, 0x03,
+	0xef, 0xc7, 0xd9, 0xc0, 0x0b, 0x03, 0xd2, 0x5f, 0x06, 0x16, 0x4b, 0xcc, 0xc0, 0xa0, 0x0c, 0x5f,
+	0x91, 0x60, 0x84, 0x2a, 0x96, 0x4a, 0xa3, 0x93, 0xb6, 0x9d, 0x88, 0xe5, 0xdb, 0xc4, 0x8a, 0x67,
+	0xd2, 0x40, 0x4a, 0x3b, 0xe4, 0x8a, 0x28, 0x83, 0x86, 0xbf, 0x4e, 0x68, 0x9f, 0x6c, 0x0a, 0x99,
+	0x01, 0x6a, 0x07, 0x0d, 0x79, 0xbc, 0x28, 0xfc, 0xe1, 0xbf, 0x43, 0xee, 0xaf, 0xd6, 0x6f, 0x49,
+	0x1e, 0x7d, 0x59, 0x23, 0xeb, 0x23, 0x54, 0xf4, 0x83, 0x4f, 0x6e, 0xfd, 0x7b, 0x90, 0x4f, 0xa2,
+	0x0b, 0xdc, 0x78, 0xb4, 0xec, 0x57, 0x7b, 0xc3, 0xff, 0xfe, 0xb4, 0x65, 0xa3, 0x9f, 0x7c, 0x72,
+	0x7b, 0xd5, 0x19, 0x1d, 0x5e, 0xd4, 0x62, 0x85, 0x48, 0xef, 0xe8, 0x12, 0x44, 0x5a, 0xe2, 0x83,
+	0x17, 0x9f, 0x67, 0x81, 0x7f, 0x3e, 0x0b, 0xfc, 0xef, 0xb3, 0xc0, 0x7f, 0x3f, 0x0f, 0xbc, 0xf3,
+	0x79, 0xe0, 0x7d, 0x9d, 0x07, 0xde, 0xcb, 0xa7, 0x4a, 0xbb, 0xe3, 0xe9, 0x24, 0xe2, 0x90, 0x36,
+	0xef, 0x9b, 0x2d, 0x7c, 0x1f, 0xfe, 0x5e, 0xbd, 0x7c, 0x8f, 0x9d, 0xfe, 0xbd, 0x7f, 0xae, 0xc8,
+	0x24, 0x4e, 0xae, 0x56, 0x2f, 0x7e, 0xef, 0x57, 0x00, 0x00, 0x00, 0xff, 0xff, 0x72, 0xb0, 0xd5,
+	0x84, 0xb0, 0x03, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -161,6 +249,7 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
 	AssignConsumerKey(ctx context.Context, in *MsgAssignConsumerKey, opts ...grpc.CallOption) (*MsgAssignConsumerKeyResponse, error)
+	RegisterConsumerRewardDenom(ctx context.Context, in *MsgRegisterConsumerRewardDenom, opts ...grpc.CallOption) (*MsgRegisterConsumerRewardDenomResponse, error)
 }
 
 type msgClient struct {
@@ -180,9 +269,19 @@ func (c *msgClient) AssignConsumerKey(ctx context.Context, in *MsgAssignConsumer
 	return out, nil
 }
 
+func (c *msgClient) RegisterConsumerRewardDenom(ctx context.Context, in *MsgRegisterConsumerRewardDenom, opts ...grpc.CallOption) (*MsgRegisterConsumerRewardDenomResponse, error) {
+	out := new(MsgRegisterConsumerRewardDenomResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Msg/RegisterConsumerRewardDenom", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	AssignConsumerKey(context.Context, *MsgAssignConsumerKey) (*MsgAssignConsumerKeyResponse, error)
+	RegisterConsumerRewardDenom(context.Context, *MsgRegisterConsumerRewardDenom) (*MsgRegisterConsumerRewardDenomResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -191,6 +290,9 @@ type UnimplementedMsgServer struct {
 
 func (*UnimplementedMsgServer) AssignConsumerKey(ctx context.Context, req *MsgAssignConsumerKey) (*MsgAssignConsumerKeyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AssignConsumerKey not implemented")
+}
+func (*UnimplementedMsgServer) RegisterConsumerRewardDenom(ctx context.Context, req *MsgRegisterConsumerRewardDenom) (*MsgRegisterConsumerRewardDenomResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterConsumerRewardDenom not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -215,6 +317,24 @@ func _Msg_AssignConsumerKey_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_RegisterConsumerRewardDenom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgRegisterConsumerRewardDenom)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).RegisterConsumerRewardDenom(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interchain_security.ccv.provider.v1.Msg/RegisterConsumerRewardDenom",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).RegisterConsumerRewardDenom(ctx, req.(*MsgRegisterConsumerRewardDenom))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "interchain_security.ccv.provider.v1.Msg",
 	HandlerType: (*MsgServer)(nil),
@@ -222,6 +342,10 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AssignConsumerKey",
 			Handler:    _Msg_AssignConsumerKey_Handler,
+		},
+		{
+			MethodName: "RegisterConsumerRewardDenom",
+			Handler:    _Msg_RegisterConsumerRewardDenom_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -248,15 +372,10 @@ func (m *MsgAssignConsumerKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.ConsumerKey != nil {
-		{
-			size, err := m.ConsumerKey.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintTx(dAtA, i, uint64(size))
-		}
+	if len(m.ConsumerKey) > 0 {
+		i -= len(m.ConsumerKey)
+		copy(dAtA[i:], m.ConsumerKey)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ConsumerKey)))
 		i--
 		dAtA[i] = 0x1a
 	}
@@ -300,6 +419,66 @@ func (m *MsgAssignConsumerKeyResponse) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
+func (m *MsgRegisterConsumerRewardDenom) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRegisterConsumerRewardDenom) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRegisterConsumerRewardDenom) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Depositor) > 0 {
+		i -= len(m.Depositor)
+		copy(dAtA[i:], m.Depositor)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Depositor)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Denom) > 0 {
+		i -= len(m.Denom)
+		copy(dAtA[i:], m.Denom)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Denom)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRegisterConsumerRewardDenomResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRegisterConsumerRewardDenomResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRegisterConsumerRewardDenomResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -325,14 +504,40 @@ func (m *MsgAssignConsumerKey) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	if m.ConsumerKey != nil {
-		l = m.ConsumerKey.Size()
+	l = len(m.ConsumerKey)
+	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
 	return n
 }
 
 func (m *MsgAssignConsumerKeyResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgRegisterConsumerRewardDenom) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Denom)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.Depositor)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgRegisterConsumerRewardDenomResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -444,7 +649,7 @@ func (m *MsgAssignConsumerKey) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerKey", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTx
@@ -454,27 +659,23 @@ func (m *MsgAssignConsumerKey) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthTx
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthTx
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ConsumerKey == nil {
-				m.ConsumerKey = &types.Any{}
-			}
-			if err := m.ConsumerKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.ConsumerKey = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -524,6 +725,170 @@ func (m *MsgAssignConsumerKeyResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgAssignConsumerKeyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRegisterConsumerRewardDenom) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRegisterConsumerRewardDenom: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRegisterConsumerRewardDenom: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Denom", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Denom = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Depositor", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Depositor = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRegisterConsumerRewardDenomResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRegisterConsumerRewardDenomResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRegisterConsumerRewardDenomResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

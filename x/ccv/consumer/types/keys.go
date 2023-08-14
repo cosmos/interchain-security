@@ -5,7 +5,8 @@ import (
 	time "time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 const (
@@ -49,10 +50,8 @@ const (
 	// received over CCV channel but not yet flushed over ABCI
 	PendingChangesByteKey
 
-	// PendingDataPacketsByteKey is the byte key for storing
-	// a list of data packets that cannot be sent yet to the provider
-	// chain either because the CCV channel is not established or
-	// because the client is expired
+	// NOTE: This prefix is depreciated, but left in place to avoid consumer state migrations
+	// [DEPRECATED]
 	PendingDataPacketsByteKey
 
 	// PreCCVByteKey is the byte to store the consumer is running on democracy staking module without consumer
@@ -61,18 +60,12 @@ const (
 	// InitialValSetByteKey is the byte to store the initial validator set for a consumer
 	InitialValSetByteKey
 
-	// InitGenesisHeightByteKey is the byte that will store the init genesis height
-	InitGenesisHeightByteKey
+	// NOTE: This prefix is depreciated, but left in place to avoid consumer state migrations
+	// [DEPRECATED]
+	LastStandaloneHeightByteKey
 
 	// SmallestNonOptOutPowerByteKey is the byte that will store the smallest val power that cannot opt out
 	SmallestNonOptOutPowerByteKey
-
-	// StandaloneTransferChannelIDByteKey is the byte storing the channelID of transfer channel
-	// that existed from a standalone chain changing over to a consumer
-	StandaloneTransferChannelIDByteKey
-
-	// PrevStandaloneChainByteKey is the byte storing the flag marking whether this chain was previously standalone
-	PrevStandaloneChainByteKey
 
 	// HistoricalInfoKey is the byte prefix that will store the historical info for a given height
 	HistoricalInfoBytePrefix
@@ -86,8 +79,31 @@ const (
 	// OutstandingDowntimePrefix is the byte prefix that will store the validators outstanding downtime by consensus address
 	OutstandingDowntimeBytePrefix
 
+	// PendingDataPacketsBytePrefix is the byte prefix for storing
+	// a list of data packets that cannot be sent yet to the provider
+	// chain either because the CCV channel is not established or
+	// because the client is expired
+	PendingDataPacketsBytePrefix
+
 	// CrossChainValidatorPrefix is the byte prefix that will store cross-chain validators by consensus address
 	CrossChainValidatorBytePrefix
+
+	// InitGenesisHeightByteKey is the byte that will store the init genesis height
+	InitGenesisHeightByteKey
+
+	// StandaloneTransferChannelIDByteKey is the byte storing the channelID of transfer channel
+	// that existed from a standalone chain changing over to a consumer
+	StandaloneTransferChannelIDByteKey
+
+	// PrevStandaloneChainByteKey is the byte storing the flag marking whether this chain was previously standalone
+	PrevStandaloneChainByteKey
+
+	// PendingPacketsIndexBytePrefix is the single byte key to the pending packets index.
+	// This index is used for implementing a FIFO queue of pending packets in the KV store.
+	PendingPacketsIndexByteKey
+
+	// SlashRecordByteKey is the single byte key storing the consumer's slash record.
+	SlashRecordByteKey
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
@@ -126,40 +142,6 @@ func PendingChangesKey() []byte {
 	return []byte{PendingChangesByteKey}
 }
 
-// PendingDataPacketsKey returns the key for storing a list of data packets
-// that cannot be sent yet to the provider chain either because the CCV channel
-// is not established or because the client is expired.
-func PendingDataPacketsKey() []byte {
-	return []byte{PendingDataPacketsByteKey}
-}
-
-func PreCCVKey() []byte {
-	return []byte{PreCCVByteKey}
-}
-
-func InitialValSetKey() []byte {
-	return []byte{InitialValSetByteKey}
-}
-
-func InitGenesisHeightKey() []byte {
-	return []byte{InitGenesisHeightByteKey}
-}
-
-func SmallestNonOptOutPowerKey() []byte {
-	return []byte{SmallestNonOptOutPowerByteKey}
-}
-
-// StandaloneTransferChannelIDKey returns the key to the transfer channelID that existed from a standalone chain
-// changing over to a consumer
-func StandaloneTransferChannelIDKey() []byte {
-	return []byte{StandaloneTransferChannelIDByteKey}
-}
-
-// PrevStandaloneChainKey returns the key to the flag marking whether this chain was previously standalone
-func PrevStandaloneChainKey() []byte {
-	return []byte{PrevStandaloneChainByteKey}
-}
-
 // HistoricalInfoKey returns the key to historical info to a given block height
 func HistoricalInfoKey(height int64) []byte {
 	hBytes := make([]byte, 8)
@@ -195,6 +177,53 @@ func OutstandingDowntimeKey(address sdk.ConsAddress) []byte {
 // CrossChainValidatorKey returns the key to a cross chain validator by consensus address
 func CrossChainValidatorKey(addr []byte) []byte {
 	return append([]byte{CrossChainValidatorBytePrefix}, addr...)
+}
+
+// PendingDataPacketsKey returns the key for storing a queue of data packets to be sent to the provider.
+// Packets in this queue will not be sent on the next endblocker if:
+// - the CCV channel is not yet established
+// - the client is expired
+// - A slash packet is being bounced between consumer and provider (not yet implemented)
+func PendingDataPacketsKey(idx uint64) []byte {
+	return append([]byte{PendingDataPacketsBytePrefix}, sdk.Uint64ToBigEndian(idx)...)
+}
+
+func PreCCVKey() []byte {
+	return []byte{PreCCVByteKey}
+}
+
+func InitialValSetKey() []byte {
+	return []byte{InitialValSetByteKey}
+}
+
+func InitGenesisHeightKey() []byte {
+	return []byte{InitGenesisHeightByteKey}
+}
+
+func SmallestNonOptOutPowerKey() []byte {
+	return []byte{SmallestNonOptOutPowerByteKey}
+}
+
+// StandaloneTransferChannelIDKey returns the key to the transfer channelID that existed from a standalone chain
+// changing over to a consumer
+func StandaloneTransferChannelIDKey() []byte {
+	return []byte{StandaloneTransferChannelIDByteKey}
+}
+
+// PrevStandaloneChainKey returns the key to the flag marking whether this chain was previously standalone
+func PrevStandaloneChainKey() []byte {
+	return []byte{PrevStandaloneChainByteKey}
+}
+
+// PendingPacketsIndexKey returns the key to the pending packets index.
+// This index is used for implementing a FIFO queue of pending packets in the KV store.
+func PendingPacketsIndexKey() []byte {
+	return []byte{PendingPacketsIndexByteKey}
+}
+
+// SlashRecordKey returns the key storing the consumer's slash record.
+func SlashRecordKey() []byte {
+	return []byte{SlashRecordByteKey}
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go

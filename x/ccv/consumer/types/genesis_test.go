@@ -4,22 +4,20 @@ import (
 	"testing"
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/stretchr/testify/require"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-
-	tmtypes "github.com/tendermint/tendermint/types"
-
-	"github.com/cosmos/interchain-security/testutil/crypto"
-
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/stretchr/testify/require"
+	"github.com/cosmos/interchain-security/v3/testutil/crypto"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 const (
@@ -47,7 +45,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 	valHash := valSet.Hash()
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(valSet)
 
-	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath, false, false)
+	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath)
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
 
 	params := types.DefaultParams()
@@ -210,7 +208,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 			true,
 		},
 		{
-			"invalid new consumer genesis state: invalid params",
+			"invalid new consumer genesis state: invalid params - ccvTimeoutPeriod",
 			types.NewInitialGenesisState(cs, consensusState, valUpdates,
 				types.NewParams(
 					true,
@@ -223,6 +221,27 @@ func TestValidateInitialGenesisState(t *testing.T) {
 					types.DefaultHistoricalEntries,
 					types.DefaultConsumerUnbondingPeriod,
 					types.DefaultSoftOptOutThreshold,
+					[]string{},
+					[]string{},
+				)),
+			true,
+		},
+		{
+			"invalid new consumer genesis state: invalid params - distributionTransmissionChannel",
+			types.NewInitialGenesisState(cs, consensusState, valUpdates,
+				types.NewParams(
+					true,
+					types.DefaultBlocksPerDistributionTransmission,
+					"badchannel/",
+					"",
+					ccv.DefaultCCVTimeoutPeriod,
+					types.DefaultTransferTimeoutPeriod,
+					types.DefaultConsumerRedistributeFrac,
+					types.DefaultHistoricalEntries,
+					types.DefaultConsumerUnbondingPeriod,
+					types.DefaultSoftOptOutThreshold,
+					[]string{},
+					[]string{},
 				)),
 			true,
 		},
@@ -264,7 +283,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 			SlashPacketData: ccv.NewSlashPacketData(
 				abci.Validator{Address: pubKey.Address(), Power: int64(1)},
 				1,
-				stakingtypes.Downtime),
+				stakingtypes.Infraction_INFRACTION_DOWNTIME),
 		},
 	}
 
@@ -273,7 +292,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		{Height: 0, ValsetUpdateId: 0},
 	}
 
-	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath, false, false)
+	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath)
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
 
 	params := types.DefaultParams()
@@ -422,6 +441,8 @@ func TestValidateRestartGenesisState(t *testing.T) {
 					types.DefaultHistoricalEntries,
 					types.DefaultConsumerUnbondingPeriod,
 					types.DefaultSoftOptOutThreshold,
+					[]string{},
+					[]string{},
 				)),
 			true,
 		},

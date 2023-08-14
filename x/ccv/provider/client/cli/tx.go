@@ -2,16 +2,17 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/cosmos/cosmos-sdk/version"
+
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // GetTxCmd returns the transaction commands for this module
@@ -25,6 +26,7 @@ func GetTxCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(NewAssignConsumerKeyCmd())
+	cmd.AddCommand(NewRegisterConsumerRewardDenomCmd())
 
 	return cmd
 }
@@ -40,16 +42,15 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 				return err
 			}
 
-			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).
-				WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
-
-			providerValAddr := clientCtx.GetFromAddress()
-			var consumerPubKey cryptotypes.PubKey
-			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[1]), &consumerPubKey); err != nil {
+			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
 				return err
 			}
+			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
-			msg, err := types.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), consumerPubKey)
+			providerValAddr := clientCtx.GetFromAddress()
+
+			msg, err := types.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), args[1])
 			if err != nil {
 				return err
 			}
@@ -64,6 +65,40 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 	flags.AddTxFlagsToCmd(cmd)
 
 	_ = cmd.MarkFlagRequired(flags.FlagFrom)
+
+	return cmd
+}
+
+func NewRegisterConsumerRewardDenomCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "register-consumer-reward-denom [denom]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Registers a denom that can be sent from consumer chains to all validators and delegators as a reward",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Registers a denom that can be sent from consumer chains to all validators and delegators as a reward.
+
+Costs a fee, which is specified in genesis.json under the "consumer_reward_denom_fee" key. Will fail if the sending account has an insufficient balance.
+
+Example:
+$ %s tx provider register-consumer-reward-denom untrn --from mykey
+`,
+				version.AppName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			depositorAddr := clientCtx.GetFromAddress()
+
+			msg := types.NewMsgRegisterConsumerRewardDenom(args[0], depositorAddr)
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
 }

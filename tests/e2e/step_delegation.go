@@ -46,7 +46,8 @@ func stepsDelegate(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -110,7 +111,8 @@ func stepsUnbond(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -118,6 +120,97 @@ func stepsUnbond(consumerName string) []Step {
 				chainID("consu"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 510,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+	}
+}
+
+// stepsCancelUnbond canceling unbonding operation for delegator and validator combination
+// the steps perform a full unbonding where the unbonding delegation is removed from the unbonding queue
+func stepsCancelUnbond(consumerName string) []Step {
+	return []Step{
+		{
+			action: unbondTokensAction{
+				chain:      chainID("provi"),
+				unbondFrom: validatorID("alice"),
+				sender:     validatorID("alice"),
+				amount:     1000000,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+				chainID("consu"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						// Voting power on consumer should not be affected yet
+						validatorID("alice"): 510,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: relayPacketsAction{
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID("consu"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: cancelUnbondTokensAction{
+				chain:     chainID("provi"),
+				delegator: validatorID("alice"),
+				validator: validatorID("alice"),
+				amount:    1000000, // cancel unbonding the full amount
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 510, // power restored
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+				chainID("consu"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						// Voting power on consumer should not be affected yet
+						validatorID("alice"): 509,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: relayPacketsAction{
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID("consu"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 510, // power restored on consumer
 						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
@@ -160,7 +253,8 @@ func stepsRedelegateForOptOut(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
@@ -212,7 +306,61 @@ func stepsRedelegate(consumerName string) []Step {
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						// Now power changes are seen by consumer
+						validatorID("alice"): 509,
+						validatorID("bob"):   500,
+						validatorID("carol"): 501,
+					},
+				},
+			},
+		},
+	}
+}
+
+// stepsRedelegate tests redelegation and resulting validator power changes.
+func stepsRedelegateShort(consumerName string) []Step {
+	return []Step{
+		{
+			action: redelegateTokensAction{
+				chain:    chainID("provi"),
+				src:      validatorID("alice"),
+				dst:      validatorID("carol"),
+				txSender: validatorID("alice"),
+				// Leave alice with majority stake so non-faulty validators maintain more than
+				// 2/3 voting power during downtime tests below, avoiding chain halt
+				amount: 1000000,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   500,
+						// carol always uses a consumer assigned key
+						validatorID("carol"): 501,
+					},
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						// Voting power changes not seen by consumer yet
+						validatorID("alice"): 510,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: relayPacketsAction{
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},

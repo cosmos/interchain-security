@@ -1,8 +1,8 @@
 package integration
 
 import (
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 )
 
 func (suite *CCVTestSuite) TestRecycleTransferChannel() {
@@ -34,7 +34,7 @@ func (suite *CCVTestSuite) TestRecycleTransferChannel() {
 	// Setup state s.t. the consumer keeper emulates a consumer that was previously standalone
 	consumerKeeper.MarkAsPrevStandaloneChain(suite.consumerCtx())
 	suite.Require().True(consumerKeeper.IsPrevStandaloneChain(suite.consumerCtx()))
-	suite.consumerApp.GetConsumerKeeper().SetStandaloneTransferChannelID(suite.consumerCtx(), resp.ChannelId)
+	suite.consumerApp.GetConsumerKeeper().SetDistributionTransmissionChannel(suite.consumerCtx(), resp.ChannelId)
 
 	// Now finish setting up CCV channel
 	suite.ExecuteCCVChannelHandshake(suite.path)

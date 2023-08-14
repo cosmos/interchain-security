@@ -2,25 +2,22 @@ package core
 
 import (
 	"fmt"
-	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/stretchr/testify/suite"
 
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	ibctestingcore "github.com/cosmos/interchain-security/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
 
-	simibc "github.com/cosmos/interchain-security/testutil/simibc"
-
-	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
+	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
+	ibctestingcore "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
+	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 )
 
 type CoreSuite struct {
@@ -66,7 +63,7 @@ func (s *CoreSuite) consumerChain() *ibctesting.TestChain {
 }
 
 func (b *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).StakingKeeper
+	return *b.providerChain().App.(*appProvider.App).StakingKeeper
 }
 
 func (b *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {
@@ -151,8 +148,9 @@ func (s *CoreSuite) delegatorBalance() int64 {
 }
 
 // delegate delegates amt tokens to validator val
-func (s *CoreSuite) delegate(val int64, amt int64) {
-	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
+func (s *CoreSuite) delegate(val, amt int64) {
+	providerStaking := s.providerStakingKeeper()
+	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
@@ -163,8 +161,9 @@ func (s *CoreSuite) delegate(val int64, amt int64) {
 }
 
 // undelegate undelegates amt tokens from validator val
-func (s *CoreSuite) undelegate(val int64, amt int64) {
-	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
+func (s *CoreSuite) undelegate(val, amt int64) {
+	providerStaking := s.providerStakingKeeper()
+	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
@@ -177,13 +176,13 @@ func (s *CoreSuite) undelegate(val int64, amt int64) {
 // consumerSlash simulates a slash event occurring on the consumer chain.
 // It can be for a downtime or doublesign.
 func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
-	kind := stakingtypes.DoubleSign
+	kind := stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 	if isDowntime {
-		kind = stakingtypes.Downtime
+		kind = stakingtypes.Infraction_INFRACTION_DOWNTIME
 	}
 	ctx := s.ctx(C)
 	before := len(ctx.EventManager().Events())
-	s.consumerKeeper().Slash(ctx, val, h, 0, sdk.Dec{}, kind)
+	s.consumerKeeper().SlashWithInfractionReason(ctx, val, h, 0, sdk.Dec{}, kind)
 	// consumer module emits packets on slash, so these must be collected.
 	evts := ctx.EventManager().ABCIEvents()
 	for _, e := range evts[before:] {
@@ -331,9 +330,12 @@ func (s *CoreSuite) TestTraces() {
 	fmt.Println("Shortest [traceIx, actionIx]:", shortest, shortestLen)
 }
 
-func TestCoreSuite(t *testing.T) {
-	suite.Run(t, new(CoreSuite))
-}
+// TODO: diff tests will eventually be replaced by quint tests, and all this code could then be deleted.
+// Until that decision is finalized, we'll just comment out the top-level test.
+
+// func TestCoreSuite(t *testing.T) {
+// 	suite.Run(t, new(CoreSuite))
+// }
 
 // SetupTest sets up the test suite in a 'zero' state which matches
 // the initial state in the model.

@@ -4,21 +4,34 @@ import (
 	"fmt"
 	"time"
 
+	"cosmossdk.io/math"
+
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
-	tmtypes "github.com/tendermint/tendermint/types"
+
+	tmtypes "github.com/cometbft/cometbft/types"
+
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // This file contains functionality relevant to the throttling of slash and vsc matured packets, aka circuit breaker logic.
 
+const vscMaturedHandledPerBlockLimit = 100
+
 // HandleThrottleQueues iterates over the global slash entry queue, and
 // handles all or some portion of throttled (slash and/or VSC matured) packet data received from
 // consumer chains. The slash meter is decremented appropriately in this method.
-func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
+func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context, vscMaturedHandledThisBlock int) {
 	meter := k.GetSlashMeter(ctx)
 	// Return if meter is negative in value
 	if meter.IsNegative() {
+		return
+	}
+
+	// Return if vsc matured handle limit was already reached this block, during HandleLeadingVSCMaturedPackets.
+	// It makes no practical difference for throttling logic to execute next block.
+	// By doing this, we assure that all leading vsc matured packets were handled before any slash packets.
+	if vscMaturedHandledThisBlock >= vscMaturedHandledPerBlockLimit {
 		return
 	}
 
@@ -29,12 +42,13 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 	for _, globalEntry := range allEntries {
 		// Subtract voting power that will be jailed/tombstoned from the slash meter
-		meter = meter.Sub(k.GetEffectiveValPower(ctx, *globalEntry.ProviderValConsAddr))
+		providerAddr := providertypes.NewProviderConsAddress(globalEntry.ProviderValConsAddr)
+		meter = meter.Sub(k.GetEffectiveValPower(ctx, providerAddr))
 
 		// Handle one slash and any trailing vsc matured packet data instances by passing in
 		// chainID and appropriate callbacks, relevant packet data is deleted in this method.
 
-		k.HandlePacketDataForChain(ctx, globalEntry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
+		k.HandlePacketDataForChain(ctx, globalEntry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket, vscMaturedHandledThisBlock)
 		handledEntries = append(handledEntries, globalEntry)
 
 		// don't handle any more global entries if meter becomes negative in value
@@ -58,7 +72,7 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 // Obtains the effective validator power relevant to a validator consensus address.
 func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
 	valConsAddr providertypes.ProviderConsAddress,
-) sdktypes.Int {
+) math.Int {
 	// Obtain staking module val object from the provider's consensus address.
 	// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
 	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr.ToSdkConsAddr())
@@ -81,18 +95,31 @@ func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
 func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID string,
 	slashPacketHandler func(sdktypes.Context, string, ccvtypes.SlashPacketData),
 	vscMaturedPacketHandler func(sdktypes.Context, string, ccvtypes.VSCMaturedPacketData),
+	vscMaturedHandledThisBlock int,
 ) {
 	// Get slash packet data and trailing vsc matured packet data, handle it all.
 	slashFound, slashData, vscMaturedData, seqNums := k.GetSlashAndTrailingData(ctx, consumerChainID)
+	seqNumsHandled := []uint64{}
 	if slashFound {
 		slashPacketHandler(ctx, consumerChainID, slashData)
+		// Due to HandleLeadingVSCMaturedPackets() running before HandleThrottleQueues(), and the fact that
+		// HandleThrottleQueues() will return until all leading vsc matured have been handled, a slash packet
+		// should always be the first packet in the queue. So we can safely append the first seqNum here.
+		seqNumsHandled = append(seqNumsHandled, seqNums[0])
 	}
-	for _, vscMData := range vscMaturedData {
+	for idx, vscMData := range vscMaturedData {
+		if vscMaturedHandledThisBlock >= vscMaturedHandledPerBlockLimit {
+			// Break from for-loop, DeleteThrottledPacketData will still be called for this consumer
+			break
+		}
 		vscMaturedPacketHandler(ctx, consumerChainID, vscMData)
+		vscMaturedHandledThisBlock++
+		// Append seq num for this vsc matured packet
+		seqNumsHandled = append(seqNumsHandled, seqNums[idx+1]) // Note idx+1, since slash packet is at index 0
 	}
 
 	// Delete handled data after it has all been handled.
-	k.DeleteThrottledPacketData(ctx, consumerChainID, seqNums...)
+	k.DeleteThrottledPacketData(ctx, consumerChainID, seqNumsHandled...)
 }
 
 // InitializeSlashMeter initializes the slash meter to it's max value (also its allowance),
@@ -158,7 +185,7 @@ func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 // Note: allowance can change between blocks, since it is directly correlated to total voting power.
 // The slash meter must be less than or equal to the allowance for this block, before any slash
 // packet handling logic can be executed.
-func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
+func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) math.Int {
 	strFrac := k.GetSlashMeterReplenishFraction(ctx)
 	// MustNewDecFromStr should not panic, since the (string representation) of the slash meter replenish fraction
 	// is validated in ValidateGenesis and anytime the param is mutated.
@@ -190,11 +217,7 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context, entry providertypes.GlobalSlashEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.GlobalSlashEntryKey(entry)
-	bz, err := entry.ProviderValConsAddr.Marshal()
-	if err != nil {
-		// This should never happen, since the provider val cons addr should be a valid sdk address
-		panic(fmt.Sprintf("failed to marshal validator consensus address: %s", err.Error()))
-	}
+	bz := entry.ProviderValConsAddr
 	store.Set(key, bz)
 }
 
@@ -228,12 +251,7 @@ func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.G
 		// MustParseGlobalSlashEntryKey should not panic, since we should be iterating over keys that're
 		// assumed to be correctly serialized in QueueGlobalSlashEntry.
 		recvTime, chainID, ibcSeqNum := providertypes.MustParseGlobalSlashEntryKey(iterator.Key())
-		valAddr := providertypes.ProviderConsAddress{}
-		err := valAddr.Unmarshal(iterator.Value())
-		if err != nil {
-			// This should never happen, provider cons address is assumed to be correctly serialized in QueueGlobalSlashEntry
-			panic(fmt.Sprintf("failed to unmarshal validator consensus address: %s", err.Error()))
-		}
+		valAddr := providertypes.NewProviderConsAddress(iterator.Value())
 		entry := providertypes.NewGlobalSlashEntry(recvTime, chainID, ibcSeqNum, valAddr)
 		entries = append(entries, entry)
 	}
@@ -539,7 +557,7 @@ func (k Keeper) DeleteThrottledPacketData(ctx sdktypes.Context, consumerChainID 
 // to an allowance of validators that can be jailed/tombstoned over time.
 //
 // Note: the value of this int should always be in the range of tendermint's [-MaxVotingPower, MaxVotingPower]
-func (k Keeper) GetSlashMeter(ctx sdktypes.Context) sdktypes.Int {
+func (k Keeper) GetSlashMeter(ctx sdktypes.Context) math.Int {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(providertypes.SlashMeterKey())
 	if bz == nil {
@@ -560,7 +578,7 @@ func (k Keeper) GetSlashMeter(ctx sdktypes.Context) sdktypes.Int {
 // SetSlashMeter sets the slash meter to the given signed int value
 //
 // Note: the value of this int should always be in the range of tendermint's [-MaxTotalVotingPower, MaxTotalVotingPower]
-func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value sdktypes.Int) {
+func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value math.Int) {
 	// TODO: remove these invariant panics once https://github.com/cosmos/interchain-security/issues/534 is solved.
 
 	// The following panics are included since they are invariants for slash meter value.

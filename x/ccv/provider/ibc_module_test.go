@@ -3,20 +3,23 @@ package provider_test
 import (
 	"testing"
 
+	"github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
+
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
+	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // TestOnChanOpenInit tests the provider's OnChanOpenInit method against spec.
@@ -24,10 +27,11 @@ import (
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coinit1
 // Spec Tag: [CCV-PCF-COINIT.1]
 func TestOnChanOpenInit(t *testing.T) {
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
-		t, testkeeper.NewInMemKeeperParams(t))
+		t, keeperParams)
 	defer ctrl.Finish()
-	providerModule := provider.NewAppModule(&providerKeeper)
+	providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
 
 	// OnChanOpenInit must error for provider even with correct arguments
 	_, err := providerModule.OnChanOpenInit(
@@ -112,9 +116,10 @@ func TestOnChanOpenTry(t *testing.T) {
 	for _, tc := range testCases {
 
 		// Setup
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
-		providerModule := provider.NewAppModule(&providerKeeper)
+			t, keeperParams)
+		providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
 
 		providerKeeper.SetPort(ctx, ccv.ProviderPortID)
 		providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientIDToConsumer")
@@ -133,7 +138,7 @@ func TestOnChanOpenTry(t *testing.T) {
 
 		// Expected mock calls
 		moduleAcct := authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{}}
-		moduleAcct.BaseAccount.Address = authtypes.NewModuleAddress(authtypes.FeeCollectorName).String()
+		moduleAcct.BaseAccount.Address = authtypes.NewModuleAddress(providertypes.ConsumerRewardsPool).String()
 
 		// Number of calls is not asserted, since not all code paths are hit for failures
 		gomock.InOrder(
@@ -145,7 +150,7 @@ func TestOnChanOpenTry(t *testing.T) {
 			mocks.MockClientKeeper.EXPECT().GetClientState(ctx, "clientIDToConsumer").Return(
 				&ibctmtypes.ClientState{ChainId: "consumerChainID"}, true,
 			).AnyTimes(),
-			mocks.MockAccountKeeper.EXPECT().GetModuleAccount(ctx, authtypes.FeeCollectorName).Return(&moduleAcct).AnyTimes(),
+			mocks.MockAccountKeeper.EXPECT().GetModuleAccount(ctx, providertypes.ConsumerRewardsPool).Return(&moduleAcct).AnyTimes(),
 		)
 
 		tc.mutateParams(&params, &providerKeeper)
@@ -181,10 +186,11 @@ func TestOnChanOpenTry(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coack1
 // Spec tag: [CCV-PCF-COACK.1]
 func TestOnChanOpenAck(t *testing.T) {
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
-		t, testkeeper.NewInMemKeeperParams(t))
+		t, keeperParams)
 	defer ctrl.Finish()
-	providerModule := provider.NewAppModule(&providerKeeper)
+	providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
 
 	// OnChanOpenAck must error for provider even with correct arguments
 	err := providerModule.OnChanOpenAck(
@@ -296,8 +302,9 @@ func TestOnChanOpenConfirm(t *testing.T) {
 
 	for _, tc := range testCases {
 
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
+			t, keeperParams)
 
 		gomock.InOrder(tc.mockExpectations(ctx, mocks)...)
 
@@ -305,7 +312,7 @@ func TestOnChanOpenConfirm(t *testing.T) {
 			providerKeeper.SetChainToChannel(ctx, "consumerChainID", "existingChannelID")
 		}
 
-		providerModule := provider.NewAppModule(&providerKeeper)
+		providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
 
 		err := providerModule.OnChanOpenConfirm(ctx, "providerPortID", "channelID")
 
@@ -329,5 +336,64 @@ func TestOnChanOpenConfirm(t *testing.T) {
 			require.Error(t, err)
 		}
 		ctrl.Finish()
+	}
+}
+
+func TestUnmarshalConsumerPacket(t *testing.T) {
+	testCases := []struct {
+		name               string
+		packet             channeltypes.Packet
+		expectedPacketData ccv.ConsumerPacketData
+	}{
+		{
+			name: "vsc matured",
+			packet: channeltypes.NewPacket(
+				ccv.ConsumerPacketData{
+					Type: ccv.VscMaturedPacket,
+					Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
+						VscMaturedPacketData: &ccv.VSCMaturedPacketData{
+							ValsetUpdateId: 420,
+						},
+					},
+				}.GetBytes(),
+				342, "sourcePort", "sourceChannel", "destinationPort", "destinationChannel", types.Height{}, 0,
+			),
+			expectedPacketData: ccv.ConsumerPacketData{
+				Type: ccv.VscMaturedPacket,
+				Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
+					VscMaturedPacketData: &ccv.VSCMaturedPacketData{
+						ValsetUpdateId: 420,
+					},
+				},
+			},
+		},
+		{
+			name: "slash packet",
+			packet: channeltypes.NewPacket(
+				ccv.ConsumerPacketData{
+					Type: ccv.SlashPacket,
+					Data: &ccv.ConsumerPacketData_SlashPacketData{
+						SlashPacketData: &ccv.SlashPacketData{
+							ValsetUpdateId: 789,
+						},
+					},
+				}.GetBytes(), // Note packet data is converted to v1 bytes here
+				342, "sourcePort", "sourceChannel", "destinationPort", "destinationChannel", types.Height{}, 0,
+			),
+			expectedPacketData: ccv.ConsumerPacketData{
+				Type: ccv.SlashPacket,
+				Data: &ccv.ConsumerPacketData_SlashPacketData{
+					SlashPacketData: &ccv.SlashPacketData{
+						ValsetUpdateId: 789,
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		actualConsumerPacketData, err := provider.UnmarshalConsumerPacket(tc.packet)
+		require.NoError(t, err)
+		require.Equal(t, tc.expectedPacketData, actualConsumerPacketData)
 	}
 }

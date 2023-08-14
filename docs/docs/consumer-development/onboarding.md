@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 3
 title: Onboarding Checklist
 ---
 # Consumer Onboarding Checklist
@@ -11,7 +11,7 @@ Additionally, you can check the [testnet repo](https://github.com/cosmos/testnet
 ## 1. Complete testing & integration
 
 - [ ] test integration with gaia
-- [ ] test your protocol with supported relayer versions (minimum hermes 1.3)
+- [ ] test your protocol with supported relayer versions (minimum hermes 1.4.1)
 - [ ] reach out to the ICS team if you are facing issues
 
 ## 2. Create an Onboarding Repository
@@ -20,7 +20,7 @@ To help validators and other node runners onboard onto your chain, please prepar
 
 This should include (at minimum):
 
-- [ ] genesis.json witout CCV data (before the propsal passes)
+- [ ] genesis.json without CCV data (before the proposal passes)
 - [ ] genesis.json with CCV data (after spawn time passes)
 - [ ] information about relevant seed/peer nodes you are running
 - [ ] relayer information (compatible versions)
@@ -73,7 +73,7 @@ Example of a consumer chain addition proposal.
     // will be responsible for starting their consumer chain validator node.
     "spawn_time": "2023-02-28T20:40:00.000000Z",
     // Unbonding period for the consumer chain.
-    // It should should be smaller than that of the provider.
+    // It should be smaller than that of the provider.
     "unbonding_period": 86400000000000,
     // Timeout period for CCV related IBC packets.
     // Packets are considered timed-out after this interval elapses.
@@ -91,6 +91,13 @@ Example of a consumer chain addition proposal.
     // This param is a part of the cosmos sdk staking module. In the case of
     // a ccv enabled consumer chain, the ccv module acts as the staking module.
     "historical_entries": 10000,
+    // The ID of a token transfer channel used for the Reward Distribution
+	// sub-protocol. If DistributionTransmissionChannel == "", a new transfer
+	// channel is created on top of the same connection as the CCV channel.
+	// Note that transfer_channel_id is the ID of the channel end on the consumer chain.
+    // it is most relevant for chains performing a sovereign to consumer changeover
+    // in order to maintain the existing ibc transfer channel
+    "distribution_transmission_channel": "channel-123"
 }
 ```
 

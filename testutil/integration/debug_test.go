@@ -6,11 +6,11 @@ import (
 	"reflect"
 	"testing"
 
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
-	integr "github.com/cosmos/interchain-security/tests/integration"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/v3/app/consumer-democracy"
+	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
+	integr "github.com/cosmos/interchain-security/v3/tests/integration"
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 )
 
 // runCCVTestByName runs a single CCV integration test by name, using a CCVTestSuite
@@ -157,10 +157,6 @@ func TestStopConsumerOnChannelClosed(t *testing.T) {
 	runCCVTestByName(t, "TestStopConsumerOnChannelClosed")
 }
 
-func TestProviderChannelClosed(t *testing.T) {
-	runCCVTestByName(t, "TestProviderChannelClosed")
-}
-
 //
 // Throttle tests
 //
@@ -203,6 +199,10 @@ func TestSlashAllValidators(t *testing.T) {
 
 func TestLeadingVSCMaturedAreDequeued(t *testing.T) {
 	runCCVTestByName(t, "TestLeadingVSCMaturedAreDequeued")
+}
+
+func TestVscMaturedHandledPerBlockLimit(t *testing.T) {
+	runCCVTestByName(t, "TestVscMaturedHandledPerBlockLimit")
 }
 
 //
@@ -251,4 +251,12 @@ func TestQueueAndSendVSCMaturedPackets(t *testing.T) {
 
 func TestRecycleTransferChannel(t *testing.T) {
 	runCCVTestByName(t, "TestRecycleTransferChannel")
+}
+
+//
+// Throttle retry tests
+//
+
+func TestSlashRetries(t *testing.T) {
+	runCCVTestByName(t, "TestSlashRetries")
 }

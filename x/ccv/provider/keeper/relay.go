@@ -4,14 +4,17 @@ import (
 	"fmt"
 	"strconv"
 
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // OnRecvVSCMaturedPacket handles a VSCMatured packet
@@ -32,7 +35,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	}
 
 	if err := k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data); err != nil {
-		return channeltypes.NewErrorAcknowledgement(fmt.Errorf(
+		return ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf(
 			"failed to queue VSCMatured packet data: %s", err.Error()))
 	}
 
@@ -41,7 +44,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		"vscID", data.ValsetUpdateId,
 	)
 
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	ack := channeltypes.NewResultAcknowledgement(ccv.V1Result)
 	return ack
 }
 
@@ -53,14 +56,25 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 // the "VSC Maturity and Slashing Order" CCV property. If VSC matured packet data DOES NOT
 // trail slash packet data for that consumer, it will be handled in this method,
 // bypassing HandleThrottleQueues.
-func (k Keeper) HandleLeadingVSCMaturedPackets(ctx sdk.Context) {
+func (k Keeper) HandleLeadingVSCMaturedPackets(ctx sdk.Context) (vscMaturedHandledThisBlock int) {
+	vscMaturedHandledThisBlock = 0
 	for _, chain := range k.GetAllConsumerChains(ctx) {
+		// Note: it's assumed the order of the vsc matured slice matches the order of the ibc seq nums slice,
+		// in that a vsc matured packet data at index i is associated with the ibc seq num at index i.
 		leadingVscMatured, ibcSeqNums := k.GetLeadingVSCMaturedData(ctx, chain.ChainId)
-		for _, data := range leadingVscMatured {
+		ibcSeqNumsHandled := []uint64{}
+		for idx, data := range leadingVscMatured {
+			if vscMaturedHandledThisBlock >= vscMaturedHandledPerBlockLimit {
+				// Break from inner for-loop, DeleteThrottledPacketData will still be called for this consumer
+				break
+			}
 			k.HandleVSCMaturedPacket(ctx, chain.ChainId, data)
+			vscMaturedHandledThisBlock++
+			ibcSeqNumsHandled = append(ibcSeqNumsHandled, ibcSeqNums[idx])
 		}
-		k.DeleteThrottledPacketData(ctx, chain.ChainId, ibcSeqNums...)
+		k.DeleteThrottledPacketData(ctx, chain.ChainId, ibcSeqNumsHandled...)
 	}
+	return vscMaturedHandledThisBlock
 }
 
 // HandleVSCMaturedPacket handles a VSCMatured packet.
@@ -103,8 +117,18 @@ func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
 		// Attempt to complete unbonding in staking module
 		err := k.stakingKeeper.UnbondingCanComplete(ctx, id)
 		if err != nil {
-			// UnbondingCanComplete fails if the unbonding operation was not found,
-			// which means that the state of the x/staking module of cosmos-sdk is invalid.
+			if stakingtypes.ErrUnbondingNotFound.Is(err) {
+				// The unbonding was not found.
+				unbondingType, found := k.stakingKeeper.GetUnbondingType(ctx, id)
+				if found && unbondingType == stakingtypes.UnbondingType_UnbondingDelegation {
+					// If this is an unbonding delegation, it may have been removed
+					// after through a CancelUnbondingDelegation message
+					k.Logger(ctx).Debug("unbonding delegation was already removed:", "unbondingID", id)
+					continue
+				}
+			}
+			// UnbondingCanComplete failing means that the state of the x/staking module
+			// of cosmos-sdk is invalid. An exception is the case handled above
 			panic(fmt.Sprintf("could not complete unbonding op: %s", err.Error()))
 		}
 		k.Logger(ctx).Debug("unbonding operation matured on all consumers", "opID", id)
@@ -125,7 +149,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			// stop consumer chain and release unbonding
 			return k.StopConsumerChain(ctx, chainID, false)
 		}
-		return sdkerrors.Wrapf(providertypes.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
+		return errorsmod.Wrapf(providertypes.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
 	}
 	return nil
 }
@@ -137,7 +161,7 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 	if !found {
 		k.Logger(ctx).Error("packet timeout, unknown channel:", "channelID", packet.SourceChannel)
 		// abort transaction
-		return sdkerrors.Wrap(
+		return errorsmod.Wrap(
 			channeltypes.ErrInvalidChannelState,
 			packet.SourceChannel,
 		)
@@ -194,12 +218,17 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
 				// the client cannot expire during iteration (in the middle of a block)
-				k.Logger(ctx).Debug("IBC client is expired, cannot send VSC, leaving packet data stored:", "chainID", chainID, "vscid", data.ValsetUpdateId)
+				k.Logger(ctx).Info("IBC client is expired, cannot send VSC, leaving packet data stored:", "chainID", chainID, "vscid", data.ValsetUpdateId)
 				return
 			}
-			// TODO do not panic if the send fails
-			// https://github.com/cosmos/interchain-security/issues/649
-			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
+			// Not able to send packet over IBC!
+			k.Logger(ctx).Error("cannot send VSC, removing consumer:", "chainID", chainID, "vscid", data.ValsetUpdateId, "err", err.Error())
+			// If this happens, most likely the consumer is malicious; remove it
+			err := k.StopConsumerChain(ctx, chainID, true)
+			if err != nil {
+				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+			}
+			return
 		}
 		// set the VSC send timestamp for this packet;
 		// note that the VSC send timestamp are set when the packets
@@ -262,13 +291,14 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// - Marshaling and/or store corruption errors.
 	// - Setting invalid slash meter values (see SetSlashMeter).
 	k.CheckForSlashMeterReplenishment(ctx)
+
 	// Handle leading vsc matured packets before throttling logic.
 	//
 	// Note: HandleLeadingVSCMaturedPackets contains panics for the following scenarios, any of which should never occur
 	// if the protocol is correct and external data is properly validated:
 	//
 	// - Marshaling and/or store corruption errors.
-	k.HandleLeadingVSCMaturedPackets(ctx)
+	vscMaturedHandledThisBlock := k.HandleLeadingVSCMaturedPackets(ctx)
 	// Handle queue entries considering throttling logic.
 	//
 	// Note: HandleThrottleQueues contains panics for the following scenarios, any of which should never occur
@@ -277,7 +307,7 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// - SlashMeter has not been set (which should be set in InitGenesis, see InitializeSlashMeter).
 	// - Marshaling and/or store corruption errors.
 	// - Setting invalid slash meter values (see SetSlashMeter).
-	k.HandleThrottleQueues(ctx)
+	k.HandleThrottleQueues(ctx, vscMaturedHandledThisBlock)
 }
 
 // OnRecvSlashPacket delivers a received slash packet, validates it and
@@ -302,7 +332,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 			"vscID", data.ValsetUpdateId,
 			"infractionType", data.Infraction,
 		)
-		return channeltypes.NewErrorAcknowledgement(err)
+		return ccv.NewErrorAcknowledgementWithLog(ctx, err)
 	}
 
 	// The slash packet validator address may be known only on the consumer chain,
@@ -310,7 +340,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	consumerConsAddr := providertypes.NewConsumerConsAddress(data.Validator.Address)
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
-	if data.Infraction == stakingtypes.DoubleSign {
+	if data.Infraction == stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN {
 		// getMappedInfractionHeight is already checked in ValidateSlashPacket
 		infractionHeight, _ := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 
@@ -325,7 +355,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 		// return successful ack, as an error would result
 		// in the consumer closing the CCV channel
-		return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+		return channeltypes.NewResultAcknowledgement(ccv.V1Result)
 	}
 
 	// Queue a slash entry to the global queue, which will be seen by the throttling logic
@@ -338,7 +368,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
 	// to enforce order of handling between the two packet data types.
 	if err := k.QueueThrottledSlashPacketData(ctx, chainID, packet.Sequence, data); err != nil {
-		return channeltypes.NewErrorAcknowledgement(fmt.Errorf("failed to queue slash packet data: %s", err.Error()))
+		return ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("failed to queue slash packet data: %s", err.Error()))
 	}
 
 	k.Logger(ctx).Info("slash packet received and enqueued",
@@ -349,7 +379,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		"infractionType", data.Infraction,
 	)
 
-	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	return channeltypes.NewResultAcknowledgement(ccv.V1Result)
 }
 
 // ValidateSlashPacket validates a recv slash packet before it is
@@ -365,7 +395,7 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 			"the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
-	if data.Infraction != stakingtypes.DoubleSign && data.Infraction != stakingtypes.Downtime {
+	if data.Infraction != stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN && data.Infraction != stakingtypes.Infraction_INFRACTION_DOWNTIME {
 		return fmt.Errorf("invalid infraction type: %s", data.Infraction)
 	}
 

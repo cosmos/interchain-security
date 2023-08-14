@@ -44,9 +44,12 @@ type ChainConfig struct {
 	ipPrefix       string
 	votingWaitTime uint
 	// Any transformations to apply to the genesis file of all chains instantiated with this chain config, as a jq string.
-	// Example: ".app_state.gov.voting_params.voting_period = \"5s\" | .app_state.slashing.params.signed_blocks_window = \"2\" | .app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\""
+	// Example: ".app_state.gov.params.voting_period = \"5s\" | .app_state.slashing.params.signed_blocks_window = \"2\" | .app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\""
 	genesisChanges string
 	binaryName     string
+
+	// binary to use after upgrade height
+	upgradeBinary string
 }
 
 type ContainerConfig struct {
@@ -70,9 +73,20 @@ type TestRun struct {
 	tendermintConfigOverride string
 	localSdkPath             string
 	useGaia                  bool
+	useCometmock             bool // if false, nodes run CometBFT
+	useGorelayer             bool // if false, Hermes is used as the relayer
 	gaiaTag                  string
+	// chains which are running, i.e. producing blocks, at the moment
+	runningChains map[chainID]bool
+	// Used with CometMock. The time by which chains have been advanced. Used to keep chains in sync: when a new chain is started, advance its time by this value to keep chains in sync.
+	timeOffset time.Duration
 
 	name string
+}
+
+// Initialize initializes the TestRun instance by setting the runningChains field to an empty map.
+func (tr *TestRun) Initialize() {
+	tr.runningChains = make(map[chainID]bool)
 }
 
 func getDefaultValidators() map[validatorID]ValidatorConfig {
@@ -138,7 +152,7 @@ func getDefaultValidators() map[validatorID]ValidatorConfig {
 }
 
 func SlashThrottleTestRun() TestRun {
-	return TestRun{
+	tr := TestRun{
 		name: "slash-throttling",
 		containerConfig: ContainerConfig{
 			containerName: "interchain-security-slash-container",
@@ -153,12 +167,12 @@ func SlashThrottleTestRun() TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
+				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"0.10\" | " +
 					".app_state.provider.params.slash_meter_replenish_period = \"20s\"",
@@ -168,20 +182,22 @@ func SlashThrottleTestRun() TestRun {
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
+				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
 		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
+	tr.Initialize()
+	return tr
 }
 
 func DefaultTestRun() TestRun {
-	return TestRun{
+	tr := TestRun{
 		name: "default",
 		containerConfig: ContainerConfig{
 			containerName: "interchain-security-container",
@@ -196,12 +212,12 @@ func DefaultTestRun() TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
+				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
 					".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
@@ -211,20 +227,34 @@ func DefaultTestRun() TestRun {
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
+				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
 		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
+	tr.Initialize()
+	return tr
 }
 
-func DemocracyTestRun() TestRun {
-	return TestRun{
+func DemocracyTestRun(allowReward bool) TestRun {
+	consumerGenChanges := ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"20\" | " +
+		".app_state.gov.voting_params.voting_period = \"10s\" | " +
+		".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+		".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+		".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
+		".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\""
+
+	if allowReward {
+		// This allows the consumer chain to send rewards in the stake denom
+		consumerGenChanges += " | .app_state.ccvconsumer.params.reward_denoms = [\"stake\"]"
+	}
+
+	tr := TestRun{
 		name: "democracy",
 		containerConfig: ContainerConfig{
 			containerName: "interchain-security-democ-container",
@@ -239,12 +269,12 @@ func DemocracyTestRun() TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
+				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\"", // This disables slash packet throttling
 			},
@@ -253,21 +283,18 @@ func DemocracyTestRun() TestRun {
 				binaryName:     "interchain-security-cdd",
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"20\" | " +
-					".app_state.gov.voting_params.voting_period = \"10s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
-					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+				genesisChanges: consumerGenChanges,
 			},
 		},
 		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
+	tr.Initialize()
+	return tr
 }
 
 func MultiConsumerTestRun() TestRun {
-	return TestRun{
+	tr := TestRun{
 		name: "multi-consumer",
 		containerConfig: ContainerConfig{
 			containerName: "interchain-security-multic-container",
@@ -282,12 +309,12 @@ func MultiConsumerTestRun() TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
+				genesisChanges: ".app_state.gov.params.voting_period = \"30s\" | " +
 					// Custom slashing parameters for testing validator downtime functionality
 					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
 					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\"", // This disables slash packet throttling
 			},
@@ -296,10 +323,10 @@ func MultiConsumerTestRun() TestRun {
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 			chainID("densu"): {
@@ -307,16 +334,65 @@ func MultiConsumerTestRun() TestRun {
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 20,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"20s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
 		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "3s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "100ms"/;`,
 	}
+	tr.Initialize()
+	return tr
+}
+
+func ChangeoverTestRun() TestRun {
+	tr := TestRun{
+		name: "changeover",
+		containerConfig: ContainerConfig{
+			containerName: "interchain-security-changeover-container",
+			instanceName:  "interchain-security-changeover-instance",
+			ccvVersion:    "1",
+			now:           time.Now(),
+		},
+		validatorConfigs: getDefaultValidators(),
+		chainConfigs: map[chainID]ChainConfig{
+			chainID("provi"): {
+				chainId:        chainID("provi"),
+				binaryName:     "interchain-security-pd",
+				ipPrefix:       "7.7.7",
+				votingWaitTime: 20,
+				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+					// Custom slashing parameters for testing validator downtime functionality
+					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\" | " + // This disables slash packet throttling
+					".app_state.provider.params.slash_meter_replenish_period = \"3s\"",
+			},
+			chainID("sover"): {
+				chainId:        chainID("sover"),
+				binaryName:     "interchain-security-sd",
+				upgradeBinary:  "interchain-security-cdd",
+				ipPrefix:       "7.7.8",
+				votingWaitTime: 20,
+				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+					".app_state.staking.params.unbonding_time = \"1728000s\"", // making the genesis unbonding time equal to unbonding time in the consumer addition proposal
+			},
+		},
+		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
+	}
+	tr.Initialize()
+	return tr
 }
 
 func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string) {
@@ -330,6 +406,14 @@ func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag str
 	s.useGaia = useGaia
 	s.gaiaTag = gaiaTag
 	s.localSdkPath = localSdkPath
+}
+
+func (s *TestRun) SetCometMockConfig(useCometmock bool) {
+	s.useCometmock = useCometmock
+}
+
+func (s *TestRun) SetRelayerConfig(useRly bool) {
+	s.useGorelayer = useRly
 }
 
 // validateStringLiterals enforces that configs follow the constraints

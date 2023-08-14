@@ -4,8 +4,9 @@ import (
 	fmt "fmt"
 	"time"
 
+	ibchost "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 )
 
 const (
@@ -55,6 +56,16 @@ func ValidateString(i interface{}) error {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 	return nil
+}
+
+func ValidateDistributionTransmissionChannel(i interface{}) error {
+	// Accept empty string as valid, since this means a new
+	// distribution transmission channel will be created
+	if i == "" {
+		return nil
+	}
+	// Otherwise validate as usual for a channelID
+	return ValidateChannelIdentifier(i)
 }
 
 func ValidateChannelIdentifier(i interface{}) error {

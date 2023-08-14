@@ -18,26 +18,116 @@ on:
     - cron: "0 3 * * *"
 
 jobs:
-  nightly-test:
+  happy-path-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 20
     steps:
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.19"
-
+          go-version: "1.20"
       - uses: actions/checkout@v3
-
-      - name: E2E tests
-        run: make test-e2e
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.20" # The Go version to download (if necessary) and use.
+      - name: E2E happy-path test
+        run: go run ./tests/e2e/... --tc happy-path
+  changeover-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.20"
+      - uses: actions/checkout@v3
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.20" # The Go version to download (if necessary) and use.
+      - name: E2E changeover test
+        run: go run ./tests/e2e/... --tc changeover
+  democracy-reward-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.20"
+      - uses: actions/checkout@v3
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.20" # The Go version to download (if necessary) and use.
+      - name: E2E democracy-reward tests
+        run: go run ./tests/e2e/... --tc democracy-reward
+  democracy-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.20"
+      - uses: actions/checkout@v3
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.20" # The Go version to download (if necessary) and use.
+      - name: E2E democracy tests
+        run: go run ./tests/e2e/... --tc democracy
+  slash-throttle-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.20"
+      - uses: actions/checkout@v3
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.20" # The Go version to download (if necessary) and use.
+      - name: E2E slash-throttle tests
+        run: go run ./tests/e2e/... --tc slash-throttle
+  multiconsumer-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.20"
+      - uses: actions/checkout@v3
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.20" # The Go version to download (if necessary) and use.
+      - name: E2E multi-consumer tests
+        run: go run ./tests/e2e/... --tc multiconsumer
 
   nightly-test-fail:
-    needs: nightly-test
+    needs:
+      - happy-path-test
+      - changeover-test
+      - democracy-reward-test
+      - democracy-test
+      - slash-throttle-test
+      - multiconsumer-test
     if: ${{ failure() }}
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on failure
-        uses: slackapi/slack-github-action@v1.23.0
+        uses: slackapi/slack-github-action@v1.24.0
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

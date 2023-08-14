@@ -5,26 +5,29 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/interchain-security/legacy_ibc_testing/core"
+	"cosmossdk.io/math"
+	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/ibc-go/v4/modules/core/keeper"
+	"github.com/cosmos/ibc-go/v7/modules/core/keeper"
 
-	"github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
+	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
 /*
@@ -52,7 +55,7 @@ type TestingApp interface {
 	AppCodec() codec.Codec
 
 	// Implemented by BaseApp
-	LastCommitID() sdk.CommitID
+	LastCommitID() storetypes.CommitID
 	LastBlockHeight() int64
 }
 
@@ -60,9 +63,10 @@ type TestingApp interface {
 // that also act as delegators. For simplicity, each validator is bonded with a delegation
 // of one consensus engine unit (10^6) in the default token of the simapp from first genesis
 // account. A Nop logger is set in SimApp.
-func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction sdk.Int, balances ...banktypes.Balance) TestingApp {
+func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction math.Int, balances ...banktypes.Balance) TestingApp {
 	t.Helper()
 	app, genesisState := appIniter()
+	baseapp.SetChainID(chainID)(app.GetBaseApp())
 
 	// set genesis accounts
 	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
@@ -73,6 +77,7 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 
 	bondAmt := sdk.TokensFromConsensusPower(1, powerReduction)
 
+	initValPowers := []abci.ValidatorUpdate{}
 	for _, val := range valSet.Validators {
 		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
 		require.NoError(t, err)
@@ -94,14 +99,20 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 
 		validators = append(validators, validator)
 		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec()))
+
+		pub, _ := val.ToProto()
+		initValPowers = append(initValPowers, abci.ValidatorUpdate{
+			Power:  val.VotingPower,
+			PubKey: pub.PubKey,
+		})
 	}
 
 	// set validators and delegations
 	var (
-		stakingGenesis stakingtypes.GenesisState
-		bondDenom      string
+		stakingGenesis  stakingtypes.GenesisState
+		consumerGenesis consumertypes.GenesisState
+		bondDenom       string
 	)
-
 	if genesisState[stakingtypes.ModuleName] != nil {
 		app.AppCodec().MustUnmarshalJSON(genesisState[stakingtypes.ModuleName], &stakingGenesis)
 		bondDenom = stakingGenesis.Params.BondDenom
@@ -120,8 +131,15 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 	genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(&stakingGenesis)
 
 	// update total supply
-	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(), []banktypes.Metadata{})
+	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(), []banktypes.Metadata{}, []banktypes.SendEnabled{})
 	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
+
+	if genesisState[consumertypes.ModuleName] != nil {
+		app.AppCodec().MustUnmarshalJSON(genesisState[consumertypes.ModuleName], &consumerGenesis)
+		consumerGenesis.InitialValSet = initValPowers
+		consumerGenesis.Params.Enabled = true
+		genesisState[consumertypes.ModuleName] = app.AppCodec().MustMarshalJSON(&consumerGenesis)
+	}
 
 	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
 	require.NoError(t, err)
@@ -138,6 +156,7 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 
 	// commit genesis changes
 	app.Commit()
+
 	app.BeginBlock(
 		abci.RequestBeginBlock{
 			Header: tmproto.Header{

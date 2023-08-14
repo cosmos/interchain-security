@@ -3,19 +3,21 @@ package consumer_test
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // TestOnChanOpenInit validates the consumer's OnChanOpenInit implementation against the spec.
@@ -121,9 +123,10 @@ func TestOnChanOpenInit(t *testing.T) {
 	for _, tc := range testCases {
 
 		// Common setup
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
-		consumerModule := consumer.NewAppModule(consumerKeeper)
+			t, keeperParams)
+		consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
 
 		consumerKeeper.SetPort(ctx, ccv.ConsumerPortID)
 		consumerKeeper.SetProviderClientID(ctx, "clientIDToProvider")
@@ -172,10 +175,11 @@ func TestOnChanOpenInit(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-ccf-cotry1
 // Spec tag: [CCV-CCF-COTRY.1]
 func TestOnChanOpenTry(t *testing.T) {
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	// No external keeper methods should be called
 	defer ctrl.Finish()
-	consumerModule := consumer.NewAppModule(consumerKeeper)
+	consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
 
 	// OnOpenTry must error even with correct arguments
 	_, err := consumerModule.OnChanOpenTry(
@@ -212,7 +216,7 @@ func TestOnChanOpenAck(t *testing.T) {
 		expPass bool
 	}{
 		{
-			"success",
+			"success - empty transferChannelID",
 			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				// Expected msg
 				distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
@@ -224,8 +228,13 @@ func TestOnChanOpenAck(t *testing.T) {
 					"", // signer unused
 				)
 
+				transferChannelID := ""
+				keeper.SetDistributionTransmissionChannel(params.ctx, transferChannelID)
+
 				// Expected mock calls
 				gomock.InOrder(
+					mocks.MockChannelKeeper.EXPECT().GetChannel(
+						params.ctx, transfertypes.PortID, transferChannelID).Return(channeltypes.Channel{}, false).Times(1),
 					mocks.MockChannelKeeper.EXPECT().GetChannel(
 						params.ctx, params.portID, params.channelID).Return(channeltypes.Channel{
 						ConnectionHops: []string{"connectionID"},
@@ -266,9 +275,10 @@ func TestOnChanOpenAck(t *testing.T) {
 
 	for _, tc := range testCases {
 		// Common setup
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
-		consumerModule := consumer.NewAppModule(consumerKeeper)
+			t, keeperParams)
+		consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
 
 		// Instantiate valid params as default. Individual test cases mutate these as needed.
 		params := params{
@@ -316,9 +326,10 @@ func TestOnChanOpenAck(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-ccf-coconfirm1
 // Spec tag: [CCV-CCF-COCONFIRM.1]
 func TestOnChanOpenConfirm(t *testing.T) {
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
-	consumerModule := consumer.NewAppModule(consumerKeeper)
+	consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
 
 	err := consumerModule.OnChanOpenConfirm(ctx, ccv.ConsumerPortID, "channel-1")
 	require.Error(t, err, "OnChanOpenConfirm callback must error on consumer chain")
@@ -356,8 +367,9 @@ func TestOnChanCloseInit(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-		consumerModule := consumer.NewAppModule(consumerKeeper)
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+		consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
 
 		if tc.establishedProviderExists {
 			consumerKeeper.SetProviderChannel(ctx, "provider")
@@ -379,12 +391,13 @@ func TestOnChanCloseInit(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-ccconfirm1// Spec tag: [CCV-CCF-CCINIT.1]
 // Spec tag: [CCV-PCF-CCCONFIRM.1]
 func TestOnChanCloseConfirm(t *testing.T) {
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 
 	// No external keeper methods should be called
 	defer ctrl.Finish()
 
-	consumerModule := consumer.NewAppModule(consumerKeeper)
+	consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
 
 	// Nothing happens, no error returned
 	err := consumerModule.OnChanCloseConfirm(ctx, "portID", "channelID")

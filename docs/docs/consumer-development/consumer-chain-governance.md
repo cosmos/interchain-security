@@ -16,10 +16,10 @@ For an example, see the [Democracy Consumer](https://github.com/cosmos/interchai
 
 ## CosmWasm
 
-There several great DAO and governance frameworks written as CosmWasm contracts. These can be used as the main governance system for a consumer chain. Actions triggered by the CosmWasm governance contracts are able to affect parameters and trigger actions on the consumer chain.
+There are several great DAO and governance frameworks written as CosmWasm contracts. These can be used as the main governance system for a consumer chain. Actions triggered by the CosmWasm governance contracts are able to affect parameters and trigger actions on the consumer chain.
 
 For an example, see [Neutron](https://github.com/neutron-org/neutron/).
 
 ## The Whitelist
 
-Not everything on a consumer chain can be changed by the consumer's governance. Some settings having to do with consensus etc. can only be changed by the provider chain. Consumer chains include a whitelist of parameters that are allowed to be changed by the consumer chain governance. For an example whitelist, see [Neutron's](https://github.com/neutron-org/neutron/blob/main/app/proposals_whitelisting.go).
+Not everything on a consumer chain can be changed by the consumer's governance. Some settings having to do with consensus etc. can only be changed by the provider chain. Consumer chains include a whitelist of parameters that are allowed to be changed by the consumer chain governance. For an example, see [Neutron's](https://github.com/neutron-org/neutron/blob/main/app/proposals_allowlisting.go) whitelist.

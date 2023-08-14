@@ -2,15 +2,17 @@ package keeper
 
 import (
 	"context"
+	"encoding/base64"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
-	tmstrings "github.com/tendermint/tendermint/libs/strings"
+
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 type msgServer struct {
@@ -46,26 +48,45 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		return nil, stakingtypes.ErrNoValidatorFound
 	}
 
-	// make sure the consumer key is in the correct format
-	consumerSDKPublicKey, ok := msg.ConsumerKey.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "Expecting cryptotypes.PubKey, got %T", consumerSDKPublicKey)
-	}
-
-	// make sure the consumer key type is supported
-	cp := ctx.ConsensusParams()
-	if cp != nil && cp.Validator != nil {
-		if !tmstrings.StringInSlice(consumerSDKPublicKey.Type(), cp.Validator.PubKeyTypes) {
-			return nil, sdkerrors.Wrapf(
-				stakingtypes.ErrValidatorPubKeyTypeNotSupported,
-				"got: %s, expected: %s", consumerSDKPublicKey.Type(), cp.Validator.PubKeyTypes,
-			)
-		}
-	}
-
-	consumerTMPublicKey, err := cryptocodec.ToTmProtoPublicKey(consumerSDKPublicKey)
+	// parse consumer key as long as it's in the right format
+	pkType, keyStr, err := types.ParseConsumerKeyFromJson(msg.ConsumerKey)
 	if err != nil {
 		return nil, err
+	}
+
+	// Note: the correct way to decide if a key type is supported is to check the
+	// consensus params. However this functionality was disabled in https://github.com/cosmos/interchain-security/pull/916
+	// as a quick way to get ed25519 working, avoiding amino/proto-any marshalling issues.
+
+	// make sure the consumer key type is supported
+	// cp := ctx.ConsensusParams()
+	// if cp != nil && cp.Validator != nil {
+	// 	if !tmstrings.StringInSlice(pkType, cp.Validator.PubKeyTypes) {
+	// 		return nil, errorsmod.Wrapf(
+	// 			stakingtypes.ErrValidatorPubKeyTypeNotSupported,
+	// 			"got: %s, expected one of: %s", pkType, cp.Validator.PubKeyTypes,
+	// 		)
+	// 	}
+	// }
+
+	// For now, only accept ed25519.
+	// TODO: decide what types should be supported.
+	if pkType != "/cosmos.crypto.ed25519.PubKey" {
+		return nil, errorsmod.Wrapf(
+			stakingtypes.ErrValidatorPubKeyTypeNotSupported,
+			"got: %s, expected: %s", pkType, "/cosmos.crypto.ed25519.PubKey",
+		)
+	}
+
+	pubKeyBytes, err := base64.StdEncoding.DecodeString(keyStr)
+	if err != nil {
+		return nil, err
+	}
+
+	consumerTMPublicKey := tmprotocrypto.PublicKey{
+		Sum: &tmprotocrypto.PublicKey_Ed25519{
+			Ed25519: pubKeyBytes,
+		},
 	}
 
 	if err := k.Keeper.AssignConsumerKey(ctx, msg.ChainId, validator, consumerTMPublicKey); err != nil {
@@ -74,16 +95,37 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	k.Logger(ctx).Info("assigned consumer key",
 		"consumer chainID", msg.ChainId,
 		"validator operator addr", msg.ProviderAddr,
-		"consumer pubkey", consumerSDKPublicKey.String(),
+		"consumer tm pubkey", consumerTMPublicKey.String(),
 	)
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			ccvtypes.EventTypeAssignConsumerKey,
 			sdk.NewAttribute(ccvtypes.AttributeProviderValidatorAddress, msg.ProviderAddr),
-			sdk.NewAttribute(ccvtypes.AttributeConsumerConsensusPubKey, consumerSDKPublicKey.String()),
+			sdk.NewAttribute(ccvtypes.AttributeConsumerConsensusPubKey, consumerTMPublicKey.String()),
 		),
 	})
 
 	return &types.MsgAssignConsumerKeyResponse{}, nil
+}
+
+func (k msgServer) RegisterConsumerRewardDenom(goCtx context.Context, msg *types.MsgRegisterConsumerRewardDenom) (*types.MsgRegisterConsumerRewardDenomResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	depositer, err := sdk.AccAddressFromBech32(msg.Depositor)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := k.Keeper.RegisterConsumerRewardDenom(ctx, msg.Denom, depositer); err != nil {
+		return nil, err
+	}
+
+	ctx.EventManager().EmitEvent(sdk.NewEvent(
+		ccvtypes.EventTypeRegisterConsumerRewardDenom,
+		sdk.NewAttribute(ccvtypes.AttributeConsumerRewardDenom, msg.Denom),
+		sdk.NewAttribute(ccvtypes.AttributeConsumerRewardDepositor, msg.Depositor),
+	))
+
+	return &types.MsgRegisterConsumerRewardDenomResponse{}, nil
 }

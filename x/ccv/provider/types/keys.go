@@ -8,7 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 type Status int
@@ -28,6 +28,9 @@ const (
 
 	// Default validator set update ID
 	DefaultValsetUpdateID = 1
+
+	// This address receives rewards from consumer chains
+	ConsumerRewardsPool = "consumer_rewards_pool"
 )
 
 // Iota generated keys/byte prefixes (as a byte), supports 256 possible values
@@ -127,6 +130,13 @@ const (
 	// SlashLogBytePrefix is the byte prefix that will store the mapping from provider address to boolean
 	// denoting whether the provider address has committed any double signign infractions
 	SlashLogBytePrefix
+
+	// ConsumerRewardDenomsBytePrefix is the byte prefix that will store a list of consumer reward denoms
+	ConsumerRewardDenomsBytePrefix
+
+	// VSCMaturedHandledThisBlockBytePrefix is the byte prefix storing the number of vsc matured packets
+	// handled in the current block
+	VSCMaturedHandledThisBlockBytePrefix
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
@@ -362,6 +372,11 @@ func SlashLogKey(providerAddr ProviderConsAddress) []byte {
 	return append([]byte{SlashLogBytePrefix}, providerAddr.ToSdkConsAddr().Bytes()...)
 }
 
+// ConsumerRewardDenomsKey returns the key under which consumer reward denoms are stored
+func ConsumerRewardDenomsKey(denom string) []byte {
+	return append([]byte{ConsumerRewardDenomsBytePrefix}, []byte(denom)...)
+}
+
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go
 
 //
@@ -463,6 +478,10 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
 	addr := bz[prefixL+8+int(chainIdL):]
 	return chainID, addr, nil
+}
+
+func VSCMaturedHandledThisBlockKey() []byte {
+	return []byte{VSCMaturedHandledThisBlockBytePrefix}
 }
 
 //

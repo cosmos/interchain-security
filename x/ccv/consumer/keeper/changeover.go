@@ -2,7 +2,8 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	abci "github.com/tendermint/tendermint/abci/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 // ChangeoverIsComplete returns whether the standalone to consumer changeover process is complete.
@@ -48,5 +49,6 @@ func (k Keeper) ChangeoverToConsumer(ctx sdk.Context) (initialValUpdates []abci.
 	// Therefore we set the PreCCV state to false so the endblocker caller doesn't call this method again.
 	k.DeletePreCCV(ctx)
 
+	k.Logger(ctx).Info("ICS changeover complete - you are now a consumer chain!")
 	return initialValUpdates
 }

@@ -1,7 +1,7 @@
 package main
 
 import (
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 )
 
 func stepStartProviderChain() []Step {
@@ -88,6 +88,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				consumerPubkey:  `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
 				reconfigureNode: false,
 				expectError:     true,
+				expectedError:   "a validator has assigned the consumer key already: consumer key is already in use by a validator",
 			},
 			state: State{},
 		},
@@ -100,6 +101,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				consumerPubkey:  `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
 				reconfigureNode: false,
 				expectError:     true,
+				expectedError:   "a validator has assigned the consumer key already: consumer key is already in use by a validator",
 			},
 			state: State{
 				chainID(consumerName): ChainState{
@@ -265,7 +267,8 @@ func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step
 		},
 		{
 			action: relayPacketsAction{
-				chain:   chainID("provi"),
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},

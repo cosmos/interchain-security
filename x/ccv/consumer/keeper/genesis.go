@@ -4,10 +4,11 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // InitGenesis initializes the CCV consumer state and binds to PortID.
@@ -89,9 +90,12 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 			k.SetLastTransmissionBlockHeight(ctx, state.LastTransmissionBlockHeight)
 		}
 
-		// set pending consumer pending packets
+		// Set pending consumer packets, using the depreciated ConsumerPacketDataList type
+		// that exists for genesis.
 		// note that the list includes pending mature VSC packet only if the handshake is completed
-		k.AppendPendingPacket(ctx, state.PendingConsumerPackets.List...)
+		for _, packet := range state.PendingConsumerPackets.List {
+			k.AppendPendingPacket(ctx, packet.Type, packet.Data)
+		}
 
 		// set height to valset update id mapping
 		for _, h2v := range state.HeightToValsetUpdateId {
@@ -108,19 +112,23 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 
 	// populate cross chain validators states with initial valset
 	k.ApplyCCValidatorChanges(ctx, state.InitialValSet)
-
 	return state.InitialValSet
 }
 
 // ExportGenesis returns the CCV consumer module's exported genesis
 func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisState) {
-	params := k.GetParams(ctx)
+	params := k.GetConsumerParams(ctx)
 	if !params.Enabled {
 		return consumertypes.DefaultGenesisState()
 	}
 
 	// export the current validator set
 	valset := k.MustGetCurrentValidatorsAsABCIUpdates(ctx)
+
+	// export pending packets using the depreciated ConsumerPacketDataList type
+	pendingPackets := k.GetPendingPackets(ctx)
+	pendingPacketsDepreciated := ccv.ConsumerPacketDataList{}
+	pendingPacketsDepreciated.List = append(pendingPacketsDepreciated.List, pendingPackets...)
 
 	// export all the states created after a provider channel got established
 	if channelID, ok := k.GetProviderChannel(ctx); ok {
@@ -136,7 +144,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			k.GetAllPacketMaturityTimes(ctx),
 			valset,
 			k.GetAllHeightToValsetUpdateIDs(ctx),
-			k.GetPendingPackets(ctx),
+			pendingPacketsDepreciated,
 			k.GetAllOutstandingDowntimes(ctx),
 			k.GetLastTransmissionBlockHeight(ctx),
 			params,
@@ -156,7 +164,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			nil,
 			valset,
 			k.GetAllHeightToValsetUpdateIDs(ctx),
-			k.GetPendingPackets(ctx),
+			pendingPacketsDepreciated,
 			nil,
 			consumertypes.LastTransmissionBlockHeight{},
 			params,

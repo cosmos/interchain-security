@@ -4,23 +4,28 @@ import (
 	"fmt"
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmtypes "github.com/tendermint/tendermint/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmtypes "github.com/cometbft/cometbft/types"
+
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // ChainType defines the type of chain (either provider or consumer)
@@ -84,13 +89,13 @@ func (s *CCVTestSuite) setDefaultValSigningInfo(tmVal tmtypes.Validator) {
 	s.providerApp.GetTestSlashingKeeper().SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
 }
 
-func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
+func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) math.Int {
 	return s.providerApp.GetTestBankKeeper().GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }
 
 // delegateAndUndelegate delegates bondAmt from delAddr to the first validator
 // and then immediately undelegates 1/shareDiv of that delegation
-func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, shareDiv int64) (initBalance sdk.Int, valsetUpdateId uint64) {
+func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int, shareDiv int64) (initBalance math.Int, valsetUpdateId uint64) {
 	// delegate
 	initBalance, shares, valAddr := delegate(s, delAddr, bondAmt)
 
@@ -112,7 +117,7 @@ func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.
 // Note: This function advances blocks in-between operations, where validator powers are
 // not checked, since they are checked in integration tests.
 func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
-	srcValAddr sdk.ValAddress, dstValAddr sdk.ValAddress, amount sdk.Int,
+	srcValAddr, dstValAddr sdk.ValAddress, amount math.Int,
 ) {
 	// Delegate to src validator
 	srcValTokensBefore := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
@@ -142,12 +147,12 @@ func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
 }
 
 // delegate delegates bondAmt to the first validator
-func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBalance sdk.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
+func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int) (initBalance math.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
 	return delegateByIdx(s, delAddr, bondAmt, 0)
 }
 
 // delegateByIdx delegates bondAmt to the validator at specified index in provider val set
-func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, idx int) (initBalance sdk.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
+func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int, idx int) (initBalance math.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
 	initBalance = getBalance(s, s.providerCtx(), delAddr)
 	// choose a validator
 	validator, valAddr := s.getValByIdx(idx)
@@ -284,7 +289,7 @@ func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	incrementTime(s, jumpPeriod)
 }
 
-func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, onHold bool, msgAndArgs ...interface{}) {
+func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found, onHold bool, msgAndArgs ...interface{}) {
 	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerApp.GetTestStakingKeeper(), id)
 	s.Require().Equal(
 		found,
@@ -407,7 +412,7 @@ func (suite *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.
 // constructSlashPacketFromConsumer constructs an IBC packet embedding
 // slash packet data to be sent from consumer to provider
 func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
-	tmVal tmtypes.Validator, infractionType stakingtypes.InfractionType, ibcSeqNum uint64,
+	tmVal tmtypes.Validator, infractionType stakingtypes.Infraction, ibcSeqNum uint64,
 ) channeltypes.Packet {
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
@@ -556,7 +561,7 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
 	clientState := ibctm.NewClientState(
 		endpoint.Counterparty.Chain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
-		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
+		height, commitmenttypes.GetSDKSpecs(), UpgradePath,
 	)
 	consensusState := endpoint.Counterparty.Chain.LastHeader.ConsensusState()
 

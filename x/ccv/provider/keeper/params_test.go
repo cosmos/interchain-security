@@ -4,12 +4,15 @@ import (
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/stretchr/testify/require"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // TestParams tests the getting/setting of provider ccv module params.
@@ -34,8 +37,6 @@ func TestParams(t *testing.T) {
 			clienttypes.Height{},
 			commitmenttypes.GetSDKSpecs(),
 			[]string{"ibc", "upgradedIBCState"},
-			true,
-			false,
 		),
 		"0.25",
 		7*24*time.Hour,
@@ -44,6 +45,10 @@ func TestParams(t *testing.T) {
 		time.Hour,
 		"0.4",
 		100,
+		sdk.Coin{
+			Denom:  "stake",
+			Amount: sdk.NewInt(10000000),
+		},
 	)
 	providerKeeper.SetParams(ctx, newParams)
 	params = providerKeeper.GetParams(ctx)

@@ -3,21 +3,21 @@ package integration
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/ibc-go/v4/testing/mock"
-	testutil "github.com/cosmos/interchain-security/testutil/integration"
-	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
-
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/cosmos/ibc-go/v7/testing/mock"
 	"github.com/stretchr/testify/suite"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
+
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // Callback for instantiating a new coordinator with a provider test chains
@@ -63,7 +63,7 @@ type CCVTestSuite struct {
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
 func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
-	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string,
+	providerAppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string,
 ) *CCVTestSuite {
 	ccvSuite := new(CCVTestSuite)
 
@@ -160,6 +160,7 @@ func initConsumerChain(
 	// run CCV module init genesis
 	s.NotPanics(func() {
 		consumerKeeper := bundle.GetKeeper()
+		// this will set the initial valset on consumer
 		consumerKeeper.InitGenesis(bundle.GetCtx(), genesisState)
 	})
 

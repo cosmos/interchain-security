@@ -3,27 +3,30 @@ package integration
 import (
 	"time"
 
+	"cosmossdk.io/math"
+	abci "github.com/cometbft/cometbft/abci/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
-	ibctesting "github.com/cosmos/interchain-security/legacy_ibc_testing/testing"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
-	abci "github.com/tendermint/tendermint/abci/types"
+
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // The interface that any provider app must implement to be compatible with ccv integration tests.
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ProviderApp interface {
 	ibctesting.TestingApp
+	GetSubspace(moduleName string) paramstypes.Subspace
 
 	//
 	// Keeper getters
@@ -32,12 +35,14 @@ type ProviderApp interface {
 	GetProviderKeeper() providerkeeper.Keeper
 	// Returns a staking keeper interface with more capabilities than the expected_keepers interface
 	GetTestStakingKeeper() TestStakingKeeper
-	// Testurns a bank keeper interface with more capabilities than the expected_keepers interface
+	// Returns a bank keeper interface with more capabilities than the expected_keepers interface
 	GetTestBankKeeper() TestBankKeeper
-	// Testurns a slashing keeper interface with more capabilities than the expected_keepers interface
+	// Returns a slashing keeper interface with more capabilities than the expected_keepers interface
 	GetTestSlashingKeeper() TestSlashingKeeper
-	// Integrurns a distribution keeper interface with more capabilities than the expected_keepers interface
+	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
 	GetTestDistributionKeeper() TestDistributionKeeper
+	// Returns an account keeper interface with more capabilities than the expected_keepers interface
+	GetTestAccountKeeper() TestAccountKeeper
 }
 
 // The interface that any consumer app must implement to be compatible with integration tests
@@ -82,7 +87,7 @@ type DemocConsumerApp interface {
 
 type TestStakingKeeper interface {
 	ccvtypes.StakingKeeper
-	Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.Int, tokenSrc types.BondStatus,
+	Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc types.BondStatus,
 		validator types.Validator, subtractAccount bool) (newShares sdk.Dec, err error)
 	Undelegate(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec,
 	) (time.Time, error)
@@ -104,6 +109,8 @@ type TestBankKeeper interface {
 	ccvtypes.BankKeeper
 	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress,
 		recipientModule string, amt sdk.Coins) error
+	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string,
+		recipientAddr sdk.AccAddress, amt sdk.Coins) error
 }
 
 type TestAccountKeeper interface {
@@ -139,10 +146,9 @@ type TestMintKeeper interface {
 }
 
 type TestGovKeeper interface {
-	GetDepositParams(ctx sdk.Context) govtypes.DepositParams
-	GetVotingParams(ctx sdk.Context) govtypes.VotingParams
-	SetVotingParams(ctx sdk.Context, votingParams govtypes.VotingParams)
-	SubmitProposal(ctx sdk.Context, content govtypes.Content) (govtypes.Proposal, error)
+	GetParams(ctx sdk.Context) govv1.Params
+	SetParams(ctx sdk.Context, params govv1.Params) error
+	SubmitProposal(ctx sdk.Context, messages []sdk.Msg, metadata, title, summary string, proposer sdk.AccAddress) (govv1.Proposal, error)
 	AddDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress, depositAmount sdk.Coins) (bool, error)
-	AddVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress, options govtypes.WeightedVoteOptions) error
+	AddVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress, options govv1.WeightedVoteOptions, metadata string) error
 }

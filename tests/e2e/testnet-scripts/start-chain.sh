@@ -33,6 +33,18 @@ SKIP_GENTX=$6
 # A sed string modifying the tendermint config
 TENDERMINT_CONFIG_TRANSFORM=$7
 
+# whether to use CometMock
+USE_COMETMOCK=$8
+
+# stores a comma separated list of nodes addresses
+# needed for CometMock - these are the addresses that the ABCI servers of the apps are listening on
+NODE_LISTEN_ADDR_STR="" # example value: 7.7.8.6:26655,7.7.8.4:26655,7.7.8.5:26655
+
+# stores a comma separated list of nodes home folders
+# needed for CometMock - validator nodes have their private keys in their home directories, and CometMock
+# reads the keys to sign with from there
+NODE_HOMES="" # example value: /consu/validatorcarol,/consu/validatoralice,/consu/validatorbob
+
 
 
 # CREATE VALIDATORS AND DO GENESIS CEREMONY
@@ -124,7 +136,7 @@ do
     
     # give this validator some money
     ALLOCATION=$(echo "$VALIDATORS" | jq -r ".[$i].allocation")
-    $BIN add-genesis-account validator$VAL_ID $ALLOCATION \
+    $BIN genesis add-genesis-account validator$VAL_ID $ALLOCATION \
         --home /$CHAIN_ID/validator$VAL_ID \
         --keyring-backend test
 
@@ -168,7 +180,7 @@ do
     # Make a gentx (this command also sets up validator state on disk even if we are not going to use the gentx for anything)
     if [ "$SKIP_GENTX" = "false" ] ; then 
         STAKE_AMOUNT=$(echo "$VALIDATORS" | jq -r ".[$i].stake")
-        $BIN gentx validator$VAL_ID "$STAKE_AMOUNT" \
+        $BIN genesis gentx validator$VAL_ID "$STAKE_AMOUNT" \
             --home /$CHAIN_ID/validator$VAL_ID \
             --keyring-backend test \
             --moniker validator$VAL_ID \
@@ -195,7 +207,7 @@ done
 
 if [ "$SKIP_GENTX" = "false" ] ; then
     # make the final genesis.json
-    $BIN collect-gentxs --home /$CHAIN_ID/validator$FIRST_VAL_ID
+    $BIN genesis collect-gentxs --home /$CHAIN_ID/validator$FIRST_VAL_ID
 
     # and copy it to the root 
     cp /$CHAIN_ID/validator$FIRST_VAL_ID/config/genesis.json /$CHAIN_ID/genesis.json
@@ -219,10 +231,13 @@ do
     VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$i].ip_suffix")
     NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
 
-    GAIA_HOME="--home /$CHAIN_ID/validator$VAL_ID"
+    NODE_HOME="/$CHAIN_ID/validator$VAL_ID"
+    GAIA_HOME="--home $NODE_HOME"
+    NODE_HOMES="$NODE_HOME,$NODE_HOMES"
     RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26658"
     GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:9091"
     LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26655"
+    NODE_LISTEN_ADDR_STR="$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26655,$NODE_LISTEN_ADDR_STR"
     P2P_ADDRESS="--p2p.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26656"
     # LOG_LEVEL="--log_level trace" # switch to trace to see panic messages and rich and all debug msgs
     LOG_LEVEL="--log_level info"
@@ -246,7 +261,13 @@ do
     PERSISTENT_PEERS="--p2p.persistent_peers ${PERSISTENT_PEERS:1}"
 
     ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
-    ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/validator$VAL_ID/logs &
+    if [[ "$USE_COMETMOCK" == "true" ]]; then
+        # to start with CometMock, ensure ABCI server  uses grpc (--transport=grpc) and the app is started without in-process CometBFT (--with-tendermint=false)
+        ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start --transport=grpc --with-tendermint=false &> /$CHAIN_ID/validator$VAL_ID/logs &
+    else
+        ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/validator$VAL_ID/logs &
+    fi
+
 done
 
 ## SETUP DOUBLE SIGNING NODE NETWORK NAMESPACE
@@ -321,15 +342,45 @@ QUERY_PERSISTENT_PEERS="--p2p.persistent_peers ${QUERY_PERSISTENT_PEERS:1}"
 
 ## START NODE
 ARGS="$QUERY_GAIA_HOME $QUERY_LISTEN_ADDRESS $QUERY_RPC_ADDRESS $QUERY_GRPC_ADDRESS $QUERY_LOG_LEVEL $QUERY_P2P_ADDRESS $QUERY_ENABLE_WEBGRPC $QUERY_PERSISTENT_PEERS"
-ip netns exec $QUERY_NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/$QUERY_NODE_ID/logs &
+
+# Query node is only started if CometMock is not used - with CometMock, it takes the role of the query node
+if [[ "$USE_COMETMOCK" != "true" ]]; then
+    ip netns exec $QUERY_NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/$QUERY_NODE_ID/logs &
+fi
 ## DONE START NODE
+
+echo "Node addresses:"
+echo $NODE_LISTEN_ADDR_STR
+
+echo "Node homes:"
+echo $NODE_HOMES
+
+NODE_LISTEN_ADDR_STR=${NODE_LISTEN_ADDR_STR%?}
+NODE_HOMES=${NODE_HOMES%?}
+
+
+# CometMock takes the role of the query node
+if [[ "$USE_COMETMOCK" == "true" ]]; then
+    sleep 2
+    ip netns exec $QUERY_NET_NAMESPACE_NAME cometmock $NODE_LISTEN_ADDR_STR /$CHAIN_ID/genesis.json tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658 $NODE_HOMES grpc &> cometmock_${CHAIN_ID}_out.log &
+    sleep 3
+fi
+
+# exit
 
 
 
 # poll for chain start
-set +e
-until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 0.3 ; done
-set -e
+if [[ "$USE_COMETMOCK" == "true" ]]; then
+    set +e
+    until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658"; do sleep 0.3 ; done
+    set -e
+else
+    set +e
+    until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":
+    ""}},"block":null}'; do sleep 0.3 ; done
+    set -e
+fi
 
 echo "done!!!!!!!!"
 

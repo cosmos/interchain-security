@@ -3,7 +3,7 @@ sidebar_position: 4
 ---
 
 # Consumer Initiated Slashing
-A consumer chain is essentially a regular Cosmos-SDK based chain that uses the interchain security module to achieve economic security by stake deposited on the provider chain, instead of it's own chain.
+A consumer chain is essentially a regular Cosmos-SDK based chain that uses the interchain security module to achieve economic security by stake deposited on the provider chain, instead of its own chain.
 In essence, provider chain and consumer chains are different networks (different infrastructures) that are bound together by the provider's validator set. By being bound to the provider's validator set, a consumer chain inherits the economic security guarantees of the provider chain (in terms of total stake).
 
 To maintain the proof of stake model, the consumer chain is able to send evidence of infractions (double signing and downtime) to the provider chain so the offending validators can be penalized.
@@ -17,7 +17,7 @@ reported by consumer chains are acted upon on the provider as soon as the provid
 Instead of slashing, the provider will only jail offending validator for the duration of time established in the chain parameters.
 
 :::info
-Slash throttling (sometimes called jail throttling) mechanism insures that only a fraction of the validator set can be jailed at any one time to prevent malicious consumer chains from harming the provider.
+Slash throttling (sometimes called jail throttling) mechanism ensures that only a fraction of the validator set can be jailed at any one time to prevent malicious consumer chains from harming the provider.
 :::
 
 ## Double-signing (equivocation)
@@ -32,4 +32,5 @@ The offending validator will only be slashed (and tombstoned) if an `Equivocatio
 The offending validator will effectively get slashed and tombstoned on all consumer chains.
 :::
 
+<!-- markdown-link-check-disable-next-line -->
 You can find instructions on creating `EquivocationProposal`s [here](./proposals#equivocationproposal).

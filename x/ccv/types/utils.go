@@ -5,14 +5,17 @@ import (
 	"sort"
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+
+	errorsmod "cosmossdk.io/errors"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
 func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci.ValidatorUpdate {
@@ -60,36 +63,34 @@ func SendIBCPacket(
 	ctx sdk.Context,
 	scopedKeeper ScopedKeeper,
 	channelKeeper ChannelKeeper,
-	channelID string,
-	portID string,
+	sourceChannelID string,
+	sourcePortID string,
 	packetData []byte,
 	timeoutPeriod time.Duration,
 ) error {
-	channel, ok := channelKeeper.GetChannel(ctx, portID, channelID)
+	_, ok := channelKeeper.GetChannel(ctx, sourcePortID, sourceChannelID)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
+		return errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", sourceChannelID)
 	}
-	channelCap, ok := scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(portID, channelID))
+	channelCap, ok := scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(sourcePortID, sourceChannelID))
 	if !ok {
-		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
+		return errorsmod.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
 	}
 
-	// get the next sequence
-	sequence, found := channelKeeper.GetNextSequenceSend(ctx, portID, channelID)
-	if !found {
-		return sdkerrors.Wrapf(
-			channeltypes.ErrSequenceSendNotFound,
-			"source port: %s, source channel: %s", portID, channelID,
-		)
-	}
-	packet := channeltypes.NewPacket(
-		packetData, sequence,
-		portID, channelID,
-		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
-		clienttypes.Height{}, uint64(ctx.BlockTime().Add(timeoutPeriod).UnixNano()),
+	_, err := channelKeeper.SendPacket(ctx,
+		channelCap,
+		sourcePortID,
+		sourceChannelID,
+		clienttypes.Height{}, //  timeout height disabled
+		uint64(ctx.BlockTime().Add(timeoutPeriod).UnixNano()), // timeout timestamp
+		packetData,
 	)
+	return err
+}
 
-	return channelKeeper.SendPacket(ctx, channelCap, packet)
+func NewErrorAcknowledgementWithLog(ctx sdk.Context, err error) channeltypes.Acknowledgement {
+	ctx.Logger().Error("IBC ErrorAcknowledgement constructed", "error", err)
+	return channeltypes.NewErrorAcknowledgement(err)
 }
 
 // AppendMany appends a variable number of byte slices together

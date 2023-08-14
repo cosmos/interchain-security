@@ -6,19 +6,21 @@ import (
 	"testing"
 	"time"
 
+	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	"github.com/cosmos/interchain-security/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	abci "github.com/cometbft/cometbft/abci/types"
+
+	"github.com/cosmos/interchain-security/v3/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper
@@ -312,12 +314,12 @@ func TestGetAllCCValidator(t *testing.T) {
 	require.Equal(t, result, expectedGetAllOrder)
 }
 
-func TestSetPendingPackets(t *testing.T) {
+func TestPendingPackets(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	// prepare test setup
-	dataPackets := []ccv.ConsumerPacketData{
+	// Instantiate some expected packet data
+	packetData := []ccv.ConsumerPacketData{
 		{
 			Type: ccv.VscMaturedPacket,
 			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
@@ -336,7 +338,7 @@ func TestSetPendingPackets(t *testing.T) {
 				SlashPacketData: ccv.NewSlashPacketData(
 					abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(), Power: int64(0)},
 					3,
-					stakingtypes.DoubleSign,
+					stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
 				),
 			},
 		},
@@ -347,11 +349,14 @@ func TestSetPendingPackets(t *testing.T) {
 			},
 		},
 	}
-	consumerKeeper.SetPendingPackets(ctx, ccv.ConsumerPacketDataList{List: dataPackets})
 
-	storedDataPackets := consumerKeeper.GetPendingPackets(ctx)
-	require.NotEmpty(t, storedDataPackets)
-	require.Equal(t, dataPackets, storedDataPackets.List)
+	// Append all packets to the queue
+	for _, data := range packetData {
+		consumerKeeper.AppendPendingPacket(ctx, data.Type, data.Data)
+	}
+	storedPacketData := consumerKeeper.GetPendingPackets(ctx)
+	require.NotEmpty(t, storedPacketData)
+	require.Equal(t, packetData, storedPacketData)
 
 	slashPacket := ccv.NewSlashPacketData(
 		abci.Validator{
@@ -359,33 +364,55 @@ func TestSetPendingPackets(t *testing.T) {
 			Power:   int64(2),
 		},
 		uint64(4),
-		stakingtypes.Downtime,
+		stakingtypes.Infraction_INFRACTION_DOWNTIME,
 	)
-	dataPackets = append(dataPackets, ccv.ConsumerPacketData{
+	// Append slash packet to expected packet data
+	packetData = append(packetData, ccv.ConsumerPacketData{
 		Type: ccv.SlashPacket,
-		Data: &ccv.ConsumerPacketData_SlashPacketData{SlashPacketData: slashPacket},
-	},
-	)
-	consumerKeeper.AppendPendingPacket(ctx, dataPackets[len(dataPackets)-1])
-	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
-	require.NotEmpty(t, storedDataPackets)
-	require.Equal(t, dataPackets, storedDataPackets.List)
+		Data: &ccv.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: slashPacket,
+		},
+	})
 
-	vscMaturedPakcet := ccv.NewVSCMaturedPacketData(4)
-	dataPackets = append(dataPackets, ccv.ConsumerPacketData{
+	toAppend := packetData[len(packetData)-1]
+	consumerKeeper.AppendPendingPacket(ctx, toAppend.Type, toAppend.Data)
+	storedPacketData = consumerKeeper.GetPendingPackets(ctx)
+	require.NotEmpty(t, storedPacketData)
+	require.Equal(t, packetData, storedPacketData)
+
+	vscMaturedPacket := ccv.NewVSCMaturedPacketData(4)
+	packetData = append(packetData, ccv.ConsumerPacketData{
 		Type: ccv.VscMaturedPacket,
-		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscMaturedPakcet},
-	},
-	)
-	consumerKeeper.AppendPendingPacket(ctx, dataPackets[len(dataPackets)-1])
-	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
-	require.NotEmpty(t, storedDataPackets)
-	require.Equal(t, dataPackets, storedDataPackets.List)
+		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
+			VscMaturedPacketData: vscMaturedPacket,
+		},
+	})
+	toAppend = packetData[len(packetData)-1]
+	consumerKeeper.AppendPendingPacket(ctx, toAppend.Type, toAppend.Data)
 
-	consumerKeeper.DeletePendingDataPackets(ctx)
-	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
-	require.Empty(t, storedDataPackets)
-	require.Len(t, storedDataPackets.List, 0)
+	storedPacketData = consumerKeeper.GetPendingPackets(ctx)
+	require.NotEmpty(t, storedPacketData)
+	require.Equal(t, packetData, storedPacketData)
+
+	// Delete packet with idx 5 (final index)
+	consumerKeeper.DeletePendingDataPackets(ctx, 5)
+	storedPacketData = consumerKeeper.GetPendingPackets(ctx)
+	require.Equal(t, packetData[:len(packetData)-1], storedPacketData)
+	pendingPacketsWithIdx := consumerKeeper.GetAllPendingPacketsWithIdx(ctx)
+	require.Equal(t, uint64(4), pendingPacketsWithIdx[len(pendingPacketsWithIdx)-1].Idx) // final element should have idx 4
+
+	// Delete packet with idx 0 (first index)
+	consumerKeeper.DeletePendingDataPackets(ctx, 0)
+	storedPacketData = consumerKeeper.GetPendingPackets(ctx)
+	require.Equal(t, packetData[1:len(packetData)-1], storedPacketData)
+	pendingPacketsWithIdx = consumerKeeper.GetAllPendingPacketsWithIdx(ctx)
+	require.Equal(t, uint64(1), pendingPacketsWithIdx[0].Idx) // first element should have idx 1
+
+	// Delete all packets
+	consumerKeeper.DeleteAllPendingDataPackets(ctx)
+	storedPacketData = consumerKeeper.GetPendingPackets(ctx)
+	require.Empty(t, storedPacketData)
+	require.Empty(t, consumerKeeper.GetAllPendingPacketsWithIdx(ctx))
 }
 
 // TestVerifyProviderChain tests the VerifyProviderChain method for the consumer keeper
@@ -541,19 +568,6 @@ func TestGetAllOutstandingDowntimes(t *testing.T) {
 	require.Equal(t, result, expectedGetAllOrder)
 }
 
-// TestStandaloneTransferChannelID tests the getter and setter for the existing transfer channel id
-func TestStandaloneTransferChannelID(t *testing.T) {
-	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	// Test that the default value is empty
-	require.Equal(t, "", ck.GetStandaloneTransferChannelID(ctx))
-
-	// Test that the value can be set and retrieved
-	ck.SetStandaloneTransferChannelID(ctx, "channelID1234")
-	require.Equal(t, "channelID1234", ck.GetStandaloneTransferChannelID(ctx))
-}
-
 func TestPrevStandaloneChainFlag(t *testing.T) {
 	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -564,4 +578,31 @@ func TestPrevStandaloneChainFlag(t *testing.T) {
 	// Test that the value can be set and retrieved
 	ck.MarkAsPrevStandaloneChain(ctx)
 	require.True(t, ck.IsPrevStandaloneChain(ctx))
+}
+
+func TestDeleteHeadOfPendingPackets(t *testing.T) {
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// append some pending packets
+	consumerKeeper.AppendPendingPacket(ctx, ccv.VscMaturedPacket, &ccv.ConsumerPacketData_VscMaturedPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, ccv.SlashPacket, &ccv.ConsumerPacketData_SlashPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, ccv.VscMaturedPacket, &ccv.ConsumerPacketData_VscMaturedPacketData{})
+
+	// Check there's 3 pending packets, vsc matured at head
+	pp := consumerKeeper.GetPendingPackets(ctx)
+	require.Len(t, pp, 3)
+	require.Equal(t, pp[0].Type, ccv.VscMaturedPacket)
+
+	// Delete the head, confirm slash packet is now at head
+	consumerKeeper.DeleteHeadOfPendingPackets(ctx)
+	pp = consumerKeeper.GetPendingPackets(ctx)
+	require.Len(t, pp, 2)
+	require.Equal(t, pp[0].Type, ccv.SlashPacket)
+
+	// Delete the head, confirm vsc matured packet is now at head
+	consumerKeeper.DeleteHeadOfPendingPackets(ctx)
+	pp = consumerKeeper.GetPendingPackets(ctx)
+	require.Len(t, pp, 1)
+	require.Equal(t, pp[0].Type, ccv.VscMaturedPacket)
 }

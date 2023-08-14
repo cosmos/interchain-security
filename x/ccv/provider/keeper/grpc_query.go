@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	errorsmod "cosmossdk.io/errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 var _ types.QueryServer = Keeper{}
@@ -27,7 +30,7 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 
 	gen, ok := k.GetConsumerGenesis(ctx, req.ChainId)
 	if !ok {
-		return nil, sdkerrors.Wrap(types.ErrUnknownConsumerChainId, req.ChainId)
+		return nil, errorsmod.Wrap(types.ErrUnknownConsumerChainId, req.ChainId)
 	}
 
 	return &types.QueryConsumerGenesisResponse{GenesisState: gen}, nil
@@ -235,4 +238,18 @@ func (k Keeper) getSlashPacketData(ctx sdk.Context, consumerChainID string, ibcS
 	}
 
 	return packet, true
+}
+
+func (k Keeper) QueryRegisteredConsumerRewardDenoms(goCtx context.Context, req *types.QueryRegisteredConsumerRewardDenomsRequest) (*types.QueryRegisteredConsumerRewardDenomsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	denoms := k.GetAllConsumerRewardDenoms(ctx)
+
+	return &types.QueryRegisteredConsumerRewardDenomsResponse{
+		Denoms: denoms,
+	}, nil
 }

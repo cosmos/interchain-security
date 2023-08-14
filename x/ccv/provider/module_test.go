@@ -3,17 +3,18 @@ package provider_test
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/golang/mock/gomock"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // Tests the provider's InitGenesis implementation against the spec.
@@ -94,7 +95,7 @@ func TestInitGenesis(t *testing.T) {
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 
-		appModule := provider.NewAppModule(&providerKeeper)
+		appModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
 		genState := types.NewGenesisState(
 			providerKeeper.GetValidatorSetUpdateId(ctx),
 			nil,
@@ -104,6 +105,8 @@ func TestInitGenesis(t *testing.T) {
 			nil,
 			nil,
 			types.DefaultParams(),
+			nil,
+			nil,
 			nil,
 			nil,
 			nil,

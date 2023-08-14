@@ -3,11 +3,14 @@ package types_test
 import (
 	"testing"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	ibcsimapp "github.com/cosmos/interchain-security/legacy_ibc_testing/simapp"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
+
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+
+	ibcsimapp "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
+	"github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 func TestAccumulateChanges(t *testing.T) {

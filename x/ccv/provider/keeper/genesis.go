@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // InitGenesis initializes the CCV provider state and binds to PortID.
@@ -73,16 +74,30 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 
 	// Import key assignment state
 	for _, item := range genState.ValidatorConsumerPubkeys {
-		k.SetValidatorConsumerPubKey(ctx, item.ChainId, *item.ProviderAddr, *item.ConsumerKey)
+		providerAddr := types.NewProviderConsAddress(item.ProviderAddr)
+		k.SetValidatorConsumerPubKey(ctx, item.ChainId, providerAddr, *item.ConsumerKey)
 	}
 
 	for _, item := range genState.ValidatorsByConsumerAddr {
-		k.SetValidatorByConsumerAddr(ctx, item.ChainId, *item.ConsumerAddr, *item.ProviderAddr)
+		consumerAddr := types.NewConsumerConsAddress(item.ConsumerAddr)
+		providerAddr := types.NewProviderConsAddress(item.ProviderAddr)
+		k.SetValidatorByConsumerAddr(ctx, item.ChainId, consumerAddr, providerAddr)
 	}
 
 	for _, item := range genState.ConsumerAddrsToPrune {
 		for _, addr := range item.ConsumerAddrs.Addresses {
-			k.AppendConsumerAddrsToPrune(ctx, item.ChainId, item.VscId, *addr)
+			consumerAddr := types.NewConsumerConsAddress(addr)
+			k.AppendConsumerAddrsToPrune(ctx, item.ChainId, item.VscId, consumerAddr)
+		}
+	}
+
+	for _, item := range genState.InitTimeoutTimestamps {
+		k.SetInitTimeoutTimestamp(ctx, item.ChainId, item.Timestamp)
+	}
+
+	for _, item := range genState.ExportedVscSendTimestamps {
+		for _, vscSendTimestamp := range item.VscSendTimestamps {
+			k.SetVscSendTimestamp(ctx, item.ChainId, vscSendTimestamp.VscId, vscSendTimestamp.Timestamp)
 		}
 	}
 
@@ -95,6 +110,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	// get a list of all registered consumer chains
 	registeredChains := k.GetAllConsumerChains(ctx)
 
+	var exportedVscSendTimestamps []types.ExportedVscSendTimestamp
 	// export states for each consumer chains
 	var consumerStates []types.ConsumerState
 	for _, chain := range registeredChains {
@@ -125,6 +141,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		cs.PendingValsetChanges = k.GetPendingVSCPackets(ctx, chain.ChainId)
 		consumerStates = append(consumerStates, cs)
 
+		vscSendTimestamps := k.GetAllVscSendTimestamps(ctx, chain.ChainId)
+		exportedVscSendTimestamps = append(exportedVscSendTimestamps, types.ExportedVscSendTimestamp{ChainId: chain.ChainId, VscSendTimestamps: vscSendTimestamps})
 	}
 
 	// ConsumerAddrsToPrune are added only for registered consumer chains
@@ -147,5 +165,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.GetAllValidatorConsumerPubKeys(ctx, nil),
 		k.GetAllValidatorsByConsumerAddr(ctx, nil),
 		consumerAddrsToPrune,
+		k.GetAllInitTimeoutTimestamps(ctx),
+		exportedVscSendTimestamps,
 	)
 }

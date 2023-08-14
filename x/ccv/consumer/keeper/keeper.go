@@ -6,27 +6,30 @@ import (
 	"reflect"
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	tmtypes "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	tmtypes "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // Keeper defines the Cross-Chain Validation Consumer Keeper
 type Keeper struct {
-	storeKey         sdk.StoreKey
+	storeKey         storetypes.StoreKey
 	cdc              codec.BinaryCodec
 	paramStore       paramtypes.Subspace
 	scopedKeeper     ccv.ScopedKeeper
@@ -51,7 +54,7 @@ type Keeper struct {
 // NOTE: the feeCollectorName is in reference to the consumer-chain fee
 // collector (and not the provider chain)
 func NewKeeper(
-	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
+	cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace,
 	scopedKeeper ccv.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
@@ -86,10 +89,26 @@ func NewKeeper(
 	return k
 }
 
+// Returns a keeper with cdc, key and paramSpace set it does not raise any panics during registration (eg with IBCKeeper).
+// Used only in testing.
+func NewNonZeroKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace) Keeper {
+	return Keeper{
+		storeKey:   key,
+		cdc:        cdc,
+		paramStore: paramSpace,
+	}
+}
+
 // SetStandaloneStakingKeeper sets the standalone staking keeper for the consumer chain.
 // This method should only be called for previously standalone chains that are now consumers.
 func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
 	k.standaloneStakingKeeper = sk
+}
+
+// SetParamSpace sets the param space for the consumer keeper.
+// Note: this is only used for testing!
+func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
+	k.paramStore = ps
 }
 
 // Validates that the consumer keeper is initialized with non-zero and
@@ -122,7 +141,7 @@ func (k Keeper) mustValidateFields() {
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", "x/"+host.ModuleName+"-"+types.ModuleName)
+	return ctx.Logger().With("module", "x/"+host.SubModuleName+"-"+types.ModuleName)
 }
 
 func (k *Keeper) SetHooks(sh ccv.ConsumerHooks) *Keeper {
@@ -143,7 +162,7 @@ func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return errorsmod.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	return k.channelKeeper.ChanCloseInit(ctx, portID, channelID, chanCap)
 }
@@ -402,20 +421,20 @@ func (k Keeper) DeletePacketMaturityTimes(ctx sdk.Context, vscId uint64, maturit
 // is the expected provider chain.
 func (k Keeper) VerifyProviderChain(ctx sdk.Context, connectionHops []string) error {
 	if len(connectionHops) != 1 {
-		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
+		return errorsmod.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
 	}
 	connectionID := connectionHops[0]
 	conn, ok := k.connectionKeeper.GetConnection(ctx, connectionID)
 	if !ok {
-		return sdkerrors.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
+		return errorsmod.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
 	}
 	// Verify that client id is expected clientID
 	expectedClientId, ok := k.GetProviderClientID(ctx)
 	if !ok {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "could not find provider client id")
+		return errorsmod.Wrapf(clienttypes.ErrInvalidClient, "could not find provider client id")
 	}
 	if expectedClientId != conn.ClientId {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "invalid client: %s, channel must be built on top of client: %s", conn.ClientId, expectedClientId)
+		return errorsmod.Wrapf(clienttypes.ErrInvalidClient, "invalid client: %s, channel must be built on top of client: %s", conn.ClientId, expectedClientId)
 	}
 
 	return nil
@@ -559,48 +578,126 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 	return validators
 }
 
-// SetPendingPackets sets the pending CCV packets
-func (k Keeper) SetPendingPackets(ctx sdk.Context, packets ccv.ConsumerPacketDataList) {
+// Implement from stakingkeeper interface
+func (k Keeper) GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Validator) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := packets.Marshal()
-	if err != nil {
-		// This should never happen
-		panic(fmt.Errorf("failed to marshal ConsumerPacketDataList: %w", err))
+
+	iterator := sdk.KVStorePrefixIterator(store, stakingtypes.ValidatorsKey)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		validator := stakingtypes.MustUnmarshalValidator(k.cdc, iterator.Value())
+		validators = append(validators, validator)
 	}
-	store.Set(types.PendingDataPacketsKey(), bz)
+
+	return validators
 }
 
-// GetPendingPackets returns the pending CCV packets from the store
-func (k Keeper) GetPendingPackets(ctx sdk.Context) ccv.ConsumerPacketDataList {
-	var packets ccv.ConsumerPacketDataList
-
+// getAndIncrementPendingPacketsIdx returns the current pending packets index and increments it.
+// This index is used for implementing a FIFO queue of pending packets in the KV store.
+func (k Keeper) getAndIncrementPendingPacketsIdx(ctx sdk.Context) (toReturn uint64) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PendingDataPacketsKey())
-	if bz == nil {
-		return packets
+	bz := store.Get(types.PendingPacketsIndexKey())
+	if bz != nil {
+		toReturn = sdk.BigEndianToUint64(bz)
 	}
+	toStore := toReturn + 1
+	store.Set(types.PendingPacketsIndexKey(), sdk.Uint64ToBigEndian(toStore))
+	return toReturn
+}
 
-	err := packets.Unmarshal(bz)
-	if err != nil {
-		// An error here would indicate something is very wrong,
-		// the PendingPackets are assumed to be correctly serialized in SetPendingPackets.
-		panic(fmt.Errorf("failed to unmarshal pending data packets: %w", err))
+// DeleteHeadOfPendingPackets deletes the head of the pending packets queue.
+func (k Keeper) DeleteHeadOfPendingPackets(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	defer iterator.Close()
+	if !iterator.Valid() {
+		return
 	}
+	store.Delete(iterator.Key())
+}
 
+// GetPendingPackets returns ALL the pending CCV packets from the store without indexes.
+func (k Keeper) GetPendingPackets(ctx sdk.Context) []ccv.ConsumerPacketData {
+	ppWithIndexes := k.GetAllPendingPacketsWithIdx(ctx)
+	var ppList []ccv.ConsumerPacketData
+	for _, ppWithIndex := range ppWithIndexes {
+		ppList = append(ppList, ppWithIndex.ConsumerPacketData)
+	}
+	return ppList
+}
+
+// ConsumerPacketDataWithIdx is a wrapper around ConsumerPacketData
+// that also stores the index of the packet in the pending packets queue.
+//
+// Note this type is a shim to avoid changing the schema of ConsumerPacketData and breaking the wire.
+type ConsumerPacketDataWithIdx struct {
+	ccv.ConsumerPacketData // Struct embedding
+	Idx                    uint64
+}
+
+// GetAllPendingPacketsWithIdx returns ALL pending consumer packet data from the store
+// with indexes relevant to the pending packets queue.
+func (k Keeper) GetAllPendingPacketsWithIdx(ctx sdk.Context) []ConsumerPacketDataWithIdx {
+	packets := []ConsumerPacketDataWithIdx{}
+	store := ctx.KVStore(k.storeKey)
+	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
+	// See consistency with PendingDataPacketsKey().
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		var packet ccv.ConsumerPacketData
+		bz := iterator.Value()
+		err := packet.Unmarshal(bz)
+		if err != nil {
+			// An error here would indicate something is very wrong,
+			panic(fmt.Errorf("failed to unmarshal pending data packet: %w", err))
+		}
+		packetWithIdx := ConsumerPacketDataWithIdx{
+			ConsumerPacketData: packet,
+			// index stored in key after prefix, see PendingDataPacketsKey()
+			Idx: sdk.BigEndianToUint64(iterator.Key()[1:]),
+		}
+		packets = append(packets, packetWithIdx)
+	}
 	return packets
 }
 
-// DeletePendingDataPackets clears the pending data packets in store
-func (k Keeper) DeletePendingDataPackets(ctx sdk.Context) {
+// DeletePendingDataPackets deletes pending data packets with given indexes
+func (k Keeper) DeletePendingDataPackets(ctx sdk.Context, idxs ...uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.PendingDataPacketsKey())
+	for _, idx := range idxs {
+		store.Delete(types.PendingDataPacketsKey(idx))
+	}
 }
 
-// AppendPendingDataPacket appends the given data packet to the pending data packets in store
-func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...ccv.ConsumerPacketData) {
-	pending := k.GetPendingPackets(ctx)
-	list := append(pending.GetList(), packet...)
-	k.SetPendingPackets(ctx, ccv.ConsumerPacketDataList{List: list})
+func (k Keeper) DeleteAllPendingDataPackets(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
+	// See consistency with PendingDataPacketsKey().
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	keysToDel := [][]byte{}
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	for _, key := range keysToDel {
+		store.Delete(key)
+	}
+}
+
+// AppendPendingPacket enqueues the given data packet to the end of the pending data packets queue
+func (k Keeper) AppendPendingPacket(ctx sdk.Context, packetType ccv.ConsumerPacketDataType, data ccv.ExportedIsConsumerPacketData_Data) {
+	idx := k.getAndIncrementPendingPacketsIdx(ctx) // for FIFO queue
+	key := types.PendingDataPacketsKey(idx)
+	store := ctx.KVStore(k.storeKey)
+	cpd := ccv.NewConsumerPacketData(packetType, data)
+	bz, err := cpd.Marshal()
+	if err != nil {
+		// This should never happen
+		panic(fmt.Errorf("failed to marshal ConsumerPacketData: %w", err))
+	}
+	store.Set(key, bz)
 }
 
 func (k Keeper) MarkAsPrevStandaloneChain(ctx sdk.Context) {
@@ -611,18 +708,4 @@ func (k Keeper) MarkAsPrevStandaloneChain(ctx sdk.Context) {
 func (k Keeper) IsPrevStandaloneChain(ctx sdk.Context) bool {
 	store := ctx.KVStore(k.storeKey)
 	return store.Has(types.PrevStandaloneChainKey())
-}
-
-// SetStandaloneTransferChannelID sets the channelID of an existing transfer channel,
-// for a chain which used to be a standalone chain.
-func (k Keeper) SetStandaloneTransferChannelID(ctx sdk.Context, channelID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.StandaloneTransferChannelIDKey(), []byte(channelID))
-}
-
-// GetStandaloneTransferChannelID returns the channelID of an existing transfer channel,
-// for a chain which used to be a standalone chain.
-func (k Keeper) GetStandaloneTransferChannelID(ctx sdk.Context) string {
-	store := ctx.KVStore(k.storeKey)
-	return string(store.Get(types.StandaloneTransferChannelIDKey()))
 }

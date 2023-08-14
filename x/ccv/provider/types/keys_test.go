@@ -4,10 +4,12 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	cryptoutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // Tests that all singular keys, or prefixes to fully resolves keys are non duplicate byte values.
@@ -51,6 +53,7 @@ func getAllKeyPrefixes() []byte {
 		providertypes.KeyAssignmentReplacementsBytePrefix,
 		providertypes.ConsumerAddrsToPruneBytePrefix,
 		providertypes.SlashLogBytePrefix,
+		providertypes.VSCMaturedHandledThisBlockBytePrefix,
 	}
 }
 
@@ -94,6 +97,7 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.KeyAssignmentReplacementsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ConsumerAddrsToPruneKey("chainID", 88),
 		providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.VSCMaturedHandledThisBlockKey(),
 	}
 }
 

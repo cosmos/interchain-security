@@ -10,9 +10,9 @@ run:
 linters:
   disable-all: true
   enable:
-    - depguard
     - dogsled
     - exportloopref
+    - gci
     - goconst
     - gocritic
     - gofumpt
@@ -31,14 +31,11 @@ linters:
     - unconvert
     - unused
 
+
+
+
+
 issues:
-  gofumpt:
-    # Module path which contains the source code being formatted.
-    # Default: ""
-    module-path: github.com/cosmos/interchain-security
-    # Choose whether to use the extra rules.
-    # Default: false
-    extra-rules: true
   exclude-rules:
     - text: "Use of weak random number generator"
       linters:
@@ -63,6 +60,21 @@ issues:
   max-same-issues: 10000
 
 linters-settings:
+  gci:
+    sections:
+      - standard # Standard section: captures all standard packages.
+      - default # Default section: contains all imports that could not be matched to another section type.
+      - blank # blank imports
+      - dot # dot imports
+      - prefix(cosmossdk.io)
+      - prefix(github.com/cosmos/cosmos-sdk)
+      - prefix(github.com/cometbft/cometbft)
+      - prefix(github.com/cosmos/interchain-security)
+    custom-order: true
+  gofumpt:
+    # Choose whether to use the extra rules.
+    # Default: false
+    extra-rules: true
   gocritic:
     disabled-checks:
       - appendAssign
