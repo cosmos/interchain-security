@@ -26,7 +26,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	}
 
 	// Since the misbehaviour packet was received within the trusting period
-	// w.r.t to the last trusted consensus it entails that the infraction age
+	// w.r.t to the trusted consensus states the infraction age
 	// isn't too old. see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 
 	// Get Byzantine validators from the conflicting headers
