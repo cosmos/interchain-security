@@ -151,9 +151,9 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 		return sdkerrors.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
 	}
 
-	// CheckMisbehaviourAndUpdateState verifies the misbehaviour against the consensus states
-	// but does NOT update the light client status.
-	// Note CheckMisbehaviourAndUpdateState returns an error if the light client is expired
+	// CheckMisbehaviourAndUpdateState verifies the misbehaviour against the trusted consensus states
+	// but does NOT update the light client state.
+	// Note CheckMisbehaviourAndUpdateState returns an error if the trusted consensus states are expired
 	_, err := clientState.CheckMisbehaviourAndUpdateState(ctx, k.cdc, clientStore, &misbehaviour)
 	if err != nil {
 		return err
