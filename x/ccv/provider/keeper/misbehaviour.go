@@ -70,8 +70,9 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	return nil
 }
 
-// GetByzantineValidators returns the Byzantine validators from a given misbehaviour
-// with the condition that it corresponds to an equivocation light client attack
+// GetByzantineValidators returns the validators that signed both headers.
+// If the misbehavior is an equivocation light client attack, then these
+// validators are the Byzantine validators.
 func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) ([]*tmtypes.Validator, error) {
 	// construct the trusted and conflicted light blocks
 	lightBlock1, err := headerToLightBlock(*misbehaviour.Header1)
