@@ -18,7 +18,7 @@ import (
 func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
 	logger := k.Logger(ctx)
 
-	// Check that the misbehaviour is valid and that the client isn't expired
+	// Check that the misbehaviour is valid and that the client consensus states at trusted heights are within trusting period
 	if err := k.CheckMisbehaviour(ctx, misbehaviour); err != nil {
 		logger.Info("Misbehaviour rejected", err.Error())
 
