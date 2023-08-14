@@ -30,7 +30,6 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	// isn't too old. see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 
 	// Get Byzantine validators from the conflicting headers
-	// Note that it returns an error if the misbehaviour doesn't correspond to an equivocation
 	byzantineValidators, err := k.GetByzantineValidators(ctx, misbehaviour)
 	if err != nil {
 		return err
@@ -98,8 +97,7 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 		header1Signers[sign.ValidatorAddress.String()] = struct{}{}
 	}
 
-	// iterate over the header2 signers
-	// and check if they s signed header1
+	// iterate over the header2 signers and check if they signed header1
 	for _, sign := range lightBlock2.Commit.Signatures {
 		if sign.Absent() {
 			continue
