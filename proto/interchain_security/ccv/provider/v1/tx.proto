@@ -7,11 +7,13 @@ import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "google/protobuf/any.proto";
+import "ibc/lightclients/tendermint/v1/tendermint.proto";
 
 // Msg defines the Msg service.
 service Msg {
   rpc AssignConsumerKey(MsgAssignConsumerKey) returns (MsgAssignConsumerKeyResponse);
   rpc RegisterConsumerRewardDenom(MsgRegisterConsumerRewardDenom) returns (MsgRegisterConsumerRewardDenomResponse);
+  rpc SubmitConsumerMisbehaviour(MsgSubmitConsumerMisbehaviour) returns (MsgSubmitConsumerMisbehaviourResponse);
 }
 
 message MsgAssignConsumerKey {
@@ -43,3 +45,17 @@ message MsgRegisterConsumerRewardDenom {
 
 // MsgRegisterConsumerRewardDenomResponse defines the Msg/RegisterConsumerRewardDenom response type.
 message MsgRegisterConsumerRewardDenomResponse {}
+
+// MsgSubmitConsumerMisbehaviour defines a message that reports a misbehaviour
+// observed on a consumer chain
+// Note that the misbheaviour' headers must contain the same trusted states
+message MsgSubmitConsumerMisbehaviour {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  string submitter = 1;
+  // The Misbehaviour of the consumer chain wrapping 
+  // two conflicting IBC headers 
+  ibc.lightclients.tendermint.v1.Misbehaviour misbehaviour = 2;
+}
+
+message MsgSubmitConsumerMisbehaviourResponse {}

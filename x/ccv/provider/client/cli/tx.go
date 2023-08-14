@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/version"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
@@ -27,6 +28,7 @@ func GetTxCmd() *cobra.Command {
 
 	cmd.AddCommand(NewAssignConsumerKeyCmd())
 	cmd.AddCommand(NewRegisterConsumerRewardDenomCmd())
+	cmd.AddCommand(NewSubmitConsumerMisbehaviourCmd())
 
 	return cmd
 }
@@ -96,6 +98,53 @@ $ %s tx provider register-consumer-reward-denom untrn --from mykey
 	}
 
 	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func NewSubmitConsumerMisbehaviourCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "submit-consumer-misbehaviour [misbehaviour]",
+		Short: "submit an IBC misbehaviour for a consumer chain",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Submit an IBC misbehaviour detected on a consumer chain.
+An IBC misbehaviour contains two conflicting IBC client headers, which are used to form a light client attack evidence.
+The misbehaviour type definition can be found in the IBC client messages, see ibc-go/proto/ibc/core/client/v1/tx.proto.
+
+Examples:
+%s tx provider submit-consumer-misbehaviour [path/to/misbehaviour.json] --from node0 --home ../node0 --chain-id $CID
+			`, version.AppName)),
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).
+				WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+
+			submitter := clientCtx.GetFromAddress()
+			var misbehaviour ibctmtypes.Misbehaviour
+			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[1]), &misbehaviour); err != nil {
+				return err
+			}
+
+			msg, err := types.NewMsgSubmitConsumerMisbehaviour(submitter, &misbehaviour)
+			if err != nil {
+				return err
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	_ = cmd.MarkFlagRequired(flags.FlagFrom)
 
 	return cmd
 }

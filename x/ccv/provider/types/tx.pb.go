@@ -7,6 +7,7 @@ import (
 	context "context"
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-sdk/codec/types"
+	types "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
@@ -191,11 +192,92 @@ func (m *MsgRegisterConsumerRewardDenomResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgRegisterConsumerRewardDenomResponse proto.InternalMessageInfo
 
+// MsgSubmitConsumerMisbehaviour defines a message that reports a misbehaviour
+// observed on a consumer chain
+// Note that the misbheaviour' headers must contain the same trusted states
+type MsgSubmitConsumerMisbehaviour struct {
+	Submitter string `protobuf:"bytes,1,opt,name=submitter,proto3" json:"submitter,omitempty"`
+	// The Misbehaviour of the consumer chain wrapping
+	// two conflicting IBC headers
+	Misbehaviour *types.Misbehaviour `protobuf:"bytes,2,opt,name=misbehaviour,proto3" json:"misbehaviour,omitempty"`
+}
+
+func (m *MsgSubmitConsumerMisbehaviour) Reset()         { *m = MsgSubmitConsumerMisbehaviour{} }
+func (m *MsgSubmitConsumerMisbehaviour) String() string { return proto.CompactTextString(m) }
+func (*MsgSubmitConsumerMisbehaviour) ProtoMessage()    {}
+func (*MsgSubmitConsumerMisbehaviour) Descriptor() ([]byte, []int) {
+	return fileDescriptor_43221a4391e9fbf4, []int{4}
+}
+func (m *MsgSubmitConsumerMisbehaviour) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgSubmitConsumerMisbehaviour) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgSubmitConsumerMisbehaviour.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgSubmitConsumerMisbehaviour) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSubmitConsumerMisbehaviour.Merge(m, src)
+}
+func (m *MsgSubmitConsumerMisbehaviour) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgSubmitConsumerMisbehaviour) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSubmitConsumerMisbehaviour.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgSubmitConsumerMisbehaviour proto.InternalMessageInfo
+
+type MsgSubmitConsumerMisbehaviourResponse struct {
+}
+
+func (m *MsgSubmitConsumerMisbehaviourResponse) Reset()         { *m = MsgSubmitConsumerMisbehaviourResponse{} }
+func (m *MsgSubmitConsumerMisbehaviourResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgSubmitConsumerMisbehaviourResponse) ProtoMessage()    {}
+func (*MsgSubmitConsumerMisbehaviourResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_43221a4391e9fbf4, []int{5}
+}
+func (m *MsgSubmitConsumerMisbehaviourResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgSubmitConsumerMisbehaviourResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgSubmitConsumerMisbehaviourResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgSubmitConsumerMisbehaviourResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSubmitConsumerMisbehaviourResponse.Merge(m, src)
+}
+func (m *MsgSubmitConsumerMisbehaviourResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgSubmitConsumerMisbehaviourResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSubmitConsumerMisbehaviourResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgSubmitConsumerMisbehaviourResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*MsgAssignConsumerKey)(nil), "interchain_security.ccv.provider.v1.MsgAssignConsumerKey")
 	proto.RegisterType((*MsgAssignConsumerKeyResponse)(nil), "interchain_security.ccv.provider.v1.MsgAssignConsumerKeyResponse")
 	proto.RegisterType((*MsgRegisterConsumerRewardDenom)(nil), "interchain_security.ccv.provider.v1.MsgRegisterConsumerRewardDenom")
 	proto.RegisterType((*MsgRegisterConsumerRewardDenomResponse)(nil), "interchain_security.ccv.provider.v1.MsgRegisterConsumerRewardDenomResponse")
+	proto.RegisterType((*MsgSubmitConsumerMisbehaviour)(nil), "interchain_security.ccv.provider.v1.MsgSubmitConsumerMisbehaviour")
+	proto.RegisterType((*MsgSubmitConsumerMisbehaviourResponse)(nil), "interchain_security.ccv.provider.v1.MsgSubmitConsumerMisbehaviourResponse")
 }
 
 func init() {
@@ -203,36 +285,43 @@ func init() {
 }
 
 var fileDescriptor_43221a4391e9fbf4 = []byte{
-	// 453 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x93, 0x3d, 0x6b, 0x14, 0x41,
-	0x18, 0xc7, 0x77, 0x13, 0xd4, 0x64, 0x8c, 0x82, 0xc3, 0x15, 0x97, 0xf3, 0xd8, 0xd3, 0x15, 0x24,
-	0x85, 0xee, 0x90, 0x58, 0x88, 0x01, 0x8b, 0x4b, 0x6c, 0x24, 0x5c, 0xb3, 0x8d, 0x60, 0xe1, 0xb1,
-	0x37, 0x33, 0x4e, 0x06, 0xb3, 0xf3, 0x2c, 0xf3, 0xcc, 0xad, 0xd9, 0x6f, 0x60, 0xa9, 0x95, 0x6d,
-	0xbe, 0x81, 0x5f, 0x43, 0xb0, 0x49, 0x69, 0x25, 0x72, 0xd7, 0x58, 0xfb, 0x09, 0x64, 0xdf, 0x3c,
-	0xc5, 0xe3, 0x08, 0x92, 0xee, 0x79, 0xdb, 0xff, 0xff, 0xb7, 0x33, 0xf3, 0x90, 0x07, 0xda, 0x38,
-	0x69, 0xf9, 0x71, 0xa2, 0xcd, 0x18, 0x25, 0x9f, 0x5a, 0xed, 0x0a, 0xc6, 0x79, 0xce, 0x32, 0x0b,
-	0xb9, 0x16, 0xd2, 0xb2, 0x7c, 0x97, 0xb9, 0xd3, 0x28, 0xb3, 0xe0, 0x80, 0xde, 0x5b, 0x32, 0x1d,
-	0x71, 0x9e, 0x47, 0xed, 0x74, 0x94, 0xef, 0xf6, 0xfa, 0x0a, 0x40, 0x9d, 0x48, 0x96, 0x64, 0x9a,
-	0x25, 0xc6, 0x80, 0x4b, 0x9c, 0x06, 0x83, 0xb5, 0x44, 0xaf, 0xa3, 0x40, 0x41, 0x15, 0xb2, 0x32,
-	0x6a, 0xaa, 0xdb, 0x1c, 0x30, 0x05, 0x1c, 0xd7, 0x8d, 0x3a, 0x69, 0x5b, 0x8d, 0x5c, 0x95, 0x4d,
-	0xa6, 0xaf, 0x59, 0x62, 0x8a, 0xba, 0x15, 0x7e, 0xf4, 0x49, 0x67, 0x84, 0x6a, 0x88, 0xa8, 0x95,
-	0x39, 0x04, 0x83, 0xd3, 0x54, 0xda, 0x23, 0x59, 0xd0, 0x6d, 0xb2, 0x51, 0x43, 0x6a, 0xd1, 0xf5,
-	0xef, 0xf8, 0x3b, 0x9b, 0xf1, 0xb5, 0x2a, 0x7f, 0x2e, 0xe8, 0x63, 0x72, 0xa3, 0x85, 0x1d, 0x27,
-	0x42, 0xd8, 0xee, 0x5a, 0xd9, 0x3f, 0xa0, 0x3f, 0xbf, 0x0d, 0x6e, 0x16, 0x49, 0x7a, 0xb2, 0x1f,
-	0x96, 0x55, 0x89, 0x18, 0xc6, 0x5b, 0xed, 0xe0, 0x50, 0x08, 0x4b, 0xef, 0x92, 0x2d, 0xde, 0x58,
-	0x8c, 0xdf, 0xc8, 0xa2, 0xbb, 0x5e, 0xe9, 0x5e, 0xe7, 0x0b, 0xdb, 0xfd, 0x8d, 0x77, 0x67, 0x03,
-	0xef, 0xc7, 0xd9, 0xc0, 0x0b, 0x03, 0xd2, 0x5f, 0x06, 0x16, 0x4b, 0xcc, 0xc0, 0xa0, 0x0c, 0x5f,
-	0x91, 0x60, 0x84, 0x2a, 0x96, 0x4a, 0xa3, 0x93, 0xb6, 0x9d, 0x88, 0xe5, 0xdb, 0xc4, 0x8a, 0x67,
-	0xd2, 0x40, 0x4a, 0x3b, 0xe4, 0x8a, 0x28, 0x83, 0x86, 0xbf, 0x4e, 0x68, 0x9f, 0x6c, 0x0a, 0x99,
-	0x01, 0x6a, 0x07, 0x0d, 0x79, 0xbc, 0x28, 0xfc, 0xe1, 0xbf, 0x43, 0xee, 0xaf, 0xd6, 0x6f, 0x49,
-	0xf6, 0xbe, 0xac, 0x91, 0xf5, 0x11, 0x2a, 0xfa, 0xc1, 0x27, 0xb7, 0xfe, 0x3d, 0xc8, 0x27, 0xd1,
-	0x05, 0x6e, 0x3c, 0x5a, 0xf6, 0xab, 0xbd, 0xe1, 0x7f, 0x7f, 0xda, 0xb2, 0xd1, 0x4f, 0x3e, 0xb9,
-	0xbd, 0xea, 0x8c, 0x0e, 0x2f, 0x6a, 0xb1, 0x42, 0xa4, 0x77, 0x74, 0x09, 0x22, 0x2d, 0xf1, 0xc1,
-	0x8b, 0xcf, 0xb3, 0xc0, 0x3f, 0x9f, 0x05, 0xfe, 0xf7, 0x59, 0xe0, 0xbf, 0x9f, 0x07, 0xde, 0xf9,
-	0x3c, 0xf0, 0xbe, 0xce, 0x03, 0xef, 0xe5, 0x53, 0xa5, 0xdd, 0xf1, 0x74, 0x12, 0x71, 0x48, 0x9b,
-	0xf7, 0xcd, 0x16, 0xbe, 0x0f, 0x7f, 0xaf, 0x5e, 0xbe, 0xc7, 0x4e, 0xff, 0xde, 0x3f, 0x57, 0x64,
-	0x12, 0x27, 0x57, 0xab, 0x17, 0xff, 0xe8, 0x57, 0x00, 0x00, 0x00, 0xff, 0xff, 0x7a, 0x53, 0xb5,
-	0xb8, 0xb0, 0x03, 0x00, 0x00,
+	// 568 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x54, 0x3f, 0x6f, 0x13, 0x4f,
+	0x10, 0xf5, 0xfd, 0xa2, 0x1f, 0x24, 0x9b, 0x80, 0xc4, 0xc9, 0x85, 0x73, 0x98, 0x33, 0x18, 0x01,
+	0x29, 0xc2, 0xae, 0x6c, 0x0a, 0x44, 0x24, 0x0a, 0x3b, 0x34, 0x10, 0x59, 0x42, 0x47, 0x81, 0x44,
+	0x81, 0x75, 0xb7, 0xbb, 0xac, 0x57, 0xf8, 0x76, 0x4f, 0xbb, 0x7b, 0x47, 0xee, 0x1b, 0x50, 0x42,
+	0x85, 0xe8, 0xf2, 0x01, 0x90, 0xf8, 0x1a, 0x94, 0x29, 0xa9, 0x10, 0xb2, 0x1b, 0x6a, 0x4a, 0x2a,
+	0xe4, 0xfb, 0x63, 0x5f, 0x84, 0xb1, 0x2c, 0xa0, 0xdb, 0x99, 0x79, 0xfb, 0xde, 0x1b, 0xcd, 0x68,
+	0xc0, 0x3e, 0x17, 0x86, 0x2a, 0x3c, 0xf2, 0xb9, 0x18, 0x6a, 0x8a, 0x63, 0xc5, 0x4d, 0x8a, 0x30,
+	0x4e, 0x50, 0xa4, 0x64, 0xc2, 0x09, 0x55, 0x28, 0xe9, 0x20, 0x73, 0x0c, 0x23, 0x25, 0x8d, 0xb4,
+	0xaf, 0x2f, 0x41, 0x43, 0x8c, 0x13, 0x58, 0xa2, 0x61, 0xd2, 0x71, 0x9a, 0x4c, 0x4a, 0x36, 0xa6,
+	0xc8, 0x8f, 0x38, 0xf2, 0x85, 0x90, 0xc6, 0x37, 0x5c, 0x0a, 0x9d, 0x53, 0x38, 0x75, 0x26, 0x99,
+	0xcc, 0x9e, 0x68, 0xf6, 0x2a, 0xb2, 0xbb, 0x58, 0xea, 0x50, 0xea, 0x61, 0x5e, 0xc8, 0x83, 0xb2,
+	0x54, 0xd0, 0x65, 0x51, 0x10, 0xbf, 0x40, 0xbe, 0x48, 0x8b, 0x12, 0xe2, 0x01, 0x46, 0x63, 0xce,
+	0x46, 0x06, 0x8f, 0x39, 0x15, 0x46, 0x23, 0x43, 0x05, 0xa1, 0x2a, 0xe4, 0xc2, 0x64, 0xbe, 0xe7,
+	0x51, 0xfe, 0xa1, 0xfd, 0xce, 0x02, 0xf5, 0x81, 0x66, 0x3d, 0xad, 0x39, 0x13, 0x87, 0x52, 0xe8,
+	0x38, 0xa4, 0xea, 0x88, 0xa6, 0xf6, 0x2e, 0xd8, 0xcc, 0xbb, 0xe2, 0xa4, 0x61, 0x5d, 0xb5, 0xf6,
+	0xb6, 0xbc, 0xf3, 0x59, 0xfc, 0x90, 0xd8, 0x77, 0xc1, 0x85, 0xb2, 0xbb, 0xa1, 0x4f, 0x88, 0x6a,
+	0xfc, 0x37, 0xab, 0xf7, 0xed, 0xef, 0x5f, 0x5a, 0x17, 0x53, 0x3f, 0x1c, 0x1f, 0xb4, 0x67, 0x59,
+	0xaa, 0x75, 0xdb, 0xdb, 0x29, 0x81, 0x3d, 0x42, 0x94, 0x7d, 0x0d, 0xec, 0xe0, 0x42, 0x62, 0xf8,
+	0x92, 0xa6, 0x8d, 0x8d, 0x8c, 0x77, 0x1b, 0x2f, 0x64, 0x0f, 0x36, 0x5f, 0x9f, 0xb4, 0x6a, 0xdf,
+	0x4e, 0x5a, 0xb5, 0xb6, 0x0b, 0x9a, 0xcb, 0x8c, 0x79, 0x54, 0x47, 0x52, 0x68, 0xda, 0x7e, 0x0e,
+	0xdc, 0x81, 0x66, 0x1e, 0x65, 0x5c, 0x1b, 0xaa, 0x4a, 0x84, 0x47, 0x5f, 0xf9, 0x8a, 0x3c, 0xa0,
+	0x42, 0x86, 0x76, 0x1d, 0xfc, 0x4f, 0x66, 0x8f, 0xc2, 0x7f, 0x1e, 0xd8, 0x4d, 0xb0, 0x45, 0x68,
+	0x24, 0x35, 0x37, 0xb2, 0x70, 0xee, 0x2d, 0x12, 0x15, 0xfd, 0x3d, 0x70, 0x73, 0x35, 0xff, 0xdc,
+	0xc9, 0x7b, 0x0b, 0x5c, 0x19, 0x68, 0xf6, 0x24, 0x0e, 0x42, 0x6e, 0x4a, 0xe0, 0x80, 0xeb, 0x80,
+	0x8e, 0xfc, 0x84, 0xcb, 0x58, 0xcd, 0x34, 0x75, 0x56, 0x35, 0x54, 0x15, 0x6e, 0x16, 0x09, 0xfb,
+	0x31, 0xd8, 0x09, 0x2b, 0xe8, 0xcc, 0xd4, 0x76, 0x77, 0x1f, 0xf2, 0x00, 0xc3, 0xea, 0x2c, 0x61,
+	0x65, 0x7a, 0x49, 0x07, 0x56, 0x15, 0xbc, 0x33, 0x0c, 0x95, 0x2e, 0x6e, 0x81, 0x1b, 0x2b, 0xad,
+	0x95, 0x4d, 0x74, 0x7f, 0x6c, 0x80, 0x8d, 0x81, 0x66, 0xf6, 0x5b, 0x0b, 0x5c, 0xfa, 0x75, 0x1b,
+	0xee, 0xc1, 0x35, 0xf6, 0x1c, 0x2e, 0x9b, 0x97, 0xd3, 0xfb, 0xe3, 0xaf, 0xa5, 0x37, 0xfb, 0xa3,
+	0x05, 0x2e, 0xaf, 0x1a, 0xf4, 0xe1, 0xba, 0x12, 0x2b, 0x48, 0x9c, 0xa3, 0x7f, 0x40, 0x32, 0x77,
+	0xfc, 0xc1, 0x02, 0xce, 0x8a, 0x7d, 0xe8, 0xaf, 0xab, 0xf5, 0x7b, 0x0e, 0xe7, 0xd1, 0xdf, 0x73,
+	0x94, 0x76, 0xfb, 0x4f, 0x3f, 0x4d, 0x5c, 0xeb, 0x74, 0xe2, 0x5a, 0x5f, 0x27, 0xae, 0xf5, 0x66,
+	0xea, 0xd6, 0x4e, 0xa7, 0x6e, 0xed, 0xf3, 0xd4, 0xad, 0x3d, 0xbb, 0xcf, 0xb8, 0x19, 0xc5, 0x01,
+	0xc4, 0x32, 0x2c, 0x8e, 0x10, 0x5a, 0xc8, 0xde, 0x9e, 0xdf, 0xc7, 0xa4, 0x8b, 0x8e, 0xcf, 0x1e,
+	0x49, 0x93, 0x46, 0x54, 0x07, 0xe7, 0xb2, 0x2b, 0x73, 0xe7, 0x67, 0x00, 0x00, 0x00, 0xff, 0xff,
+	0xe3, 0x4f, 0x57, 0x26, 0x55, 0x05, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -249,6 +338,7 @@ const _ = grpc.SupportPackageIsVersion4
 type MsgClient interface {
 	AssignConsumerKey(ctx context.Context, in *MsgAssignConsumerKey, opts ...grpc.CallOption) (*MsgAssignConsumerKeyResponse, error)
 	RegisterConsumerRewardDenom(ctx context.Context, in *MsgRegisterConsumerRewardDenom, opts ...grpc.CallOption) (*MsgRegisterConsumerRewardDenomResponse, error)
+	SubmitConsumerMisbehaviour(ctx context.Context, in *MsgSubmitConsumerMisbehaviour, opts ...grpc.CallOption) (*MsgSubmitConsumerMisbehaviourResponse, error)
 }
 
 type msgClient struct {
@@ -277,10 +367,20 @@ func (c *msgClient) RegisterConsumerRewardDenom(ctx context.Context, in *MsgRegi
 	return out, nil
 }
 
+func (c *msgClient) SubmitConsumerMisbehaviour(ctx context.Context, in *MsgSubmitConsumerMisbehaviour, opts ...grpc.CallOption) (*MsgSubmitConsumerMisbehaviourResponse, error) {
+	out := new(MsgSubmitConsumerMisbehaviourResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Msg/SubmitConsumerMisbehaviour", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	AssignConsumerKey(context.Context, *MsgAssignConsumerKey) (*MsgAssignConsumerKeyResponse, error)
 	RegisterConsumerRewardDenom(context.Context, *MsgRegisterConsumerRewardDenom) (*MsgRegisterConsumerRewardDenomResponse, error)
+	SubmitConsumerMisbehaviour(context.Context, *MsgSubmitConsumerMisbehaviour) (*MsgSubmitConsumerMisbehaviourResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -292,6 +392,9 @@ func (*UnimplementedMsgServer) AssignConsumerKey(ctx context.Context, req *MsgAs
 }
 func (*UnimplementedMsgServer) RegisterConsumerRewardDenom(ctx context.Context, req *MsgRegisterConsumerRewardDenom) (*MsgRegisterConsumerRewardDenomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterConsumerRewardDenom not implemented")
+}
+func (*UnimplementedMsgServer) SubmitConsumerMisbehaviour(ctx context.Context, req *MsgSubmitConsumerMisbehaviour) (*MsgSubmitConsumerMisbehaviourResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SubmitConsumerMisbehaviour not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -334,6 +437,24 @@ func _Msg_RegisterConsumerRewardDenom_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_SubmitConsumerMisbehaviour_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgSubmitConsumerMisbehaviour)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).SubmitConsumerMisbehaviour(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interchain_security.ccv.provider.v1.Msg/SubmitConsumerMisbehaviour",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).SubmitConsumerMisbehaviour(ctx, req.(*MsgSubmitConsumerMisbehaviour))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "interchain_security.ccv.provider.v1.Msg",
 	HandlerType: (*MsgServer)(nil),
@@ -345,6 +466,10 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RegisterConsumerRewardDenom",
 			Handler:    _Msg_RegisterConsumerRewardDenom_Handler,
+		},
+		{
+			MethodName: "SubmitConsumerMisbehaviour",
+			Handler:    _Msg_SubmitConsumerMisbehaviour_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -478,6 +603,71 @@ func (m *MsgRegisterConsumerRewardDenomResponse) MarshalToSizedBuffer(dAtA []byt
 	return len(dAtA) - i, nil
 }
 
+func (m *MsgSubmitConsumerMisbehaviour) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgSubmitConsumerMisbehaviour) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgSubmitConsumerMisbehaviour) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Misbehaviour != nil {
+		{
+			size, err := m.Misbehaviour.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTx(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Submitter) > 0 {
+		i -= len(m.Submitter)
+		copy(dAtA[i:], m.Submitter)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Submitter)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgSubmitConsumerMisbehaviourResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgSubmitConsumerMisbehaviourResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgSubmitConsumerMisbehaviourResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -537,6 +727,32 @@ func (m *MsgRegisterConsumerRewardDenom) Size() (n int) {
 }
 
 func (m *MsgRegisterConsumerRewardDenomResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgSubmitConsumerMisbehaviour) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Submitter)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.Misbehaviour != nil {
+		l = m.Misbehaviour.Size()
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgSubmitConsumerMisbehaviourResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -888,6 +1104,174 @@ func (m *MsgRegisterConsumerRewardDenomResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgRegisterConsumerRewardDenomResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgSubmitConsumerMisbehaviour) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgSubmitConsumerMisbehaviour: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgSubmitConsumerMisbehaviour: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Submitter", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Submitter = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Misbehaviour", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Misbehaviour == nil {
+				m.Misbehaviour = &types.Misbehaviour{}
+			}
+			if err := m.Misbehaviour.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgSubmitConsumerMisbehaviourResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgSubmitConsumerMisbehaviourResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgSubmitConsumerMisbehaviourResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

@@ -9,11 +9,11 @@ const (
 	EventTypeConsumerClientCreated       = "consumer_client_created"
 	EventTypeAssignConsumerKey           = "assign_consumer_key"
 	EventTypeRegisterConsumerRewardDenom = "register_consumer_reward_denom"
-
-	EventTypeExecuteConsumerChainSlash = "execute_consumer_chain_slash"
-	EventTypeFeeDistribution           = "fee_distribution"
-	EventTypeConsumerSlashRequest      = "consumer_slash_request"
-	EventTypeVSCMatured                = "vsc_matured"
+	EventTypeSubmitConsumerMisbehaviour  = "submit_consumer_misbehaviour"
+	EventTypeExecuteConsumerChainSlash   = "execute_consumer_chain_slash"
+	EventTypeFeeDistribution             = "fee_distribution"
+	EventTypeConsumerSlashRequest        = "consumer_slash_request"
+	EventTypeVSCMatured                  = "vsc_matured"
 
 	AttributeKeyAckSuccess = "success"
 	AttributeKeyAck        = "acknowledgement"
@@ -33,6 +33,11 @@ const (
 	AttributeUnbondingPeriod          = "unbonding_period"
 	AttributeProviderValidatorAddress = "provider_validator_address"
 	AttributeConsumerConsensusPubKey  = "consumer_consensus_pub_key"
+	AttributeSubmitterAddress         = "submitter_address"
+	AttributeConsumerMisbehaviour     = "consumer_misbehaviour"
+	AttributeMisbehaviourClientId     = "misbehaviour_client_id"
+	AttributeMisbehaviourHeight1      = "misbehaviour_height_1"
+	AttributeMisbehaviourHeight2      = "misbehaviour_height_2"
 
 	AttributeDistributionCurrentHeight = "current_distribution_height"
 	AttributeDistributionNextHeight    = "next_distribution_height"
