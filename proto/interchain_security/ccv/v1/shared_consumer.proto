@@ -110,7 +110,7 @@ message GenesisState {
     repeated OutstandingDowntime outstanding_downtime_slashing = 10
         [ (gogoproto.nullable) = false ];
     // PendingConsumerPackets nil on new chain, filled in on restart.
-    interchain_security.ccv.consumer.v1.ConsumerPacketDataList pending_consumer_packets =
+    ConsumerPacketDataList pending_consumer_packets =
         11 [ (gogoproto.nullable) = false ];
     // LastTransmissionBlockHeight nil on new chain, filled in on restart.
     LastTransmissionBlockHeight
@@ -144,4 +144,14 @@ message MaturingVSCPacket {
     uint64 vscId = 1;
     google.protobuf.Timestamp maturity_time = 2
         [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+}
+
+// ConsumerPacketDataList is a list of consumer packet data packets.
+//
+// Note this type is is used internally to the consumer CCV module 
+// for exporting / importing state in InitGenesis and ExportGenesis,
+// AND included in the consumer genesis type (reffed by provider and consumer modules), 
+// hence this is a shared type.
+message ConsumerPacketDataList {
+    repeated interchain_security.ccv.v1.ConsumerPacketData list = 1 [ (gogoproto.nullable) = false ];
 }
