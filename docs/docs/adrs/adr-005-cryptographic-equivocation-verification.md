@@ -14,7 +14,9 @@ Proposed
 
 ## Context
 
-Currently, we use a governance proposal to slash validators for equivocation (double signing and light client attacks). This has the downside that it takes 2 weeks for the proposal to be approved, effectively reducing the unbonding period in some respects. This does not lead to any pressing real-world security concerns, but since it involves the basis of proof of stake, it would be good to get consumer chain slashing back to parity as soon as possible.
+Currently, we use a governance proposal to slash validators for equivocation (double signing and light client attacks). 
+Every proposal needs to go through a (two weeks) voting period before it can be approved. 
+Given a three-week unbonding period, this means that an equivocation proposal needs to be submitted within one week since the infraction occurred.
 
 This ADR proposes a system to slash validators automatically for equivocation, immediately upon the provider chain's receipt of the evidence. Another thing to note is that we intend to introduce this system in stages, since even the partial ability to slash and/or tombstone is a strict improvement in security.
 For the first stage of this work, we will only handle light client attacks.
@@ -36,7 +38,6 @@ For instance, if a light client receives header `A` from the primary and header 
 and both headers are successfully verified, it indicates a light client attack.
 Note that in this case, either the primary or the witness or both are malicious.
 
-To orchestrate a light client attack, Byzantine actors create a header with incorrect state transitions that must be signed by ⅓+ of the voting power.
 The types of light client attacks are defined by analyzing the differences between the conflicting headers.
 There are three types of light client attacks: lunatic attack, equivocation attack, and amnesia attack. 
 For details, see the [CometBFT specification](https://github.com/cometbft/cometbft/blob/main/spec/light-client/attacks/notes-on-evidence-handling.md#evidence-handling).
@@ -45,8 +46,8 @@ When a light client agent detects two conflicting headers, it will initially ver
 If these headers pass successful verification, the Byzantine validators will be identified based on the header's commit signatures
 and the type of light client attack. The agent will then transmit this information to its nodes using a [`LightClientAttackEvidence`](https://github.com/cometbft/cometbft/blob/feed0ddf564e113a840c4678505601256b93a8bc/docs/architecture/adr-047-handling-evidence-from-light-client.md) to be eventually voted on and added to a block.
 Note that from a light client agent perspective, it is not possible to establish whether a primary or a witness node, or both, are malicious.
- Therefore, it will create and send two `LightClientAttackEvidence`: one against the primary (sent to the witness), and one against the witness (sent to the primary).
-  Both nodes will then verify it before broadcasting it and adding it to the [evidence pool](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/evidence/pool.go#L28).
+Therefore, it will create and send two `LightClientAttackEvidence`: one against the primary (sent to the witness), and one against the witness (sent to the primary).
+Both nodes will then verify it before broadcasting it and adding it to the [evidence pool](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/evidence/pool.go#L28).
 If a `LightClientAttackEvidence` is finally committed to a block, the chain's evidence module will execute it, resulting in the jailing and the slashing of the validators responsible for the light client attack.
 
 
