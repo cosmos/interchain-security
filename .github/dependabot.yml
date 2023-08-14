@@ -47,3 +47,12 @@ updates:
     open-pull-requests-limit: 0
     labels:
       - dependencies
+  
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: daily
+    target-branch: "release/v4.0.x"
+    open-pull-requests-limit: 0
+    labels:
+      - dependencies
