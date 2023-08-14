@@ -1,20 +1,22 @@
 package keeper_test
 
 import (
+	"sort"
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
-
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
 )
 
 // TestInitAndExportGenesis tests the export and the initialisation of a provider chain genesis
@@ -34,6 +36,32 @@ func TestInitAndExportGenesis(t *testing.T) {
 	consumerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7897)
 	consumerTmPubKey := consumerCryptoId.TMProtoCryptoPublicKey()
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
+
+	initTimeoutTimeStamps := []providertypes.InitTimeoutTimestamp{
+		{ChainId: cChainIDs[0], Timestamp: uint64(time.Now().UTC().UnixNano()) + 10},
+		{ChainId: cChainIDs[1], Timestamp: uint64(time.Now().UTC().UnixNano()) + 15},
+	}
+
+	now := time.Now().UTC()
+	exportedVscSendTimeStampsC0 := providertypes.ExportedVscSendTimestamp{
+		ChainId: "c0",
+		VscSendTimestamps: []providertypes.VscSendTimestamp{
+			{VscId: 1, Timestamp: now.Add(time.Hour)},
+			{VscId: 2, Timestamp: now.Add(2 * time.Hour)},
+		},
+	}
+
+	exportedVscSendTimeStampsC1 := providertypes.ExportedVscSendTimestamp{
+		ChainId: "c1",
+		VscSendTimestamps: []providertypes.VscSendTimestamp{
+			{VscId: 1, Timestamp: now.Add(-time.Hour)},
+			{VscId: 2, Timestamp: now.Add(time.Hour)},
+		},
+	}
+
+	var exportedVscSendTimeStampsAll []providertypes.ExportedVscSendTimestamp
+	exportedVscSendTimeStampsAll = append(exportedVscSendTimeStampsAll, exportedVscSendTimeStampsC0)
+	exportedVscSendTimeStampsAll = append(exportedVscSendTimeStampsAll, exportedVscSendTimeStampsC1)
 
 	// create genesis struct
 	provGenesis := providertypes.NewGenesisState(vscID,
@@ -97,6 +125,8 @@ func TestInitAndExportGenesis(t *testing.T) {
 				ConsumerAddrs: &providertypes.AddressList{Addresses: [][]byte{consumerConsAddr.ToSdkConsAddr()}},
 			},
 		},
+		initTimeoutTimeStamps,
+		exportedVscSendTimeStampsAll,
 	)
 
 	// Instantiate in-mem provider keeper with mocks
@@ -163,6 +193,24 @@ func TestInitAndExportGenesis(t *testing.T) {
 
 	// check the exported genesis
 	require.Equal(t, provGenesis, pk.ExportGenesis(ctx))
+
+	initTimeoutTimestampInStore := pk.GetAllInitTimeoutTimestamps(ctx)
+	sort.Slice(initTimeoutTimestampInStore, func(i, j int) bool {
+		return initTimeoutTimestampInStore[i].Timestamp < initTimeoutTimestampInStore[j].Timestamp
+	})
+	require.Equal(t, initTimeoutTimestampInStore, initTimeoutTimeStamps)
+
+	vscSendTimestampsC0InStore := pk.GetAllVscSendTimestamps(ctx, cChainIDs[0])
+	sort.Slice(vscSendTimestampsC0InStore, func(i, j int) bool {
+		return vscSendTimestampsC0InStore[i].VscId < vscSendTimestampsC0InStore[j].VscId
+	})
+	require.Equal(t, vscSendTimestampsC0InStore, exportedVscSendTimeStampsC0.VscSendTimestamps)
+
+	vscSendTimestampsC1InStore := pk.GetAllVscSendTimestamps(ctx, cChainIDs[1])
+	sort.Slice(vscSendTimestampsC1InStore, func(i, j int) bool {
+		return vscSendTimestampsC1InStore[i].VscId < vscSendTimestampsC1InStore[j].VscId
+	})
+	require.Equal(t, vscSendTimestampsC1InStore, exportedVscSendTimeStampsC1.VscSendTimestamps)
 }
 
 func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, consumerStates ...providertypes.ConsumerState) {

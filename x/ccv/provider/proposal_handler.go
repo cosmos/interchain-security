@@ -1,11 +1,12 @@
 package provider
 
 import (
-	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-
 	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )

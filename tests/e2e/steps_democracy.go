@@ -100,7 +100,7 @@ func stepsDemocracy(consumerName string) []Step {
 			state: State{
 				chainID(consumerName): ChainState{
 					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 9899999999,
+						validatorID("alice"): 9889999998,
 						validatorID("bob"):   9960000001,
 					},
 					// Check that the parameter is changed on gov-consumer chain

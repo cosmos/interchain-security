@@ -259,6 +259,15 @@ message ValidatorSetChangePackets {
 // Note this type is only used internally to the provider CCV module.
 message MaturedUnbondingOps { repeated uint64 ids = 1; }
 
+// ExportedVscSendTimestamps is VscSendTimestamp with chainID info for exporting to genesis
+// 
+// Note this type is only used internally to the provider CCV module.
+message ExportedVscSendTimestamp {
+  string chain_id = 1;
+  repeated VscSendTimestamp vsc_send_timestamps = 2
+    [ (gogoproto.nullable) = false ];
+}
+
 //
 // Key assignment section
 //

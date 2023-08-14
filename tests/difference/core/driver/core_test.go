@@ -2,24 +2,21 @@ package core
 
 import (
 	"fmt"
-	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/stretchr/testify/suite"
 
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	ibctestingcore "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
-
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
-
+	ibctestingcore "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
-
-	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 )
 
@@ -333,9 +330,12 @@ func (s *CoreSuite) TestTraces() {
 	fmt.Println("Shortest [traceIx, actionIx]:", shortest, shortestLen)
 }
 
-func TestCoreSuite(t *testing.T) {
-	suite.Run(t, new(CoreSuite))
-}
+// TODO: diff tests will eventually be replaced by quint tests, and all this code could then be deleted.
+// Until that decision is finalized, we'll just comment out the top-level test.
+
+// func TestCoreSuite(t *testing.T) {
+// 	suite.Run(t, new(CoreSuite))
+// }
 
 // SetupTest sets up the test suite in a 'zero' state which matches
 // the initial state in the model.

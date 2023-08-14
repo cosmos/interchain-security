@@ -41,6 +41,8 @@ func getAllKeyPrefixes() []byte {
 		InitGenesisHeightByteKey,
 		StandaloneTransferChannelIDByteKey,
 		PrevStandaloneChainByteKey,
+		PendingPacketsIndexByteKey,
+		SlashRecordByteKey,
 	}
 }
 
@@ -72,10 +74,12 @@ func getAllFullyDefinedKeys() [][]byte {
 		PacketMaturityTimeKey(0, time.Time{}),
 		HeightValsetUpdateIDKey(0),
 		OutstandingDowntimeKey([]byte{}),
-		PendingDataPacketsKey(),
+		PendingDataPacketsKey(473289),
 		CrossChainValidatorKey([]byte{}),
 		InitGenesisHeightKey(),
 		StandaloneTransferChannelIDKey(),
 		PrevStandaloneChainKey(),
+		PendingPacketsIndexKey(),
+		SlashRecordKey(),
 	}
 }

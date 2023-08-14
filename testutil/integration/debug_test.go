@@ -157,10 +157,6 @@ func TestStopConsumerOnChannelClosed(t *testing.T) {
 	runCCVTestByName(t, "TestStopConsumerOnChannelClosed")
 }
 
-func TestProviderChannelClosed(t *testing.T) {
-	runCCVTestByName(t, "TestProviderChannelClosed")
-}
-
 //
 // Throttle tests
 //
@@ -255,4 +251,12 @@ func TestQueueAndSendVSCMaturedPackets(t *testing.T) {
 
 func TestRecycleTransferChannel(t *testing.T) {
 	runCCVTestByName(t, "TestRecycleTransferChannel")
+}
+
+//
+// Throttle retry tests
+//
+
+func TestSlashRetries(t *testing.T) {
+	runCCVTestByName(t, "TestSlashRetries")
 }

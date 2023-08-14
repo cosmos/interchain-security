@@ -32,7 +32,7 @@ Minimal example:
         "revision_number": 1,
     },
     // Unbonding period for the consumer chain.
-    // It should should be smaller than that of the provider.
+    // It should be smaller than that of the provider.
     "unbonding_period": 86400000000000,
     // Timeout period for CCV related IBC packets.
     // Packets are considered timed-out after this interval elapses.
@@ -44,11 +44,11 @@ Minimal example:
     "genesis_hash": "d86d756e10118e66e6805e9cc476949da2e750098fcc7634fd0cc77f57a0b2b0",
     "binary_hash": "376cdbd3a222a3d5c730c9637454cd4dd925e2f9e2e0d0f3702fc922928583f1"
     // relevant for chains performing a sovereign to consumer changeover
-    // in order to maintan the existing ibc transfer channel
+    // in order to maintain the existing ibc transfer channel
     "distribution_transmission_channel": "channel-123"
 }
 ```
-More examples can be found in the replicated security testnet repository [here](https://github.com/cosmos/testnets/blob/master/replicated-security/baryon-1/proposal-baryon-1.json) and [here](https://github.com/cosmos/testnets/blob/master/replicated-security/noble-1/start-proposal-noble-1.json).
+More examples can be found in the replicated security testnet repository [here](https://github.com/cosmos/testnets/blob/master/replicated-security/stopped/baryon-1/proposal-baryon-1.json) and [here](https://github.com/cosmos/testnets/blob/master/replicated-security/stopped/noble-1/start-proposal-noble-1.json).
 
 ## `ConsumerRemovalProposal`
 Proposal type used to suggest removing an existing consumer chain.

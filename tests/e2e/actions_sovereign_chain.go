@@ -105,16 +105,16 @@ func (tr TestRun) startSovereignChain(
 	}, verbose)
 }
 
-type UpgradeProposalAction struct {
+type LegacyUpgradeProposalAction struct {
 	chainID       chainID
 	upgradeTitle  string
 	proposer      validatorID
 	upgradeHeight uint64
 }
 
-func (tr *TestRun) submitUpgradeProposal(action UpgradeProposalAction, verbose bool) {
+func (tr *TestRun) submitLegacyUpgradeProposal(action LegacyUpgradeProposalAction, verbose bool) {
 	submit := fmt.Sprintf(
-		`%s tx gov submit-proposal software-upgrade %s \
+		`%s tx gov submit-legacy-proposal software-upgrade %s \
 		--title  %s \
 		--deposit 10000000stake \
 		--upgrade-height %s \
@@ -126,7 +126,7 @@ func (tr *TestRun) submitUpgradeProposal(action UpgradeProposalAction, verbose b
 		--chain-id %s \
 		--home %s \
 		--node %s \
-		-b block \
+		--no-validate \
 		-y`,
 		tr.chainConfigs[chainID("sover")].binaryName,
 		action.upgradeTitle,
@@ -152,6 +152,8 @@ func (tr *TestRun) submitUpgradeProposal(action UpgradeProposalAction, verbose b
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.chainID, 1, 15*time.Second)
 }
 
 type waitUntilBlockAction struct {

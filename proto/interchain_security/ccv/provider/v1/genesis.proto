@@ -43,6 +43,12 @@ message GenesisState {
   // empty for a new chain
   repeated ConsumerAddrsToPrune consumer_addrs_to_prune = 11
       [ (gogoproto.nullable) = false ];
+
+  repeated interchain_security.ccv.provider.v1.InitTimeoutTimestamp init_timeout_timestamps = 12
+      [ (gogoproto.nullable) = false ];
+
+  repeated interchain_security.ccv.provider.v1.ExportedVscSendTimestamp exported_vsc_send_timestamps = 13
+      [ (gogoproto.nullable) = false ];
 }
 
 // The provider CCV module's knowledge of consumer state. 

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 3
 title: Onboarding Checklist
 ---
 # Consumer Onboarding Checklist
@@ -20,7 +20,7 @@ To help validators and other node runners onboard onto your chain, please prepar
 
 This should include (at minimum):
 
-- [ ] genesis.json witout CCV data (before the propsal passes)
+- [ ] genesis.json without CCV data (before the proposal passes)
 - [ ] genesis.json with CCV data (after spawn time passes)
 - [ ] information about relevant seed/peer nodes you are running
 - [ ] relayer information (compatible versions)
@@ -73,7 +73,7 @@ Example of a consumer chain addition proposal.
     // will be responsible for starting their consumer chain validator node.
     "spawn_time": "2023-02-28T20:40:00.000000Z",
     // Unbonding period for the consumer chain.
-    // It should should be smaller than that of the provider.
+    // It should be smaller than that of the provider.
     "unbonding_period": 86400000000000,
     // Timeout period for CCV related IBC packets.
     // Packets are considered timed-out after this interval elapses.
@@ -96,7 +96,7 @@ Example of a consumer chain addition proposal.
 	// channel is created on top of the same connection as the CCV channel.
 	// Note that transfer_channel_id is the ID of the channel end on the consumer chain.
     // it is most relevant for chains performing a sovereign to consumer changeover
-    // in order to maintan the existing ibc transfer channel
+    // in order to maintain the existing ibc transfer channel
     "distribution_transmission_channel": "channel-123"
 }
 ```

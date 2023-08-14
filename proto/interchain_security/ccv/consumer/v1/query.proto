@@ -20,6 +20,10 @@ service Query {
   rpc QueryParams(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/interchain_security/ccv/consumer/params";
   }
+
+  rpc QueryProviderInfo(QueryProviderInfoRequest) returns (QueryProviderInfoResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/consumer/provider-info";
+  }
 }
 
 // NextFeeDistributionEstimate holds information about next fee distribution
@@ -52,4 +56,18 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params holds all the parameters of this module.
   interchain_security.ccv.v1.Params params = 1 [ (gogoproto.nullable) = false ];
+}
+
+message QueryProviderInfoRequest {}
+
+message QueryProviderInfoResponse {
+  ChainInfo consumer = 1 [ (gogoproto.nullable) = false ];
+  ChainInfo provider = 2 [ (gogoproto.nullable) = false ];
+}
+
+message ChainInfo {
+  string chainID = 1;
+  string clientID = 2;
+  string connectionID = 3;
+  string channelID = 4;
 }
