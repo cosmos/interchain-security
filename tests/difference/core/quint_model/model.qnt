@@ -1,78 +1,15 @@
 // -*- mode: Bluespec; -*-
-
-// Design notes:
-// The spec is modular.
-// The various modules generally have actions and variables.
-// The internal state may be read, but not modified, by other modules.
-// In turn, *all* public actions of modules should specify behavior for /all/ variables of the module.
-module common {
-    type Validator = str
-    type Chain = str
-
-    pure val Provider = "provider"
-    pure val Consumer = "consumer"
-
-    type Timestamp = int
-
-    type ValidatorUpdate = {validator: Validator, newPower: int64}
-
-    // Generic state for a chain.
-    type ChainState = {
-        height: int,
-        time: Timestamp,
-    }
-
-    // State for the provider chain.
-    val providerState: ChainState = {height: 0, time: 0}
-
-    // State for the consumer chain.
-    val consumerState: ChainState = {height: 0, time: 0}
-}
-
-module ccv_packets {
-    import common.*
-    // contains validator updates
-    type VSCPacketData =
-    {
-        // id of the vsc packet
-        id: int,
-        // validator updates
-        updates: List[ValidatorUpdate],
-        // downtime slash requests acknowledgements, 
-        // i.e., list of validator addresses
-        downtimeSlashAcks: List[string],
-    }
-
-    // contains a request to slash a validator
-    type SlashPacketData = 
-    {
-        validator: Validator,
-        validatorPower: int,
-        // the id of the vsc packet that the consumer last applied
-        vscId: int,
-        // if it is not downtime, it is equivocation
-        isDowntime: bool
-    }
-
-    type VSCMaturedPacketData = 
-    {
-        // the id of the VSC that reached maturity
-        id: int
-    }
-}
-
 module ccv_common {
-    import common.* 
-
+    import common.* from "./common"
+ 
     type VscId = int
     type UnbondingId = int
-    type UnbondingOperation = 
-        {id: int}
 }
 
 module ibc {
-    import common.*
-    import ccv_packets.*
+    import common.* from "./common"
+
+    import ccv_packets.* from "./ccv_packets"
 
 
     // Since Quint does not support sum types yet, this is a workaround
@@ -164,172 +101,21 @@ module ibc {
     }
 }
 
-module slashing_state {
-    import common.*
-    // Stores, for each validator, until when it is jailed.
-    // If this is less than the current time, the validator is not jailed.
-    var jailed: Validator -> int
-
-    val jailTime: int = 50
-}
-
-module staking_state {
-    import common.*
-
-    type Undelegation = {validator: Validator, amount: int, completionTime: Timestamp, unbondingHeight: height}
-
-    val Bonded: str = "Bonded"
-    val Unbonded: str = "Unbonded"
-    val Unbonding: str = "Unbonding"
-
-    // params
-    val MaxValidators: int = 100
-    val UnbondingSeconds: int = 5200
-
-    // The amount of unbonded tokens of the single delegator.
-    var delegatorTokens: int
-    // The amount delegated to each validator by the single delegator.
-    var delegationAmounts: Validator -> int
-    // The total stake of the validator. Includes, but may exceed, the delegationAmount (e.g. validators can have self-delegations).
-    var validatorPower: Validator -> int
-     // A queue of pending undelegations (i.e. unbondings).
-    var undelegationsQueue: List[Undelegation]
-    // The status of the validators, either Bonded, Unbonded, or Unbonding.
-    var validatorStatus: Validator -> string
-
-    var currentValidatorSet: Set[Validator]
-}
-
-module slashing {
-    import common.*
-    import ccv_packets.*
-    import slashing_state.*
-    import staking_state.*
-
-    // For now, just jails the validator.
-    action SlashValidator(validator: Validator): bool = all {
-        JailUntil(validator, providerState.time + jailTime)
-    }
-
-    action JailUntil(validator: Validator, time: Timestamp): bool = 
-        jailed' = jailed.set(validator, time)
-
-    action SlashingNoop(): bool = 
-        jailed' = jailed
-
-    action OnRecvSlash(data: SlashPacketData): bool = all {
-        // TODO: soft opt out https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/adr-009-soft-opt-out.md
-        if(validatorStatus.get(data.validator) == Unbonded) {
-            // noop, the validator is unbonded so cannot be slashed anymore
-            SlashingNoop
-        } else {
-            // tell the slashing module to slash the validator
-            SlashValidator(data.validator)
-        }
-    }
-}
-
-// Staking models the staking module with a single delegator, but multiple validators.
-module staking {
-    import common.*
-    import slashing_state.*
-    import staking_state.*
-    import basicSpells.* from "./basicSpells"
-    import extraSpells.* from "./extraSpells"
-
-    // Constructor for undelegations.
-    pure def NewUndelegation(validator: Validator, amount: int, completionTime: Timestamp, currentHeight: height): Undelegation =
-        {validator: validator, amount: amount, completionTime: completionTime, unbondingHeight: currentHeight}
-
-    // Delegates an amount of tokens from the single delegator to the validator
-    action Delegate(validator: Validator, amount: int): bool = all {
-        delegatorTokens' = delegatorTokens - amount, // unbonded tokens are decreased because we bond tokens
-        delegationAmounts' = delegationAmounts.setBy(validator, (oldDelegation => oldDelegation + amount)),
-        validatorPower' = validatorPower.setBy(validator, (oldBalance => oldBalance + amount)),
-        currentValidatorSet' = currentValidatorSet
-    }
-
-    // Undelegates tokens (delegated by the single delegator) from a validator.
-    action Undelegate(validator: Validator, undelegationAmount: int): bool = any {
-        all {
-            // failure case: the undelegation amount is larger than the delegated amount.
-            assert(undelegationAmount > delegationAmounts.get(validator)),
-            // thus, the undelegation should not proceed.
-            delegationAmounts' = delegationAmounts,
-            undelegationsQueue' = undelegationsQueue,
-            currentValidatorSet' = currentValidatorSet
-        },
-        all {
-            // happy path: the undelegation amount is at most the delegated amount.
-            assert(undelegationAmount <= delegationAmounts.get(validator)),
-            // reduce the delegated amount immediately
-            delegationAmounts' = delegationAmounts.setBy(validator, (oldDelegation => oldDelegation - undelegationAmount)),
-            // keep the undelegation in the queue until unbonding is complete
-            undelegationsQueue' = 
-                undelegationsQueue.append(NewUndelegation(
-                        validator, 
-                        undelegationAmount,
-                        providerState.time + UnbondingSeconds,
-                        providerState.height)),
-            currentValidatorSet' = currentValidatorSet,
-            // TODO: call hooks for undelegate
-        }
-    }
-
-    action Staking_EndBlock(chain: Chain): bool = all {
-        ComputeValUpdates(chain),
-        // ApplyMatureUnbondings(chain),
-    }
-
-    // Computes how to update the status of a given validator.
-    def GetNewValidatorStatus(newValidatorSet: Set[Validator], validator: Validator): str = 
-        if (newValidatorSet.contains(validator)) { 
-            // new validator gets bonded
-            Bonded 
-        } else { 
-            if (currentValidatorSet.contains(validator))
-            { // validator is in current but not in new validator set
-                Unbonding
-            } else {
-                // validator is not in new nor current validator set, so only change might be if unbonding completes
-                if (undelegationsQueue.filter(undelegation => all {
-                    undelegation.completionTime >= providerState.currentTime,
-                    undelegation.completionHeight >= providerState.height,
-                })
-                )
-                validatorStatus.get(validator)
-            }
-        }
-
-    action ComputeValUpdates(chain: Chain): bool = 
-        val potentialValidators = 
-            validatorPower.keys().filter(validator => validatorPower.get(validator) > 0 and jailed.getOrElse(validator, 0) <= providerState.time)
-        val potentialValidatorList = potentialValidators.toList()
-        def HasMorePower(this: Validator, other: Validator): bool = validatorPower.get(this) > validatorPower.get(other)
-        val sortedValidatorList = potentialValidatorList.listSorted(HasMorePower)
-        val newValidators = sortedValidatorList.slice(0, MaxValidators)
-        val newValidatorSet = newValidators.toSet()
-        all {
-        currentValidatorSet' = newValidatorSet,
-        validatorStatus' = validatorStatus.keys().union(newValidatorSet).mapBy(validator => 
-            GetNewValidatorStatus(newValidatorSet, validator))
-    }
-}
-
 
 module ccv_provider {
-    import common.*
+    import common.* from "./common"
+
     import ibc.*
-    import ccv_packets.*
+    import ccv_packets.* from "./ccv_packets"
     import ccv_common.*
     import basicSpells.* from "./basicSpells"
     import extraSpells.* from "./extraSpells"
-    import slashing.*
-    import staking.*
+    import slashing.* from "./slashing"
+    import staking.* from "./staking"
 
     // Enables accessing, for every unbonding operation,
     // the set of consumer chains that are still unbonding.
-    var unbondingOps: UnbondingId -> UnbondingOperation
+    var unbondingOps: UnbondingId -> ValidatorUnbonding
 
     // Enables the provider CCV module to match a VSCMaturedPacket{vscId},
     // received from a consumer chain with chainId,
@@ -340,7 +126,6 @@ module ccv_provider {
 
     // Matures all unbondings associated with the vscId of the given VSCMaturedPacketData.
     // Remove the unbonding operations from the unbondingOps map.
-    // Add the 
     action OnRecvVSCMatured(data: VSCMaturedPacketData): bool = all {
         matureUnbondingOps' = matureUnbondingOps.union(vscToUnbondingOps.get(data.id)),
         unbondingOps'  = unbondingOps.mapRemoveAll(vscToUnbondingOps.get(data.id)),
@@ -356,12 +141,13 @@ module ccv_provider {
 
 
 module ccv_consumer {
-    import common.*
+    import common.* from "./common"
+
     import ibc.*
-    import ccv_packets.*
-    import staking.*
-    import slashing.*
-    import staking_state.*
+    import ccv_packets.* from "./ccv_packets"
+    import staking.* from "./staking"
+    import slashing.* from "./slashing"
+    import staking_state.* from "./staking"
 
     // outstandingDowntime.get(valAddr) = true entails that the consumer chain sent a request to slash for downtime the validator with address valAddr.
     // outstandingDowntime.get(valAddr) is set to false once the consumer chain receives a confirmation that the downtime slash request was received by the provider chain, 
@@ -412,13 +198,13 @@ module ccv_consumer {
     }
 }
 
-// Actions of the main module always touch all the other modules.
 module main {
-    import common.*
+    import common.* from "./common"
+
     import ibc.*
     import ccv_consumer.*
     import ccv_provider.*
-    import slashing.*
+    import slashing.* from "./slashing"
 
      // Delivers the next pending packet to the given chain.
     action DeliverPacket(receiver: Chain): bool = all {

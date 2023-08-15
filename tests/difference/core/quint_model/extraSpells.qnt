@@ -55,4 +55,8 @@ module extraSpells {
         assert(toSet(List()) == Set())
     }
 
+    pure def add(__set: Set[a], elem: a): Set[a] = {
+        __set.union(Set(elem))
+    }
+
 }
