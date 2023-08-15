@@ -9,6 +9,7 @@ title: Throttle with retries
 
 * 6/9/23: Initial draft
 * 6/22/23: added note on consumer pending packets storage optimization
+* 7/14/23: Added note on upgrade order
 
 ## Status
 
@@ -46,6 +47,8 @@ Note to prevent weird edge case behavior, a retry would not be attempted until e
 With the behavior described, we maintain very similar behavior to the current throttling mechanism regarding the timing that slash and vsc matured packets are handled on the provider. Obviously the queueing and blocking logic is moved, and the two chains would have to send more messages between one another (only in the case the throttling mechanism is triggered).
 
 In the normal case, when no or a few slash packets are being sent, the VSCMaturedPackets will not be delayed, and hence unbonding will not be delayed.
+
+For implementation of this design, see [throttle_retry.go](../../../x/ccv/consumer/keeper/throttle_retry.go).
 
 ### Consumer pending packets storage optimization
 
@@ -86,9 +89,11 @@ If a consumer sends VSCMatured packets too leniently: The consumer is malicious 
 
 If a consumer blocks the sending of VSCMatured packets: The consumer is malicious and blocking vsc matured packets that should have been sent. This will block unbonding only up until the VSC timeout period has elapsed. At that time, the consumer is removed. Again the malicious behavior only creates a negative outcome for the chain that is being malicious.
 
-### Splitting of PRs
+### Splitting of PRs and Upgrade Order
 
-We could split this feature into two PRs, one affecting the consumer and one affecting the provider, along with a third PR which could setup a clever way to upgrade the provider in multiple steps, ensuring that queued slash packets at upgrade time are handled properly.
+This feature will implement consumer changes in [#1024](https://github.com/cosmos/interchain-security/pull/1024). Note these changes should be deployed to prod for all consumers before the provider changes are deployed to prod. That is the consumer changes in #1024 are compatible with the current ("v1") provider implementation of throttling that's running on the Cosmos Hub as of July 2023.
+
+Once all consumers have deployed the changes in #1024, the provider changes from (TBD) can be deployed to prod, fully enabling v2 throttling.
 
 ## Consequences
 

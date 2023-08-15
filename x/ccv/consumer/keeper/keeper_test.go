@@ -325,14 +325,12 @@ func TestPendingPackets(t *testing.T) {
 			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 				VscMaturedPacketData: ccv.NewVSCMaturedPacketData(1),
 			},
-			Idx: 0, // Note these are expected idxs, we don't pass this data to the keeper
 		},
 		{
 			Type: ccv.VscMaturedPacket,
 			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 				VscMaturedPacketData: ccv.NewVSCMaturedPacketData(2),
 			},
-			Idx: 1,
 		},
 		{
 			Type: ccv.SlashPacket,
@@ -343,14 +341,12 @@ func TestPendingPackets(t *testing.T) {
 					stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
 				),
 			},
-			Idx: 2,
 		},
 		{
 			Type: ccv.VscMaturedPacket,
 			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 				VscMaturedPacketData: ccv.NewVSCMaturedPacketData(3),
 			},
-			Idx: 3,
 		},
 	}
 
@@ -376,7 +372,6 @@ func TestPendingPackets(t *testing.T) {
 		Data: &ccv.ConsumerPacketData_SlashPacketData{
 			SlashPacketData: slashPacket,
 		},
-		Idx: 4,
 	})
 
 	toAppend := packetData[len(packetData)-1]
@@ -391,7 +386,6 @@ func TestPendingPackets(t *testing.T) {
 		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 			VscMaturedPacketData: vscMaturedPacket,
 		},
-		Idx: 5,
 	})
 	toAppend = packetData[len(packetData)-1]
 	consumerKeeper.AppendPendingPacket(ctx, toAppend.Type, toAppend.Data)
@@ -404,16 +398,21 @@ func TestPendingPackets(t *testing.T) {
 	consumerKeeper.DeletePendingDataPackets(ctx, 5)
 	storedPacketData = consumerKeeper.GetPendingPackets(ctx)
 	require.Equal(t, packetData[:len(packetData)-1], storedPacketData)
+	pendingPacketsWithIdx := consumerKeeper.GetAllPendingPacketsWithIdx(ctx)
+	require.Equal(t, uint64(4), pendingPacketsWithIdx[len(pendingPacketsWithIdx)-1].Idx) // final element should have idx 4
 
 	// Delete packet with idx 0 (first index)
 	consumerKeeper.DeletePendingDataPackets(ctx, 0)
 	storedPacketData = consumerKeeper.GetPendingPackets(ctx)
 	require.Equal(t, packetData[1:len(packetData)-1], storedPacketData)
+	pendingPacketsWithIdx = consumerKeeper.GetAllPendingPacketsWithIdx(ctx)
+	require.Equal(t, uint64(1), pendingPacketsWithIdx[0].Idx) // first element should have idx 1
 
 	// Delete all packets
 	consumerKeeper.DeleteAllPendingDataPackets(ctx)
 	storedPacketData = consumerKeeper.GetPendingPackets(ctx)
 	require.Empty(t, storedPacketData)
+	require.Empty(t, consumerKeeper.GetAllPendingPacketsWithIdx(ctx))
 }
 
 // TestVerifyProviderChain tests the VerifyProviderChain method for the consumer keeper
@@ -579,4 +578,31 @@ func TestPrevStandaloneChainFlag(t *testing.T) {
 	// Test that the value can be set and retrieved
 	ck.MarkAsPrevStandaloneChain(ctx)
 	require.True(t, ck.IsPrevStandaloneChain(ctx))
+}
+
+func TestDeleteHeadOfPendingPackets(t *testing.T) {
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// append some pending packets
+	consumerKeeper.AppendPendingPacket(ctx, ccv.VscMaturedPacket, &ccv.ConsumerPacketData_VscMaturedPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, ccv.SlashPacket, &ccv.ConsumerPacketData_SlashPacketData{})
+	consumerKeeper.AppendPendingPacket(ctx, ccv.VscMaturedPacket, &ccv.ConsumerPacketData_VscMaturedPacketData{})
+
+	// Check there's 3 pending packets, vsc matured at head
+	pp := consumerKeeper.GetPendingPackets(ctx)
+	require.Len(t, pp, 3)
+	require.Equal(t, pp[0].Type, ccv.VscMaturedPacket)
+
+	// Delete the head, confirm slash packet is now at head
+	consumerKeeper.DeleteHeadOfPendingPackets(ctx)
+	pp = consumerKeeper.GetPendingPackets(ctx)
+	require.Len(t, pp, 2)
+	require.Equal(t, pp[0].Type, ccv.SlashPacket)
+
+	// Delete the head, confirm vsc matured packet is now at head
+	consumerKeeper.DeleteHeadOfPendingPackets(ctx)
+	pp = consumerKeeper.GetPendingPackets(ctx)
+	require.Len(t, pp, 1)
+	require.Equal(t, pp[0].Type, ccv.VscMaturedPacket)
 }

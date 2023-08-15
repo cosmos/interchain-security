@@ -14,6 +14,7 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -22,6 +23,7 @@ import (
 
 	"github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
@@ -210,80 +212,6 @@ func TestOnRecvVSCPacketDuplicateUpdates(t *testing.T) {
 	require.Equal(t, valUpdates[1], gotPendingChanges.ValidatorUpdates[0]) // Only latest update should be kept
 }
 
-// TestOnAcknowledgementPacket tests application logic for acknowledgments of sent VSCMatured and Slash packets
-// in conjunction with the ibc module's execution of "acknowledgePacket",
-// according to https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements
-func TestOnAcknowledgementPacket(t *testing.T) {
-	// Channel ID to some dest chain that's not the established provider
-	channelIDToDestChain := "channelIDToDestChain"
-
-	// Channel ID to established provider
-	channelIDToProvider := "channelIDToProvider"
-
-	// Channel ID on destination (counter party) chain
-	channelIDOnDest := "ChannelIDOnDest"
-
-	// Instantiate in-mem keeper with mocks
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	mocks := testkeeper.NewMockedKeepers(ctrl)
-	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
-	ctx := keeperParams.Ctx
-
-	// Set an established provider channel for later in test
-	consumerKeeper.SetProviderChannel(ctx, channelIDToProvider)
-
-	packetData := types.NewSlashPacketData(
-		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Infraction_INFRACTION_DOWNTIME,
-	)
-
-	// AcknowledgePacket is in reference to a packet originally sent from this (consumer) module.
-	packet := channeltypes.NewPacket(
-		packetData.GetBytes(),
-		1,
-		types.ConsumerPortID, // Source port
-		channelIDToDestChain, // Source channel
-		types.ProviderPortID, // Dest (counter party) port
-		channelIDOnDest,      // Dest (counter party) channel
-		clienttypes.Height{},
-		uint64(time.Now().Add(60*time.Second).UnixNano()),
-	)
-
-	ack := channeltypes.NewResultAcknowledgement([]byte{1})
-
-	// expect no error returned from OnAcknowledgementPacket, no input error with ack
-	err := consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
-	require.Nil(t, err)
-
-	// Still expect no error returned from OnAcknowledgementPacket,
-	// but the input error ack will be handled with appropriate ChanCloseInit calls
-	dummyCap := &capabilitytypes.Capability{}
-	gomock.InOrder(
-
-		mocks.MockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.ChannelCapabilityPath(types.ConsumerPortID, channelIDToDestChain),
-		).Return(dummyCap, true).Times(1),
-		// Due to input error ack, ChanCloseInit is called on channel to destination chain
-		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
-			ctx, types.ConsumerPortID, channelIDToDestChain, dummyCap,
-		).Return(nil).Times(1),
-
-		mocks.MockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.ChannelCapabilityPath(types.ConsumerPortID, channelIDToProvider),
-		).Return(dummyCap, true).Times(1),
-		// Due to input error ack and existence of established channel to provider,
-		// ChanCloseInit is called on channel to provider
-		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
-			ctx, types.ConsumerPortID, channelIDToProvider, dummyCap,
-		).Return(nil).Times(1),
-	)
-
-	ack = types.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("error"))
-	err = consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
-	require.Nil(t, err)
-}
-
 // TestSendPackets tests the SendPackets method failing
 func TestSendPacketsFailure(t *testing.T) {
 	// Keeper setup
@@ -308,16 +236,29 @@ func TestSendPacketsFailure(t *testing.T) {
 	require.Equal(t, 3, len(consumerKeeper.GetPendingPackets(ctx)))
 }
 
-// Regression test for https://github.com/cosmos/interchain-security/issues/1145
-func TestSendPacketsDeletion(t *testing.T) {
+func TestSendPackets(t *testing.T) {
 	// Keeper setup
 	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
 	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
 	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
 
-	// Queue two pending packets
-	consumerKeeper.AppendPendingPacket(ctx, types.SlashPacket, &types.ConsumerPacketData_SlashPacketData{ // Slash appears first
+	// No slash record should exist
+	_, found := consumerKeeper.GetSlashRecord(ctx)
+	require.False(t, found)
+	require.True(t, consumerKeeper.PacketSendingPermitted(ctx))
+
+	// Queue up two vsc matured, followed by slash, followed by vsc matured
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
+		VscMaturedPacketData: &types.VSCMaturedPacketData{
+			ValsetUpdateId: 77,
+		},
+	})
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
+		VscMaturedPacketData: &types.VSCMaturedPacketData{
+			ValsetUpdateId: 90,
+		},
+	})
+	consumerKeeper.AppendPendingPacket(ctx, types.SlashPacket, &types.ConsumerPacketData_SlashPacketData{
 		SlashPacketData: &types.SlashPacketData{
 			Validator:      abci.Validator{},
 			ValsetUpdateId: 88,
@@ -326,13 +267,229 @@ func TestSendPacketsDeletion(t *testing.T) {
 	})
 	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
 		VscMaturedPacketData: &types.VSCMaturedPacketData{
-			ValsetUpdateId: 90,
+			ValsetUpdateId: 99,
 		},
 	})
 
-	// Get mocks for a successful SendPacket call that does NOT return an error
+	// First two vsc matured and slash should be sent, 3 total
+	gomock.InAnyOrder(
+		testkeeper.GetMocksForSendIBCPacket(ctx, mocks, "consumerCCVChannelID", 3),
+	)
+	consumerKeeper.SendPackets(ctx)
+	ctrl.Finish()
+
+	// First two packets should be deleted, slash should be at head of queue
+	pendingPackets := consumerKeeper.GetPendingPackets(ctx)
+	require.Equal(t, 2, len(pendingPackets))
+	require.Equal(t, types.SlashPacket, pendingPackets[0].Type)
+	require.Equal(t, types.VscMaturedPacket, pendingPackets[1].Type)
+
+	// Packet sending not permitted
+	require.False(t, consumerKeeper.PacketSendingPermitted(ctx))
+
+	// Now delete slash record as would be done by a recv SlashPacketHandledResult
+	// then confirm last vsc matured is sent
+	consumerKeeper.ClearSlashRecord(ctx)
+	consumerKeeper.DeleteHeadOfPendingPackets(ctx)
+
+	// Packet sending permitted
+	require.True(t, consumerKeeper.PacketSendingPermitted(ctx))
+
+	gomock.InAnyOrder(
+		testkeeper.GetMocksForSendIBCPacket(ctx, mocks, "consumerCCVChannelID", 1),
+	)
+
+	consumerKeeper.SendPackets(ctx)
+	ctrl.Finish()
+
+	// No packets should be left
+	pendingPackets = consumerKeeper.GetPendingPackets(ctx)
+	require.Equal(t, 0, len(pendingPackets))
+}
+
+// TestOnAcknowledgementPacketError tests application logic for ERROR acknowledgments of sent VSCMatured and Slash packets
+// in conjunction with the ibc module's execution of "acknowledgePacket",
+// according to https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements
+func TestOnAcknowledgementPacketError(t *testing.T) {
+	// Channel ID to some dest chain that's not the established provider
+	channelIDToDestChain := "channelIDToDestChain"
+
+	// Channel ID to established provider
+	channelIDToProvider := "channelIDToProvider"
+
+	// Channel ID on destination (counter party) chain
+	channelIDOnDest := "ChannelIDOnDest"
+
+	// Instantiate in-mem keeper with mocks
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	mocks := testkeeper.NewMockedKeepers(ctrl)
+	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
+	ctx := keeperParams.Ctx
+
+	// Set an established provider channel for later in test
+	consumerKeeper.SetProviderChannel(ctx, channelIDToProvider)
+
+	slashPacketData := types.NewSlashPacketData(
+		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Infraction_INFRACTION_DOWNTIME,
+	)
+
+	// The type that'd be JSON marshaled and sent over the wire
+	consumerPacketData := types.NewConsumerPacketData(
+		types.SlashPacket,
+		&types.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: slashPacketData,
+		},
+	)
+
+	// AcknowledgePacket is in reference to a packet originally sent from this (consumer) module.
+	packet := channeltypes.NewPacket(
+		consumerPacketData.GetBytes(),
+		1,
+		types.ConsumerPortID, // Source port
+		channelIDToDestChain, // Source channel
+		types.ProviderPortID, // Dest (counter party) port
+		channelIDOnDest,      // Dest (counter party) channel
+		clienttypes.Height{},
+		uint64(time.Now().Add(60*time.Second).UnixNano()),
+	)
+
+	// Still expect no error returned from OnAcknowledgementPacket,
+	// but the input error ack will be handled with appropriate ChanCloseInit calls
+	dummyCap := &capabilitytypes.Capability{}
+	gomock.InOrder(
+
+		mocks.MockScopedKeeper.EXPECT().GetCapability(
+			ctx, host.ChannelCapabilityPath(types.ConsumerPortID, channelIDToDestChain),
+		).Return(dummyCap, true).Times(1),
+		// Due to input error ack, ChanCloseInit is called on channel to destination chain
+		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
+			ctx, types.ConsumerPortID, channelIDToDestChain, dummyCap,
+		).Return(nil).Times(1),
+
+		mocks.MockScopedKeeper.EXPECT().GetCapability(
+			ctx, host.ChannelCapabilityPath(types.ConsumerPortID, channelIDToProvider),
+		).Return(dummyCap, true).Times(1),
+		// Due to input error ack and existence of established channel to provider,
+		// ChanCloseInit is called on channel to provider
+		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
+			ctx, types.ConsumerPortID, channelIDToProvider, dummyCap,
+		).Return(nil).Times(1),
+	)
+
+	ack := types.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("error"))
+	err := consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
+	require.Nil(t, err)
+}
+
+// TestOnAcknowledgementPacketResult tests application logic for RESULT acknowledgments of sent VSCMatured and Slash packets
+// in conjunction with the ibc module's execution of "acknowledgePacket",
+func TestOnAcknowledgementPacketResult(t *testing.T) {
+	// Setup
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	setupSlashBeforeVscMatured(ctx, &consumerKeeper)
+
+	// Slash record found, 2 pending packets, slash is at head of queue
+	_, found := consumerKeeper.GetSlashRecord(ctx)
+	require.True(t, found)
+	pendingPackets := consumerKeeper.GetPendingPackets(ctx)
+	require.Len(t, pendingPackets, 2)
+	require.Equal(t, types.SlashPacket, pendingPackets[0].Type)
+
+	// v1 result should delete slash record and head of pending packets. Vsc matured remains
+	ack := channeltypes.NewResultAcknowledgement(types.V1Result)
+	packet := channeltypes.Packet{Data: pendingPackets[0].GetBytes()}
+	err := consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
+	require.Nil(t, err)
+	_, found = consumerKeeper.GetSlashRecord(ctx)
+	require.False(t, found)
+	require.Len(t, consumerKeeper.GetPendingPackets(ctx), 1)
+	require.Equal(t, types.VscMaturedPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
+
+	// refresh state
+	setupSlashBeforeVscMatured(ctx, &consumerKeeper)
+	pendingPackets = consumerKeeper.GetPendingPackets(ctx)
+	packet = channeltypes.Packet{Data: pendingPackets[0].GetBytes()}
+
+	// Slash packet handled result should delete slash record and head of pending packets
+	ack = channeltypes.NewResultAcknowledgement(types.SlashPacketHandledResult)
+	err = consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
+	require.Nil(t, err)
+	_, found = consumerKeeper.GetSlashRecord(ctx)
+	require.False(t, found)
+	require.Len(t, consumerKeeper.GetPendingPackets(ctx), 1)
+	require.Equal(t, types.VscMaturedPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
+
+	// refresh state
+	setupSlashBeforeVscMatured(ctx, &consumerKeeper)
+	pendingPackets = consumerKeeper.GetPendingPackets(ctx)
+	packet = channeltypes.Packet{Data: pendingPackets[0].GetBytes()}
+
+	slashRecordBefore, found := consumerKeeper.GetSlashRecord(ctx)
+	require.True(t, found)
+	require.True(t, slashRecordBefore.WaitingOnReply)
+
+	// Slash packet bounced result should update slash record
+	ack = channeltypes.NewResultAcknowledgement(types.SlashPacketBouncedResult)
+	err = consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
+	require.Nil(t, err)
+	slashRecordAfter, found := consumerKeeper.GetSlashRecord(ctx)
+	require.True(t, found)
+	require.False(t, slashRecordAfter.WaitingOnReply) // waiting on reply toggled false
+	require.Equal(t, slashRecordAfter.SendTime.UnixNano(),
+		slashRecordBefore.SendTime.UnixNano()) // send time NOT updated. Bounce result shouldn't affect that
+}
+
+func setupSlashBeforeVscMatured(ctx sdk.Context, k *consumerkeeper.Keeper) {
+	// clear old state
+	k.ClearSlashRecord(ctx)
+	k.DeleteAllPendingDataPackets(ctx)
+
+	// Set some related state to test against
+	k.SetSlashRecord(ctx, consumertypes.SlashRecord{WaitingOnReply: true, SendTime: time.Now()})
+	// Slash packet before VSCMatured packet
+	k.AppendPendingPacket(ctx, types.SlashPacket, &types.ConsumerPacketData_SlashPacketData{ // Slash appears first
+		SlashPacketData: &types.SlashPacketData{
+			Validator:      abci.Validator{},
+			ValsetUpdateId: 88,
+			Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
+		},
+	})
+	k.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
+		VscMaturedPacketData: &types.VSCMaturedPacketData{
+			ValsetUpdateId: 90,
+		},
+	})
+}
+
+// Regression test for https://github.com/cosmos/interchain-security/issues/1145
+func TestSendPacketsDeletion(t *testing.T) {
+	// Keeper setup
+	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
+	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
+
+	// Queue two pending packets, vsc matured first
+	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{
+		VscMaturedPacketData: &types.VSCMaturedPacketData{
+			ValsetUpdateId: 90,
+		},
+	})
+	consumerKeeper.AppendPendingPacket(ctx, types.SlashPacket, &types.ConsumerPacketData_SlashPacketData{ // Slash appears first
+		SlashPacketData: &types.SlashPacketData{
+			Validator:      abci.Validator{},
+			ValsetUpdateId: 88,
+			Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
+		},
+	})
+
+	// Get mocks for the (first) successful SendPacket call that does NOT return an error
 	expectations := testkeeper.GetMocksForSendIBCPacket(ctx, mocks, "consumerCCVChannelID", 1)
-	// Append mocks for a failed SendPacket call, which returns an error
+	// Append mocks for the (second) failed SendPacket call, which returns an error
 	expectations = append(expectations, mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, types.ConsumerPortID,
 		"consumerCCVChannelID").Return(channeltypes.Channel{}, false).Times(1))
 	gomock.InOrder(expectations...)
@@ -341,5 +498,7 @@ func TestSendPacketsDeletion(t *testing.T) {
 
 	// Expect the first successfully sent packet to be popped from queue
 	require.Equal(t, 1, len(consumerKeeper.GetPendingPackets(ctx)))
-	require.Equal(t, types.VscMaturedPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
+
+	// Expect the slash packet to remain
+	require.Equal(t, types.SlashPacket, consumerKeeper.GetPendingPackets(ctx)[0].Type)
 }

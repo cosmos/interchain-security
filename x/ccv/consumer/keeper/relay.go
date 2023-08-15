@@ -185,11 +185,14 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 		return
 	}
 
-	pending := k.GetPendingPackets(ctx)
+	pending := k.GetAllPendingPacketsWithIdx(ctx)
 	idxsForDeletion := []uint64{}
 	for _, p := range pending {
+		if !k.PacketSendingPermitted(ctx) {
+			break
+		}
 
-		// send packet over IBC
+		// Send packet over IBC
 		err := ccv.SendIBCPacket(
 			ctx,
 			k.scopedKeeper,
@@ -213,6 +216,16 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			k.Logger(ctx).Error("cannot send IBC packet; leaving packet data stored:", "type", p.Type.String(), "err", err.Error())
 			break
 		}
+		// If the packet that was just sent was a Slash packet, set the waiting on slash reply flag.
+		// This flag will be toggled false again when consumer hears back from provider. See OnAcknowledgementPacket below.
+		if p.Type == ccv.SlashPacket {
+			k.UpdateSlashRecordOnSend(ctx)
+			// Break so slash stays at head of queue.
+			// This blocks the sending of any other packet until the leading slash packet is handled.
+			// Also see OnAcknowledgementPacket below which will eventually delete the leading slash packet.
+			break
+		}
+		// Otherwise the vsc matured will be deleted
 		idxsForDeletion = append(idxsForDeletion, p.Idx)
 	}
 	// Delete pending packets that were successfully sent and did not return an error from SendIBCPacket
@@ -223,6 +236,40 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 // in conjunction with the ibc module's execution of "acknowledgePacket",
 // according to https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
+	if res := ack.GetResult(); res != nil {
+		if len(res) != 1 {
+			return fmt.Errorf("acknowledgement result length must be 1, got %d", len(res))
+		}
+
+		// Unmarshal into V1 consumer packet data type. We trust data is formed correctly
+		// as it was originally marshalled by this module, and consumers must trust the provider
+		// did not tamper with the data. Note ConsumerPacketData.GetBytes() always JSON marshals to the
+		// ConsumerPacketDataV1 type which is sent over the wire.
+		var consumerPacket ccv.ConsumerPacketDataV1
+		ccv.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacket)
+		// If this ack is regarding a provider handling a vsc matured packet, there's nothing to do.
+		// As vsc matured packets are popped from the consumer pending packets queue on send.
+		if consumerPacket.Type == ccv.VscMaturedPacket {
+			return nil
+		}
+
+		// Otherwise we handle the result of the slash packet acknowledgement.
+		switch res[0] {
+		// We treat a v1 result as the provider successfully queuing the slash packet w/o need for retry.
+		case ccv.V1Result[0]:
+			k.ClearSlashRecord(ctx)           // Clears slash record state, unblocks sending of pending packets.
+			k.DeleteHeadOfPendingPackets(ctx) // Remove slash from head of queue. It's been handled.
+		case ccv.SlashPacketHandledResult[0]:
+			k.ClearSlashRecord(ctx)           // Clears slash record state, unblocks sending of pending packets.
+			k.DeleteHeadOfPendingPackets(ctx) // Remove slash from head of queue. It's been handled.
+		case ccv.SlashPacketBouncedResult[0]:
+			k.UpdateSlashRecordOnBounce(ctx)
+			// Note slash is still at head of queue and will now be retried after appropriate delay period.
+		default:
+			return fmt.Errorf("unrecognized acknowledgement result: %c", res[0])
+		}
+	}
+
 	if err := ack.GetError(); err != "" {
 		// Reasons for ErrorAcknowledgment
 		//  - packet data could not be successfully decoded

@@ -19,7 +19,10 @@ func NewQueryCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	cmd.AddCommand(CmdNextFeeDistribution())
+	cmd.AddCommand(
+		CmdNextFeeDistribution(),
+		CmdProviderInfo(),
+	)
 
 	return cmd
 }
@@ -38,6 +41,33 @@ func CmdNextFeeDistribution() *cobra.Command {
 
 			req := &types.QueryNextFeeDistributionEstimateRequest{}
 			res, err := queryClient.QueryNextFeeDistribution(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdProviderInfo() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "provider-info",
+		Short: "Query provider info",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryProviderInfoRequest{}
+			res, err := queryClient.QueryProviderInfo(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

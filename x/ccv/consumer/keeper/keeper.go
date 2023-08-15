@@ -606,9 +606,40 @@ func (k Keeper) getAndIncrementPendingPacketsIdx(ctx sdk.Context) (toReturn uint
 	return toReturn
 }
 
-// GetPendingPackets returns ALL the pending CCV packets from the store
+// DeleteHeadOfPendingPackets deletes the head of the pending packets queue.
+func (k Keeper) DeleteHeadOfPendingPackets(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	defer iterator.Close()
+	if !iterator.Valid() {
+		return
+	}
+	store.Delete(iterator.Key())
+}
+
+// GetPendingPackets returns ALL the pending CCV packets from the store without indexes.
 func (k Keeper) GetPendingPackets(ctx sdk.Context) []ccv.ConsumerPacketData {
-	var packets []ccv.ConsumerPacketData
+	ppWithIndexes := k.GetAllPendingPacketsWithIdx(ctx)
+	var ppList []ccv.ConsumerPacketData
+	for _, ppWithIndex := range ppWithIndexes {
+		ppList = append(ppList, ppWithIndex.ConsumerPacketData)
+	}
+	return ppList
+}
+
+// ConsumerPacketDataWithIdx is a wrapper around ConsumerPacketData
+// that also stores the index of the packet in the pending packets queue.
+//
+// Note this type is a shim to avoid changing the schema of ConsumerPacketData and breaking the wire.
+type ConsumerPacketDataWithIdx struct {
+	ccv.ConsumerPacketData // Struct embedding
+	Idx                    uint64
+}
+
+// GetAllPendingPacketsWithIdx returns ALL pending consumer packet data from the store
+// with indexes relevant to the pending packets queue.
+func (k Keeper) GetAllPendingPacketsWithIdx(ctx sdk.Context) []ConsumerPacketDataWithIdx {
+	packets := []ConsumerPacketDataWithIdx{}
 	store := ctx.KVStore(k.storeKey)
 	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
 	// See consistency with PendingDataPacketsKey().
@@ -622,7 +653,12 @@ func (k Keeper) GetPendingPackets(ctx sdk.Context) []ccv.ConsumerPacketData {
 			// An error here would indicate something is very wrong,
 			panic(fmt.Errorf("failed to unmarshal pending data packet: %w", err))
 		}
-		packets = append(packets, packet)
+		packetWithIdx := ConsumerPacketDataWithIdx{
+			ConsumerPacketData: packet,
+			// index stored in key after prefix, see PendingDataPacketsKey()
+			Idx: sdk.BigEndianToUint64(iterator.Key()[1:]),
+		}
+		packets = append(packets, packetWithIdx)
 	}
 	return packets
 }
@@ -652,13 +688,10 @@ func (k Keeper) DeleteAllPendingDataPackets(ctx sdk.Context) {
 
 // AppendPendingPacket enqueues the given data packet to the end of the pending data packets queue
 func (k Keeper) AppendPendingPacket(ctx sdk.Context, packetType ccv.ConsumerPacketDataType, data ccv.ExportedIsConsumerPacketData_Data) {
-	cpd := ccv.NewConsumerPacketData(
-		packetType,
-		data,
-		k.getAndIncrementPendingPacketsIdx(ctx),
-	)
-	key := types.PendingDataPacketsKey(cpd.Idx)
+	idx := k.getAndIncrementPendingPacketsIdx(ctx) // for FIFO queue
+	key := types.PendingDataPacketsKey(idx)
 	store := ctx.KVStore(k.storeKey)
+	cpd := ccv.NewConsumerPacketData(packetType, data)
 	bz, err := cpd.Marshal()
 	if err != nil {
 		// This should never happen
