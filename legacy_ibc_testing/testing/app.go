@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cosmos/ibc-go/v7/modules/core/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 
 	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
@@ -110,7 +111,7 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 	// set validators and delegations
 	var (
 		stakingGenesis  stakingtypes.GenesisState
-		consumerGenesis consumertypes.GenesisState
+		consumerGenesis ccvtypes.GenesisState
 		bondDenom       string
 	)
 	if genesisState[stakingtypes.ModuleName] != nil {
