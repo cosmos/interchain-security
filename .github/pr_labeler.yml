@@ -1,0 +1,29 @@
+"C:x/consumer":
+  - x/ccv/consumer/**/*
+"C:x/democracy":
+  - x/ccv/democracy/**/*
+"C:x/provider":
+  - x/ccv/provider/**/*
+"C:x/types":
+  - x/ccv/types/**/*
+"C:Docs":
+  - docs/docs/**/*
+"C:ADR":
+  - docs/docs/adrs/**/*
+"C:CI":
+  - .github/**/*.yml
+  - buf.work.yaml
+  - .mergify.yml
+  - .golangci.yml
+  - mlc_config.json
+  - sonar-project.properties
+"C:Build":
+  - Makefile
+  - Dockerfile
+  - scripts/*
+"C:Testing":
+  - app/**/*
+  - cmd/**/*
+  - legacy_ibc_testing/**/*
+  - tests/**/*
+  - testutil/**/*
