@@ -31,8 +31,6 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// TODO: rename to ConsumerParams (or make issue)
-//
 // Params defines the parameters for CCV consumer module.
 //
 // Note this type is referenced in both the consumer and provider CCV modules,
@@ -198,8 +196,6 @@ func (m *Params) GetProviderRewardDenoms() []string {
 	return nil
 }
 
-// TODO: rename to ConsumerGenesisState (make issue)
-//
 // GenesisState defines the CCV consumer chain genesis state.
 //
 // Note this type is referenced in both the consumer and provider CCV modules,

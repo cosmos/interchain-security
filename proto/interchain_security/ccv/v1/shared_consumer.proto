@@ -18,8 +18,6 @@ import "interchain_security/ccv/consumer/v1/consumer.proto";
 // but not sent over the wire. These schemas could change, only with careful consideration of effects!
 //
 
-// TODO: rename to ConsumerParams (or make issue)
-// 
 // Params defines the parameters for CCV consumer module.
 // 
 // Note this type is referenced in both the consumer and provider CCV modules,
@@ -80,8 +78,6 @@ message Params {
     repeated string provider_reward_denoms = 12;
 }
 
-// TODO: rename to ConsumerGenesisState (make issue)
-//
 // GenesisState defines the CCV consumer chain genesis state.
 // 
 // Note this type is referenced in both the consumer and provider CCV modules,

@@ -25,11 +25,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtypes "github.com/cometbft/cometbft/types"
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 
 	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
 	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 /*
