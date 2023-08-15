@@ -5,6 +5,7 @@ import (
 	"time"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
 	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 )
 

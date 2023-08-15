@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
-	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 
 	tmdb "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
@@ -16,6 +15,7 @@ import (
 	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
 	appConsumerDemocracy "github.com/cosmos/interchain-security/v3/app/consumer-democracy"
 	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
+	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 )
 
 // ProviderAppIniter implements ibctesting.AppIniter for a provider app
