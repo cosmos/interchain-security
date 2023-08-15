@@ -5,12 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
-	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
+	"github.com/cosmos/ibc-go/v7/modules/core/keeper"
+	"github.com/stretchr/testify/require"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	tmtypes "github.com/cometbft/cometbft/types"
+	"cosmossdk.io/math"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -22,11 +21,13 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/ibc-go/v7/modules/core/keeper"
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmtypes "github.com/cometbft/cometbft/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 
+	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
 	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
