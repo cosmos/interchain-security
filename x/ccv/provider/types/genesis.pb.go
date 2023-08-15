@@ -26,8 +26,6 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // GenesisState defines the CCV provider chain genesis state
-//
-// TODO: Change to ProviderGenesisState for consistency with consumer, or create issue for this.
 type GenesisState struct {
 	// strictly positive and set to 1 (DefaultValsetUpdateID) for a new chain
 	ValsetUpdateId uint64 `protobuf:"varint,1,opt,name=valset_update_id,json=valsetUpdateId,proto3" json:"valset_update_id,omitempty"`

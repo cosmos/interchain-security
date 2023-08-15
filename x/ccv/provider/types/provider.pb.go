@@ -358,8 +358,6 @@ func (m *GlobalSlashEntry) GetProviderValConsAddr() []byte {
 // Params defines the parameters for CCV Provider module
 //
 // Note this type is only used internally to the provider CCV module.
-//
-// TODO: change to ProviderParams for consistency with consumer, or create issue for this.
 type Params struct {
 	TemplateClient *_07_tendermint.ClientState `protobuf:"bytes,1,opt,name=template_client,json=templateClient,proto3" json:"template_client,omitempty"`
 	// TrustingPeriodFraction is used to compute the consumer and provider IBC
