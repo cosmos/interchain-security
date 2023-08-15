@@ -25,7 +25,6 @@ import (
 
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -576,7 +575,7 @@ func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64) {
 		return nil
 	}
 
-	var ops providertypes.MaturedUnbondingOps
+	var ops types.MaturedUnbondingOps
 	if err := ops.Unmarshal(bz); err != nil {
 		// An error here would indicate something is very wrong,
 		// the MaturedUnbondingOps are assumed to be correctly serialized in AppendMaturedUnbondingOps.
@@ -591,7 +590,7 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) {
 		return
 	}
 	existingIds := k.GetMaturedUnbondingOps(ctx)
-	maturedOps := providertypes.MaturedUnbondingOps{
+	maturedOps := types.MaturedUnbondingOps{
 		Ids: append(existingIds, ids...),
 	}
 
@@ -815,7 +814,7 @@ func (k Keeper) DeleteInitChainHeight(ctx sdk.Context, chainID string) {
 
 // GetPendingVSCPackets returns the list of pending ValidatorSetChange packets stored under chain ID
 func (k Keeper) GetPendingVSCPackets(ctx sdk.Context, chainID string) []ccv.ValidatorSetChangePacketData {
-	var packets providertypes.ValidatorSetChangePackets
+	var packets types.ValidatorSetChangePackets
 
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingVSCsKey(chainID))
@@ -836,7 +835,7 @@ func (k Keeper) AppendPendingVSCPackets(ctx sdk.Context, chainID string, newPack
 	pds := append(k.GetPendingVSCPackets(ctx, chainID), newPackets...)
 
 	store := ctx.KVStore(k.storeKey)
-	packets := providertypes.ValidatorSetChangePackets{List: pds}
+	packets := types.ValidatorSetChangePackets{List: pds}
 	buf, err := packets.Marshal()
 	if err != nil {
 		// An error here would indicate something is very wrong,
