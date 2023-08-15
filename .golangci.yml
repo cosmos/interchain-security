@@ -3,8 +3,6 @@ run:
   timeout: 10m
   sort-results: true
   allow-parallel-runners: true
-  skip-dirs:
-    - 'testutil'
 
 linters:
   disable-all: true
