@@ -1292,6 +1292,8 @@ func (tr TestRun) relayPacketsGorelayer(
 	action relayPacketsAction,
 	verbose bool,
 ) {
+	tr.waitBlocks(action.chainA, 1, 30*time.Second)
+	tr.waitBlocks(action.chainB, 1, 30*time.Second)
 	pathName := tr.GetPathNameForGorelayer(action.chainA, action.chainB)
 
 	// rly transact relay-packets [path-name] --channel [channel-id]
@@ -1309,6 +1311,7 @@ func (tr TestRun) relayPacketsGorelayer(
 	}
 
 	tr.waitBlocks(action.chainA, 1, 30*time.Second)
+	tr.waitBlocks(action.chainB, 1, 30*time.Second)
 }
 
 func (tr TestRun) relayPacketsHermes(
@@ -1332,6 +1335,7 @@ func (tr TestRun) relayPacketsHermes(
 	}
 
 	tr.waitBlocks(action.chainA, 1, 30*time.Second)
+	tr.waitBlocks(action.chainB, 1, 30*time.Second)
 }
 
 type relayRewardPacketsToProviderAction struct {
@@ -1819,7 +1823,7 @@ func (tr TestRun) invokeDoublesignSlash(
 		address := tr.getQueryNodeRPCAddress(action.chain)
 
 		tr.curlJsonRPCRequest(method, params, address)
-		tr.waitBlocks(action.chain, 1, 10*time.Second)
+		tr.waitBlocks(action.chain, 10, 10*time.Second)
 		return
 	}
 }
