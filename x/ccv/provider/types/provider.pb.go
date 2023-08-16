@@ -39,8 +39,6 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // chain are expected to validate the consumer chain at spawn time or get
 // slashed. It is recommended that spawn time occurs after the proposal end
 // time.
-//
-// Note this type is only used internally to the provider CCV module.
 type ConsumerAdditionProposal struct {
 	// the title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
@@ -130,8 +128,6 @@ var xxx_messageInfo_ConsumerAdditionProposal proto.InternalMessageInfo
 // remove (and stop) a consumer chain. If it passes, all the consumer chain's
 // state is removed from the provider chain. The outstanding unbonding operation
 // funds are released.
-//
-// Note this type is only used internally to the provider CCV module.
 type ConsumerRemovalProposal struct {
 	// the title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
@@ -275,8 +271,6 @@ func (m *EquivocationProposal) GetEquivocations() []*types1.Equivocation {
 // A persisted queue entry indicating that a slash packet data instance needs to
 // be handled. This type belongs in the "global" queue, to coordinate slash
 // packet handling times between consumers.
-//
-// Soon to be depreicated
 type GlobalSlashEntry struct {
 	// Block time that slash packet was received by provider chain.
 	// This field is used for store key iteration ordering.
@@ -356,8 +350,6 @@ func (m *GlobalSlashEntry) GetProviderValConsAddr() []byte {
 }
 
 // Params defines the parameters for CCV Provider module
-//
-// Note this type is only used internally to the provider CCV module.
 type Params struct {
 	TemplateClient *_07_tendermint.ClientState `protobuf:"bytes,1,opt,name=template_client,json=templateClient,proto3" json:"template_client,omitempty"`
 	// TrustingPeriodFraction is used to compute the consumer and provider IBC
@@ -484,8 +476,6 @@ func (m *Params) GetConsumerRewardDenomRegistrationFee() types2.Coin {
 
 // SlashAcks contains cons addresses of consumer chain validators
 // successfully slashed on the provider chain.
-//
-// Note this type is only used internally to the provider CCV module.
 type SlashAcks struct {
 	Addresses []string `protobuf:"bytes,1,rep,name=addresses,proto3" json:"addresses,omitempty"`
 }
@@ -532,8 +522,6 @@ func (m *SlashAcks) GetAddresses() []string {
 
 // ConsumerAdditionProposals holds pending governance proposals on the provider
 // chain to spawn a new chain.
-//
-// Note this type is only used internally to the provider CCV module.
 type ConsumerAdditionProposals struct {
 	// proposals waiting for spawn_time to pass
 	Pending []*ConsumerAdditionProposal `protobuf:"bytes,1,rep,name=pending,proto3" json:"pending,omitempty"`
@@ -581,8 +569,6 @@ func (m *ConsumerAdditionProposals) GetPending() []*ConsumerAdditionProposal {
 
 // ConsumerRemovalProposals holds pending governance proposals on the provider
 // chain to remove (and stop) a consumer chain.
-//
-// Note this type is only used internally to the provider CCV module.
 type ConsumerRemovalProposals struct {
 	// proposals waiting for stop_time to pass
 	Pending []*ConsumerRemovalProposal `protobuf:"bytes,1,rep,name=pending,proto3" json:"pending,omitempty"`
@@ -629,8 +615,6 @@ func (m *ConsumerRemovalProposals) GetPending() []*ConsumerRemovalProposal {
 }
 
 // AddressList contains a list of consensus addresses
-//
-// Note this type is only used internally to the provider CCV module.
 type AddressList struct {
 	Addresses [][]byte `protobuf:"bytes,1,rep,name=addresses,proto3" json:"addresses,omitempty"`
 }
@@ -675,7 +659,6 @@ func (m *AddressList) GetAddresses() [][]byte {
 	return nil
 }
 
-// Note this type is only used internally to the provider CCV module.
 type ChannelToChain struct {
 	ChannelId string `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	ChainId   string `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
@@ -730,8 +713,6 @@ func (m *ChannelToChain) GetChainId() string {
 
 // VscUnbondingOps contains the IDs of unbonding operations that are waiting for
 // at least one VSCMaturedPacket with vscID from a consumer chain
-//
-// Note this type is only used internally to the provider CCV module  .
 type VscUnbondingOps struct {
 	VscId          uint64   `protobuf:"varint,1,opt,name=vsc_id,json=vscId,proto3" json:"vsc_id,omitempty"`
 	UnbondingOpIds []uint64 `protobuf:"varint,2,rep,packed,name=unbonding_op_ids,json=unbondingOpIds,proto3" json:"unbonding_op_ids,omitempty"`
@@ -786,8 +767,6 @@ func (m *VscUnbondingOps) GetUnbondingOpIds() []uint64 {
 
 // UnbondingOp contains the ids of consumer chains that need to unbond before
 // the unbonding operation with the given ID can unbond
-//
-// Note this type is only used internally to the provider CCV module.
 type UnbondingOp struct {
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	// consumer chains that are still unbonding
@@ -841,7 +820,6 @@ func (m *UnbondingOp) GetUnbondingConsumerChains() []string {
 	return nil
 }
 
-// Note this type is only used internally to the provider CCV module.
 type InitTimeoutTimestamp struct {
 	ChainId   string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	Timestamp uint64 `protobuf:"varint,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
@@ -894,7 +872,6 @@ func (m *InitTimeoutTimestamp) GetTimestamp() uint64 {
 	return 0
 }
 
-// Note this type is only used internally to the provider CCV module.
 type VscSendTimestamp struct {
 	VscId     uint64    `protobuf:"varint,1,opt,name=vsc_id,json=vscId,proto3" json:"vsc_id,omitempty"`
 	Timestamp time.Time `protobuf:"bytes,2,opt,name=timestamp,proto3,stdtime" json:"timestamp"`
@@ -948,8 +925,6 @@ func (m *VscSendTimestamp) GetTimestamp() time.Time {
 }
 
 // ValidatorSetChangePackets is a pb list of ccv.ValidatorSetChangePacketData.
-//
-// Note this type is only used internally to the provider CCV module.
 type ValidatorSetChangePackets struct {
 	List []types3.ValidatorSetChangePacketData `protobuf:"bytes,1,rep,name=list,proto3" json:"list"`
 }
@@ -996,8 +971,6 @@ func (m *ValidatorSetChangePackets) GetList() []types3.ValidatorSetChangePacketD
 
 // MaturedUnbondingOps defines a list of ids corresponding to ids of matured
 // unbonding operations.
-//
-// Note this type is only used internally to the provider CCV module.
 type MaturedUnbondingOps struct {
 	Ids []uint64 `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`
 }
@@ -1043,8 +1016,6 @@ func (m *MaturedUnbondingOps) GetIds() []uint64 {
 }
 
 // ExportedVscSendTimestamps is VscSendTimestamp with chainID info for exporting to genesis
-//
-// Note this type is only used internally to the provider CCV module.
 type ExportedVscSendTimestamp struct {
 	ChainId           string             `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	VscSendTimestamps []VscSendTimestamp `protobuf:"bytes,2,rep,name=vsc_send_timestamps,json=vscSendTimestamps,proto3" json:"vsc_send_timestamps"`
@@ -1097,7 +1068,6 @@ func (m *ExportedVscSendTimestamp) GetVscSendTimestamps() []VscSendTimestamp {
 	return nil
 }
 
-// Note this type is only used internally to the provider CCV module.
 type KeyAssignmentReplacement struct {
 	ProviderAddr []byte            `protobuf:"bytes,1,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty"`
 	PrevCKey     *crypto.PublicKey `protobuf:"bytes,2,opt,name=prev_c_key,json=prevCKey,proto3" json:"prev_c_key,omitempty"`
@@ -1161,8 +1131,6 @@ func (m *KeyAssignmentReplacement) GetPower() int64 {
 // Used to serialize the ValidatorConsumerPubKey index from key assignment
 // ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey
 // tmprotocrypto.PublicKey
-//
-// Note this type is only used internally to the provider CCV module.
 type ValidatorConsumerPubKey struct {
 	ChainId      string            `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	ProviderAddr []byte            `protobuf:"bytes,2,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty"`
@@ -1226,8 +1194,6 @@ func (m *ValidatorConsumerPubKey) GetConsumerKey() *crypto.PublicKey {
 // Used to serialize the ValidatorConsumerAddr index from key assignment
 // ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr
 // consAddr
-//
-// Note this type is only used internally to the provider CCV module.
 type ValidatorByConsumerAddr struct {
 	ChainId      string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	ConsumerAddr []byte `protobuf:"bytes,2,opt,name=consumer_addr,json=consumerAddr,proto3" json:"consumer_addr,omitempty"`
@@ -1290,8 +1256,6 @@ func (m *ValidatorByConsumerAddr) GetProviderAddr() []byte {
 
 // Used to serialize the ConsumerAddrsToPrune index from key assignment
 // ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrs AddressList
-//
-// Note this type is only used internally to the provider CCV module.
 type ConsumerAddrsToPrune struct {
 	ChainId       string       `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	VscId         uint64       `protobuf:"varint,2,opt,name=vsc_id,json=vscId,proto3" json:"vsc_id,omitempty"`

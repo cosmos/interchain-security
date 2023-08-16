@@ -21,6 +21,8 @@ import "google/protobuf/timestamp.proto";
 // 
 // Note this type is referenced in both the consumer and provider CCV modules,
 // and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis. 
+//
+// TODO: Rename to ConsumerParams. See https://github.com/cosmos/interchain-security/issues/1206
 message Params {
     // TODO: Remove enabled flag and find a better way to setup integration tests
     // See: https://github.com/cosmos/interchain-security/issues/339
@@ -81,6 +83,8 @@ message Params {
 // 
 // Note this type is referenced in both the consumer and provider CCV modules,
 // and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis.
+// 
+// TODO: Rename to ConsumerGenesisState. See https://github.com/cosmos/interchain-security/issues/1206
 message GenesisState {
     Params params = 1 [ (gogoproto.nullable) = false ];
     string provider_client_id = 2; // empty for a new chain, filled in on restart.

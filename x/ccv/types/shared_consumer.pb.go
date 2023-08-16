@@ -35,6 +35,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //
 // Note this type is referenced in both the consumer and provider CCV modules,
 // and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis.
+//
+// TODO: Rename to ConsumerParams. See https://github.com/cosmos/interchain-security/issues/1206
 type Params struct {
 	// TODO: Remove enabled flag and find a better way to setup integration tests
 	// See: https://github.com/cosmos/interchain-security/issues/339
@@ -200,6 +202,8 @@ func (m *Params) GetProviderRewardDenoms() []string {
 //
 // Note this type is referenced in both the consumer and provider CCV modules,
 // and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis.
+//
+// TODO: Rename to ConsumerGenesisState. See https://github.com/cosmos/interchain-security/issues/1206
 type GenesisState struct {
 	Params            Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
 	ProviderClientId  string `protobuf:"bytes,2,opt,name=provider_client_id,json=providerClientId,proto3" json:"provider_client_id,omitempty"`
