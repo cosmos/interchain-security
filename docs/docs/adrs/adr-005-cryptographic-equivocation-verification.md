@@ -51,7 +51,7 @@ Both nodes will then verify it before broadcasting it and adding it to the [evid
 If a `LightClientAttackEvidence` is finally committed to a block, the chain's evidence module will execute it, resulting in the jailing and the slashing of the validators responsible for the light client attack.
 
 
-Light clients are a core component of IBC. In the event of a light client attack, IBC relayers notify the affected chains by submitting an [IBC misbehavior message]((https://github.com/cosmos/ibc-go/blob/2b7c969066fbcb18f90c7f5bd256439ca12535c7/proto/ibc/lightclients/tendermint/v1/tendermint.proto#L79)).
+Light clients are a core component of IBC. In the event of a light client attack, IBC relayers notify the affected chains by submitting an [IBC misbehavior message](https://github.com/cosmos/ibc-go/blob/2b7c969066fbcb18f90c7f5bd256439ca12535c7/proto/ibc/lightclients/tendermint/v1/tendermint.proto#L79).
 A misbehavior message includes the conflicting headers that constitute a `LightClientAttackEvidence`. Upon receiving such a message,
 a chain will first verify whether these headers would have convinced its light client. This verification is achieved by checking
 the header states against the light client consensus states (see [IBC misbehaviour handler](https://github.com/cosmos/ibc-go/blob/2b7c969066fbcb18f90c7f5bd256439ca12535c7/modules/light-clients/07-tendermint/types/misbehaviour_handle.go#L101)). If the misbehaviour is successfully verified, the chain will then "freeze" the
