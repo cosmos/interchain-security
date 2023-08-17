@@ -77,6 +77,7 @@ import (
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+
 	// add mint
 	mint "github.com/cosmos/cosmos-sdk/x/mint"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
@@ -107,11 +108,11 @@ import (
 	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
 	consumer "github.com/cosmos/interchain-security/v3/x/ccv/consumer"
+	ccvdistr "github.com/cosmos/interchain-security/v3/x/ccv/consumer/democracy/distribution"
+	ccvgov "github.com/cosmos/interchain-security/v3/x/ccv/consumer/democracy/governance"
+	ccvstaking "github.com/cosmos/interchain-security/v3/x/ccv/consumer/democracy/staking"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	ccvdistr "github.com/cosmos/interchain-security/v3/x/ccv/democracy/distribution"
-	ccvgov "github.com/cosmos/interchain-security/v3/x/ccv/democracy/governance"
-	ccvstaking "github.com/cosmos/interchain-security/v3/x/ccv/democracy/staking"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
