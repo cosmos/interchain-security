@@ -111,6 +111,7 @@ type Param struct {
 func (tr TestRun) getState(modelState State) State {
 	systemState := State{}
 	for k, modelState := range modelState {
+		fmt.Println("Getting model state for chain: ", k)
 		systemState[k] = tr.getChainState(k, modelState)
 	}
 
@@ -184,6 +185,8 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
 	}
 
+	fmt.Println("Done getting chain state: ")
+
 	return chainState
 }
 
@@ -218,20 +221,21 @@ func (tr TestRun) waitBlocks(chain chainID, blocks uint, timeout time.Duration) 
 		params := fmt.Sprintf(`{"num_blocks": "%d"}`, blocks)
 
 		tr.curlJsonRPCRequest(method, params, tcpAddress)
-		return
-	}
-	startBlock := tr.getBlockHeight(chain)
+		log.Println("This was the waitBlocks function")
+	} else {
+		startBlock := tr.getBlockHeight(chain)
 
-	start := time.Now()
-	for {
-		thisBlock := tr.getBlockHeight(chain)
-		if thisBlock >= startBlock+blocks {
-			return
+		start := time.Now()
+		for {
+			thisBlock := tr.getBlockHeight(chain)
+			if thisBlock >= startBlock+blocks {
+				return
+			}
+			if time.Since(start) > timeout {
+				panic(fmt.Sprintf("\n\n\nwaitBlocks method has timed out after: %s\n\n", timeout))
+			}
+			time.Sleep(time.Second)
 		}
-		if time.Since(start) > timeout {
-			panic(fmt.Sprintf("\n\n\nwaitBlocks method has timed out after: %s\n\n", timeout))
-		}
-		time.Sleep(time.Second)
 	}
 }
 
@@ -759,6 +763,6 @@ func (tr TestRun) curlJsonRPCRequest(method, params, address string) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
 
-	verbosity := false
-	executeCommandWithVerbosity(cmd, "curlJsonRPCRequest", verbosity)
+	executeCommandWithVerbosity(cmd, "curlJsonRPCRequest", true)
+	log.Println("this was the curlJsonRPCRequest function")
 }
