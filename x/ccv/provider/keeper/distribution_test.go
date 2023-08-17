@@ -8,15 +8,15 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	testutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // TestRegisterConsumerRewardDenom tests the RegisterConsumerRewardDenom method.
 func TestRegisterConsumerRewardDenom(t *testing.T) {
 	// Setup
-	providerKeeper, ctx, ctrl, mocks := testutil.GetProviderKeeperAndCtx(t, testutil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	defaultParams := types.DefaultParams()
 	providerKeeper.SetParams(ctx, defaultParams)

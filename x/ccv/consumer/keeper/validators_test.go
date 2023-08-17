@@ -15,16 +15,15 @@ import (
 	tmrand "github.com/cometbft/cometbft/libs/rand"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v3/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper
 func TestApplyCCValidatorChanges(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+	keeperParams := ututil.NewInMemKeeperParams(t)
+	consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
 	// utility functions
@@ -112,7 +111,7 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 
 // TestIsValidatorJailed tests the IsValidatorJailed method for a consumer keeper
 func TestIsValidatorJailed(t *testing.T) {
-	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Consumer keeper from test setup should return false for IsPrevStandaloneChain()
@@ -148,7 +147,7 @@ func TestIsValidatorJailed(t *testing.T) {
 }
 
 func TestSlash(t *testing.T) {
-	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// If we call slash with infraction type empty, no slash packet will be queued
@@ -197,8 +196,8 @@ func TestSlash(t *testing.T) {
 
 // Tests the getter and setter behavior for historical info
 func TestHistoricalInfo(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+	keeperParams := ututil.NewInMemKeeperParams(t)
+	consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockHeight(15)
 
@@ -254,7 +253,7 @@ func GenerateValidators(tb testing.TB) []*tmtypes.Validator {
 	numValidators := 4
 	validators := []*tmtypes.Validator{}
 	for i := 0; i < numValidators; i++ {
-		cId := crypto.NewCryptoIdentityFromIntSeed(234 + i)
+		cId := ututil.NewCryptoIdentityFromIntSeed(234 + i)
 		pubKey := cId.TMCryptoPubKey()
 
 		votingPower := int64(i + 1)

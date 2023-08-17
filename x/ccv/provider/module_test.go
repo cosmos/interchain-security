@@ -11,10 +11,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // Tests the provider's InitGenesis implementation against the spec.
@@ -92,8 +92,8 @@ func TestInitGenesis(t *testing.T) {
 		//
 		// Setup
 		//
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		keeperParams := ututil.NewInMemKeeperParams(t)
+		providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(t, keeperParams)
 
 		appModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
 		genState := types.NewGenesisState(

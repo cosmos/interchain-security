@@ -13,10 +13,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // TestOnChanOpenInit validates the consumer's OnChanOpenInit implementation against the spec.
@@ -40,11 +40,11 @@ func TestOnChanOpenInit(t *testing.T) {
 	testCases := []struct {
 		name string
 		// Test-case specific function that mutates method parameters and setups expected mock calls
-		setup   func(*consumerkeeper.Keeper, *params, testkeeper.MockedKeepers)
+		setup   func(*consumerkeeper.Keeper, *params, ututil.MockedKeepers)
 		expPass bool
 	}{
 		{
-			"success", func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			"success", func(keeper *consumerkeeper.Keeper, params *params, mocks ututil.MockedKeepers) {
 				gomock.InOrder(
 					mocks.MockScopedKeeper.EXPECT().ClaimCapability(
 						params.ctx, params.chanCap, host.ChannelCapabilityPath(
@@ -56,7 +56,7 @@ func TestOnChanOpenInit(t *testing.T) {
 			}, true,
 		},
 		{
-			"should succeed when IBC module version isn't provided", func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			"should succeed when IBC module version isn't provided", func(keeper *consumerkeeper.Keeper, params *params, mocks ututil.MockedKeepers) {
 				params.version = ""
 				gomock.InOrder(
 					mocks.MockScopedKeeper.EXPECT().ClaimCapability(
@@ -70,43 +70,43 @@ func TestOnChanOpenInit(t *testing.T) {
 		},
 		{
 			"invalid non-empty IBC module version",
-			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks ututil.MockedKeepers) {
 				params.version = "2"
 			}, false,
 		},
 		{
 			"invalid: channel to provider already established",
-			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks ututil.MockedKeepers) {
 				keeper.SetProviderChannel(params.ctx, "existingProviderChanID")
 			}, false,
 		},
 		{
 			"invalid: UNORDERED channel",
-			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks ututil.MockedKeepers) {
 				params.order = channeltypes.UNORDERED
 			}, false,
 		},
 		{
 			"invalid port ID, not CCV port",
-			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks ututil.MockedKeepers) {
 				params.portID = "someDingusPortID"
 			}, false,
 		},
 		{
 			"invalid version",
-			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks ututil.MockedKeepers) {
 				params.version = "someDingusVer"
 			}, false,
 		},
 		{
 			"invalid counterparty port ID",
-			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks ututil.MockedKeepers) {
 				params.counterparty.PortId = "someOtherDingusPortID"
 			}, false,
 		},
 		{
 			"invalid clientID to provider",
-			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks ututil.MockedKeepers) {
 				gomock.InOrder(
 					mocks.MockScopedKeeper.EXPECT().ClaimCapability(
 						params.ctx, params.chanCap, host.ChannelCapabilityPath(
@@ -122,8 +122,8 @@ func TestOnChanOpenInit(t *testing.T) {
 	for _, tc := range testCases {
 
 		// Common setup
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(
+		keeperParams := ututil.NewInMemKeeperParams(t)
+		consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(
 			t, keeperParams)
 		consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
 
@@ -174,8 +174,8 @@ func TestOnChanOpenInit(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-ccf-cotry1
 // Spec tag: [CCV-CCF-COTRY.1]
 func TestOnChanOpenTry(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+	keeperParams := ututil.NewInMemKeeperParams(t)
+	consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
 	// No external keeper methods should be called
 	defer ctrl.Finish()
 	consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
@@ -211,12 +211,12 @@ func TestOnChanOpenAck(t *testing.T) {
 	testCases := []struct {
 		name string
 		// Test-case specific function that mutates method parameters and setups expected mock calls
-		setup   func(*consumerkeeper.Keeper, *params, testkeeper.MockedKeepers)
+		setup   func(*consumerkeeper.Keeper, *params, ututil.MockedKeepers)
 		expPass bool
 	}{
 		{
 			"success - empty transferChannelID",
-			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks ututil.MockedKeepers) {
 				// Expected msg
 				distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
 					transfertypes.PortID,
@@ -248,19 +248,19 @@ func TestOnChanOpenAck(t *testing.T) {
 		},
 		{
 			"invalid: provider channel already established",
-			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks ututil.MockedKeepers) {
 				keeper.SetProviderChannel(params.ctx, "existingProviderChannelID")
 			}, false,
 		},
 		{
 			"invalid: cannot unmarshal ack metadata ",
-			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks ututil.MockedKeepers) {
 				params.counterpartyMetadata = "bunkData"
 			}, false,
 		},
 		{
 			"invalid: mismatched serialized version",
-			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks ututil.MockedKeepers) {
 				md := ccv.HandshakeMetadata{
 					ProviderFeePoolAddr: "", // dummy address used
 					Version:             "bunkVersion",
@@ -274,8 +274,8 @@ func TestOnChanOpenAck(t *testing.T) {
 
 	for _, tc := range testCases {
 		// Common setup
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(
+		keeperParams := ututil.NewInMemKeeperParams(t)
+		consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(
 			t, keeperParams)
 		consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
 
@@ -325,8 +325,8 @@ func TestOnChanOpenAck(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-ccf-coconfirm1
 // Spec tag: [CCV-CCF-COCONFIRM.1]
 func TestOnChanOpenConfirm(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+	keeperParams := ututil.NewInMemKeeperParams(t)
+	consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 	consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
 
@@ -366,8 +366,8 @@ func TestOnChanCloseInit(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+		keeperParams := ututil.NewInMemKeeperParams(t)
+		consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
 		consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
 
 		if tc.establishedProviderExists {
@@ -390,8 +390,8 @@ func TestOnChanCloseInit(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-ccconfirm1// Spec tag: [CCV-CCF-CCINIT.1]
 // Spec tag: [CCV-PCF-CCCONFIRM.1]
 func TestOnChanCloseConfirm(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+	keeperParams := ututil.NewInMemKeeperParams(t)
+	consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
 
 	// No external keeper methods should be called
 	defer ctrl.Finish()

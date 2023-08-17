@@ -12,8 +12,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v3/testutil/crypto"
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 func TestPacketDataValidateBasic(t *testing.T) {
@@ -100,8 +100,8 @@ func TestMarshalPacketData(t *testing.T) {
 // TestVSCPacketDataWireBytes is a regression test that the JSON schema
 // for ValidatorSetChangePacketData (sent over the wire) does not change.
 func TestVSCPacketDataWireBytes(t *testing.T) {
-	cId1 := crypto.NewCryptoIdentityFromIntSeed(4732894)
-	cId2 := crypto.NewCryptoIdentityFromIntSeed(4732895)
+	cId1 := ututil.NewCryptoIdentityFromIntSeed(4732894)
+	cId2 := ututil.NewCryptoIdentityFromIntSeed(4732895)
 
 	pd := types.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{
@@ -153,7 +153,7 @@ func TestVSCPacketDataWireBytes(t *testing.T) {
 // for SlashPacketData (sent over the wire) does not change.
 func TestSlashPacketDataWireBytes(t *testing.T) {
 	// Construct consumer packet data wrapping slash packet data
-	cId := crypto.NewCryptoIdentityFromIntSeed(4732894342)
+	cId := ututil.NewCryptoIdentityFromIntSeed(4732894342)
 	slashPacketData := types.NewSlashPacketData(
 		abci.Validator{
 			Address: cId.SDKValConsAddress(),

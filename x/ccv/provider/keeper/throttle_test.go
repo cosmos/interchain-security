@@ -15,11 +15,10 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	cryptoutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // TestHandlePacketDataForChain tests the HandlePacketDataForChain function. Note: Only one consumer is tested here,
@@ -43,7 +42,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 			"one slash packet should be handled",
 			"chain-37",
 			[]interface{}{
-				testkeeper.GetNewSlashPacketData(),
+				ututil.GetNewSlashPacketData(),
 			},
 			[]int{0},
 		},
@@ -51,8 +50,8 @@ func TestHandlePacketDataForChain(t *testing.T) {
 			"one slash packet followed by one vsc matured packet should all be handled",
 			"chain-222",
 			[]interface{}{
-				testkeeper.GetNewSlashPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
+				ututil.GetNewSlashPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
 			},
 			[]int{0, 1},
 		},
@@ -60,12 +59,12 @@ func TestHandlePacketDataForChain(t *testing.T) {
 			"one slash packet followed by multiple vsc matured packets should all be handled",
 			"chain-2223",
 			[]interface{}{
-				testkeeper.GetNewSlashPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
+				ututil.GetNewSlashPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
 			},
 			[]int{0, 1, 2, 3, 4, 5},
 		},
@@ -73,10 +72,10 @@ func TestHandlePacketDataForChain(t *testing.T) {
 			"multiple slash packets followed by multiple vsc matured packets should only handle first slash packet",
 			"chain-9",
 			[]interface{}{
-				testkeeper.GetNewSlashPacketData(),
-				testkeeper.GetNewSlashPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
+				ututil.GetNewSlashPacketData(),
+				ututil.GetNewSlashPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
 			},
 			[]int{0},
 		},
@@ -84,17 +83,17 @@ func TestHandlePacketDataForChain(t *testing.T) {
 			"vsc matured packets sandwiched between slash packets should handle everything but the last slash packet",
 			"chain-000",
 			[]interface{}{
-				testkeeper.GetNewSlashPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewSlashPacketData(), // 10th index not included in expectedHandledIndexes
+				ututil.GetNewSlashPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewSlashPacketData(), // 10th index not included in expectedHandledIndexes
 			},
 			[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
 		},
@@ -102,24 +101,24 @@ func TestHandlePacketDataForChain(t *testing.T) {
 			"alternating slash and vsc matured packets should handle only the first slash, and trailing vsc matured packets",
 			"chain-00000",
 			[]interface{}{
-				testkeeper.GetNewSlashPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewSlashPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewSlashPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewSlashPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewSlashPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
+				ututil.GetNewSlashPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewSlashPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewSlashPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewSlashPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
+				ututil.GetNewSlashPacketData(),
+				ututil.GetNewVSCMaturedPacketData(),
 			},
 			[]int{0, 1, 2},
 		},
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
@@ -208,8 +207,8 @@ func TestSlashMeterReplenishment(t *testing.T) {
 	}
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(
+			t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
 		now := time.Now().UTC()
@@ -289,8 +288,8 @@ func TestSlashMeterReplenishment(t *testing.T) {
 // Tests that the slash meter exhibits desired behavior when multiple replenishments are needed
 // to restore it to a full value.
 func TestConsecutiveReplenishments(t *testing.T) {
-	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
-		t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(
+		t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	now := time.Now().UTC()
@@ -364,7 +363,7 @@ func TestConsecutiveReplenishments(t *testing.T) {
 // TestSlashMeterAllowanceChanges tests the behavior of a full slash meter
 // when total voting power becomes higher and lower.
 func TestTotalVotingPowerChanges(t *testing.T) {
-	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	now := time.Now()
@@ -497,8 +496,8 @@ func TestNegativeSlashMeter(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(
+			t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
 		params := providertypes.DefaultParams()
@@ -607,8 +606,8 @@ func TestGetSlashMeterAllowance(t *testing.T) {
 	}
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(
+			t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
 		gomock.InOrder(
@@ -630,7 +629,7 @@ func TestGetSlashMeterAllowance(t *testing.T) {
 // TestGlobalSlashEntries tests the queue and iteration functions for global slash entries,
 // with assertion of FIFO ordering
 func TestGlobalSlashEntries(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Consistent time for "now"
@@ -642,11 +641,11 @@ func TestGlobalSlashEntries(t *testing.T) {
 	// Queue 3 entries for chainIDs 0, 1, 2, note their respective ibc seq nums are
 	// ordered differently than the chainIDs would be iterated.
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-		now.Local(), "chain-0", 15, cryptoutil.NewCryptoIdentityFromIntSeed(10).ProviderConsAddress()))
+		now.Local(), "chain-0", 15, ututil.NewCryptoIdentityFromIntSeed(10).ProviderConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-		now.Local(), "chain-1", 10, cryptoutil.NewCryptoIdentityFromIntSeed(11).ProviderConsAddress()))
+		now.Local(), "chain-1", 10, ututil.NewCryptoIdentityFromIntSeed(11).ProviderConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-		now.Local(), "chain-2", 5, cryptoutil.NewCryptoIdentityFromIntSeed(12).ProviderConsAddress()))
+		now.Local(), "chain-2", 5, ututil.NewCryptoIdentityFromIntSeed(12).ProviderConsAddress()))
 
 	globalEntries = providerKeeper.GetAllGlobalSlashEntries(ctx)
 	require.Equal(t, 3, len(globalEntries))
@@ -654,13 +653,13 @@ func TestGlobalSlashEntries(t *testing.T) {
 	// Queue 3 entries for chainIDs 0, 1, 2 an hour later, with incremented ibc seq nums
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		now.Add(time.Hour).Local(), "chain-0", 16, // should appear last for this recv time
-		cryptoutil.NewCryptoIdentityFromIntSeed(20).ProviderConsAddress()))
+		ututil.NewCryptoIdentityFromIntSeed(20).ProviderConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		now.Add(time.Hour).Local(), "chain-1", 11, // should appear middle for this recv time
-		cryptoutil.NewCryptoIdentityFromIntSeed(21).ProviderConsAddress()))
+		ututil.NewCryptoIdentityFromIntSeed(21).ProviderConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		now.Add(time.Hour).Local(), "chain-2", 6, // should appear first for this recv time
-		cryptoutil.NewCryptoIdentityFromIntSeed(22).ProviderConsAddress()))
+		ututil.NewCryptoIdentityFromIntSeed(22).ProviderConsAddress()))
 
 	// Retrieve entries from store
 	globalEntries = providerKeeper.GetAllGlobalSlashEntries(ctx)
@@ -677,13 +676,13 @@ func TestGlobalSlashEntries(t *testing.T) {
 	// Queue 3 entries for chainIDs 5, 6, 7 another hour later
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-5", 50, // should appear middle for this recv time
-			cryptoutil.NewCryptoIdentityFromIntSeed(96).ProviderConsAddress()))
+			ututil.NewCryptoIdentityFromIntSeed(96).ProviderConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-6", 60, // should appear last for this recv time
-			cryptoutil.NewCryptoIdentityFromIntSeed(97).ProviderConsAddress()))
+			ututil.NewCryptoIdentityFromIntSeed(97).ProviderConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-7", 40, // should appear first for this recv time
-			cryptoutil.NewCryptoIdentityFromIntSeed(98).ProviderConsAddress()))
+			ututil.NewCryptoIdentityFromIntSeed(98).ProviderConsAddress()))
 	// Retrieve entries from store
 	globalEntries = providerKeeper.GetAllGlobalSlashEntries(ctx)
 	require.Equal(t, 9, len(globalEntries))
@@ -723,26 +722,26 @@ func TestGlobalSlashEntries(t *testing.T) {
 
 // Tests DeleteGlobalSlashEntriesForConsumer.
 func TestDeleteGlobalSlashEntriesForConsumer(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
-		t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(
+		t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Queue 2 global entries for a consumer chain ID
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(time.Hour), "chain-78", 1,
-			cryptoutil.NewCryptoIdentityFromIntSeed(78).ProviderConsAddress()))
+			ututil.NewCryptoIdentityFromIntSeed(78).ProviderConsAddress()))
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(time.Hour), "chain-78", 2,
-			cryptoutil.NewCryptoIdentityFromIntSeed(79).ProviderConsAddress()))
+			ututil.NewCryptoIdentityFromIntSeed(79).ProviderConsAddress()))
 
 	// Queue 1 global entry for two other consumer chain IDs
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(2*time.Hour), "chain-79", 1,
-			cryptoutil.NewCryptoIdentityFromIntSeed(80).ProviderConsAddress()))
+			ututil.NewCryptoIdentityFromIntSeed(80).ProviderConsAddress()))
 
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(3*time.Hour), "chain-80", 1,
-			cryptoutil.NewCryptoIdentityFromIntSeed(81).ProviderConsAddress()))
+			ututil.NewCryptoIdentityFromIntSeed(81).ProviderConsAddress()))
 
 	// Delete entries for chain-78, confirm those are deleted, and the other two remain
 	providerKeeper.DeleteGlobalSlashEntriesForConsumer(ctx, "chain-78")
@@ -755,7 +754,7 @@ func TestDeleteGlobalSlashEntriesForConsumer(t *testing.T) {
 // TestGlobalSlashEntryDeletion tests the deletion function for
 // global slash entries with assertion of FIFO ordering.
 func TestGlobalSlashEntryDeletion(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	now := time.Now()
@@ -764,13 +763,13 @@ func TestGlobalSlashEntryDeletion(t *testing.T) {
 	require.Equal(t, 0, len(entries))
 
 	providerConsAddrs := []providertypes.ProviderConsAddress{
-		cryptoutil.NewCryptoIdentityFromIntSeed(1).ProviderConsAddress(),
-		cryptoutil.NewCryptoIdentityFromIntSeed(2).ProviderConsAddress(),
-		cryptoutil.NewCryptoIdentityFromIntSeed(3).ProviderConsAddress(),
-		cryptoutil.NewCryptoIdentityFromIntSeed(4).ProviderConsAddress(),
-		cryptoutil.NewCryptoIdentityFromIntSeed(5).ProviderConsAddress(),
-		cryptoutil.NewCryptoIdentityFromIntSeed(6).ProviderConsAddress(),
-		cryptoutil.NewCryptoIdentityFromIntSeed(7).ProviderConsAddress(),
+		ututil.NewCryptoIdentityFromIntSeed(1).ProviderConsAddress(),
+		ututil.NewCryptoIdentityFromIntSeed(2).ProviderConsAddress(),
+		ututil.NewCryptoIdentityFromIntSeed(3).ProviderConsAddress(),
+		ututil.NewCryptoIdentityFromIntSeed(4).ProviderConsAddress(),
+		ututil.NewCryptoIdentityFromIntSeed(5).ProviderConsAddress(),
+		ututil.NewCryptoIdentityFromIntSeed(6).ProviderConsAddress(),
+		ututil.NewCryptoIdentityFromIntSeed(7).ProviderConsAddress(),
 	}
 
 	// Instantiate entries in the expected order we wish to get them back as (ordered by recv time)
@@ -827,7 +826,7 @@ func TestGlobalSlashEntryDeletion(t *testing.T) {
 // TestThrottledPacketData tests chain-specific throttled packet data queuing,
 // iteration and deletion functionality.
 func TestThrottledPacketData(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
@@ -846,11 +845,11 @@ func TestThrottledPacketData(t *testing.T) {
 		{
 			chainID: "chain-0",
 			instances: []throttledPacketDataInstance{
-				{IbcSeqNum: 0, Data: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 1, Data: testkeeper.GetNewVSCMaturedPacketData()},
-				{IbcSeqNum: 2, Data: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 3, Data: testkeeper.GetNewVSCMaturedPacketData()},
-				{IbcSeqNum: 4, Data: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 0, Data: ututil.GetNewSlashPacketData()},
+				{IbcSeqNum: 1, Data: ututil.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 2, Data: ututil.GetNewSlashPacketData()},
+				{IbcSeqNum: 3, Data: ututil.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 4, Data: ututil.GetNewSlashPacketData()},
 			},
 			expectedOrder:              []int{0, 1, 2, 3, 4},
 			toDelete:                   []int{0, 2, 4},
@@ -859,13 +858,13 @@ func TestThrottledPacketData(t *testing.T) {
 		{
 			chainID: "chain-7",
 			instances: []throttledPacketDataInstance{
-				{IbcSeqNum: 96, Data: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 78, Data: testkeeper.GetNewVSCMaturedPacketData()},
-				{IbcSeqNum: 12, Data: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 0, Data: testkeeper.GetNewVSCMaturedPacketData()},
-				{IbcSeqNum: 1, Data: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 78972, Data: testkeeper.GetNewVSCMaturedPacketData()},
-				{IbcSeqNum: 9999999999999999999, Data: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 96, Data: ututil.GetNewSlashPacketData()},
+				{IbcSeqNum: 78, Data: ututil.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 12, Data: ututil.GetNewSlashPacketData()},
+				{IbcSeqNum: 0, Data: ututil.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 1, Data: ututil.GetNewSlashPacketData()},
+				{IbcSeqNum: 78972, Data: ututil.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 9999999999999999999, Data: ututil.GetNewSlashPacketData()},
 			},
 			expectedOrder:              []int{3, 4, 2, 1, 0, 5, 6},
 			toDelete:                   []int{0, 1, 2, 3, 4, 5},
@@ -874,12 +873,12 @@ func TestThrottledPacketData(t *testing.T) {
 		{
 			chainID: "chain-thats-not-0-or-7",
 			instances: []throttledPacketDataInstance{
-				{IbcSeqNum: 9, Data: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 8, Data: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 7, Data: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 6, Data: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 5, Data: testkeeper.GetNewVSCMaturedPacketData()},
-				{IbcSeqNum: 1, Data: testkeeper.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 9, Data: ututil.GetNewSlashPacketData()},
+				{IbcSeqNum: 8, Data: ututil.GetNewSlashPacketData()},
+				{IbcSeqNum: 7, Data: ututil.GetNewSlashPacketData()},
+				{IbcSeqNum: 6, Data: ututil.GetNewSlashPacketData()},
+				{IbcSeqNum: 5, Data: ututil.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 1, Data: ututil.GetNewVSCMaturedPacketData()},
 			},
 			expectedOrder:              []int{5, 4, 3, 2, 1, 0},
 			toDelete:                   []int{1, 2, 3, 4, 5},
@@ -996,15 +995,15 @@ func TestGetLeadingVSCMaturedData(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 		// Queue a slash and vsc matured packet data for some random chain.
 		// These values should never be returned.
-		err := providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
+		err := providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, ututil.GetNewSlashPacketData())
 		require.NoError(t, err)
-		err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, testkeeper.GetNewVSCMaturedPacketData())
+		err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, ututil.GetNewVSCMaturedPacketData())
 		require.NoError(t, err)
 
 		// Queue the data to test against
@@ -1101,15 +1100,15 @@ func TestGetSlashAndTrailingData(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 		// Queue a slash and vsc matured packet data for some random chain.
 		// These values should never be returned.
-		err := providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
+		err := providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, ututil.GetNewSlashPacketData())
 		require.NoError(t, err)
-		err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, testkeeper.GetNewVSCMaturedPacketData())
+		err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, ututil.GetNewVSCMaturedPacketData())
 		require.NoError(t, err)
 
 		// Queue the data to test
@@ -1129,30 +1128,30 @@ func TestGetSlashAndTrailingData(t *testing.T) {
 
 // TestDeleteThrottledPacketDataForConsumer tests the DeleteThrottledPacketDataForConsumer method.
 func TestDeleteThrottledPacketDataForConsumer(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// Queue slash and a VSC matured packet data for chain-48
-	err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-48", 0, testkeeper.GetNewSlashPacketData())
+	err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-48", 0, ututil.GetNewSlashPacketData())
 	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-48", 1, testkeeper.GetNewVSCMaturedPacketData())
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-48", 1, ututil.GetNewVSCMaturedPacketData())
 	require.NoError(t, err)
 
 	// Queue 3 slash, and 4 vsc matured packet data instances for chain-49
-	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 0, testkeeper.GetNewSlashPacketData())
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 0, ututil.GetNewSlashPacketData())
 	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 1, testkeeper.GetNewSlashPacketData())
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 1, ututil.GetNewSlashPacketData())
 	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 2, testkeeper.GetNewSlashPacketData())
+	err = providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 2, ututil.GetNewSlashPacketData())
 	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 3, testkeeper.GetNewVSCMaturedPacketData())
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 3, ututil.GetNewVSCMaturedPacketData())
 	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 4, testkeeper.GetNewVSCMaturedPacketData())
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 4, ututil.GetNewVSCMaturedPacketData())
 	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 5, testkeeper.GetNewVSCMaturedPacketData())
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 5, ututil.GetNewVSCMaturedPacketData())
 	require.NoError(t, err)
-	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 6, testkeeper.GetNewVSCMaturedPacketData())
+	err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 6, ututil.GetNewVSCMaturedPacketData())
 	require.NoError(t, err)
 
 	// Delete all packet data for chain-49, confirm they are deleted
@@ -1186,7 +1185,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
 		// Set max throttled packets param
@@ -1198,9 +1197,9 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		rng := rand.New(rand.NewSource(seed))
 
 		// Queuing up a couple data instances for another chain shouldn't matter
-		err := providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 0, testkeeper.GetNewSlashPacketData())
+		err := providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 0, ututil.GetNewSlashPacketData())
 		require.NoError(t, err)
-		err = providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 1, testkeeper.GetNewVSCMaturedPacketData())
+		err = providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 1, ututil.GetNewVSCMaturedPacketData())
 		require.NoError(t, err)
 
 		// Queue packet data instances until we reach the max (some slash packets, some VSC matured packets)
@@ -1209,9 +1208,9 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 			randBool := rng.Intn(2) == 0
 			var data interface{}
 			if randBool {
-				data = testkeeper.GetNewSlashPacketData()
+				data = ututil.GetNewSlashPacketData()
 			} else {
-				data = testkeeper.GetNewVSCMaturedPacketData()
+				data = ututil.GetNewVSCMaturedPacketData()
 			}
 			// Panic only if we've reached the max
 			if i == int(tc.max-1) {
@@ -1230,7 +1229,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 
 // TestThrottledPacketDataSize tests the getter, setter and incrementer for throttled packet data size.
 func TestThrottledPacketDataSize(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Set params so we can use the default max throttled packet data size
@@ -1270,8 +1269,8 @@ func TestSlashMeter(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(
+			t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
 		if tc.shouldPanic {
@@ -1304,8 +1303,8 @@ func TestSlashMeterReplenishTimeCandidate(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(
+			t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
 		ctx = ctx.WithBlockTime(tc.blockTime)
@@ -1369,7 +1368,7 @@ func assertPendingPacketDataOrdering(t *testing.T, k *keeper.Keeper, ctx sdktype
 func getTenSampleSlashPacketData() []ccvtypes.SlashPacketData {
 	sampleData := []ccvtypes.SlashPacketData{}
 	for i := 0; i < 10; i++ {
-		sampleData = append(sampleData, testkeeper.GetNewSlashPacketData())
+		sampleData = append(sampleData, ututil.GetNewSlashPacketData())
 	}
 	return sampleData
 }
@@ -1378,7 +1377,7 @@ func getTenSampleSlashPacketData() []ccvtypes.SlashPacketData {
 func getTenSampleVSCMaturedPacketData() []ccvtypes.VSCMaturedPacketData {
 	sampleData := []ccvtypes.VSCMaturedPacketData{}
 	for i := 0; i < 10; i++ {
-		sampleData = append(sampleData, testkeeper.GetNewVSCMaturedPacketData())
+		sampleData = append(sampleData, ututil.GetNewVSCMaturedPacketData())
 	}
 	return sampleData
 }

@@ -14,15 +14,14 @@ import (
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	testcrypto "github.com/cosmos/interchain-security/v3/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	keeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 func TestInvalidMsg(t *testing.T) {
-	k, _, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	k, _, _, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	handler := provider.NewHandler(&k)
 	res, err := handler(sdk.NewContext(nil, tmproto.Header{}, false, nil), testdata.NewTestMsg())
 	require.Error(t, err)
@@ -31,10 +30,10 @@ func TestInvalidMsg(t *testing.T) {
 }
 
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
-	providerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(0)
+	providerCryptoId := ututil.NewCryptoIdentityFromIntSeed(0)
 	providerConsAddr := providerCryptoId.ProviderConsAddress()
 
-	consumerCryptoId := testcrypto.NewCryptoIdentityFromIntSeed(1)
+	consumerCryptoId := ututil.NewCryptoIdentityFromIntSeed(1)
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
 	consumerKeyBz := base64.StdEncoding.EncodeToString(consumerCryptoId.ConsensusSDKPubKey().Bytes())
 	consumerKey := `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"` + consumerKeyBz + `"}`
@@ -42,14 +41,14 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 	testCases := []struct {
 		name string
 		// State-mutating setup specific to this test case
-		setup    func(sdk.Context, keeper.Keeper, testkeeper.MockedKeepers)
+		setup    func(sdk.Context, keeper.Keeper, ututil.MockedKeepers)
 		expError bool
 		chainID  string
 	}{
 		{
 			name: "success",
 			setup: func(ctx sdk.Context,
-				k keeper.Keeper, mocks testkeeper.MockedKeepers,
+				k keeper.Keeper, mocks ututil.MockedKeepers,
 			) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
@@ -67,7 +66,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 		{
 			name: "fail: missing validator",
 			setup: func(ctx sdk.Context,
-				k keeper.Keeper, mocks testkeeper.MockedKeepers,
+				k keeper.Keeper, mocks ututil.MockedKeepers,
 			) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
@@ -82,7 +81,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 		{
 			name: "fail: consumer key in use",
 			setup: func(ctx sdk.Context,
-				k keeper.Keeper, mocks testkeeper.MockedKeepers,
+				k keeper.Keeper, mocks ututil.MockedKeepers,
 			) {
 				// Use the consumer key already
 				k.SetValidatorByConsumerAddr(ctx, "chainid", consumerConsAddr, providerConsAddr)
@@ -104,7 +103,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+			k, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 
 			tc.setup(ctx, k, mocks)
 

@@ -7,15 +7,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 func TestValidatorConsensusKeyInUse(t *testing.T) {
-	newValidator := cryptotestutil.NewCryptoIdentityFromIntSeed(0)
-	anotherValidator0 := cryptotestutil.NewCryptoIdentityFromIntSeed(1)
-	anotherValidator1 := cryptotestutil.NewCryptoIdentityFromIntSeed(2)
+	newValidator := ututil.NewCryptoIdentityFromIntSeed(0)
+	anotherValidator0 := ututil.NewCryptoIdentityFromIntSeed(1)
+	anotherValidator1 := ututil.NewCryptoIdentityFromIntSeed(2)
 
 	tests := []struct {
 		name   string
@@ -59,7 +58,7 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		k, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		k, ctx, _, mocks := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().GetValidator(ctx,

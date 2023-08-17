@@ -11,11 +11,10 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/cosmos/interchain-security/v3/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // TestInitAndExportGenesis tests the export and the initialisation of a provider chain genesis
@@ -29,10 +28,10 @@ func TestInitAndExportGenesis(t *testing.T) {
 	params := providertypes.DefaultParams()
 
 	// create validator keys and addresses for key assignment
-	providerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7896)
+	providerCryptoId := ututil.NewCryptoIdentityFromIntSeed(7896)
 	provAddr := providerCryptoId.ProviderConsAddress()
 
-	consumerCryptoId := crypto.NewCryptoIdentityFromIntSeed(7897)
+	consumerCryptoId := ututil.NewCryptoIdentityFromIntSeed(7897)
 	consumerTmPubKey := consumerCryptoId.TMProtoCryptoPublicKey()
 	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
 
@@ -129,7 +128,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	)
 
 	// Instantiate in-mem provider keeper with mocks
-	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	gomock.InOrder(

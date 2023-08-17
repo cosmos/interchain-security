@@ -10,22 +10,22 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // TestGetEstimatedNextFeeDistribution tests next fee distribution parameters.
 func TestGetEstimatedNextFeeDistribution(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	keeperParams := ututil.NewInMemKeeperParams(t)
 	ctx := keeperParams.Ctx
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mocks := testkeeper.NewMockedKeepers(ctrl)
+	mocks := ututil.NewMockedKeepers(ctrl)
 	mockAccountKeeper := mocks.MockAccountKeeper
 	mockBankKeeper := mocks.MockBankKeeper
-	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
+	consumerKeeper := ututil.NewInMemConsumerKeeper(keeperParams, mocks)
 	consumerKeeper.SetParams(ctx, ccvtypes.DefaultParams())
 
 	// Setup mock account balance
@@ -70,13 +70,13 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 }
 
 func TestAllowedRewardDenoms(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	keeperParams := ututil.NewInMemKeeperParams(t)
 	ctx := keeperParams.Ctx
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mocks := testkeeper.NewMockedKeepers(ctrl)
-	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
+	mocks := ututil.NewMockedKeepers(ctrl)
+	consumerKeeper := ututil.NewInMemConsumerKeeper(keeperParams, mocks)
 	params := ccvtypes.DefaultParams()
 	params.RewardDenoms = []string{"ustake"}
 	params.ProviderRewardDenoms = []string{"uatom"}

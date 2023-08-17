@@ -2,7 +2,7 @@
 // Source: x/ccv/types/expected_keepers.go
 
 // Package keeper is a generated GoMock package.
-package keeper
+package ututil
 
 import (
 	context "context"

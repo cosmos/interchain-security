@@ -11,14 +11,13 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v3/testutil/crypto"
-	uthelpers "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 func TestChangeoverToConsumer(t *testing.T) {
-	cIds := []crypto.CryptoIdentity{}
+	cIds := []ututil.CryptoIdentity{}
 	for i := 0; i < 10; i++ {
-		cIds = append(cIds, *crypto.NewCryptoIdentityFromIntSeed(i + 42834729))
+		cIds = append(cIds, *ututil.NewCryptoIdentityFromIntSeed(i + 42834729))
 	}
 
 	// Instantiate 5 sov validators for use in test
@@ -90,8 +89,8 @@ func TestChangeoverToConsumer(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		keeperParams := uthelpers.NewInMemKeeperParams(t)
-		consumerKeeper, ctx, ctrl, mocks := uthelpers.GetConsumerKeeperAndCtx(t, keeperParams)
+		keeperParams := ututil.NewInMemKeeperParams(t)
+		consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
 		defer ctrl.Finish()
 
 		// Set PRECCV to true, as would be done in InitGenesis

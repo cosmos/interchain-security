@@ -18,11 +18,10 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v3/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // TestInitGenesis tests that a consumer chain is correctly initialised from genesis.
@@ -37,7 +36,7 @@ func TestInitGenesis(t *testing.T) {
 	blockHeight := uint64(0)
 
 	// create validator set
-	cId := crypto.NewCryptoIdentityFromIntSeed(234234)
+	cId := ututil.NewCryptoIdentityFromIntSeed(234234)
 	pubKey := cId.TMCryptoPubKey()
 	validator := tmtypes.NewValidator(pubKey, 1)
 	abciValidator := abci.Validator{Address: pubKey.Address(), Power: int64(1)}
@@ -99,17 +98,17 @@ func TestInitGenesis(t *testing.T) {
 	// and finally check that the genesis states are successfully imported in the consumer keeper stores
 	testCases := []struct {
 		name         string
-		malleate     func(sdk.Context, testkeeper.MockedKeepers)
+		malleate     func(sdk.Context, ututil.MockedKeepers)
 		genesis      *ccv.GenesisState
 		assertStates func(sdk.Context, consumerkeeper.Keeper, *ccv.GenesisState)
 	}{
 		{
 			"start a new chain",
-			func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+			func(ctx sdk.Context, mocks ututil.MockedKeepers) {
 				gomock.InOrder(
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 1),
-					testkeeper.ExpectCreateClientMock(ctx, mocks, provClientID, provClientState, provConsState),
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 1),
+					ututil.ExpectGetCapabilityMock(ctx, mocks, 1),
+					ututil.ExpectCreateClientMock(ctx, mocks, provClientID, provClientState, provConsState),
+					ututil.ExpectGetCapabilityMock(ctx, mocks, 1),
 				)
 			},
 			ccv.NewInitialGenesisState(
@@ -129,9 +128,9 @@ func TestInitGenesis(t *testing.T) {
 			},
 		}, {
 			"restart a chain without an established CCV channel",
-			func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+			func(ctx sdk.Context, mocks ututil.MockedKeepers) {
 				gomock.InOrder(
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 2),
+					ututil.ExpectGetCapabilityMock(ctx, mocks, 2),
 				)
 			},
 			ccv.NewRestartGenesisState(
@@ -161,12 +160,12 @@ func TestInitGenesis(t *testing.T) {
 			},
 		}, {
 			"restart a chain with an established CCV channel",
-			func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+			func(ctx sdk.Context, mocks ututil.MockedKeepers) {
 				// simulate a CCV channel handshake completition
 				params.DistributionTransmissionChannel = "distribution-channel"
 				params.ProviderFeePoolAddrStr = "provider-fee-pool-address"
 				gomock.InOrder(
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 2),
+					ututil.ExpectGetCapabilityMock(ctx, mocks, 2),
 				)
 			},
 			// create a genesis for a restarted chain
@@ -213,8 +212,8 @@ func TestInitGenesis(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			keeperParams := testkeeper.NewInMemKeeperParams(t)
-			consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+			keeperParams := ututil.NewInMemKeeperParams(t)
+			consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
 			defer ctrl.Finish()
 
 			// test setup
@@ -288,12 +287,12 @@ func TestExportGenesis(t *testing.T) {
 	// that the resulting genesis struct contains the same states
 	testCases := []struct {
 		name       string
-		malleate   func(sdk.Context, consumerkeeper.Keeper, testkeeper.MockedKeepers)
+		malleate   func(sdk.Context, consumerkeeper.Keeper, ututil.MockedKeepers)
 		expGenesis *ccv.GenesisState
 	}{
 		{
 			"export a chain without an established CCV channel",
-			func(ctx sdk.Context, ck consumerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+			func(ctx sdk.Context, ck consumerkeeper.Keeper, mocks ututil.MockedKeepers) {
 				// populate the states allowed before a CCV channel is established
 				ck.SetProviderClientID(ctx, provClientID)
 				cVal, err := consumertypes.NewCCValidator(validator.Address.Bytes(), 1, pubKey)
@@ -321,7 +320,7 @@ func TestExportGenesis(t *testing.T) {
 		},
 		{
 			"export a chain with an established CCV channel",
-			func(ctx sdk.Context, ck consumerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+			func(ctx sdk.Context, ck consumerkeeper.Keeper, mocks ututil.MockedKeepers) {
 				ck.SetProviderClientID(ctx, provClientID)
 				ck.SetProviderChannel(ctx, provChannelID)
 
@@ -361,8 +360,8 @@ func TestExportGenesis(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			keeperParams := testkeeper.NewInMemKeeperParams(t)
-			consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+			keeperParams := ututil.NewInMemKeeperParams(t)
+			consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
 			defer ctrl.Finish()
 			consumerKeeper.SetParams(ctx, params)
 

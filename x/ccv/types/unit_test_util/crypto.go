@@ -1,4 +1,4 @@
-package crypto
+package ututil
 
 import (
 	cryptoEd25519 "crypto/ed25519"

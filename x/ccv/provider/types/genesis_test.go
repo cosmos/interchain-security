@@ -14,9 +14,9 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v3/testutil/crypto"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // Tests validation of consumer states and params within a provider genesis state
@@ -760,7 +760,7 @@ func TestValidateGenesisState(t *testing.T) {
 func getInitialConsumerGenesis(t *testing.T, chainID string) ccv.GenesisState {
 	t.Helper()
 	// generate validator public key
-	cId := crypto.NewCryptoIdentityFromIntSeed(239668)
+	cId := ututil.NewCryptoIdentityFromIntSeed(239668)
 	pubKey := cId.TMCryptoPubKey()
 
 	// create validator set with single validator

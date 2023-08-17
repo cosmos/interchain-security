@@ -15,11 +15,11 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // TestOnChanOpenInit tests the provider's OnChanOpenInit method against spec.
@@ -27,8 +27,8 @@ import (
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coinit1
 // Spec Tag: [CCV-PCF-COINIT.1]
 func TestOnChanOpenInit(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+	keeperParams := ututil.NewInMemKeeperParams(t)
+	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(
 		t, keeperParams)
 	defer ctrl.Finish()
 	providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
@@ -116,8 +116,8 @@ func TestOnChanOpenTry(t *testing.T) {
 	for _, tc := range testCases {
 
 		// Setup
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		keeperParams := ututil.NewInMemKeeperParams(t)
+		providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(
 			t, keeperParams)
 		providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
 
@@ -186,8 +186,8 @@ func TestOnChanOpenTry(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coack1
 // Spec tag: [CCV-PCF-COACK.1]
 func TestOnChanOpenAck(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+	keeperParams := ututil.NewInMemKeeperParams(t)
+	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(
 		t, keeperParams)
 	defer ctrl.Finish()
 	providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
@@ -213,13 +213,13 @@ func TestOnChanOpenAck(t *testing.T) {
 func TestOnChanOpenConfirm(t *testing.T) {
 	testCases := []struct {
 		name                string
-		mockExpectations    func(sdk.Context, testkeeper.MockedKeepers) []*gomock.Call
+		mockExpectations    func(sdk.Context, ututil.MockedKeepers) []*gomock.Call
 		setDuplicateChannel bool
 		expPass             bool
 	}{
 		{
 			name: "channel not found",
-			mockExpectations: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) []*gomock.Call {
+			mockExpectations: func(ctx sdk.Context, mocks ututil.MockedKeepers) []*gomock.Call {
 				return []*gomock.Call{
 					mocks.MockChannelKeeper.EXPECT().GetChannel(
 						ctx, ccv.ProviderPortID, gomock.Any()).Return(channeltypes.Channel{},
@@ -231,7 +231,7 @@ func TestOnChanOpenConfirm(t *testing.T) {
 		},
 		{
 			name: "too many connection hops",
-			mockExpectations: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) []*gomock.Call {
+			mockExpectations: func(ctx sdk.Context, mocks ututil.MockedKeepers) []*gomock.Call {
 				return []*gomock.Call{
 					mocks.MockChannelKeeper.EXPECT().GetChannel(
 						ctx, ccv.ProviderPortID, gomock.Any()).Return(channeltypes.Channel{
@@ -245,7 +245,7 @@ func TestOnChanOpenConfirm(t *testing.T) {
 		},
 		{
 			name: "connection not found",
-			mockExpectations: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) []*gomock.Call {
+			mockExpectations: func(ctx sdk.Context, mocks ututil.MockedKeepers) []*gomock.Call {
 				return []*gomock.Call{
 					mocks.MockChannelKeeper.EXPECT().GetChannel(
 						ctx, ccv.ProviderPortID, gomock.Any()).Return(channeltypes.Channel{
@@ -262,7 +262,7 @@ func TestOnChanOpenConfirm(t *testing.T) {
 		},
 		{
 			name: "client state not found",
-			mockExpectations: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) []*gomock.Call {
+			mockExpectations: func(ctx sdk.Context, mocks ututil.MockedKeepers) []*gomock.Call {
 				return []*gomock.Call{
 					mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, gomock.Any()).Return(
 						channeltypes.Channel{
@@ -283,18 +283,18 @@ func TestOnChanOpenConfirm(t *testing.T) {
 		},
 		{
 			name: "CCV channel already exists, error returned, but dup channel is not closed",
-			mockExpectations: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) []*gomock.Call {
+			mockExpectations: func(ctx sdk.Context, mocks ututil.MockedKeepers) []*gomock.Call {
 				// Error is returned after all expected mock calls are hit for SetConsumerChain
-				return testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, "consumerChainID")
+				return ututil.GetMocksForSetConsumerChain(ctx, &mocks, "consumerChainID")
 			},
 			setDuplicateChannel: true, // Only case where duplicate channel is setup
 			expPass:             false,
 		},
 		{
 			name: "success",
-			mockExpectations: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) []*gomock.Call {
+			mockExpectations: func(ctx sdk.Context, mocks ututil.MockedKeepers) []*gomock.Call {
 				// Full SetConsumerChain method should run without error, hitting all expected mocks
-				return testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, "consumerChainID")
+				return ututil.GetMocksForSetConsumerChain(ctx, &mocks, "consumerChainID")
 			},
 			expPass: true,
 		},
@@ -302,8 +302,8 @@ func TestOnChanOpenConfirm(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+		keeperParams := ututil.NewInMemKeeperParams(t)
+		providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(
 			t, keeperParams)
 
 		gomock.InOrder(tc.mockExpectations(ctx, mocks)...)

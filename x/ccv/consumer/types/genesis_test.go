@@ -15,8 +15,8 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v3/testutil/crypto"
 	types "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 const (
@@ -35,7 +35,7 @@ var (
 // and its Validate() method over different genesis scenarios
 func TestValidateInitialGenesisState(t *testing.T) {
 	// generate validator public key
-	cId := crypto.NewCryptoIdentityFromIntSeed(238934)
+	cId := ututil.NewCryptoIdentityFromIntSeed(238934)
 	pubKey := cId.TMCryptoPubKey()
 
 	// create validator set with single validator
@@ -260,7 +260,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 // and its Validate() method over different genesis scenarios
 func TestValidateRestartGenesisState(t *testing.T) {
 	// generate validator private/public key
-	cId := crypto.NewCryptoIdentityFromIntSeed(234234)
+	cId := ututil.NewCryptoIdentityFromIntSeed(234234)
 	pubKey := cId.TMCryptoPubKey()
 
 	// create validator set with single validator

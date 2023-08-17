@@ -13,9 +13,9 @@ import (
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // TestProviderProposalHandler tests the highest level handler for proposals
@@ -93,20 +93,20 @@ func TestProviderProposalHandler(t *testing.T) {
 	for _, tc := range testCases {
 
 		// Setup
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		providerKeeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		keeperParams := ututil.NewInMemKeeperParams(t)
+		providerKeeper, ctx, _, mocks := ututil.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		// Mock expectations depending on expected outcome
 		switch {
 		case tc.expValidConsumerAddition:
-			gomock.InOrder(testkeeper.GetMocksForCreateConsumerClient(
+			gomock.InOrder(ututil.GetMocksForCreateConsumerClient(
 				ctx, &mocks, "chainID", clienttypes.NewHeight(2, 3),
 			)...)
 
 		case tc.expValidConsumerRemoval:
-			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+			ututil.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
 
 		case tc.expValidEquivocation:
 			providerKeeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(equivocation.GetConsensusAddress()))

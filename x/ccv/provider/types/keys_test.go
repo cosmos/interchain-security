@@ -8,8 +8,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	cryptoutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // Tests that all singular keys, or prefixes to fully resolves keys are non duplicate byte values.
@@ -184,9 +184,9 @@ func TestGlobalSlashEntryKeyAndParse(t *testing.T) {
 	now := time.Now()
 
 	providerConsAddrs := []providertypes.ProviderConsAddress{
-		cryptoutil.NewCryptoIdentityFromIntSeed(0).ProviderConsAddress(),
-		cryptoutil.NewCryptoIdentityFromIntSeed(1).ProviderConsAddress(),
-		cryptoutil.NewCryptoIdentityFromIntSeed(2).ProviderConsAddress(),
+		ututil.NewCryptoIdentityFromIntSeed(0).ProviderConsAddress(),
+		ututil.NewCryptoIdentityFromIntSeed(1).ProviderConsAddress(),
+		ututil.NewCryptoIdentityFromIntSeed(2).ProviderConsAddress(),
 	}
 
 	entries := []providertypes.GlobalSlashEntry{}
@@ -208,10 +208,10 @@ func TestGlobalSlashEntryKeyAndParse(t *testing.T) {
 
 // Tests the construction and parsing of ChainIdAndConsAddr keys
 func TestChainIdAndConsAddrAndParse(t *testing.T) {
-	cIds := []*cryptoutil.CryptoIdentity{
-		cryptoutil.NewCryptoIdentityFromIntSeed(99998),
-		cryptoutil.NewCryptoIdentityFromIntSeed(99999),
-		cryptoutil.NewCryptoIdentityFromIntSeed(100000),
+	cIds := []*ututil.CryptoIdentity{
+		ututil.NewCryptoIdentityFromIntSeed(99998),
+		ututil.NewCryptoIdentityFromIntSeed(99999),
+		ututil.NewCryptoIdentityFromIntSeed(100000),
 	}
 	pubKey1 := cIds[0].TMCryptoPubKey()
 	pubKey2 := cIds[1].TMCryptoPubKey()

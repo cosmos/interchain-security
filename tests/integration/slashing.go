@@ -17,9 +17,9 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	keepertestutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // TestRelayAndApplyDowntimePacket tests that downtime slash packets can be properly relayed
@@ -248,7 +248,7 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	s.SetupTransferChannel()
 
 	// Mock a proper slash packet from consumer
-	spd := keepertestutil.GetNewSlashPacketData()
+	spd := ututil.GetNewSlashPacketData()
 
 	// We don't want truly randomized fields, infraction needs to be specified
 	if spd.Infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
