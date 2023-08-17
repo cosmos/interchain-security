@@ -15,7 +15,6 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -94,30 +93,30 @@ func GetMocksForStopConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomo
 }
 
 func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
-	expectedProviderValConsAddr providertypes.ProviderConsAddress,
+	expectedProviderValConsAddr sdk.ConsAddress,
 	valToReturn stakingtypes.Validator, expectJailing bool,
 ) []*gomock.Call {
 	// These first two calls are always made.
 	calls := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-			ctx, expectedProviderValConsAddr.ToSdkConsAddr()).Return(
+			ctx, expectedProviderValConsAddr).Return(
 			valToReturn, true,
 		).Times(1),
 
 		mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
-			expectedProviderValConsAddr.ToSdkConsAddr()).Return(false).Times(1),
+			expectedProviderValConsAddr).Return(false).Times(1),
 	}
 
 	if expectJailing {
 		calls = append(calls, mocks.MockStakingKeeper.EXPECT().Jail(
 			gomock.Eq(ctx),
-			gomock.Eq(expectedProviderValConsAddr.ToSdkConsAddr()),
+			gomock.Eq(expectedProviderValConsAddr),
 		).Return())
 
 		// JailUntil is set in this code path.
 		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour).Times(1))
 		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().JailUntil(ctx,
-			expectedProviderValConsAddr.ToSdkConsAddr(), gomock.Any()).Times(1))
+			expectedProviderValConsAddr, gomock.Any()).Times(1))
 	}
 
 	return calls

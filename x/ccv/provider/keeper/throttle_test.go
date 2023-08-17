@@ -15,6 +15,7 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -118,7 +119,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
@@ -207,7 +208,7 @@ func TestSlashMeterReplenishment(t *testing.T) {
 	}
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, mocks := provider.GetProviderKeeperAndCtx(
 			t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
@@ -288,7 +289,7 @@ func TestSlashMeterReplenishment(t *testing.T) {
 // Tests that the slash meter exhibits desired behavior when multiple replenishments are needed
 // to restore it to a full value.
 func TestConsecutiveReplenishments(t *testing.T) {
-	providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(
+	providerKeeper, ctx, ctrl, mocks := provider.GetProviderKeeperAndCtx(
 		t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -363,7 +364,7 @@ func TestConsecutiveReplenishments(t *testing.T) {
 // TestSlashMeterAllowanceChanges tests the behavior of a full slash meter
 // when total voting power becomes higher and lower.
 func TestTotalVotingPowerChanges(t *testing.T) {
-	providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, mocks := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	now := time.Now()
@@ -496,7 +497,7 @@ func TestNegativeSlashMeter(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, mocks := provider.GetProviderKeeperAndCtx(
 			t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
@@ -606,7 +607,7 @@ func TestGetSlashMeterAllowance(t *testing.T) {
 	}
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, mocks := provider.GetProviderKeeperAndCtx(
 			t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
@@ -629,7 +630,7 @@ func TestGetSlashMeterAllowance(t *testing.T) {
 // TestGlobalSlashEntries tests the queue and iteration functions for global slash entries,
 // with assertion of FIFO ordering
 func TestGlobalSlashEntries(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Consistent time for "now"
@@ -641,11 +642,11 @@ func TestGlobalSlashEntries(t *testing.T) {
 	// Queue 3 entries for chainIDs 0, 1, 2, note their respective ibc seq nums are
 	// ordered differently than the chainIDs would be iterated.
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-		now.Local(), "chain-0", 15, ututil.NewCryptoIdentityFromIntSeed(10).ProviderConsAddress()))
+		now.Local(), "chain-0", 15, providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(10))))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-		now.Local(), "chain-1", 10, ututil.NewCryptoIdentityFromIntSeed(11).ProviderConsAddress()))
+		now.Local(), "chain-1", 10, providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(11))))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-		now.Local(), "chain-2", 5, ututil.NewCryptoIdentityFromIntSeed(12).ProviderConsAddress()))
+		now.Local(), "chain-2", 5, providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(12))))
 
 	globalEntries = providerKeeper.GetAllGlobalSlashEntries(ctx)
 	require.Equal(t, 3, len(globalEntries))
@@ -653,13 +654,13 @@ func TestGlobalSlashEntries(t *testing.T) {
 	// Queue 3 entries for chainIDs 0, 1, 2 an hour later, with incremented ibc seq nums
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		now.Add(time.Hour).Local(), "chain-0", 16, // should appear last for this recv time
-		ututil.NewCryptoIdentityFromIntSeed(20).ProviderConsAddress()))
+		providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(20))))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		now.Add(time.Hour).Local(), "chain-1", 11, // should appear middle for this recv time
-		ututil.NewCryptoIdentityFromIntSeed(21).ProviderConsAddress()))
+		providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(21))))
 	providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		now.Add(time.Hour).Local(), "chain-2", 6, // should appear first for this recv time
-		ututil.NewCryptoIdentityFromIntSeed(22).ProviderConsAddress()))
+		providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(22))))
 
 	// Retrieve entries from store
 	globalEntries = providerKeeper.GetAllGlobalSlashEntries(ctx)
@@ -676,13 +677,13 @@ func TestGlobalSlashEntries(t *testing.T) {
 	// Queue 3 entries for chainIDs 5, 6, 7 another hour later
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-5", 50, // should appear middle for this recv time
-			ututil.NewCryptoIdentityFromIntSeed(96).ProviderConsAddress()))
+			providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(96))))
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-6", 60, // should appear last for this recv time
-			ututil.NewCryptoIdentityFromIntSeed(97).ProviderConsAddress()))
+			providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(97))))
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour).Local(), "chain-7", 40, // should appear first for this recv time
-			ututil.NewCryptoIdentityFromIntSeed(98).ProviderConsAddress()))
+			providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(98))))
 	// Retrieve entries from store
 	globalEntries = providerKeeper.GetAllGlobalSlashEntries(ctx)
 	require.Equal(t, 9, len(globalEntries))
@@ -722,26 +723,26 @@ func TestGlobalSlashEntries(t *testing.T) {
 
 // Tests DeleteGlobalSlashEntriesForConsumer.
 func TestDeleteGlobalSlashEntriesForConsumer(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(
 		t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Queue 2 global entries for a consumer chain ID
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(time.Hour), "chain-78", 1,
-			ututil.NewCryptoIdentityFromIntSeed(78).ProviderConsAddress()))
+			providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(78))))
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(time.Hour), "chain-78", 2,
-			ututil.NewCryptoIdentityFromIntSeed(79).ProviderConsAddress()))
+			providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(79))))
 
 	// Queue 1 global entry for two other consumer chain IDs
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(2*time.Hour), "chain-79", 1,
-			ututil.NewCryptoIdentityFromIntSeed(80).ProviderConsAddress()))
+			providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(80))))
 
 	providerKeeper.QueueGlobalSlashEntry(ctx,
 		providertypes.NewGlobalSlashEntry(time.Now().Add(3*time.Hour), "chain-80", 1,
-			ututil.NewCryptoIdentityFromIntSeed(81).ProviderConsAddress()))
+			providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(81))))
 
 	// Delete entries for chain-78, confirm those are deleted, and the other two remain
 	providerKeeper.DeleteGlobalSlashEntriesForConsumer(ctx, "chain-78")
@@ -754,7 +755,7 @@ func TestDeleteGlobalSlashEntriesForConsumer(t *testing.T) {
 // TestGlobalSlashEntryDeletion tests the deletion function for
 // global slash entries with assertion of FIFO ordering.
 func TestGlobalSlashEntryDeletion(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	now := time.Now()
@@ -763,13 +764,13 @@ func TestGlobalSlashEntryDeletion(t *testing.T) {
 	require.Equal(t, 0, len(entries))
 
 	providerConsAddrs := []providertypes.ProviderConsAddress{
-		ututil.NewCryptoIdentityFromIntSeed(1).ProviderConsAddress(),
-		ututil.NewCryptoIdentityFromIntSeed(2).ProviderConsAddress(),
-		ututil.NewCryptoIdentityFromIntSeed(3).ProviderConsAddress(),
-		ututil.NewCryptoIdentityFromIntSeed(4).ProviderConsAddress(),
-		ututil.NewCryptoIdentityFromIntSeed(5).ProviderConsAddress(),
-		ututil.NewCryptoIdentityFromIntSeed(6).ProviderConsAddress(),
-		ututil.NewCryptoIdentityFromIntSeed(7).ProviderConsAddress(),
+		providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(1)),
+		providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(2)),
+		providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(3)),
+		providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(4)),
+		providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(5)),
+		providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(6)),
+		providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(7)),
 	}
 
 	// Instantiate entries in the expected order we wish to get them back as (ordered by recv time)
@@ -826,7 +827,7 @@ func TestGlobalSlashEntryDeletion(t *testing.T) {
 // TestThrottledPacketData tests chain-specific throttled packet data queuing,
 // iteration and deletion functionality.
 func TestThrottledPacketData(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
@@ -995,7 +996,7 @@ func TestGetLeadingVSCMaturedData(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
@@ -1100,7 +1101,7 @@ func TestGetSlashAndTrailingData(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
@@ -1128,7 +1129,7 @@ func TestGetSlashAndTrailingData(t *testing.T) {
 
 // TestDeleteThrottledPacketDataForConsumer tests the DeleteThrottledPacketDataForConsumer method.
 func TestDeleteThrottledPacketDataForConsumer(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
@@ -1185,7 +1186,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
 		// Set max throttled packets param
@@ -1229,7 +1230,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 
 // TestThrottledPacketDataSize tests the getter, setter and incrementer for throttled packet data size.
 func TestThrottledPacketDataSize(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Set params so we can use the default max throttled packet data size
@@ -1269,7 +1270,7 @@ func TestSlashMeter(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(
 			t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
@@ -1303,7 +1304,7 @@ func TestSlashMeterReplenishTimeCandidate(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(
 			t, ututil.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 

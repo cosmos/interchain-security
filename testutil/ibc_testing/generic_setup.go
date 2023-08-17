@@ -15,7 +15,7 @@ import (
 	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
-	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
 )
 
 // Contains generic setup code for running integration tests against a provider, consumer,
@@ -99,7 +99,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	providerApp := providerChain.App.(Tp)
 	providerKeeper := providerApp.GetProviderKeeper()
 
-	prop := ututil.GetTestConsumerAdditionProp()
+	prop := provider.GetTestConsumerAdditionProp()
 	prop.ChainId = chainID
 	// NOTE: the initial height passed to CreateConsumerClient
 	// must be the height on the consumer when InitGenesis is called

@@ -11,6 +11,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
@@ -19,7 +20,7 @@ import (
 func TestParams(t *testing.T) {
 	// Construct an in-mem keeper with registered key table
 	keeperParams := ututil.NewInMemKeeperParams(t)
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, keeperParams)
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
 	defaultParams := providertypes.DefaultParams()

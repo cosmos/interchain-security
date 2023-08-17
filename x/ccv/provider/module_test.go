@@ -93,7 +93,7 @@ func TestInitGenesis(t *testing.T) {
 		// Setup
 		//
 		keeperParams := ututil.NewInMemKeeperParams(t)
-		providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper, ctx, ctrl, mocks := provider.GetProviderKeeperAndCtx(t, keeperParams)
 
 		appModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
 		genState := types.NewGenesisState(

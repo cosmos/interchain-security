@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // A validator's consensus address on the provider chain.
@@ -59,6 +60,20 @@ func (c *ConsumerConsAddress) ToSdkConsAddr() sdk.ConsAddress {
 // in the same format as sdk.ConsAddress
 func (c *ConsumerConsAddress) String() string {
 	return c.ToSdkConsAddr().String()
+}
+
+// Returns the cons address of the crypto identity as a ProviderConsAddress.
+// In most cases, one crypto identity should NOT be casted to both a ProviderConsAddress and ConsumerConsAddress.
+// However, test intention is left to the caller.
+func ProviderConsAddressFromCId(cId ututil.CryptoIdentity) ProviderConsAddress {
+	return NewProviderConsAddress(cId.SDKValConsAddress())
+}
+
+// Returns the cons address of the crypto identity as a ConsumerConsAddress.
+// In most cases, one crypto identity should NOT be casted to both a ProviderConsAddress and ConsumerConsAddress.
+// However, test intention is left to the caller.
+func ConsumerConsAddressFromCId(cId ututil.CryptoIdentity) ConsumerConsAddress {
+	return NewConsumerConsAddress(cId.SDKValConsAddress())
 }
 
 // KeyAssignmentValidateBasic validates all the genesis state for key assignment

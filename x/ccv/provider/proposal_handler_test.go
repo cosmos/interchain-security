@@ -94,7 +94,7 @@ func TestProviderProposalHandler(t *testing.T) {
 
 		// Setup
 		keeperParams := ututil.NewInMemKeeperParams(t)
-		providerKeeper, ctx, _, mocks := ututil.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper, ctx, _, mocks := provider.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
@@ -106,7 +106,7 @@ func TestProviderProposalHandler(t *testing.T) {
 			)...)
 
 		case tc.expValidConsumerRemoval:
-			ututil.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+			provider.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
 
 		case tc.expValidEquivocation:
 			providerKeeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(equivocation.GetConsensusAddress()))

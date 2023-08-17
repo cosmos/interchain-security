@@ -28,7 +28,7 @@ import (
 // Spec Tag: [CCV-PCF-COINIT.1]
 func TestOnChanOpenInit(t *testing.T) {
 	keeperParams := ututil.NewInMemKeeperParams(t)
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(
 		t, keeperParams)
 	defer ctrl.Finish()
 	providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
@@ -117,7 +117,7 @@ func TestOnChanOpenTry(t *testing.T) {
 
 		// Setup
 		keeperParams := ututil.NewInMemKeeperParams(t)
-		providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, mocks := provider.GetProviderKeeperAndCtx(
 			t, keeperParams)
 		providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
 
@@ -187,7 +187,7 @@ func TestOnChanOpenTry(t *testing.T) {
 // Spec tag: [CCV-PCF-COACK.1]
 func TestOnChanOpenAck(t *testing.T) {
 	keeperParams := ututil.NewInMemKeeperParams(t)
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(
 		t, keeperParams)
 	defer ctrl.Finish()
 	providerModule := provider.NewAppModule(&providerKeeper, *keeperParams.ParamsSubspace)
@@ -303,7 +303,7 @@ func TestOnChanOpenConfirm(t *testing.T) {
 	for _, tc := range testCases {
 
 		keeperParams := ututil.NewInMemKeeperParams(t)
-		providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(
+		providerKeeper, ctx, ctrl, mocks := provider.GetProviderKeeperAndCtx(
 			t, keeperParams)
 
 		gomock.InOrder(tc.mockExpectations(ctx, mocks)...)

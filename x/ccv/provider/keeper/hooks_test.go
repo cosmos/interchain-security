@@ -7,7 +7,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
@@ -34,8 +36,8 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 				// We are trying to add a new validator, but its address has already been used
 				// by another validator
 				k.SetValidatorByConsumerAddr(ctx, "chainid",
-					newValidator.ConsumerConsAddress(),
-					anotherValidator0.ProviderConsAddress(),
+					providertypes.ConsumerConsAddressFromCId(*newValidator),
+					providertypes.ProviderConsAddressFromCId(*anotherValidator0),
 				)
 			},
 			expect: true,
@@ -46,19 +48,19 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 				// We are trying to add a new validator, but its address has already been used
 				// by another validator, of which there are several, across potentially several chains
 				k.SetValidatorByConsumerAddr(ctx, "chainid0",
-					newValidator.ConsumerConsAddress(),
-					anotherValidator0.ProviderConsAddress(),
+					providertypes.ConsumerConsAddressFromCId(*newValidator),
+					providertypes.ProviderConsAddressFromCId(*anotherValidator0),
 				)
 				k.SetValidatorByConsumerAddr(ctx, "chainid1",
-					anotherValidator1.ConsumerConsAddress(),
-					anotherValidator1.ProviderConsAddress(),
+					providertypes.ConsumerConsAddressFromCId(*anotherValidator1),
+					providertypes.ProviderConsAddressFromCId(*anotherValidator1),
 				)
 			},
 			expect: true,
 		},
 	}
 	for _, tt := range tests {
-		k, ctx, _, mocks := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+		k, ctx, _, mocks := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().GetValidator(ctx,

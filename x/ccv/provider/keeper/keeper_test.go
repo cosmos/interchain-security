@@ -14,7 +14,9 @@ import (
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	ibcsimapp "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
+	provider "github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
@@ -23,7 +25,7 @@ const consumer = "consumer"
 
 // TestValsetUpdateBlockHeight tests the getter, setter, and deletion methods for valset updates mapped to block height
 func TestValsetUpdateBlockHeight(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	blockHeight, found := providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(0))
@@ -49,7 +51,7 @@ func TestValsetUpdateBlockHeight(t *testing.T) {
 
 // TestGetAllValsetUpdateBlockHeights tests GetAllValsetUpdateBlockHeights behaviour correctness
 func TestGetAllValsetUpdateBlockHeights(t *testing.T) {
-	pk, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	cases := []types.ValsetUpdateIdToHeight{
@@ -90,7 +92,7 @@ func TestGetAllValsetUpdateBlockHeights(t *testing.T) {
 
 // TestSlashAcks tests the getter, setter, iteration, and deletion methods for stored slash acknowledgements
 func TestSlashAcks(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	chainID := consumer
@@ -127,7 +129,7 @@ func TestSlashAcks(t *testing.T) {
 
 // TestAppendSlashAck tests the append method for stored slash acknowledgements
 func TestAppendSlashAck(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	p := []string{"alice", "bob", "charlie"}
@@ -147,7 +149,7 @@ func TestAppendSlashAck(t *testing.T) {
 
 // TestPendingVSCs tests the getter, appending, and deletion methods for stored pending VSCs
 func TestPendingVSCs(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	chainID := consumer
@@ -200,7 +202,7 @@ func TestPendingVSCs(t *testing.T) {
 
 // TestInitHeight tests the getter and setter methods for the stored block heights (on provider) when a given consumer chain was started
 func TestInitHeight(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	tc := []struct {
@@ -223,7 +225,7 @@ func TestInitHeight(t *testing.T) {
 
 // TestGetAllUnbondingOpIndexes tests GetAllUnbondingOpIndexes behavior correctness
 func TestGetAllUnbondingOpIndexes(t *testing.T) {
-	pk, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	ops := []types.VscUnbondingOps{
@@ -262,7 +264,7 @@ func TestGetAllUnbondingOpIndexes(t *testing.T) {
 }
 
 func TestMaturedUnbondingOps(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	ids := providerKeeper.GetMaturedUnbondingOps(ctx)
@@ -279,7 +281,7 @@ func TestMaturedUnbondingOps(t *testing.T) {
 }
 
 func TestInitTimeoutTimestamp(t *testing.T) {
-	pk, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	now := time.Now().UTC()
@@ -333,7 +335,7 @@ func TestInitTimeoutTimestamp(t *testing.T) {
 
 // TestVscSendTimestamp tests the set, deletion, and iteration methods for VSC timeout timestamps
 func TestVscSendTimestamp(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	now := time.Now().UTC()
@@ -392,7 +394,7 @@ func TestVscSendTimestamp(t *testing.T) {
 
 // TestGetAllConsumerChains tests GetAllConsumerChains behaviour correctness
 func TestGetAllConsumerChains(t *testing.T) {
-	pk, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
@@ -414,7 +416,7 @@ func TestGetAllConsumerChains(t *testing.T) {
 
 // TestGetAllChannelToChains tests GetAllChannelToChains behaviour correctness
 func TestGetAllChannelToChains(t *testing.T) {
-	pk, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
@@ -436,7 +438,7 @@ func TestGetAllChannelToChains(t *testing.T) {
 
 // TestGetAllUnbondingOps tests GetAllUnbondingOps behaviour correctness
 func TestGetAllUnbondingOps(t *testing.T) {
-	pk, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	ops := []types.UnbondingOp{
@@ -475,7 +477,7 @@ func TestGetAllUnbondingOps(t *testing.T) {
 
 // TestRemoveConsumerFromUnbondingOp tests RemoveConsumerFromUnbondingOp behaviour correctness
 func TestRemoveConsumerFromUnbondingOp(t *testing.T) {
-	pk, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	var expectedID uint64 = 1
@@ -522,11 +524,11 @@ func TestRemoveConsumerFromUnbondingOp(t *testing.T) {
 
 // TestSetSlashLog tests slash log getter and setter methods
 func TestSetSlashLog(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	addrWithDoubleSigns := ututil.NewCryptoIdentityFromIntSeed(1).ProviderConsAddress()
-	addrWithoutDoubleSigns := ututil.NewCryptoIdentityFromIntSeed(2).ProviderConsAddress()
+	addrWithDoubleSigns := providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(1))
+	addrWithoutDoubleSigns := providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(2))
 
 	providerKeeper.SetSlashLog(ctx, addrWithDoubleSigns)
 	require.True(t, providerKeeper.GetSlashLog(ctx, addrWithDoubleSigns))

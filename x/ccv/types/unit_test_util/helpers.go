@@ -4,9 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"testing"
-	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -29,8 +27,6 @@ import (
 
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -110,27 +106,6 @@ func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 	}
 }
 
-// NewInMemProviderKeeper instantiates an in-mem provider keeper from params and mocked keepers
-func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) providerkeeper.Keeper {
-	return providerkeeper.NewKeeper(
-		params.Cdc,
-		params.StoreKey,
-		*params.ParamsSubspace,
-		mocks.MockScopedKeeper,
-		mocks.MockChannelKeeper,
-		mocks.MockPortKeeper,
-		mocks.MockConnectionKeeper,
-		mocks.MockClientKeeper,
-		mocks.MockStakingKeeper,
-		mocks.MockSlashingKeeper,
-		mocks.MockAccountKeeper,
-		mocks.MockEvidenceKeeper,
-		mocks.MockDistributionKeeper,
-		mocks.MockBankKeeper,
-		authtypes.FeeCollectorName,
-	)
-}
-
 // NewInMemConsumerKeeper instantiates an in-mem consumer keeper from params and mocked keepers
 func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consumerkeeper.Keeper {
 	return consumerkeeper.NewKeeper(
@@ -149,19 +124,6 @@ func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consu
 		mocks.MockIBCCoreKeeper,
 		authtypes.FeeCollectorName,
 	)
-}
-
-// Returns an in-memory provider keeper, context, controller, and mocks, given a test instance and parameters.
-//
-// Note: Calling ctrl.Finish() at the end of a test function ensures that
-// no unexpected calls to external keepers are made.
-func GetProviderKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
-	providerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers,
-) {
-	t.Helper()
-	ctrl := gomock.NewController(t)
-	mocks := NewMockedKeepers(ctrl)
-	return NewInMemProviderKeeper(params, mocks), params.Ctx, ctrl, mocks
 }
 
 // Return an in-memory consumer keeper, context, controller, and mocks, given a test instance and parameters.
@@ -204,47 +166,6 @@ func GetNewVSCMaturedPacketData() types.VSCMaturedPacketData {
 	b := make([]byte, 8)
 	_, _ = rand.Read(b)
 	return types.VSCMaturedPacketData{ValsetUpdateId: binary.BigEndian.Uint64(b)}
-}
-
-// SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
-// which asserts that a consumer chain was properly stopped from StopConsumerChain().
-func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
-	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers,
-) {
-	t.Helper()
-	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
-		"chainID", clienttypes.NewHeight(4, 5))
-	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
-	expectations = append(expectations, GetMocksForStopConsumerChain(ctx, &mocks)...)
-
-	gomock.InOrder(expectations...)
-
-	prop := GetTestConsumerAdditionProp()
-	err := providerKeeper.CreateConsumerClient(ctx, prop)
-	require.NoError(t, err)
-	err = providerKeeper.SetConsumerChain(ctx, "channelID")
-	require.NoError(t, err)
-}
-
-func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
-	prop := providertypes.NewConsumerAdditionProposal(
-		"chainID",
-		"description",
-		"chainID",
-		clienttypes.NewHeight(4, 5),
-		[]byte("gen_hash"),
-		[]byte("bin_hash"),
-		time.Now(),
-		types.DefaultConsumerRedistributeFrac,
-		types.DefaultBlocksPerDistributionTransmission,
-		"",
-		types.DefaultHistoricalEntries,
-		types.DefaultCCVTimeoutPeriod,
-		types.DefaultTransferTimeoutPeriod,
-		types.DefaultConsumerUnbondingPeriod,
-	).(*providertypes.ConsumerAdditionProposal)
-
-	return prop
 }
 
 // Obtains a CrossChainValidator with a newly generated key, and randomized field values

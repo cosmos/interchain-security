@@ -21,7 +21,7 @@ import (
 )
 
 func TestInvalidMsg(t *testing.T) {
-	k, _, _, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	k, _, _, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	handler := provider.NewHandler(&k)
 	res, err := handler(sdk.NewContext(nil, tmproto.Header{}, false, nil), testdata.NewTestMsg())
 	require.Error(t, err)
@@ -31,10 +31,10 @@ func TestInvalidMsg(t *testing.T) {
 
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 	providerCryptoId := ututil.NewCryptoIdentityFromIntSeed(0)
-	providerConsAddr := providerCryptoId.ProviderConsAddress()
+	providerConsAddr := providertypes.ProviderConsAddressFromCId(*providerCryptoId)
 
 	consumerCryptoId := ututil.NewCryptoIdentityFromIntSeed(1)
-	consumerConsAddr := consumerCryptoId.ConsumerConsAddress()
+	consumerConsAddr := providertypes.ConsumerConsAddressFromCId(*consumerCryptoId)
 	consumerKeyBz := base64.StdEncoding.EncodeToString(consumerCryptoId.ConsensusSDKPubKey().Bytes())
 	consumerKey := `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"` + consumerKeyBz + `"}`
 
@@ -103,7 +103,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			k, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+			k, ctx, ctrl, mocks := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 
 			tc.setup(ctx, k, mocks)
 

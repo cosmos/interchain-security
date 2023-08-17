@@ -16,8 +16,10 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
+	provider "github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
@@ -27,7 +29,7 @@ func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 	consumerKey := ututil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 
-	keeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	keeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	keeper.SetValidatorConsumerPubKey(ctx, chainID, providerAddr, consumerKey)
@@ -45,7 +47,7 @@ func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
 }
 
 func TestGetAllValidatorConsumerPubKey(t *testing.T) {
-	pk, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	seed := time.Now().UnixNano()
@@ -56,7 +58,7 @@ func TestGetAllValidatorConsumerPubKey(t *testing.T) {
 	testAssignments := []types.ValidatorConsumerPubKey{}
 	for i := 0; i < numAssignments; i++ {
 		consumerKey := ututil.NewCryptoIdentityFromIntSeed(i).TMProtoCryptoPublicKey()
-		providerAddr := ututil.NewCryptoIdentityFromIntSeed(numAssignments + i).ProviderConsAddress()
+		providerAddr := providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(numAssignments + i))
 		testAssignments = append(testAssignments,
 			types.ValidatorConsumerPubKey{
 				ChainId:      chainIDs[rng.Intn(len(chainIDs))],
@@ -107,7 +109,7 @@ func TestValidatorByConsumerAddrCRUD(t *testing.T) {
 	providerAddr := types.NewProviderConsAddress([]byte("providerAddr"))
 	consumerAddr := types.NewConsumerConsAddress([]byte("consumerAddr"))
 
-	keeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	keeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	keeper.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
@@ -125,7 +127,7 @@ func TestValidatorByConsumerAddrCRUD(t *testing.T) {
 }
 
 func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
-	pk, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	seed := time.Now().UnixNano()
@@ -135,8 +137,8 @@ func TestGetAllValidatorsByConsumerAddr(t *testing.T) {
 	numAssignments := 10
 	testAssignments := []types.ValidatorByConsumerAddr{}
 	for i := 0; i < numAssignments; i++ {
-		consumerAddr := ututil.NewCryptoIdentityFromIntSeed(i).ConsumerConsAddress()
-		providerAddr := ututil.NewCryptoIdentityFromIntSeed(numAssignments + i).ProviderConsAddress()
+		consumerAddr := providertypes.ConsumerConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(i))
+		providerAddr := providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(numAssignments + i))
 		testAssignments = append(testAssignments,
 			types.ValidatorByConsumerAddr{
 				ChainId:      chainIDs[rng.Intn(len(chainIDs))],
@@ -189,7 +191,7 @@ func TestKeyAssignmentReplacementCRUD(t *testing.T) {
 	expCPubKey := ututil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	var expPower int64 = 100
 
-	keeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	keeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	keeper.SetKeyAssignmentReplacement(ctx, chainID, providerAddr, expCPubKey, expPower)
@@ -205,7 +207,7 @@ func TestKeyAssignmentReplacementCRUD(t *testing.T) {
 }
 
 func TestGetAllKeyAssignmentReplacements(t *testing.T) {
-	pk, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	chainID := "consumer-1"
@@ -217,7 +219,7 @@ func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 	testAssignments := []types.KeyAssignmentReplacement{}
 	for i := 0; i < numAssignments; i++ {
 		consumerKey := ututil.NewCryptoIdentityFromIntSeed(i).TMProtoCryptoPublicKey()
-		providerAddr := ututil.NewCryptoIdentityFromIntSeed(numAssignments + i).ProviderConsAddress()
+		providerAddr := providertypes.ProviderConsAddressFromCId(*ututil.NewCryptoIdentityFromIntSeed(numAssignments + i))
 		testAssignments = append(testAssignments,
 			types.KeyAssignmentReplacement{
 				ProviderAddr: providerAddr.ToSdkConsAddr(),
@@ -249,7 +251,7 @@ func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 	consumerAddr := types.NewConsumerConsAddress([]byte("consumerAddr1"))
 	vscID := uint64(1)
 
-	keeper, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	keeper, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	addrsToPrune := keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
@@ -268,7 +270,7 @@ func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 }
 
 func TestGetAllConsumerAddrsToPrune(t *testing.T) {
-	pk, ctx, ctrl, _ := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	seed := time.Now().UnixNano()
@@ -416,9 +418,9 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 				require.NoError(t, err)
 				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
-					consumerIdentities[0].ConsumerConsAddress())
+					providertypes.ConsumerConsAddressFromCId(*consumerIdentities[0]))
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
+				require.Equal(t, providertypes.ProviderConsAddressFromCId(*providerIdentities[0]), providerAddr)
 			},
 		},
 		{
@@ -452,9 +454,9 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 				require.NoError(t, err)
 				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
-					consumerIdentities[1].ConsumerConsAddress())
+					providertypes.ConsumerConsAddressFromCId(*consumerIdentities[1]))
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
+				require.Equal(t, providertypes.ProviderConsAddressFromCId(*providerIdentities[0]), providerAddr)
 			},
 		},
 		{
@@ -485,9 +487,9 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 				require.Error(t, err)
 				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
-					consumerIdentities[0].ConsumerConsAddress())
+					providertypes.ConsumerConsAddressFromCId(*consumerIdentities[0]))
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
+				require.Equal(t, providertypes.ProviderConsAddressFromCId(*providerIdentities[0]), providerAddr)
 			},
 		},
 		{
@@ -524,9 +526,9 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 				require.NoError(t, err)
 				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
-					consumerIdentities[0].ConsumerConsAddress())
+					providertypes.ConsumerConsAddressFromCId(*consumerIdentities[0]))
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
+				require.Equal(t, providertypes.ProviderConsAddressFromCId(*providerIdentities[0]), providerAddr)
 			},
 		},
 		{
@@ -553,9 +555,9 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 				require.NoError(t, err)
 				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
-					consumerIdentities[1].ConsumerConsAddress())
+					providertypes.ConsumerConsAddressFromCId(*consumerIdentities[1]))
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
+				require.Equal(t, providertypes.ProviderConsAddressFromCId(*providerIdentities[0]), providerAddr)
 			},
 		},
 		{
@@ -582,9 +584,9 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				)
 				require.Error(t, err)
 				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID,
-					consumerIdentities[0].ConsumerConsAddress())
+					providertypes.ConsumerConsAddressFromCId(*consumerIdentities[0]))
 				require.True(t, found)
-				require.Equal(t, providerIdentities[0].ProviderConsAddress(), providerAddr)
+				require.Equal(t, providertypes.ProviderConsAddressFromCId(*providerIdentities[0]), providerAddr)
 			},
 		},
 		{
@@ -608,7 +610,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			k, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+			k, ctx, ctrl, mocks := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 
 			tc.mockSetup(ctx, k, mocks)
 			tc.doActions(ctx, k)
@@ -629,7 +631,7 @@ func TestCannotReassignDefaultKeyAssignment(t *testing.T) {
 	// We only need one identity, a single validator / single key
 	cId := ututil.NewCryptoIdentityFromIntSeed(49827489)
 
-	providerKeeper, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, mocks := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Mock that the validator is validating with the single key, as confirmed by provider's staking keeper
@@ -752,7 +754,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 	// and key assignments tx's. For each simulated 'block', the validator set replication
 	// properties and the pruning property are checked.
 	runRandomExecution := func() {
-		k, ctx, ctrl, mocks := ututil.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+		k, ctx, ctrl, mocks := provider.GetProviderKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 
 		// Create validator sets for the provider and consumer. These are used to check the validator set
 		// replication property.
@@ -865,7 +867,8 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				// For each active validator on the provider chain
 				if 0 < providerValset.power[i] {
 					// Get the assigned key
-					ck, found := k.GetValidatorConsumerPubKey(ctx, CHAINID, idP.ProviderConsAddress())
+					pConsAddr := providertypes.ProviderConsAddressFromCId(*idP)
+					ck, found := k.GetValidatorConsumerPubKey(ctx, CHAINID, pConsAddr)
 					if !found {
 						// Use default if unassigned
 						ck = idP.TMProtoCryptoPublicKey()
@@ -884,7 +887,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			// Check validator set replication backward direction
 			for i := range consumerValset.identities {
 				// For each active validator on the consumer chain
-				consC := consumerValset.identities[i].ConsumerConsAddress()
+				consC := providertypes.ConsumerConsAddressFromCId(*consumerValset.identities[i])
 				if 0 < consumerValset.power[i] {
 					// Get the provider who assigned the key
 					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
@@ -918,7 +921,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			// Build up the historicSlashQueries data structure
 			for i := range consumerValset.identities {
 				// For each active validator on the consumer chain
-				consC := consumerValset.identities[i].ConsumerConsAddress()
+				consC := providertypes.ConsumerConsAddressFromCId(*consumerValset.identities[i])
 				if 0 < consumerValset.power[i] {
 					// Get the provider who assigned the key
 					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
