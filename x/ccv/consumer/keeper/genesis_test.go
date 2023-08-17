@@ -18,6 +18,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -213,7 +214,7 @@ func TestInitGenesis(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			keeperParams := ututil.NewInMemKeeperParams(t)
-			consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
+			consumerKeeper, ctx, ctrl, mocks := consumer.GetConsumerKeeperAndCtx(t, keeperParams)
 			defer ctrl.Finish()
 
 			// test setup
@@ -361,7 +362,7 @@ func TestExportGenesis(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			keeperParams := ututil.NewInMemKeeperParams(t)
-			consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
+			consumerKeeper, ctx, ctrl, mocks := consumer.GetConsumerKeeperAndCtx(t, keeperParams)
 			defer ctrl.Finish()
 			consumerKeeper.SetParams(ctx, params)
 

@@ -123,7 +123,7 @@ func TestOnChanOpenInit(t *testing.T) {
 
 		// Common setup
 		keeperParams := ututil.NewInMemKeeperParams(t)
-		consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(
+		consumerKeeper, ctx, ctrl, mocks := consumer.GetConsumerKeeperAndCtx(
 			t, keeperParams)
 		consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
 
@@ -175,7 +175,7 @@ func TestOnChanOpenInit(t *testing.T) {
 // Spec tag: [CCV-CCF-COTRY.1]
 func TestOnChanOpenTry(t *testing.T) {
 	keeperParams := ututil.NewInMemKeeperParams(t)
-	consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
+	consumerKeeper, ctx, ctrl, _ := consumer.GetConsumerKeeperAndCtx(t, keeperParams)
 	// No external keeper methods should be called
 	defer ctrl.Finish()
 	consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
@@ -275,7 +275,7 @@ func TestOnChanOpenAck(t *testing.T) {
 	for _, tc := range testCases {
 		// Common setup
 		keeperParams := ututil.NewInMemKeeperParams(t)
-		consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(
+		consumerKeeper, ctx, ctrl, mocks := consumer.GetConsumerKeeperAndCtx(
 			t, keeperParams)
 		consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
 
@@ -326,7 +326,7 @@ func TestOnChanOpenAck(t *testing.T) {
 // Spec tag: [CCV-CCF-COCONFIRM.1]
 func TestOnChanOpenConfirm(t *testing.T) {
 	keeperParams := ututil.NewInMemKeeperParams(t)
-	consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
+	consumerKeeper, ctx, ctrl, _ := consumer.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 	consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
 
@@ -367,7 +367,7 @@ func TestOnChanCloseInit(t *testing.T) {
 
 	for _, tc := range testCases {
 		keeperParams := ututil.NewInMemKeeperParams(t)
-		consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
+		consumerKeeper, ctx, ctrl, _ := consumer.GetConsumerKeeperAndCtx(t, keeperParams)
 		consumerModule := consumer.NewAppModule(consumerKeeper, *keeperParams.ParamsSubspace)
 
 		if tc.establishedProviderExists {
@@ -391,7 +391,7 @@ func TestOnChanCloseInit(t *testing.T) {
 // Spec tag: [CCV-PCF-CCCONFIRM.1]
 func TestOnChanCloseConfirm(t *testing.T) {
 	keeperParams := ututil.NewInMemKeeperParams(t)
-	consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
+	consumerKeeper, ctx, ctrl, _ := consumer.GetConsumerKeeperAndCtx(t, keeperParams)
 
 	// No external keeper methods should be called
 	defer ctrl.Finish()

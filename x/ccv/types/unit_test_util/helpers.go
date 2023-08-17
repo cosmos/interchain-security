@@ -16,7 +16,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -25,8 +24,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -106,39 +103,6 @@ func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 	}
 }
 
-// NewInMemConsumerKeeper instantiates an in-mem consumer keeper from params and mocked keepers
-func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consumerkeeper.Keeper {
-	return consumerkeeper.NewKeeper(
-		params.Cdc,
-		params.StoreKey,
-		*params.ParamsSubspace,
-		mocks.MockScopedKeeper,
-		mocks.MockChannelKeeper,
-		mocks.MockPortKeeper,
-		mocks.MockConnectionKeeper,
-		mocks.MockClientKeeper,
-		mocks.MockSlashingKeeper,
-		mocks.MockBankKeeper,
-		mocks.MockAccountKeeper,
-		mocks.MockIBCTransferKeeper,
-		mocks.MockIBCCoreKeeper,
-		authtypes.FeeCollectorName,
-	)
-}
-
-// Return an in-memory consumer keeper, context, controller, and mocks, given a test instance and parameters.
-//
-// Note: Calling ctrl.Finish() at the end of a test function ensures that
-// no unexpected calls to external keepers are made.
-func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
-	consumerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers,
-) {
-	t.Helper()
-	ctrl := gomock.NewController(t)
-	mocks := NewMockedKeepers(ctrl)
-	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
-}
-
 type PrivateKey struct {
 	PrivKey cryptotypes.PrivKey
 }
@@ -166,16 +130,4 @@ func GetNewVSCMaturedPacketData() types.VSCMaturedPacketData {
 	b := make([]byte, 8)
 	_, _ = rand.Read(b)
 	return types.VSCMaturedPacketData{ValsetUpdateId: binary.BigEndian.Uint64(b)}
-}
-
-// Obtains a CrossChainValidator with a newly generated key, and randomized field values
-func GetNewCrossChainValidator(t *testing.T) consumertypes.CrossChainValidator {
-	t.Helper()
-	b1 := make([]byte, 8)
-	_, _ = rand.Read(b1)
-	power := int64(binary.BigEndian.Uint64(b1))
-	privKey := ed25519.GenPrivKey()
-	validator, err := consumertypes.NewCCValidator(privKey.PubKey().Address(), power, privKey.PubKey())
-	require.NoError(t, err)
-	return validator
 }

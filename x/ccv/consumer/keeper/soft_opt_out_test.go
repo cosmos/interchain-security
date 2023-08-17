@@ -7,6 +7,7 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
@@ -100,7 +101,7 @@ func TestUpdateSmallestNonOptOutPower(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+			consumerKeeper, ctx, ctrl, _ := consumer.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 			moduleParams := ccvtypes.DefaultParams()
 			moduleParams.SoftOptOutThreshold = tc.optOutThresh
 			consumerKeeper.SetParams(ctx, moduleParams)

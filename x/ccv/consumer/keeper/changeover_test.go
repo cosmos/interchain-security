@@ -11,6 +11,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer"
 	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
@@ -90,7 +91,7 @@ func TestChangeoverToConsumer(t *testing.T) {
 	for _, tc := range testCases {
 
 		keeperParams := ututil.NewInMemKeeperParams(t)
-		consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
+		consumerKeeper, ctx, ctrl, mocks := consumer.GetConsumerKeeperAndCtx(t, keeperParams)
 		defer ctrl.Finish()
 
 		// Set PRECCV to true, as would be done in InitGenesis

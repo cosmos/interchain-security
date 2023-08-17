@@ -6,13 +6,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
 )
 
 // TestParams tests getters/setters for consumer params
 func TestParams(t *testing.T) {
-	consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, _ := consumer.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	consumerKeeper.SetParams(ctx, ccv.DefaultParams())
 

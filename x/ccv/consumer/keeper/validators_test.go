@@ -15,6 +15,7 @@ import (
 	tmrand "github.com/cometbft/cometbft/libs/rand"
 	tmtypes "github.com/cometbft/cometbft/types"
 
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer"
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ututil "github.com/cosmos/interchain-security/v3/x/ccv/types/unit_test_util"
@@ -23,7 +24,7 @@ import (
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper
 func TestApplyCCValidatorChanges(t *testing.T) {
 	keeperParams := ututil.NewInMemKeeperParams(t)
-	consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
+	consumerKeeper, ctx, ctrl, _ := consumer.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
 	// utility functions
@@ -111,7 +112,7 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 
 // TestIsValidatorJailed tests the IsValidatorJailed method for a consumer keeper
 func TestIsValidatorJailed(t *testing.T) {
-	consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, mocks := consumer.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Consumer keeper from test setup should return false for IsPrevStandaloneChain()
@@ -147,7 +148,7 @@ func TestIsValidatorJailed(t *testing.T) {
 }
 
 func TestSlash(t *testing.T) {
-	consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, mocks := consumer.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// If we call slash with infraction type empty, no slash packet will be queued
@@ -197,7 +198,7 @@ func TestSlash(t *testing.T) {
 // Tests the getter and setter behavior for historical info
 func TestHistoricalInfo(t *testing.T) {
 	keeperParams := ututil.NewInMemKeeperParams(t)
-	consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, keeperParams)
+	consumerKeeper, ctx, ctrl, _ := consumer.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockHeight(15)
 

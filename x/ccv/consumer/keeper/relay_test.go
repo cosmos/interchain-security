@@ -21,6 +21,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/bytes"
 
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -115,7 +116,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		},
 	}
 
-	consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, _ := consumer.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Set channel to provider, still in context of consumer chain
@@ -168,7 +169,7 @@ func TestOnRecvVSCPacketDuplicateUpdates(t *testing.T) {
 	providerCCVChannelID := "providerCCVChannelID"
 
 	// Keeper setup
-	consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, _ := consumer.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	consumerKeeper.SetProviderChannel(ctx, consumerCCVChannelID)
 	consumerKeeper.SetParams(ctx, types.DefaultParams())
@@ -214,7 +215,7 @@ func TestOnRecvVSCPacketDuplicateUpdates(t *testing.T) {
 // TestSendPackets tests the SendPackets method failing
 func TestSendPacketsFailure(t *testing.T) {
 	// Keeper setup
-	consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, mocks := consumer.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
 	consumerKeeper.SetParams(ctx, types.DefaultParams())
@@ -237,7 +238,7 @@ func TestSendPacketsFailure(t *testing.T) {
 
 func TestSendPackets(t *testing.T) {
 	// Keeper setup
-	consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, mocks := consumer.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
 	consumerKeeper.SetParams(ctx, types.DefaultParams())
 
@@ -324,7 +325,7 @@ func TestOnAcknowledgementPacketError(t *testing.T) {
 	defer ctrl.Finish()
 	keeperParams := ututil.NewInMemKeeperParams(t)
 	mocks := ututil.NewMockedKeepers(ctrl)
-	consumerKeeper := ututil.NewInMemConsumerKeeper(keeperParams, mocks)
+	consumerKeeper := consumer.NewInMemConsumerKeeper(keeperParams, mocks)
 	ctx := keeperParams.Ctx
 
 	// Set an established provider channel for later in test
@@ -386,7 +387,7 @@ func TestOnAcknowledgementPacketError(t *testing.T) {
 // in conjunction with the ibc module's execution of "acknowledgePacket",
 func TestOnAcknowledgementPacketResult(t *testing.T) {
 	// Setup
-	consumerKeeper, ctx, ctrl, _ := ututil.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, _ := consumer.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	setupSlashBeforeVscMatured(ctx, &consumerKeeper)
@@ -467,7 +468,7 @@ func setupSlashBeforeVscMatured(ctx sdk.Context, k *consumerkeeper.Keeper) {
 // Regression test for https://github.com/cosmos/interchain-security/issues/1145
 func TestSendPacketsDeletion(t *testing.T) {
 	// Keeper setup
-	consumerKeeper, ctx, ctrl, mocks := ututil.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
+	consumerKeeper, ctx, ctrl, mocks := consumer.GetConsumerKeeperAndCtx(t, ututil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
 	consumerKeeper.SetParams(ctx, types.DefaultParams())
