@@ -5,19 +5,19 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	ibcsimapp "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
-	"github.com/cosmos/interchain-security/v3/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/types"
+	ututil "github.com/cosmos/interchain-security/x/types/unit_test_util"
 )
 
 func TestAccumulateChanges(t *testing.T) {
-	testKeys := ibcsimapp.CreateTestPubKeys(2)
 
-	tmPubKey, _ := cryptocodec.ToTmProtoPublicKey(testKeys[0])
-	tmPubKey2, _ := cryptocodec.ToTmProtoPublicKey(testKeys[1])
+	cId1 := ututil.NewCryptoIdentityFromIntSeed(1)
+	cId2 := ututil.NewCryptoIdentityFromIntSeed(2)
+
+	tmPubKey := cId1.TMProtoCryptoPublicKey()
+	tmPubKey2 := cId2.TMProtoCryptoPublicKey()
 
 	testCases := []struct {
 		name     string
