@@ -496,27 +496,31 @@ type ValPubKey struct {
 }
 
 func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+	if *verbose {
+		log.Println("getting validator power for chain: ", chain, " validator: ", validator)
+	}
+	command := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
 
 		"query", "tendermint-validator-set",
 
 		`--node`, tr.getQueryNode(chain),
-	).CombinedOutput()
+	)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := command.CombinedOutput()
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		log.Fatalf("encountered an error when executing command '%s': %v, output: %s", command.String(), err, string(bz))
 	}
 
 	valset := TmValidatorSetYaml{}
 
 	err = yaml.Unmarshal(bz, &valset)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		log.Fatalf("yaml.Unmarshal returned an error while unmarshalling validator set: %v, input: %s", err, string(bz))
 	}
 
 	total, err := strconv.Atoi(valset.Total)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		log.Fatalf("strconv.Atoi returned an error while coonverting total for validator set: %v, input: %s", err, string(valset.Total))
 	}
 
 	if total != len(valset.Validators) {
@@ -530,7 +534,7 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 
 			votingPower, err := strconv.Atoi(val.VotingPower)
 			if err != nil {
-				log.Fatalf("error: %v", err)
+				log.Fatalf("strconv.Atoi returned an error while convering validator voting power: %v, voting power string: %s", err, val.VotingPower)
 			}
 
 			return uint(votingPower)
