@@ -111,7 +111,7 @@ type Param struct {
 func (tr TestRun) getState(modelState State) State {
 	systemState := State{}
 	for k, modelState := range modelState {
-		fmt.Println("Getting model state for chain: ", k)
+		log.Println("Getting model state for chain: ", k)
 		systemState[k] = tr.getChainState(k, modelState)
 	}
 
@@ -768,5 +768,4 @@ func (tr TestRun) curlJsonRPCRequest(method, params, address string) {
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
 
 	executeCommandWithVerbosity(cmd, "curlJsonRPCRequest", true)
-	log.Println("this was the curlJsonRPCRequest function")
 }
