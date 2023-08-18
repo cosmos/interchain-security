@@ -498,13 +498,13 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 	if *verbose {
 		log.Println("getting validator power for chain: ", chain, " validator: ", validator)
 	}
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	command := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
 
 		"query", "tendermint-validator-set",
 
 		`--node`, tr.getQueryNode(chain),
 	)
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := command.CombinedOutput()
 	if err != nil {
 		log.Fatalf("encountered an error when executing command '%s': %v, output: %s", command.String(), err, string(bz))
@@ -519,7 +519,7 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 
 	total, err := strconv.Atoi(valset.Total)
 	if err != nil {
-		log.Fatalf("strconv.Atoi returned an error while coonverting total for validator set: %v, input: %s", err, string(valset.Total))
+		log.Fatalf("strconv.Atoi returned an error while coonverting total for validator set: %v, input: %s", err, valset.Total)
 	}
 
 	if total != len(valset.Validators) {
