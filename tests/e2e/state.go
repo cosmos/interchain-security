@@ -221,20 +221,20 @@ func (tr TestRun) waitBlocks(chain chainID, blocks uint, timeout time.Duration) 
 		params := fmt.Sprintf(`{"num_blocks": "%d"}`, blocks)
 
 		tr.curlJsonRPCRequest(method, params, tcpAddress)
-	} else {
-		startBlock := tr.getBlockHeight(chain)
+		return
+	}
+	startBlock := tr.getBlockHeight(chain)
 
-		start := time.Now()
-		for {
-			thisBlock := tr.getBlockHeight(chain)
-			if thisBlock >= startBlock+blocks {
-				return
-			}
-			if time.Since(start) > timeout {
-				panic(fmt.Sprintf("\n\n\nwaitBlocks method has timed out after: %s\n\n", timeout))
-			}
-			time.Sleep(time.Second)
+	start := time.Now()
+	for {
+		thisBlock := tr.getBlockHeight(chain)
+		if thisBlock >= startBlock+blocks {
+			return
 		}
+		if time.Since(start) > timeout {
+			panic(fmt.Sprintf("\n\n\nwaitBlocks method has timed out after: %s\n\n", timeout))
+		}
+		time.Sleep(time.Second)
 	}
 }
 
