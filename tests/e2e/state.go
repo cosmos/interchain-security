@@ -185,7 +185,7 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
 	}
 
-	fmt.Println("Done getting chain state: ")
+	log.Println("Done getting chain state: ")
 
 	return chainState
 }
@@ -221,7 +221,6 @@ func (tr TestRun) waitBlocks(chain chainID, blocks uint, timeout time.Duration) 
 		params := fmt.Sprintf(`{"num_blocks": "%d"}`, blocks)
 
 		tr.curlJsonRPCRequest(method, params, tcpAddress)
-		log.Println("This was the waitBlocks function")
 	} else {
 		startBlock := tr.getBlockHeight(chain)
 
