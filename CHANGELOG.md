@@ -1,16 +1,22 @@
 # CHANGELOG
 
-## [Unreleased]
+## [Unreleased for Provider]
 
-Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
+Add an entry to the unreleased provider section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a provider release.
 
 * (deps!) [#1196](https://github.com/cosmos/interchain-security/pull/1196) Bump [ibc-go](https://github.com/cosmos/ibc-go) to [v7.2.0](https://github.com/cosmos/ibc-go/releases/tag/v7.2.0).
 * `[x/ccv/provider]` (fix) [#1076](https://github.com/cosmos/interchain-security/pull/1076) Add `InitTimeoutTimestamps` and `ExportedVscSendTimestamps` to exported genesis.
+
+## [Unreleased for Consumer]
+
+Add an entry to the unreleased consumer section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a consumer release.
+
+* (deps!) [#1196](https://github.com/cosmos/interchain-security/pull/1196) Bump [ibc-go](https://github.com/cosmos/ibc-go) to [v7.2.0](https://github.com/cosmos/ibc-go/releases/tag/v7.2.0).
 * (feat!) [#1024](https://github.com/cosmos/interchain-security/pull/1024) throttle with retries, consumer changes  
 * (fix!) revert consumer packet data changes from #1037 [#1150](https://github.com/cosmos/interchain-security/pull/1150)
 * (fix!) proper deletion of pending packets [#1146](https://github.com/cosmos/interchain-security/pull/1146)
 * (feat!) optimize pending packets storage on consumer, with migration! [#1037](https://github.com/cosmos/interchain-security/pull/1037)
-* (feat) introduce the gRPC query `/interchain_security/ccv/consumer/provider-info` and CLI command `interchain-security-cd q ccvconsumer provider-info`to retrieve provider info from the consumer chain.
+* (feat)  introduce the gRPC query `/interchain_security/ccv/consumer/provider-info` and CLI command `interchain-security-cd q ccvconsumer provider-info`to retrieve provider info from the consumer chain. [#1164](https://github.com/cosmos/interchain-security/pull/1164).
 
 ## v3.1.0
 
