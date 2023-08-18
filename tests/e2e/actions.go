@@ -55,12 +55,11 @@ func (tr TestRun) sendTokens(
 	}
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(action.chain, 2, 30*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 type StartChainAction struct {
@@ -213,12 +212,11 @@ func (tr TestRun) submitTextProposal(
 		`-y`,
 	).CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(action.chain, 1, 10*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 type submitConsumerAdditionProposalAction struct {
@@ -271,7 +269,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json")).CombinedOutput()
 
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -288,12 +286,11 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	).CombinedOutput()
 
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(chainID("provi"), 2, 10*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 type submitConsumerRemovalProposalAction struct {
@@ -332,7 +329,7 @@ func (tr TestRun) submitConsumerRemovalProposal(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json")).CombinedOutput()
 
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -349,12 +346,11 @@ func (tr TestRun) submitConsumerRemovalProposal(
 	).CombinedOutput()
 
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(chainID("provi"), 2, 20*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 type submitParamChangeLegacyProposalAction struct {
@@ -407,7 +403,7 @@ func (tr TestRun) submitParamChangeProposal(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/params-proposal.json")).CombinedOutput()
 
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -425,12 +421,11 @@ func (tr TestRun) submitParamChangeProposal(
 
 	bz, err = cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(action.chain, 2, 60*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 type submitEquivocationProposalAction struct {
@@ -479,7 +474,7 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/equivocation-proposal.json")).CombinedOutput()
 
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -496,12 +491,11 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	).CombinedOutput()
 
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(chainID("provi"), 2, 30*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 type voteGovProposalAction struct {
@@ -536,7 +530,7 @@ func (tr *TestRun) voteGovProposal(
 				`-y`,
 			).CombinedOutput()
 			if err != nil {
-				log.Fatal("Encountered an error:", err, "\n", string(bz))
+				log.Fatal(err, "\n", string(bz))
 			}
 		}(val, vote)
 	}
@@ -544,7 +538,6 @@ func (tr *TestRun) voteGovProposal(
 	wg.Wait()
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(action.chain, 1, 10*time.Second)
-	log.Println("This was after the call to waitBlocks")
 	tr.WaitTime(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
 }
 
@@ -575,7 +568,7 @@ func (tr *TestRun) startConsumerChain(
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
@@ -621,7 +614,7 @@ func (tr TestRun) changeoverChain(
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
@@ -798,7 +791,7 @@ func (tr TestRun) addChainToGorelayer(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly", "config", "init").CombinedOutput()
 	if err != nil && !strings.Contains(string(bz), "config already exists") {
-		log.Fatal("Encountered an error:", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	chainConfigFileName := fmt.Sprintf("/root/%s_config.json", chainId)
@@ -808,7 +801,7 @@ func (tr TestRun) addChainToGorelayer(
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
 		bashCommand).CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -847,7 +840,7 @@ func (tr TestRun) addChainToHermes(
 		bashCommand,
 	).CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	// Save mnemonic to file within container
@@ -857,7 +850,7 @@ func (tr TestRun) addChainToHermes(
 		saveMnemonicCommand,
 	).CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -868,7 +861,7 @@ func (tr TestRun) addChainToHermes(
 	).CombinedOutput()
 
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 }
 
@@ -946,9 +939,7 @@ func (tr TestRun) addIbcConnectionGorelayer(
 	executeCommand(newClientsCommand, "new clients")
 
 	tr.waitBlocks(action.chainA, 1, 10*time.Second)
-	log.Println("This was after the call to waitBlocks")
 	tr.waitBlocks(action.chainB, 1, 10*time.Second)
-	log.Println("This was after the call to waitBlocks")
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	newConnectionCommand := exec.Command("docker", "exec", tr.containerConfig.instanceName, "rly",
@@ -959,9 +950,7 @@ func (tr TestRun) addIbcConnectionGorelayer(
 	executeCommand(newConnectionCommand, "new connection")
 
 	tr.waitBlocks(action.chainA, 1, 10*time.Second)
-	log.Println("This was after the call to waitBlocks")
 	tr.waitBlocks(action.chainB, 1, 10*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 type createIbcClientsAction struct {
@@ -1253,16 +1242,27 @@ func executeCommandWithVerbosity(cmd *exec.Cmd, cmdName string, verbose bool) {
 		fmt.Println(cmdName+" cmd:", cmd.String())
 	}
 
-	out, err := cmd.CombinedOutput()
+	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Fatal("Encountered an error when running command\ncommand:", cmd, "\nerror:", err)
+		log.Fatal(err)
 	}
-	if verbose {
-		log.Println("Here is my output for this command:", cmdName, "\nactual command:", cmd.String())
-		log.Println(string(out))
-		log.Println("This is the end of the output for the command.")
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
 	}
-	time.Sleep(200 * time.Millisecond)
+
+	scanner := bufio.NewScanner(cmdReader)
+
+	for scanner.Scan() {
+		out := scanner.Text()
+		if verbose {
+			fmt.Println(cmdName + ": " + out)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // Executes a command with verbosity specified by CLI flag
@@ -1292,10 +1292,6 @@ func (tr TestRun) relayPacketsGorelayer(
 	action relayPacketsAction,
 	verbose bool,
 ) {
-	tr.waitBlocks(action.chainA, 3, 30*time.Second)
-	log.Println("This was after the call to waitBlocks")
-	tr.waitBlocks(action.chainB, 3, 30*time.Second)
-	log.Println("This was after the call to waitBlocks")
 	pathName := tr.GetPathNameForGorelayer(action.chainA, action.chainB)
 
 	// rly transact relay-packets [path-name] --channel [channel-id]
@@ -1309,13 +1305,10 @@ func (tr TestRun) relayPacketsGorelayer(
 	}
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
-	tr.waitBlocks(action.chainA, 3, 30*time.Second)
-	log.Println("This was after the call to waitBlocks")
-	tr.waitBlocks(action.chainB, 3, 30*time.Second)
-	log.Println("This was after the call to waitBlocks")
+	tr.waitBlocks(action.chainA, 1, 30*time.Second)
 }
 
 func (tr TestRun) relayPacketsHermes(
@@ -1335,13 +1328,10 @@ func (tr TestRun) relayPacketsHermes(
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	tr.waitBlocks(action.chainA, 1, 30*time.Second)
-	log.Println("This was after the call to waitBlocks")
-	tr.waitBlocks(action.chainB, 1, 30*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 type relayRewardPacketsToProviderAction struct {
@@ -1359,12 +1349,10 @@ func (tr TestRun) relayRewardPacketsToProvider(
 	currentBlock := uint64(tr.getBlockHeight(action.consumerChain))
 	if currentBlock <= blockPerDistribution {
 		tr.waitBlocks(action.consumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
-		log.Println("This was after the call to waitBlocks")
 	}
 
 	tr.relayPackets(relayPacketsAction{chainA: action.consumerChain, chainB: action.providerChain, port: action.port, channel: action.channel}, verbose)
 	tr.waitBlocks(action.providerChain, 1, 10*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 type delegateTokensAction struct {
@@ -1404,12 +1392,11 @@ func (tr TestRun) delegateTokens(
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(action.chain, 2, 10*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 type unbondTokensAction struct {
@@ -1450,12 +1437,11 @@ func (tr TestRun) unbondTokens(
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(action.chain, 2, 20*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 type cancelUnbondTokensAction struct {
@@ -1490,7 +1476,7 @@ func (tr TestRun) cancelUnbondTokens(
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 	creationHeight := gjson.Get(string(bz), "entries.0.creation_height").Int()
 	if creationHeight == 0 {
@@ -1519,12 +1505,11 @@ func (tr TestRun) cancelUnbondTokens(
 
 	bz, err = cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(action.chain, 2, 20*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 type redelegateTokensAction struct {
@@ -1562,7 +1547,7 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 		`--home`, tr.getValidatorHome(action.chain, action.txSender),
 		`--node`, tr.getValidatorNode(action.chain, action.txSender),
 		// Need to manually set gas limit past default (200000), since redelegate has a lot of operations
-		`--gas`, "1200000",
+		`--gas`, "900000",
 		`--keyring-backend`, `test`,
 		`-y`,
 	)
@@ -1573,12 +1558,11 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(action.chain, 2, 10*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 type downtimeSlashAction struct {
@@ -1605,7 +1589,6 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 	tr.setValidatorDowntime(action.chain, action.validator, true, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
 	tr.waitBlocks(action.chain, 10, 3*time.Minute)
-	log.Println("This was after the call to waitBlocks")
 	// Bring validator back up
 	tr.setValidatorDowntime(action.chain, action.validator, false, verbose)
 }
@@ -1629,7 +1612,6 @@ func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, dow
 
 		tr.curlJsonRPCRequest(method, params, address)
 		tr.waitBlocks(chain, 1, 10*time.Second)
-		log.Println("This was after the call to waitBlocks")
 		return
 	}
 
@@ -1651,7 +1633,7 @@ func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, dow
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 }
 
@@ -1702,13 +1684,12 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	// wait for 1 blocks to make sure that tx got included
 	// in a block and packets committed before proceeding
 	tr.waitBlocks(action.provider, 2, time.Minute)
-	log.Println("This was after the call to waitBlocks")
 }
 
 type registerRepresentativeAction struct {
@@ -1757,12 +1738,11 @@ func (tr TestRun) registerRepresentative(
 				`-y`,
 			).CombinedOutput()
 			if err != nil {
-				log.Fatal("Encountered an error:", err, "\n", string(bz))
+				log.Fatal(err, "\n", string(bz))
 			}
 
 			// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 			tr.waitBlocks(action.chain, 1, 10*time.Second)
-			log.Println("This was after the call to waitBlocks")
 		}(val, stake)
 	}
 
@@ -1794,11 +1774,10 @@ func (tr TestRun) registerConsumerRewardDenom(action registerConsumerRewardDenom
 	}
 
 	if err != nil {
-		log.Fatal("Encountered an error", err, "\n", string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	tr.waitBlocks(action.chain, 2, 10*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 // Creates an additional node on selected chain
@@ -1828,10 +1807,9 @@ func (tr TestRun) invokeDoublesignSlash(
 			"/testnet-scripts/cause-doublesign.sh", chainConfig.binaryName, string(action.validator),
 			string(chainConfig.chainId), chainConfig.ipPrefix).CombinedOutput()
 		if err != nil {
-			log.Fatal("Encountered an error:", err, "\n", string(bz))
+			log.Fatal(err, "\n", string(bz))
 		}
 		tr.waitBlocks("provi", 10, 2*time.Minute)
-		log.Println("This was after the call to waitBlocks")
 	} else { // tr.useCometMock
 		validatorAddress := tr.GetValidatorAddress(action.chain, action.validator)
 
@@ -1841,8 +1819,8 @@ func (tr TestRun) invokeDoublesignSlash(
 		address := tr.getQueryNodeRPCAddress(action.chain)
 
 		tr.curlJsonRPCRequest(method, params, address)
-		tr.waitBlocks(action.chain, 10, 10*time.Second)
-		log.Println("This was after the call to waitBlocks")
+		tr.waitBlocks(action.chain, 1, 10*time.Second)
+		return
 	}
 }
 
@@ -1955,7 +1933,6 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(chainID("provi"), 2, 30*time.Second)
-	log.Println("This was after the call to waitBlocks")
 }
 
 // slashThrottleDequeue polls slash queue sizes until nextQueueSize is achieved
@@ -1998,7 +1975,6 @@ func (tr TestRun) waitForSlashThrottleDequeue(
 	// wair for 2 blocks to be created
 	// allowing the jailing to be incorporated into voting power
 	tr.waitBlocks(action.chain, 2, time.Minute)
-	log.Println("This was after the call to waitBlocks")
 }
 
 func uintPointer(i uint) *uint {
@@ -2036,7 +2012,6 @@ func (tr *TestRun) WaitTime(duration time.Duration) {
 			}
 			tr.AdvanceTimeForChain(chain, duration)
 			tr.waitBlocks(chain, 1, 2*time.Second)
-			log.Println("This was after the call to waitBlocks")
 		}
 	}
 }
@@ -2052,5 +2027,4 @@ func (tr TestRun) AdvanceTimeForChain(chain chainID, duration time.Duration) {
 
 	// wait for 1 block of the chain to get a block with the advanced timestamp
 	tr.waitBlocks(chain, 1, time.Minute)
-	log.Println("This was after the call to waitBlocks")
 }
