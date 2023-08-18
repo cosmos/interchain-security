@@ -107,6 +107,7 @@ func TestProviderProposalHandler(t *testing.T) {
 
 		case tc.expValidConsumerRemoval:
 			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+			testkeeper.SetupForStoppingConsumerChainChannel(t, ctx, mocks)
 
 		case tc.expValidEquivocation:
 			providerKeeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(equivocation.GetConsensusAddress()))
