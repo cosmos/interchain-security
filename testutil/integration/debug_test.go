@@ -252,3 +252,11 @@ func TestQueueAndSendVSCMaturedPackets(t *testing.T) {
 func TestRecycleTransferChannel(t *testing.T) {
 	runCCVTestByName(t, "TestRecycleTransferChannel")
 }
+
+//
+// Throttle retry tests
+//
+
+func TestSlashRetries(t *testing.T) {
+	runCCVTestByName(t, "TestSlashRetries")
+}

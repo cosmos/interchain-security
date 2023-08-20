@@ -102,6 +102,9 @@ const (
 	// This index is used for implementing a FIFO queue of pending packets in the KV store.
 	PendingPacketsIndexByteKey
 
+	// SlashRecordByteKey is the single byte key storing the consumer's slash record.
+	SlashRecordByteKey
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -216,6 +219,11 @@ func PrevStandaloneChainKey() []byte {
 // This index is used for implementing a FIFO queue of pending packets in the KV store.
 func PendingPacketsIndexKey() []byte {
 	return []byte{PendingPacketsIndexByteKey}
+}
+
+// SlashRecordKey returns the key storing the consumer's slash record.
+func SlashRecordKey() []byte {
+	return []byte{SlashRecordByteKey}
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go

@@ -564,6 +564,16 @@ func (m *MockChannelKeeper) GetChannel(ctx types0.Context, srcPort, srcChan stri
 	return ret0, ret1
 }
 
+func (m *MockChannelKeeper) GetChannelConnection(ctx types0.Context, portID, channelID string) (string, exported.ConnectionI, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetChannelConnection", ctx, portID, channelID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[0].(exported.ConnectionI)
+	ret2, _ := ret[1].(error)
+
+	return ret0, ret1, ret2
+}
+
 // GetChannel indicates an expected call of GetChannel.
 func (mr *MockChannelKeeperMockRecorder) GetChannel(ctx, srcPort, srcChan interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()

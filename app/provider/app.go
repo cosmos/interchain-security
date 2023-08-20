@@ -530,12 +530,7 @@ func New(
 		vestingtypes.ModuleName,
 		providertypes.ModuleName,
 	)
-	// Interchain Security requirements
-	// 	- provider.EndBlock gets validator updates from the staking module;
-	// 	thus, staking.EndBlock must be executed before provider.EndBlock;
-	//	- creating a new consumer chain requires the following order,
-	//	CreateChildClient(), staking.EndBlock, provider.EndBlock;
-	//	thus, gov.EndBlock must be executed before staking.EndBlock
+
 	app.MM.SetOrderEndBlockers(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,

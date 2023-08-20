@@ -221,6 +221,13 @@ message VscSendTimestamp {
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 }
 
+// ExportedVscSendTimestamps is VscSendTimestamp with chainID info for exporting to genesis
+message ExportedVscSendTimestamp {
+  string chain_id = 1;
+  repeated VscSendTimestamp vsc_send_timestamps = 2
+    [ (gogoproto.nullable) = false ];
+}
+
 //
 // Key assignment section
 //

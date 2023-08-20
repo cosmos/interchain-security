@@ -247,14 +247,34 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	s.SetupCCVChannel(s.path)
 	s.SetupTransferChannel()
 
-	packet := channeltypes.NewPacket([]byte{}, 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
+	// Mock a proper slash packet from consumer
+	spd := keepertestutil.GetNewSlashPacketData()
+
+	// We don't want truly randomized fields, infraction needs to be specified
+	if spd.Infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
+		spd.Infraction = stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
+	}
+	cpd := ccv.NewConsumerPacketData(ccv.SlashPacket,
+		&ccv.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: &spd,
+		},
+	)
+	packet := channeltypes.NewPacket(cpd.GetBytes(), // Consumer always sends v1 packet data
+		1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
 		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, 0)
 
-	ack := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet,
-		keepertestutil.GetNewSlashPacketData())
-	s.Require().NotNil(ack)
+	// Map infraction height on provider so validation passes and provider returns valid ack result
+	providerKeeper.SetValsetUpdateBlockHeight(s.providerCtx(), spd.ValsetUpdateId, 47923)
 
-	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))
+	exportedAck := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, spd)
+	s.Require().NotNil(exportedAck)
+
+	// Unmarshal ack to struct that's compatible with consumer. IBC does this automatically
+	ack := channeltypes.Acknowledgement{}
+	err := channeltypes.SubModuleCdc.UnmarshalJSON(exportedAck.Acknowledgement(), &ack)
+	s.Require().NoError(err)
+
+	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, ack)
 	s.Require().NoError(err)
 
 	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, ccv.NewErrorAcknowledgementWithLog(s.consumerCtx(), fmt.Errorf("another error")))
@@ -492,9 +512,15 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 	// clear queue, commit packets
 	suite.consumerApp.GetConsumerKeeper().SendPackets(ctx)
 
-	// check queue was cleared
+	// Check slash record is created
+	slashRecord, found := suite.consumerApp.GetConsumerKeeper().GetSlashRecord(suite.consumerCtx())
+	suite.Require().True(found, "slash record not found")
+	suite.Require().True(slashRecord.WaitingOnReply)
+	suite.Require().Equal(slashRecord.SendTime, suite.consumerCtx().BlockTime())
+
+	// check queue is not cleared, since no ack has been received from provider
 	pendingPackets = suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)
-	suite.Require().Empty(pendingPackets, "pending packets NOT empty")
+	suite.Require().Len(pendingPackets, 1, "pending packets len should be 1 is %d", len(pendingPackets))
 
 	// verify that the slash packet was sent
 	gotCommit := consumerIBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq)
@@ -579,9 +605,15 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	// clear queue, commit packets
 	suite.consumerApp.GetConsumerKeeper().SendPackets(ctx)
 
-	// check queue was cleared
+	// Check slash record is created
+	slashRecord, found := suite.consumerApp.GetConsumerKeeper().GetSlashRecord(suite.consumerCtx())
+	suite.Require().True(found, "slash record not found")
+	suite.Require().True(slashRecord.WaitingOnReply)
+	suite.Require().Equal(slashRecord.SendTime, suite.consumerCtx().BlockTime())
+
+	// check queue is not cleared, since no ack has been received from provider
 	pendingPackets = suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)
-	suite.Require().Empty(pendingPackets, "pending packets NOT empty")
+	suite.Require().Len(pendingPackets, 1, "pending packets len should be 1 is %d", len(pendingPackets))
 
 	// check slash packet is sent
 	gotCommit := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq)
@@ -644,10 +676,12 @@ func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 	// establish ccv channel by sending an empty VSC packet to consumer endpoint
 	suite.SendEmptyVSCPacket()
 
-	// check that each pending data packet is sent once
+	// check that each pending data packet is sent once, as long as the prev slash packet was relayed/acked.
+	// Note that consumer throttling blocks packet sending until a slash packet is successfully acked by the provider.
 	for i := 0; i < 12; i++ {
 		commit := consumerIBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq+uint64(i))
 		suite.Require().NotNil(commit)
+		relayAllCommittedPackets(suite, suite.consumerChain, suite.path, ccv.ConsumerPortID, channelID, 1)
 	}
 
 	// check that outstanding downtime flags
@@ -657,8 +691,8 @@ func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 		suite.Require().True(consumerKeeper.OutstandingDowntime(ctx, consAddr))
 	}
 
-	// send all pending packets - only slash packets should be queued in this test
-	consumerKeeper.SendPackets(ctx)
+	// SendPackets method should have already been called during
+	// endblockers in relayAllCommittedPackets above
 
 	// check that pending data packets got cleared
 	dataPackets = consumerKeeper.GetPendingPackets(ctx)
@@ -676,12 +710,20 @@ func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 	pendingPackets := consumerKeeper.GetPendingPackets(suite.consumerCtx())
 	suite.Require().Len(pendingPackets, 0)
 
+	// No slash record found (no slash sent)
+	_, found := consumerKeeper.GetSlashRecord(suite.consumerCtx())
+	suite.Require().False(found)
+
 	consumerKeeper.SlashWithInfractionReason(suite.consumerCtx(), []byte{0x01, 0x02, 0x3},
 		66, 4324, sdk.MustNewDecFromStr("0.05"), stakingtypes.Infraction_INFRACTION_DOWNTIME)
 
 	// Check slash packet was queued
 	pendingPackets = consumerKeeper.GetPendingPackets(suite.consumerCtx())
 	suite.Require().Len(pendingPackets, 1)
+
+	// but slash packet is not yet sent
+	_, found = consumerKeeper.GetSlashRecord(suite.consumerCtx())
+	suite.Require().False(found)
 
 	// Pass 5 blocks, confirming the consumer doesn't panic
 	for i := 0; i < 5; i++ {
@@ -698,6 +740,8 @@ func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 
 	// Pass one more block, and confirm the packet is sent now that ccv channel is established
 	suite.consumerChain.NextBlock()
-	pendingPackets = consumerKeeper.GetPendingPackets(suite.consumerCtx())
-	suite.Require().Len(pendingPackets, 0)
+
+	// Slash record should now be found (slash sent)
+	_, found = consumerKeeper.GetSlashRecord(suite.consumerCtx())
+	suite.Require().True(found)
 }

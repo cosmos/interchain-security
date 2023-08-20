@@ -29,6 +29,8 @@ func (vsc ValidatorSetChangePacketData) ValidateBasic() error {
 	return nil
 }
 
+// GetBytes marshals the ValidatorSetChangePacketData into JSON string bytes
+// to be sent over the wire with IBC.
 func (vsc ValidatorSetChangePacketData) GetBytes() []byte {
 	valUpdateBytes := ModuleCdc.MustMarshalJSON(&vsc)
 	return valUpdateBytes
@@ -46,11 +48,6 @@ func (mat VSCMaturedPacketData) ValidateBasic() error {
 		return errorsmod.Wrap(ErrInvalidPacketData, "vscId cannot be equal to zero")
 	}
 	return nil
-}
-
-func (mat VSCMaturedPacketData) GetBytes() []byte {
-	bytes := ModuleCdc.MustMarshalJSON(&mat)
-	return bytes
 }
 
 func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, infractionType stakingtypes.Infraction) *SlashPacketData {
@@ -88,11 +85,6 @@ func (vdt SlashPacketData) ValidateBasic() error {
 	}
 
 	return nil
-}
-
-func (vdt SlashPacketData) GetBytes() []byte {
-	valDowntimeBytes := ModuleCdc.MustMarshalJSON(&vdt)
-	return valDowntimeBytes
 }
 
 func (vdt SlashPacketData) ToV1() *SlashPacketDataV1 {
@@ -164,6 +156,20 @@ func (vdt1 SlashPacketDataV1) FromV1() *SlashPacketData {
 		Infraction:     newType,
 	}
 }
+
+type PacketAckResult []byte
+
+var ( // slice types can't be const
+
+	// The result ack that has historically been sent from the provider.
+	// A provider with v1 throttling sends these acks for all successfully recv packets.
+	V1Result = PacketAckResult([]byte{byte(1)})
+	// Slash packet handled result ack, sent by a throttling v2 provider to indicate that a slash packet was handled.
+	SlashPacketHandledResult = PacketAckResult([]byte{byte(2)})
+	// Slash packet bounced result ack, sent by a throttling v2 provider to indicate that a slash packet was NOT handled
+	// and should eventually be retried.
+	SlashPacketBouncedResult = PacketAckResult([]byte{byte(3)})
+)
 
 // An exported wrapper around the auto generated isConsumerPacketData_Data interface, only for
 // AppendPendingPacket to accept the interface as an argument.

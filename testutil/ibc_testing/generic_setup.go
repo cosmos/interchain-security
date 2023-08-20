@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"github.com/stretchr/testify/suite"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
+	tmtypes "github.com/cometbft/cometbft/types"
+
 	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
-
-	"github.com/stretchr/testify/suite"
-
-	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
-	tmtypes "github.com/cometbft/cometbft/types"
 )
 
 // Contains generic setup code for running integration tests against a provider, consumer,
