@@ -58,7 +58,7 @@ func (ConsumerPacketDataType) EnumDescriptor() ([]byte, []int) {
 }
 
 // InfractionType indicates the infraction type a validator commited.
-// NOTE: ccv.InfractionType to maintain compatibility between ICS versions
+// Note ccv.InfractionType to maintain compatibility between ICS versions
 // using different versions of the cosmos-sdk and ibc-go modules.
 type InfractionType int32
 
