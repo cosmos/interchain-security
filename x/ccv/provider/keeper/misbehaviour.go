@@ -147,7 +147,7 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 
 	// Check that the headers are at the same height to ensure that
 	// the misbehaviour is for a light client attack and not a time violation,
-	// see https://github.com/cosmos/ibc-go/blob/v4.2.0/modules/light-clients/07-tendermint/types/misbehaviour_handle.go#L24
+	// https://github.com/cosmos/ibc-go/blob/v4.2.0/modules/light-clients/07-tendermint/types/misbehaviour_handle.go#L53-L58
 	if !misbehaviour.Header1.GetHeight().EQ(misbehaviour.Header2.GetHeight()) {
 		return sdkerrors.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
 	}
