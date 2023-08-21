@@ -522,7 +522,7 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 
 	total, err := strconv.Atoi(valset.Total)
 	if err != nil {
-		log.Fatalf("strconv.Atoi returned an error while coonverting total for validator set: %v, input: %s", err, valset.Total)
+		log.Fatalf("strconv.Atoi returned an error while coonverting total for validator set: %v, input: %s, validator set: %s", err, valset.Total, pretty.Sprint(valset))
 	}
 
 	if total != len(valset.Validators) {
