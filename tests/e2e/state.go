@@ -9,6 +9,7 @@ import (
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 )
@@ -185,7 +186,9 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
 	}
 
-	log.Println("Done getting chain state: ")
+	if *verbose {
+		log.Println("Done getting chain state:\n" + pretty.Sprint(chainState))
+	}
 
 	return chainState
 }
