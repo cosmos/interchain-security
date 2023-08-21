@@ -473,7 +473,9 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		// meaning no external keeper methods are allowed to be called.
 		if tc.expAppendProp {
 			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
-			testkeeper.SetupForStoppingConsumerChainChannel(t, ctx, mocks)
+
+			// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
+			gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 		}
 
 		tc.setupMocks(ctx, providerKeeper, tc.prop.ChainId)
@@ -528,7 +530,9 @@ func TestStopConsumerChain(t *testing.T) {
 			description: "valid stop of consumer chain, throttle related queues are cleaned",
 			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
-				testkeeper.SetupForStoppingConsumerChainChannel(t, ctx, mocks)
+
+				// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
+				gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 
 				providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 					ctx.BlockTime(), "chainID", 1, cryptoutil.NewCryptoIdentityFromIntSeed(90).ProviderConsAddress()))
@@ -548,7 +552,9 @@ func TestStopConsumerChain(t *testing.T) {
 			description: "valid stop of consumer chain, all mock calls hit",
 			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
-				testkeeper.SetupForStoppingConsumerChainChannel(t, ctx, mocks)
+
+				// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
+				gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 			},
 			expErr: false,
 		},
@@ -1042,8 +1048,8 @@ func TestBeginBlockCCR(t *testing.T) {
 		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, prop.ChainId)...)
 	}
 	// Only first two consumer chains should be stopped
-	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
-	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
+	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
+	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 
 	gomock.InOrder(expectations...)
 

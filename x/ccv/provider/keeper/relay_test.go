@@ -700,7 +700,7 @@ func TestSendVSCPacketsToChainFailure(t *testing.T) {
 	)
 
 	// Append mocks for expected call to StopConsumerChain
-	mockCalls = append(mockCalls, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
+	mockCalls = append(mockCalls, testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 
 	// Assert mock calls hit
 	gomock.InOrder(mockCalls...)

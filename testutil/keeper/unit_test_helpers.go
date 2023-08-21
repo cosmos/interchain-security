@@ -210,7 +210,7 @@ func GetNewVSCMaturedPacketData() types.VSCMaturedPacketData {
 // which assert that a consumer chain was properly setup to be later stopped from `StopConsumerChain`.
 // Note: This function only setups and tests that we correctly setup a consumer chain that we could later stop when
 // calling `StopConsumerChain` -- this does NOT necessarily mean that the consumer chain is stopped.
-// Also see `SetupForStoppingConsumerChainChannel` and `TestProviderStateIsCleanedAfterConsumerChainIsStopped`.
+// Also see `TestProviderStateIsCleanedAfterConsumerChainIsStopped`.
 func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers,
 ) {
@@ -226,13 +226,6 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	require.NoError(t, err)
 	err = providerKeeper.SetConsumerChain(ctx, "channelID")
 	require.NoError(t, err)
-}
-
-// SetupForStoppingConsumerChainChannel registers expected mock calls which assert that the channel to the consumer
-// chain is closed. To be used when we test that `StopConsumerChain` is called with `closeChan` set to `true`.
-func SetupForStoppingConsumerChainChannel(t *testing.T, ctx sdk.Context, mocks MockedKeepers) {
-	t.Helper()
-	gomock.InOrder(GetMocksForStopConsumerChain(ctx, &mocks)...)
 }
 
 // TestProviderStateIsCleanedAfterConsumerChainIsStopped executes test assertions for the provider's state being cleaned
