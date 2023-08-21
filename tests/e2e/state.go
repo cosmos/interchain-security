@@ -526,8 +526,8 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 	}
 
 	if total != len(valset.Validators) {
-		log.Fatalf("Total number of validators %v does not match number of validators in list %v. Probably a query pagination issue.",
-			valset.Total, uint(len(valset.Validators)))
+		log.Fatalf("Total number of validators %v does not match number of validators in list %v. Probably a query pagination issue. Validator set: %v",
+			valset.Total, uint(len(valset.Validators)), pretty.Sprint(valset))
 	}
 
 	for _, val := range valset.Validators {
@@ -536,7 +536,7 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 
 			votingPower, err := strconv.Atoi(val.VotingPower)
 			if err != nil {
-				log.Fatalf("strconv.Atoi returned an error while convering validator voting power: %v, voting power string: %s", err, val.VotingPower)
+				log.Fatalf("strconv.Atoi returned an error while convering validator voting power: %v, voting power string: %s, validator set: %s", err, val.VotingPower, pretty.Sprint(valset))
 			}
 
 			return uint(votingPower)
