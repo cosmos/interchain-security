@@ -324,11 +324,12 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		return channeltypes.NewResultAcknowledgement(ccv.SlashPacketBouncedResult)
 	}
 
-	k.HandleSlashPacket(ctx, chainID, data)
-
-	// Subtract voting power that will be jailed/tombstoned from the slash meter
+	// Subtract voting power that will be jailed/tombstoned from the slash meter,
+	// BEFORE handling slash packet.
 	meter = meter.Sub(k.GetEffectiveValPower(ctx, providerConsAddr))
 	k.SetSlashMeter(ctx, meter)
+
+	k.HandleSlashPacket(ctx, chainID, data)
 
 	k.Logger(ctx).Info("slash packet received and handled",
 		"chainID", chainID,

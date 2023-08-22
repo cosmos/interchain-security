@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"bytes"
 	"time"
 
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -84,9 +85,9 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		packet = s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 2)
 		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
 
-		s.Fail("need to update")
-
-		// Require that slash packet has not been handled
+		// Require that slash packet has not been handled, a bounce result would have
+		// been returned, but the IBC helper throws out acks.
+		// TODO: determine if there's a way to make this test better with a real retry.
 		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
 		s.Require().False(vals[2].IsJailed())
 
@@ -136,10 +137,26 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx)
 		s.Require().True(slashMeter.IsPositive())
 
-		// Assert validator 2 is jailed once pending slash packets are handled in ccv endblocker.
-		s.providerChain.NextBlock()
+		// Assert validator 2 is jailed once slash packet is retried.
+		tmVal2 := s.providerChain.Vals.Validators[2]
+		packet = s.constructSlashPacketFromConsumer(s.getFirstBundle(),
+			*tmVal2, stakingtypes.Infraction_INFRACTION_DOWNTIME, 3) // make sure to use a new seq num
+		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
+
 		vals = providerStakingKeeper.GetAllValidators(cacheCtx)
-		slashedVal = vals[2]
+		found := false
+		for _, val := range vals {
+			consAddr, err := val.GetConsAddr()
+			s.Require().NoError(err)
+			if bytes.Equal(consAddr, tmVal2.Address) {
+				slashedVal = val
+				found = true
+				break
+			}
+		}
+		if !found {
+			s.Fail("slashed validator not found")
+		}
 		s.Require().True(slashedVal.IsJailed())
 
 		// Assert validator 2 has no power, this should be apparent next block,
