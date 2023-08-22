@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/version"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
@@ -29,6 +30,7 @@ func GetTxCmd() *cobra.Command {
 	cmd.AddCommand(NewAssignConsumerKeyCmd())
 	cmd.AddCommand(NewRegisterConsumerRewardDenomCmd())
 	cmd.AddCommand(NewSubmitConsumerMisbehaviourCmd())
+	cmd.AddCommand(NewSubmitConsumerDoubleVotingCmd())
 
 	return cmd
 }
@@ -131,6 +133,51 @@ Examples:
 			}
 
 			msg, err := types.NewMsgSubmitConsumerMisbehaviour(submitter, &misbehaviour)
+			if err != nil {
+				return err
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	_ = cmd.MarkFlagRequired(flags.FlagFrom)
+
+	return cmd
+}
+
+func NewSubmitConsumerDoubleVotingCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "submit-consumer-double-voting [evidence]",
+		Short: "submit a double-vote evidence for a consumer chain",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).
+				WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+
+			submitter := clientCtx.GetFromAddress()
+			var ev *tmproto.DuplicateVoteEvidence
+			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[1]), &ev); err != nil {
+				return err
+			}
+
+			// TODO: uncomment this when the infraction header is used
+			// var header ibctmtypes.Header
+			// if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[2]), &header); err != nil {
+			// 	return err
+			// }
+
+			msg, err := types.NewMsgSubmitConsumerDoubleVoting(submitter, ev, nil)
 			if err != nil {
 				return err
 			}

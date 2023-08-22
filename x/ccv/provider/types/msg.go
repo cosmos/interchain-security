@@ -2,11 +2,13 @@ package types
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	tmtypes "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 // provider message types
@@ -14,6 +16,7 @@ const (
 	TypeMsgAssignConsumerKey           = "assign_consumer_key"
 	TypeMsgRegisterConsumerRewardDenom = "register_consumer_reward_denom"
 	TypeMsgSubmitConsumerMisbehaviour  = "submit_consumer_misbehaviour"
+	TypeMsgSubmitConsumerDoubleVoting  = "submit_consumer_double_vote"
 )
 
 var (
@@ -178,6 +181,52 @@ func (msg MsgSubmitConsumerMisbehaviour) GetSignBytes() []byte {
 
 // Type implements the sdk.Msg interface.
 func (msg MsgSubmitConsumerMisbehaviour) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.Submitter)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{addr}
+}
+
+func NewMsgSubmitConsumerDoubleVoting(submitter sdk.AccAddress, ev *tmtypes.DuplicateVoteEvidence, header *ibctmtypes.Header) (*MsgSubmitConsumerDoubleVoting, error) {
+	return &MsgSubmitConsumerDoubleVoting{Submitter: submitter.String(), DuplicateVoteEvidence: ev, InfractionBlockHeader: header}, nil
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerDoubleVoting) Route() string { return RouterKey }
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerDoubleVoting) Type() string {
+	return TypeMsgSubmitConsumerDoubleVoting
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
+	if msg.Submitter == "" {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
+
+	}
+	if msg.DuplicateVoteEvidence == nil {
+		return fmt.Errorf("duplicate evidence cannot be nil")
+	}
+
+	// TODO: uncomment this when the infraction header is used
+	// if msg.InfractionBlockHeader.Header == nil {
+	// 	return fmt.Errorf("double-vote evidence header cannot be nil")
+	// }
+
+	return nil
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerDoubleVoting) GetSignBytes() []byte {
+	bz := ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// Type implements the sdk.Msg interface.
+func (msg MsgSubmitConsumerDoubleVoting) GetSigners() []sdk.AccAddress {
 	addr, err := sdk.AccAddressFromBech32(msg.Submitter)
 	if err != nil {
 		// same behavior as in cosmos-sdk

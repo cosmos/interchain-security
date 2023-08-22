@@ -8,12 +8,15 @@ import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "google/protobuf/any.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
+import "tendermint/types/evidence.proto";
+
 
 // Msg defines the Msg service.
 service Msg {
   rpc AssignConsumerKey(MsgAssignConsumerKey) returns (MsgAssignConsumerKeyResponse);
   rpc RegisterConsumerRewardDenom(MsgRegisterConsumerRewardDenom) returns (MsgRegisterConsumerRewardDenomResponse);
   rpc SubmitConsumerMisbehaviour(MsgSubmitConsumerMisbehaviour) returns (MsgSubmitConsumerMisbehaviourResponse);
+  rpc SubmitConsumerDoubleVoting(MsgSubmitConsumerDoubleVoting) returns (MsgSubmitConsumerDoubleVotingResponse);
 }
 
 message MsgAssignConsumerKey {
@@ -59,3 +62,19 @@ message MsgSubmitConsumerMisbehaviour {
 }
 
 message MsgSubmitConsumerMisbehaviourResponse {}
+
+
+// MsgSubmitConsumerDoubleVoting defines a message that reports an equivocation
+// observed on a consumer chain
+message MsgSubmitConsumerDoubleVoting {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  string submitter = 1;
+  // The equivocation of the consumer chain wrapping 
+  // an evidence of a validator that signed two conflicting votes
+  tendermint.types.DuplicateVoteEvidence duplicate_vote_evidence = 2;
+  // Unused but still here to not break the wire
+  ibc.lightclients.tendermint.v1.Header infraction_block_header = 3;
+}
+
+message MsgSubmitConsumerDoubleVotingResponse {}
