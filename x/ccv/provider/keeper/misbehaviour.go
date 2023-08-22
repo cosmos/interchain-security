@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"sort"
-
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -109,7 +107,6 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 		}
 	}
 
-	sort.Sort(tmtypes.ValidatorsByVotingPower(validators))
 	return validators, nil
 }
 
@@ -134,10 +131,6 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 // CheckMisbehaviour checks that headers in the given misbehaviour forms
 // a valid light client attack and that the corresponding light client isn't expired
 func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
-	if err := misbehaviour.ValidateBasic(); err != nil {
-		return err
-	}
-
 	clientState, found := k.clientKeeper.GetClientState(ctx, misbehaviour.GetClientID())
 	if !found {
 		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot check misbehaviour for client with ID %s", misbehaviour.GetClientID())
