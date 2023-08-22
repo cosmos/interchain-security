@@ -426,16 +426,10 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
 	suite.Require().False(errAck.Success())
 
-	// Expect nothing was queued
-	suite.Require().Equal(0, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
-	suite.Require().Equal(uint64(0), (providerKeeper.GetThrottledPacketDataSize(ctx, consumerChainID)))
-
 	// expect to queue entries for the slash request
 	slashingPkt.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
 	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
 	suite.Require().True(ack.Success())
-	suite.Require().Equal(1, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
-	suite.Require().Equal(uint64(1), (providerKeeper.GetThrottledPacketDataSize(ctx, consumerChainID)))
 }
 
 // TestValidatorDowntime tests if a slash packet is sent

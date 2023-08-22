@@ -10,12 +10,7 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
-// TestSlashRetries tests the throttling v2 retry logic. Without provider changes,
-// the consumer will queue up a slash packet, the provider will return a v1 result,
-// and the consumer will never need to retry.
-//
-// Once provider changes are made (slash packet queuing is removed), the consumer may retry packets
-// via new result acks from the provider.
+// TestSlashRetries tests the throttling v2 retry logic.
 //
 // TODO: This test will need updating once provider changes are made.
 func (s *CCVTestSuite) TestSlashRetries() {
@@ -80,8 +75,6 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	s.Require().True(vals[1].IsJailed())
 	s.Require().Equal(int64(0),
 		s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), vals[1].GetOperator()))
-	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(s.providerCtx(),
-		s.getFirstBundle().Chain.ChainID))
 
 	// Now slash meter should be negative on provider
 	s.Require().True(s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx()).IsNegative())
@@ -128,12 +121,12 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	s.providerChain.NextBlock()
 	s.providerChain.NextBlock()
 
+	s.Fail("need to update with provider changes")
+
 	// Val shouldn't be jailed on provider. Slash packet was queued
 	s.Require().False(vals[2].IsJailed())
 	s.Require().Equal(int64(1000),
 		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[2].GetOperator()))
-	s.Require().Equal(uint64(1), providerKeeper.GetThrottledPacketDataSize(s.providerCtx(),
-		s.getFirstBundle().Chain.ChainID))
 
 	// Apply ack on consumer
 	ackForConsumer = expectedv1Ack
