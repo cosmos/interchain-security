@@ -473,6 +473,9 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		// meaning no external keeper methods are allowed to be called.
 		if tc.expAppendProp {
 			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+
+			// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
+			gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 		}
 
 		tc.setupMocks(ctx, providerKeeper, tc.prop.ChainId)
@@ -528,6 +531,9 @@ func TestStopConsumerChain(t *testing.T) {
 			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
 
+				// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
+				gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
+
 				providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 					ctx.BlockTime(), "chainID", 1, cryptoutil.NewCryptoIdentityFromIntSeed(90).ProviderConsAddress()))
 
@@ -546,6 +552,9 @@ func TestStopConsumerChain(t *testing.T) {
 			description: "valid stop of consumer chain, all mock calls hit",
 			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
+
+				// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
+				gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 			},
 			expErr: false,
 		},
@@ -569,46 +578,10 @@ func TestStopConsumerChain(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		testProviderStateIsCleaned(t, ctx, providerKeeper, "chainID", "channelID")
+		testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "chainID", "channelID")
 
 		ctrl.Finish()
 	}
-}
-
-// testProviderStateIsCleaned executes test assertions for the proposer's state being cleaned after a stopped consumer chain.
-func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
-	expectedChainID, expectedChannelID string,
-) {
-	t.Helper()
-	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
-	require.False(t, found)
-	_, found = providerKeeper.GetChainToChannel(ctx, expectedChainID)
-	require.False(t, found)
-	_, found = providerKeeper.GetChannelToChain(ctx, expectedChannelID)
-	require.False(t, found)
-	_, found = providerKeeper.GetInitChainHeight(ctx, expectedChainID)
-	require.False(t, found)
-	acks := providerKeeper.GetSlashAcks(ctx, expectedChainID)
-	require.Empty(t, acks)
-	_, found = providerKeeper.GetInitTimeoutTimestamp(ctx, expectedChainID)
-	require.False(t, found)
-
-	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, expectedChainID))
-
-	// test key assignment state is cleaned
-	require.Empty(t, providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &expectedChainID))
-	require.Empty(t, providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &expectedChainID))
-	require.Empty(t, providerKeeper.GetAllKeyAssignmentReplacements(ctx, expectedChainID))
-	require.Empty(t, providerKeeper.GetAllConsumerAddrsToPrune(ctx, expectedChainID))
-
-	allGlobalEntries := providerKeeper.GetAllGlobalSlashEntries(ctx)
-	for _, entry := range allGlobalEntries {
-		require.NotEqual(t, expectedChainID, entry.ConsumerChainID)
-	}
-
-	slashPacketData, vscMaturedPacketData, _, _ := providerKeeper.GetAllThrottledPacketData(ctx, expectedChainID)
-	require.Empty(t, slashPacketData)
-	require.Empty(t, vscMaturedPacketData)
 }
 
 // TestPendingConsumerRemovalPropDeletion tests the getting/setting
@@ -1075,8 +1048,8 @@ func TestBeginBlockCCR(t *testing.T) {
 		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, prop.ChainId)...)
 	}
 	// Only first two consumer chains should be stopped
-	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
-	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
+	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
+	expectations = append(expectations, testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 
 	gomock.InOrder(expectations...)
 
