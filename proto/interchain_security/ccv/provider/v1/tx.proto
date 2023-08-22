@@ -73,7 +73,7 @@ message MsgSubmitConsumerDoubleVoting {
   // The equivocation of the consumer chain wrapping 
   // an evidence of a validator that signed two conflicting votes
   tendermint.types.DuplicateVoteEvidence duplicate_vote_evidence = 2;
-  // Unused but still here to not break the wire
+  // The light client header of the infraction block 
   ibc.lightclients.tendermint.v1.Header infraction_block_header = 3;
 }
 

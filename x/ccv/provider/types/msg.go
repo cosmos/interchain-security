@@ -211,10 +211,9 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 		return fmt.Errorf("duplicate evidence cannot be nil")
 	}
 
-	// TODO: uncomment this when the infraction header is used
-	// if msg.InfractionBlockHeader.Header == nil {
-	// 	return fmt.Errorf("double-vote evidence header cannot be nil")
-	// }
+	if msg.InfractionBlockHeader.Header == nil {
+		return fmt.Errorf("double-vote evidence header cannot be nil")
+	}
 
 	return nil
 }

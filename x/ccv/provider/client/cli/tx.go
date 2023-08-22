@@ -171,11 +171,10 @@ func NewSubmitConsumerDoubleVotingCmd() *cobra.Command {
 				return err
 			}
 
-			// TODO: uncomment this when the infraction header is used
-			// var header ibctmtypes.Header
-			// if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[2]), &header); err != nil {
-			// 	return err
-			// }
+			var header ibctmtypes.Header
+			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[2]), &header); err != nil {
+				return err
+			}
 
 			msg, err := types.NewMsgSubmitConsumerDoubleVoting(submitter, ev, nil)
 			if err != nil {
