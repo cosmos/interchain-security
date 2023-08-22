@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 type msgServer struct {
@@ -149,7 +150,13 @@ func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.
 
 func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.MsgSubmitConsumerDoubleVoting) (*types.MsgSubmitConsumerDoubleVotingResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	if err := k.Keeper.HandleConsumerDoubleVoting(ctx, msg.DuplicateVoteEvidence, msg.InfractionBlockHeader); err != nil {
+
+	evidence, err := tmtypes.DuplicateVoteEvidenceFromProto(msg.DuplicateVoteEvidence)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := k.Keeper.HandleConsumerDoubleVoting(ctx, evidence, msg.InfractionBlockHeader); err != nil {
 		return &types.MsgSubmitConsumerDoubleVotingResponse{}, err
 	}
 

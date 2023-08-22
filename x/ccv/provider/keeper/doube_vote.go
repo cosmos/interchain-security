@@ -10,44 +10,33 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-// header infraction heaader
-func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmproto.DuplicateVoteEvidence, h *ibctmtypes.Header) error {
-	h.Header.ChainID
-	// TODO: check header against consumer chain client states
+// HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer chain and,
+// if successful, executes the the jailing and the tombstoning of the malicious validator
+func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.DuplicateVoteEvidence, h *ibctmtypes.Header) error {
+	chainID := h.Header.ChainID
 
-	// ev, err := tmtypes.DuplicateVoteEvidenceFromProto(evidence)
-	// if err != nil {
-	// 	return err
-	// }
+	if err := k.VerifyDoubleVoting(ctx, *evidence, chainID); err != nil {
+		return nil
+	}
 
-	// TODO: figure out if the evidence age must be checked
-	// if err := tmev.VerifyDuplicateVote(ev, header.Header.ChainID, valset); err != nil {
-	// 	return err
-	// }
+	consuAddress := types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress))
+	k.JailAndTombstoneByConsumerAddress(ctx, consuAddress, chainID)
+	provAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consuAddress)
 
-	// CONVERT CONSUMER ADDRESS TO PROVIDER ADDRESS
-
-	// consuAddress := sdk.ConsAddress(evidence.VoteA.GetValidatorAddress())
-	// chainID := header.Header.ChainID
-
-	// k.JailConsumerValidator(ctx, chainID, consuAddress)
-
-	// provAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consuAddress)
-
-	// logger := ctx.Logger()
-	// logger.Info(
-	// 	"confirmed equivocation",
-	// 	"byzantine validator address", provAddr,
-	// )
+	logger := ctx.Logger()
+	logger.Info(
+		"confirmed equivocation",
+		"byzantine validator address", provAddr,
+	)
 
 	return nil
 }
 
-func (k Keeper) HandleConsensusEquivocation(ctx sdk.Context, evidence tmtypes.DuplicateVoteEvidence, chainID string) error {
+// VerifyEquivocation verifies the equivocation for the given chain id
+func (k Keeper) VerifyDoubleVoting(ctx sdk.Context, evidence tmtypes.DuplicateVoteEvidence, chainID string) error {
 	// default evidence params in CometBFT see https://github.com/cometbft/cometbft/blob/main/types/params.go#L107
 	MAX_AGE_NUM_BLOCKS := int64(1000000)
 	MAX_AGE_DURATION := 48 * time.Hour
@@ -64,7 +53,6 @@ func (k Keeper) HandleConsensusEquivocation(ctx sdk.Context, evidence tmtypes.Du
 			evidence.Height(),
 			evidence.Time(),
 			height-MAX_AGE_NUM_BLOCKS,
-			height,
 			blockTime.Add(MAX_AGE_DURATION),
 		)
 	}
@@ -106,21 +94,27 @@ func (k Keeper) HandleConsensusEquivocation(ctx sdk.Context, evidence tmtypes.Du
 
 	logger := k.Logger(ctx)
 
+	// why aren't we returning an error here ?
 	if !ok || val.IsUnbonded() {
 		logger.Error("validator not found or is unbonded", providerAddr.String())
 		return nil
 	}
 
+	// use the validator consumer validator pubkeys to verify the signatures
 	pubkey, err := val.ConsPubKey()
+	if err != nil {
+		logger.Error(err.Error()) // why aren't we returning an error here ?
+		return nil
+	}
 
 	va := evidence.VoteA.ToProto()
 	vb := evidence.VoteB.ToProto()
-	// Signatures must be valid
-	// RELAYER SEND EVIDENCE + CHAINID
-	if !pubKey.VerifySignature(tmtypes.VoteSignBytes(chainID, va), evidence.VoteA.Signature) {
+
+	// signatures must be valid
+	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(chainID, va), evidence.VoteA.Signature) {
 		return fmt.Errorf("verifying VoteA: %w", tmtypes.ErrVoteInvalidSignature)
 	}
-	if !pubKey.VerifySignature(tmtypes.VoteSignBytes(chainID, vb), evidence.VoteB.Signature) {
+	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(chainID, vb), evidence.VoteB.Signature) {
 		return fmt.Errorf("verifying VoteB: %w", tmtypes.ErrVoteInvalidSignature)
 	}
 
