@@ -108,6 +108,9 @@ func TestProviderProposalHandler(t *testing.T) {
 		case tc.expValidConsumerRemoval:
 			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
 
+			// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
+			gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
+
 		case tc.expValidEquivocation:
 			providerKeeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(equivocation.GetConsensusAddress()))
 			mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocation)

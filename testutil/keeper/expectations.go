@@ -81,8 +81,9 @@ func GetMocksForSetConsumerChain(ctx sdk.Context, mocks *MockedKeepers,
 	}
 }
 
-// GetMocksForStopConsumerChain returns mock expectations needed to call StopConsumerChain().
-func GetMocksForStopConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomock.Call {
+// GetMocksForStopConsumerChainWithCloseChannel returns mock expectations needed to call StopConsumerChain() when
+// `closeChan` is true.
+func GetMocksForStopConsumerChainWithCloseChannel(ctx sdk.Context, mocks *MockedKeepers) []*gomock.Call {
 	dummyCap := &capabilitytypes.Capability{}
 	return []*gomock.Call{
 		mocks.MockChannelKeeper.EXPECT().GetChannel(gomock.Any(), types.ProviderPortID, "channelID").Return(
