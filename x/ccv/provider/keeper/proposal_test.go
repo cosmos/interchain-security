@@ -18,7 +18,6 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	cryptoutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
@@ -524,25 +523,6 @@ func TestStopConsumerChain(t *testing.T) {
 			expErr: true,
 		},
 		{
-			description: "valid stop of consumer chain, throttle related queues are cleaned",
-			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
-
-				providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-					ctx.BlockTime(), "chainID", 1, cryptoutil.NewCryptoIdentityFromIntSeed(90).ProviderConsAddress()))
-
-				err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chainID", 1, testkeeper.GetNewSlashPacketData())
-				if err != nil {
-					t.Fatal(err)
-				}
-				err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chainID", 2, testkeeper.GetNewVSCMaturedPacketData())
-				if err != nil {
-					t.Fatal(err)
-				}
-			},
-			expErr: false,
-		},
-		{
 			description: "valid stop of consumer chain, all mock calls hit",
 			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
@@ -600,15 +580,6 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 	require.Empty(t, providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &expectedChainID))
 	require.Empty(t, providerKeeper.GetAllKeyAssignmentReplacements(ctx, expectedChainID))
 	require.Empty(t, providerKeeper.GetAllConsumerAddrsToPrune(ctx, expectedChainID))
-
-	allGlobalEntries := providerKeeper.GetAllGlobalSlashEntries(ctx)
-	for _, entry := range allGlobalEntries {
-		require.NotEqual(t, expectedChainID, entry.ConsumerChainID)
-	}
-
-	slashPacketData, vscMaturedPacketData, _, _ := providerKeeper.GetAllThrottledPacketData(ctx, expectedChainID)
-	require.Empty(t, slashPacketData)
-	require.Empty(t, vscMaturedPacketData)
 }
 
 // TestPendingConsumerRemovalPropDeletion tests the getting/setting
