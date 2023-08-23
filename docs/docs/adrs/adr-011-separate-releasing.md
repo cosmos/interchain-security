@@ -61,7 +61,7 @@ For each PR merged to main (something like this should be in our PR template):
 ### Negative
 
 * Slightly more complexity.
-
+* This solution does not allow having provider and consumer on separate versions of e.g. the Cosmos SDK
 ### Neutral
 
 ## References
