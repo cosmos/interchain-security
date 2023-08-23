@@ -40,15 +40,9 @@ I don't think any of us want to split up the monorepo, that's a lot of work and 
 
 Slightly adapting [the current semver ruleset](https://github.com/cosmos/interchain-security/blob/cca008d856e3ffc60ec1a486871d0faa702abe26/CONTRIBUTING.md#semantic-versioning):
 
-* A library API breaking change TO EITHER MODULE will result in an increase of the MAJOR version number for both the consumer and provider modules. Most often this will involve bumping a major version of sdk or a large change to the protocol that warrants new a major version for consumer/provider anyways.  
-* A state breaking change (change requiring coordinated upgrade and/or state migration) will result in an increase of the MINOR version number FOR THAT MODULE (consumer-x.Y.z or provider-x.Y.z ).
-* Any other changes (including node API breaking changes) will result in an increase of the PATCH version number FOR THAT MODULE (consumer-x.y.Z or provider-x.y.Z).
-
-For each PR merged to main (something like this should be in our PR template):
-
-* If this PR is library API breaking, bump the go.mod version string of the repo, and the PR will result in a new major release for the consumer and provider.
-* Else if this PR is state breaking to consumer, provider, or both, the PR will accordingly result in new minor release(s).
-* Else if this PR has other changes, the PR will accordingly result in new patch release(s).
+* A library API breaking change to EITHER the provider or consumer module will result in an increase of the MAJOR version number for BOTH modules (X.y.z-provider AND X.y.z-consumer).
+* A state breaking change (change requiring coordinated upgrade and/or state migration) will result in an increase of the MINOR version number for the AFFECTED module(s) (x.Y.z-provider AND/OR x.Y.z-consumer).
+* Any other changes (including node API breaking changes) will result in an increase of the PATCH version number for the AFFECTED module(s) (x.y.Z-provider AND/OR x.y.Z-consumer).
 
 ## Consequences
 
@@ -62,6 +56,7 @@ For each PR merged to main (something like this should be in our PR template):
 
 * Slightly more complexity.
 * This solution does not allow having provider and consumer on separate versions of e.g. the Cosmos SDK
+
 ### Neutral
 
 ## References
