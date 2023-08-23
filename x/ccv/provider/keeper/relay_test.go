@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
@@ -112,7 +113,60 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 }
 
-// TestOnRecvSlashPacket tests the OnRecvSlashPacket method specifically for double-sign slash packets.
+// TestOnRecvDowntimeSlashPacket tests the OnRecvSlashPacket method specifically for downtime slash packets.
+func TestOnRecvDowntimeSlashPacket(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+
+	// Set channel to chain (faking multiple established channels)
+	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
+	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
+
+	// Generate a new slash packet data instance with double sign infraction type
+	packetData := testkeeper.GetNewSlashPacketData()
+	packetData.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
+
+	// Set a block height for the valset update id in the generated packet data
+	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
+
+	// Set slash meter to negative value and assert a bounce ack is returned
+	providerKeeper.SetSlashMeter(ctx, math.NewInt(-5))
+	ack := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
+	require.Equal(t, channeltypes.NewResultAcknowledgement(ccv.SlashPacketBouncedResult), ack)
+
+	// Also bounced for chain-2
+	ack = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2, packetData)
+	require.Equal(t, channeltypes.NewResultAcknowledgement(ccv.SlashPacketBouncedResult), ack)
+
+	// Now set slash meter to positive value and assert slash packet handled result is returned
+	providerKeeper.SetSlashMeter(ctx, math.NewInt(5))
+
+	// Mock call to GetEffectiveValPower, so that it returns 2.
+	providerAddr := providertypes.NewProviderConsAddress(packetData.Validator.Address)
+	calls := []*gomock.Call{
+		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr()).
+			Return(stakingtypes.Validator{}, true).Times(1),
+		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(ctx, gomock.Any()).
+			Return(int64(2)).Times(1),
+	}
+
+	// Add mocks for slash packet handling
+	calls = append(calls,
+		testkeeper.GetMocksForHandleSlashPacket(
+			ctx, mocks, providerAddr, stakingtypes.Validator{Jailed: false}, true)...,
+	)
+	gomock.InOrder(calls...)
+
+	// Execute on recv and confirm slash packet handled result is returned
+	ack = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
+	require.Equal(t, channeltypes.NewResultAcknowledgement(ccv.SlashPacketHandledResult), ack)
+
+	// Require slash meter was decremented appropriately, 5-2=3
+	require.Equal(t, int64(3), providerKeeper.GetSlashMeter(ctx).Int64())
+}
+
+// TestOnRecvDoubleSignSlashPacket tests the OnRecvSlashPacket method specifically for double-sign slash packets.
 func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -131,7 +185,7 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 
 	// Receive the double-sign slash packet for chain-1 and confirm the expected acknowledgement
 	ack := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
-	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
+	require.Equal(t, channeltypes.NewResultAcknowledgement(ccv.V1Result), ack)
 
 	require.True(t, providerKeeper.GetSlashLog(ctx,
 		providertypes.NewProviderConsAddress(packetData.Validator.Address)))
