@@ -95,20 +95,18 @@ type assertChainIsHaltedAction struct {
 	chain chainID
 }
 
+// assertChainIsHalted verifies that the chain isn't producing blocks
+// by checking that the block height is still the same after 20 seconds
 func (tr TestRun) assertChainIsHalted(
 	action assertChainIsHaltedAction,
 	verbose bool,
 ) {
-	// Recover the panic if the chain doesn't produce blocks as expected
-	defer func() {
-		if r := recover(); r != nil {
-			if verbose {
-				log.Printf("assertChainIsHalted - chain %v was successfully halted\n", action.chain)
-			}
-		}
-	}()
-
-	// Panic if the chain still produces blocks
-	tr.waitBlocks(action.chain, 1, 20*time.Second)
-	panic(fmt.Sprintf("chain %v isn't expected to produce blocks", action.chain))
+	blockHeight := tr.getBlockHeight(action.chain)
+	time.Sleep(20 * time.Second)
+	if blockHeight != tr.getBlockHeight(action.chain) {
+		panic(fmt.Sprintf("chain %v isn't expected to produce blocks", action.chain))
+	}
+	if verbose {
+		log.Printf("assertChainIsHalted - chain %v was successfully halted\n", action.chain)
+	}
 }
