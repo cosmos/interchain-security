@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
@@ -25,8 +26,6 @@ func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.Du
 	// TODO optimize this to convert consumer address only once
 	// but also remember that the jailing method is called in misbehaviour also
 	consuAddress := types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress))
-
-	// catch errors
 	if err := k.JailAndTombstoneByConsumerAddress(ctx, consuAddress, chainID); err != nil {
 		return err
 	}
@@ -93,25 +92,31 @@ func (k Keeper) VerifyDoubleVoting(ctx sdk.Context, evidence tmtypes.DuplicateVo
 		)
 	}
 
-	logger := k.Logger(ctx)
-
 	// convert consumer validator address to provider adddress
 	consumerAddr := types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress.Bytes()))
 	providerAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerAddr)
 	val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 
-	// why aren't we returning an error here ?
 	if !ok || val.IsUnbonded() {
-		logger.Error("validator not found or is unbonded", providerAddr.String())
-		return nil
+		return fmt.Errorf("validator not found or is unbonded: %s", providerAddr.String())
 	}
 
-	// use the validator consumer validator pubkeys to verify the signatures
-	pubkey, err := val.ConsPubKey()
-	if err != nil {
-		logger.Error(err.Error()) // why aren't we returning an error here ? RETURN ERRORS
-		return nil
+	// use the validator consumer chain public key to verify the signature
+	tmpk, ok := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
+	if !ok {
+		return fmt.Errorf("cannot find public key for validator %s and consumer chain %s", providerAddr.String(), chainID)
 	}
+
+	pubkey, err := cryptocodec.FromTmProtoPublicKey(tmpk)
+	if err != nil {
+		return err
+	}
+
+	// pubkey, err := val.ConsPubKey()
+	// if err != nil {
+	// 	logger.Error(err.Error()) // why aren't we returning an error here ? RETURN ERRORS
+	// 	return nil
+	// }
 
 	va := evidence.VoteA.ToProto()
 	vb := evidence.VoteB.ToProto()
