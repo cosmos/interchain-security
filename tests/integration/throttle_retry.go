@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"bytes"
 	"time"
 
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -12,8 +11,6 @@ import (
 )
 
 // TestSlashRetries tests the throttling v2 retry logic at an integration level.
-//
-// TODO: can prob make some helpers to make this test more readable and succinct. Matching vals for example
 func (s *CCVTestSuite) TestSlashRetries() {
 	s.SetupAllCCVChannels()
 	s.SendEmptyVSCPacket() // Establish ccv channel
@@ -31,9 +28,17 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	for _, val := range vals {
 		s.Require().False(val.IsJailed())
 	}
-	// Setup signing info for jailings
+
+	// We jail two different validators in this test, referred to as val1 and val2.
+	// This may or may not correspond to the indexes 1 and 2 in various validator slices,
+	// depending on how the slice is constructed.
+
+	// The s.providerChain.Vals.Validators set will change depending on jailings,
+	// so we cache these two val objects now to be the canonical val1 and val2.
 	tmval1 := s.providerChain.Vals.Validators[1]
 	tmval2 := s.providerChain.Vals.Validators[2]
+
+	// Setup signing info for jailings
 	s.setDefaultValSigningInfo(*tmval1)
 	s.setDefaultValSigningInfo(*tmval2)
 
@@ -83,20 +88,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	s.providerChain.NextBlock()
 
 	// Default slash meter replenish fraction is 0.05, so packet should be handled on provider.
-	vals = s.providerApp.GetTestStakingKeeper().GetAllValidators(s.providerCtx())
-
-	// Match val from staking keeper to tmval1
-	var stakingVal1 stakingtypes.Validator
-	for i, val := range vals {
-		consAddr, err := val.GetConsAddr()
-		s.Require().NoError(err)
-		if bytes.Equal(consAddr.Bytes(), tmval1.Address.Bytes()) {
-			stakingVal1 = vals[i]
-		}
-	}
-	// Require stakingVal1 is found
-	s.Require().NotZero(stakingVal1)
-
+	stakingVal1 := s.mustGetStakingValFromTmVal(*tmval1)
 	s.Require().True(stakingVal1.IsJailed())
 	s.Require().Equal(int64(0),
 		s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), stakingVal1.GetOperator()))
@@ -155,21 +147,8 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	s.providerChain.NextBlock()
 	s.providerChain.NextBlock()
 
-	vals = s.providerApp.GetTestStakingKeeper().GetAllValidators(s.providerCtx())
-
-	// Match val from staking keeper to tmval2
-	var stakingVal2 stakingtypes.Validator
-	for i, val := range vals {
-		consAddr, err := val.GetConsAddr()
-		s.Require().NoError(err)
-		if bytes.Equal(consAddr.Bytes(), tmval2.Address.Bytes()) {
-			stakingVal2 = vals[i]
-		}
-	}
-	// Require stakingVal2 is found
-	s.Require().NotZero(stakingVal2)
-
 	// Val 2 shouldn't be jailed on provider. Slash packet should have been bounced.
+	stakingVal2 := s.mustGetStakingValFromTmVal(*tmval2)
 	s.Require().False(stakingVal2.IsJailed())
 	s.Require().Equal(int64(1000),
 		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), stakingVal2.GetOperator()))
@@ -220,23 +199,20 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	s.providerChain.NextBlock()
 	s.providerChain.NextBlock()
 
-	vals = s.providerApp.GetTestStakingKeeper().GetAllValidators(s.providerCtx())
-
-	// Match val from staking keeper to tmval2
-	stakingVal2 = stakingtypes.Validator{}
-	for i, val := range vals {
-		consAddr, err := val.GetConsAddr()
-		s.Require().NoError(err)
-		if bytes.Equal(consAddr.Bytes(), tmval2.Address.Bytes()) {
-			stakingVal2 = vals[i]
-		}
-	}
-	// Require stakingVal2 is found
-	s.Require().NotZero(stakingVal2)
-
-	// Provider should have now jailed val[2]
-	vals = s.providerApp.GetTestStakingKeeper().GetAllValidators(s.providerCtx())
+	// Provider should have now jailed val 2
+	stakingVal2 = s.mustGetStakingValFromTmVal(*tmval2)
 	s.Require().True(stakingVal2.IsJailed())
 	s.Require().Equal(int64(0),
 		s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), stakingVal2.GetOperator()))
+
+	// Apply ack on consumer
+	expectedAck = channeltypes.NewResultAcknowledgement([]byte(ccvtypes.SlashPacketHandledResult))
+	err = s.getFirstBundle().Path.EndpointA.AcknowledgePacket(packet2, expectedAck.Acknowledgement())
+	s.Require().NoError(err)
+
+	// Consumer state is properly cleared again
+	_, found = consumerKeeper.GetSlashRecord(s.consumerCtx())
+	s.Require().False(found)
+	s.Require().Empty(consumerKeeper.GetPendingPackets(s.consumerCtx()))
+	s.Require().True(consumerKeeper.PacketSendingPermitted(s.consumerCtx()))
 }
