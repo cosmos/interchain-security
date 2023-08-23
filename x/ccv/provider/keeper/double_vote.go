@@ -39,7 +39,8 @@ func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.Du
 	return nil
 }
 
-// VerifyEquivocation verifies the equivocation for the given chain id
+// VerifyEquivocation verifies the equivocation for the given chain id and
+// provider consensus address
 func (k Keeper) VerifyDoubleVoting(
 	ctx sdk.Context,
 	evidence tmtypes.DuplicateVoteEvidence,
@@ -96,12 +97,7 @@ func (k Keeper) VerifyDoubleVoting(
 		)
 	}
 
-	// val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
-	// if !ok || val.IsUnbonded() {
-	// 	return fmt.Errorf("validator not found or is unbonded: %s", providerAddr.String())
-	// }
-
-	// get the public key assigned to the validator for the consumer chain
+	// get the consumer chain public key assigned to the validator
 	tmpk, ok := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 	if !ok {
 		return fmt.Errorf("cannot find public key for validator %s and consumer chain %s", providerAddr.String(), chainID)
@@ -111,12 +107,6 @@ func (k Keeper) VerifyDoubleVoting(
 	if err != nil {
 		return err
 	}
-
-	// pubkey, err := val.ConsPubKey()
-	// if err != nil {
-	// 	logger.Error(err.Error()) // why aren't we returning an error here ? RETURN ERRORS
-	// 	return nil
-	// }
 
 	va := evidence.VoteA.ToProto()
 	vb := evidence.VoteB.ToProto()
