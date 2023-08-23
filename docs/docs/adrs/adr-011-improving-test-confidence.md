@@ -27,6 +27,8 @@ During development and testnet operation the most commonly found types of bugs a
 - improper input handling and validation
 - improper cached context usage
 - non-determinism check (improper use of maps in go, relying on random values)
+- KV store management and/or how keys are defined
+- deserialization issues arising from consumer/provider versioning mismatch
 
 Such bugs can be discovered earlier with better tooling. Some of these bugs can induce increases in block times, chain halts or introduce an attack surface which is difficult to remove if other systems have started depending on that behavior.
 
