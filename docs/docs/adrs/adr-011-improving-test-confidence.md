@@ -30,7 +30,7 @@ During development and testnet operation the most commonly found types of bugs a
 - KV store management and/or how keys are defined
 - deserialization issues arising from consumer/provider versioning mismatch
 
-Such bugs can be discovered earlier with better tooling. Some of these bugs can induce increases in block times, chain halts or introduce an attack surface which is difficult to remove if other systems have started depending on that behavior.
+Such bugs can be discovered earlier with better tooling. Some of these bugs can induce increases in block times, chain halts, state corruption, or introduce an attack surface which is difficult to remove if other systems have started depending on that behavior.
 
 #### Current state of testing
 Our testing suites consist of multiple parts, each with their own trade-offs and benefits with regards to code coverage, complexity and confidence they provide.
