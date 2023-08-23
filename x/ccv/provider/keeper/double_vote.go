@@ -19,11 +19,17 @@ func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.Du
 	chainID := h.Header.ChainID
 
 	if err := k.VerifyDoubleVoting(ctx, *evidence, chainID); err != nil {
-		return nil
+		return err
 	}
 
+	// TODO optimize this to convert consumer address only once
+	// but also remember that the jailing method is called in misbehaviour also
 	consuAddress := types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress))
-	k.JailAndTombstoneByConsumerAddress(ctx, consuAddress, chainID)
+
+	// catch errors
+	if err := k.JailAndTombstoneByConsumerAddress(ctx, consuAddress, chainID); err != nil {
+		return err
+	}
 	provAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consuAddress)
 
 	logger := ctx.Logger()
@@ -87,12 +93,12 @@ func (k Keeper) VerifyDoubleVoting(ctx sdk.Context, evidence tmtypes.DuplicateVo
 		)
 	}
 
+	logger := k.Logger(ctx)
+
 	// convert consumer validator address to provider adddress
 	consumerAddr := types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress.Bytes()))
 	providerAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerAddr)
 	val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
-
-	logger := k.Logger(ctx)
 
 	// why aren't we returning an error here ?
 	if !ok || val.IsUnbonded() {
@@ -103,7 +109,7 @@ func (k Keeper) VerifyDoubleVoting(ctx sdk.Context, evidence tmtypes.DuplicateVo
 	// use the validator consumer validator pubkeys to verify the signatures
 	pubkey, err := val.ConsPubKey()
 	if err != nil {
-		logger.Error(err.Error()) // why aren't we returning an error here ?
+		logger.Error(err.Error()) // why aren't we returning an error here ? RETURN ERRORS
 		return nil
 	}
 
