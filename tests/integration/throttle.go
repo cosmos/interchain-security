@@ -169,23 +169,14 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 
 // TestMultiConsumerSlashPacketThrottling tests slash packet throttling in the context of multiple
 // consumers sending slash packets to the provider, with VSC matured packets sprinkled around.
+//
+// TODO: see if you can make this test better with less manual retries
 func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	// Setup test
 	s.SetupAllCCVChannels()
 	s.setupValidatorPowers()
 
 	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
-
-	// First confirm that VSC matured packets are handled immediately (not queued)
-	// when no slash packets are sent.
-
-	// Send 2 VSC matured packets from every consumer to provider
-	for _, bundle := range s.consumerBundles {
-		packet := s.constructVSCMaturedPacketFromConsumer(*bundle, 1) // use sequence 1
-		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
-		packet = s.constructVSCMaturedPacketFromConsumer(*bundle, 2) // use sequence 2
-		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
-	}
 
 	// Choose 3 consumer bundles. It doesn't matter which ones.
 	idx := 0
@@ -198,7 +189,7 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 		idx++
 	}
 
-	// Send some packets to provider from the 3 chosen consumers.
+	// Send some slash packets to provider from the 3 chosen consumers.
 	// They will each slash a different validator according to idx.
 	idx = 0
 	valsToSlash := []tmtypes.Validator{}
@@ -214,26 +205,17 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 			*bundle,
 			*tmVal,
 			stakingtypes.Infraction_INFRACTION_DOWNTIME,
-			3, // use sequence 3, 1 and 2 are used above.
+			1, // all consumers use 1 seq num
 		)
-		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
-
-		// Send two trailing VSC matured packets from consumer to provider
-		packet = s.constructVSCMaturedPacketFromConsumer(*bundle, 4) // use sequence 4
-		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
-		packet = s.constructVSCMaturedPacketFromConsumer(*bundle, 5) // use sequence 5
 		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
 
 		idx++
 	}
 
-	s.Fail("needs updating")
-
-	// Confirm that the slash packet and trailing VSC matured packet
-	// were handled immediately for the first consumer (this packet was recv first).
+	// Confirm that the slash packet for the first consumer was handled (this packet was recv first).
 	s.confirmValidatorJailed(valsToSlash[0], true)
 
-	// Packets were queued for the second and third consumers.
+	// Packets were bounced for the second and third consumers.
 	s.confirmValidatorNotJailed(valsToSlash[1], 1000)
 	s.confirmValidatorNotJailed(valsToSlash[2], 1000)
 
@@ -242,22 +224,51 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 		providerStakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
 
 	// Now replenish the slash meter and confirm one of two queued slash
-	// packet entries are then handled. Order is irrelevant here since those
-	// two packets were sent and recv at the same block time when being queued.
+	// packet entries are then handled, when both are retried.
 	s.replenishSlashMeterTillPositive()
 
-	// 1st NextBlock will handle the slash packet, 2nd will update staking module val powers
+	// Retry from consumer with idx 1
+	bundle := senderBundles[1]
+	packet := s.constructSlashPacketFromConsumer(
+		*bundle,
+		valsToSlash[1],
+		stakingtypes.Infraction_INFRACTION_DOWNTIME,
+		2, // seq number is incremented since last try
+	)
+	sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
+
+	// retry from consumer with idx 2
+	bundle = senderBundles[2]
+	packet = s.constructSlashPacketFromConsumer(
+		*bundle,
+		valsToSlash[2],
+		stakingtypes.Infraction_INFRACTION_DOWNTIME,
+		2, // seq number is incremented since last try
+	)
+	sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
+
+	// Call NextBlocks to update staking module val powers
 	s.providerChain.NextBlock()
 	s.providerChain.NextBlock()
 
-	// If one of the entires was handled, total power will be 2000 (1000 power was slashed)
+	// If one of the entires was handled, total power will be 2000 (1000 power was just slashed)
 	s.Require().Equal(int64(2000),
 		providerStakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
 
 	// Now replenish one more time, and handle final slash packet.
 	s.replenishSlashMeterTillPositive()
 
-	// 1st NextBlock will handle the slash packet, 2nd will update last validator power
+	// Retry from consumer with idx 2
+	bundle = senderBundles[2]
+	packet = s.constructSlashPacketFromConsumer(
+		*bundle,
+		valsToSlash[2],
+		stakingtypes.Infraction_INFRACTION_DOWNTIME,
+		3, // seq number is incremented since last try
+	)
+	sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
+
+	// Call NextBlocks to update staking module val powers
 	s.providerChain.NextBlock()
 	s.providerChain.NextBlock()
 
