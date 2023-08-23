@@ -1,27 +1,28 @@
 package integration
 
 import (
+	"bytes"
+	"time"
+
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	provider "github.com/cosmos/interchain-security/v3/x/ccv/provider"
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
-// TestSlashRetries tests the throttling v2 retry logic.
+// TestSlashRetries tests the throttling v2 retry logic at an integration level.
 //
-// TODO: This test will need updating once provider changes are made.
+// TODO: can prob make some helpers to make this test more readable and succinct. Matching vals for example
 func (s *CCVTestSuite) TestSlashRetries() {
 	s.SetupAllCCVChannels()
+	s.SendEmptyVSCPacket() // Establish ccv channel
 	s.setupValidatorPowers()
 
 	//
 	// Provider setup
 	//
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerModule := provider.NewAppModule(&providerKeeper, s.providerApp.GetSubspace(providertypes.ModuleName))
 	// Initialize slash meter
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
 	// Assert that we start out with no jailings
@@ -31,12 +32,15 @@ func (s *CCVTestSuite) TestSlashRetries() {
 		s.Require().False(val.IsJailed())
 	}
 	// Setup signing info for jailings
-	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[1])
+	tmval1 := s.providerChain.Vals.Validators[1]
+	tmval2 := s.providerChain.Vals.Validators[2]
+	s.setDefaultValSigningInfo(*tmval1)
+	s.setDefaultValSigningInfo(*tmval2)
 
 	//
 	// Consumer setup
 	//
-	consumerKeeper := s.consumerApp.GetConsumerKeeper()
+	consumerKeeper := s.getFirstBundle().App.GetConsumerKeeper()
 	// Assert no slash record exists
 	_, found := consumerKeeper.GetSlashRecord(s.consumerCtx())
 	s.Require().False(found)
@@ -46,25 +50,33 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	//
 
 	// Construct a mock slash packet from consumer
-	tmval1 := s.providerChain.Vals.Validators[1]
-	packet1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
+	packet1, data := s.constructSlashPacketFromConsumerWithData(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
 
-	// Mock the sending of the packet on consumer
+	// Append packet to be sent by consumer
 	consumerKeeper.AppendPendingPacket(s.consumerCtx(), ccvtypes.SlashPacket,
 		&ccvtypes.ConsumerPacketData_SlashPacketData{
-			SlashPacketData: &ccvtypes.SlashPacketData{},
+			SlashPacketData: &data,
 		},
 	)
-	consumerKeeper.UpdateSlashRecordOnSend(s.consumerCtx())
+
+	sendTime := s.consumerCtx().BlockTime()
+
+	// Advance block on consumer to send pending packet
+	s.getFirstBundle().Chain.NextBlock()
+
+	// Confirm packet was sent via state that's updated on send
 	slashRecord, found := consumerKeeper.GetSlashRecord(s.consumerCtx())
 	s.Require().True(found)
 	s.Require().True(slashRecord.WaitingOnReply)
+	s.Require().NotZero(slashRecord.SendTime)
+	s.Require().Equal(sendTime, slashRecord.SendTime)
 	s.Require().Len(consumerKeeper.GetPendingPackets(s.consumerCtx()), 1)
 
-	// Recv packet on provider and assert ack. Provider should return v1 result.
-	ack := providerModule.OnRecvPacket(s.providerCtx(), packet1, nil)
-	expectedv1Ack := channeltypes.NewResultAcknowledgement([]byte(ccvtypes.V1Result))
-	s.Require().Equal(expectedv1Ack.Acknowledgement(), ack.Acknowledgement())
+	// Packet sending blocked until provider returns slash packet handled ack
+	s.Require().False(consumerKeeper.PacketSendingPermitted(s.consumerCtx()))
+
+	// Recv packet on provider.
+	relayAllCommittedPackets(s, s.consumerChain, s.path, ccvtypes.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
 
 	// Couple blocks pass on provider for provider staking keeper to process jailing
 	s.providerChain.NextBlock()
@@ -72,23 +84,39 @@ func (s *CCVTestSuite) TestSlashRetries() {
 
 	// Default slash meter replenish fraction is 0.05, so packet should be handled on provider.
 	vals = s.providerApp.GetTestStakingKeeper().GetAllValidators(s.providerCtx())
-	s.Require().True(vals[1].IsJailed())
+
+	// Match val from staking keeper to tmval1
+	var stakingVal1 stakingtypes.Validator
+	for i, val := range vals {
+		consAddr, err := val.GetConsAddr()
+		s.Require().NoError(err)
+		if bytes.Equal(consAddr.Bytes(), tmval1.Address.Bytes()) {
+			stakingVal1 = vals[i]
+		}
+	}
+	// Require stakingVal1 is found
+	s.Require().NotZero(stakingVal1)
+
+	s.Require().True(stakingVal1.IsJailed())
 	s.Require().Equal(int64(0),
-		s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), vals[1].GetOperator()))
+		s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), stakingVal1.GetOperator()))
 
 	// Now slash meter should be negative on provider
 	s.Require().True(s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx()).IsNegative())
 
 	// Apply ack back on consumer
-	ackForConsumer := expectedv1Ack
-	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet1, ackForConsumer)
+	expectedAck := channeltypes.NewResultAcknowledgement([]byte(ccvtypes.SlashPacketHandledResult))
+	err := s.getFirstBundle().Path.EndpointA.AcknowledgePacket(packet1, expectedAck.Acknowledgement())
 	s.Require().NoError(err)
 
-	// Slash record should have been deleted, head of pending packets should have been popped
-	// Since provider has handled the packet
+	// Slash record should have been deleted, head of pending packets should have been popped,
+	// since provider has handled the packet.
 	_, found = consumerKeeper.GetSlashRecord(s.consumerCtx())
 	s.Require().False(found)
 	s.Require().Empty(consumerKeeper.GetPendingPackets(s.consumerCtx()))
+
+	// Packet sending should now be unblocked
+	s.Require().True(consumerKeeper.PacketSendingPermitted(s.consumerCtx()))
 
 	// pass two blocks on provider and consumer for good measure
 	s.providerChain.NextBlock()
@@ -96,48 +124,119 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	s.consumerChain.NextBlock()
 	s.consumerChain.NextBlock()
 
-	// Construct and mock the sending of a second packet on consumer
-	tmval2 := s.providerChain.Vals.Validators[2]
-	packet2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
-
+	// Have consumer queue a new slash packet for a different validator.
+	packet2, data := s.constructSlashPacketFromConsumerWithData(
+		s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
 	consumerKeeper.AppendPendingPacket(s.consumerCtx(), ccvtypes.SlashPacket,
 		&ccvtypes.ConsumerPacketData_SlashPacketData{
-			SlashPacketData: &ccvtypes.SlashPacketData{},
+			SlashPacketData: &data,
 		},
 	)
-	consumerKeeper.UpdateSlashRecordOnSend(s.consumerCtx())
+
+	// Advance block on consumer to send pending packet
+	sendTime = s.consumerCtx().BlockTime()
+	s.getFirstBundle().Chain.NextBlock()
+
+	// Confirm packet was sent via state that's updated on send
 	slashRecord, found = consumerKeeper.GetSlashRecord(s.consumerCtx())
 	s.Require().True(found)
 	s.Require().True(slashRecord.WaitingOnReply)
+	s.Require().NotZero(slashRecord.SendTime)
+	s.Require().Equal(sendTime, slashRecord.SendTime)
 	s.Require().Len(consumerKeeper.GetPendingPackets(s.consumerCtx()), 1)
 
-	// Recv 2nd slash packet on provider for different validator.
-	// Provider should return the same v1 result ack even tho the packet was queued.
-	ack = providerModule.OnRecvPacket(s.providerCtx(), packet2, nil)
-	expectedv1Ack = channeltypes.NewResultAcknowledgement([]byte(ccvtypes.V1Result))
-	s.Require().Equal(expectedv1Ack.Acknowledgement(), ack.Acknowledgement())
+	// Packet sending blocked until provider returns slash packet handled ack
+	s.Require().False(consumerKeeper.PacketSendingPermitted(s.consumerCtx()))
+
+	// Recv 2nd packet on provider.
+	relayAllCommittedPackets(s, s.consumerChain, s.path, ccvtypes.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
 
 	// Couple blocks pass on provider for staking keeper to process jailings
 	s.providerChain.NextBlock()
 	s.providerChain.NextBlock()
 
-	s.Fail("need to update with provider changes")
+	vals = s.providerApp.GetTestStakingKeeper().GetAllValidators(s.providerCtx())
 
-	// Val shouldn't be jailed on provider. Slash packet was queued
-	s.Require().False(vals[2].IsJailed())
+	// Match val from staking keeper to tmval2
+	var stakingVal2 stakingtypes.Validator
+	for i, val := range vals {
+		consAddr, err := val.GetConsAddr()
+		s.Require().NoError(err)
+		if bytes.Equal(consAddr.Bytes(), tmval2.Address.Bytes()) {
+			stakingVal2 = vals[i]
+		}
+	}
+	// Require stakingVal2 is found
+	s.Require().NotZero(stakingVal2)
+
+	// Val 2 shouldn't be jailed on provider. Slash packet should have been bounced.
+	s.Require().False(stakingVal2.IsJailed())
 	s.Require().Equal(int64(1000),
-		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[2].GetOperator()))
+		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), stakingVal2.GetOperator()))
 
 	// Apply ack on consumer
-	ackForConsumer = expectedv1Ack
-	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet2, ackForConsumer)
+	expectedAck = channeltypes.NewResultAcknowledgement([]byte(ccvtypes.SlashPacketBouncedResult))
+	err = s.getFirstBundle().Path.EndpointA.AcknowledgePacket(packet2, expectedAck.Acknowledgement())
 	s.Require().NoError(err)
 
-	// TODO: when provider changes are made, slashRecord.WaitingOnReply should have been updated to false on consumer. Slash Packet will still be in consumer's pending packets queue.
+	// Now consumer should have updated it's slash record on receipt of bounce ack
+	slashRecord, found = consumerKeeper.GetSlashRecord(s.consumerCtx())
+	s.Require().True(found)
+	s.Require().False(slashRecord.WaitingOnReply)
+	// Packet still at head of queue
+	s.Require().Len(consumerKeeper.GetPendingPackets(s.consumerCtx()), 1)
 
-	// Slash record should have been deleted, head of pending packets should have been popped
-	// Since provider has handled the packet
-	_, found = consumerKeeper.GetSlashRecord(s.consumerCtx())
-	s.Require().False(found)
-	s.Require().Empty(consumerKeeper.GetPendingPackets(s.consumerCtx()))
+	// Packet sending should still be blocked, WaitingOnReply is false,
+	// but retry delay hasn't passed yet.
+	s.Require().False(consumerKeeper.PacketSendingPermitted(s.consumerCtx()))
+
+	// IBC testing framework doesn't have a way to advance time,
+	// so we manually mutate send time in the slash record to be in the past.
+	slashRecord.SendTime = slashRecord.SendTime.Add(-time.Hour - time.Minute)
+	consumerKeeper.SetSlashRecord(s.consumerCtx(), slashRecord)
+
+	s.Require().True(consumerKeeper.PacketSendingPermitted(s.consumerCtx()))
+
+	// Set slash meter on provider to positive value,
+	// now allowing handling of the slash packet
+	providerKeeper.InitializeSlashMeter(s.providerCtx())
+
+	// Advance block on consumer, now consumer should retry the sending of the slash packet.
+	sendTime = s.consumerCtx().BlockTime()
+	s.getFirstBundle().Chain.NextBlock()
+
+	// Confirm packet was sent via state that's updated on send
+	slashRecord, found = consumerKeeper.GetSlashRecord(s.consumerCtx())
+	s.Require().True(found)
+	s.Require().True(slashRecord.WaitingOnReply)
+	s.Require().NotZero(slashRecord.SendTime)
+	s.Require().Equal(sendTime, slashRecord.SendTime)
+	s.Require().Len(consumerKeeper.GetPendingPackets(s.consumerCtx()), 1)
+
+	// Recv retried packet on provider.
+	relayAllCommittedPackets(s, s.consumerChain, s.path, ccvtypes.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
+
+	// Couple blocks pass on provider for provider staking keeper to process jailing
+	s.providerChain.NextBlock()
+	s.providerChain.NextBlock()
+
+	vals = s.providerApp.GetTestStakingKeeper().GetAllValidators(s.providerCtx())
+
+	// Match val from staking keeper to tmval2
+	stakingVal2 = stakingtypes.Validator{}
+	for i, val := range vals {
+		consAddr, err := val.GetConsAddr()
+		s.Require().NoError(err)
+		if bytes.Equal(consAddr.Bytes(), tmval2.Address.Bytes()) {
+			stakingVal2 = vals[i]
+		}
+	}
+	// Require stakingVal2 is found
+	s.Require().NotZero(stakingVal2)
+
+	// Provider should have now jailed val[2]
+	vals = s.providerApp.GetTestStakingKeeper().GetAllValidators(s.providerCtx())
+	s.Require().True(stakingVal2.IsJailed())
+	s.Require().Equal(int64(0),
+		s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), stakingVal2.GetOperator()))
 }

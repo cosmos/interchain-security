@@ -414,24 +414,33 @@ func (suite *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.
 func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
 	tmVal tmtypes.Validator, infractionType stakingtypes.Infraction, ibcSeqNum uint64,
 ) channeltypes.Packet {
+	packet, _ := s.constructSlashPacketFromConsumerWithData(bundle, tmVal, infractionType, ibcSeqNum)
+	return packet
+}
+
+func (s *CCVTestSuite) constructSlashPacketFromConsumerWithData(bundle icstestingutils.ConsumerBundle,
+	tmVal tmtypes.Validator, infractionType stakingtypes.Infraction, ibcSeqNum uint64,
+) (channeltypes.Packet, ccv.SlashPacketData) {
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
 
-	data := ccv.ConsumerPacketData{
+	spdData := ccv.SlashPacketData{
+		Validator: abci.Validator{
+			Address: tmVal.Address,
+			Power:   tmVal.VotingPower,
+		},
+		ValsetUpdateId: valsetUpdateId,
+		Infraction:     infractionType,
+	}
+
+	cpdData := ccv.ConsumerPacketData{
 		Type: ccv.SlashPacket,
 		Data: &ccv.ConsumerPacketData_SlashPacketData{
-			SlashPacketData: &ccv.SlashPacketData{
-				Validator: abci.Validator{
-					Address: tmVal.Address,
-					Power:   tmVal.VotingPower,
-				},
-				ValsetUpdateId: valsetUpdateId,
-				Infraction:     infractionType,
-			},
+			SlashPacketData: &spdData,
 		},
 	}
 
-	return channeltypes.NewPacket(data.GetBytes(),
+	return channeltypes.NewPacket(cpdData.GetBytes(),
 		ibcSeqNum,
 		ccv.ConsumerPortID,              // Src port
 		bundle.Path.EndpointA.ChannelID, // Src channel
@@ -439,7 +448,7 @@ func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.C
 		bundle.Path.EndpointB.ChannelID, // Dst channel
 		clienttypes.Height{},
 		uint64(bundle.GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano()),
-	)
+	), spdData
 }
 
 // constructVSCMaturedPacketFromConsumer constructs an IBC packet embedding
