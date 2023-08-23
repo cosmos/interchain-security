@@ -241,13 +241,15 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 						},
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   20,
-					},
-				},
 			},
+		},
+		// we expect the consumer chain to be halted since the last VSC packet should
+		// have updated the alice validator power to 0.
+		{
+			action: assertChainIsHaltedAction{
+				chain: chainID("consu"),
+			},
+			state: State{},
 		},
 	}
 }
