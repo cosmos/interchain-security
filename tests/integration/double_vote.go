@@ -98,45 +98,15 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
 
 	testCases := []struct {
-		name            string
-		currBlockHeight int64
-		providerAddr    types.ProviderConsAddress
-		evTimestamp     time.Time
-		votes           []*tmtypes.Vote
-		chainID         string
-		expPass         bool
+		name         string
+		providerAddr types.ProviderConsAddress
+		votes        []*tmtypes.Vote
+		chainID      string
+		expPass      bool
 	}{
 		{
-			"expired evidence - shouldn't pass",
-			s.consumerCtx().BlockHeight() + 10000001,
-			provAddr,
-			s.consumerCtx().BlockTime(),
-			[]*tmtypes.Vote{
-				makeAndSignVote(
-					blockID1,
-					s.consumerCtx().BlockHeight(),
-					s.consumerCtx().BlockTime(),
-					valSet,
-					signer,
-					s.consumerChain.ChainID,
-				),
-				makeAndSignVote(
-					blockID2,
-					s.consumerCtx().BlockHeight(),
-					s.consumerCtx().BlockTime(),
-					valSet,
-					signer,
-					s.consumerChain.ChainID,
-				),
-			},
-			s.consumerChain.ChainID,
-			false,
-		},
-		{
 			"votes with different block height - shouldn't pass",
-			s.consumerCtx().BlockHeight(),
 			provAddr,
-			s.consumerCtx().BlockTime(),
 			[]*tmtypes.Vote{
 				makeAndSignVote(
 					blockID1,
@@ -160,9 +130,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 		},
 		{
 			"votes with different validator address - shouldn't pass",
-			s.consumerCtx().BlockHeight(),
 			provAddr,
-			s.consumerCtx().BlockTime(),
 			[]*tmtypes.Vote{
 				makeAndSignVote(
 					blockID1,
@@ -186,9 +154,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 		},
 		{
 			"votes with same block IDs - shouldn't pass",
-			s.consumerCtx().BlockHeight(),
 			provAddr,
-			s.consumerCtx().BlockTime(),
 			[]*tmtypes.Vote{
 				makeAndSignVote(
 					blockID1,
@@ -212,9 +178,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 		},
 		{
 			"no consumer chain for given chain ID - shouldn't pass",
-			s.consumerCtx().BlockHeight(),
 			provAddr,
-			s.consumerCtx().BlockTime(),
 			[]*tmtypes.Vote{
 				makeAndSignVote(
 					blockID1,
@@ -238,9 +202,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 		},
 		{
 			"voteA signed with wrong chain ID doesn't exist - shouldn't pass",
-			s.consumerCtx().BlockHeight(),
 			provAddr,
-			s.consumerCtx().BlockTime(),
 			[]*tmtypes.Vote{
 				makeAndSignVote(
 					blockID1,
@@ -264,9 +226,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 		},
 		{
 			"voteB signed with wrong chain ID - shouldn't pass",
-			s.consumerCtx().BlockHeight(),
 			provAddr,
-			s.consumerCtx().BlockTime(),
 			[]*tmtypes.Vote{
 				makeAndSignVote(
 					blockID1,
@@ -290,9 +250,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 		},
 		{
 			"valid evidence should pass",
-			s.consumerCtx().BlockHeight(),
 			provAddr,
-			s.consumerCtx().BlockTime(),
 			[]*tmtypes.Vote{
 				makeAndSignVote(
 					blockID1,
@@ -318,9 +276,8 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			ctx := s.providerCtx().WithBlockHeight(tc.currBlockHeight)
 			err := s.providerApp.GetProviderKeeper().VerifyDoubleVoting(
-				ctx,
+				s.providerCtx(),
 				tmtypes.DuplicateVoteEvidence{
 					VoteA:            tc.votes[0],
 					VoteB:            tc.votes[1],

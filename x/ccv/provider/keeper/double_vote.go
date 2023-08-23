@@ -3,7 +3,6 @@ package keeper
 import (
 	"bytes"
 	"fmt"
-	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -47,25 +46,8 @@ func (k Keeper) VerifyDoubleVoting(
 	chainID string,
 	providerAddr types.ProviderConsAddress,
 ) error {
-	// default evidence params in CometBFT see https://github.com/cometbft/cometbft/blob/main/types/params.go#L107
-	MAX_AGE_NUM_BLOCKS := int64(1000000)
-	MAX_AGE_DURATION := 48 * time.Hour
 
-	height := ctx.BlockHeight()
-	blockTime := ctx.BlockTime()
-	ageNumBlocks := height - evidence.Height()
-
-	// check that the evidence hasn't expired
-	if ageNumBlocks > MAX_AGE_NUM_BLOCKS {
-		return sdkerrors.Wrapf(
-			ccvtypes.ErrInvalidEvidence,
-			"evidence from height %d (created at: %v) is too old; min height is %d and evidence can not be older than %v",
-			evidence.Height(),
-			evidence.Time(),
-			height-MAX_AGE_NUM_BLOCKS,
-			blockTime.Add(MAX_AGE_DURATION),
-		)
-	}
+	// TODO: check the evidence age once we agreed on the infraction height mapping
 
 	// H/R/S must be the same
 	if evidence.VoteA.Height != evidence.VoteB.Height ||
