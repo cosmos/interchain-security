@@ -153,9 +153,9 @@ Examples:
 
 func NewSubmitConsumerDoubleVotingCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "submit-consumer-double-voting [evidence]",
+		Use:   "submit-consumer-double-voting [evidence] [infraction_header]",
 		Short: "submit a double-vote evidence for a consumer chain",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {

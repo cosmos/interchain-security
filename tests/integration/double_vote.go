@@ -9,7 +9,11 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
+// TestHandleConsumerDoubleVoting tests that handling double voting evidence
+// that occurred on a consumer chain results in the jailing and tombstoning
+// of the malicious validators
 func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
+	// Setup a consumer chain
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
 	s.SendEmptyVSCPacket()
@@ -28,48 +32,36 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	blockID1 := makeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
 	blockID2 := makeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
 
-	vote1, err := tmtypes.MakeVote(
-		s.consumerCtx().BlockHeight(),
-		blockID1,
-		valSet,
-		signer,
-		s.consumerChain.ChainID,
-		s.consumerCtx().BlockTime(),
-	)
-
-	s.Require().NoError(err)
-
-	v1 := vote1.ToProto()
-	err = signer.SignVote(s.consumerChain.ChainID, v1)
-	s.Require().NoError(err)
-
-	badVote, err := tmtypes.MakeVote(
-		s.consumerCtx().BlockHeight(),
-		blockID2,
-		valSet,
-		signer,
-		s.consumerChain.ChainID,
-		s.consumerCtx().BlockTime(),
-	)
-
-	s.Require().NoError(err)
-
-	bv := badVote.ToProto()
-	err = signer.SignVote(s.consumerChain.ChainID, bv)
-	s.Require().NoError(err)
-
+	// In order to create an evidence for the configured consumer chain above,
+	// we create two votes that only differs by their BlockIDs and
+	// signed them using the same validator and the chain ID of the consumer chain
 	evidence := &tmtypes.DuplicateVoteEvidence{
-		VoteA:            vote1,
-		VoteB:            badVote,
+		VoteA: makeAndSignVote(
+			blockID1,
+			s.consumerCtx().BlockHeight(),
+			s.consumerCtx().BlockTime(),
+			valSet,
+			signer,
+			s.consumerChain.ChainID,
+		),
+		VoteB: makeAndSignVote(
+			blockID2,
+			s.consumerCtx().BlockHeight(),
+			s.consumerCtx().BlockTime(),
+			valSet,
+			signer,
+			s.consumerChain.ChainID,
+		),
 		ValidatorPower:   val.VotingPower,
 		TotalVotingPower: val.VotingPower,
 		Timestamp:        s.consumerCtx().BlockTime(),
 	}
 
-	vote1.Signature = v1.Signature
-	badVote.Signature = bv.Signature
-
-	err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(s.providerCtx(), evidence, s.consumerChain.LastHeader)
+	err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
+		s.providerCtx(),
+		evidence,
+		s.consumerChain.LastHeader,
+	)
 	s.Require().NoError(err)
 
 	consuAddr := types.NewConsumerConsAddress(sdk.ConsAddress(val.Address.Bytes()))
@@ -105,7 +97,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 		expPass      bool
 	}{
 		{
-			"votes with different block height - shouldn't pass",
+			"evidence has votes with different block height - shouldn't pass",
 			provAddr,
 			[]*tmtypes.Vote{
 				makeAndSignVote(
@@ -129,7 +121,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 			false,
 		},
 		{
-			"votes with different validator address - shouldn't pass",
+			"evidence has votes with different validator address - shouldn't pass",
 			provAddr,
 			[]*tmtypes.Vote{
 				makeAndSignVote(
@@ -153,7 +145,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 			false,
 		},
 		{
-			"votes with same block IDs - shouldn't pass",
+			"evidence has votes with same block IDs - shouldn't pass",
 			provAddr,
 			[]*tmtypes.Vote{
 				makeAndSignVote(
@@ -177,7 +169,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 			false,
 		},
 		{
-			"no consumer chain for given chain ID - shouldn't pass",
+			"no consumer chain exists for given chain ID - shouldn't pass",
 			provAddr,
 			[]*tmtypes.Vote{
 				makeAndSignVote(
@@ -201,7 +193,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 			false,
 		},
 		{
-			"voteA signed with wrong chain ID doesn't exist - shouldn't pass",
+			"voteA is signed with the wrong chain ID and is invalid - shouldn't pass",
 			provAddr,
 			[]*tmtypes.Vote{
 				makeAndSignVote(
@@ -225,7 +217,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 			false,
 		},
 		{
-			"voteB signed with wrong chain ID - shouldn't pass",
+			"voteB is signed with the wrong chain ID and is invalid - shouldn't pass",
 			provAddr,
 			[]*tmtypes.Vote{
 				makeAndSignVote(
@@ -249,7 +241,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 			false,
 		},
 		{
-			"valid evidence should pass",
+			"valid double voting evidence should pass",
 			provAddr,
 			[]*tmtypes.Vote{
 				makeAndSignVote(
