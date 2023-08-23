@@ -19,29 +19,33 @@ import (
 func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.DuplicateVoteEvidence, h *ibctmtypes.Header) error {
 	chainID := h.Header.ChainID
 
-	if err := k.VerifyDoubleVoting(ctx, *evidence, chainID); err != nil {
+	providerAddr := k.GetProviderAddrFromConsumerAddr(
+		ctx,
+		chainID,
+		types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress.Bytes())),
+	)
+
+	if err := k.VerifyDoubleVoting(ctx, *evidence, chainID, providerAddr); err != nil {
 		return err
 	}
 
-	// TODO optimize this to convert consumer address only once
-	// but also remember that the jailing method is called in misbehaviour also
-	consuAddress := types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress))
-	if err := k.JailAndTombstoneByConsumerAddress(ctx, consuAddress, chainID); err != nil {
-		return err
-	}
-	provAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consuAddress)
+	k.JailAndTombstoneValidator(ctx, providerAddr, chainID)
 
-	logger := ctx.Logger()
-	logger.Info(
+	k.Logger(ctx).Info(
 		"confirmed equivocation",
-		"byzantine validator address", provAddr,
+		"byzantine validator address", providerAddr,
 	)
 
 	return nil
 }
 
 // VerifyEquivocation verifies the equivocation for the given chain id
-func (k Keeper) VerifyDoubleVoting(ctx sdk.Context, evidence tmtypes.DuplicateVoteEvidence, chainID string) error {
+func (k Keeper) VerifyDoubleVoting(
+	ctx sdk.Context,
+	evidence tmtypes.DuplicateVoteEvidence,
+	chainID string,
+	providerAddr types.ProviderConsAddress,
+) error {
 	// default evidence params in CometBFT see https://github.com/cometbft/cometbft/blob/main/types/params.go#L107
 	MAX_AGE_NUM_BLOCKS := int64(1000000)
 	MAX_AGE_DURATION := 48 * time.Hour
@@ -92,16 +96,12 @@ func (k Keeper) VerifyDoubleVoting(ctx sdk.Context, evidence tmtypes.DuplicateVo
 		)
 	}
 
-	// convert consumer validator address to provider adddress
-	consumerAddr := types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress.Bytes()))
-	providerAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerAddr)
-	val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
+	// val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
+	// if !ok || val.IsUnbonded() {
+	// 	return fmt.Errorf("validator not found or is unbonded: %s", providerAddr.String())
+	// }
 
-	if !ok || val.IsUnbonded() {
-		return fmt.Errorf("validator not found or is unbonded: %s", providerAddr.String())
-	}
-
-	// use the validator consumer chain public key to verify the signature
+	// get the public key assigned to the validator for the consumer chain
 	tmpk, ok := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 	if !ok {
 		return fmt.Errorf("cannot find public key for validator %s and consumer chain %s", providerAddr.String(), chainID)
