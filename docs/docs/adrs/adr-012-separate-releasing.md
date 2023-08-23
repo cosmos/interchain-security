@@ -1,8 +1,8 @@
 ---
-sidebar_position: 12
+sidebar_position: 13
 title: Separate Releasing
 ---
-# ADR 011: Separate Releasing
+# ADR 012: Separate Releasing
 
 ## Changelog
 
