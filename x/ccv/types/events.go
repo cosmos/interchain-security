@@ -39,7 +39,6 @@ const (
 	AttributeMisbehaviourHeight1      = "misbehaviour_height_1"
 	AttributeMisbehaviourHeight2      = "misbehaviour_height_2"
 	AttributeConsumerDoubleVoting     = "consumer_double_voting"
-	AttributeInfractionBlockHeader    = "infraction_block_header"
 
 	AttributeDistributionCurrentHeight = "current_distribution_height"
 	AttributeDistributionNextHeight    = "next_distribution_height"

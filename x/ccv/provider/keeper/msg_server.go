@@ -156,7 +156,7 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 		return nil, err
 	}
 
-	if err := k.Keeper.HandleConsumerDoubleVoting(ctx, evidence, msg.InfractionBlockHeader); err != nil {
+	if err := k.Keeper.HandleConsumerDoubleVoting(ctx, evidence, msg.InfractionBlockHeader.Header.ChainID); err != nil {
 		return &types.MsgSubmitConsumerDoubleVotingResponse{}, err
 	}
 
@@ -164,7 +164,7 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 		sdk.NewEvent(
 			ccvtypes.EventTypeSubmitConsumerMisbehaviour,
 			sdk.NewAttribute(ccvtypes.AttributeConsumerDoubleVoting, msg.DuplicateVoteEvidence.String()),
-			sdk.NewAttribute(ccvtypes.AttributeInfractionBlockHeader, msg.InfractionBlockHeader.String()),
+			sdk.NewAttribute(ccvtypes.AttributeChainID, msg.InfractionBlockHeader.Header.ChainID),
 			sdk.NewAttribute(ccvtypes.AttributeSubmitterAddress, msg.Submitter),
 		),
 	})

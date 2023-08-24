@@ -4,10 +4,8 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -53,7 +51,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	testCases := []struct {
 		name    string
 		ev      *tmtypes.DuplicateVoteEvidence
-		header  *ibctmtypes.Header
+		chainID string
 		expPass bool
 	}{
 		{
@@ -65,13 +63,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				TotalVotingPower: val.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
-			&ibctmtypes.Header{
-				SignedHeader: &tmproto.SignedHeader{
-					Header: &tmproto.Header{
-						ChainID: "chainID",
-					},
-				},
-			},
+			"chainID",
 			false,
 		},
 		{
@@ -84,7 +76,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				TotalVotingPower: val.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
-			s.consumerChain.LastHeader,
+			s.consumerChain.ChainID,
 			false,
 		},
 		{
@@ -99,7 +91,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				TotalVotingPower: val.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
-			s.consumerChain.LastHeader,
+			s.consumerChain.ChainID,
 			true,
 		},
 	}
@@ -112,7 +104,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
 				s.providerCtx(),
 				tc.ev,
-				tc.header,
+				tc.chainID,
 			)
 			if tc.expPass {
 				s.Require().NoError(err)

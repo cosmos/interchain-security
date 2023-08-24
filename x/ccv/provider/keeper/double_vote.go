@@ -7,7 +7,6 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
@@ -16,10 +15,7 @@ import (
 
 // HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer chain and,
 // if successful, executes the the jailing and the tombstoning of the malicious validator.
-// Note that the infraction header argument is temporarily only used to get the consumer chain ID.
-func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.DuplicateVoteEvidence, h *ibctmtypes.Header) error {
-	chainID := h.Header.ChainID
-
+func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.DuplicateVoteEvidence, chainID string) error {
 	// get the validator's consensus address on the provider
 	providerAddr := k.GetProviderAddrFromConsumerAddr(
 		ctx,
