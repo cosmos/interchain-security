@@ -44,6 +44,15 @@ Slightly adapting [the current semver ruleset](https://github.com/cosmos/interch
 * A state breaking change (change requiring coordinated upgrade and/or state migration) will result in an increase of the MINOR version number for the AFFECTED module(s) (x.Y.z-provider AND/OR x.Y.z-consumer).
 * Any other changes (including node API breaking changes) will result in an increase of the PATCH version number for the AFFECTED module(s) (x.y.Z-provider AND/OR x.y.Z-consumer).
 
+### Example release flow
+
+We upgrade `main` to use a new version of SDK. This is a major version bump, triggering a new release for both the provider and consumer modules, `v5.0.0-provider` and `v5.0.0-consumer`.
+
+* A state breaking change is merged to `main` for the provider module. We release only a `v5.1.0-provider` off main.
+* Another state breaking change is merged to `main` for the provider module. We release only a `v5.2.0-provider` off main.
+* At this point, the latest consumer version is still `v5.0.0-consumer`. We now merge a state breaking change for the consumer module to `main`, and consequently release `v5.1.0-consumer`. Note that `v5.1.0-consumer` is tagged off a LATER commit from main than `v5.2.0-provider`. This is fine, as the consumer module should not be affected by the provider module's state breaking changes.
+* Once either module sees a library API breaking change, we bump the major version for both modules. For example, we merge a library API breaking change to `main` for the provider module. We release `v6.0.0-provider` and `v6.0.0-consumer` off main. Note that most often, a library API breaking change will affect both modules simultaneously (example being bumping sdk version).
+
 ## Consequences
 
 ### Positive
