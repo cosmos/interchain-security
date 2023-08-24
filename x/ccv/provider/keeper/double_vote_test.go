@@ -289,8 +289,6 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 	ctx = testutil.SetDefaultConsensusEvidenceParams(ctx)
 
 	for _, tc := range testCases {
-		// TODO: add test case when pukey is invalid
-
 		err = keeper.VerifyDoubleVotingEvidence(
 			ctx,
 			tmtypes.DuplicateVoteEvidence{
