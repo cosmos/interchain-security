@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"bytes"
 	"time"
 
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -142,21 +141,8 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 			*tmVal2, stakingtypes.Infraction_INFRACTION_DOWNTIME, 3) // make sure to use a new seq num
 		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
 
-		vals = providerStakingKeeper.GetAllValidators(cacheCtx)
-		found := false
-		for _, val := range vals {
-			consAddr, err := val.GetConsAddr()
-			s.Require().NoError(err)
-			if bytes.Equal(consAddr, tmVal2.Address) {
-				slashedVal = val
-				found = true
-				break
-			}
-		}
-		if !found {
-			s.Fail("slashed validator not found")
-		}
-		s.Require().True(slashedVal.IsJailed())
+		stakingVal2 := s.mustGetStakingValFromTmVal(*tmVal2)
+		s.Require().True(stakingVal2.IsJailed())
 
 		// Assert validator 2 has no power, this should be apparent next block,
 		// since the staking endblocker runs before the ccv endblocker.
