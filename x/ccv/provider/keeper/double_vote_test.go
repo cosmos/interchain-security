@@ -25,14 +25,6 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 
 	valSet := tmtypes.NewValidatorSet([]*tmtypes.Validator{val1, val2})
 
-	// valSet, err := tmtypes.ValidatorSetFromProto(s.consumerChain.LastHeader.ValidatorSet)
-	// require.NoError(t, err)
-
-	// val := valSet.Validators[0]
-	// signer := s.consumerChain.Signers[val.Address.String()]
-	// val2 := valSet.Validators[1]
-	// signer2 := s.consumerChain.Signers[val2.Address.String()]
-
 	blockID1 := testutil.MakeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
 	blockID2 := testutil.MakeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
 
@@ -256,5 +248,4 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 			require.Error(t, err)
 		}
 	}
-
 }

@@ -274,13 +274,9 @@ func TestCheckMisbehaviour(t *testing.T) {
 }
 
 //
-// Equivocation tests
+// Equivocation test
 //
 
 func TestHandleConsumerDoubleVoting(t *testing.T) {
 	runCCVTestByName(t, "TestHandleConsumerDoubleVoting")
-}
-
-func TestVerifyDoubleVotingEvidence(t *testing.T) {
-	runCCVTestByName(t, "TestVerifyDoubleVotingEvidence")
 }

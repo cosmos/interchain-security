@@ -115,7 +115,6 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				s.Require().Error(err)
 
 				// verifies that no jailing and tombstoning has occurred
-
 				s.Require().False(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(ctx, provAddr.ToSdkConsAddr()))
 				s.Require().False(s.providerApp.GetTestSlashingKeeper().IsTombstoned(ctx, provAddr.ToSdkConsAddr()))
 			}
