@@ -98,7 +98,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
 
 	for _, tc := range testCases {
-		ctx := setDefaultConsensusEvidenceParams(s.providerCtx())
+		ctx := testutil.SetDefaultConsensusEvidenceParams(s.providerCtx())
 		s.Run(tc.name, func() {
 			err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
 				ctx,
