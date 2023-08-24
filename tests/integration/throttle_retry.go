@@ -54,8 +54,9 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	// Test section: See FSM explanation in throttle_retry.go
 	//
 
-	// Construct a mock slash packet from consumer
-	packet1, data := s.constructSlashPacketFromConsumerWithData(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
+	// Construct a slash packet
+	packet1, data := s.constructSlashPacketFromConsumerWithData(
+		s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
 
 	// Append packet to be sent by consumer
 	consumerKeeper.AppendPendingPacket(s.consumerCtx(), ccvtypes.SlashPacket,

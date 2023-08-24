@@ -87,7 +87,6 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 
 		// Require that slash packet has not been handled, a bounce result would have
 		// been returned, but the IBC helper throws out acks.
-		// TODO: determine if there's a way to make this test better with a real retry.
 		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
 		s.Require().False(vals[2].IsJailed())
 
@@ -169,8 +168,6 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 
 // TestMultiConsumerSlashPacketThrottling tests slash packet throttling in the context of multiple
 // consumers sending slash packets to the provider, with VSC matured packets sprinkled around.
-//
-// TODO: see if you can make this test better with less manual retries
 func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	// Setup test
 	s.SetupAllCCVChannels()
