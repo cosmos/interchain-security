@@ -65,6 +65,14 @@ service Query {
         "/interchain_security/ccv/provider/throttle_state";
   }
 
+  // QueryThrottledConsumerPacketData returns a list of pending packet data
+  // instances (slash packet and vsc matured) for a single consumer chain
+  rpc QueryThrottledConsumerPacketData(QueryThrottledConsumerPacketDataRequest)
+      returns (QueryThrottledConsumerPacketDataResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/provider/pending_consumer_packets";
+  }
+
   // QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
   // denoms that are registered
   rpc QueryRegisteredConsumerRewardDenoms(
