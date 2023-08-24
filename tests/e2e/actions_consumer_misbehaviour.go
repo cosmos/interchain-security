@@ -29,7 +29,7 @@ func (tr TestRun) forkConsumerChain(action forkConsumerChainAction, verbose bool
 	)
 
 	if verbose {
-		fmt.Println("forkConsumerChain - reconfigure node cmd:", configureNodeCmd.String())
+		log.Println("forkConsumerChain - reconfigure node cmd:", configureNodeCmd.String())
 	}
 
 	cmdReader, err := configureNodeCmd.StdoutPipe()
@@ -47,7 +47,7 @@ func (tr TestRun) forkConsumerChain(action forkConsumerChainAction, verbose bool
 	for scanner.Scan() {
 		out := scanner.Text()
 		if verbose {
-			fmt.Println("fork consumer validator : " + out)
+			log.Println("fork consumer validator : " + out)
 		}
 		if out == done {
 			break
@@ -89,4 +89,24 @@ func (tr TestRun) updateLightClient(
 	}
 
 	tr.waitBlocks(action.hostChain, 5, 30*time.Second)
+}
+
+type assertChainIsHaltedAction struct {
+	chain chainID
+}
+
+// assertChainIsHalted verifies that the chain isn't producing blocks
+// by checking that the block height is still the same after 20 seconds
+func (tr TestRun) assertChainIsHalted(
+	action assertChainIsHaltedAction,
+	verbose bool,
+) {
+	blockHeight := tr.getBlockHeight(action.chain)
+	time.Sleep(20 * time.Second)
+	if blockHeight != tr.getBlockHeight(action.chain) {
+		panic(fmt.Sprintf("chain %v isn't expected to produce blocks", action.chain))
+	}
+	if verbose {
+		log.Printf("assertChainIsHalted - chain %v was successfully halted\n", action.chain)
+	}
 }

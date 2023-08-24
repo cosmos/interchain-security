@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"sort"
-
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -94,7 +92,6 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 		}
 	}
 
-	sort.Sort(tmtypes.ValidatorsByVotingPower(validators))
 	return validators, nil
 }
 
@@ -119,10 +116,6 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 // CheckMisbehaviour checks that headers in the given misbehaviour forms
 // a valid light client attack and that the corresponding light client isn't expired
 func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
-	if err := misbehaviour.ValidateBasic(); err != nil {
-		return err
-	}
-
 	clientState, found := k.clientKeeper.GetClientState(ctx, misbehaviour.GetClientID())
 	if !found {
 		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot check misbehaviour for client with ID %s", misbehaviour.GetClientID())
@@ -132,14 +125,15 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 
 	// Check that the headers are at the same height to ensure that
 	// the misbehaviour is for a light client attack and not a time violation,
-	// see https://github.com/cosmos/ibc-go/blob/8f53c21361f9d65448a850c2eafcf3ab3c384a61/modules/light-clients/07-tendermint/types/misbehaviour_handle.go#L56
+	// https://github.com/cosmos/ibc-go/blob/v4.2.0/modules/light-clients/07-tendermint/types/misbehaviour_handle.go#L53-L58
 	if !misbehaviour.Header1.GetHeight().EQ(misbehaviour.Header2.GetHeight()) {
 		return sdkerrors.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
 	}
 
 	// CheckMisbehaviourAndUpdateState verifies the misbehaviour against the trusted consensus states
 	// but does NOT update the light client state.
-	// Note CheckMisbehaviourAndUpdateState returns an error if the trusted consensus states are expired
+	// Note that the CometBFT CheckMisbehaviourAndUpdateState method returns an error if the trusted consensus states are expired,
+	// see https://github.com/cosmos/ibc-go/blob/v4.2.0/modules/light-clients/07-tendermint/types/misbehaviour_handle.go#L120
 	_, err := clientState.CheckMisbehaviourAndUpdateState(ctx, k.cdc, clientStore, &misbehaviour)
 	if err != nil {
 		return err
