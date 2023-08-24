@@ -16,7 +16,6 @@ import (
 	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -152,7 +151,7 @@ func (suite *CCVTestSuite) SetupTest() {
 func initConsumerChain(
 	s *CCVTestSuite,
 	chainID string,
-	genesisState *consumertypes.GenesisState,
+	genesisState *ccv.GenesisState,
 ) {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	bundle := s.consumerBundles[chainID]

@@ -274,13 +274,13 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 		[]byte("gen_hash"),
 		[]byte("bin_hash"),
 		time.Now(),
-		consumertypes.DefaultConsumerRedistributeFrac,
-		consumertypes.DefaultBlocksPerDistributionTransmission,
+		types.DefaultConsumerRedistributeFrac,
+		types.DefaultBlocksPerDistributionTransmission,
 		"",
-		consumertypes.DefaultHistoricalEntries,
+		types.DefaultHistoricalEntries,
 		types.DefaultCCVTimeoutPeriod,
-		consumertypes.DefaultTransferTimeoutPeriod,
-		consumertypes.DefaultConsumerUnbondingPeriod,
+		types.DefaultTransferTimeoutPeriod,
+		types.DefaultConsumerUnbondingPeriod,
 	).(*providertypes.ConsumerAdditionProposal)
 
 	return prop

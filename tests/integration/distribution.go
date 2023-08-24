@@ -34,7 +34,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 
 	// reward for the provider chain will be sent after each 2 blocks
 	consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
-	consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(2))
+	consumerParams.Set(s.consumerCtx(), ccv.KeyBlocksPerDistributionTransmission, int64(2))
 	s.consumerChain.NextBlock()
 
 	consumerAccountKeeper := s.consumerApp.GetTestAccountKeeper()
@@ -166,7 +166,7 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 
 	// reward for the provider chain will be sent after each 1000 blocks
 	consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
-	consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(1000))
+	consumerParams.Set(s.consumerCtx(), ccv.KeyBlocksPerDistributionTransmission, int64(1000))
 
 	// fill fee pool
 	fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
@@ -296,7 +296,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 
 		// reward for the provider chain will be sent after each 1000 blocks
 		consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
-		consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(1000))
+		consumerParams.Set(s.consumerCtx(), ccv.KeyBlocksPerDistributionTransmission, int64(1000))
 
 		// fill fee pool
 		fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))

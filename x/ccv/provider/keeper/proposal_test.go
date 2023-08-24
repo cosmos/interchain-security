@@ -20,7 +20,6 @@ import (
 
 	cryptoutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -908,7 +907,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		]
 	}`
 
-	var expectedGenesis consumertypes.GenesisState
+	var expectedGenesis ccvtypes.GenesisState
 	err = json.Unmarshal([]byte(jsonString), &expectedGenesis) // ignores tabs, newlines and spaces
 	require.NoError(t, err)
 

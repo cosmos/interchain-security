@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package interchain_security.ccv.v1;
+
+option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/types";
+
+import "tendermint/abci/types.proto";
+import "ibc/lightclients/tendermint/v1/tendermint.proto";
+import "ibc/core/channel/v1/channel.proto";
+import "google/protobuf/duration.proto";
+import "gogoproto/gogo.proto";
+import "interchain_security/ccv/v1/wire.proto";
+import "google/protobuf/timestamp.proto";
+
+//
+// Note any type defined in this file is referenced/persisted in both the consumer and provider CCV modules,
+// but not sent over the wire. These schemas could change, only with careful consideration of effects!
+//
+
+// Params defines the parameters for CCV consumer module.
+// 
+// Note this type is referenced in both the consumer and provider CCV modules,
+// and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis. 
+//
+// TODO: Rename to ConsumerParams. See https://github.com/cosmos/interchain-security/issues/1206
+message Params {
+    // TODO: Remove enabled flag and find a better way to setup integration tests
+    // See: https://github.com/cosmos/interchain-security/issues/339
+    bool enabled = 1;
+  
+    ///////////////////////
+    // Distribution Params
+    // Number of blocks between ibc-token-transfers from the consumer chain to
+    // the provider chain. Note that at this transmission event a fraction of
+    // the accumulated tokens are divided and sent consumer redistribution
+    // address.
+    int64 blocks_per_distribution_transmission = 2;
+  
+    // Channel, and provider-chain receiving address to send distribution token
+    // transfers over. These parameters is auto-set during the consumer <->
+    // provider handshake procedure.
+    string distribution_transmission_channel = 3;
+    string provider_fee_pool_addr_str = 4;
+    // Sent CCV related IBC packets will timeout after this duration
+    google.protobuf.Duration ccv_timeout_period = 5
+        [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+  
+    // Sent transfer related IBC packets will timeout after this duration
+    google.protobuf.Duration transfer_timeout_period = 6
+        [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+  
+    // The fraction of tokens allocated to the consumer redistribution address
+    // during distribution events. The fraction is a string representing a
+    // decimal number. For example "0.75" would represent 75%.
+    string consumer_redistribution_fraction = 7;
+  
+    // The number of historical info entries to persist in store.
+    // This param is a part of the cosmos sdk staking module. In the case of
+    // a ccv enabled consumer chain, the ccv module acts as the staking module.
+    int64 historical_entries = 8;
+  
+    // Unbonding period for the consumer,
+    // which should be smaller than that of the provider in general.
+    google.protobuf.Duration unbonding_period = 9
+        [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+  
+    // The threshold for the percentage of validators at the bottom of the set who
+    // can opt out of running the consumer chain without being punished. For
+    // example, a value of 0.05 means that the validators in the bottom 5% of the
+    // set can opt out
+    string soft_opt_out_threshold = 10;
+  
+    // Reward denoms. These are the denominations which are allowed to be sent to
+    // the provider as rewards.
+    repeated string reward_denoms = 11;
+  
+    // Provider-originated reward denoms. These are denoms coming from the
+    // provider which are allowed to be used as rewards. e.g. "uatom"
+    repeated string provider_reward_denoms = 12;
+}
+
+// GenesisState defines the CCV consumer chain genesis state.
+// 
+// Note this type is referenced in both the consumer and provider CCV modules,
+// and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis.
+// 
+// TODO: Rename to ConsumerGenesisState. See https://github.com/cosmos/interchain-security/issues/1206
+message GenesisState {
+    Params params = 1 [ (gogoproto.nullable) = false ];
+    string provider_client_id = 2; // empty for a new chain, filled in on restart.
+    string provider_channel_id =
+        3; // empty for a new chain, filled in on restart.
+    bool new_chain =
+        4; // true for new chain GenesisState, false for chain restart.
+    // ProviderClientState filled in on new chain, nil on restart.
+    ibc.lightclients.tendermint.v1.ClientState provider_client_state = 5;
+    // ProviderConsensusState filled in on new chain, nil on restart.
+    ibc.lightclients.tendermint.v1.ConsensusState provider_consensus_state = 6;
+    // MaturingPackets nil on new chain, filled in on restart.
+    repeated MaturingVSCPacket
+        maturing_packets = 7 [ (gogoproto.nullable) = false ];
+    // InitialValset filled in on new chain and on restart.
+    repeated .tendermint.abci.ValidatorUpdate initial_val_set = 8
+        [ (gogoproto.nullable) = false ];
+    // HeightToValsetUpdateId nil on new chain, filled in on restart.
+    repeated HeightToValsetUpdateID height_to_valset_update_id = 9
+        [ (gogoproto.nullable) = false ];
+    // OutstandingDowntimes nil on new chain, filled  in on restart.
+    repeated OutstandingDowntime outstanding_downtime_slashing = 10
+        [ (gogoproto.nullable) = false ];
+    // PendingConsumerPackets nil on new chain, filled in on restart.
+    ConsumerPacketDataList pending_consumer_packets =
+        11 [ (gogoproto.nullable) = false ];
+    // LastTransmissionBlockHeight nil on new chain, filled in on restart.
+    LastTransmissionBlockHeight
+        last_transmission_block_height = 12 [ (gogoproto.nullable) = false ];
+    bool preCCV = 13; // flag indicating whether the consumer CCV module starts in
+                      // pre-CCV state
+}
+
+// HeightValsetUpdateID represents a mapping internal to the consumer CCV module
+// AND used in shared consumer genesis state, which links a block height to each recv valset update id.
+message HeightToValsetUpdateID {
+    uint64 height = 1;
+    uint64 valset_update_id = 2;
+}
+
+// OutstandingDowntime defines the type used internally to the consumer CCV module,
+// AND used in shared consumer genesis state, in order to not send multiple slashing 
+// requests for the same downtime infraction.
+message OutstandingDowntime { string validator_consensus_address = 1; }
+
+// LastTransmissionBlockHeight is the last time validator holding
+// pools were transmitted to the provider chain. This type is used internally 
+// to the consumer CCV module AND used in shared consumer genesis state.
+message LastTransmissionBlockHeight { int64 height = 1; }
+
+// MaturingVSCPacket represents a vsc packet that is maturing internal to the
+// consumer CCV module, where the consumer has not yet relayed a VSCMatured packet
+// back to the provider.  This type is used internally to the consumer CCV module
+// AND used in shared consumer genesis state.
+message MaturingVSCPacket {
+    uint64 vscId = 1;
+    google.protobuf.Timestamp maturity_time = 2
+        [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+}
+
+// ConsumerPacketDataList is a list of consumer packet data packets.
+//
+// Note this type is is used internally to the consumer CCV module 
+// for exporting / importing state in InitGenesis and ExportGenesis,
+// AND included in the consumer genesis type (reffed by provider and consumer modules), 
+// hence this is a shared type.
+message ConsumerPacketDataList {
+    repeated interchain_security.ccv.v1.ConsumerPacketData list = 1 [ (gogoproto.nullable) = false ];
+}
