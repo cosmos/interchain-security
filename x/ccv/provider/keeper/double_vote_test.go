@@ -212,7 +212,8 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 			chainID,
 			valPubkey1,
 			false,
-		}, {
+		},
+		{
 			"invalid public key - shouldn't pass",
 			[]*tmtypes.Vote{
 				testutil.MakeAndSignVote(
