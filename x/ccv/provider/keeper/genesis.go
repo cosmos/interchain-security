@@ -158,7 +158,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.GetAllValsetUpdateBlockHeights(ctx),
 		consumerStates,
 		k.GetAllUnbondingOps(ctx),
-		&ccv.MaturedUnbondingOps{Ids: k.GetMaturedUnbondingOps(ctx)},
+		&types.MaturedUnbondingOps{Ids: k.GetMaturedUnbondingOps(ctx)},
 		k.GetAllPendingConsumerAdditionProps(ctx),
 		k.GetAllPendingConsumerRemovalProps(ctx),
 		params,

@@ -29,6 +29,7 @@ import (
 	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
 	"github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 /*
@@ -111,7 +112,7 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 	// set validators and delegations
 	var (
 		stakingGenesis  stakingtypes.GenesisState
-		consumerGenesis consumertypes.GenesisState
+		consumerGenesis ccvtypes.GenesisState
 		bondDenom       string
 	)
 	if genesisState[stakingtypes.ModuleName] != nil {

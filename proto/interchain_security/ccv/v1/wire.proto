@@ -9,6 +9,12 @@ import "cosmos/staking/v1beta1/staking.proto";
 import "gogoproto/gogo.proto";
 import "tendermint/abci/types.proto";
 
+//
+// Note any type defined in this file is used by both the consumer and provider
+// AND SENT OVER THE WIRE via a ccv channel. Ideally these schemas should never change, or at least 
+// be backwards compatible if ever changed. 
+// 
+
 // This packet is sent from provider chain to consumer chain if the validator
 // set for consumer chain changes (due to new bonding/unbonding messages or
 // slashing events) A VSCMatured packet from consumer chain will be sent
@@ -23,12 +29,6 @@ message ValidatorSetChangePacketData {
   // consensus address of consumer chain validators
   // successfully slashed on the provider chain
   repeated string slash_acks = 3;
-}
-
-// List of ccv.ValidatorSetChangePacketData.
-message ValidatorSetChangePackets {
-  repeated ValidatorSetChangePacketData list = 1
-      [ (gogoproto.nullable) = false ];
 }
 
 // This packet is sent from the consumer chain to the provider chain
@@ -52,11 +52,7 @@ message SlashPacketData {
   cosmos.staking.v1beta1.Infraction infraction = 3;
 }
 
-// MaturedUnbondingOps defines a list of ids corresponding to ids of matured
-// unbonding operations.
-message MaturedUnbondingOps { repeated uint64 ids = 1; }
-
-// ConsumerPacketData contains a consumer packet data, type tag, and index for storage.
+// ConsumerPacketData contains a consumer packet data and a type tag
 message ConsumerPacketData {
   ConsumerPacketDataType type = 1;
 
@@ -64,13 +60,6 @@ message ConsumerPacketData {
     SlashPacketData slashPacketData = 2;
     VSCMaturedPacketData vscMaturedPacketData = 3;
   }
-}
-
-
-// ConsumerPacketDataList is a list of consumer packet data packets.
-// NOTE: It is only used for exporting / importing state in InitGenesis and ExportGenesis.
-message ConsumerPacketDataList {
-  repeated ConsumerPacketData list = 1 [ (gogoproto.nullable) = false ];
 }
 
 // ConsumerPacketType indicates interchain security specific packet types.
@@ -86,6 +75,12 @@ enum ConsumerPacketDataType {
   // VSCMatured packet
   CONSUMER_PACKET_TYPE_VSCM = 2
       [ (gogoproto.enumvalue_customname) = "VscMaturedPacket" ];
+}
+
+// Note this type is used during IBC handshake methods for both the consumer and provider
+message HandshakeMetadata {
+  string provider_fee_pool_addr = 1;
+  string version = 2;
 }
 
 // ConsumerPacketData contains a consumer packet data and a type tag
@@ -113,7 +108,7 @@ message SlashPacketDataV1 {
 }
 
 // InfractionType indicates the infraction type a validator commited.
-// NOTE: ccv.InfractionType to maintain compatibility between ICS versions
+// Note ccv.InfractionType to maintain compatibility between ICS versions
 // using different versions of the cosmos-sdk and ibc-go modules.
 enum InfractionType {
   option (gogoproto.goproto_enum_prefix) = false;
