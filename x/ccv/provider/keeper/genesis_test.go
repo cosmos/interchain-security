@@ -13,6 +13,7 @@ import (
 
 	"github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -71,7 +72,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 				expClientID,
 				"channel",
 				initHeight,
-				*ccv.DefaultGenesisState(),
+				*consumertypes.DefaultGenesisState(),
 				[]providertypes.VscUnbondingOps{
 					{VscId: vscID, UnbondingOpIds: ubdIndex},
 				},
@@ -83,7 +84,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 				expClientID,
 				"",
 				0,
-				*ccv.DefaultGenesisState(),
+				*consumertypes.DefaultGenesisState(),
 				nil,
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
 				nil,
@@ -93,7 +94,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 			Id:                      vscID,
 			UnbondingConsumerChains: []string{cChainIDs[0]},
 		}},
-		&providertypes.MaturedUnbondingOps{Ids: ubdIndex},
+		&ccv.MaturedUnbondingOps{Ids: ubdIndex},
 		[]providertypes.ConsumerAdditionProposal{{
 			ChainId:   cChainIDs[0],
 			SpawnTime: oneHourFromNow,
@@ -218,7 +219,7 @@ func assertConsumerChainStates(t *testing.T, ctx sdk.Context, pk keeper.Keeper, 
 		chainID := cs.ChainId
 		gen, found := pk.GetConsumerGenesis(ctx, chainID)
 		require.True(t, found)
-		require.Equal(t, *ccv.DefaultGenesisState(), gen)
+		require.Equal(t, *consumertypes.DefaultGenesisState(), gen)
 
 		clientID, found := pk.GetConsumerClientId(ctx, chainID)
 		require.True(t, found)

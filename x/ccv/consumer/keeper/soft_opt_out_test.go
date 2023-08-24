@@ -9,7 +9,7 @@ import (
 
 	"github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
 // Tests that UpdateSmallestNonOptOutPower updates the smallest validator power that cannot soft opt out.
@@ -102,7 +102,7 @@ func TestUpdateSmallestNonOptOutPower(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-			moduleParams := ccvtypes.DefaultParams()
+			moduleParams := types.DefaultParams()
 			moduleParams.SoftOptOutThreshold = tc.optOutThresh
 			consumerKeeper.SetParams(ctx, moduleParams)
 			defer ctrl.Finish()

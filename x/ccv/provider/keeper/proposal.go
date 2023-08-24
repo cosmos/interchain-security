@@ -19,6 +19,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
@@ -223,7 +224,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 func (k Keeper) MakeConsumerGenesis(
 	ctx sdk.Context,
 	prop *types.ConsumerAdditionProposal,
-) (gen ccv.GenesisState, nextValidatorsHash []byte, err error) {
+) (gen consumertypes.GenesisState, nextValidatorsHash []byte, err error) {
 	chainID := prop.ChainId
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
@@ -286,7 +287,7 @@ func (k Keeper) MakeConsumerGenesis(
 	}
 	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
 
-	consumerGenesisParams := ccv.NewParams(
+	consumerGenesisParams := consumertypes.NewParams(
 		true,
 		prop.BlocksPerDistributionTransmission,
 		prop.DistributionTransmissionChannel,
@@ -301,7 +302,7 @@ func (k Keeper) MakeConsumerGenesis(
 		[]string{},
 	)
 
-	gen = *ccv.NewInitialGenesisState(
+	gen = *consumertypes.NewInitialGenesisState(
 		clientState,
 		consState.(*ibctmtypes.ConsensusState),
 		initialUpdatesWithConsumerKeys,

@@ -206,7 +206,7 @@ func (b *Builder) getAppBytesAndSenders(
 
 	bondDenom := sdk.DefaultBondDenom
 	genesisStaking := stakingtypes.GenesisState{}
-	genesisConsumer := ccv.GenesisState{}
+	genesisConsumer := consumertypes.GenesisState{}
 
 	if genesis[stakingtypes.ModuleName] != nil {
 		// If staking module genesis already exists
@@ -520,25 +520,25 @@ func (b *Builder) createConsumersLocalClientGenesis() *ibctmtypes.ClientState {
 	)
 }
 
-func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *ccv.GenesisState {
+func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consumertypes.GenesisState {
 	providerConsState := b.provider().LastHeader.ConsensusState()
 
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.provider().Vals)
-	params := ccv.NewParams(
+	params := consumertypes.NewParams(
 		true,
 		1000, // ignore distribution
 		"",   // ignore distribution
 		"",   // ignore distribution
 		ccv.DefaultCCVTimeoutPeriod,
-		ccv.DefaultTransferTimeoutPeriod,
-		ccv.DefaultConsumerRedistributeFrac,
-		ccv.DefaultHistoricalEntries,
+		consumertypes.DefaultTransferTimeoutPeriod,
+		consumertypes.DefaultConsumerRedistributeFrac,
+		consumertypes.DefaultHistoricalEntries,
 		b.initState.UnbondingC,
 		"0", // disable soft opt-out
 		[]string{},
 		[]string{},
 	)
-	return ccv.NewInitialGenesisState(client, providerConsState, valUpdates, params)
+	return consumertypes.NewInitialGenesisState(client, providerConsState, valUpdates, params)
 }
 
 // The state of the data returned is equivalent to the state of two chains

@@ -168,7 +168,7 @@ func TestOnChanOpenTry(t *testing.T) {
 
 		if tc.expPass {
 			require.NoError(t, err)
-			md := &ccv.HandshakeMetadata{}
+			md := &providertypes.HandshakeMetadata{}
 			err = md.Unmarshal([]byte(metadata))
 			require.NoError(t, err)
 			require.Equal(t, moduleAcct.BaseAccount.Address, md.ProviderFeePoolAddr,

@@ -123,7 +123,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	consumerKeeper.SetProviderChannel(ctx, consumerCCVChannelID)
 
 	// Set module params with custom unbonding period
-	moduleParams := types.DefaultParams()
+	moduleParams := consumertypes.DefaultParams()
 	moduleParams.UnbondingPeriod = 100 * time.Hour
 	consumerKeeper.SetParams(ctx, moduleParams)
 
@@ -172,7 +172,7 @@ func TestOnRecvVSCPacketDuplicateUpdates(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	consumerKeeper.SetProviderChannel(ctx, consumerCCVChannelID)
-	consumerKeeper.SetParams(ctx, types.DefaultParams())
+	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
 
 	// Construct packet/data with duplicate val updates for the same pub key
 	cId := crypto.NewCryptoIdentityFromIntSeed(43278947)
@@ -218,7 +218,7 @@ func TestSendPacketsFailure(t *testing.T) {
 	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
-	consumerKeeper.SetParams(ctx, types.DefaultParams())
+	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
 
 	// Set some pending packets
 	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{})
@@ -240,7 +240,7 @@ func TestSendPackets(t *testing.T) {
 	// Keeper setup
 	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
-	consumerKeeper.SetParams(ctx, types.DefaultParams())
+	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
 
 	// No slash record should exist
 	_, found := consumerKeeper.GetSlashRecord(ctx)
@@ -471,7 +471,7 @@ func TestSendPacketsDeletion(t *testing.T) {
 	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	consumerKeeper.SetProviderChannel(ctx, "consumerCCVChannelID")
-	consumerKeeper.SetParams(ctx, types.DefaultParams())
+	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
 
 	// Queue two pending packets, vsc matured first
 	consumerKeeper.AppendPendingPacket(ctx, types.VscMaturedPacket, &types.ConsumerPacketData_VscMaturedPacketData{

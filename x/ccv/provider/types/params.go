@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -177,13 +178,13 @@ func ValidateTemplateClient(i interface{}) error {
 	// populate zeroed fields with valid fields
 	copiedClient.ChainId = "chainid"
 
-	trustPeriod, err := ccvtypes.CalculateTrustPeriod(ccvtypes.DefaultConsumerUnbondingPeriod, DefaultTrustingPeriodFraction)
+	trustPeriod, err := ccvtypes.CalculateTrustPeriod(consumertypes.DefaultConsumerUnbondingPeriod, DefaultTrustingPeriodFraction)
 	if err != nil {
 		return fmt.Errorf("invalid TrustPeriodFraction: %T", err)
 	}
 	copiedClient.TrustingPeriod = trustPeriod
 
-	copiedClient.UnbondingPeriod = ccvtypes.DefaultConsumerUnbondingPeriod
+	copiedClient.UnbondingPeriod = consumertypes.DefaultConsumerUnbondingPeriod
 	copiedClient.LatestHeight = clienttypes.NewHeight(0, 1)
 
 	if err := copiedClient.Validate(); err != nil {

@@ -42,7 +42,7 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 	}
 
 	// Update LastTransmissionBlockHeight
-	newLtbh := ccv.LastTransmissionBlockHeight{
+	newLtbh := types.LastTransmissionBlockHeight{
 		Height: ctx.BlockHeight(),
 	}
 	k.SetLastTransmissionBlockHeight(ctx, newLtbh)
@@ -190,10 +190,10 @@ func (k Keeper) AllowedRewardDenoms(ctx sdk.Context) []string {
 	return rewardDenoms
 }
 
-func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) ccv.LastTransmissionBlockHeight {
+func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) types.LastTransmissionBlockHeight {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.LastDistributionTransmissionKey())
-	ltbh := ccv.LastTransmissionBlockHeight{}
+	ltbh := types.LastTransmissionBlockHeight{}
 	if bz != nil {
 		if err := ltbh.Unmarshal(bz); err != nil {
 			panic(fmt.Errorf("failed to unmarshal LastTransmissionBlockHeight: %w", err))
@@ -202,7 +202,7 @@ func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) ccv.LastTransmis
 	return ltbh
 }
 
-func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context, ltbh ccv.LastTransmissionBlockHeight) {
+func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context, ltbh types.LastTransmissionBlockHeight) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := ltbh.Marshal()
 	if err != nil {

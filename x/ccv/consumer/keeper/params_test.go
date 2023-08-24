@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -14,21 +15,21 @@ import (
 func TestParams(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
-	consumerKeeper.SetParams(ctx, ccv.DefaultParams())
+	consumerKeeper.SetParams(ctx, types.DefaultParams())
 
 	var rewardDenoms []string
 	var provideRewardDenoms []string
-	expParams := ccv.NewParams(
+	expParams := types.NewParams(
 		false,
 		1000,
 		"",
 		"",
 		ccv.DefaultCCVTimeoutPeriod,
-		ccv.DefaultTransferTimeoutPeriod,
-		ccv.DefaultConsumerRedistributeFrac,
-		ccv.DefaultHistoricalEntries,
-		ccv.DefaultConsumerUnbondingPeriod,
-		ccv.DefaultSoftOptOutThreshold,
+		types.DefaultTransferTimeoutPeriod,
+		types.DefaultConsumerRedistributeFrac,
+		types.DefaultHistoricalEntries,
+		types.DefaultConsumerUnbondingPeriod,
+		types.DefaultSoftOptOutThreshold,
 		rewardDenoms,
 		provideRewardDenoms,
 	) // these are the default params, IBC suite independently sets enabled=true
@@ -36,7 +37,7 @@ func TestParams(t *testing.T) {
 	params := consumerKeeper.GetConsumerParams(ctx)
 	require.Equal(t, expParams, params)
 
-	newParams := ccv.NewParams(false, 1000,
+	newParams := types.NewParams(false, 1000,
 		"channel-2", "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
 		7*24*time.Hour, 25*time.Hour, "0.5", 500, 24*21*time.Hour, "0.05", []string{"untrn"}, []string{"uatom"})
 	consumerKeeper.SetParams(ctx, newParams)

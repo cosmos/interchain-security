@@ -18,6 +18,7 @@ import (
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -126,7 +127,7 @@ func (am AppModule) OnChanOpenAck(
 			"provider channel: %s already established", providerChannel)
 	}
 
-	var md types.HandshakeMetadata
+	var md providertypes.HandshakeMetadata
 	if err := (&md).Unmarshal([]byte(counterpartyMetadata)); err != nil {
 		return errorsmod.Wrapf(types.ErrInvalidHandshakeMetadata,
 			"error unmarshalling ibc-ack metadata: \n%v; \nmetadata: %v", err, counterpartyMetadata)

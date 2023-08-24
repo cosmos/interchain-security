@@ -83,7 +83,7 @@ func (am AppModule) OnChanOpenTry(
 		return "", err
 	}
 
-	md := ccv.HandshakeMetadata{
+	md := providertypes.HandshakeMetadata{
 		// NOTE that the fee pool collector address string provided to the
 		// the consumer chain must be excluded from the blocked addresses
 		// blacklist or all all ibc-transfers from the consumer chain to the

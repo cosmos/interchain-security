@@ -17,7 +17,7 @@ func NewGenesisState(
 	vscIdToHeights []ValsetUpdateIdToHeight,
 	consumerStates []ConsumerState,
 	unbondingOps []UnbondingOp,
-	matureUbdOps *MaturedUnbondingOps,
+	matureUbdOps *ccv.MaturedUnbondingOps,
 	additionProposals []ConsumerAdditionProposal,
 	removalProposals []ConsumerRemovalProposal,
 	params Params,
