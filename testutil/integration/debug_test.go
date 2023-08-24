@@ -281,6 +281,6 @@ func TestHandleConsumerDoubleVoting(t *testing.T) {
 	runCCVTestByName(t, "TestHandleConsumerDoubleVoting")
 }
 
-func TestVerifyDoubleVoting(t *testing.T) {
-	runCCVTestByName(t, "TestVerifyDoubleVoting")
+func TestVerifyDoubleVotingEvidence(t *testing.T) {
+	runCCVTestByName(t, "TestVerifyDoubleVotingEvidence")
 }

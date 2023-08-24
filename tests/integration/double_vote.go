@@ -4,15 +4,16 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // TestHandleConsumerDoubleVoting verifies that handling a double voting evidence
 // of a consumer chain results in the expected jailing and tombstoning of the malicious validator
 func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
-	// Setup a consumer chain
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
 	s.SendEmptyVSCPacket()
@@ -50,11 +51,31 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	)
 
 	testCases := []struct {
-		name string
-		ev   *tmtypes.DuplicateVoteEvidence
+		name    string
+		ev      *tmtypes.DuplicateVoteEvidence
+		header  *ibctmtypes.Header
+		expPass bool
 	}{
 		{
-			// an evidence containing two identical votes
+			"create infraction header using an invalid consumer chain id - shouldn't pass",
+			&tmtypes.DuplicateVoteEvidence{
+				VoteA:            vote1,
+				VoteB:            badVote,
+				ValidatorPower:   val.VotingPower,
+				TotalVotingPower: val.VotingPower,
+				Timestamp:        s.consumerCtx().BlockTime(),
+			},
+			&ibctmtypes.Header{
+				SignedHeader: &tmproto.SignedHeader{
+					Header: &tmproto.Header{
+						ChainID: "chainID",
+					},
+				},
+			},
+			false,
+		},
+		{
+			// create an invalid evidence containing two identical votes
 			"invalid double voting evidence - shouldn't pass",
 			&tmtypes.DuplicateVoteEvidence{
 				VoteA:            vote1,
@@ -63,7 +84,10 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				TotalVotingPower: val.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
-		}, {
+			s.consumerChain.LastHeader,
+			false,
+		},
+		{
 			// In order to create an evidence for a consumer chain,
 			// we create two votes that only differs by their Block IDs and
 			// signed them using the same validator and chain ID of the consumer chain
@@ -75,33 +99,40 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				TotalVotingPower: val.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
+			s.consumerChain.LastHeader,
+			true,
 		},
 	}
 
-	err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
-		s.providerCtx(),
-		testCases[0].ev,
-		s.consumerChain.LastHeader,
-	)
-	s.Require().Error(err)
-
-	// verifies that no jailing and tombstoning has occurred
 	consuAddr := types.NewConsumerConsAddress(sdk.ConsAddress(val.Address.Bytes()))
 	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
-	s.Require().False(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(s.providerCtx(), provAddr.ToSdkConsAddr()))
-	s.Require().False(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.ToSdkConsAddr()))
 
-	err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
-		s.providerCtx(),
-		testCases[1].ev,
-		s.consumerChain.LastHeader,
-	)
-	s.Require().NoError(err)
-	s.Require().True(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(s.providerCtx(), provAddr.ToSdkConsAddr()))
-	s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.ToSdkConsAddr()))
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
+				s.providerCtx(),
+				tc.ev,
+				tc.header,
+			)
+			if tc.expPass {
+				s.Require().NoError(err)
+
+				// verifies that the jailing and tombstoning has occurred
+				s.Require().True(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(s.providerCtx(), provAddr.ToSdkConsAddr()))
+				s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.ToSdkConsAddr()))
+			} else {
+				s.Require().Error(err)
+
+				// verifies that no jailing and tombstoning has occurred
+
+				s.Require().False(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(s.providerCtx(), provAddr.ToSdkConsAddr()))
+				s.Require().False(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.ToSdkConsAddr()))
+			}
+		})
+	}
 }
 
-func (s *CCVTestSuite) TestVerifyDoubleVoting() {
+func (s *CCVTestSuite) TestVerifyDoubleVotingEvidence() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
 	s.SendEmptyVSCPacket()
@@ -121,15 +152,13 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
 
 	testCases := []struct {
-		name         string
-		providerAddr types.ProviderConsAddress
-		votes        []*tmtypes.Vote
-		chainID      string
-		expPass      bool
+		name    string
+		votes   []*tmtypes.Vote
+		chainID string
+		expPass bool
 	}{
 		{
 			"evidence has votes with different block height - shouldn't pass",
-			provAddr,
 			[]*tmtypes.Vote{
 				makeAndSignVote(
 					blockID1,
@@ -153,7 +182,6 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 		},
 		{
 			"evidence has votes with different validator address - shouldn't pass",
-			provAddr,
 			[]*tmtypes.Vote{
 				makeAndSignVote(
 					blockID1,
@@ -177,7 +205,6 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 		},
 		{
 			"evidence has votes with same block IDs - shouldn't pass",
-			provAddr,
 			[]*tmtypes.Vote{
 				makeAndSignVote(
 					blockID1,
@@ -200,8 +227,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 			false,
 		},
 		{
-			"no consumer chain exists for given chain ID - shouldn't pass",
-			provAddr,
+			"no consumer chain exists for the given chain ID - shouldn't pass",
 			[]*tmtypes.Vote{
 				makeAndSignVote(
 					blockID1,
@@ -224,8 +250,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 			false,
 		},
 		{
-			"voteA is signed with the wrong chain ID and is invalid - shouldn't pass",
-			provAddr,
+			"voteA is signed using the wrong chain ID - shouldn't pass",
 			[]*tmtypes.Vote{
 				makeAndSignVote(
 					blockID1,
@@ -248,8 +273,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 			false,
 		},
 		{
-			"voteB is signed with the wrong chain ID and is invalid - shouldn't pass",
-			provAddr,
+			"voteB is signed using the wrong chain ID - shouldn't pass",
 			[]*tmtypes.Vote{
 				makeAndSignVote(
 					blockID1,
@@ -273,7 +297,6 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 		},
 		{
 			"valid double voting evidence should pass",
-			provAddr,
 			[]*tmtypes.Vote{
 				makeAndSignVote(
 					blockID1,
@@ -299,7 +322,15 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			err := s.providerApp.GetProviderKeeper().VerifyDoubleVoting(
+			// get the consumer chain public key assigned to the validator
+			consuPubkey, ok := s.providerApp.GetProviderKeeper().GetValidatorConsumerPubKey(
+				s.providerCtx(),
+				s.consumerChain.ChainID,
+				provAddr,
+			)
+			s.Require().True(ok)
+
+			err := s.providerApp.GetProviderKeeper().VerifyDoubleVotingEvidence(
 				s.providerCtx(),
 				tmtypes.DuplicateVoteEvidence{
 					VoteA:            tc.votes[0],
@@ -309,7 +340,7 @@ func (s *CCVTestSuite) TestVerifyDoubleVoting() {
 					Timestamp:        s.consumerCtx().BlockTime(),
 				},
 				tc.chainID,
-				tc.providerAddr,
+				consuPubkey,
 			)
 			if tc.expPass {
 				s.Require().NoError(err)

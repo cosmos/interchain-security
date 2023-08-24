@@ -10,6 +10,7 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -19,16 +20,25 @@ import (
 func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.DuplicateVoteEvidence, h *ibctmtypes.Header) error {
 	chainID := h.Header.ChainID
 
+	// get the validator's consensus address on the provider
 	providerAddr := k.GetProviderAddrFromConsumerAddr(
 		ctx,
 		chainID,
 		types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress.Bytes())),
 	)
 
-	if err := k.VerifyDoubleVoting(ctx, *evidence, chainID, providerAddr); err != nil {
+	// get the consumer chain public key assigned to the validator
+	consuPubkey, ok := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
+	if !ok {
+		return fmt.Errorf("cannot find public key for validator %s and consumer chain %s", providerAddr.String(), chainID)
+	}
+
+	// verifies the double voting evidence using the consumer chain public key
+	if err := k.VerifyDoubleVotingEvidence(ctx, *evidence, chainID, consuPubkey); err != nil {
 		return err
 	}
 
+	// execute the jailing and tombstoning
 	k.JailAndTombstoneValidator(ctx, providerAddr)
 
 	k.Logger(ctx).Info(
@@ -39,13 +49,13 @@ func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.Du
 	return nil
 }
 
-// VerifyEquivocation verifies the equivocation for the given chain id and
-// provider consensus address
-func (k Keeper) VerifyDoubleVoting(
+// VerifyDoubleVotingEvidence verifies a double voting evidence
+// for a given chain id and validator public key
+func (k Keeper) VerifyDoubleVotingEvidence(
 	ctx sdk.Context,
 	evidence tmtypes.DuplicateVoteEvidence,
 	chainID string,
-	providerAddr types.ProviderConsAddress,
+	pubkey tmprotocrypto.PublicKey,
 ) error {
 	// TODO: check the evidence age once we agreed on the infraction height mapping
 
@@ -79,13 +89,7 @@ func (k Keeper) VerifyDoubleVoting(
 		)
 	}
 
-	// get the consumer chain public key assigned to the validator
-	tmpk, ok := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
-	if !ok {
-		return fmt.Errorf("cannot find public key for validator %s and consumer chain %s", providerAddr.String(), chainID)
-	}
-
-	pubkey, err := cryptocodec.FromTmProtoPublicKey(tmpk)
+	pk, err := cryptocodec.FromTmProtoPublicKey(pubkey)
 	if err != nil {
 		return err
 	}
@@ -94,10 +98,10 @@ func (k Keeper) VerifyDoubleVoting(
 	vb := evidence.VoteB.ToProto()
 
 	// signatures must be valid
-	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(chainID, va), evidence.VoteA.Signature) {
+	if !pk.VerifySignature(tmtypes.VoteSignBytes(chainID, va), evidence.VoteA.Signature) {
 		return fmt.Errorf("verifying VoteA: %w", tmtypes.ErrVoteInvalidSignature)
 	}
-	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(chainID, vb), evidence.VoteB.Signature) {
+	if !pk.VerifySignature(tmtypes.VoteSignBytes(chainID, vb), evidence.VoteB.Signature) {
 		return fmt.Errorf("verifying VoteB: %w", tmtypes.ErrVoteInvalidSignature)
 	}
 
