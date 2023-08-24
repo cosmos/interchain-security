@@ -452,32 +452,6 @@ func (s *CCVTestSuite) constructSlashPacketFromConsumerWithData(bundle icstestin
 	), spdData
 }
 
-// constructVSCMaturedPacketFromConsumer constructs an IBC packet embedding
-// VSC Matured packet data to be sent from consumer to provider
-func (s *CCVTestSuite) constructVSCMaturedPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
-	ibcSeqNum uint64,
-) channeltypes.Packet {
-	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
-		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
-
-	data := ccv.ConsumerPacketData{
-		Type: ccv.VscMaturedPacket,
-		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
-			VscMaturedPacketData: &ccv.VSCMaturedPacketData{ValsetUpdateId: valsetUpdateId},
-		},
-	}
-
-	return channeltypes.NewPacket(data.GetBytes(),
-		ibcSeqNum,
-		ccv.ConsumerPortID,              // Src port
-		bundle.Path.EndpointA.ChannelID, // Src channel
-		ccv.ProviderPortID,              // Dst port
-		bundle.Path.EndpointB.ChannelID, // Dst channel
-		clienttypes.Height{},
-		uint64(bundle.GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano()),
-	)
-}
-
 // incrementTime increments the overall time by jumpPeriod
 // while updating to not expire the clients
 func incrementTime(s *CCVTestSuite, jumpPeriod time.Duration) {
