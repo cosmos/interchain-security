@@ -1186,8 +1186,7 @@ type QueryClient interface {
 	// QueryThrottleState returns the main on-chain state relevant to currently
 	// throttled slash packets
 	QueryThrottleState(ctx context.Context, in *QueryThrottleStateRequest, opts ...grpc.CallOption) (*QueryThrottleStateResponse, error)
-	// QueryThrottledConsumerPacketData returns a list of pending packet data
-	// instances (slash packet and vsc matured) for a single consumer chain
+	// [DEPRECATED] Returns an empty set.
 	QueryThrottledConsumerPacketData(ctx context.Context, in *QueryThrottledConsumerPacketDataRequest, opts ...grpc.CallOption) (*QueryThrottledConsumerPacketDataResponse, error)
 	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
 	// denoms that are registered
@@ -1304,8 +1303,7 @@ type QueryServer interface {
 	// QueryThrottleState returns the main on-chain state relevant to currently
 	// throttled slash packets
 	QueryThrottleState(context.Context, *QueryThrottleStateRequest) (*QueryThrottleStateResponse, error)
-	// QueryThrottledConsumerPacketData returns a list of pending packet data
-	// instances (slash packet and vsc matured) for a single consumer chain
+	// [DEPRECATED] Returns an empty set.
 	QueryThrottledConsumerPacketData(context.Context, *QueryThrottledConsumerPacketDataRequest) (*QueryThrottledConsumerPacketDataResponse, error)
 	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
 	// denoms that are registered

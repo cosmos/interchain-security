@@ -65,8 +65,7 @@ service Query {
         "/interchain_security/ccv/provider/throttle_state";
   }
 
-  // QueryThrottledConsumerPacketData returns a list of pending packet data
-  // instances (slash packet and vsc matured) for a single consumer chain
+  // [DEPRECATED] Returns an empty set.
   rpc QueryThrottledConsumerPacketData(QueryThrottledConsumerPacketDataRequest)
       returns (QueryThrottledConsumerPacketDataResponse) {
     option (google.api.http).get =

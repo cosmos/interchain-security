@@ -289,10 +289,9 @@ $ %s query provider throttle-state
 func CmdThrottledConsumerPacketData() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "throttled-consumer-packet-data [chainid]",
-		Short: "Query pending VSCMatured and slash packet data for a consumer chainId",
+		Short: "[DEPRECIATED] Returns an empty set.",
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Returns the current pending VSCMatured and slash packet data instances for a consumer chainId.
-			Queue is ordered by ibc sequence number. 
+			fmt.Sprintf(`[DEPRECIATED] Returns an empty set. 
 Example:
 $ %s query provider throttled-consumer-packet-data foochain
 `,
