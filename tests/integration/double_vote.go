@@ -3,6 +3,9 @@ package integration
 import (
 	"time"
 
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
@@ -100,9 +103,10 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
 
 	for _, tc := range testCases {
+		ctx := setDefaultConsensusEvidenceParams(s.providerCtx())
 		s.Run(tc.name, func() {
 			err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
-				s.providerCtx(),
+				ctx,
 				tc.ev,
 				tc.chainID,
 			)
@@ -110,15 +114,15 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				s.Require().NoError(err)
 
 				// verifies that the jailing and tombstoning has occurred
-				s.Require().True(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(s.providerCtx(), provAddr.ToSdkConsAddr()))
-				s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.ToSdkConsAddr()))
+				s.Require().True(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(ctx, provAddr.ToSdkConsAddr()))
+				s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(ctx, provAddr.ToSdkConsAddr()))
 			} else {
 				s.Require().Error(err)
 
 				// verifies that no jailing and tombstoning has occurred
 
-				s.Require().False(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(s.providerCtx(), provAddr.ToSdkConsAddr()))
-				s.Require().False(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.ToSdkConsAddr()))
+				s.Require().False(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(ctx, provAddr.ToSdkConsAddr()))
+				s.Require().False(s.providerApp.GetTestSlashingKeeper().IsTombstoned(ctx, provAddr.ToSdkConsAddr()))
 			}
 		})
 	}
@@ -140,6 +144,8 @@ func (s *CCVTestSuite) TestVerifyDoubleVotingEvidence() {
 	blockID1 := makeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
 	blockID2 := makeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
 
+	oldTime := s.consumerCtx().BlockTime().Add(-505 * time.Hour)
+
 	consuAddr := types.NewConsumerConsAddress(sdk.ConsAddress(val.Address.Bytes()))
 	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
 
@@ -149,6 +155,29 @@ func (s *CCVTestSuite) TestVerifyDoubleVotingEvidence() {
 		chainID string
 		expPass bool
 	}{
+		{
+			"evidence is too old - shouldn't pass",
+			[]*tmtypes.Vote{
+				makeAndSignVote(
+					blockID1,
+					s.consumerCtx().BlockHeight(),
+					oldTime,
+					valSet,
+					signer,
+					s.consumerChain.ChainID,
+				),
+				makeAndSignVote(
+					blockID2,
+					s.consumerCtx().BlockHeight(),
+					oldTime,
+					valSet,
+					signer,
+					s.consumerChain.ChainID,
+				),
+			},
+			s.consumerChain.ChainID,
+			false,
+		},
 		{
 			"evidence has votes with different block height - shouldn't pass",
 			[]*tmtypes.Vote{
@@ -313,23 +342,24 @@ func (s *CCVTestSuite) TestVerifyDoubleVotingEvidence() {
 	}
 
 	for _, tc := range testCases {
+		ctx := setDefaultConsensusEvidenceParams(s.providerCtx())
 		s.Run(tc.name, func() {
 			// get the consumer chain public key assigned to the validator
 			consuPubkey, ok := s.providerApp.GetProviderKeeper().GetValidatorConsumerPubKey(
-				s.providerCtx(),
+				ctx,
 				s.consumerChain.ChainID,
 				provAddr,
 			)
 			s.Require().True(ok)
 
 			err := s.providerApp.GetProviderKeeper().VerifyDoubleVotingEvidence(
-				s.providerCtx(),
+				ctx,
 				tmtypes.DuplicateVoteEvidence{
 					VoteA:            tc.votes[0],
 					VoteB:            tc.votes[1],
 					ValidatorPower:   val.VotingPower,
 					TotalVotingPower: val.VotingPower,
-					Timestamp:        s.consumerCtx().BlockTime(),
+					Timestamp:        tc.votes[0].Timestamp,
 				},
 				tc.chainID,
 				consuPubkey,
@@ -389,4 +419,16 @@ func makeAndSignVote(
 
 	vote.Signature = v.Signature
 	return vote
+}
+
+func setDefaultConsensusEvidenceParams(ctx sdk.Context) sdk.Context {
+	return ctx.WithConsensusParams(
+		&abci.ConsensusParams{
+			Evidence: &tmproto.EvidenceParams{
+				MaxAgeNumBlocks: 302400,
+				MaxAgeDuration:  504 * time.Hour, // 3 weeks is the max duration
+				MaxBytes:        10000,
+			},
+		},
+	)
 }

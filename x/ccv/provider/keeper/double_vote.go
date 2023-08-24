@@ -53,7 +53,17 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	chainID string,
 	pubkey tmprotocrypto.PublicKey,
 ) error {
-	// TODO: check the evidence age once we agreed on the infraction height mapping
+	// check evidence age duration
+	maxAgeDuration := ctx.ConsensusParams().Evidence.MaxAgeDuration
+	ageDuration := ctx.BlockHeader().Time.Sub(evidence.Time())
+
+	if ageDuration > maxAgeDuration {
+		return fmt.Errorf(
+			"evidence from created at: %v is too old; evidence can not be older than %v",
+			evidence.Time(),
+			ctx.BlockHeader().Time.Add(maxAgeDuration),
+		)
+	}
 
 	// H/R/S must be the same
 	if evidence.VoteA.Height != evidence.VoteB.Height ||
