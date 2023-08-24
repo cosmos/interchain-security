@@ -279,7 +279,7 @@ type MsgSubmitConsumerDoubleVoting struct {
 	// The equivocation of the consumer chain wrapping
 	// an evidence of a validator that signed two conflicting votes
 	DuplicateVoteEvidence *types1.DuplicateVoteEvidence `protobuf:"bytes,2,opt,name=duplicate_vote_evidence,json=duplicateVoteEvidence,proto3" json:"duplicate_vote_evidence,omitempty"`
-	// Unused but still here to not break the wire
+	// The light client header of the infraction block
 	InfractionBlockHeader *types.Header `protobuf:"bytes,3,opt,name=infraction_block_header,json=infractionBlockHeader,proto3" json:"infraction_block_header,omitempty"`
 }
 

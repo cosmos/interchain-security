@@ -205,7 +205,6 @@ func (msg MsgSubmitConsumerDoubleVoting) Type() string {
 func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 	if msg.Submitter == "" {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
-
 	}
 	if msg.DuplicateVoteEvidence == nil {
 		return fmt.Errorf("double voting evidence cannot be nil")
