@@ -34,17 +34,16 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 		return err
 	}
 
-	chainID := misbehaviour.Header1.Header.ChainID
 	provAddrs := make([]types.ProviderConsAddress, len(byzantineValidators))
 
 	// jail and tombstone the Byzantine validators
 	for _, v := range byzantineValidators {
 		providerAddr := k.GetProviderAddrFromConsumerAddr(
 			ctx,
-			chainID,
+			misbehaviour.Header1.Header.ChainID,
 			types.NewConsumerConsAddress(sdk.ConsAddress(v.Address.Bytes())),
 		)
-		k.JailAndTombstoneValidator(ctx, providerAddr, chainID)
+		k.JailAndTombstoneValidator(ctx, providerAddr)
 		provAddrs = append(provAddrs, providerAddr)
 	}
 

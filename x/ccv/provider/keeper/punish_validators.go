@@ -6,8 +6,8 @@ import (
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 )
 
-// JailAndTombstoneValidator jails and tombstones the validator for the given provider consensus chain address
-func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress, chainID string) {
+// JailAndTombstoneValidator jails and tombstones the validator for the given validator consensus address
+func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) {
 	logger := k.Logger(ctx)
 
 	// get validator

@@ -14,7 +14,8 @@ import (
 )
 
 // HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer chain and,
-// if successful, executes the the jailing and the tombstoning of the malicious validator
+// if successful, executes the the jailing and the tombstoning of the malicious validator.
+// Note that the infraction header argument is temporarily only used to get the consumer chain ID.
 func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.DuplicateVoteEvidence, h *ibctmtypes.Header) error {
 	chainID := h.Header.ChainID
 
@@ -28,7 +29,7 @@ func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.Du
 		return err
 	}
 
-	k.JailAndTombstoneValidator(ctx, providerAddr, chainID)
+	k.JailAndTombstoneValidator(ctx, providerAddr)
 
 	k.Logger(ctx).Info(
 		"confirmed equivocation",
@@ -46,7 +47,6 @@ func (k Keeper) VerifyDoubleVoting(
 	chainID string,
 	providerAddr types.ProviderConsAddress,
 ) error {
-
 	// TODO: check the evidence age once we agreed on the infraction height mapping
 
 	// H/R/S must be the same

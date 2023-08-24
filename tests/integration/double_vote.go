@@ -9,9 +9,8 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-// TestHandleConsumerDoubleVoting tests that handling double voting evidence
-// that occurred on a consumer chain results in the jailing and tombstoning
-// of the malicious validators
+// TestHandleConsumerDoubleVoting verifies that handling a double voting evidence
+// of a consumer chain results in the expected jailing and tombstoning of the malicious validator
 func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	// Setup a consumer chain
 	s.SetupCCVChannel(s.path)
@@ -32,40 +31,72 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	blockID1 := makeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
 	blockID2 := makeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
 
-	// In order to create an evidence for the configured consumer chain above,
-	// we create two votes that only differs by their BlockIDs and
-	// signed them using the same validator and the chain ID of the consumer chain
-	evidence := &tmtypes.DuplicateVoteEvidence{
-		VoteA: makeAndSignVote(
-			blockID1,
-			s.consumerCtx().BlockHeight(),
-			s.consumerCtx().BlockTime(),
-			valSet,
-			signer,
-			s.consumerChain.ChainID,
-		),
-		VoteB: makeAndSignVote(
-			blockID2,
-			s.consumerCtx().BlockHeight(),
-			s.consumerCtx().BlockTime(),
-			valSet,
-			signer,
-			s.consumerChain.ChainID,
-		),
-		ValidatorPower:   val.VotingPower,
-		TotalVotingPower: val.VotingPower,
-		Timestamp:        s.consumerCtx().BlockTime(),
+	vote1 := makeAndSignVote(
+		blockID1,
+		s.consumerCtx().BlockHeight(),
+		s.consumerCtx().BlockTime(),
+		valSet,
+		signer,
+		s.consumerChain.ChainID,
+	)
+
+	badVote := makeAndSignVote(
+		blockID2,
+		s.consumerCtx().BlockHeight(),
+		s.consumerCtx().BlockTime(),
+		valSet,
+		signer,
+		s.consumerChain.ChainID,
+	)
+
+	testCases := []struct {
+		name string
+		ev   *tmtypes.DuplicateVoteEvidence
+	}{
+		{
+			// an evidence containing two identical votes
+			"invalid double voting evidence - shouldn't pass",
+			&tmtypes.DuplicateVoteEvidence{
+				VoteA:            vote1,
+				VoteB:            vote1,
+				ValidatorPower:   val.VotingPower,
+				TotalVotingPower: val.VotingPower,
+				Timestamp:        s.consumerCtx().BlockTime(),
+			},
+		}, {
+			// In order to create an evidence for a consumer chain,
+			// we create two votes that only differs by their Block IDs and
+			// signed them using the same validator and chain ID of the consumer chain
+			"valid double voting evidence - should pass",
+			&tmtypes.DuplicateVoteEvidence{
+				VoteA:            vote1,
+				VoteB:            badVote,
+				ValidatorPower:   val.VotingPower,
+				TotalVotingPower: val.VotingPower,
+				Timestamp:        s.consumerCtx().BlockTime(),
+			},
+		},
 	}
 
 	err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
 		s.providerCtx(),
-		evidence,
+		testCases[0].ev,
+		s.consumerChain.LastHeader,
+	)
+	s.Require().Error(err)
+
+	// verifies that no jailing and tombstoning has occurred
+	consuAddr := types.NewConsumerConsAddress(sdk.ConsAddress(val.Address.Bytes()))
+	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
+	s.Require().False(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(s.providerCtx(), provAddr.ToSdkConsAddr()))
+	s.Require().False(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.ToSdkConsAddr()))
+
+	err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
+		s.providerCtx(),
+		testCases[1].ev,
 		s.consumerChain.LastHeader,
 	)
 	s.Require().NoError(err)
-
-	consuAddr := types.NewConsumerConsAddress(sdk.ConsAddress(val.Address.Bytes()))
-	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
 	s.Require().True(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(s.providerCtx(), provAddr.ToSdkConsAddr()))
 	s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.ToSdkConsAddr()))
 }
