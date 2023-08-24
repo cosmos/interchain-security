@@ -19,7 +19,7 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 
 	// check that validator isn't already tombstoned
 	if k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
-		k.Logger(ctx).Info("validator is already tombstoned", "provider cons addr", providerAddr.String())
+		logger.Info("validator is already tombstoned", "provider cons addr", providerAddr.String())
 		return
 	}
 
