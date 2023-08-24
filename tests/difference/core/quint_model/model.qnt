@@ -19,36 +19,54 @@ module ccv {
             // the identifier for this packet
             id: int,
             // the new validator set. in the implementation, this would be a list of validator updates
-            validatorSet: ValidatorSet
+            validatorSet: ValidatorSet,
+            // the time, that when passed on the receiver chain, will mean the packet is considered timed out
+            timeout: Timestamp
         }
 
     type VSCMaturedPacket = 
         {
             // the id of the VSCPacket that matured
-            id: int
+            id: int,
+            // the time, that when passed on the receiver chain, will mean the packet is considered timed out
+            timeout: Timestamp
         }
     
     // MODEL PARAMETERS
-    // length of the unbonding period on each chain
-    const UnbondingPeriod: Chain -> int
+        
 
     // set of identifiers of potential nodes
-    const Nodes: Set[Node]
+    pure val Nodes: Set[Node] = 
+        Set("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
 
     // the set of consumer chains
-    const ConsumerChains: Set[Chain]
+    pure val ConsumerChains: Set[Chain] = 
+        Set("chain1", "chain2", "chain3")
 
     // The singular provider chain.
-    const ProviderChain: Chain
-
+    pure val ProviderChain: Chain = 
+        "provider"
+        
     pure val chains = ConsumerChains.union(Set(ProviderChain))
 
+    // length of the unbonding period on each chain
+    pure val UnbondingPeriod: Chain -> int = chains.mapBy(
+        (chain) => 
+        10
+    )
+
     // the time until a packet times out
-    const PacketTimeout: int
+    pure val PacketTimeout: int = 
+        5
 
     // the time until a consumer chain is dropped by the provider due to inactivity
-    const InactivityTimeout: int
+    pure val InactivityTimeout: int =
+        10
 
+    // consumer statuses
+    pure val STOPPED = "stopped"
+    pure val RUNNING = "running"
+    pure val UNUSED = "unused"
 
     // MODEL STATE
     // --SHARED STATE
@@ -88,6 +106,9 @@ module ccv {
     // the set of VSCMaturedPackets received by the provider chain
     var receivedMaturations: Set[VSCMaturedPacket]
 
+    // stores which VSC Packets have been sent to compare with receivedMaturations to detect timeouts due to non-responsiveness
+    var sentVSCPackets: Chain -> Set[VSCPacket]
+
 
     // UTILITY FUNCTIONS & ACTIONS
     def wasValidatorSetOnProvider(validatorSet: ValidatorSet): bool = {
@@ -104,6 +125,34 @@ module ccv {
         oldValidatorSet.set(validator, newVotingPower)
         else
         oldValidatorSet.mapRemove(validator)
+
+    // returns true if the consumer has timed out and should be dropped
+    def consumerTimedOut(consumer: Chain): bool =
+        any {
+            // either a package from provider to consumer has timed out
+            outstandingPacketsToConsumer.get(consumer).select(
+                packet => packet.timeout <= curChainTimes.get(consumer)
+            ).length() > 0,
+            // or a package from consumer to provider has timed out
+            outstandingPacketsToProvider.get(consumer).select(
+                packet => packet.timeout <= curChainTimes.get(ProviderChain)
+            ).length() > 0,
+            // or the inactivity timeout has passed since a VSCPacket was sent to the consumer, but the
+            // provider has not received a VSCMaturedPacket for it
+            val packetsWithoutResponse = sentVSCPackets.get(consumer).filter( // get packets without response
+                packet => 
+                not(receivedMaturations.exists(
+                    maturedPacket => maturedPacket.id == packet.id
+                ))
+            )
+            // among those, get packets where inactivity timeout has passed
+            packetsWithoutResponse.filter(
+                packet => 
+                val sentAt = curChainTimes.get(ProviderChain) - PacketTimeout // compute when the packet was sent
+                val timesOutAt = sentAt + InactivityTimeout // compute when the packet times out
+                timesOutAt <= curChainTimes.get(ProviderChain)
+            ).size() > 0
+        }
 
     // utility action that leaves all provider state untouched
     action PROVIDER_NOOP(): bool = 
@@ -213,14 +262,15 @@ module ccv {
         outstandingPacketsToConsumer' = 
             // if running validator set is not equal to the last one in the history
             if (runningValidatorSet.get(ProviderChain) != votingPowerHistories.get(ProviderChain).head())
-                // then send a packet to each consumer
-                outstandingPacketsToConsumer.keys().mapBy(
+                // then send a packet to each running consumer
+                outstandingPacketsToConsumer.keys().filter(consumer => consumerStatus.get(consumer) == RUNNING).mapBy(
                     (consumer) => 
                     val packetQueue = outstandingPacketsToConsumer.get(consumer)
                     packetQueue.append(
                         {
                             id: packetQueue.length(),
-                            validatorSet: runningValidatorSet.get(ProviderChain)
+                            validatorSet: runningValidatorSet.get(ProviderChain),
+                            timeout: curChainTimes.get(ProviderChain) + PacketTimeout
                         }
                     )
                 )
@@ -255,7 +305,7 @@ module ccv {
                 consumer, 
                 // construct VSCMaturedPackets from the matured VSCPackets
                 outstandingPacketsToProvider.get(consumer).concat(
-                    maturedPackets.map(packet => {id: packet.id}).toList()
+                    maturedPackets.map(packet => {id: packet.id, timeout: 5}).toList()
                 )
             )
         },
@@ -265,46 +315,59 @@ module ccv {
     }
 
     // the timestamp for each chain is advanced nondeterministically
-    action advanceTimestamps(): bool =
+    action AdvanceTimestamps(): bool =
         curChainTimes' = curChainTimes.keys().mapBy(
             (chain) => 
             nondet advancement = oneOf(0.to(100))
             curChainTimes.get(chain) + advancement
-        )
+        )        
 
-    // each consumer chain may nondeterministically advance in the order
-    // unused -> initializing -> running -> stopped
-    // some events may necessitate a transition, e.g. timeouts
-    action AdvanceConsumers: bool = 
+    // each consumer chain may advance in the order
+    // some events may necessitate a transition, e.g. timeouts.
+    // shouldAdvance gives, for each consumer chain, whether it should advance if possible.
+    // if a chain has to advance, e.g. due to timeouts, or may not advance, the value will have no effect.
+    action AdvanceConsumers(shouldAdvance: Chain -> bool): bool = 
         consumerStatus' = consumerStatus.keys().mapBy(
-            (chain) => 
+            chain => 
             val curStatus = consumerStatus.get(chain)
-            // if the current status is unused, it may transition to running
-            if (curStatus == "unused") {
-                nondet transition = oneOf(0.to(1))
-                if (transition == 0)
+            if (curStatus == UNUSED) {
+                if (shouldAdvance.get(chain))
                 {
-                    "running"
+                    RUNNING
                 } else {
-                    "unused"
+                    UNUSED
                 }
             }
-            else if (curStatus == "running") {
+            else if (curStatus == RUNNING) {
                 // the chain may transition to stopped.
                 // it is *forced* to stop if a packet timed out,
                 // or if the inactivity timeout has passed
+                if(consumerTimedOut(chain)) {
+                    STOPPED
+                } else {
+                    if (shouldAdvance.get(chain)) {
+                        RUNNING
+                    } else {
+                        STOPPED
+                    }
+                }
             } else {
-                "unused"
+                // stopped chains cannot restart, we assume a new chain would be started in that case
+                STOPPED
             }
-
-            // if the current status is initializing, it may transition to running
         )
 
+    // stores the VSCPackets sent in this step in sentVSCPackets
+    action StoreSentPackets: bool = 
+        sentVSCPackets' = sentVSCPackets.keys().mapBy(
+            (chain) => 
+            sentVSCPackets.get(chain).union(outstandingPacketsToConsumer.get(chain).toSet())
+        )
 
     action step: bool = 
-    all {  
+    all  {
         // timestamps can be advanced in each step
-        advanceTimestamps,  
+        AdvanceTimestamps,  
         any {
             nondet node = oneOf(Nodes)
             nondet amount = oneOf(1.to(10))
@@ -313,7 +376,56 @@ module ccv {
             recvPacketOnConsumer(oneOf(ConsumerChains)),
             nondet chain = oneOf(chains)
             endAndBeginBlock(chain),
-        }
+        },
+        StoreSentPackets,
+        val shouldAdvance = ConsumerChains.mapBy(
+            chain => 
+            nondet should = oneOf(Set(true, false))
+            should
+        )
+        AdvanceConsumers(shouldAdvance),
+    }
+    
+
+    def getArbitraryValidatorSet(): ValidatorSet = 
+        val numValidators = oneOf(1.to(Nodes.size()))
+        // toList has nondeterministic behaviour, so this gets arbitrary validators
+        val validators = Nodes.toList().slice(0, numValidators).toSet()
+        validators.mapBy(
+            validator => 
+            nondet votingPower = oneOf(1.to(10))
+            votingPower
+        )
+
+    action init: bool = 
+    all {
+        // voting power histories are empty
+        votingPowerHistories' = 
+            chains.mapBy(
+                (chain) => 
+                List()
+            ),
+        // provider chain gets an arbitrary validator set, consumer chains have none
+        runningValidatorSet' =
+            chains.mapBy(
+                (chain) => 
+                if (chain == ProviderChain) getArbitraryValidatorSet else Map()
+            ),
+        // each chain starts at time 0
+        curChainTimes' = chains.mapBy(
+            (chain) => 0
+        ),
+        // all consumer chains are unused
+        consumerStatus' = chains.mapBy(chain => UNUSED),
+        // no packets are outstanding
+        outstandingPacketsToProvider' = chains.mapBy(chain => List()),
+        outstandingPacketsToConsumer' = chains.mapBy(chain => List()),
+        // no maturations have been received by provider
+        receivedMaturations' = Set(),
+        // no packets have been sent to consumers
+        sentVSCPackets' = chains.mapBy(chain => Set()),
+        // no packets have been received by consumers, so no maturation times set
+        maturationTimes' = chains.mapBy(chain => Map()),
     }
 
     // PROPERTIES
