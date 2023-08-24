@@ -8,6 +8,7 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	"github.com/stretchr/testify/require"
 	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -31,10 +32,17 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 	ctx = ctx.WithBlockTime(time.Now())
 	oldTime := ctx.BlockTime().Add(-505 * time.Hour)
 
+	valPubkey1, err := tmencoding.PubKeyToProto(val1.PubKey)
+	require.NoError(t, err)
+
+	valPubkey2, err := tmencoding.PubKeyToProto(val2.PubKey)
+	require.NoError(t, err)
+
 	testCases := []struct {
 		name    string
 		votes   []*tmtypes.Vote
 		chainID string
+		pubkey  tmprotocrypto.PublicKey
 		expPass bool
 	}{
 		{
@@ -58,6 +66,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 				),
 			},
 			chainID,
+			valPubkey1,
 			false,
 		},
 		{
@@ -81,6 +90,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 				),
 			},
 			chainID,
+			valPubkey1,
 			false,
 		},
 		{
@@ -104,6 +114,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 				),
 			},
 			chainID,
+			valPubkey1,
 			false,
 		},
 		{
@@ -127,10 +138,11 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 				),
 			},
 			chainID,
+			valPubkey1,
 			false,
 		},
 		{
-			"no consumer chain exists for the given chain ID - shouldn't pass",
+			"given chain ID isn't the same that the one used to sign the votes - shouldn't pass",
 			[]*tmtypes.Vote{
 				testutil.MakeAndSignVote(
 					blockID1,
@@ -150,6 +162,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 				),
 			},
 			"WrongChainID",
+			valPubkey1,
 			false,
 		},
 		{
@@ -173,6 +186,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 				),
 			},
 			chainID,
+			valPubkey1,
 			false,
 		},
 		{
@@ -196,6 +210,54 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 				),
 			},
 			chainID,
+			valPubkey1,
+			false,
+		}, {
+			"invalid public key - shouldn't pass",
+			[]*tmtypes.Vote{
+				testutil.MakeAndSignVote(
+					blockID1,
+					ctx.BlockHeight(),
+					ctx.BlockTime(),
+					valSet,
+					signer1,
+					chainID,
+				),
+				testutil.MakeAndSignVote(
+					blockID2,
+					ctx.BlockHeight(),
+					ctx.BlockTime(),
+					valSet,
+					signer1,
+					chainID,
+				),
+			},
+			chainID,
+			tmprotocrypto.PublicKey{},
+			false,
+		},
+		{
+			"wrong public key - shouldn't pass",
+			[]*tmtypes.Vote{
+				testutil.MakeAndSignVote(
+					blockID1,
+					ctx.BlockHeight(),
+					ctx.BlockTime(),
+					valSet,
+					signer1,
+					chainID,
+				),
+				testutil.MakeAndSignVote(
+					blockID2,
+					ctx.BlockHeight(),
+					ctx.BlockTime(),
+					valSet,
+					signer1,
+					chainID,
+				),
+			},
+			chainID,
+			valPubkey2,
 			false,
 		},
 		{
@@ -219,6 +281,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 				),
 			},
 			chainID,
+			valPubkey1,
 			true,
 		},
 	}
@@ -227,8 +290,6 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 
 	for _, tc := range testCases {
 		// TODO: add test case when pukey is invalid
-		consuPubkey, err := tmencoding.PubKeyToProto(val1.PubKey)
-		require.NoError(t, err)
 
 		err = keeper.VerifyDoubleVotingEvidence(
 			ctx,
@@ -240,7 +301,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 				Timestamp:        tc.votes[0].Timestamp,
 			},
 			tc.chainID,
-			consuPubkey,
+			tc.pubkey,
 		)
 		if tc.expPass {
 			require.NoError(t, err)
