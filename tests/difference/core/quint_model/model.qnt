@@ -68,6 +68,23 @@ module ccv {
     pure val RUNNING = "running"
     pure val UNUSED = "unused"
 
+    // utility: a map assigning each chain to 0, used for not advancing timestamps
+    pure val NoTimeAdvancement: Chain -> int = chains.mapBy(
+        (chain) => 
+        0
+    )
+
+
+    // utility: a map assigning each chain to false, used for not advancing consumer status
+    pure val NoStatusAdvancement: Chain -> bool = chains.mapBy(
+        (chain) => 
+        false
+    )
+
+    // utility: the set of consumers currently running
+    val RunningConsumers: Set[Chain] = 
+        ConsumerChains.filter(chain => consumerStatus.get(chain) == RUNNING)
+
     // MODEL STATE
     // --SHARED STATE
 
@@ -186,6 +203,12 @@ module ccv {
             CONSUMER_NOOP,
             // voting power history is only updated on endAndBeginBlock
             votingPowerHistories' = votingPowerHistories,
+            // consumer statusses do not change
+            consumerStatus' = consumerStatus,
+            // chain times do not change
+            curChainTimes' = curChainTimes,
+            // update the packet store on the provider
+            StoreSentPackets,
         }
 
     // deliver the next outstanding packet from the consumer to the provider.
@@ -204,6 +227,12 @@ module ccv {
         votingPowerHistories' = votingPowerHistories,
         // no validator set changes are made
         runningValidatorSet' = runningValidatorSet,
+        // consumer statusses do not change
+        consumerStatus' = consumerStatus,
+        // chain times do not change
+        curChainTimes' = curChainTimes,
+        // update the packet store on the provider
+        StoreSentPackets,
     }
 
     // deliver the next outstanding packet from the provider to the consumer.
@@ -226,6 +255,12 @@ module ccv {
         PROVIDER_NOOP,
         votingPowerHistories' = votingPowerHistories,
         outstandingPacketsToProvider' = outstandingPacketsToProvider,
+        // consumer statusses do not change
+        consumerStatus' = consumerStatus,
+        // chain times do not change
+        curChainTimes' = curChainTimes,
+        // update the packet store on the provider
+        StoreSentPackets,
     }
 
     // ends the current block and starts the next block for a given chain.
@@ -282,6 +317,12 @@ module ccv {
         outstandingPacketsToProvider' = outstandingPacketsToProvider,
         // do not receive any maturations
         receivedMaturations' = receivedMaturations,
+        // consumer statusses do not change
+        consumerStatus' = consumerStatus,
+        // chain times do not change
+        curChainTimes' = curChainTimes,
+        // update the packet store on the provider
+        StoreSentPackets,
     }
 
     action endAndBeginBlockForConsumer(consumer: Chain): bool = all {
@@ -312,22 +353,49 @@ module ccv {
         PROVIDER_NOOP,
         // no packets are sent to consumer or received by it
         outstandingPacketsToConsumer' = outstandingPacketsToConsumer,
+        // consumer statusses do not change
+        consumerStatus' = consumerStatus,
+        // chain times do not change
+        curChainTimes' = curChainTimes,
+        // update the packet store on the provider
+        StoreSentPackets,
     }
 
-    // the timestamp for each chain is advanced nondeterministically
-    action AdvanceTimestamps(): bool =
-        curChainTimes' = curChainTimes.keys().mapBy(
-            (chain) => 
-            nondet advancement = oneOf(0.to(100))
-            curChainTimes.get(chain) + advancement
-        )        
+    // advance timestamps for maps nondeterministically
+    action AdvanceTime(): bool = 
+            val advanceAmounts = curChainTimes.keys().mapBy(
+                chain =>    
+                nondet amount = oneOf(1.to(10))
+                amount
+            )
+            AdvanceTimeByMap(advanceAmounts)
+
+    // the timestamp for each chain is advanced by the given amount
+    action AdvanceTimeByMap(advancementAmount: Chain -> int): bool = all
+        {
+            curChainTimes' = curChainTimes.keys().mapBy(
+                chain => 
+                curChainTimes.get(chain) + advancementAmount.get(chain)
+            ),
+            // all other variables are left untouched
+            votingPowerHistories' = votingPowerHistories,
+            runningValidatorSet' = runningValidatorSet,
+            outstandingPacketsToProvider' = outstandingPacketsToProvider,
+            outstandingPacketsToConsumer' = outstandingPacketsToConsumer,
+            receivedMaturations' = receivedMaturations,
+            maturationTimes' = maturationTimes,
+            // chain times do not change
+            consumerStatus' = consumerStatus,
+            // update the packet store on the provider
+            StoreSentPackets,
+        }
 
     // each consumer chain may advance in the order
     // some events may necessitate a transition, e.g. timeouts.
     // shouldAdvance gives, for each consumer chain, whether it should advance if possible.
     // if a chain has to advance, e.g. due to timeouts, or may not advance, the value will have no effect.
     action AdvanceConsumers(shouldAdvance: Chain -> bool): bool = 
-        consumerStatus' = consumerStatus.keys().mapBy(
+        val newConsumerStatus = consumerStatus.keys().mapBy(
             chain => 
             val curStatus = consumerStatus.get(chain)
             if (curStatus == UNUSED) {
@@ -355,7 +423,30 @@ module ccv {
                 // stopped chains cannot restart, we assume a new chain would be started in that case
                 STOPPED
             }
-        )
+            )
+        all {
+            consumerStatus' = newConsumerStatus,
+            // all other variables are left untouched
+            votingPowerHistories' = votingPowerHistories,
+            runningValidatorSet' = runningValidatorSet.keys().mapBy(
+                chain => 
+                if (newConsumerStatus.get(chain) == RUNNING and consumerStatus.get(chain) == UNUSED) 
+                // consumers that went from unused to running start with the current validator set on the provider
+                { 
+                    runningValidatorSet.get(ProviderChain) 
+                } else {
+                    runningValidatorSet.get(chain)
+                }
+            ),
+            outstandingPacketsToProvider' = outstandingPacketsToProvider,
+            outstandingPacketsToConsumer' = outstandingPacketsToConsumer,
+            receivedMaturations' = receivedMaturations,
+            maturationTimes' = maturationTimes,
+            // chain times do not change
+            curChainTimes' = curChainTimes,
+            // update the packet store on the provider
+            StoreSentPackets,
+        }
 
     // stores the VSCPackets sent in this step in sentVSCPackets
     action StoreSentPackets: bool = 
@@ -364,20 +455,17 @@ module ccv {
             sentVSCPackets.get(chain).union(outstandingPacketsToConsumer.get(chain).toSet())
         )
 
-    action step: bool = 
-    all  {
-        // timestamps can be advanced in each step
-        AdvanceTimestamps,  
-        any {
-            nondet node = oneOf(Nodes)
-            nondet amount = oneOf(1.to(10))
-            votingPowerChange(node, amount),
-            recvPacketOnProvider(oneOf(ConsumerChains)),
-            recvPacketOnConsumer(oneOf(ConsumerChains)),
-            nondet chain = oneOf(chains)
-            endAndBeginBlock(chain),
-        },
-        StoreSentPackets,
+    
+    // the main step action 
+    action step: bool = any {
+        AdvanceTime,
+        nondet node = oneOf(Nodes)
+        nondet amount = oneOf(1.to(10))
+        votingPowerChange(node, amount),
+        recvPacketOnProvider(oneOf(ConsumerChains)),
+        recvPacketOnConsumer(oneOf(ConsumerChains)),
+        nondet chain = oneOf(chains)
+        endAndBeginBlock(chain),
         val shouldAdvance = ConsumerChains.mapBy(
             chain => 
             nondet should = oneOf(Set(true, false))
@@ -385,7 +473,6 @@ module ccv {
         )
         AdvanceConsumers(shouldAdvance),
     }
-    
 
     def getArbitraryValidatorSet(): ValidatorSet = 
         val numValidators = oneOf(1.to(Nodes.size()))
@@ -397,6 +484,7 @@ module ccv {
             votingPower
         )
 
+    // INITIALIZATION
     action init: bool = 
     all {
         // voting power histories are empty
@@ -436,4 +524,17 @@ module ccv {
         chains.forall(
             chain => chain.getCurrentValidatorSet().wasValidatorSetOnProvider()
         )
+
+    // TESTS
+    run VSCHappyPath: bool = {
+        init
+        // trigger a votingPowerChange on the provider chain
+        .then(votingPowerChange("A", 10))
+        // endAndBeginBlock on provider. No consumer chains are running, so no packets are sent
+        .then(endAndBeginBlock(ProviderChain))
+        // advance chain1 to running
+        .then(AdvanceConsumers(NoStatusAdvancement.set("chain1", true)))
+    }
+
+
 }
