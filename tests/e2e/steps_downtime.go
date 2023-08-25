@@ -378,8 +378,8 @@ func stepsThrottledDowntime(consumerName string) []Step {
 
 				// Slash meter replenish fraction is set to 10%, replenish period is 20 seconds, see config.go
 				// Meter is initially at 10%, decremented to -23% from bob being jailed. It'll then take three replenishments
-				// for meter to become positive again. 3*20 = 60 seconds + buffer = 80 seconds
-				timeout: 80 * time.Second,
+				// for meter to become positive again. 3*20 = 60 seconds + buffer = 100 seconds
+				timeout: 100 * time.Second,
 			},
 			state: State{
 				chainID("provi"): ChainState{
