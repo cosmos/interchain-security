@@ -5,6 +5,11 @@ module ccv {
     // * Reward distribution
     // * Starting/Stopping chains during execution
     // * Slashes
+
+    // Things that explicitly are modelled:
+    // * Validator set changes are propagated from provider to consumers
+    // * VSC packets mature
+    // * Consumers can be forcefully dropped due to timeouts, or stop on their own volition
     
     // TYPE DEFINITIONS
     type Node = str
