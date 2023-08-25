@@ -1972,10 +1972,6 @@ func (tr TestRun) waitForSlashMeterReplenishment(
 	}
 }
 
-func uintPointer(i uint) *uint {
-	return &i
-}
-
 // GetPathNameForGorelayer returns the name of the path between two given chains used by Gorelayer.
 // Since paths are bidirectional, we need either chain to be able to be provided as first or second argument
 // and still return the same name, so we sort the chain names alphabetically.
