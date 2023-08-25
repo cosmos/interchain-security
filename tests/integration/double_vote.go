@@ -53,7 +53,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		expPass bool
 	}{
 		{
-			"create infraction header using an invalid consumer chain id - shouldn't pass",
+			"invalid consumer chain id - shouldn't pass",
 			&tmtypes.DuplicateVoteEvidence{
 				VoteA:            vote1,
 				VoteB:            badVote,

@@ -59,7 +59,7 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 
 	if ageDuration > maxAgeDuration {
 		return fmt.Errorf(
-			"evidence from created at: %v is too old; evidence can not be older than %v",
+			"evidence created at: %v is too old; evidence can not be older than %v",
 			evidence.Time(),
 			ctx.BlockHeader().Time.Add(maxAgeDuration),
 		)
