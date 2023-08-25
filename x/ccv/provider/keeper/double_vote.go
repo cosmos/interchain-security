@@ -14,7 +14,7 @@ import (
 )
 
 // HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer chain and,
-// if successful, executes the jailing and of the malicious validator.
+// if successful, executes the jailing of the malicious validator.
 func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.DuplicateVoteEvidence, chainID string) error {
 	// get the validator's consensus address on the provider
 	providerAddr := k.GetProviderAddrFromConsumerAddr(
