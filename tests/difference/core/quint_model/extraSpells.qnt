@@ -1,3 +1,4 @@
+-*- mode: Bluespec; -*-
 module extraSpells {
 
   pure def prepend(__list: List[a], __elem: a): List[a] = {
