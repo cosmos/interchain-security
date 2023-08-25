@@ -53,7 +53,6 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	chainID string,
 	pubkey tmprotocrypto.PublicKey,
 ) error {
-
 	// Note that since we don't slash validators for double signing
 	// on a consumer chain, we don't need to check the age of the evidence
 
