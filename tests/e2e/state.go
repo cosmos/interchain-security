@@ -9,6 +9,7 @@ import (
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 )
@@ -111,6 +112,7 @@ type Param struct {
 func (tr TestRun) getState(modelState State) State {
 	systemState := State{}
 	for k, modelState := range modelState {
+		log.Println("Getting model state for chain: ", k)
 		systemState[k] = tr.getChainState(k, modelState)
 	}
 
@@ -169,6 +171,10 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 	if modelState.RegisteredConsumerRewardDenoms != nil {
 		registeredConsumerRewardDenoms := tr.getRegisteredConsumerRewardDenoms(chain)
 		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
+	}
+
+	if *verbose {
+		log.Println("Done getting chain state:\n" + pretty.Sprint(chainState))
 	}
 
 	return chainState
@@ -479,32 +485,36 @@ type ValPubKey struct {
 }
 
 func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
+	if *verbose {
+		log.Println("getting validator power for chain: ", chain, " validator: ", validator)
+	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+	command := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
 
 		"query", "tendermint-validator-set",
 
 		`--node`, tr.getQueryNode(chain),
-	).CombinedOutput()
+	)
+	bz, err := command.CombinedOutput()
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		log.Fatalf("encountered an error when executing command '%s': %v, output: %s", command.String(), err, string(bz))
 	}
 
 	valset := TmValidatorSetYaml{}
 
 	err = yaml.Unmarshal(bz, &valset)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		log.Fatalf("yaml.Unmarshal returned an error while unmarshalling validator set: %v, input: %s", err, string(bz))
 	}
 
 	total, err := strconv.Atoi(valset.Total)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		log.Fatalf("strconv.Atoi returned an error while coonverting total for validator set: %v, input: %s, validator set: %s", err, valset.Total, pretty.Sprint(valset))
 	}
 
 	if total != len(valset.Validators) {
-		log.Fatalf("Total number of validators %v does not match number of validators in list %v. Probably a query pagination issue.",
-			valset.Total, uint(len(valset.Validators)))
+		log.Fatalf("Total number of validators %v does not match number of validators in list %v. Probably a query pagination issue. Validator set: %v",
+			valset.Total, uint(len(valset.Validators)), pretty.Sprint(valset))
 	}
 
 	for _, val := range valset.Validators {
@@ -513,7 +523,7 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 
 			votingPower, err := strconv.Atoi(val.VotingPower)
 			if err != nil {
-				log.Fatalf("error: %v", err)
+				log.Fatalf("strconv.Atoi returned an error while convering validator voting power: %v, voting power string: %s, validator set: %s", err, val.VotingPower, pretty.Sprint(valset))
 			}
 
 			return uint(votingPower)
