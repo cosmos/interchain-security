@@ -11,7 +11,6 @@ import (
 
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/integration"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
-	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -365,7 +364,7 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 				err := bankKeeper.SendCoinsFromAccountToModule(
 					ctx,
 					s.consumerChain.SenderAccount.GetAddress(),
-					types.ConsumerToSendToProviderName,
+					consumertypes.ConsumerToSendToProviderName,
 					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))),
 				)
 				s.Require().NoError(err)
@@ -419,7 +418,7 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 				err := bankKeeper.SendCoinsFromAccountToModule(
 					ctx,
 					s.consumerChain.SenderAccount.GetAddress(),
-					types.ConsumerToSendToProviderName,
+					consumertypes.ConsumerToSendToProviderName,
 					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))),
 				)
 				s.Require().NoError(err)
@@ -443,7 +442,7 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 				err := bankKeeper.SendCoinsFromAccountToModule(
 					ctx,
 					s.consumerChain.SenderAccount.GetAddress(),
-					types.ConsumerToSendToProviderName,
+					consumertypes.ConsumerToSendToProviderName,
 					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))),
 				)
 				s.Require().NoError(err)
@@ -484,11 +483,10 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 		)
 		s.Require().Len(commitments, tc.tokenTransfers)
 	}
-
 }
 
 // getEscrowBalance gets the current balances in the escrow account holding the transferred tokens to the provider
-func (s *CCVTestSuite) getEscrowBalance() sdk.Coins { //nolint:govet // we copy locks for this test
+func (s *CCVTestSuite) getEscrowBalance() sdk.Coins {
 	consumerBankKeeper := s.consumerApp.GetTestBankKeeper()
 	transChanID := s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(s.consumerCtx())
 	escAddr := transfertypes.GetEscrowAddress(transfertypes.PortID, transChanID)
