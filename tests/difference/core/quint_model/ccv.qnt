@@ -140,6 +140,12 @@ module ccv {
     // stores which VSC Packets have been sent to compare with receivedMaturations to detect timeouts due to non-responsiveness
     var sentVSCPackets: Chain -> Set[VSCPacket]
 
+    // stores whether, in this step, the validator set considered to be changed.
+    // this is needed because the validator set might be considered to have changed, even though
+    // it is still technically identical at our level of abstraction, e.g. a validator power change on the provider
+    // might leave the validator set the same because a delegation and undelegation cancel each other out.
+    var providerValidatorSetChangedInThisBlock: bool
+
 
     // UTILITY FUNCTIONS & ACTIONS
     def wasValidatorSetOnProvider(validatorSet: ValidatorSet): bool = {
@@ -153,7 +159,7 @@ module ccv {
 
     def getUpdatedValidatorSet(oldValidatorSet: ValidatorSet, validator: Node, newVotingPower: int): ValidatorSet =
         if (newVotingPower > 0) 
-        oldValidatorSet.set(validator, newVotingPower)
+        oldValidatorSet.put(validator, newVotingPower)
         else
         oldValidatorSet.mapRemove(validator)
 
@@ -211,7 +217,7 @@ module ccv {
             // set the running validator set on the provider chain, but don't update the history yet
             runningValidatorSet' = runningValidatorSet.set(ProviderChain, newValidatorSet),
             // no packets are sent yet, these are only sent on endAndBeginBlock
-            outstandingPacketsToConsumer' = outstandingPacketsToConsumer,
+            RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
             outstandingPacketsToProvider' = outstandingPacketsToProvider,
             receivedMaturations' = receivedMaturations,
             CONSUMER_NOOP,
@@ -221,8 +227,8 @@ module ccv {
             consumerStatus' = consumerStatus,
             // chain times do not change
             curChainTimes' = curChainTimes,
-            // update the packet store on the provider
-            StoreSentPackets,
+            // the validator set is considered to have changed
+            providerValidatorSetChangedInThisBlock' = true,
         }
 
     // deliver the next outstanding packet from the consumer to the provider.
@@ -237,7 +243,7 @@ module ccv {
         val maturedPacket = outstandingPacketsToProvider.get(consumer).head()
         receivedMaturations' = receivedMaturations.add(maturedPacket),
         CONSUMER_NOOP,
-        outstandingPacketsToConsumer' = outstandingPacketsToConsumer,
+        RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
         votingPowerHistories' = votingPowerHistories,
         // no validator set changes are made
         runningValidatorSet' = runningValidatorSet,
@@ -245,8 +251,8 @@ module ccv {
         consumerStatus' = consumerStatus,
         // chain times do not change
         curChainTimes' = curChainTimes,
-        // update the packet store on the provider
-        StoreSentPackets,
+        // the validator set was not changed by this action (but might have been changed before in this block)
+        providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
     }
 
     // deliver the next outstanding packet from the provider to the consumer.
@@ -256,7 +262,8 @@ module ccv {
         outstandingPacketsToConsumer.get(consumer).length() > 0,
         // remove packet from outstanding packets
         val newPacketQueue = outstandingPacketsToConsumer.get(consumer).tail()
-        outstandingPacketsToConsumer' = outstandingPacketsToConsumer.set(consumer, newPacketQueue),
+        val newOutstandingPackets = outstandingPacketsToConsumer.set(consumer, newPacketQueue)
+        RegisterNewOutstandingPackets(newOutstandingPackets),
         val packet = outstandingPacketsToConsumer.get(consumer).head()
         all {
             // update the running validator set, but not the history yet,
@@ -273,8 +280,8 @@ module ccv {
         consumerStatus' = consumerStatus,
         // chain times do not change
         curChainTimes' = curChainTimes,
-        // update the packet store on the provider
-        StoreSentPackets,
+        // the validator set was not changed by this action (but might have been changed before in this block)
+        providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
     }
 
     // ends the current block and starts the next block for a given chain.
@@ -308,9 +315,9 @@ module ccv {
         // so start with it in the next block
         runningValidatorSet' = runningValidatorSet,
         // send VSCPackets to consumers
-        outstandingPacketsToConsumer' = 
-            // if running validator set is not equal to the last one in the history
-            if (runningValidatorSet.get(ProviderChain) != votingPowerHistories.get(ProviderChain).head())
+        val newOutstandingPackets = 
+            // if running validator set is considered to have changed
+            if (providerValidatorSetChangedInThisBlock)
                 // then send a packet to each running consumer
                 outstandingPacketsToConsumer.keys().mapBy(
                     (consumer) => 
@@ -329,7 +336,8 @@ module ccv {
                 )
             else
                 // otherwise, don't send any packets
-                outstandingPacketsToConsumer,
+                outstandingPacketsToConsumer
+        RegisterNewOutstandingPackets(newOutstandingPackets),
         CONSUMER_NOOP,
         // no packets are sent to the provider
         outstandingPacketsToProvider' = outstandingPacketsToProvider,
@@ -339,8 +347,8 @@ module ccv {
         consumerStatus' = consumerStatus,
         // chain times do not change
         curChainTimes' = curChainTimes,
-        // update the packet store on the provider
-        StoreSentPackets,
+        // the validator set was definitely not changed in the new block yet, so set to false
+        providerValidatorSetChangedInThisBlock' = false
     }
 
     action endAndBeginBlockForConsumer(consumer: Chain): bool = all {
@@ -370,13 +378,14 @@ module ccv {
         },
         PROVIDER_NOOP,
         // no packets are sent to consumer or received by it
-        outstandingPacketsToConsumer' = outstandingPacketsToConsumer,
+        RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
         // consumer statusses do not change
         consumerStatus' = consumerStatus,
         // chain times do not change
         curChainTimes' = curChainTimes,
-        // update the packet store on the provider
-        StoreSentPackets,
+        // the validator set was not changed by this action (but might have been changed before in this block)
+        // also, this is only a new block for a consumer, so the change variable shouldn't be reset
+        providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
     }
 
     // advance timestamps for maps nondeterministically
@@ -399,13 +408,13 @@ module ccv {
             votingPowerHistories' = votingPowerHistories,
             runningValidatorSet' = runningValidatorSet,
             outstandingPacketsToProvider' = outstandingPacketsToProvider,
-            outstandingPacketsToConsumer' = outstandingPacketsToConsumer,
+            RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
             receivedMaturations' = receivedMaturations,
             maturationTimes' = maturationTimes,
             // chain times do not change
             consumerStatus' = consumerStatus,
-            // update the packet store on the provider
-            StoreSentPackets,
+            // the validator set was not changed by this action (but might have been changed before in this block)
+            providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
         }
 
     // each consumer chain may advance in the order
@@ -457,20 +466,28 @@ module ccv {
                 }
             ),
             outstandingPacketsToProvider' = outstandingPacketsToProvider,
-            outstandingPacketsToConsumer' = outstandingPacketsToConsumer,
+            RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
             receivedMaturations' = receivedMaturations,
             maturationTimes' = maturationTimes,
             // chain times do not change
             curChainTimes' = curChainTimes,
-            // update the packet store on the provider
-            StoreSentPackets,
+            // the validator set was not changed by this action (but might have been changed before in this block)
+            providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
         }
 
+    // Updates the outstandingPacketsToConsumer and sentVSCPackets variables
+    action RegisterNewOutstandingPackets(newOutstandingPackets: Chain -> List[VSCPacket]): bool = 
+        all {
+            outstandingPacketsToConsumer' = newOutstandingPackets,
+            StoreSentPackets(newOutstandingPackets),
+        }
+
+
     // stores the VSCPackets sent in this step in sentVSCPackets
-    action StoreSentPackets: bool = 
+    action StoreSentPackets(newOutstandingPackets: Chain -> List[VSCPacket]): bool = 
         sentVSCPackets' = sentVSCPackets.keys().mapBy(
             (chain) => 
-            sentVSCPackets.get(chain).union(outstandingPacketsToConsumer.get(chain).toSet())
+            sentVSCPackets.get(chain).union(newOutstandingPackets.get(chain).toSet())
         )
 
     
@@ -534,6 +551,8 @@ module ccv {
         sentVSCPackets' = chains.mapBy(chain => Set()),
         // no packets have been received by consumers, so no maturation times set
         maturationTimes' = chains.mapBy(chain => Map()),
+        // validator set was not changed yet
+        providerValidatorSetChangedInThisBlock' = false
     }
 
     // PROPERTIES
@@ -567,22 +586,27 @@ module ccv {
                 votingPowerChange("B", 10)
             }
         )
-        .then(endAndBeginBlock(ProviderChain))
-        // now the provider should send a packet on block end
-        .then(all {
-            // a packet was sent
-            assert(outstandingPacketsToConsumer.get("chain1").length() == 1),
-            // deliver the packet to the consumer
-            recvPacketOnConsumer("chain1")
-        })
-        .then(all {
-            // the consumer should have the new validator set
-            assert(runningValidatorSet.get("chain1") == runningValidatorSet.get(ProviderChain)),
-            // the old validator set should be in the history
-            assert(votingPowerHistories.get("chain1").head() == Map("A" -> 10)),
-            // put a last action to satisfy the action effect
-            AdvanceConsumers(NoStatusAdvancement)
-        })
+        .then(
+            val valSet = runningValidatorSet.get(ProviderChain)
+            endAndBeginBlock(ProviderChain)
+            // now the provider should send a packet on block end
+            .then(all {
+                // a packet was sent
+                assert(outstandingPacketsToConsumer.get("chain1").length() == 1),
+                // deliver the packet to the consumer
+                recvPacketOnConsumer("chain1")
+            })
+            .then(
+                // consumer needs to end a block before it has the new validator set
+                endAndBeginBlock("chain1")
+            )
+            .then(all {
+                // the consumer should have the new validator set
+                assert(runningValidatorSet.get("chain1") == valSet),
+                // put a last action to satisfy the action effect
+                AdvanceConsumers(NoStatusAdvancement)
+            })
+        )
     }
 
 
