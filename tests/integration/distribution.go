@@ -9,6 +9,9 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/integration"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -338,8 +341,154 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 	}
 }
 
+// TestSendRewardsToProvider is effectively a unit test for TestSendRewardsToProvider(),
+// but is written as an integration test to avoid excessive mocking.
+func (s *CCVTestSuite) TestSendRewardsToProvider() {
+	testCases := []struct {
+		name           string
+		setup          func(sdk.Context, *consumerkeeper.Keeper, icstestingutils.TestBankKeeper)
+		expError       bool
+		tokenTransfers int
+	}{
+		{
+			name: "successful token transfer",
+			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				// setup transfer channel
+				s.SetupTransferChannel()
+
+				// register a consumer reward denom
+				params := keeper.GetConsumerParams(ctx)
+				params.RewardDenoms = []string{sdk.DefaultBondDenom}
+				keeper.SetParams(ctx, params)
+
+				// send coins to the pool which is used for collect reward distributions to be sent to the provider
+				err := bankKeeper.SendCoinsFromAccountToModule(
+					ctx,
+					s.consumerChain.SenderAccount.GetAddress(),
+					types.ConsumerToSendToProviderName,
+					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))),
+				)
+				s.Require().NoError(err)
+			},
+			expError:       false,
+			tokenTransfers: 1,
+		},
+		{
+			name: "no transfer channel",
+			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+			},
+			expError:       false,
+			tokenTransfers: 0,
+		},
+		{
+			name: "no reward denom",
+			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				// setup transfer channel
+				s.SetupTransferChannel()
+			},
+			expError:       false,
+			tokenTransfers: 0,
+		},
+		{
+			name: "reward balance is zero",
+			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				// setup transfer channel
+				s.SetupTransferChannel()
+
+				// register a consumer reward denom
+				params := keeper.GetConsumerParams(ctx)
+				params.RewardDenoms = []string{sdk.DefaultBondDenom}
+				keeper.SetParams(ctx, params)
+			},
+			expError:       false,
+			tokenTransfers: 0,
+		},
+		{
+			name: "no distribution transmission channel",
+			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				// setup transfer channel
+				s.SetupTransferChannel()
+
+				// register a consumer reward denom
+				params := keeper.GetConsumerParams(ctx)
+				params.RewardDenoms = []string{sdk.DefaultBondDenom}
+				params.DistributionTransmissionChannel = ""
+				keeper.SetParams(ctx, params)
+
+				// send coins to the pool which is used for collect reward distributions to be sent to the provider
+				err := bankKeeper.SendCoinsFromAccountToModule(
+					ctx,
+					s.consumerChain.SenderAccount.GetAddress(),
+					types.ConsumerToSendToProviderName,
+					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))),
+				)
+				s.Require().NoError(err)
+			},
+			expError:       false,
+			tokenTransfers: 0,
+		},
+		{
+			name: "no recipient address",
+			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				// setup transfer channel
+				s.SetupTransferChannel()
+
+				// register a consumer reward denom
+				params := keeper.GetConsumerParams(ctx)
+				params.RewardDenoms = []string{sdk.DefaultBondDenom}
+				params.ProviderFeePoolAddrStr = ""
+				keeper.SetParams(ctx, params)
+
+				// send coins to the pool which is used for collect reward distributions to be sent to the provider
+				err := bankKeeper.SendCoinsFromAccountToModule(
+					ctx,
+					s.consumerChain.SenderAccount.GetAddress(),
+					types.ConsumerToSendToProviderName,
+					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))),
+				)
+				s.Require().NoError(err)
+			},
+			expError:       true,
+			tokenTransfers: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.SetupTest()
+
+		// ccv channels setup
+		s.SetupCCVChannel(s.path)
+		bondAmt := sdk.NewInt(10000000)
+		delAddr := s.providerChain.SenderAccount.GetAddress()
+		delegate(s, delAddr, bondAmt)
+		s.providerChain.NextBlock()
+
+		// customized setup
+		consumerCtx := s.consumerCtx()
+		consumerKeeper := s.consumerApp.GetConsumerKeeper()
+		tc.setup(consumerCtx, &consumerKeeper, s.consumerApp.GetTestBankKeeper())
+
+		// call SendRewardsToProvider
+		err := s.consumerApp.GetConsumerKeeper().SendRewardsToProvider(consumerCtx)
+		if tc.expError {
+			s.Require().Error(err)
+		} else {
+			s.Require().NoError(err)
+		}
+
+		// check whether the amount of token transfers is as expected
+		commitments := s.consumerApp.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
+			consumerCtx,
+			transfertypes.PortID,
+			s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(consumerCtx),
+		)
+		s.Require().Len(commitments, tc.tokenTransfers)
+	}
+
+}
+
 // getEscrowBalance gets the current balances in the escrow account holding the transferred tokens to the provider
-func (s CCVTestSuite) getEscrowBalance() sdk.Coins { //nolint:govet // we copy locks for this test
+func (s *CCVTestSuite) getEscrowBalance() sdk.Coins { //nolint:govet // we copy locks for this test
 	consumerBankKeeper := s.consumerApp.GetTestBankKeeper()
 	transChanID := s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(s.consumerCtx())
 	escAddr := transfertypes.GetEscrowAddress(transfertypes.PortID, transChanID)
