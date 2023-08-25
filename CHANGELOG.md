@@ -4,6 +4,7 @@
 
 Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
 
+* (fix!) [#1244](https://github.com/cosmos/interchain-security/pull/1244) Validate token transfer messages before calling `Transfer()`.
 * (deps!) [#1196](https://github.com/cosmos/interchain-security/pull/1196) Bump [ibc-go](https://github.com/cosmos/ibc-go) to [v7.2.0](https://github.com/cosmos/ibc-go/releases/tag/v7.2.0).
 * `[x/ccv/provider]` (fix) [#1076](https://github.com/cosmos/interchain-security/pull/1076) Add `InitTimeoutTimestamps` and `ExportedVscSendTimestamps` to exported genesis.
 * (feat!) [#1024](https://github.com/cosmos/interchain-security/pull/1024) throttle with retries, consumer changes  
