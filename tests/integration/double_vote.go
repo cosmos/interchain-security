@@ -79,7 +79,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		},
 		{
 			// In order to create an evidence for a consumer chain,
-			// we create two votes that only differs by their Block IDs and
+			// we create two votes that only differ by their Block IDs and
 			// signed them using the same validator and chain ID of the consumer chain
 			"valid double voting evidence - should pass",
 			&tmtypes.DuplicateVoteEvidence{
@@ -98,7 +98,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
 
 	for _, tc := range testCases {
-		ctx := testutil.SetDefaultConsensusEvidenceParams(s.providerCtx())
+		ctx := s.providerCtx().WithConsensusParams(testutil.GetDefaultConsensusEvidenceParams())
 		s.Run(tc.name, func() {
 			err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
 				ctx,

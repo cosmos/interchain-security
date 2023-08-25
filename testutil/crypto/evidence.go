@@ -3,7 +3,6 @@ package crypto
 import (
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -58,14 +57,12 @@ func MakeAndSignVote(
 	return vote
 }
 
-func SetDefaultConsensusEvidenceParams(ctx sdk.Context) sdk.Context {
-	return ctx.WithConsensusParams(
-		&abci.ConsensusParams{
-			Evidence: &tmproto.EvidenceParams{
-				MaxAgeNumBlocks: 302400,
-				MaxAgeDuration:  504 * time.Hour, // 3 weeks is the max duration
-				MaxBytes:        10000,
-			},
+func GetDefaultConsensusEvidenceParams() *abci.ConsensusParams {
+	return &abci.ConsensusParams{
+		Evidence: &tmproto.EvidenceParams{
+			MaxAgeNumBlocks: 302400,
+			MaxAgeDuration:  504 * time.Hour, // 3 weeks is the max duration
+			MaxBytes:        10000,
 		},
-	)
+	}
 }

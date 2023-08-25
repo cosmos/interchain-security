@@ -16,7 +16,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := consumer
+	chainID := "consumer"
 
 	signer1 := tmtypes.NewMockPV()
 	signer2 := tmtypes.NewMockPV()
@@ -30,7 +30,9 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 	blockID2 := testutil.MakeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
 
 	ctx = ctx.WithBlockTime(time.Now())
-	oldTime := ctx.BlockTime().Add(-505 * time.Hour)
+	oldTime := ctx.BlockTime().
+		Add(-testutil.GetDefaultConsensusEvidenceParams().Evidence.MaxAgeDuration).
+		Add(-1 * time.Hour)
 
 	valPubkey1, err := tmencoding.PubKeyToProto(val1.PubKey)
 	require.NoError(t, err)
@@ -142,7 +144,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 			false,
 		},
 		{
-			"given chain ID isn't the same that the one used to sign the votes - shouldn't pass",
+			"given chain ID isn't the same as the one used to sign the votes - shouldn't pass",
 			[]*tmtypes.Vote{
 				testutil.MakeAndSignVote(
 					blockID1,
@@ -287,7 +289,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 		},
 	}
 
-	ctx = testutil.SetDefaultConsensusEvidenceParams(ctx)
+	ctx = ctx.WithConsensusParams(testutil.GetDefaultConsensusEvidenceParams())
 
 	for _, tc := range testCases {
 		err = keeper.VerifyDoubleVotingEvidence(
