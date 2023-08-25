@@ -1309,6 +1309,7 @@ func (tr TestRun) relayPacketsGorelayer(
 	}
 
 	tr.waitBlocks(action.chainA, 1, 30*time.Second)
+	tr.waitBlocks(action.chainB, 1, 30*time.Second)
 }
 
 func (tr TestRun) relayPacketsHermes(
@@ -1332,6 +1333,7 @@ func (tr TestRun) relayPacketsHermes(
 	}
 
 	tr.waitBlocks(action.chainA, 1, 30*time.Second)
+	tr.waitBlocks(action.chainB, 1, 30*time.Second)
 }
 
 type relayRewardPacketsToProviderAction struct {
