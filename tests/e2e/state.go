@@ -659,7 +659,6 @@ func (tr TestRun) getSlashMeter() int64 {
 	}
 
 	slashMeter := gjson.Get(string(bz), "slash_meter")
-	// might also be "slashMeter"
 	return slashMeter.Int()
 }
 
