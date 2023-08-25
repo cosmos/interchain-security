@@ -74,6 +74,20 @@ module ccv {
         0
     )
 
+    // utility: a struct summarizing the current state
+    val state = 
+        {
+            votingPowerHistories: votingPowerHistories,
+            runningValidatorSet: runningValidatorSet,
+            curChainTimes: curChainTimes,
+            consumerStatus: consumerStatus,
+            outstandingPacketsToProvider: outstandingPacketsToProvider,
+            outstandingPacketsToConsumer: outstandingPacketsToConsumer,
+            maturationTimes: maturationTimes,
+            receivedMaturations: receivedMaturations,
+            sentVSCPackets: sentVSCPackets,
+        }
+
 
     // utility: a map assigning each chain to false, used for not advancing consumer status
     pure val NoStatusAdvancement: Chain -> bool = chains.mapBy(
@@ -249,7 +263,7 @@ module ccv {
             // as that only happens when the next block is started
             runningValidatorSet' = runningValidatorSet.set(consumer, packet.validatorSet),
             // add the new packet and store its maturation time
-            val newMaturationTimes = maturationTimes.get(consumer).set(packet, curChainTimes.get(consumer) + UnbondingPeriod.get(consumer))
+            val newMaturationTimes = maturationTimes.get(consumer).put(packet, curChainTimes.get(consumer) + UnbondingPeriod.get(consumer))
             maturationTimes' = maturationTimes.set(consumer, newMaturationTimes)
         },
         PROVIDER_NOOP,
@@ -298,16 +312,20 @@ module ccv {
             // if running validator set is not equal to the last one in the history
             if (runningValidatorSet.get(ProviderChain) != votingPowerHistories.get(ProviderChain).head())
                 // then send a packet to each running consumer
-                outstandingPacketsToConsumer.keys().filter(consumer => consumerStatus.get(consumer) == RUNNING).mapBy(
+                outstandingPacketsToConsumer.keys().mapBy(
                     (consumer) => 
                     val packetQueue = outstandingPacketsToConsumer.get(consumer)
-                    packetQueue.append(
-                        {
-                            id: packetQueue.length(),
-                            validatorSet: runningValidatorSet.get(ProviderChain),
-                            timeout: curChainTimes.get(ProviderChain) + PacketTimeout
-                        }
-                    )
+                    if (consumerStatus.get(consumer) == RUNNING) {
+                        packetQueue.append(
+                            {
+                                id: packetQueue.length(),
+                                validatorSet: runningValidatorSet.get(ProviderChain),
+                                timeout: curChainTimes.get(ProviderChain) + PacketTimeout
+                            }
+                        )
+                    } else {
+                        packetQueue
+                    }
                 )
             else
                 // otherwise, don't send any packets
@@ -474,10 +492,12 @@ module ccv {
         AdvanceConsumers(shouldAdvance),
     }
 
+    pure val nodePowerSet = Nodes.powerset()
+
     def getArbitraryValidatorSet(): ValidatorSet = 
-        val numValidators = oneOf(1.to(Nodes.size()))
+        nondet numValidators = oneOf(1.to(Nodes.size()))
         // toList has nondeterministic behaviour, so this gets arbitrary validators
-        val validators = Nodes.toList().slice(0, numValidators).toSet()
+        nondet validators = oneOf(nodePowerSet.filter(s => s.size() == numValidators))
         validators.mapBy(
             validator => 
             nondet votingPower = oneOf(1.to(10))
@@ -487,18 +507,18 @@ module ccv {
     // INITIALIZATION
     action init: bool = 
     all {
-        // voting power histories are empty
-        votingPowerHistories' = 
-            chains.mapBy(
-                (chain) => 
-                List()
-            ),
+        val validatorSets = chains.mapBy(
+            (chain) => 
         // provider chain gets an arbitrary validator set, consumer chains have none
-        runningValidatorSet' =
-            chains.mapBy(
+            if (chain == ProviderChain) getArbitraryValidatorSet else Map()
+        )
+        all {
+            votingPowerHistories' = chains.mapBy(
                 (chain) => 
-                if (chain == ProviderChain) getArbitraryValidatorSet else Map()
+                List(validatorSets.get(chain))
             ),
+            runningValidatorSet' = validatorSets,
+        },
         // each chain starts at time 0
         curChainTimes' = chains.mapBy(
             (chain) => 0
@@ -526,14 +546,43 @@ module ccv {
         )
 
     // TESTS
-    run VSCHappyPath: bool = {
+    run VSCHappyPathTest: bool = {
         init
         // trigger a votingPowerChange on the provider chain
         .then(votingPowerChange("A", 10))
         // endAndBeginBlock on provider. No consumer chains are running, so no packets are sent
         .then(endAndBeginBlock(ProviderChain))
-        // advance chain1 to running
-        .then(AdvanceConsumers(NoStatusAdvancement.set("chain1", true)))
+        .then(all {
+            // no packet was sent
+            assert(outstandingPacketsToConsumer.get("chain1").length() == 0),
+            // advance chain1 to running
+            AdvanceConsumers(NoStatusAdvancement.set("chain1", true))
+        })
+        // consumer chain should have current validator set from provider
+        .then(
+            all { 
+                // since consumer chain just started, its assumed to have the validator set from provider
+                assert(runningValidatorSet.get("chain1") == runningValidatorSet.get(ProviderChain)),
+                // trigger a votingPowerChange on the provider chain
+                votingPowerChange("B", 10)
+            }
+        )
+        .then(endAndBeginBlock(ProviderChain))
+        // now the provider should send a packet on block end
+        .then(all {
+            // a packet was sent
+            assert(outstandingPacketsToConsumer.get("chain1").length() == 1),
+            // deliver the packet to the consumer
+            recvPacketOnConsumer("chain1")
+        })
+        .then(all {
+            // the consumer should have the new validator set
+            assert(runningValidatorSet.get("chain1") == runningValidatorSet.get(ProviderChain)),
+            // the old validator set should be in the history
+            assert(votingPowerHistories.get("chain1").head() == Map("A" -> 10)),
+            // put a last action to satisfy the action effect
+            AdvanceConsumers(NoStatusAdvancement)
+        })
     }
 
 
