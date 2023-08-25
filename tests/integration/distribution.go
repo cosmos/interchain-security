@@ -396,8 +396,11 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 
 				// register a consumer reward denom
 				params := keeper.GetConsumerParams(ctx)
-				params.RewardDenoms = []string{sdk.DefaultBondDenom}
+				params.RewardDenoms = []string{"uatom"}
 				keeper.SetParams(ctx, params)
+
+				denoms := keeper.AllowedRewardDenoms(ctx)
+				s.Require().Len(denoms, 1)
 			},
 			expError:       false,
 			tokenTransfers: 0,
@@ -481,7 +484,7 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 			transfertypes.PortID,
 			s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(consumerCtx),
 		)
-		s.Require().Len(commitments, tc.tokenTransfers)
+		s.Require().Len(commitments, tc.tokenTransfers, "unexpected amount of token transfers; test: %s", tc.name)
 	}
 }
 
