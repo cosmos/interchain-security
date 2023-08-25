@@ -1,3 +1,4 @@
+-*- mode: Bluespec; -*-
 module ccv {
     import extraSpells.* from "./extraSpells"
 
