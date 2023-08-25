@@ -8,7 +8,7 @@ import (
 )
 
 // TestHandleConsumerDoubleVoting verifies that handling a double voting evidence
-// of a consumer chain results in the expected jailing and tombstoning of the malicious validator
+// of a consumer chain results in the expected jailing of the malicious validator
 func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
@@ -98,25 +98,22 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
 
 	for _, tc := range testCases {
-		ctx := s.providerCtx().WithConsensusParams(testutil.GetDefaultConsensusEvidenceParams())
 		s.Run(tc.name, func() {
 			err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
-				ctx,
+				s.providerCtx(),
 				tc.ev,
 				tc.chainID,
 			)
 			if tc.expPass {
 				s.Require().NoError(err)
 
-				// verifies that the jailing and tombstoning has occurred
-				s.Require().True(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(ctx, provAddr.ToSdkConsAddr()))
-				s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(ctx, provAddr.ToSdkConsAddr()))
+				// verifies that the jailing has occurred
+				s.Require().True(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(s.providerCtx(), provAddr.ToSdkConsAddr()))
 			} else {
 				s.Require().Error(err)
 
-				// verifies that no jailing and tombstoning has occurred
-				s.Require().False(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(ctx, provAddr.ToSdkConsAddr()))
-				s.Require().False(s.providerApp.GetTestSlashingKeeper().IsTombstoned(ctx, provAddr.ToSdkConsAddr()))
+				// verifies that no jailing and has occurred
+				s.Require().False(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(s.providerCtx(), provAddr.ToSdkConsAddr()))
 			}
 		})
 	}

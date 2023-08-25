@@ -11,7 +11,7 @@ import (
 )
 
 // TestHandleConsumerMisbehaviour tests that handling a valid misbehaviour,
-// with conflicting headers forming an equivocation, results in the jailing and tombstoning of the validators
+// with conflicting headers forming an equivocation, results in the jailing of the validators
 func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
@@ -63,7 +63,6 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 		val, ok := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), provAddr.Address)
 		s.Require().True(ok)
 		s.Require().True(val.Jailed)
-		s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.Address))
 	}
 }
 

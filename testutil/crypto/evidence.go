@@ -3,9 +3,7 @@ package crypto
 import (
 	"time"
 
-	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -55,14 +53,4 @@ func MakeAndSignVote(
 
 	vote.Signature = v.Signature
 	return vote
-}
-
-func GetDefaultConsensusEvidenceParams() *abci.ConsensusParams {
-	return &abci.ConsensusParams{
-		Evidence: &tmproto.EvidenceParams{
-			MaxAgeNumBlocks: 302400,
-			MaxAgeDuration:  504 * time.Hour, // 3 weeks is the max duration
-			MaxBytes:        10000,
-		},
-	}
 }

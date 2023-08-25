@@ -6,8 +6,11 @@ import (
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 )
 
-// JailAndTombstoneValidator jails and tombstones the validator for the given validator consensus address
-func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) {
+// JailValidator jails the validator for the given validator consensus address
+// Note that the tombstoning is temporarily removed until we integrate the slashing
+// for consumer double signing and light client attacks,
+// see comments https://github.com/cosmos/interchain-security/pull/1232#issuecomment-1693127641.
+func (k Keeper) JailValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) {
 	logger := k.Logger(ctx)
 
 	// get validator
@@ -17,7 +20,7 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 		return
 	}
 
-	// check that validator isn't already tombstoned
+	// check that validator isn't tombstoned
 	if k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
 		logger.Info("validator is already tombstoned", "provider cons addr", providerAddr.String())
 		return
@@ -30,6 +33,6 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 
 	// update jail time to end after double sign jail duration
 	k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
-	// tombstone validator
-	k.slashingKeeper.Tombstone(ctx, providerAddr.ToSdkConsAddr())
+
+	// TODO: add tombstoning back once we integrate the slashing
 }

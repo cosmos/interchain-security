@@ -14,7 +14,7 @@ import (
 )
 
 // HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer chain and,
-// if successful, executes the the jailing and the tombstoning of the malicious validator.
+// if successful, executes the jailing and of the malicious validator.
 func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.DuplicateVoteEvidence, chainID string) error {
 	// get the validator's consensus address on the provider
 	providerAddr := k.GetProviderAddrFromConsumerAddr(
@@ -34,8 +34,8 @@ func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.Du
 		return err
 	}
 
-	// execute the jailing and tombstoning
-	k.JailAndTombstoneValidator(ctx, providerAddr)
+	// execute the jailing
+	k.JailValidator(ctx, providerAddr)
 
 	k.Logger(ctx).Info(
 		"confirmed equivocation",
@@ -53,17 +53,12 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	chainID string,
 	pubkey tmprotocrypto.PublicKey,
 ) error {
-	// check evidence age duration
-	maxAgeDuration := ctx.ConsensusParams().Evidence.MaxAgeDuration
-	ageDuration := ctx.BlockHeader().Time.Sub(evidence.Time())
 
-	if ageDuration > maxAgeDuration {
-		return fmt.Errorf(
-			"evidence created at: %v is too old; evidence can not be older than %v",
-			evidence.Time(),
-			ctx.BlockHeader().Time.Add(maxAgeDuration),
-		)
-	}
+	// Note that since we don't slash validators for double signing
+	// on a consumer chain, we don't need to check the age of the evidence
+
+	// TODO: check the age of the evidence once we integrate
+	// the slashing to HandleConsumerDoubleVoting
 
 	// H/R/S must be the same
 	if evidence.VoteA.Height != evidence.VoteB.Height ||

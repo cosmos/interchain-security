@@ -12,7 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
-func TestJailAndTombstoneValidator(t *testing.T) {
+func TestJailValidator(t *testing.T) {
 	providerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(7842334).ProviderConsAddress()
 	testCases := []struct {
 		name          string
@@ -86,9 +86,6 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 					mocks.MockSlashingKeeper.EXPECT().JailUntil(
 						ctx, providerConsAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime).
 						Times(1),
-					mocks.MockSlashingKeeper.EXPECT().Tombstone(
-						ctx, providerConsAddr.ToSdkConsAddr()).
-						Times(1),
 				}
 			},
 		},
@@ -113,9 +110,6 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 					mocks.MockSlashingKeeper.EXPECT().JailUntil(
 						ctx, providerConsAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime).
 						Times(1),
-					mocks.MockSlashingKeeper.EXPECT().Tombstone(
-						ctx, providerConsAddr.ToSdkConsAddr()).
-						Times(1),
 				}
 			},
 		},
@@ -129,7 +123,7 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 		gomock.InOrder(tc.expectedCalls(ctx, mocks, tc.provAddr)...)
 
 		// Execute method and assert expected mock calls
-		providerKeeper.JailAndTombstoneValidator(ctx, tc.provAddr)
+		providerKeeper.JailValidator(ctx, tc.provAddr)
 
 		ctrl.Finish()
 	}

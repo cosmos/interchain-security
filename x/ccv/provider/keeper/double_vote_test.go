@@ -30,9 +30,6 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 	blockID2 := testutil.MakeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
 
 	ctx = ctx.WithBlockTime(time.Now())
-	oldTime := ctx.BlockTime().
-		Add(-testutil.GetDefaultConsensusEvidenceParams().Evidence.MaxAgeDuration).
-		Add(-1 * time.Hour)
 
 	valPubkey1, err := tmencoding.PubKeyToProto(val1.PubKey)
 	require.NoError(t, err)
@@ -47,30 +44,6 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 		pubkey  tmprotocrypto.PublicKey
 		expPass bool
 	}{
-		{
-			"evidence is too old - shouldn't pass",
-			[]*tmtypes.Vote{
-				testutil.MakeAndSignVote(
-					blockID1,
-					ctx.BlockHeight(),
-					oldTime,
-					valSet,
-					signer1,
-					chainID,
-				),
-				testutil.MakeAndSignVote(
-					blockID2,
-					ctx.BlockHeight(),
-					oldTime,
-					valSet,
-					signer1,
-					chainID,
-				),
-			},
-			chainID,
-			valPubkey1,
-			false,
-		},
 		{
 			"evidence has votes with different block height - shouldn't pass",
 			[]*tmtypes.Vote{
@@ -288,8 +261,6 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 			true,
 		},
 	}
-
-	ctx = ctx.WithConsensusParams(testutil.GetDefaultConsensusEvidenceParams())
 
 	for _, tc := range testCases {
 		err = keeper.VerifyDoubleVotingEvidence(
