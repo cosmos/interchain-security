@@ -166,19 +166,6 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 		chainState.ProviderKeys = &providerKeys
 	}
 
-	if modelState.GlobalSlashQueueSize != nil {
-		globalQueueSize := tr.getGlobalSlashQueueSize()
-		chainState.GlobalSlashQueueSize = &globalQueueSize
-	}
-
-	if modelState.ConsumerChainQueueSizes != nil {
-		consumerChainQueueSizes := map[chainID]uint{}
-		for c := range *modelState.ConsumerChainQueueSizes {
-			consumerChainQueueSizes[c] = tr.getConsumerChainPacketQueueSize(c)
-		}
-		chainState.ConsumerChainQueueSizes = &consumerChainQueueSizes
-	}
-
 	if modelState.RegisteredConsumerRewardDenoms != nil {
 		registeredConsumerRewardDenoms := tr.getRegisteredConsumerRewardDenoms(chain)
 		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
@@ -657,9 +644,10 @@ func (tr TestRun) getProviderAddressFromConsumer(consumerChain chainID, validato
 	return addr
 }
 
-func (tr TestRun) getGlobalSlashQueueSize() uint {
+func (tr TestRun) getSlashMeter() int64 {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chainID("provi")].binaryName,
+	cmd := exec.Command("docker", "exec",
+		tr.containerConfig.instanceName, tr.chainConfigs[chainID("provi")].binaryName,
 
 		"query", "provider", "throttle-state",
 		`--node`, tr.getQueryNode(chainID("provi")),
@@ -670,26 +658,9 @@ func (tr TestRun) getGlobalSlashQueueSize() uint {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	packets := gjson.Get(string(bz), "packets").Array()
-	return uint(len(packets))
-}
-
-func (tr TestRun) getConsumerChainPacketQueueSize(consumerChain chainID) uint {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chainID("provi")].binaryName,
-
-		"query", "provider", "throttled-consumer-packet-data",
-		string(consumerChain),
-		`--node`, tr.getQueryNode(chainID("provi")),
-		`-o`, `json`,
-	)
-	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	size := gjson.Get(string(bz), "size").Uint()
-	return uint(size)
+	slashMeter := gjson.Get(string(bz), "slash_meter")
+	// might also be "slashMeter"
+	return slashMeter.Int()
 }
 
 func (tr TestRun) getRegisteredConsumerRewardDenoms(chain chainID) []string {

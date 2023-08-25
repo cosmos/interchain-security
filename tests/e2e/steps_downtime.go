@@ -278,7 +278,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				validator: validatorID("bob"),
 			},
 			state: State{
-				// slash packet queued on consumer, but powers not affected on either chain yet
+				// slash packet queued for bob on consumer, but powers not affected on either chain yet
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
@@ -312,11 +312,6 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   0, // bob is jailed
 						validatorID("carol"): 500,
 					},
-					// no provider throttling engaged yet
-					GlobalSlashQueueSize: uintPointer(0),
-					ConsumerChainQueueSizes: &map[chainID]uint{
-						chainID(consumerName): uint(0),
-					},
 				},
 				chainID(consumerName): ChainState{
 					// VSC packet applying jailing is not yet relayed to consumer
@@ -328,13 +323,13 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				},
 			},
 		},
+		// Invoke carol downtime slash on consumer
 		{
 			action: downtimeSlashAction{
 				chain:     chainID(consumerName),
 				validator: validatorID("carol"),
 			},
 			state: State{
-				// powers not affected on either chain yet
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
@@ -343,10 +338,10 @@ func stepsThrottledDowntime(consumerName string) []Step {
 					},
 				},
 				chainID(consumerName): ChainState{
-					// VSC packet applying jailing is not yet relayed to consumer
+
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   500,
+						validatorID("bob"):   500, // VSC packet applying bob jailing is not yet relayed to consumer
 						validatorID("carol"): 500,
 					},
 				},
@@ -364,27 +359,24 @@ func stepsThrottledDowntime(consumerName string) []Step {
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
 						validatorID("bob"):   0,
-						validatorID("carol"): 500, // not slashed due to throttling
-					},
-					GlobalSlashQueueSize: uintPointer(1), // carol's slash request is throttled
-					ConsumerChainQueueSizes: &map[chainID]uint{
-						chainID(consumerName): uint(1),
+						validatorID("carol"): 500, // slash packet for carol recv by provider, carol not slashed due to throttling
 					},
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   0,
+						validatorID("bob"):   0, // VSC packet applying bob jailing is also relayed and recv by consumer
 						validatorID("carol"): 500,
 					},
 				},
 			},
 		},
+		// TODO(Shawn): Improve this test to have the consumer retry it's downtime slash, and to assert queue size on consumer.
+		// See https://github.com/cosmos/interchain-security/issues/1103 and https://github.com/cosmos/interchain-security/issues/1233
 		{
-			action: slashThrottleDequeue{
-				chain:            chainID(consumerName),
-				currentQueueSize: 1,
-				nextQueueSize:    0,
+			action: slashMeterReplenishmentAction{
+				targetValue: 0, // We just want slash meter to be non-negative
+
 				// Slash meter replenish fraction is set to 10%, replenish period is 20 seconds, see config.go
 				// Meter is initially at 10%, decremented to -23% from bob being jailed. It'll then take three replenishments
 				// for meter to become positive again. 3*20 = 60 seconds + buffer = 80 seconds
@@ -395,11 +387,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
 						validatorID("bob"):   0,
-						validatorID("carol"): 0, // Carol is jailed upon packet being handled on provider
-					},
-					GlobalSlashQueueSize: uintPointer(0), // slash packets dequeued
-					ConsumerChainQueueSizes: &map[chainID]uint{
-						chainID(consumerName): 0,
+						validatorID("carol"): 500, // Carol still not slashed, packet must be retried
 					},
 				},
 				chainID(consumerName): ChainState{
@@ -408,37 +396,6 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("alice"): 511,
 						validatorID("bob"):   0,
 						validatorID("carol"): 500,
-					},
-				},
-			},
-		},
-		// A block is incremented each action, hence why VSC is committed on provider,
-		// and can now be relayed as packet to consumer
-		{
-			action: relayPacketsAction{
-				chainA:  chainID("provi"),
-				chainB:  chainID(consumerName),
-				port:    "provider",
-				channel: 0,
-			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   0,
-						validatorID("carol"): 0,
-					},
-					GlobalSlashQueueSize: uintPointer(0),
-					ConsumerChainQueueSizes: &map[chainID]uint{
-						chainID(consumerName): 0,
-					},
-				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						// throttled update gets to consumer
-						validatorID("bob"):   0,
-						validatorID("carol"): 0,
 					},
 				},
 			},

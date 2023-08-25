@@ -1935,46 +1935,41 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	tr.waitBlocks(chainID("provi"), 2, 30*time.Second)
 }
 
-// slashThrottleDequeue polls slash queue sizes until nextQueueSize is achieved
-type slashThrottleDequeue struct {
-	chain            chainID
-	currentQueueSize int
-	nextQueueSize    int
+// slashMeterReplenishmentAction polls the slash meter on provider until value is achieved
+type slashMeterReplenishmentAction struct {
+	targetValue int64
 	// panic if timeout is exceeded
 	timeout time.Duration
 }
 
-func (tr TestRun) waitForSlashThrottleDequeue(
-	action slashThrottleDequeue,
+func (tr TestRun) waitForSlashMeterReplenishment(
+	action slashMeterReplenishmentAction,
 	verbose bool,
 ) {
 	timeout := time.Now().Add(action.timeout)
-	initialGlobalQueueSize := int(tr.getGlobalSlashQueueSize())
+	initialSlashMeter := tr.getSlashMeter()
 
-	if initialGlobalQueueSize != action.currentQueueSize {
-		panic(fmt.Sprintf("wrong initial queue size: %d - expected global queue: %d\n", initialGlobalQueueSize, action.currentQueueSize))
+	if initialSlashMeter >= 0 {
+		panic(fmt.Sprintf("No need to wait for slash meter replenishment, current value: %d", initialSlashMeter))
 	}
+
 	for {
-		globalQueueSize := int(tr.getGlobalSlashQueueSize())
-		chainQueueSize := int(tr.getConsumerChainPacketQueueSize(action.chain))
+		slashMeter := tr.getSlashMeter()
 		if verbose {
-			fmt.Printf("waiting for packed queue size to reach: %d - current: %d\n", action.nextQueueSize, globalQueueSize)
+			fmt.Printf("waiting for slash meter to be replenished, current value: %d\n", slashMeter)
 		}
 
-		// check if global queue size is equal to chain queue size
-		if globalQueueSize == chainQueueSize && globalQueueSize == action.nextQueueSize { //nolint:gocritic // this is the comparison that we want here.
+		// check if meter has reached target value
+		if slashMeter >= action.targetValue {
 			break
 		}
 
 		if time.Now().After(timeout) {
-			panic(fmt.Sprintf("\n\n\nwaitForSlashThrottleDequeuemethod has timed out after: %s\n\n", action.timeout))
+			panic(fmt.Sprintf("\n\nwaitForSlashMeterReplenishment has timed out after: %s\n\n", action.timeout))
 		}
 
 		time.Sleep(500 * time.Millisecond)
 	}
-	// wair for 2 blocks to be created
-	// allowing the jailing to be incorporated into voting power
-	tr.waitBlocks(action.chain, 2, time.Minute)
 }
 
 func uintPointer(i uint) *uint {
