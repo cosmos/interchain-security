@@ -112,6 +112,7 @@ import (
 	ccvdistr "github.com/cosmos/interchain-security/v3/x/ccv/democracy/distribution"
 	ccvgov "github.com/cosmos/interchain-security/v3/x/ccv/democracy/governance"
 	ccvstaking "github.com/cosmos/interchain-security/v3/x/ccv/democracy/staking"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 const (
@@ -712,7 +713,7 @@ func New(
 				return fromVM, fmt.Errorf("failed to unmarshal genesis state: %w", err)
 			}
 
-			consumerGenesis := consumertypes.GenesisState{}
+			consumerGenesis := ccvtypes.GenesisState{}
 			appCodec.MustUnmarshalJSON(appState[consumertypes.ModuleName], &consumerGenesis)
 
 			consumerGenesis.PreCCV = true

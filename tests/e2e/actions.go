@@ -17,9 +17,9 @@ import (
 
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/client"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 type SendTokensAction struct {
@@ -235,7 +235,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	verbose bool,
 ) {
 	spawnTime := tr.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
-	params := consumertypes.DefaultParams()
+	params := ccvtypes.DefaultParams()
 	prop := client.ConsumerAdditionProposalJSON{
 		Title:                             "Propose the addition of a new chain",
 		Summary:                           "Gonna be a great chain",
