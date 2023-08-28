@@ -5,7 +5,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -33,36 +32,22 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 		return err
 	}
 
+	provAddrs := make([]types.ProviderConsAddress, len(byzantineValidators))
+
 	// jail and tombstone the Byzantine validators
 	for _, v := range byzantineValidators {
-		// convert consumer consensus address
-		consumerAddr := types.NewConsumerConsAddress(sdk.ConsAddress(v.Address.Bytes()))
-		providerAddr := k.GetProviderAddrFromConsumerAddr(ctx, misbehaviour.Header1.Header.ChainID, consumerAddr)
-		val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
-
-		if !ok || val.IsUnbonded() {
-			logger.Error("validator not found or is unbonded", providerAddr.String())
-			continue
-		}
-
-		// jail validator if not already
-		if !val.IsJailed() {
-			k.stakingKeeper.Jail(ctx, providerAddr.ToSdkConsAddr())
-		}
-
-		// tombstone validator if not already
-		if !k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
-			k.slashingKeeper.Tombstone(ctx, providerAddr.ToSdkConsAddr())
-			k.Logger(ctx).Info("validator tombstoned", "provider cons addr", providerAddr.String())
-		}
-
-		// update jail time to end after double sign jail duration
-		k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
+		providerAddr := k.GetProviderAddrFromConsumerAddr(
+			ctx,
+			misbehaviour.Header1.Header.ChainID,
+			types.NewConsumerConsAddress(sdk.ConsAddress(v.Address.Bytes())),
+		)
+		k.JailValidator(ctx, providerAddr)
+		provAddrs = append(provAddrs, providerAddr)
 	}
 
 	logger.Info(
 		"confirmed equivocation light client attack",
-		"byzantine validators", byzantineValidators,
+		"byzantine validators", provAddrs,
 	)
 
 	return nil

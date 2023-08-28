@@ -25,4 +25,5 @@ var (
 	ErrClientNotFound           = errorsmod.Register(ModuleName, 18, "client not found")
 	ErrDuplicateConsumerChain   = errorsmod.Register(ModuleName, 19, "consumer chain already exists")
 	ErrConsumerChainNotFound    = errorsmod.Register(ModuleName, 20, "consumer chain not found")
+	ErrInvalidEvidence          = errorsmod.Register(ModuleName, 21, "invalid consumer double voting evidence")
 )

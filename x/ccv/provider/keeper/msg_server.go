@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 type msgServer struct {
@@ -145,4 +146,28 @@ func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.
 	})
 
 	return &types.MsgSubmitConsumerMisbehaviourResponse{}, nil
+}
+
+func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.MsgSubmitConsumerDoubleVoting) (*types.MsgSubmitConsumerDoubleVotingResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	evidence, err := tmtypes.DuplicateVoteEvidenceFromProto(msg.DuplicateVoteEvidence)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := k.Keeper.HandleConsumerDoubleVoting(ctx, evidence, msg.InfractionBlockHeader.Header.ChainID); err != nil {
+		return &types.MsgSubmitConsumerDoubleVotingResponse{}, err
+	}
+
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			ccvtypes.EventTypeSubmitConsumerMisbehaviour,
+			sdk.NewAttribute(ccvtypes.AttributeConsumerDoubleVoting, msg.DuplicateVoteEvidence.String()),
+			sdk.NewAttribute(ccvtypes.AttributeChainID, msg.InfractionBlockHeader.Header.ChainID),
+			sdk.NewAttribute(ccvtypes.AttributeSubmitterAddress, msg.Submitter),
+		),
+	})
+
+	return &types.MsgSubmitConsumerDoubleVotingResponse{}, nil
 }
