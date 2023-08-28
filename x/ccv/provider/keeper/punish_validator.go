@@ -6,10 +6,10 @@ import (
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 )
 
-// JailValidator jails the validator for the given validator consensus address
-// Note that the tombstoning is temporarily removed until we integrate the slashing
-// for consumer double signing and light client attacks,
-// see comments https://github.com/cosmos/interchain-security/pull/1232#issuecomment-1693127641.
+// JailValidator jails the validator with the given provider consensus address
+// Note that the tombstoning is temporarily removed until we slash validator
+// for double signing on a consumer chain, see comment
+// https://github.com/cosmos/interchain-security/pull/1232#issuecomment-1693127641.
 func (k Keeper) JailValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) {
 	logger := k.Logger(ctx)
 
@@ -20,7 +20,7 @@ func (k Keeper) JailValidator(ctx sdk.Context, providerAddr types.ProviderConsAd
 		return
 	}
 
-	// check that validator isn't tombstoned
+	// check that the validator isn't tombstoned
 	if k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
 		logger.Info("validator is already tombstoned", "provider cons addr", providerAddr.String())
 		return

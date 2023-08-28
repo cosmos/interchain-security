@@ -12,6 +12,8 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
+// TestJailValidator tests that the jailing of a validator is only executed
+// under the conditions that the validator is neither unbonded, already jailed, nor tombstoned.
 func TestJailValidator(t *testing.T) {
 	providerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(7842334).ProviderConsAddress()
 	testCases := []struct {

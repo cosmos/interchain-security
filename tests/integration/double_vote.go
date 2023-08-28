@@ -28,6 +28,8 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	blockID1 := testutil.MakeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
 	blockID2 := testutil.MakeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
 
+	// Note that votes are signed along with the chain ID
+	// see VoteSignBytes in https://github.com/cometbft/cometbft/blob/main/types/vote.go#L139
 	vote1 := testutil.MakeAndSignVote(
 		blockID1,
 		s.consumerCtx().BlockHeight(),
@@ -80,7 +82,8 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		{
 			// In order to create an evidence for a consumer chain,
 			// we create two votes that only differ by their Block IDs and
-			// signed them using the same validator and chain ID of the consumer chain
+			// signed them using the same validator private key and chain ID
+			// of the consumer chain
 			"valid double voting evidence - should pass",
 			&tmtypes.DuplicateVoteEvidence{
 				VoteA:            vote1,

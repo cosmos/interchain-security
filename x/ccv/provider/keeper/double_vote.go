@@ -46,18 +46,18 @@ func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.Du
 }
 
 // VerifyDoubleVotingEvidence verifies a double voting evidence
-// for a given chain id and validator public key
+// for a given chain id and a validator public key
 func (k Keeper) VerifyDoubleVotingEvidence(
 	ctx sdk.Context,
 	evidence tmtypes.DuplicateVoteEvidence,
 	chainID string,
 	pubkey tmprotocrypto.PublicKey,
 ) error {
-	// Note that since we don't slash validators for double signing
-	// on a consumer chain, we don't need to check the age of the evidence
+	// Note that since we're only jailing validators for double voting on a consumer chain,
+	// the age of the evidence is irrelevant and therefore isn't checked.
 
-	// TODO: check the age of the evidence once we integrate
-	// the slashing to HandleConsumerDoubleVoting
+	// TODO: check the age of the evidence once we slash
+	// validators for double voting on a consumer chain
 
 	// H/R/S must be the same
 	if evidence.VoteA.Height != evidence.VoteB.Height ||
