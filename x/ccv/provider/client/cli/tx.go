@@ -176,7 +176,7 @@ func NewSubmitConsumerDoubleVotingCmd() *cobra.Command {
 				return err
 			}
 
-			msg, err := types.NewMsgSubmitConsumerDoubleVoting(submitter, ev, nil)
+			msg, err := types.NewMsgSubmitConsumerDoubleVoting(submitter, ev, &header)
 			if err != nil {
 				return err
 			}
