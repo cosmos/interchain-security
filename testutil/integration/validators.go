@@ -3,16 +3,19 @@ package integration
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
+	"github.com/cosmos/cosmos-sdk/testutil/mock"
+
 	"github.com/cometbft/cometbft/abci/types"
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	tmtypes "github.com/cometbft/cometbft/types"
-	"github.com/cosmos/cosmos-sdk/testutil/mock"
-	"github.com/stretchr/testify/require"
 )
 
 func CreateValidators(t *testing.T, n int) (
 	*tmtypes.ValidatorSet, []types.ValidatorUpdate, map[string]tmtypes.PrivValidator,
 ) {
+	t.Helper()
 	// generate validators private/public key
 	var (
 		validators       []*tmtypes.Validator
@@ -34,6 +37,7 @@ func CreateValidators(t *testing.T, n int) (
 }
 
 func ToValidatorUpdates(t *testing.T, valSet *tmtypes.ValidatorSet) (valUpdates []types.ValidatorUpdate) {
+	t.Helper()
 	for _, val := range valSet.Validators {
 		protoPubKey, err := tmencoding.PubKeyToProto(val.PubKey)
 		require.NoError(t, err)
