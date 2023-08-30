@@ -57,6 +57,12 @@ var (
 that involve starting or stopping nodes for the same chain outside of the chain setup or teardown.
 This is suited for CometMock+Gorelayer testing`,
 		},
+		"light-client-attack": {
+			testRun: DefaultTestRun(), steps: lightClientAttackSteps,
+			description: `This is like the short happy path, but uses light client attacks instead of double sign slashing.
+This is suited for CometMock+Gorelayer testing, but currently does not work with CometBFT,
+since causing light client attacks is not implemented.`,
+		},
 		"happy-path":       {testRun: DefaultTestRun(), steps: happyPathSteps, description: "happy path tests"},
 		"changeover":       {testRun: ChangeoverTestRun(), steps: changeoverSteps, description: "changeover tests"},
 		"democracy-reward": {testRun: DemocracyTestRun(true), steps: democracySteps, description: "democracy tests allowing rewards"},
@@ -238,6 +244,12 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.unjailValidator(action, verbose)
 	case doublesignSlashAction:
 		tr.invokeDoublesignSlash(action, verbose)
+	case lightClientAmnesiaAttackAction:
+		tr.lightClientAmnesiaAttack(action, verbose)
+	case lightClientEquivocationAttackAction:
+		tr.lightClientEquivocationAttack(action, verbose)
+	case lightClientLunaticAttackAction:
+		tr.lightClientLunaticAttack(action, verbose)
 	case registerRepresentativeAction:
 		tr.registerRepresentative(action, verbose)
 	case assignConsumerPubKeyAction:

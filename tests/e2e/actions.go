@@ -1826,6 +1826,73 @@ func (tr TestRun) invokeDoublesignSlash(
 	}
 }
 
+// Cause light client attack evidence for a certain validator to appear on the given chain.
+// The evidence will look like the validator equivocated to a light client.
+type lightClientEquivocationAttackAction struct {
+	validator validatorID
+	chain     chainID
+}
+
+func (tr TestRun) lightClientEquivocationAttack(
+	action lightClientEquivocationAttackAction,
+	verbose bool,
+) {
+	tr.lightClientAttack(action.validator, action.chain, LightClientEquivocationAttack)
+}
+
+// Cause light client attack evidence for a certain validator to appear on the given chain.
+// The evidence will look like the validator tried to perform an amnesia attack.
+type lightClientAmnesiaAttackAction struct {
+	validator validatorID
+	chain     chainID
+}
+
+func (tr TestRun) lightClientAmnesiaAttack(
+	action lightClientAmnesiaAttackAction,
+	verbose bool,
+) {
+	tr.lightClientAttack(action.validator, action.chain, LightClientAmnesiaAttack)
+}
+
+type lightClientLunaticAttackAction struct {
+	validator validatorID
+	chain     chainID
+}
+
+func (tr TestRun) lightClientLunaticAttack(
+	action lightClientLunaticAttackAction,
+	verbose bool,
+) {
+	tr.lightClientAttack(action.validator, action.chain, LightClientLunaticAttack)
+}
+
+type LightClientAttackType string
+
+const (
+	LightClientEquivocationAttack LightClientAttackType = "Equivocation"
+	LightClientAmnesiaAttack      LightClientAttackType = "Amnesia"
+	LightClientLunaticAttack      LightClientAttackType = "Lunatic"
+)
+
+func (tr TestRun) lightClientAttack(
+	validator validatorID,
+	chain chainID,
+	attackType LightClientAttackType,
+) {
+	if !tr.useCometmock {
+		log.Fatal("light client attack is only supported with CometMock")
+	}
+	validatorAddress := tr.GetValidatorAddress(chain, validator)
+
+	method := "cause_light_client_attack"
+	params := fmt.Sprintf(`{"private_key_address":"%s", "misbehaviour_type": "%s"}`, validatorAddress, attackType)
+
+	address := tr.getQueryNodeRPCAddress(chain)
+
+	tr.curlJsonRPCRequest(method, params, address)
+	tr.waitBlocks(chain, 1, 10*time.Second)
+}
+
 type assignConsumerPubKeyAction struct {
 	chain          chainID
 	validator      validatorID
