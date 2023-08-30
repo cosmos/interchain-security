@@ -189,4 +189,4 @@ require (
 // following versions might cause unexpected behavior
 replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 
-replace github.com/cosmos/ibc-go/v7 => github.com/allinbits/ibc-go/v7 v7.0.0-20230804095822-27dc704b7dec
+replace github.com/cosmos/ibc-go/v7 => github.com/cosmos/ibc-go/v7 v7.2.1-0.20230830084256-668fa1d67ef8
