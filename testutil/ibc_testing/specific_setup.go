@@ -21,6 +21,7 @@ import (
 	appConsumerDemocracy "github.com/cosmos/interchain-security/v3/app/consumer-democracy"
 	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 var (
@@ -50,7 +51,7 @@ func ConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter {
 			},
 		)
 		// Feed consumer genesis with provider validators
-		var consumerGenesis consumertypes.GenesisState
+		var consumerGenesis ccvtypes.GenesisState
 		encoding.Codec.MustUnmarshalJSON(genesisState[consumertypes.ModuleName], &consumerGenesis)
 		consumerGenesis.InitialValSet = initValPowers
 		consumerGenesis.Params.Enabled = true
@@ -68,7 +69,7 @@ func DemocracyConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter
 		genesisState := appConsumerDemocracy.NewDefaultGenesisState(encoding.Codec)
 		// Feed consumer genesis with provider validators
 		// TODO See if useful for democracy
-		var consumerGenesis consumertypes.GenesisState
+		var consumerGenesis ccvtypes.GenesisState
 		encoding.Codec.MustUnmarshalJSON(genesisState[consumertypes.ModuleName], &consumerGenesis)
 		consumerGenesis.InitialValSet = initValPowers
 		consumerGenesis.Params.Enabled = true
