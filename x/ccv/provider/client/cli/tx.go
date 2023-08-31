@@ -153,7 +153,7 @@ Examples:
 
 func NewSubmitConsumerDoubleVotingCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "submit consumer-double-voting [evidence] [infraction_header]",
+		Use:   "submit-consumer-double-voting [evidence] [infraction_header]",
 		Short: "submit a double voting evidence for a consumer chain",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -176,7 +176,7 @@ func NewSubmitConsumerDoubleVotingCmd() *cobra.Command {
 				return err
 			}
 
-			msg, err := types.NewMsgSubmitConsumerDoubleVoting(submitter, ev, nil)
+			msg, err := types.NewMsgSubmitConsumerDoubleVoting(submitter, ev, &header)
 			if err != nil {
 				return err
 			}
