@@ -5,22 +5,17 @@ import (
 	"fmt"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer chain and,
 // if successful, executes the jailing of the malicious validator.
 func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.DuplicateVoteEvidence, chainID string) error {
-
-	k.Logger(ctx).Info("received double voting evidence", "chain: ", chainID, "evidence: ", evidence, "current block heigt",
-		ctx.BlockHeight())
-
 	// get the validator's consensus address on the provider
 	providerAddr := k.GetProviderAddrFromConsumerAddr(
 		ctx,
@@ -28,14 +23,14 @@ func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.Du
 		types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress.Bytes())),
 	)
 
-	// get validator pubkey used on the consumer chain
-	pubkey, err := k.getValidatorPubkeyOnConsumer(ctx, chainID, providerAddr)
-	if err != nil {
-		return err
+	// get the consumer chain public key assigned to the validator
+	consuPubkey, ok := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
+	if !ok {
+		return fmt.Errorf("cannot find public key for validator %s and consumer chain %s", providerAddr.String(), chainID)
 	}
 
 	// verifies the double voting evidence using the consumer chain public key
-	if err := k.VerifyDoubleVotingEvidence(ctx, *evidence, chainID, pubkey); err != nil {
+	if err := k.VerifyDoubleVotingEvidence(ctx, *evidence, chainID, consuPubkey); err != nil {
 		return err
 	}
 
@@ -44,7 +39,7 @@ func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.Du
 
 	k.Logger(ctx).Info(
 		"confirmed equivocation",
-		"byzantine validator address", providerAddr.String(),
+		"byzantine validator address", providerAddr,
 	)
 
 	return nil
@@ -56,12 +51,8 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	ctx sdk.Context,
 	evidence tmtypes.DuplicateVoteEvidence,
 	chainID string,
-	pubkey cryptotypes.PubKey,
+	pubkey tmprotocrypto.PublicKey,
 ) error {
-	if pubkey == nil {
-		return fmt.Errorf("validator public key cannot be empty")
-	}
-
 	// Note that since we're only jailing validators for double voting on a consumer chain,
 	// the age of the evidence is irrelevant and therefore isn't checked.
 
@@ -98,44 +89,21 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 		)
 	}
 
+	pk, err := cryptocodec.FromTmProtoPublicKey(pubkey)
+	if err != nil {
+		return err
+	}
+
 	va := evidence.VoteA.ToProto()
 	vb := evidence.VoteB.ToProto()
 
 	// signatures must be valid
-	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(chainID, va), evidence.VoteA.Signature) {
+	if !pk.VerifySignature(tmtypes.VoteSignBytes(chainID, va), evidence.VoteA.Signature) {
 		return fmt.Errorf("verifying VoteA: %w", tmtypes.ErrVoteInvalidSignature)
 	}
-	if !pubkey.VerifySignature(tmtypes.VoteSignBytes(chainID, vb), evidence.VoteB.Signature) {
+	if !pk.VerifySignature(tmtypes.VoteSignBytes(chainID, vb), evidence.VoteB.Signature) {
 		return fmt.Errorf("verifying VoteB: %w", tmtypes.ErrVoteInvalidSignature)
 	}
 
 	return nil
-}
-
-// getValidatorPubkeyOnConsumer returns the public key a validator used on a given consumer chain.
-// It can either be an assigned consumer public key or the primary validator public key.
-func (k Keeper) getValidatorPubkeyOnConsumer(
-	ctx sdk.Context,
-	chainID string,
-	providerAddr types.ProviderConsAddress,
-) (pubkey cryptotypes.PubKey, err error) {
-	tmPK, ok := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
-	if ok {
-		pubkey, err = cryptocodec.FromTmProtoPublicKey(tmPK)
-		if err != nil {
-			return
-		}
-	} else {
-		val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
-		if !ok {
-			err = fmt.Errorf("cannot find validator %s", providerAddr.String())
-			return
-		}
-		pubkey, err = val.ConsPubKey()
-		if err != nil {
-			return
-		}
-	}
-
-	return
 }
