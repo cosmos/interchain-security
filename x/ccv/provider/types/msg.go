@@ -210,8 +210,16 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 		return fmt.Errorf("double voting evidence cannot be nil")
 	}
 
-	if msg.InfractionBlockHeader.Header == nil {
-		return fmt.Errorf("infraction header cannot be nil")
+	if msg.InfractionBlockHeader == nil {
+		return fmt.Errorf("infraction block header cannot be nil")
+	}
+
+	if msg.InfractionBlockHeader.SignedHeader == nil {
+		return fmt.Errorf("signed header in infraction block header cannot be nil")
+	}
+
+	if msg.InfractionBlockHeader.SignedHeader.Header.ChainID == "" {
+		return fmt.Errorf("chain ID of signed header in infraction block header cannot be empty")
 	}
 
 	return nil
