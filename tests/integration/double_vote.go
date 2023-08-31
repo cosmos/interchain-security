@@ -171,5 +171,3 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		})
 	}
 }
-
-// use new context

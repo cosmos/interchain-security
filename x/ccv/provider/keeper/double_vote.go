@@ -28,23 +28,10 @@ func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.Du
 		types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress.Bytes())),
 	)
 
-	// get the consumer chain public key assigned to the validator
-	pubkey, err := k.getValidatorConsumerPubKey(ctx, chainID, providerAddr)
+	// get validator pubkey used on the consumer chain
+	pubkey, err := k.getValidatorPubkeyOnConsumer(ctx, chainID, providerAddr)
 	if err != nil {
-		// val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
-		// if !ok {
-		// 	return fmt.Errorf("cannot find validator %s", providerAddr.String())
-		// }
-		// pk, err := val.ConsPubKey()
-		// if err != nil {
-		// 	return fmt.Errorf("cannot find public key for validator %s", &providerAddr)
-		// }
-
-		// pubkey, err = cryptocodec.ToTmProtoPublicKey(pk)
-		// if err != nil {
-		// 	return fmt.Errorf("cannot convert public key for validator %s", &providerAddr)
-		// }
-		return fmt.Errorf("cannot find public key for validator %s and consumer chain %s", providerAddr.String(), chainID)
+		return err
 	}
 
 	// verifies the double voting evidence using the consumer chain public key
@@ -57,7 +44,7 @@ func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.Du
 
 	k.Logger(ctx).Info(
 		"confirmed equivocation",
-		"byzantine validator address", providerAddr,
+		"byzantine validator address", providerAddr.String(),
 	)
 
 	return nil
@@ -71,6 +58,10 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	chainID string,
 	pubkey cryptotypes.PubKey,
 ) error {
+	if pubkey == nil {
+		return fmt.Errorf("validator public key cannot be empty")
+	}
+
 	// Note that since we're only jailing validators for double voting on a consumer chain,
 	// the age of the evidence is irrelevant and therefore isn't checked.
 
@@ -121,14 +112,13 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	return nil
 }
 
-// getValidatorConsumerPubKey returns the public key used by the given validator
-// on a consumer chain
-func (k Keeper) getValidatorConsumerPubKey(
+// getValidatorPubkeyOnConsumer returns the public key a validator used on a given consumer chain.
+// It can either be an assigned consumer public key or the primary validator public key.
+func (k Keeper) getValidatorPubkeyOnConsumer(
 	ctx sdk.Context,
 	chainID string,
 	providerAddr types.ProviderConsAddress,
 ) (pubkey cryptotypes.PubKey, err error) {
-	// get the consumer chain public key assigned to the validator
 	tmPK, ok := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 	if ok {
 		pubkey, err = cryptocodec.FromTmProtoPublicKey(tmPK)
