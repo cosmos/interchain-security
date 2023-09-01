@@ -218,8 +218,8 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 		return fmt.Errorf("signed header in infraction block header cannot be nil")
 	}
 
-	if msg.InfractionBlockHeader.SignedHeader.Header.ChainID == "" {
-		return fmt.Errorf("chain ID of signed header in infraction block header cannot be empty")
+	if msg.InfractionBlockHeader.SignedHeader.Header == nil {
+		return fmt.Errorf("invalid signed header in infraction block header, 'SignedHeader.Header' is nil")
 	}
 
 	return nil

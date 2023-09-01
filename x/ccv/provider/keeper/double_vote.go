@@ -17,9 +17,6 @@ import (
 // HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer chain and,
 // if successful, executes the jailing of the malicious validator.
 func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.DuplicateVoteEvidence, chainID string) error {
-	k.Logger(ctx).Info("received double voting evidence", "chain: ", chainID, "evidence: ", evidence, "current block heigt",
-		ctx.BlockHeight())
-
 	// get the validator's consensus address on the provider
 	providerAddr := k.GetProviderAddrFromConsumerAddr(
 		ctx,
@@ -112,7 +109,8 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 }
 
 // getValidatorPubkeyOnConsumer returns the public key a validator used on a given consumer chain.
-// It can either be an assigned consumer public key or the primary validator public key.
+// Note that it can either be an assigned public key or the same public key the validator uses
+// on the provider chain.
 func (k Keeper) getValidatorPubkeyOnConsumer(
 	ctx sdk.Context,
 	chainID string,

@@ -25,10 +25,10 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	s.Require().NoError(err)
 	consuSigner := s.consumerChain.Signers[consuVal.Address.String()]
 
-	prvovValSet, err := tmtypes.ValidatorSetFromProto(s.providerChain.LastHeader.ValidatorSet)
+	provValSet, err := tmtypes.ValidatorSetFromProto(s.providerChain.LastHeader.ValidatorSet)
 	s.Require().NoError(err)
-	prvovVal := prvovValSet.Validators[0]
-	prvovSigner := s.providerChain.Signers[prvovVal.Address.String()]
+	provVal := provValSet.Validators[0]
+	provSigner := s.providerChain.Signers[provVal.Address.String()]
 
 	blockID1 := testutil.MakeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
 	blockID2 := testutil.MakeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
@@ -60,8 +60,8 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		blockID1,
 		s.consumerCtx().BlockHeight(),
 		s.consumerCtx().BlockTime(),
-		prvovValSet,
-		prvovSigner,
+		provValSet,
+		provSigner,
 		s.consumerChain.ChainID,
 	)
 
@@ -69,8 +69,8 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		blockID2,
 		s.consumerCtx().BlockHeight(),
 		s.consumerCtx().BlockTime(),
-		prvovValSet,
-		prvovSigner,
+		provValSet,
+		provSigner,
 		s.consumerChain.ChainID,
 	)
 
@@ -122,8 +122,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			true,
 		},
 		{
-			// create double voting evidence as if we didn't assign
-			// a new key to the validator on the consumer chain
+			// create a double voting evidence using the provider validator key
 			"valid double voting evidence 2 - should pass",
 			&tmtypes.DuplicateVoteEvidence{
 				VoteA:            provVote,
@@ -137,7 +136,6 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		},
 	}
 
-	// consumer and provider address of the validator
 	consuAddr := types.NewConsumerConsAddress(sdk.ConsAddress(consuVal.Address.Bytes()))
 	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
 
@@ -146,7 +144,9 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			// reset context for each run
 			provCtx := s.providerCtx()
 
-			// remove key assigned if the validator provider key is used
+			// if the evidence was built using the validator provider address and key,
+			// we remove the consumer key assigned to the validator otherwise
+			// HandleConsumerDoubleVoting uses the consumer key to verify the signature
 			if tc.ev.VoteA.ValidatorAddress.String() != consuVal.Address.String() {
 				s.providerApp.GetProviderKeeper().DeleteKeyAssignments(provCtx, s.consumerChain.ChainID)
 			}
