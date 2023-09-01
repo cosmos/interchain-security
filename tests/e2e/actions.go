@@ -1695,8 +1695,6 @@ func (tr TestRun) detectDoubleSigningEvidence(
 ) {
 	chainConfig := tr.chainConfigs[action.chain]
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	fmt.Println("docker", "exec", "-d", tr.containerConfig.instanceName,
-		"hermes", "evidence", "--chain", string(chainConfig.chainId))
 	bz, err := exec.Command("docker", "exec", "-d", tr.containerConfig.instanceName,
 		"hermes", "evidence", "--chain", string(chainConfig.chainId)).CombinedOutput()
 	if err != nil {

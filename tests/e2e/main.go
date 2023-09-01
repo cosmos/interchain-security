@@ -63,7 +63,9 @@ func main() {
 		{DemocracyTestRun(false), rewardDenomConsumerSteps},
 		{SlashThrottleTestRun(), slashThrottleSteps},
 		{ConsumerMisbehaviourTestRun(), consumerMisbehaviourSteps},
+		{DefaultTestRun(), consumerDoubleSignSteps},
 	}
+
 	if includeMultiConsumer != nil && *includeMultiConsumer {
 		testRuns = append(testRuns, testRunWithSteps{MultiConsumerTestRun(), multipleConsumers})
 	}
@@ -102,7 +104,7 @@ func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag 
 	tr.validateStringLiterals()
 	tr.startDocker()
 	tr.executeSteps(steps)
-	// tr.teardownDocker()
+	tr.teardownDocker()
 }
 
 type testRunWithSteps struct {
