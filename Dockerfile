@@ -28,7 +28,7 @@ RUN go mod tidy
 RUN make install
 
 # Get Hermes build
-FROM otacrew/hermes-ics:latest AS hermes-builder
+FROM otacrew/hermes-ics:double-voting AS hermes-builder
 
 # Get CometMock
 FROM informalofftermatt/cometmock:latest as cometmock-builder
@@ -36,7 +36,7 @@ FROM informalofftermatt/cometmock:latest as cometmock-builder
 # Get GoRelayer
 FROM informalofftermatt/gorelayer:nogas AS gorelayer-builder
 
-FROM --platform=linux/amd64 fedora:36
+FROM --platform=linux/arm64 fedora:36
 RUN dnf update -y
 RUN dnf install -y which iproute iputils procps-ng vim-minimal tmux net-tools htop jq
 USER root

@@ -718,7 +718,7 @@ rpc_addr = "%s"
 rpc_timeout = "10s"
 store_prefix = "ibc"
 trusting_period = "14days"
-websocket_addr = "%s"
+event_source = { mode = "push", url = "%s", batch_delay = "50ms" }
 ccv_consumer_chain = %v
 
 [chains.gas_price]
@@ -1676,6 +1676,29 @@ func (tr TestRun) invokeDoublesignSlash(
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/cause-doublesign.sh", chainConfig.binaryName, string(action.validator),
 		string(chainConfig.chainId), chainConfig.ipPrefix).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+	tr.waitBlocks("provi", 10, 2*time.Minute)
+}
+
+// Run an instance of the Hermes relayer in the "evidence" mode
+// to detect and report the double signing evidences committed on the consumer chain
+// to the provider chain
+type detectDoubleSigningEvidenceAction struct {
+	chain chainID
+}
+
+func (tr TestRun) detectDoubleSigningEvidence(
+	action detectDoubleSigningEvidenceAction,
+	verbose bool,
+) {
+	chainConfig := tr.chainConfigs[action.chain]
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	fmt.Println("docker", "exec", "-d", tr.containerConfig.instanceName,
+		"hermes", "evidence", "--chain", string(chainConfig.chainId))
+	bz, err := exec.Command("docker", "exec", "-d", tr.containerConfig.instanceName,
+		"hermes", "evidence", "--chain", string(chainConfig.chainId)).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
