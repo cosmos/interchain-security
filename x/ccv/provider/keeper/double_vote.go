@@ -17,7 +17,6 @@ import (
 // HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer chain and,
 // if successful, executes the jailing of the malicious validator.
 func (k Keeper) HandleConsumerDoubleVoting(ctx sdk.Context, evidence *tmtypes.DuplicateVoteEvidence, chainID string) error {
-
 	k.Logger(ctx).Info("received double voting evidence", "chain: ", chainID, "evidence: ", evidence, "current block heigt",
 		ctx.BlockHeight())
 
