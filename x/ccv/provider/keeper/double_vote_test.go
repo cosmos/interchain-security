@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	testutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	"github.com/stretchr/testify/require"
-	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -31,17 +31,17 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 
 	ctx = ctx.WithBlockTime(time.Now())
 
-	valPubkey1, err := tmencoding.PubKeyToProto(val1.PubKey)
+	valPubkey1, err := cryptocodec.FromTmPubKeyInterface(val1.PubKey)
 	require.NoError(t, err)
 
-	valPubkey2, err := tmencoding.PubKeyToProto(val2.PubKey)
+	valPubkey2, err := cryptocodec.FromTmPubKeyInterface(val2.PubKey)
 	require.NoError(t, err)
 
 	testCases := []struct {
 		name    string
 		votes   []*tmtypes.Vote
 		chainID string
-		pubkey  tmprotocrypto.PublicKey
+		pubkey  cryptotypes.PubKey
 		expPass bool
 	}{
 		{
@@ -209,7 +209,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 				),
 			},
 			chainID,
-			tmprotocrypto.PublicKey{},
+			nil,
 			false,
 		},
 		{

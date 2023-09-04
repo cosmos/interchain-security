@@ -19,32 +19,58 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		s.setDefaultValSigningInfo(*v)
 	}
 
-	valSet, err := tmtypes.ValidatorSetFromProto(s.consumerChain.LastHeader.ValidatorSet)
+	consuValSet, err := tmtypes.ValidatorSetFromProto(s.consumerChain.LastHeader.ValidatorSet)
 	s.Require().NoError(err)
+	consuVal := consuValSet.Validators[0]
+	s.Require().NoError(err)
+	consuSigner := s.consumerChain.Signers[consuVal.Address.String()]
 
-	val := valSet.Validators[0]
-	signer := s.consumerChain.Signers[val.Address.String()]
+	provValSet, err := tmtypes.ValidatorSetFromProto(s.providerChain.LastHeader.ValidatorSet)
+	s.Require().NoError(err)
+	provVal := provValSet.Validators[0]
+	provSigner := s.providerChain.Signers[provVal.Address.String()]
 
 	blockID1 := testutil.MakeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
 	blockID2 := testutil.MakeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
 
 	// Note that votes are signed along with the chain ID
 	// see VoteSignBytes in https://github.com/cometbft/cometbft/blob/main/types/vote.go#L139
-	vote1 := testutil.MakeAndSignVote(
+
+	// create two votes using the consumer validator key
+	consuVote := testutil.MakeAndSignVote(
 		blockID1,
 		s.consumerCtx().BlockHeight(),
 		s.consumerCtx().BlockTime(),
-		valSet,
-		signer,
+		consuValSet,
+		consuSigner,
 		s.consumerChain.ChainID,
 	)
 
-	badVote := testutil.MakeAndSignVote(
+	consuBadVote := testutil.MakeAndSignVote(
 		blockID2,
 		s.consumerCtx().BlockHeight(),
 		s.consumerCtx().BlockTime(),
-		valSet,
-		signer,
+		consuValSet,
+		consuSigner,
+		s.consumerChain.ChainID,
+	)
+
+	// create two votes using the provider validator key
+	provVote := testutil.MakeAndSignVote(
+		blockID1,
+		s.consumerCtx().BlockHeight(),
+		s.consumerCtx().BlockTime(),
+		provValSet,
+		provSigner,
+		s.consumerChain.ChainID,
+	)
+
+	provBadVote := testutil.MakeAndSignVote(
+		blockID2,
+		s.consumerCtx().BlockHeight(),
+		s.consumerCtx().BlockTime(),
+		provValSet,
+		provSigner,
 		s.consumerChain.ChainID,
 	)
 
@@ -57,10 +83,10 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		{
 			"invalid consumer chain id - shouldn't pass",
 			&tmtypes.DuplicateVoteEvidence{
-				VoteA:            vote1,
-				VoteB:            badVote,
-				ValidatorPower:   val.VotingPower,
-				TotalVotingPower: val.VotingPower,
+				VoteA:            consuVote,
+				VoteB:            consuBadVote,
+				ValidatorPower:   consuVal.VotingPower,
+				TotalVotingPower: consuVal.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
 			"chainID",
@@ -68,12 +94,12 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		},
 		{
 			// create an invalid evidence containing two identical votes
-			"invalid double voting evidence - shouldn't pass",
+			"invalid double voting evidence with identical votes - shouldn't pass",
 			&tmtypes.DuplicateVoteEvidence{
-				VoteA:            vote1,
-				VoteB:            vote1,
-				ValidatorPower:   val.VotingPower,
-				TotalVotingPower: val.VotingPower,
+				VoteA:            consuVote,
+				VoteB:            consuVote,
+				ValidatorPower:   consuVal.VotingPower,
+				TotalVotingPower: consuVal.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
 			s.consumerChain.ChainID,
@@ -84,12 +110,25 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			// we create two votes that only differ by their Block IDs and
 			// signed them using the same validator private key and chain ID
 			// of the consumer chain
-			"valid double voting evidence - should pass",
+			"valid double voting evidence 1 - should pass",
 			&tmtypes.DuplicateVoteEvidence{
-				VoteA:            vote1,
-				VoteB:            badVote,
-				ValidatorPower:   val.VotingPower,
-				TotalVotingPower: val.VotingPower,
+				VoteA:            consuVote,
+				VoteB:            consuBadVote,
+				ValidatorPower:   consuVal.VotingPower,
+				TotalVotingPower: consuVal.VotingPower,
+				Timestamp:        s.consumerCtx().BlockTime(),
+			},
+			s.consumerChain.ChainID,
+			true,
+		},
+		{
+			// create a double voting evidence using the provider validator key
+			"valid double voting evidence 2 - should pass",
+			&tmtypes.DuplicateVoteEvidence{
+				VoteA:            provVote,
+				VoteB:            provBadVote,
+				ValidatorPower:   consuVal.VotingPower,
+				TotalVotingPower: consuVal.VotingPower,
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
 			s.consumerChain.ChainID,
@@ -97,26 +136,37 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		},
 	}
 
-	consuAddr := types.NewConsumerConsAddress(sdk.ConsAddress(val.Address.Bytes()))
+	consuAddr := types.NewConsumerConsAddress(sdk.ConsAddress(consuVal.Address.Bytes()))
 	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
+			// reset context for each run
+			provCtx := s.providerCtx()
+
+			// if the evidence was built using the validator provider address and key,
+			// we remove the consumer key assigned to the validator otherwise
+			// HandleConsumerDoubleVoting uses the consumer key to verify the signature
+			if tc.ev.VoteA.ValidatorAddress.String() != consuVal.Address.String() {
+				s.providerApp.GetProviderKeeper().DeleteKeyAssignments(provCtx, s.consumerChain.ChainID)
+			}
+
 			err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
-				s.providerCtx(),
+				provCtx,
 				tc.ev,
 				tc.chainID,
 			)
+
 			if tc.expPass {
 				s.Require().NoError(err)
 
 				// verifies that the jailing has occurred
-				s.Require().True(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(s.providerCtx(), provAddr.ToSdkConsAddr()))
+				s.Require().True(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(provCtx, provAddr.ToSdkConsAddr()))
 			} else {
 				s.Require().Error(err)
 
 				// verifies that no jailing and has occurred
-				s.Require().False(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(s.providerCtx(), provAddr.ToSdkConsAddr()))
+				s.Require().False(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(provCtx, provAddr.ToSdkConsAddr()))
 			}
 		})
 	}
