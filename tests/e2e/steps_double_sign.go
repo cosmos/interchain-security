@@ -129,6 +129,7 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 	}
 }
 
+// Steps that make bob double sign on the consumer
 func stepsCauseDoubleSignOnConsumer(consumerName string) []Step {
 	return []Step{
 		{
@@ -153,6 +154,8 @@ func stepsCauseDoubleSignOnConsumer(consumerName string) []Step {
 				},
 			},
 		},
+		// detect the double voting infraction
+		// and jail bob on the provider
 		{
 			action: detectDoubleSigningEvidenceAction{
 				chain: chainID("consu"),
@@ -174,6 +177,7 @@ func stepsCauseDoubleSignOnConsumer(consumerName string) []Step {
 				},
 			},
 		},
+		// consumer learn about the jailing
 		{
 			action: relayPacketsAction{
 				chainA:  chainID("provi"),
