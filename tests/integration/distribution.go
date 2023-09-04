@@ -340,7 +340,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 	}
 }
 
-// TestSendRewardsToProvider is effectively a unit test for TestSendRewardsToProvider(),
+// TestSendRewardsToProvider is effectively a unit test for SendRewardsToProvider(),
 // but is written as an integration test to avoid excessive mocking.
 func (s *CCVTestSuite) TestSendRewardsToProvider() {
 	testCases := []struct {
@@ -352,7 +352,6 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 		{
 			name: "successful token transfer",
 			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
-				// setup transfer channel
 				s.SetupTransferChannel()
 
 				// register a consumer reward denom
@@ -382,7 +381,6 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 		{
 			name: "no reward denom",
 			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
-				// setup transfer channel
 				s.SetupTransferChannel()
 			},
 			expError:       false,
@@ -391,7 +389,6 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 		{
 			name: "reward balance is zero",
 			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
-				// setup transfer channel
 				s.SetupTransferChannel()
 
 				// register a consumer reward denom
@@ -408,7 +405,6 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 		{
 			name: "no distribution transmission channel",
 			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
-				// setup transfer channel
 				s.SetupTransferChannel()
 
 				// register a consumer reward denom
@@ -432,7 +428,6 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 		{
 			name: "no recipient address",
 			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
-				// setup transfer channel
 				s.SetupTransferChannel()
 
 				// register a consumer reward denom
