@@ -1682,9 +1682,10 @@ func (tr TestRun) invokeDoublesignSlash(
 	tr.waitBlocks("provi", 10, 2*time.Minute)
 }
 
-// Run an instance of the Hermes relayer in the "evidence" mode
-// to detect and report the double signing evidences committed on the consumer chain
-// to the provider chain
+// Run an instance of the Hermes relayer in the "evidence" mode,
+// which detects the double signing evidences on the consumer chain.
+// Each infraction detected is reported to the provider chain using
+// a SubmitConsumerDoubleVoting message
 type detectDoubleSigningEvidenceAction struct {
 	chain chainID
 }
