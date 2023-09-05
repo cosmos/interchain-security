@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -156,7 +158,32 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 		return nil, err
 	}
 
-	if err := k.Keeper.HandleConsumerDoubleVoting(ctx, evidence, msg.InfractionBlockHeader.Header.ChainID); err != nil {
+	// parse the validator set of the infraction block header in order
+	// to find the public key of the validator who double voted
+
+	// get validator set
+	valset, err := tmtypes.ValidatorSetFromProto(msg.InfractionBlockHeader.ValidatorSet)
+	if err != nil {
+		return nil, err
+	}
+
+	// look for the malicious validator in the validator set
+	_, validator := valset.GetByAddress(evidence.VoteA.ValidatorAddress)
+	if validator == nil {
+		return nil, errorsmod.Wrapf(
+			ccvtypes.ErrInvalidEvidence,
+			"misbehaving validator %s cannot be found in the infraction block header validator set",
+			evidence.VoteA.ValidatorAddress)
+	}
+
+	pubkey, err := cryptocodec.FromTmPubKeyInterface(validator.PubKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// handle the the double voting evidence using the the chain ID of the infraction block header
+	// and the malicious validator's public key
+	if err := k.Keeper.HandleConsumerDoubleVoting(ctx, evidence, msg.InfractionBlockHeader.Header.ChainID, pubkey); err != nil {
 		return &types.MsgSubmitConsumerDoubleVotingResponse{}, err
 	}
 

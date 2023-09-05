@@ -1,9 +1,11 @@
 package integration
 
 import (
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	testutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	"github.com/tendermint/tendermint/crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -74,10 +76,13 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		s.consumerChain.ChainID,
 	)
 
+	provSigner.GetPubKey()
+
 	testCases := []struct {
 		name    string
 		ev      *tmtypes.DuplicateVoteEvidence
 		chainID string
+		pubkey  crypto.PubKey
 		expPass bool
 	}{
 		{
@@ -90,6 +95,20 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
 			"chainID",
+			consuVal.PubKey,
+			false,
+		},
+		{
+			"wrong public key - shouldn't pass",
+			&tmtypes.DuplicateVoteEvidence{
+				VoteA:            consuVote,
+				VoteB:            consuVote,
+				ValidatorPower:   consuVal.VotingPower,
+				TotalVotingPower: consuVal.VotingPower,
+				Timestamp:        s.consumerCtx().BlockTime(),
+			},
+			s.consumerChain.ChainID,
+			provVal.PubKey,
 			false,
 		},
 		{
@@ -103,6 +122,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
 			s.consumerChain.ChainID,
+			consuVal.PubKey,
 			false,
 		},
 		{
@@ -119,6 +139,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
 			s.consumerChain.ChainID,
+			consuVal.PubKey,
 			true,
 		},
 		{
@@ -132,6 +153,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
 			s.consumerChain.ChainID,
+			provVal.PubKey,
 			true,
 		},
 	}
@@ -144,17 +166,22 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			// reset context for each run
 			provCtx := s.providerCtx()
 
-			// if the evidence was built using the validator provider address and key,
+			// if the evidence was built using the validator provider address andkey,
 			// we remove the consumer key assigned to the validator otherwise
 			// HandleConsumerDoubleVoting uses the consumer key to verify the signature
 			if tc.ev.VoteA.ValidatorAddress.String() != consuVal.Address.String() {
 				s.providerApp.GetProviderKeeper().DeleteKeyAssignments(provCtx, s.consumerChain.ChainID)
 			}
 
+			// convert validator public key
+			pk, err := cryptocodec.FromTmPubKeyInterface(tc.pubkey)
+			s.Require().NoError(err)
+
 			err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
 				provCtx,
 				tc.ev,
 				tc.chainID,
+				pk,
 			)
 
 			if tc.expPass {
