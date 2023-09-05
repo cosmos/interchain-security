@@ -1828,6 +1828,8 @@ func (tr TestRun) invokeDoublesignSlash(
 
 // Cause light client attack evidence for a certain validator to appear on the given chain.
 // The evidence will look like the validator equivocated to a light client.
+// See https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability
+// for more information about light client attacks.
 type lightClientEquivocationAttackAction struct {
 	validator validatorID
 	chain     chainID
@@ -1842,6 +1844,8 @@ func (tr TestRun) lightClientEquivocationAttack(
 
 // Cause light client attack evidence for a certain validator to appear on the given chain.
 // The evidence will look like the validator tried to perform an amnesia attack.
+// See https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability
+// for more information about light client attacks.
 type lightClientAmnesiaAttackAction struct {
 	validator validatorID
 	chain     chainID
@@ -1854,6 +1858,10 @@ func (tr TestRun) lightClientAmnesiaAttack(
 	tr.lightClientAttack(action.validator, action.chain, LightClientAmnesiaAttack)
 }
 
+// Cause light client attack evidence for a certain validator to appear on the given chain.
+// The evidence will look like the validator tried to perform a lunatic attack.
+// See https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability
+// for more information about light client attacks.
 type lightClientLunaticAttackAction struct {
 	validator validatorID
 	chain     chainID
