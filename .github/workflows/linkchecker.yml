@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Check out the latest version of the code
-      - uses: actions/checkout@v3.5.2
+      - uses: actions/checkout@v4
 
       # Checks the status of hyperlinks in *.md files in docs/
       - uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
