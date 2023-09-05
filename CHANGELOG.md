@@ -4,6 +4,7 @@
 
 Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
 
+* (deps) [#1259](https://github.com/cosmos/interchain-security/pull/1259) Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to [v0.47.5](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.5).
 * (deps!) [#1258](https://github.com/cosmos/interchain-security/pull/1258) Bump [ibc-go](https://github.com/cosmos/ibc-go) to [v7.3.0](https://github.com/cosmos/ibc-go/releases/tag/v7.3.0).
 * (deps) [#1258](https://github.com/cosmos/interchain-security/pull/1258) Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to [v0.47.4](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.4).
 * (deps!) [#1196](https://github.com/cosmos/interchain-security/pull/1196) Bump [ibc-go](https://github.com/cosmos/ibc-go) to [v7.2.0](https://github.com/cosmos/ibc-go/releases/tag/v7.2.0).
