@@ -181,7 +181,7 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 		return nil, err
 	}
 
-	// handle the the double voting evidence using the the chain ID of the infraction block header
+	// handle the double voting evidence using the chain ID of the infraction block header
 	// and the malicious validator's public key
 	if err := k.Keeper.HandleConsumerDoubleVoting(ctx, evidence, msg.InfractionBlockHeader.Header.ChainID, pubkey); err != nil {
 		return &types.MsgSubmitConsumerDoubleVotingResponse{}, err

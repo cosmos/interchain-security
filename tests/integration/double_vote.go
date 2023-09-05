@@ -76,8 +76,6 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		s.consumerChain.ChainID,
 	)
 
-	provSigner.GetPubKey()
-
 	testCases := []struct {
 		name    string
 		ev      *tmtypes.DuplicateVoteEvidence
@@ -166,7 +164,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			// reset context for each run
 			provCtx := s.providerCtx()
 
-			// if the evidence was built using the validator provider address andkey,
+			// if the evidence was built using the validator provider address and key,
 			// we remove the consumer key assigned to the validator otherwise
 			// HandleConsumerDoubleVoting uses the consumer key to verify the signature
 			if tc.ev.VoteA.ValidatorAddress.String() != consuVal.Address.String() {
