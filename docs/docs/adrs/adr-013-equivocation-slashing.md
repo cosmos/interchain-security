@@ -89,22 +89,23 @@ Note that we do not need to store equivocation evidence to avoid slashing a vali
 ### Implementation
 The following logic needs to be added to the [HandleConsumerDoubleVoting](https://github.com/cosmos/interchain-security/pull/1232) method:
 ```go
-undelegationsTotalAmount := sdk.NewInt(0)
+undelegationsInTokens := sdk.NewInt(0)
 for _, v := range k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, validatorAddress) {
     for _, entry := range v.Entries {
-        undelegationsTotalAmount = undelegationsTotalAmount.Add(entry.InitialBalance)
+        undelegationsInTokens = undelegationsInTokens.Add(entry.InitialBalance)
     }
 }
 
-redelegationsTotalAmount := sdk.NewInt(0)
+redelegationsInTokens := sdk.NewInt(0)
 for _, v := range k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, validatorAddress) {
     for _, entry := range v.Entries {
-        redelegationsTotalAmount = redelegationsTotalAmount.Add(entry.InitialBalance)
+        redelegationsInTokens = redelegationsInTokens.Add(entry.InitialBalance)
     }
 }
 
 infractionHeight := 0
-totalPower := validators voting Power + undelegationsTotalAmount.Add(redelegationsTotalAmount)
+undelegationsAndRedelegationsInPower = sdk.TokensToConsensusPower(undelegationsInTokens.Add(redelegationsInTokens))
+totalPower := validator's voting power + undelegationsAndRedelegationsInPower
 slashFraction := k.slashingKeeper.SlashFractionDoubleSign(ctx)
 
 k.stakingKeeper.Slash(ctx, validatorConsAddress, infractionHeight, totalPower, slashFraction, DoubleSign)
