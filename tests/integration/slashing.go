@@ -72,8 +72,8 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 		timeoutHeight    = clienttypes.Height{}
 		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 	)
-	data := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME)
-	sequence, err := s.getFirstBundle().Path.EndpointA.SendPacket(timeoutHeight, timeoutTimestamp, data)
+	slashPacket := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+	sequence, err := s.getFirstBundle().Path.EndpointA.SendPacket(timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
 	s.Require().NoError(err)
 
 	// Set outstanding slashing flag for first consumer, it's important to use the consumer's cons addr here
@@ -90,7 +90,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	valsetUpdateIdN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// receive the slash packet on the provider chain. RecvPacket() calls the provider endblocker twice
-	packet := s.newPacketFromConsumer(data, sequence, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
+	packet := s.newPacketFromConsumer(slashPacket.GetBytes(), sequence, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
 	err = s.path.EndpointB.RecvPacket(packet)
 	s.Require().NoError(err)
 
@@ -205,8 +205,8 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 		timeoutHeight    = clienttypes.Height{}
 		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 	)
-	data := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
-	packet := sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, data)
+	slashPacket := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
+	packet := sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
 
 	// Advance a few more blocks to make sure any voting power changes would be reflected
 	s.providerChain.NextBlock()

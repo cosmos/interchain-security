@@ -67,8 +67,8 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		// Send a slash packet from consumer to provider
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
 		tmVal := s.providerChain.Vals.Validators[0]
-		data := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME)
-		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, data)
+		slashPacket := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
 
 		// Assert validator 0 is jailed and has no power
 		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
@@ -86,8 +86,8 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		// Now send a second slash packet from consumer to provider for a different validator.
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
 		tmVal = s.providerChain.Vals.Validators[2]
-		data = s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME)
-		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, data)
+		slashPacket = s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
 
 		// Require that slash packet has not been handled
 		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
@@ -172,10 +172,10 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
 	)
 	for consumerChainID, bundle := range s.consumerBundles {
-		data := s.constructVSCMaturedPacketFromConsumer(*bundle)
-		sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, data)
-		data = s.constructVSCMaturedPacketFromConsumer(*bundle)
-		sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, data)
+		slashPacket := s.constructVSCMaturedPacketFromConsumer(*bundle)
+		sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
+		slashPacket = s.constructVSCMaturedPacketFromConsumer(*bundle)
+		sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
 		// Confirm packets were not queued on provider for this consumer
 		s.Require().Equal(uint64(0),
 			providerKeeper.GetThrottledPacketDataSize(s.providerCtx(), consumerChainID))
@@ -204,18 +204,18 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 		// Send downtime slash packet from consumer to provider
 		tmVal := s.providerChain.Vals.Validators[idx]
 		valsToSlash = append(valsToSlash, *tmVal)
-		data := s.constructSlashPacketFromConsumer(
+		slashPacket := s.constructSlashPacketFromConsumer(
 			*bundle,
 			*tmVal,
 			stakingtypes.Infraction_INFRACTION_DOWNTIME,
 		)
-		sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, data)
+		sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
 
 		// Send two trailing VSC matured packets from consumer to provider
-		data = s.constructVSCMaturedPacketFromConsumer(*bundle)
-		sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, data)
-		data = s.constructVSCMaturedPacketFromConsumer(*bundle)
-		sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, data)
+		slashPacket = s.constructVSCMaturedPacketFromConsumer(*bundle)
+		sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
+		slashPacket = s.constructVSCMaturedPacketFromConsumer(*bundle)
+		sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
 
 		idx++
 	}
@@ -319,7 +319,8 @@ func (s *CCVTestSuite) TestPacketSpam() {
 			infractionType = stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 		}
 		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
-		packetsData = append(packetsData, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType))
+		slashPacket := s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType)
+		packetsData = append(packetsData, slashPacket.GetBytes())
 	}
 
 	// Recv 500 packets from consumer to provider in same block
@@ -378,7 +379,8 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 		// Increment ibc seq num for each packet (starting at 1)
 		ibcSeqNum++
 		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
-		packetsData = append(packetsData, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN))
+		slashPacket := s.constructSlashPacketFromConsumer(firstBundle, *valToJail, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
+		packetsData = append(packetsData, slashPacket.GetBytes())
 	}
 
 	// Recv 500 packets from consumer to provider in same block
@@ -477,13 +479,13 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 
 		// Instantiate a vsc matured packet every 10th packet
 		if ibcSeqNum%10 == 0 {
-			packetsData = append(packetsData, s.constructVSCMaturedPacketFromConsumer(firstBundle))
+			packetsData = append(packetsData, s.constructVSCMaturedPacketFromConsumer(firstBundle).GetBytes())
 			continue
 		}
 		// Else instantiate a slash packet
 
 		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
-		packetsData = append(packetsData, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, stakingtypes.Infraction_INFRACTION_DOWNTIME))
+		packetsData = append(packetsData, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes())
 	}
 
 	// Recv 500 packets from consumer to provider in same block
@@ -626,12 +628,12 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	tmval1 := s.providerChain.Vals.Validators[1]
 	tmval2 := s.providerChain.Vals.Validators[2]
 	tmval3 := s.providerChain.Vals.Validators[3]
-	data1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME)
-	data2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME)
-	data3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Infraction_INFRACTION_DOWNTIME)
-	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, data1)
-	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, data2)
-	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, data3)
+	slashPacket1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+	slashPacket2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+	slashPacket3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket1.GetBytes())
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket2.GetBytes())
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket3.GetBytes())
 
 	// Default slash meter replenish fraction is 0.05, so all sent packets should be handled immediately.
 	vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
@@ -701,12 +703,12 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 	s.setDefaultValSigningInfo(*tmval3)
 
 	packetsData := [][]byte{
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Infraction_INFRACTION_DOWNTIME),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Infraction_INFRACTION_DOWNTIME),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes(),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes(),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes(),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes(),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes(),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes(),
 	}
 
 	// Recv and queue all slash packets.
@@ -759,14 +761,14 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 	for _, val := range s.providerChain.Vals.Validators {
 		s.setDefaultValSigningInfo(*val)
 		packetsData = append(packetsData, s.constructSlashPacketFromConsumer(
-			s.getFirstBundle(), *val, stakingtypes.Infraction_INFRACTION_DOWNTIME))
+			s.getFirstBundle(), *val, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes())
 	}
 
 	// add 5 more slash packets for each validator, that will be handled in the same block.
 	for _, val := range s.providerChain.Vals.Validators {
 		for i := 0; i < 5; i++ {
 			packetsData = append(packetsData, s.constructSlashPacketFromConsumer(
-				s.getFirstBundle(), *val, stakingtypes.Infraction_INFRACTION_DOWNTIME))
+				s.getFirstBundle(), *val, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes())
 		}
 	}
 
@@ -815,7 +817,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 	for _, bundle := range s.consumerBundles {
 		for i := 0; i < 50; i++ {
 			ibcSeqNum := uint64(i)
-			data := s.constructVSCMaturedPacketFromConsumer(*bundle)
+			data := s.constructVSCMaturedPacketFromConsumer(*bundle).GetBytes()
 			packetData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 			s.Require().NoError(err)
 			packet := s.newPacketFromConsumer(data, ibcSeqNum, bundle.Path, timeoutHeight, timeoutTimestamp)
@@ -829,7 +831,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 		for i := 50; i < 100; i++ {
 			ibcSeqNum := uint64(i)
 			data := s.constructSlashPacketFromConsumer(*bundle,
-				*s.providerChain.Vals.Validators[0], stakingtypes.Infraction_INFRACTION_DOWNTIME)
+				*s.providerChain.Vals.Validators[0], stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes()
 			packetData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 			s.Require().NoError(err)
 			packet := s.newPacketFromConsumer(data, ibcSeqNum, bundle.Path, timeoutHeight, timeoutTimestamp)
@@ -842,7 +844,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 	for _, bundle := range s.consumerBundles {
 		for i := 100; i < 150; i++ {
 			ibcSeqNum := uint64(i)
-			data := s.constructVSCMaturedPacketFromConsumer(*bundle)
+			data := s.constructVSCMaturedPacketFromConsumer(*bundle).GetBytes()
 			packetData := ccvtypes.ConsumerPacketData{}
 			ccvtypes.ModuleCdc.MustUnmarshalJSON(data, &packetData)
 			packet := s.newPacketFromConsumer(data, ibcSeqNum, bundle.Path, timeoutHeight, timeoutTimestamp)
@@ -913,7 +915,7 @@ func (s *CCVTestSuite) TestVscMaturedHandledPerBlockLimit() {
 	for _, bundle := range s.consumerBundles {
 		for i := 0; i < 100; i++ {
 			ibcSeqNum := uint64(i)
-			data := s.constructVSCMaturedPacketFromConsumer(*bundle)
+			data := s.constructVSCMaturedPacketFromConsumer(*bundle).GetBytes()
 			packetData := ccvtypes.ConsumerPacketData{}
 			ccvtypes.ModuleCdc.MustUnmarshalJSON(data, &packetData)
 			packet := s.newPacketFromConsumer(data, ibcSeqNum, bundle.Path, timeoutHeight, timeoutTimestamp)
@@ -927,7 +929,7 @@ func (s *CCVTestSuite) TestVscMaturedHandledPerBlockLimit() {
 		for i := 100; i < 150; i++ {
 			ibcSeqNum := uint64(i)
 			data := s.constructSlashPacketFromConsumer(*bundle,
-				*s.providerChain.Vals.Validators[0], stakingtypes.Infraction_INFRACTION_DOWNTIME)
+				*s.providerChain.Vals.Validators[0], stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes()
 			consumderPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 			s.Require().NoError(err)
 			packet := s.newPacketFromConsumer(data, ibcSeqNum, bundle.Path, timeoutHeight, timeoutTimestamp)

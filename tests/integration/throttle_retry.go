@@ -53,7 +53,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 
 	// Construct a mock slash packet from consumer
 	tmval1 := s.providerChain.Vals.Validators[1]
-	packetData1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+	packetData1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes()
 	var (
 		timeoutHeight    = clienttypes.Height{}
 		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
@@ -110,7 +110,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 
 	// Construct and mock the sending of a second packet on consumer
 	tmval2 := s.providerChain.Vals.Validators[2]
-	packetData2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+	packetData2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes()
 	packet2 := s.newPacketFromConsumer(packetData2, 1, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
 
 	consumerKeeper.AppendPendingPacket(s.consumerCtx(), ccvtypes.SlashPacket,

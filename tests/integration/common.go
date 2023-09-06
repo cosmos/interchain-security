@@ -427,11 +427,11 @@ func (suite *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.
 // slash packet data to be sent from consumer to provider
 func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
 	tmVal tmtypes.Validator, infractionType stakingtypes.Infraction,
-) []byte {
+) ccv.ConsumerPacketData {
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
 
-	data := ccv.ConsumerPacketData{
+	return ccv.ConsumerPacketData{
 		Type: ccv.SlashPacket,
 		Data: &ccv.ConsumerPacketData_SlashPacketData{
 			SlashPacketData: &ccv.SlashPacketData{
@@ -444,22 +444,20 @@ func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.C
 			},
 		},
 	}
-	return data.GetBytes()
 }
 
 // constructVSCMaturedPacketFromConsumer constructs an IBC packet embedding
 // VSC Matured packet data to be sent from consumer to provider
-func (s *CCVTestSuite) constructVSCMaturedPacketFromConsumer(bundle icstestingutils.ConsumerBundle) []byte {
+func (s *CCVTestSuite) constructVSCMaturedPacketFromConsumer(bundle icstestingutils.ConsumerBundle) ccv.ConsumerPacketData {
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
 
-	data := ccv.ConsumerPacketData{
+	return ccv.ConsumerPacketData{
 		Type: ccv.VscMaturedPacket,
 		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 			VscMaturedPacketData: &ccv.VSCMaturedPacketData{ValsetUpdateId: valsetUpdateId},
 		},
 	}
-	return data.GetBytes()
 }
 
 // incrementTime increments the overall time by jumpPeriod
