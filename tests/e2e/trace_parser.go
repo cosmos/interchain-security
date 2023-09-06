@@ -4,19 +4,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // TraceParser provides an interface for parsers that read sequences of Steps from files.
 type TraceParser interface {
-	ReadTraceFromFile(filepath string) []Step
+	ReadTraceFromFile(path string) []Step
 }
 
 // JSONParser is a simple parser that reads steps by unmarshalling from a file.
 type JSONParser struct{}
 
-func (parser JSONParser) ReadTraceFromFile(filepath string) ([]Step, error) {
+func (parser JSONParser) ReadTraceFromFile(path string) ([]Step, error) {
 	// Open the JSON file and read into a bite array
-	jsonData, err := os.ReadFile(filepath)
+	jsonData, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}
