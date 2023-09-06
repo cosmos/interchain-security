@@ -483,6 +483,7 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// EQUIVOCATION PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.InstanceName, providerChain.BinaryName,
 
 		"tx", "gov", "submit-legacy-proposal", "equivocation",
