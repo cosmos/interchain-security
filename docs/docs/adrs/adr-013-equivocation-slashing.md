@@ -16,7 +16,7 @@ Currently, the provider chain can [receive and verify evidence of equivocation](
 
 In the remainder of this section, we explain how slashing is performed on a single chain and show why slashing on the provider for equivocation on the consumer is challenging.
 
-Note that future versions of the Cosmos SDK and CometBFT could modify the way we slash, etc. Therefore, a future reader of this ADR, should note that when we refer to Cosmos SDK and CometBFT we specifically refer to their [v0.47](https://docs.cosmos.network/v0.47/) and [v0.37](https://docs.cometbft.com/v0.37/) versions respectively.
+Note that future versions of the Cosmos SDK and CometBFT could modify the way we slash, etc. Therefore, a future reader of this ADR, should note that when we refer to Cosmos SDK and CometBFT we specifically refer to their [v0.47](https://docs.cosmos.network/v0.47/intro/overview) and [v0.37](https://docs.cometbft.com/v0.37/) versions respectively.
 
 ### Single-chain slashing
 Slashing is implemented across the [slashing](https://docs.cosmos.network/v0.47/modules/slashing)
