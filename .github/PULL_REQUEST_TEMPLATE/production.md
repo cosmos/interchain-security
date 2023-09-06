@@ -30,7 +30,6 @@ I have...
 * [ ] Updated the relevant documentation or specification
 * [ ] Reviewed "Files changed" and left comments if necessary <!-- relevant if the changes are not obvious  -->
 * [ ] Confirmed all CI checks have passed
-* [ ] If this PR is library API breaking, bump the go.mod version string of the repo, and follow through on a new major release for both the consumer and provider
 
 ### Reviewers Checklist
 

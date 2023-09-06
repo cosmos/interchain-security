@@ -247,9 +247,9 @@ ICS adheres to the [trunk based development branching model](https://trunkbasedd
 
 ICS follows [semantic versioning](https://semver.org), but with the following deviations (similar to [IBC-Go](https://github.com/cosmos/ibc-go/blob/main/RELEASES.md)):
 
-- A library API breaking change to EITHER the provider or consumer module will result in an increase of the MAJOR version number for BOTH modules (X.y.z-provider AND X.y.z-consumer).
-- A state breaking change (change requiring coordinated upgrade and/or state migration) will result in an increase of the MINOR version number for the AFFECTED module(s) (x.Y.z-provider AND/OR x.Y.z-consumer).
-- Any other changes (including node API breaking changes) will result in an increase of the PATCH version number for the AFFECTED module(s) (x.y.Z-provider AND/OR x.y.Z-consumer).
+- A library API breaking change will result in an increase of the MAJOR version number (X.y.z | x > 0). 
+- A state breaking change (change requiring coordinated upgrade and/or state migration for the consumer, the provider, or both) will result in an increase of the MINOR version number (x.Y.z | x > 0).
+- Any other changes (including node API breaking changes) will result in an increase of the PATCH version number (x.y.Z | x > 0).
 
 ### Backwards Compatibility
 

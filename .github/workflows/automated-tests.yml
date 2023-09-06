@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           lfs: true
       - name: Checkout LFS objects
@@ -31,7 +31,7 @@ jobs:
   E2E_Tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           lfs: true
       - name: Checkout LFS objects
@@ -45,7 +45,7 @@ jobs:
   Cometmock_Tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           lfs: true
       - name: Checkout LFS objects

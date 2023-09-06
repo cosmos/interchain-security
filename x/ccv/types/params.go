@@ -32,10 +32,10 @@ const (
 	// (and for consistency with other protobuf schemas defined for ccv).
 	DefaultHistoricalEntries = int64(stakingtypes.DefaultHistoricalEntries)
 
-	// In general, the default unbonding period on the consumer is one week less
+	// In general, the default unbonding period on the consumer is one day less
 	// than the default unbonding period on the provider, where the provider uses
 	// the staking module default.
-	DefaultConsumerUnbondingPeriod = stakingtypes.DefaultUnbondingTime - 7*24*time.Hour
+	DefaultConsumerUnbondingPeriod = stakingtypes.DefaultUnbondingTime - 24*time.Hour
 
 	// By default, the bottom 5% of the validator set can opt out of validating consumer chains
 	DefaultSoftOptOutThreshold = "0.05"
@@ -179,8 +179,8 @@ func ValidateProviderFeePoolAddrStr(i interface{}) error {
 	if i == "" {
 		return nil
 	}
-	// Cannot validate provider chain address on the consumer chain
-	return nil
+	// Otherwise validate as usual for a bech32 address
+	return ValidateBech32(i)
 }
 
 func ValidateSoftOptOutThreshold(i interface{}) error {

@@ -30,6 +30,10 @@ func TestValidateParams(t *testing.T) {
 			ccvtypes.NewParams(true, 5, "badchannel/", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "0.05", []string{"untrn"}, []string{"uatom"}), false,
 		},
 		{
+			"custom invalid params, provider fee pool addr string",
+			ccvtypes.NewParams(true, 5, "", "imabadaddress", 5, 1005, "0.5", 1000, 24*21*time.Hour, "0.05", []string{"untrn"}, []string{"uatom"}), false,
+		},
+		{
 			"custom invalid params, ccv timeout",
 			ccvtypes.NewParams(true, 5, "", "", -5, 1005, "0.5", 1000, 24*21*time.Hour, "0.05", []string{"untrn"}, []string{"uatom"}), false,
 		},
