@@ -179,8 +179,8 @@ func ValidateProviderFeePoolAddrStr(i interface{}) error {
 	if i == "" {
 		return nil
 	}
-	// Otherwise validate as usual for a bech32 address
-	return ValidateBech32(i)
+	// Cannot validate provider chain address on the consumer chain
+	return nil
 }
 
 func ValidateSoftOptOutThreshold(i interface{}) error {

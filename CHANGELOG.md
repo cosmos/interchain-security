@@ -26,6 +26,7 @@ Add an entry to the unreleased consumer section whenever merging a PR to main th
 * (fix!) [#1146](https://github.com/cosmos/interchain-security/pull/1146) Proper deletion of pending packets.
 * (feat!) [#1037](https://github.com/cosmos/interchain-security/pull/1037) Optimize pending packets storage on consumer, with migration. 
 * (feat) [#1164](https://github.com/cosmos/interchain-security/pull/1164) Introduce the gRPC query `/interchain_security/ccv/consumer/provider-info` and CLI command `interchain-security-cd q ccvconsumer provider-info` to retrieve provider info from the consumer chain.
+* (fix!) [#1262](https://github.com/cosmos/interchain-security/pull/1262) Remove incorrect address validation on `ProviderFeePoolAddrStr` param 
 
 ## v3.1.0
 
