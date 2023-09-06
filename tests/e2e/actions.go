@@ -486,8 +486,7 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	// EQUIVOCATION PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.InstanceName, providerChain.BinaryName,
 
-		"tx", "gov", "submit-legacy-proposal", "equivocation",
-		"/equivocation-proposal.json",
+		"tx", "gov", "submit-legacy-proposal", "equivocation", "/equivocation-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.From),
 		`--chain-id`, string(providerChain.ChainId),
