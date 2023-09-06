@@ -413,8 +413,7 @@ func (tr TestRun) submitParamChangeProposal(
 	// PARAM CHANGE PROPOSAL
 	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.Chain].BinaryName,
 
-		"tx", "gov", "submit-legacy-proposal", "param-change",
-		"/params-proposal.json",
+		"tx", "gov", "submit-legacy-proposal", "param-change", "/params-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.From),
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
