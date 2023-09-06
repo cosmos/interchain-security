@@ -58,7 +58,7 @@ Unless we have a way to find the corresponding `infractionHeight` and `power` on
 
 The challenge of figuring out the corresponding `infractionHeight` and `power` values on the provider chain is due to the following trust assumption:
 
-We trust the consensus layer and validator set of the consumer chains, _but we do not trust the application layer_.
+- We trust the consensus layer and validator set of the consumer chains, _but we do not trust the application layer_.
 
 As a result, we cannot trust anything that stems from the _application state_ of a consumer chain.
 
@@ -112,8 +112,9 @@ k.stakingKeeper.Slash(ctx, validatorConsAddress, infractionHeight, totalPower, s
 
 **Infraction height:** We provide a zero `infractionHeight` to the [Slash](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0/x/staking/keeper/slash.go#L33) method in order to slash all ongoing undelegations and redelegations (see checks in [Slash](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0/x/staking/keeper/slash.go#L92), [SlashUnbondingDelegation](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0/x/staking/keeper/slash.go#L195), and [SlashRedelegation](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0/x/staking/keeper/slash.go#L249)).
 
-**Power:** We pass the sum of the voting power of the misbehaving validator and the power of all the ongoing undelegations and redelegations. This is a slightly more aggressive approach than just providing the voting `power` at the evidence height. If we assume that the `slashFactor` is 5%, then the `power` we pass is `validatorPower + totalPower(undelegations) + totalPower(redelegations)`.
-Hence, when the `Slash` method slashes all the undelegations and redelegations it would end up with `0.05 * power + 0.05 * totalPower(undelegations) + 0.05 * totalPower(redelegations) - 0.05 * totalPower(undelegations) - 0.05 * totalPower(redelegations) = 0.05 * power` and hence it would slash 5% of the validator's power when the evidence is received.
+**Power:** We pass the sum of the voting power of the misbehaving validator when the evidence was received (i.e., at evidence height) and the power of all the ongoing undelegations and redelegations.
+If we assume that the `slashFactor` is `5%`, then the voting power we pass is `power + totalPower(undelegations) + totalPower(redelegations)`.
+Hence, when the `Slash` method slashes all the undelegations and redelegations it would end up with `0.05 * power + 0.05 * totalPower(undelegations) + 0.05 * totalPower(redelegations) - 0.05 * totalPower(undelegations) - 0.05 * totalPower(redelegations) = 0.05 * power` and hence it would slash `5%` of the validator's power when the evidence is received.
 
 ### Positive
 With the proposed approach we can quickly implement slashing functionality on the provider chain for consumer chain equivocations.
