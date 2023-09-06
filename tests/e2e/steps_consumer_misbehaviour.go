@@ -218,6 +218,27 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			action: startRelayerAction{},
 			state:  State{},
 		},
+		// detect the ics misbehaviour
+		// and jail alice on the provider
+		{
+			action: detectConsumerEvidenceAction{
+				chain: chainID("consu"),
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 0,
+						validatorID("bob"):   20,
+					},
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   20,
+					},
+				},
+			},
+		},
 		{
 			// update the fork consumer client to create a light client attack
 			// which should trigger a ICS misbehaviour message
@@ -237,7 +258,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 					ClientsFrozenHeights: &map[string]clienttypes.Height{
 						"07-tendermint-0": {
 							RevisionNumber: 0,
-							RevisionHeight: 0,
+							RevisionHeight: 1,
 						},
 					},
 				},

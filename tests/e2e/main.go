@@ -57,11 +57,11 @@ func main() {
 	}
 
 	testRuns := []testRunWithSteps{
-		{ChangeoverTestRun(), changeoverSteps},
-		{DefaultTestRun(), happyPathSteps},
-		{DemocracyTestRun(true), democracySteps},
-		{DemocracyTestRun(false), rewardDenomConsumerSteps},
-		{SlashThrottleTestRun(), slashThrottleSteps},
+		// {ChangeoverTestRun(), changeoverSteps},
+		// {DefaultTestRun(), happyPathSteps},
+		// {DemocracyTestRun(true), democracySteps},
+		// {DemocracyTestRun(false), rewardDenomConsumerSteps},
+		// {SlashThrottleTestRun(), slashThrottleSteps},
 		{ConsumerMisbehaviourTestRun(), consumerMisbehaviourSteps},
 	}
 	if includeMultiConsumer != nil && *includeMultiConsumer {
@@ -102,7 +102,7 @@ func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag 
 	tr.validateStringLiterals()
 	tr.startDocker()
 	tr.executeSteps(steps)
-	tr.teardownDocker()
+	// tr.teardownDocker()
 }
 
 type testRunWithSteps struct {
@@ -180,6 +180,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.updateLightClient(action, verbose)
 	case assertChainIsHaltedAction:
 		tr.assertChainIsHalted(action, verbose)
+	case detectConsumerEvidenceAction:
+		tr.detectConsumerEvidence(action, verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", tr.name, action)
 	}

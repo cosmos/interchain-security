@@ -718,7 +718,7 @@ rpc_addr = "%s"
 rpc_timeout = "10s"
 store_prefix = "ibc"
 trusting_period = "14days"
-websocket_addr = "%s"
+event_source = { mode = "push", url = "%s", batch_delay = "50ms" }
 ccv_consumer_chain = %v
 
 [chains.gas_price]
@@ -1843,4 +1843,26 @@ func (tr TestRun) GetPathNameForGorelayer(chainA, chainB chainID) string {
 	}
 
 	return pathName
+}
+
+// Run an instance of the Hermes relayer in the "evidence" mode,
+// which detects evidences committed on the consumer chain.
+// Each infraction detected is reported to the provider chain using
+// either a SubmitConsumerDoubleVoting or a SubmitConsumerMisbehaviour message.
+type detectConsumerEvidenceAction struct {
+	chain chainID
+}
+
+func (tr TestRun) detectConsumerEvidence(
+	action detectConsumerEvidenceAction,
+	verbose bool,
+) {
+	chainConfig := tr.chainConfigs[action.chain]
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", "-d", tr.containerConfig.instanceName,
+		"hermes", "evidence", "--chain", string(chainConfig.chainId)).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+	tr.waitBlocks("provi", 10, 2*time.Minute)
 }
