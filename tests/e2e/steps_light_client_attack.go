@@ -57,7 +57,7 @@ func stepsLightClientAttackOnProviderAndConsumer(consumerName string) []Step {
 			// provider will only log the double sign slash
 			// stepsSubmitEquivocationProposal will cause the double sign slash to be executed
 			action: lightClientEquivocationAttackAction{
-				chain:     chainID("consu"),
+				chain:     chainID(consumerName),
 				validator: validatorID("bob"),
 			},
 			state: State{
