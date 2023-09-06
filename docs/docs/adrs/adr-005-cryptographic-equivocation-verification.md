@@ -7,6 +7,7 @@ title: Cryptographic verification of equivocation evidence
 ## Changelog
 * 5/1/2023: First draft
 * 7/23/23: Add light client attacks handling
+* 6/9/23: Add double signing
 
 ## Status
 
@@ -72,6 +73,18 @@ the headers in the misbehaviour message have the same block height, and
 the light client isn’t expired.
 
 After having successfully verified a misbehaviour, the endpoint will execute the jailing and slashing of the malicious validators similarly as in the evidence module. 
+
+
+### Double Signing
+
+A double signing attack, also known as an equivocation, occurs when a validator sends two different votes for a block in the same round of a consensus instance.
+The Tendermint consensus operates for each block height, with multiple rounds of voting per height, and voting twice in the same round is strictly prohibited.
+
+Explain the votes data structure
+
+
+## Decision
+
 
 ### Current limitations:
 
