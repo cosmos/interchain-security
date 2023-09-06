@@ -410,6 +410,7 @@ func (tr TestRun) submitParamChangeProposal(
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// PARAM CHANGE PROPOSAL
 	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.Chain].BinaryName,
 
 		"tx", "gov", "submit-legacy-proposal", "param-change",
