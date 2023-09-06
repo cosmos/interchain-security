@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -12,192 +13,52 @@ type StepWithActionType struct {
 	ActionType string `json:"ActionType"`
 }
 
+// has to be manually kept in sync with the available action types.
+var actionRegistry = map[string]reflect.Type{
+	"main.submitConsumerAdditionProposalAction":  reflect.TypeOf(submitConsumerAdditionProposalAction{}),
+	"main.StartChainAction":                      reflect.TypeOf(StartChainAction{}),
+	"main.SendTokensAction":                      reflect.TypeOf(SendTokensAction{}),
+	"main.submitTextProposalAction":              reflect.TypeOf(submitTextProposalAction{}),
+	"main.submitConsumerRemovalProposalAction":   reflect.TypeOf(submitConsumerRemovalProposalAction{}),
+	"main.submitEquivocationProposalAction":      reflect.TypeOf(submitEquivocationProposalAction{}),
+	"main.submitParamChangeLegacyProposalAction": reflect.TypeOf(submitParamChangeLegacyProposalAction{}),
+	"main.voteGovProposalAction":                 reflect.TypeOf(voteGovProposalAction{}),
+	"main.startConsumerChainAction":              reflect.TypeOf(startConsumerChainAction{}),
+	"main.AddChainToRelayerAction":               reflect.TypeOf(addChainToRelayerAction{}),
+	"main.addIbcConnectionAction":                reflect.TypeOf(addIbcConnectionAction{}),
+	"main.addIbcChannelAction":                   reflect.TypeOf(addIbcChannelAction{}),
+	"main.transferChannelCompleteAction":         reflect.TypeOf(transferChannelCompleteAction{}),
+	"main.unjailValidatorAction":                 reflect.TypeOf(unjailValidatorAction{}),
+	"main.assignConsumerPubKeyAction":            reflect.TypeOf(assignConsumerPubKeyAction{}),
+	"main.delegateTokensAction":                  reflect.TypeOf(delegateTokensAction{}),
+	"main.relayPacketsAction":                    reflect.TypeOf(relayPacketsAction{}),
+	"main.registerRepresentativeAction":          reflect.TypeOf(registerRepresentativeAction{}),
+	"main.relayRewardPacketsToProviderAction":    reflect.TypeOf(relayRewardPacketsToProviderAction{}),
+	"main.registerConsumerRewardDenomAction":     reflect.TypeOf(registerConsumerRewardDenomAction{}),
+	"main.downtimeSlashAction":                   reflect.TypeOf(downtimeSlashAction{}),
+	"main.unbondTokensAction":                    reflect.TypeOf(unbondTokensAction{}),
+	"main.cancelUnbondTokensAction":              reflect.TypeOf(cancelUnbondTokensAction{}),
+	"main.redelegateTokensAction":                reflect.TypeOf(redelegateTokensAction{}),
+	"main.doublesignSlashAction":                 reflect.TypeOf(doublesignSlashAction{}),
+	"main.startRelayerAction":                    reflect.TypeOf(startRelayerAction{}),
+	"main.slashThrottleDequeue":                  reflect.TypeOf(slashThrottleDequeue{}),
+	"main.createIbcClientsAction":                reflect.TypeOf(createIbcClientsAction{}),
+	"main.LegacyUpgradeProposalAction":           reflect.TypeOf(LegacyUpgradeProposalAction{}),
+	"main.waitUntilBlockAction":                  reflect.TypeOf(waitUntilBlockAction{}),
+	"main.ChangeoverChainAction":                 reflect.TypeOf(ChangeoverChainAction{}),
+	"main.StartSovereignChainAction":             reflect.TypeOf(StartSovereignChainAction{}),
+}
+
 // UnmarshalMapToActionType takes a JSON object and an action type and marshals into an object of the corresponding action.
 func UnmarshalMapToActionType(inputMap map[string]any, actionType string) (interface{}, error) {
-	switch actionType {
-	case "main.StartChainAction":
-		var action StartChainAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.SendTokensAction":
-		var action SendTokensAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.submitTextProposalAction":
-		var action submitTextProposalAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.submitConsumerAdditionProposalAction":
-		var action submitConsumerAdditionProposalAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.submitConsumerRemovalProposalAction":
-		var action submitConsumerRemovalProposalAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.submitEquivocationProposalAction":
-		var action submitEquivocationProposalAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.submitParamChangeLegacyProposalAction":
-		var action submitParamChangeLegacyProposalAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.voteGovProposalAction":
-		var action voteGovProposalAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.startConsumerChainAction":
-		var action startConsumerChainAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.AddChainToRelayerAction":
-		var action addChainToRelayerAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.addIbcConnectionAction":
-		var action addIbcConnectionAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-
-	case "main.addIbcChannelAction":
-		var action addIbcChannelAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-
-	case "main.transferChannelCompleteAction":
-		var action transferChannelCompleteAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-
-	case "main.relayPacketsAction":
-		var action relayPacketsAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-
-	case "main.relayRewardPacketsToProviderAction":
-		var action relayRewardPacketsToProviderAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-
-	case "main.delegateTokensAction":
-		var action delegateTokensAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-
-	case "main.unbondTokensAction":
-		var action unbondTokensAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-
-	case "main.redelegateTokensAction":
-		var action redelegateTokensAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.downtimeSlashAction":
-		var action downtimeSlashAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.unjailValidatorAction":
-		var action unjailValidatorAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.doublesignSlashAction":
-		var action doublesignSlashAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.registerRepresentativeAction":
-		var action registerRepresentativeAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.assignConsumerPubKeyAction":
-		var action assignConsumerPubKeyAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.slashThrottleDequeue":
-		var action slashThrottleDequeue
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	case "main.startRelayerAction":
-		var action startRelayerAction
-		err := mapstructure.Decode(inputMap, &action)
-		if err != nil {
-			return nil, err
-		}
-		return action, nil
-	default:
+	reflectType, ok := actionRegistry[actionType]
+	if !ok {
 		return nil, fmt.Errorf("%s is not a known action type", actionType)
 	}
+	action := reflect.New(reflectType).Interface()
+	err := mapstructure.Decode(inputMap, &action)
+	if err != nil {
+		return nil, err
+	}
+	return action, nil
 }

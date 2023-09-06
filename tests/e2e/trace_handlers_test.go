@@ -18,6 +18,13 @@ func TestWriterThenParser(t *testing.T) {
 		trace []Step
 	}{
 		"start_provider_chain": {stepStartProviderChain()},
+		"happyPath":            {happyPathSteps},
+		"democracy":            {democracySteps},
+		"slashThrottle":        {slashThrottleSteps},
+		"multipleConsumers":    {multipleConsumers},
+		"shorthappy":           {shortHappyPathSteps},
+		"rewardDenomConsumer":  {rewardDenomConsumerSteps},
+		"changeover":           {changeoverSteps},
 	}
 
 	dir, err := os.MkdirTemp("", "example")
@@ -31,13 +38,17 @@ func TestWriterThenParser(t *testing.T) {
 			filename := filepath.Join(dir, name)
 			err := writer.WriteTraceToFile(filename, tc.trace)
 			if err != nil {
-				t.Fatalf("error writing trace to file: %v", err)
+				t.Fatalf("in testcase %v, got error writing trace to file: %v", name, err)
 			}
 
-			got, _ := parser.ReadTraceFromFile(filename)
+			got, err := parser.ReadTraceFromFile(filename)
+			if err != nil {
+				t.Fatalf("in testcase %v, got error reading trace from file: %v", name, err)
+			}
 			diff := cmp.Diff(tc.trace, got, cmp.AllowUnexported(Step{}))
 			if diff != "" {
-				t.Fatalf(diff)
+				t.Log("Got a difference for testcase " + name)
+				t.Errorf("(-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -53,8 +64,11 @@ func TestWriteExamples(t *testing.T) {
 		"start_provider_chain": {stepStartProviderChain()},
 		"happyPath":            {happyPathSteps},
 		"democracy":            {democracySteps},
-		"slashThrottleSteps":   {slashThrottleSteps},
+		"slashThrottle":        {slashThrottleSteps},
 		"multipleConsumers":    {multipleConsumers},
+		"shorthappy":           {shortHappyPathSteps},
+		"rewardDenomConsumer":  {rewardDenomConsumerSteps},
+		"changeover":           {changeoverSteps},
 	}
 
 	dir := "tracehandler_testdata"
