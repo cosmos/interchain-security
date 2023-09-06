@@ -23,7 +23,7 @@ A minor version upgrade to the CONSUMER CCV module. This release includes variou
 
 Note:
 
-* This release is ONLY RELEVANT TO CONSUMERS. The most recent provider release is v3.1.0, and will eventually be the a release postfixed with `-provider`.
+* This release is ONLY RELEVANT TO CONSUMERS. The most recent provider release is v3.1.0, and will eventually be a release postfixed with `-provider`.
 * this is the first upgrade to the consumer module with a separate semver cycle from the provider module. See [contributing.md](./CONTRIBUTING.md#semantic-versioning) and [associated ADR](docs/docs/adrs/adr-012-separate-releasing.md) for more info.
 
 Changes:
