@@ -59,7 +59,7 @@ This is suited for CometMock+Gorelayer testing`,
 		},
 		"light-client-attack": {
 			testRun: DefaultTestRun(), steps: lightClientAttackSteps,
-			description: `This is like the short happy path, but uses light client attacks instead of double sign slashing.
+			description: `This is like the short happy path, but will slash validators for LightClientAttackEvidence instead of DuplicateVoteEvidence.
 This is suited for CometMock+Gorelayer testing, but currently does not work with CometBFT,
 since causing light client attacks is not implemented.`,
 		},
