@@ -215,15 +215,26 @@ func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddre
 	}
 }
 
+func (s *CCVTestSuite) newPacketFromProvider(data []byte, sequence uint64, path *ibctesting.Path, timeoutHeight clienttypes.Height, timeoutTimestamp uint64) channeltypes.Packet {
+	return channeltypes.NewPacket(data, sequence,
+		path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID,
+		path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID,
+		timeoutHeight, timeoutTimestamp)
+}
+
+func (s *CCVTestSuite) newPacketFromConsumer(data []byte, sequence uint64, path *ibctesting.Path, timeoutHeight clienttypes.Height, timeoutTimestamp uint64) channeltypes.Packet {
+	return channeltypes.NewPacket(data, sequence,
+		path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID,
+		path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID,
+		timeoutHeight, timeoutTimestamp)
+}
+
 // sendOnProviderRecvOnConsumer sends a packet from the provider chain and receives it on the consumer chain
 func sendOnProviderRecvOnConsumer(s *CCVTestSuite, path *ibctesting.Path, timeoutHeight clienttypes.Height, timeoutTimestamp uint64, data []byte) channeltypes.Packet {
 	sequence, err := path.EndpointB.SendPacket(timeoutHeight, timeoutTimestamp, data)
 	s.Require().NoError(err)
 
-	packet := channeltypes.NewPacket(data, sequence,
-		path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID,
-		path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID,
-		timeoutHeight, timeoutTimestamp)
+	packet := s.newPacketFromProvider(data, sequence, path, timeoutHeight, timeoutTimestamp)
 
 	err = path.EndpointA.RecvPacket(packet)
 	s.Require().NoError(err)
@@ -235,10 +246,7 @@ func sendOnConsumerRecvOnProvider(s *CCVTestSuite, path *ibctesting.Path, timeou
 	sequence, err := path.EndpointA.SendPacket(timeoutHeight, timeoutTimestamp, data)
 	s.Require().NoError(err)
 
-	packet := channeltypes.NewPacket(data, sequence,
-		path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID,
-		path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID,
-		timeoutHeight, timeoutTimestamp)
+	packet := s.newPacketFromConsumer(data, sequence, path, timeoutHeight, timeoutTimestamp)
 
 	err = path.EndpointB.RecvPacket(packet)
 	s.Require().NoError(err)
@@ -410,8 +418,7 @@ func (suite *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.
 	oldBlockTime := ctx.BlockTime()
 	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID, suite.path.EndpointA.ChannelID,
-		ccv.ProviderPortID, suite.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
+	packet := suite.newPacketFromConsumer(packetData.GetBytes(), 1, suite.path, clienttypes.Height{}, timeout)
 
 	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)
 }

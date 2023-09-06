@@ -4,7 +4,6 @@ import (
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -331,10 +330,7 @@ func (s *CCVTestSuite) TestPacketSpam() {
 	for sequence, data := range packetsData {
 		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
-		packet := channeltypes.NewPacket(data, uint64(sequence),
-			firstBundle.Path.EndpointA.ChannelConfig.PortID, firstBundle.Path.EndpointA.ChannelID,
-			firstBundle.Path.EndpointB.ChannelConfig.PortID, firstBundle.Path.EndpointB.ChannelID,
-			timeoutHeight, timeoutTimestamp)
+		packet := s.newPacketFromConsumer(data, uint64(sequence), firstBundle.Path, timeoutHeight, timeoutTimestamp)
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
@@ -393,10 +389,7 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 	for sequence, data := range packetsData {
 		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
-		packet := channeltypes.NewPacket(data, uint64(sequence),
-			firstBundle.Path.EndpointA.ChannelConfig.PortID, firstBundle.Path.EndpointA.ChannelID,
-			firstBundle.Path.EndpointB.ChannelConfig.PortID, firstBundle.Path.EndpointB.ChannelID,
-			timeoutHeight, timeoutTimestamp)
+		packet := s.newPacketFromConsumer(data, uint64(sequence), firstBundle.Path, timeoutHeight, timeoutTimestamp)
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
@@ -501,10 +494,7 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 	for i, data := range packetsData {
 		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
-		packet := channeltypes.NewPacket(data, ibcSeqs[i],
-			firstBundle.Path.EndpointA.ChannelConfig.PortID, firstBundle.Path.EndpointA.ChannelID,
-			firstBundle.Path.EndpointB.ChannelConfig.PortID, firstBundle.Path.EndpointB.ChannelID,
-			timeoutHeight, timeoutTimestamp)
+		packet := s.newPacketFromConsumer(data, ibcSeqs[i], firstBundle.Path, timeoutHeight, timeoutTimestamp)
 		// Type depends on index packets were appended from above
 		if (i+5)%10 == 0 {
 			vscMaturedPacketData := consumerPacketData.GetVscMaturedPacketData()
@@ -727,10 +717,7 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 	for i, data := range packetsData {
 		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
-		packet := channeltypes.NewPacket(data, uint64(i),
-			s.getFirstBundle().Path.EndpointA.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointA.ChannelID,
-			s.getFirstBundle().Path.EndpointB.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointB.ChannelID,
-			timeoutHeight, timeoutTimestamp)
+		packet := s.newPacketFromConsumer(data, uint64(i), s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
@@ -792,10 +779,7 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 		ibcSeqNum := uint64(i)
 		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
-		packet := channeltypes.NewPacket(data, ibcSeqNum,
-			s.getFirstBundle().Path.EndpointA.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointA.ChannelID,
-			s.getFirstBundle().Path.EndpointB.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointB.ChannelID,
-			timeoutHeight, timeoutTimestamp)
+		packet := s.newPacketFromConsumer(data, ibcSeqNum, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
@@ -834,10 +818,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 			data := s.constructVSCMaturedPacketFromConsumer(*bundle)
 			packetData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 			s.Require().NoError(err)
-			packet := channeltypes.NewPacket(data, ibcSeqNum,
-				ccvtypes.ConsumerPortID, bundle.Path.EndpointA.ChannelID,
-				ccvtypes.ProviderPortID, bundle.Path.EndpointB.ChannelID,
-				timeoutHeight, timeoutTimestamp)
+			packet := s.newPacketFromConsumer(data, ibcSeqNum, bundle.Path, timeoutHeight, timeoutTimestamp)
 			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(),
 				packet, *packetData.GetVscMaturedPacketData())
 		}
@@ -851,10 +832,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 				*s.providerChain.Vals.Validators[0], stakingtypes.Infraction_INFRACTION_DOWNTIME)
 			packetData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 			s.Require().NoError(err)
-			packet := channeltypes.NewPacket(data, ibcSeqNum,
-				ccvtypes.ConsumerPortID, bundle.Path.EndpointA.ChannelID,
-				ccvtypes.ProviderPortID, bundle.Path.EndpointB.ChannelID,
-				timeoutHeight, timeoutTimestamp)
+			packet := s.newPacketFromConsumer(data, ibcSeqNum, bundle.Path, timeoutHeight, timeoutTimestamp)
 			providerKeeper.OnRecvSlashPacket(s.providerCtx(),
 				packet, *packetData.GetSlashPacketData())
 		}
@@ -867,10 +845,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 			data := s.constructVSCMaturedPacketFromConsumer(*bundle)
 			packetData := ccvtypes.ConsumerPacketData{}
 			ccvtypes.ModuleCdc.MustUnmarshalJSON(data, &packetData)
-			packet := channeltypes.NewPacket(data, ibcSeqNum,
-				ccvtypes.ConsumerPortID, bundle.Path.EndpointA.ChannelID,
-				ccvtypes.ProviderPortID, bundle.Path.EndpointB.ChannelID,
-				timeoutHeight, timeoutTimestamp)
+			packet := s.newPacketFromConsumer(data, ibcSeqNum, bundle.Path, timeoutHeight, timeoutTimestamp)
 			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(),
 				packet, *packetData.GetVscMaturedPacketData())
 		}
@@ -941,10 +916,7 @@ func (s *CCVTestSuite) TestVscMaturedHandledPerBlockLimit() {
 			data := s.constructVSCMaturedPacketFromConsumer(*bundle)
 			packetData := ccvtypes.ConsumerPacketData{}
 			ccvtypes.ModuleCdc.MustUnmarshalJSON(data, &packetData)
-			packet := channeltypes.NewPacket(data, ibcSeqNum,
-				ccvtypes.ConsumerPortID, bundle.Path.EndpointA.ChannelID,
-				ccvtypes.ProviderPortID, bundle.Path.EndpointB.ChannelID,
-				timeoutHeight, timeoutTimestamp)
+			packet := s.newPacketFromConsumer(data, ibcSeqNum, bundle.Path, timeoutHeight, timeoutTimestamp)
 			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(),
 				packet, *packetData.GetVscMaturedPacketData())
 		}
@@ -958,10 +930,7 @@ func (s *CCVTestSuite) TestVscMaturedHandledPerBlockLimit() {
 				*s.providerChain.Vals.Validators[0], stakingtypes.Infraction_INFRACTION_DOWNTIME)
 			consumderPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 			s.Require().NoError(err)
-			packet := channeltypes.NewPacket(data, ibcSeqNum,
-				ccvtypes.ConsumerPortID, bundle.Path.EndpointA.ChannelID,
-				ccvtypes.ProviderPortID, bundle.Path.EndpointB.ChannelID,
-				timeoutHeight, timeoutTimestamp)
+			packet := s.newPacketFromConsumer(data, ibcSeqNum, bundle.Path, timeoutHeight, timeoutTimestamp)
 			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumderPacketData.GetSlashPacketData())
 		}
 	}

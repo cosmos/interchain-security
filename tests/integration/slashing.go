@@ -90,10 +90,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	valsetUpdateIdN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// receive the slash packet on the provider chain. RecvPacket() calls the provider endblocker twice
-	packet := channeltypes.NewPacket(data, sequence,
-		s.getFirstBundle().Path.EndpointA.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointA.ChannelID,
-		s.getFirstBundle().Path.EndpointB.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointB.ChannelID,
-		timeoutHeight, timeoutTimestamp)
+	packet := s.newPacketFromConsumer(data, sequence, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
 	err = s.path.EndpointB.RecvPacket(packet)
 	s.Require().NoError(err)
 
@@ -266,9 +263,8 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 			SlashPacketData: &spd,
 		},
 	)
-	packet := channeltypes.NewPacket(cpd.GetBytes(), // Consumer always sends v1 packet data
-		1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
-		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, 0)
+	packet := s.newPacketFromConsumer(cpd.GetBytes(), // Consumer always sends v1 packet data
+		1, s.path, clienttypes.Height{}, 0)
 
 	// Map infraction height on provider so validation passes and provider returns valid ack result
 	providerKeeper.SetValsetUpdateBlockHeight(s.providerCtx(), spd.ValsetUpdateId, 47923)

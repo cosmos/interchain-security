@@ -58,10 +58,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 		timeoutHeight    = clienttypes.Height{}
 		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
 	)
-	packet1 := channeltypes.NewPacket(packetData1, 1,
-		s.getFirstBundle().Path.EndpointA.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointA.ChannelID,
-		s.getFirstBundle().Path.EndpointB.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointB.ChannelID,
-		timeoutHeight, timeoutTimestamp)
+	packet1 := s.newPacketFromConsumer(packetData1, 1, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
 	// Mock the sending of the packet on consumer
 	consumerKeeper.AppendPendingPacket(s.consumerCtx(), ccvtypes.SlashPacket,
 		&ccvtypes.ConsumerPacketData_SlashPacketData{
@@ -114,10 +111,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	// Construct and mock the sending of a second packet on consumer
 	tmval2 := s.providerChain.Vals.Validators[2]
 	packetData2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME)
-	packet2 := channeltypes.NewPacket(packetData2, 1,
-		s.getFirstBundle().Path.EndpointA.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointA.ChannelID,
-		s.getFirstBundle().Path.EndpointB.ChannelConfig.PortID, s.getFirstBundle().Path.EndpointB.ChannelID,
-		timeoutHeight, timeoutTimestamp)
+	packet2 := s.newPacketFromConsumer(packetData2, 1, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
 
 	consumerKeeper.AppendPendingPacket(s.consumerCtx(), ccvtypes.SlashPacket,
 		&ccvtypes.ConsumerPacketData_SlashPacketData{
