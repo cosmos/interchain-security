@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"fmt"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
@@ -12,6 +13,41 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
+
+func (k Keeper) slashValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) {
+	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
+
+	if !found {
+		//logger.Error("validator not found or is unbonded", providerAddr.String())
+		return
+	}
+	valOperatorAddress := val.GetOperator()
+
+	undelegationsInTokens := sdk.NewInt(0)
+	for _, v := range k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, valOperatorAddress) {
+		for _, entry := range v.Entries {
+			undelegationsInTokens = undelegationsInTokens.Add(entry.InitialBalance)
+		}
+	}
+
+	redelegationsInTokens := sdk.NewInt(0)
+	for _, v := range k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, valOperatorAddress) {
+		for _, entry := range v.Entries {
+			redelegationsInTokens = redelegationsInTokens.Add(entry.InitialBalance)
+		}
+	}
+
+	powerReduction := k.stakingKeeper.PowerReduction(ctx)
+	undelegationsAndRedelegationsInPower := sdk.TokensToConsensusPower(
+		undelegationsInTokens.Add(redelegationsInTokens), powerReduction)
+
+	power := k.stakingKeeper.GetLastValidatorPower(ctx, valOperatorAddress)
+	totalPower := power + undelegationsAndRedelegationsInPower
+	slashFraction := k.slashingKeeper.SlashFractionDoubleSign(ctx)
+
+	// TODO: what if it's another key ????
+	k.stakingKeeper.Slash(ctx, providerAddr.ToSdkConsAddr(), 0, totalPower, slashFraction, stakingtypes.DoubleSign)
+}
 
 // HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer chain ID
 // and a public key and, if successful, executes the jailing of the malicious validator.
@@ -34,7 +70,8 @@ func (k Keeper) HandleConsumerDoubleVoting(
 	)
 
 	// execute the jailing
-	k.JailValidator(ctx, providerAddr)
+	k.slashValidator(ctx, providerAddr)
+	k.JailAndTombstoneValidator(ctx, providerAddr)
 
 	k.Logger(ctx).Info(
 		"confirmed equivocation",

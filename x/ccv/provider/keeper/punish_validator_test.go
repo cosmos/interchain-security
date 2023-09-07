@@ -125,7 +125,7 @@ func TestJailValidator(t *testing.T) {
 		gomock.InOrder(tc.expectedCalls(ctx, mocks, tc.provAddr)...)
 
 		// Execute method and assert expected mock calls
-		providerKeeper.JailValidator(ctx, tc.provAddr)
+		providerKeeper.JailAndTombstoneValidator(ctx, tc.provAddr)
 
 		ctrl.Finish()
 	}

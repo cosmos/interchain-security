@@ -25,6 +25,8 @@ type StakingKeeper interface {
 	GetValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 	UnbondingCanComplete(ctx sdk.Context, id uint64) error
 	UnbondingTime(ctx sdk.Context) time.Duration
+	GetUnbondingDelegationsFromValidator(ctx sdk.Context, valAddr sdk.ValAddress) (ubds []stakingtypes.UnbondingDelegation)
+	GetRedelegationsFromSrcValidator(ctx sdk.Context, valAddr sdk.ValAddress) (reds []stakingtypes.Redelegation)
 	GetValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) (validator stakingtypes.Validator, found bool)
 	GetLastValidatorPower(ctx sdk.Context, operator sdk.ValAddress) (power int64)
 	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
