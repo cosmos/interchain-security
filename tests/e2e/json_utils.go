@@ -109,10 +109,10 @@ type ChainStateWithProposalTypes struct {
 // custom marshal and unmarshal functions for the chainstate that convert proposals to/from the auxiliary type with type info
 
 // transform the ChainState into a ChainStateWithProposalTypes by adding type info to the proposals
-func (c *ChainState) MarshalJson() ([]byte, error) {
+func (c ChainState) MarshalJson() ([]byte, error) {
 	fmt.Println("Custom marshal is called")
 	chainStateWithProposalTypes := ChainStateWithProposalTypes{
-		ChainState: *c,
+		ChainState: c,
 	}
 	if c.Proposals != nil {
 		proposalsWithTypes := make(map[uint]ProposalAndType)

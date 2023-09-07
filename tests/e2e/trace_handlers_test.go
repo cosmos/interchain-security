@@ -11,10 +11,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-// tests unmarshalling and marshalling a ChainState object
-func TestMarshal(t *testing.T) {
-}
-
 // define some sets of steps to test with
 var proposalSubmissionSteps = []Step{
 	{submitTextProposalAction{Title: "Proposal 1", Description: "Description 1"}, State{}},
