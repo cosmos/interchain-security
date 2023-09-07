@@ -145,11 +145,11 @@ func (k Keeper) SetValidatorByConsumerAddr(
 
 func (k Keeper) GetValidatorsByConsumerAddr(ctx sdk.Context, consumerConsAddr sdk.ConsAddress) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
 	store := ctx.KVStore(k.storeKey)
-	prefix := types.PrefixWithConsAddress(types.ValidatorsByConsumerAddrBytePrefix, consumerConsAddr)
+	prefix := types.PrefixWithLenConsAddress(types.ValidatorsByConsumerAddrBytePrefix, consumerConsAddr)
 	iterator := sdk.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		chainID, consumerAddrTmp, err := types.ParseConsAddrKeyAndChainID(types.ValidatorsByConsumerAddrBytePrefix, consumerConsAddr, iterator.Key())
+		chainID, consumerAddrTmp, err := types.ParseConsAddrKeyAndChainID(types.ValidatorsByConsumerAddrBytePrefix, iterator.Key())
 		if err != nil {
 			// An error here would indicate something is very wrong,
 			// store keys are assumed to be correctly serialized in SetValidatorByConsumerAddr.
@@ -174,7 +174,7 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string)
 	prefix := []byte{types.ValidatorsByConsumerAddrBytePrefix}
 	iterator := sdk.KVStorePrefixIterator(store, prefix)
 	for ; iterator.Valid(); iterator.Next() {
-		cID, consumerAddrTmp, err := types.ParseConsAddrKeyAndChainID(types.ValidatorsByConsumerAddrBytePrefix, consumerConsAddr, iterator.Key())
+		cID, consumerAddrTmp, err := types.ParseConsAddrKeyAndChainID(types.ValidatorsByConsumerAddrBytePrefix, iterator.Key())
 		if err != nil {
 			// An error here would indicate something is very wrong,
 			// store keys are assumed to be correctly serialized in SetValidatorByConsumerAddr.

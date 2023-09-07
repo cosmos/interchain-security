@@ -37,7 +37,7 @@ func (k Keeper) MigrateConsumerAddrStoreKey(ctx sdk.Context) error {
 		consumerAddr := types.NewConsumerConsAddress(consumerAddrTmp)
 		providerAddr := types.NewProviderConsAddress(iteratorCon.Value())
 
-		// bytePrefix | ConsAddress | len(chainID) | chainID
+		// bytePrefix | len(ConsAddress) | ConsAddress | chainID
 		k.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
 
 		// delete old kv
