@@ -343,14 +343,26 @@ func MustParseGlobalSlashEntryKey(bz []byte) (
 	return recvTime, chainID, ibcSeqNum
 }
 
+// ConsumerValidatorsKeyLegacy returns the key under which the
+// validator assigned keys for every consumer chain are stored
+// key: bytePrefix | len(chainID) | chainID | ConsAddress
+func ConsumerValidatorsKeyLegacy(chainID string, addr ProviderConsAddress) []byte {
+	return ChainIdAndConsAddrKeyLegacy(ConsumerValidatorsBytePrefix, chainID, addr.ToSdkConsAddr())
+}
+
 // ConsumerValidatorsKey returns the key under which the
 // validator assigned keys for every consumer chain are stored
+// key: bytePrefix | ConsAddress | len(chainID) | chainID
 func ConsumerValidatorsKey(chainID string, addr ProviderConsAddress) []byte {
 	return ChainIdAndConsAddrKey(ConsumerValidatorsBytePrefix, chainID, addr.ToSdkConsAddr())
 }
 
-// ValidatorsByConsumerAddrKey returns the key under which the mapping from validator addresses
+// ValidatorsByConsumerAddrKeyLegacy returns the key under which the mapping from validator addresses
 // on consumer chains to validator addresses on the provider chain is stored
+func ValidatorsByConsumerAddrKeyLegacy(chainID string, addr ConsumerConsAddress) []byte {
+	return ChainIdAndConsAddrKeyLegacy(ValidatorsByConsumerAddrBytePrefix, chainID, addr.ToSdkConsAddr())
+}
+
 func ValidatorsByConsumerAddrKey(chainID string, addr ConsumerConsAddress) []byte {
 	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr.ToSdkConsAddr())
 }
@@ -358,7 +370,7 @@ func ValidatorsByConsumerAddrKey(chainID string, addr ConsumerConsAddress) []byt
 // KeyAssignmentReplacementsKey returns the key under which the
 // key assignments that need to be replaced in the current block are stored
 func KeyAssignmentReplacementsKey(chainID string, addr ProviderConsAddress) []byte {
-	return ChainIdAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr.ToSdkConsAddr())
+	return ChainIdAndConsAddrKeyLegacy(KeyAssignmentReplacementsBytePrefix, chainID, addr.ToSdkConsAddr())
 }
 
 // ConsumerAddrsToPruneKey returns the key under which the
@@ -414,6 +426,15 @@ func ChainIdWithLenKey(prefix byte, chainID string) []byte {
 	)
 }
 
+// PrefixWithConsAddress returns the key with the following format:
+// bytePrefix | Address
+func PrefixWithConsAddress(prefix byte, addr sdk.ConsAddress) []byte {
+	return ccvtypes.AppendMany(
+		[]byte{prefix},
+		addr,
+	)
+}
+
 // ParseChainIdAndTsKey returns the chain ID and time for a ChainIdAndTs key
 func ParseChainIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
 	expectedPrefix := []byte{prefix}
@@ -455,9 +476,9 @@ func ParseChainIdAndUintIdKey(prefix byte, bz []byte) (string, uint64, error) {
 	return chainID, uintID, nil
 }
 
-// ChainIdAndConsAddrKey returns the key with the following format:
+// ChainIdAndConsAddrKeyLegacy returns the key with the following format:
 // bytePrefix | len(chainID) | chainID | ConsAddress
-func ChainIdAndConsAddrKey(prefix byte, chainID string, addr sdk.ConsAddress) []byte {
+func ChainIdAndConsAddrKeyLegacy(prefix byte, chainID string, addr sdk.ConsAddress) []byte {
 	partialKey := ChainIdWithLenKey(prefix, chainID)
 	return ccvtypes.AppendMany(
 		// Append the partialKey
@@ -467,7 +488,20 @@ func ChainIdAndConsAddrKey(prefix byte, chainID string, addr sdk.ConsAddress) []
 	)
 }
 
-// ParseChainIdAndConsAddrKey returns the chain ID and ConsAddress for a ChainIdAndConsAddrKey key
+// ChainIdAndConsAddrKey returns the key with the following format:
+// bytePrefix | ConsAddress | len(chainID) | chainID
+func ChainIdAndConsAddrKey(prefix byte, chainID string, addr sdk.ConsAddress) []byte {
+	chainIdL := len(chainID)
+	partialKey := PrefixWithConsAddress(prefix, addr)
+	return ccvtypes.AppendMany(
+		partialKey,
+		sdk.Uint64ToBigEndian(uint64(chainIdL)),
+		// Append the chainID
+		[]byte(chainID),
+	)
+}
+
+// ParseChainIdAndConsAddrKey returns the chain ID and ConsAddress for a ChainIdAndConsAddrKey key: bytePrefix | len(chainID) | chainID | ConsAddress
 func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress, error) {
 	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
@@ -478,6 +512,27 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
 	addr := bz[prefixL+8+int(chainIdL):]
 	return chainID, addr, nil
+}
+
+// ParseConsAddrKeyAndChainID returns the chain ID and ConsAddress for a ConsAddrKeyAndChainID key:  bytePrefix | ConsAddress | len(chainID) | chainID
+func ParseConsAddrKeyAndChainID(prefix byte, consAddr sdk.ConsAddress, bz []byte) (string, sdk.ConsAddress, error) {
+	expectedPrefix := []byte{prefix}
+	prefixL := len(expectedPrefix)
+	addrL := len(consAddr)
+
+	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
+		return "", nil, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
+	}
+
+	if addr := bz[prefixL:addrL]; bytes.Equal(addr, consAddr) {
+		return "", nil, fmt.Errorf("invalid prefix concensus address; expected: %X, got: %X", addr, consAddr)
+	}
+	prefixAddrL := len(expectedPrefix) + len(consAddr)
+
+	chainIdL := sdk.BigEndianToUint64(bz[prefixAddrL : prefixAddrL+8])
+	chainID := string(bz[prefixAddrL+8 : prefixAddrL+8+int(chainIdL)])
+
+	return chainID, consAddr, nil
 }
 
 func VSCMaturedHandledThisBlockKey() []byte {

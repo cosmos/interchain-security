@@ -118,7 +118,7 @@ func TestValidatorByConsumerAddrCRUD(t *testing.T) {
 	require.NotEmpty(t, providerAddrResult, "provider address is empty")
 	require.Equal(t, providerAddr, providerAddrResult)
 
-	keeper.DeleteValidatorByConsumerAddr(ctx, chainID, consumerAddr)
+	keeper.DeleteValidatorByConsumerAddrLegacy(ctx, chainID, consumerAddr)
 	providerAddrResult, found = keeper.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr)
 	require.False(t, found, "provider address was found")
 	require.Empty(t, providerAddrResult, "provider address not empty")

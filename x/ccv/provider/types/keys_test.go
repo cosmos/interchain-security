@@ -92,8 +92,8 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ThrottledPacketDataSizeKey("chainID"),
 		providertypes.ThrottledPacketDataKey("chainID", 88),
 		providertypes.GlobalSlashEntryKey(providertypes.GlobalSlashEntry{}),
-		providertypes.ConsumerValidatorsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
-		providertypes.ValidatorsByConsumerAddrKey("chainID", providertypes.NewConsumerConsAddress([]byte{0x05})),
+		providertypes.ConsumerValidatorsKeyLegacy("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.ValidatorsByConsumerAddrKeyLegacy("chainID", providertypes.NewConsumerConsAddress([]byte{0x05})),
 		providertypes.KeyAssignmentReplacementsKey("chainID", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ConsumerAddrsToPruneKey("chainID", 88),
 		providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05})),
@@ -228,7 +228,7 @@ func TestChainIdAndConsAddrAndParse(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		key := providertypes.ChainIdAndConsAddrKey(test.prefix, test.chainID, test.addr)
+		key := providertypes.ChainIdAndConsAddrKeyLegacy(test.prefix, test.chainID, test.addr)
 		require.NotEmpty(t, key)
 		// Expected bytes = prefix + chainID length + chainID + consAddr bytes
 		expectedLen := 1 + 8 + len(test.chainID) + len(test.addr)

@@ -1,10 +1,8 @@
 package keeper
 
 import (
-	"fmt"
-
 	errorsmod "cosmossdk.io/errors"
-
+	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -135,30 +133,23 @@ func (k Keeper) SetValidatorByConsumerAddr(
 	store.Set(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr), bz)
 }
 
-// GetValidatorsByConsumerAddrs gets all the mappings from consensus addresses
+// GetValidatorsByConsumerAddr gets all the mappings from consensus addresses
 // on a given consumer chain to consensus addresses on the provider chain.
 // If chainID is nil, it returns all the mappings from consensus addresses on all consumer chains.
 //
 // Note that the mappings for a consumer chain are stored under keys with the following format:
-// ValidatorsByConsumerAddrBytePrefix | len(chainID) | chainID | consumerAddress
+// ValidatorsByConsumerAddrBytePrefix | consumerAddress | len(chainID) | chainID
 // Thus, the returned array is
 //   - in ascending order of consumerAddresses, if chainID is not nil;
 //   - in undetermined order, if chainID is nil.
-func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
+
+func (k Keeper) GetValidatorsByConsumerAddr(ctx sdk.Context, consumerConsAddr sdk.ConsAddress) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
 	store := ctx.KVStore(k.storeKey)
-	var prefix []byte
-	if chainID == nil {
-		// iterate over the mappings from consensus addresses on all consumer chains
-		prefix = []byte{types.ValidatorsByConsumerAddrBytePrefix}
-	} else {
-		// iterate over the mappings from consensus addresses on chainID
-		prefix = types.ChainIdWithLenKey(types.ValidatorsByConsumerAddrBytePrefix, *chainID)
-	}
+	prefix := types.PrefixWithConsAddress(types.ValidatorsByConsumerAddrBytePrefix, consumerConsAddr)
 	iterator := sdk.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		// TODO: store chainID and consumer cons address in value bytes, marshaled as protobuf type
-		chainID, consumerAddrTmp, err := types.ParseChainIdAndConsAddrKey(types.ValidatorsByConsumerAddrBytePrefix, iterator.Key())
+		chainID, consumerAddrTmp, err := types.ParseConsAddrKeyAndChainID(types.ValidatorsByConsumerAddrBytePrefix, consumerConsAddr, iterator.Key())
 		if err != nil {
 			// An error here would indicate something is very wrong,
 			// store keys are assumed to be correctly serialized in SetValidatorByConsumerAddr.
@@ -175,6 +166,41 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string)
 	}
 
 	return validatorConsumerAddrs
+}
+
+// ValidatorsByConsumerAddrBytePrefix | consumerAddress | len(chainID) | chainID
+func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
+	store := ctx.KVStore(k.storeKey)
+	prefix := []byte{types.ValidatorsByConsumerAddrBytePrefix}
+	iterator := sdk.KVStorePrefixIterator(store, prefix)
+	for ; iterator.Valid(); iterator.Next() {
+		cID, consumerAddrTmp, err := types.ParseConsAddrKeyAndChainID(types.ValidatorsByConsumerAddrBytePrefix, consumerConsAddr, iterator.Key())
+		if err != nil {
+			// An error here would indicate something is very wrong,
+			// store keys are assumed to be correctly serialized in SetValidatorByConsumerAddr.
+			panic(fmt.Sprintf("failed to parse chainID and consumer address: %v", err))
+		}
+
+		if cID == *chainID {
+			consumerAddr := types.NewConsumerConsAddress(consumerAddrTmp)
+			providerAddr := types.NewProviderConsAddress(iterator.Value())
+
+			validatorConsumerAddrs = append(validatorConsumerAddrs, types.ValidatorByConsumerAddr{
+				ConsumerAddr: consumerAddr.ToSdkConsAddr(),
+				ProviderAddr: providerAddr.ToSdkConsAddr(),
+				ChainId:      cID,
+			})
+		}
+	}
+
+	return validatorConsumerAddrs
+}
+
+// DeleteValidatorByConsumerAddrLegacy deletes the mapping from a validator's consensus address on a consumer
+// to the validator's consensus address on the provider
+func (k Keeper) DeleteValidatorByConsumerAddrLegacy(ctx sdk.Context, chainID string, consumerAddr types.ConsumerConsAddress) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ValidatorsByConsumerAddrKeyLegacy(chainID, consumerAddr))
 }
 
 // DeleteValidatorByConsumerAddr deletes the mapping from a validator's consensus address on a consumer
@@ -610,10 +636,22 @@ func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
 	for _, validatorConsumerAddr := range k.GetAllValidatorConsumerPubKeys(ctx, &chainID) {
 		providerAddr := types.NewProviderConsAddress(validatorConsumerAddr.ProviderAddr)
 		k.DeleteValidatorConsumerPubKey(ctx, chainID, providerAddr)
+
+		//consAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(*validatorConsumerAddr.ConsumerKey)
+		//if err != nil {
+		//	// todo
+		//	panic(err)
+		//}
+		//consumerAddr := types.NewConsumerConsAddress(consAddrTmp)
+		//
+		//k.DeleteValidatorByConsumerAddr(ctx, chainID, consumerAddr)
 	}
 
-	// delete ValidatorsByConsumerAddr
+	//// delete ValidatorsByConsumerAddr
 	for _, validatorConsumerAddr := range k.GetAllValidatorsByConsumerAddr(ctx, &chainID) {
+		if validatorConsumerAddr.ChainId != chainID {
+			continue
+		}
 		consumerAddr := types.NewConsumerConsAddress(validatorConsumerAddr.ConsumerAddr)
 		k.DeleteValidatorByConsumerAddr(ctx, chainID, consumerAddr)
 	}
