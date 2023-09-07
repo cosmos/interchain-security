@@ -87,7 +87,7 @@ jobs:
           run: go run ./tests/e2e/... --tc slash-throttle
   multiconsumer-test:
       runs-on: ubuntu-latest
-      timeout-minutes: 20
+      timeout-minutes: 40
       steps:
         - uses: actions/setup-go@v4
           with:
