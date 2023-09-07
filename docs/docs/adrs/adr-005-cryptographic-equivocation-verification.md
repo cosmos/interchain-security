@@ -80,10 +80,34 @@ After having successfully verified a misbehaviour, the endpoint will execute the
 A double signing attack, also known as an equivocation, occurs when a validator sends two different votes for a block in the same round of a consensus instance.
 The Tendermint consensus operates for each block height, with multiple rounds of voting per height, and voting twice in the same round is strictly prohibited.
 
-Explain the votes data structure
+- How equivocations are detected ?
 
+- How are they reported ?
+
+
+- How it is verified ?
+    - note on data loss through ABCI
+
+How are the validators  punished in consequence ?
 
 ## Decision
+
+
+ - We will introduce a new endpoint: handling a SubmitConsumerDoubleVote message
+
+ - The message contain a DuplicateVoteEvidence with the votes and their signatures
+
+ - The light client header at the infraction height infraction_block_header 
+
+ - Verification is done as for tendermint using the validator pubkey and the chain ID received in the message
+
+ - Note that since for this first iteration we will only slash validators so no voting power and infraction height timestamp / evidence age must is checked
+   since the time when the jailing is executed don't change anything jail forever - don't speak about slashing since we're doing it yet
+
+- Note that we change remove the tombstoning since it'd would prevent to get slash using governance proposal 
+
+
+
 
 
 ### Current limitations:
