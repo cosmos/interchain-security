@@ -181,7 +181,7 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string)
 			panic(fmt.Sprintf("failed to parse chainID and consumer address: %v", err))
 		}
 
-		if cID == *chainID {
+		if cID == *chainID || chainID == nil {
 			consumerAddr := types.NewConsumerConsAddress(consumerAddrTmp)
 			providerAddr := types.NewProviderConsAddress(iterator.Value())
 
