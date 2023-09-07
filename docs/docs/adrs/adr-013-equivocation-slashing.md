@@ -16,7 +16,7 @@ Currently, the provider chain can [receive and verify evidence of equivocation](
 
 In the remainder of this section, we explain how slashing is performed on a single chain and show why slashing on the provider for equivocation on the consumer is challenging.
 
-Note that future versions of the Cosmos SDK and CometBFT could modify the way we slash, etc. Therefore, a future reader of this ADR, should note that when we refer to Cosmos SDK and CometBFT we specifically refer to their [v0.47](https://docs.cosmos.network/v0.47/intro/overview) and [v0.37](https://docs.cometbft.com/v0.37/) versions respectively.
+Note that future versions of the Cosmos SDK, CometBFT, and ibc-go could modify the way we slash, etc. Therefore, a future reader of this ADR, should note that when we refer to Cosmos SDK, CometBFT, and ibc-go we specifically refer to their [v0.47](https://docs.cosmos.network/v0.47/intro/overview),  [v0.37](https://docs.cometbft.com/v0.37/) and [v7.3.0](https://github.com/cosmos/ibc-go/blob/v7.3.0) versions respectively.
 
 ### Single-chain slashing
 Slashing is implemented across the [slashing](https://docs.cosmos.network/v0.47/modules/slashing)
@@ -76,7 +76,7 @@ type DuplicateVoteEvidence struct {
 ```
 The "abci specific information" fields cannot be trusted because they are not signed. Therefore,
 we can use neither `ValidatorPower` for slashing on the provider chain, nor the `Timestamp` to check the evidence age. We can get the `infractionHeight` from the votes, but this `infractionHeight` corresponds to the infraction height on the consumer and **not** on the provider chain.
-
+Similarly, when a relayer or a user sends evidence through a [MsgSubmitConsumerMisbehaviour](https://github.com/cosmos/interchain-security/pull/826) message, the provider gets access to [Misbehaviour](https://github.com/cosmos/ibc-go/blob/v7.3.0/proto/ibc/lightclients/tendermint/v1/tendermint.proto#L79) that we cannot use to extract the infraction height, power, or the time on the provider chain.
 
 ## Proposed solution
 As a first iteration, we propose the following approach. At the moment the provider receives evidence of equivocation on a consumer:
@@ -84,10 +84,12 @@ As a first iteration, we propose the following approach. At the moment the provi
 2. slash all delegations using as voting `power` the sum of the voting power of the misbehaving validator and the power of all the ongoing undelegations and redelegations.
 
 **Evidence expiration:** Additionally, because we cannot infer the actual time of the evidence (i.e., the timestamp of the evidence cannot be trusted), we do not consider _evidence expiration_ and hence old evidence is never ignored (e.g., the provider would act on 3 year-old evidence of equivocation on a consumer).
-Note that we do not need to store equivocation evidence to avoid slashing a validator more than once, because we [do not slash](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0/x/evidence/keeper/infraction.go#L94) tombstoned validators and we [tombstone](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0/x/evidence/keeper/infraction.go#L138) a validator when slashed.
+Additionally, we do not need to store equivocation evidence to avoid slashing a validator more than once, because we [do not slash](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0/x/evidence/keeper/infraction.go#L94) tombstoned validators and we [tombstone](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0/x/evidence/keeper/infraction.go#L138) a validator when slashed.
+
+We do not act on evidence that was signed by a validator [consensus key](https://tutorials.cosmos.network/tutorials/9-path-to-prod/3-keys.html#what-validator-keys) that is _pruned_ when we receive the evidence. We prune a validator's consensus key if the validator has assigned a new consumer key (using `MsgAssignConsumerKey`) and an unbonding period on the consumer chain has elapsed (see [key assignment ADR](https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/adr-001-key-assignment.md)). Note that the provider chain is informed that the unbonding period has elapsed on the consumer when the provider receives a `VSCMaturedPacket` and because of this, if the consumer delays the sending of a `VSCMaturedPacket`, we would delay the pruning of the key as well.
 
 ### Implementation
-The following logic needs to be added to the [HandleConsumerDoubleVoting](https://github.com/cosmos/interchain-security/pull/1232) method:
+The following logic needs to be added to the [HandleConsumerDoubleVoting](https://github.com/cosmos/interchain-security/pull/1232) and [HandleConsumerMisbehaviour](https://github.com/cosmos/interchain-security/pull/826) methods:
 ```go
 undelegationsInTokens := sdk.NewInt(0)
 for _, v := range k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, validatorAddress) {
