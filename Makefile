@@ -10,8 +10,8 @@ install: go.sum
 		GOWORK='off' go install $(BUILD_FLAGS) ./cmd/interchain-security-sd
 
 # run all tests: unit, integration, diff, and E2E
-test:
-	go test ./... && go run ./tests/e2e/...
+test: 
+	go test ./... && go run ./e2e/... 
 
 # run all unit tests
 test-unit:
@@ -23,7 +23,7 @@ test-short:
 
 # run E2E tests
 test-e2e:
-	go run ./tests/e2e/...
+	go run ./e2e/...
 
 # run difference tests
 test-diff:
@@ -31,51 +31,51 @@ test-diff:
 
 # run only happy path E2E tests
 test-e2e-short:
-	go run ./tests/e2e/... --tc happy-path
+	go run ./e2e/... --tc happy-path
 
 # run only happy path E2E tests with cometmock
 # this set of traces does not test equivocation but it does check downtime
 test-e2e-short-cometmock:
-	go run ./tests/e2e/... --tc happy-path-short --use-cometmock --use-gorelayer
+	go run ./e2e/... --tc happy-path-short --use-cometmock --use-gorelayer
 
 # run full E2E tests in sequence (including multiconsumer)
 test-e2e-multi-consumer:
-	go run ./tests/e2e/... --include-multi-consumer
+	go run ./e2e/... --include-multi-consumer
 
 # run full E2E tests in parallel (including multiconsumer)
 test-e2e-parallel:
-	go run ./tests/e2e/... --include-multi-consumer --parallel
+	go run ./e2e/... --include-multi-consumer --parallel
 
 # run full E2E tests in sequence (including multiconsumer) using latest tagged gaia
 test-gaia-e2e:
-	go run ./tests/e2e/... --include-multi-consumer --use-gaia
+	go run ./e2e/... --include-multi-consumer --use-gaia
 
 # run only happy path E2E tests using latest tagged gaia
 test-gaia-e2e-short:
-	go run ./tests/e2e/... --tc happy-path --use-gaia
+	go run ./e2e/... --happy-path-only --use-gaia
 
 # run full E2E tests in parallel (including multiconsumer) using latest tagged gaia
 test-gaia-e2e-parallel:
-	go run ./tests/e2e/... --include-multi-consumer --parallel --use-gaia
+	go run ./e2e/... --include-multi-consumer --parallel --use-gaia
 
 # run full E2E tests in sequence (including multiconsumer) using specific tagged version of gaia
 # usage: GAIA_TAG=v9.0.0 make test-gaia-e2e-tagged
 test-gaia-e2e-tagged:
-	go run ./tests/e2e/... --include-multi-consumer --use-gaia --gaia-tag $(GAIA_TAG)
+	go run ./e2e/... --include-multi-consumer --use-gaia --gaia-tag $(GAIA_TAG)
 
 # run only happy path E2E tests using latest tagged gaia
 # usage: GAIA_TAG=v9.0.0 make test-gaia-e2e-short-tagged
 test-gaia-e2e-short-tagged:
-	go run ./tests/e2e/... --tc happy-path --use-gaia --gaia-tag $(GAIA_TAG)
+	go run ./e2e/... --happy-path-only --use-gaia --gaia-tag $(GAIA_TAG)
 
 # run full E2E tests in parallel (including multiconsumer) using specific tagged version of gaia
 # usage: GAIA_TAG=v9.0.0 make test-gaia-e2e-parallel-tagged
 test-gaia-e2e-parallel-tagged:
-	go run ./tests/e2e/... --include-multi-consumer --parallel --use-gaia --gaia-tag $(GAIA_TAG)
+	go run ./e2e/... --include-multi-consumer --parallel --use-gaia --gaia-tag $(GAIA_TAG)
 
 # run all tests with caching disabled
 test-no-cache:
-	go test ./... -count=1 && go run ./tests/e2e/...
+	go test ./... -count=1 && go run ./e2e/...
 
 ###############################################################################
 ###                                Linting                                  ###
