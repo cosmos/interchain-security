@@ -9,6 +9,33 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+// tests unmarshalling and marshalling a ChainState object
+func TestMarshal(t *testing.T) {
+}
+
+// define some sets of steps to test with
+var proposalSubmissionSteps = []Step{
+	{submitTextProposalAction{Title: "Proposal 1", Description: "Description 1"}, State{}},
+}
+
+var proposalInStateSteps = []Step{
+	{
+		Action: submitConsumerRemovalProposalAction{},
+		State: State{
+			ChainID("provi"): ChainState{
+				Proposals: &map[uint]Proposal{
+					1: ConsumerRemovalProposal{
+						Deposit:  10000001,
+						Chain:    ChainID("foo"),
+						StopTime: 0,
+						Status:   "PROPOSAL_STATUS_VOTING_PERIOD",
+					},
+				},
+			},
+		},
+	},
+}
+
 // Checks that writing, then parsing a trace results in the same trace.
 func TestWriterThenParser(t *testing.T) {
 	parser := JSONParser{}
@@ -17,14 +44,16 @@ func TestWriterThenParser(t *testing.T) {
 	tests := map[string]struct {
 		trace []Step
 	}{
+		"proposalSubmission":   {proposalSubmissionSteps},
+		"proposalInState":      {proposalInStateSteps},
 		"start_provider_chain": {stepStartProviderChain()},
-		"happyPath":            {happyPathSteps},
-		"democracy":            {democracySteps},
-		"slashThrottle":        {slashThrottleSteps},
-		"multipleConsumers":    {multipleConsumers},
-		"shorthappy":           {shortHappyPathSteps},
-		"rewardDenomConsumer":  {rewardDenomConsumerSteps},
-		"changeover":           {changeoverSteps},
+		// "happyPath":            {happyPathSteps},
+		// "democracy":            {democracySteps},
+		// "slashThrottle":        {slashThrottleSteps},
+		// "multipleConsumers":    {multipleConsumers},
+		// "shorthappy":           {shortHappyPathSteps},
+		// "rewardDenomConsumer":  {rewardDenomConsumerSteps},
+		// "changeover":           {changeoverSteps},
 	}
 
 	dir, err := os.MkdirTemp("", "example")

@@ -45,7 +45,7 @@ func (writer JSONWriter) WriteTraceToFile(filepath string, trace []Step) error {
 	}
 	jsonobj, err := json.Marshal(traceWithMarshalledActions)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	err = os.WriteFile(filepath, jsonobj, 0o600)

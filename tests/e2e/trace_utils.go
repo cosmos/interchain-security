@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -14,51 +15,131 @@ type StepWithActionType struct {
 }
 
 // has to be manually kept in sync with the available action types.
-var actionRegistry = map[string]reflect.Type{
-	"main.submitConsumerAdditionProposalAction":  reflect.TypeOf(submitConsumerAdditionProposalAction{}),
-	"main.StartChainAction":                      reflect.TypeOf(StartChainAction{}),
-	"main.SendTokensAction":                      reflect.TypeOf(SendTokensAction{}),
-	"main.submitTextProposalAction":              reflect.TypeOf(submitTextProposalAction{}),
-	"main.submitConsumerRemovalProposalAction":   reflect.TypeOf(submitConsumerRemovalProposalAction{}),
-	"main.submitEquivocationProposalAction":      reflect.TypeOf(submitEquivocationProposalAction{}),
-	"main.submitParamChangeLegacyProposalAction": reflect.TypeOf(submitParamChangeLegacyProposalAction{}),
-	"main.voteGovProposalAction":                 reflect.TypeOf(voteGovProposalAction{}),
-	"main.startConsumerChainAction":              reflect.TypeOf(startConsumerChainAction{}),
-	"main.AddChainToRelayerAction":               reflect.TypeOf(addChainToRelayerAction{}),
-	"main.addIbcConnectionAction":                reflect.TypeOf(addIbcConnectionAction{}),
-	"main.addIbcChannelAction":                   reflect.TypeOf(addIbcChannelAction{}),
-	"main.transferChannelCompleteAction":         reflect.TypeOf(transferChannelCompleteAction{}),
-	"main.unjailValidatorAction":                 reflect.TypeOf(unjailValidatorAction{}),
-	"main.assignConsumerPubKeyAction":            reflect.TypeOf(assignConsumerPubKeyAction{}),
-	"main.delegateTokensAction":                  reflect.TypeOf(delegateTokensAction{}),
-	"main.relayPacketsAction":                    reflect.TypeOf(relayPacketsAction{}),
-	"main.registerRepresentativeAction":          reflect.TypeOf(registerRepresentativeAction{}),
-	"main.relayRewardPacketsToProviderAction":    reflect.TypeOf(relayRewardPacketsToProviderAction{}),
-	"main.registerConsumerRewardDenomAction":     reflect.TypeOf(registerConsumerRewardDenomAction{}),
-	"main.downtimeSlashAction":                   reflect.TypeOf(downtimeSlashAction{}),
-	"main.unbondTokensAction":                    reflect.TypeOf(unbondTokensAction{}),
-	"main.cancelUnbondTokensAction":              reflect.TypeOf(cancelUnbondTokensAction{}),
-	"main.redelegateTokensAction":                reflect.TypeOf(redelegateTokensAction{}),
-	"main.doublesignSlashAction":                 reflect.TypeOf(doublesignSlashAction{}),
-	"main.startRelayerAction":                    reflect.TypeOf(startRelayerAction{}),
-	"main.slashThrottleDequeue":                  reflect.TypeOf(slashThrottleDequeue{}),
-	"main.createIbcClientsAction":                reflect.TypeOf(createIbcClientsAction{}),
-	"main.LegacyUpgradeProposalAction":           reflect.TypeOf(LegacyUpgradeProposalAction{}),
-	"main.waitUntilBlockAction":                  reflect.TypeOf(waitUntilBlockAction{}),
-	"main.ChangeoverChainAction":                 reflect.TypeOf(ChangeoverChainAction{}),
-	"main.StartSovereignChainAction":             reflect.TypeOf(StartSovereignChainAction{}),
+var actionRegistry = map[string]interface{}{
+	"main.submitConsumerAdditionProposalAction":  submitConsumerAdditionProposalAction{},
+	"main.StartChainAction":                      StartChainAction{},
+	"main.SendTokensAction":                      SendTokensAction{},
+	"main.submitTextProposalAction":              submitTextProposalAction{},
+	"main.submitConsumerRemovalProposalAction":   submitConsumerRemovalProposalAction{},
+	"main.submitEquivocationProposalAction":      submitEquivocationProposalAction{},
+	"main.submitParamChangeLegacyProposalAction": submitParamChangeLegacyProposalAction{},
+	"main.voteGovProposalAction":                 voteGovProposalAction{},
+	"main.startConsumerChainAction":              startConsumerChainAction{},
+	"main.AddChainToRelayerAction":               addChainToRelayerAction{},
+	"main.addIbcConnectionAction":                addIbcConnectionAction{},
+	"main.addIbcChannelAction":                   addIbcChannelAction{},
+	"main.transferChannelCompleteAction":         transferChannelCompleteAction{},
+	"main.unjailValidatorAction":                 unjailValidatorAction{},
+	"main.assignConsumerPubKeyAction":            assignConsumerPubKeyAction{},
+	"main.delegateTokensAction":                  delegateTokensAction{},
+	"main.relayPacketsAction":                    relayPacketsAction{},
+	"main.registerRepresentativeAction":          registerRepresentativeAction{},
+	"main.relayRewardPacketsToProviderAction":    relayRewardPacketsToProviderAction{},
+	"main.registerConsumerRewardDenomAction":     registerConsumerRewardDenomAction{},
+	"main.downtimeSlashAction":                   downtimeSlashAction{},
+	"main.unbondTokensAction":                    unbondTokensAction{},
+	"main.cancelUnbondTokensAction":              cancelUnbondTokensAction{},
+	"main.redelegateTokensAction":                redelegateTokensAction{},
+	"main.doublesignSlashAction":                 doublesignSlashAction{},
+	"main.startRelayerAction":                    startRelayerAction{},
+	"main.slashThrottleDequeue":                  slashThrottleDequeue{},
+	"main.createIbcClientsAction":                createIbcClientsAction{},
+	"main.LegacyUpgradeProposalAction":           LegacyUpgradeProposalAction{},
+	"main.waitUntilBlockAction":                  waitUntilBlockAction{},
+	"main.ChangeoverChainAction":                 ChangeoverChainAction{},
+	"main.StartSovereignChainAction":             StartSovereignChainAction{},
 }
 
 // UnmarshalMapToActionType takes a JSON object and an action type and marshals into an object of the corresponding action.
 func UnmarshalMapToActionType(inputMap map[string]any, actionType string) (interface{}, error) {
-	reflectType, ok := actionRegistry[actionType]
+	actionStruct, ok := actionRegistry[actionType]
 	if !ok {
 		return nil, fmt.Errorf("%s is not a known action type", actionType)
 	}
-	action := reflect.New(reflectType).Interface()
-	err := mapstructure.Decode(inputMap, &action)
+	err := mapstructure.Decode(inputMap, &actionStruct)
 	if err != nil {
 		return nil, err
 	}
-	return action, nil
+	return actionStruct, nil
+}
+
+// for marshalling/unmarshalling proposals
+type ProposalAndType struct {
+	RawProposal map[string]any
+	Type        string `json:"Type"`
+}
+
+type ChainStateWithProposalTypes struct {
+	ChainState
+	Proposals *map[uint]ProposalAndType `json:"Proposals"`
+}
+
+// custom marshal and unmarshal functions for the chainstate that convert proposals to/from the auxiliary type with type info
+
+// transform the ChainState into a ChainStateWithProposalTypes by adding type info to the proposals
+func (c *ChainState) MarshalJson() ([]byte, error) {
+	fmt.Println("Custom marshal is called")
+	chainStateWithProposalTypes := ChainStateWithProposalTypes{
+		ChainState: *c,
+	}
+	if c.Proposals != nil {
+		proposalsWithTypes := make(map[uint]ProposalAndType)
+		for k, v := range *c.Proposals {
+			rawProposal := make(map[string]any)
+			err := mapstructure.Decode(v, &rawProposal)
+			if err != nil {
+				return nil, err
+			}
+			proposalsWithTypes[k] = ProposalAndType{rawProposal, reflect.TypeOf(v).String()}
+		}
+		chainStateWithProposalTypes.Proposals = &proposalsWithTypes
+	}
+	return json.Marshal(chainStateWithProposalTypes)
+}
+
+// unmarshal the ChainStateWithProposalTypes into a ChainState by removing the type info from the proposals and getting back standard proposals
+func (c *ChainState) UnmarshalJson(data []byte) error {
+	fmt.Println("Custom unmarshal is called")
+
+	chainStateWithProposalTypes := ChainStateWithProposalTypes{}
+	err := json.Unmarshal(data, &chainStateWithProposalTypes)
+	if err != nil {
+		return err
+	}
+	*c = chainStateWithProposalTypes.ChainState
+	if chainStateWithProposalTypes.Proposals != nil {
+		proposals := make(map[uint]Proposal)
+		for k, v := range *chainStateWithProposalTypes.Proposals {
+			proposal, err := UnmarshalProposalWithType(v.RawProposal, v.Type)
+			if err != nil {
+				return err
+			}
+			proposals[k] = proposal
+		}
+		c.Proposals = &proposals
+	}
+	return nil
+}
+
+// has to be manually kept in sync with the available proposal types.
+var proposalRegistry = map[string]Proposal{
+	"main.TextProposal":             TextProposal{},
+	"main.ConsumerAdditionProposal": ConsumerAdditionProposal{},
+	"main.UpgradeProposal":          UpgradeProposal{},
+	"main.ConsumerRemovalProposal":  ConsumerRemovalProposal{},
+	"main.EquivocationProposal":     EquivocationProposal{},
+	"main.ParamsProposal":           ParamsProposal{},
+}
+
+// UnmarshalProposalWithType takes a JSON object and a proposal type and marshals into an object of the corresponding proposal.
+func UnmarshalProposalWithType(inputMap map[string]any, proposalType string) (Proposal, error) {
+	propStruct, ok := proposalRegistry[proposalType]
+	if !ok {
+		return nil, fmt.Errorf("%s is not a known proposal type", proposalType)
+	}
+	err := mapstructure.Decode(inputMap, &propStruct)
+	if err != nil {
+		return nil, err
+	}
+	return propStruct, nil
 }
