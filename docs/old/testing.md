@@ -20,7 +20,7 @@ To run integration tests against your own consumer/provider implementations, use
 
 ## End-to-End (E2E) Tests 
 
-[E2E tests](../../tests/e2e/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. E2E tests use queries/transactions invoked from CLI to drive and validate the code.
+[E2E tests](../../e2e/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. E2E tests use queries/transactions invoked from CLI to drive and validate the code.
 
 ## Running Tests
 Tests can be run using `make`:
