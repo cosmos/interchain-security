@@ -4,11 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-<<<<<<< HEAD:tests/e2e/trace_utils.go
 
 	"github.com/mitchellh/mapstructure"
-=======
->>>>>>> 24b0ef1b (fix: e2e trace format fails on slashthrottlesteps (#903)):tests/e2e/json_step_marshalling.go
 )
 
 // MarshalJSON marshals a step into JSON while including the type of the action.
@@ -86,7 +83,7 @@ var actionRegistry = map[string]interface{}{
 }
 
 // UnmarshalMapToActionType takes a JSON object and an action type and marshals into an object of the corresponding action.
-func UnmarshalMapToActionType(inputMap map[string]any, actionType string) (interface{}, error) {
+func UnmarshalMapToActionType(inputMap json.RawMessage, actionType string) (interface{}, error) {
 	actionStruct, ok := actionRegistry[actionType]
 	if !ok {
 		return nil, fmt.Errorf("%s is not a known action type", actionType)

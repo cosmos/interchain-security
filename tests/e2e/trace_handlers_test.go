@@ -74,14 +74,8 @@ func TestWriterThenParser(t *testing.T) {
 
 			got, err := parser.ReadTraceFromFile(filename)
 			if err != nil {
-<<<<<<< HEAD
 				t.Fatalf("in testcase %v, got error reading trace from file: %v", name, err)
 			}
-=======
-				t.Fatalf("error reading trace from file: %v", err)
-			}
-
->>>>>>> 24b0ef1b (fix: e2e trace format fails on slashthrottlesteps (#903))
 			diff := cmp.Diff(tc.trace, got, cmp.AllowUnexported(Step{}))
 			if diff != "" {
 				t.Log("Got a difference for testcase " + name)

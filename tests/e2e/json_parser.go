@@ -23,16 +23,11 @@ func (parser JSONParser) ReadTraceFromFile(path string) ([]Step, error) {
 	}
 
 	// Unmarshal the JSON into a slice of Step structs
-<<<<<<< HEAD:tests/e2e/trace_parser.go
-	var stepsWithActionTypes []StepWithActionType
+	var steps []Step
 
 	decoder := json.NewDecoder(bytes.NewReader(jsonData))
 	decoder.DisallowUnknownFields() // To avoid silent errors. Will cause an error if the JSON contains unknown fields
-	err = decoder.Decode(&stepsWithActionTypes)
-=======
-	var steps []Step
-	err = json.Unmarshal(jsonData, &steps)
->>>>>>> 24b0ef1b (fix: e2e trace format fails on slashthrottlesteps (#903)):tests/e2e/json_parser.go
+	err = decoder.Decode(&steps)
 	if err != nil {
 		return nil, err
 	}

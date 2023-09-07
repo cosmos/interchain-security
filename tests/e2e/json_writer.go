@@ -23,14 +23,14 @@ func (writer JSONWriter) WriteTraceToFile(filepath string, trace []Step) error {
 	// workaround: we would keep a set, but go doesn't have sets.
 	missingActionTypes := make(map[string]struct{}, 0)
 
-	traceWithMarshalledActions := make([]StepWithActionType, 0)
+	traceWithMarshalledActions := make([]Step, 0)
 	for _, step := range trace {
 		actionType := reflect.TypeOf(step.Action).String()
 		_, ok := actionRegistry[actionType]
 		if !ok {
 			missingActionTypes[actionType] = struct{}{}
 		}
-		traceWithMarshalledActions = append(traceWithMarshalledActions, StepWithActionType{step, actionType})
+		traceWithMarshalledActions = append(traceWithMarshalledActions, step)
 	}
 	if len(missingActionTypes) > 0 {
 		missingActionTypesString := ""
