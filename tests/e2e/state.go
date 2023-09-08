@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os/exec"
@@ -774,5 +775,52 @@ func (tr TestRun) getClientFrozenHeight(chain chainID, clientID string) clientty
 		log.Fatal(err, "\n", string(bz))
 	}
 
+	return clienttypes.Height{RevisionHeight: uint64(revHeight), RevisionNumber: uint64(revNumber)}
+}
+
+func (tr TestRun) getTrustedHeight(
+	chain chainID,
+	clientID string,
+	index int,
+) clienttypes.Height {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	configureNodeCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
+		"--json", "query", "client", "consensus", "--chain", string(chain),
+		`--client`, clientID,
+	)
+
+	cmdReader, err := configureNodeCmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	configureNodeCmd.Stderr = configureNodeCmd.Stdout
+
+	if err := configureNodeCmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(cmdReader)
+
+	var trustedHeight gjson.Result
+	// iterate on the relayer's response
+	// and parse the the command "result"
+	for scanner.Scan() {
+		out := scanner.Text()
+		if len(gjson.Get(out, "result").Array()) > 0 {
+			trustedHeight = gjson.Get(out, "result").Array()[index]
+			break
+		}
+	}
+
+	revHeight, err := strconv.Atoi(trustedHeight.Get("revision_height").String())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	revNumber, err := strconv.Atoi(trustedHeight.Get("revision_number").String())
+	if err != nil {
+		log.Fatal(err)
+	}
 	return clienttypes.Height{RevisionHeight: uint64(revHeight), RevisionNumber: uint64(revNumber)}
 }

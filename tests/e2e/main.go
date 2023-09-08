@@ -180,6 +180,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.updateLightClient(action, verbose)
 	case assertChainIsHaltedAction:
 		tr.assertChainIsHalted(action, verbose)
+	case detectConsumerEvidenceAction:
+		tr.detectConsumerEvidence(action, verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", tr.name, action)
 	}

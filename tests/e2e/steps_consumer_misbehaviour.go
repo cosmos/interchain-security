@@ -213,43 +213,65 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			},
 			state: State{},
 		},
+		// start relayer to detect IBC misbehaviour
 		{
-			// start relayer to detect ICS misbehaviour
 			action: startRelayerAction{},
 			state:  State{},
+		},
+		// detect the ICS misbehaviour
+		// and jail alice on the provider
+		{
+			action: detectConsumerEvidenceAction{
+				chain: chainID(consumerName),
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   20,
+					},
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   20,
+					},
+				},
+			},
 		},
 		{
 			// update the fork consumer client to create a light client attack
 			// which should trigger a ICS misbehaviour message
 			action: updateLightClientAction{
+				chain:         chainID(consumerName),
+				clientID:      consumerClientID,
 				hostChain:     chainID("provi"),
 				relayerConfig: forkRelayerConfig, // this relayer config uses the "forked" consumer
-				clientID:      consumerClientID,
 			},
 			state: State{
 				chainID("provi"): ChainState{
-					// validator should be jailed on the provider
+					// alice should be jailed on the provider
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 0,
 						validatorID("bob"):   20,
 					},
-					// The consumer light client should not be frozen
+					// The consumer light client should be frozen on the provider
 					ClientsFrozenHeights: &map[string]clienttypes.Height{
-						"07-tendermint-0": {
+						consumerClientID: {
 							RevisionNumber: 0,
-							RevisionHeight: 0,
+							RevisionHeight: 1,
 						},
 					},
 				},
+				chainID(consumerName): ChainState{
+					// consumer should not have learned the jailing of alice
+					// since its light client is frozen on the provider
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   20,
+					},
+				},
 			},
-		},
-		// we expect the consumer chain to be halted since the last VSC packet should
-		// have updated the alice validator power to 0.
-		{
-			action: assertChainIsHaltedAction{
-				chain: chainID("consu"),
-			},
-			state: State{},
 		},
 	}
 }
