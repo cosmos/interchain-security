@@ -783,7 +783,6 @@ func (tr TestRun) getTrustedHeight(
 	clientID string,
 	index int,
 ) clienttypes.Height {
-
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	configureNodeCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"--json", "query", "client", "consensus", "--chain", string(chain),
