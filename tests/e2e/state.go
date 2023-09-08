@@ -804,10 +804,13 @@ func (tr TestRun) getTrustedHeight(
 	scanner := bufio.NewScanner(cmdReader)
 
 	var trustedHeight gjson.Result
+	// iterate on the relayer's response
+	// and parse the the command "result"
 	for scanner.Scan() {
 		out := scanner.Text()
 		if len(gjson.Get(out, "result").Array()) > 0 {
 			trustedHeight = gjson.Get(out, "result").Array()[index]
+			break
 		}
 	}
 
