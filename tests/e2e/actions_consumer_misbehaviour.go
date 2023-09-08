@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"strconv"
 	"time"
 )
 
@@ -61,15 +62,19 @@ func (tr TestRun) forkConsumerChain(action forkConsumerChainAction, verbose bool
 }
 
 type updateLightClientAction struct {
+	chain         chainID
 	hostChain     chainID
 	relayerConfig string
 	clientID      string
+	hostClientID  string
 }
 
 func (tr TestRun) updateLightClient(
 	action updateLightClientAction,
 	verbose bool,
 ) {
+	trustedHeight := tr.getTrustedHeight(action.hostChain, action.hostClientID, 2)
+
 	// hermes clear packets ibc0 transfer channel-13
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
@@ -78,6 +83,7 @@ func (tr TestRun) updateLightClient(
 		"client",
 		"--client", action.clientID,
 		"--host-chain", string(action.hostChain),
+		"--trusted-height", strconv.Itoa(int(trustedHeight.RevisionHeight)),
 	)
 	if verbose {
 		log.Println("updateLightClientAction cmd:", cmd.String())
