@@ -21,6 +21,7 @@ import (
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
@@ -629,6 +630,10 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, p *types.Chan
 			continue
 		}
 		k.SetConsumerRewardDenom(ctx, denomToAdd)
+		ctx.EventManager().EmitEvent(sdk.NewEvent(
+			ccvtypes.EventTypeRegisterConsumerRewardDenom,
+			sdk.NewAttribute(ccvtypes.AttributeConsumerRewardDenom, denomToAdd),
+		))
 	}
 	for _, denomToRemove := range p.DenomsToRemove {
 		// Log error and move on if one of the denoms is not registered

@@ -108,25 +108,3 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 
 	return &types.MsgAssignConsumerKeyResponse{}, nil
 }
-
-// TODO: remove this tx and handler
-func (k msgServer) RegisterConsumerRewardDenom(goCtx context.Context, msg *types.MsgRegisterConsumerRewardDenom) (*types.MsgRegisterConsumerRewardDenomResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	depositer, err := sdk.AccAddressFromBech32(msg.Depositor)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := k.Keeper.RegisterConsumerRewardDenom(ctx, msg.Denom, depositer); err != nil {
-		return nil, err
-	}
-
-	ctx.EventManager().EmitEvent(sdk.NewEvent(
-		ccvtypes.EventTypeRegisterConsumerRewardDenom,
-		sdk.NewAttribute(ccvtypes.AttributeConsumerRewardDenom, msg.Denom),
-		sdk.NewAttribute(ccvtypes.AttributeConsumerRewardDepositor, msg.Depositor),
-	))
-
-	return &types.MsgRegisterConsumerRewardDenomResponse{}, nil
-}

@@ -41,6 +41,5 @@ const (
 	AttributeDistributionTotal      = "total"
 	AttributeDistributionToProvider = "provider_amount"
 
-	AttributeConsumerRewardDenom     = "consumer_reward_denom"
-	AttributeConsumerRewardDepositor = "consumer_reward_depositor"
+	AttributeConsumerRewardDenom = "consumer_reward_denom"
 )
