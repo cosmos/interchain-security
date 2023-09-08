@@ -133,19 +133,25 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-			action: registerConsumerRewardDenomAction{
-				chain: chainID("provi"),
-				from:  validatorID("bob"),
-				denom: consumerRewardDenom,
+			action: submitChangeRewardDenomsProposalAction{
+				chain:   chainID("provi"),
+				denom:   consumerRewardDenom,
+				deposit: 10000001,
+				from:    validatorID("bob"),
+			},
+			// No state to verify, need to vote on prop
+		},
+		{
+			action: voteGovProposalAction{
+				chain:      chainID("provi"),
+				from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
+				vote:       []string{"yes", "yes", "yes"},
+				propNumber: 3, // TODO double check this
 			},
 			state: State{
 				chainID("provi"): ChainState{
 					// Check that the denom is registered on provider chain
 					RegisteredConsumerRewardDenoms: &[]string{consumerRewardDenom},
-					ValBalances: &map[validatorID]uint{
-						// make sure that bob's account was debited
-						validatorID("bob"): 9490000000,
-					},
 				},
 			},
 		},
