@@ -139,14 +139,19 @@ func stepsDemocracy(consumerName string) []Step {
 				deposit: 10000001,
 				from:    validatorID("bob"),
 			},
-			// No state to verify, need to vote on prop
+			state: State{
+				chainID("provi"): ChainState{
+					// Denom not yet registered, gov prop needs to pass first
+					RegisteredConsumerRewardDenoms: &[]string{},
+				},
+			},
 		},
 		{
 			action: voteGovProposalAction{
 				chain:      chainID("provi"),
 				from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
 				vote:       []string{"yes", "yes", "yes"},
-				propNumber: 3, // TODO double check this
+				propNumber: 2,
 			},
 			state: State{
 				chainID("provi"): ChainState{
