@@ -63,6 +63,7 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 		val, ok := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), provAddr.Address)
 		s.Require().True(ok)
 		s.Require().True(val.Jailed)
+		s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.ToSdkConsAddr()))
 	}
 }
 

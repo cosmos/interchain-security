@@ -3,26 +3,24 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 )
 
-// JailAndTombstoneValidator jails the validator with the given provider consensus address
-// Note that the tombstoning is temporarily removed until we slash validator
-// for double signing on a consumer chain, see comment
-// https://github.com/cosmos/interchain-security/pull/1232#issuecomment-1693127641.
+// JailAndTombstoneValidator jails and tombstones the validator with the given provider consensus address
 func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) {
 	logger := k.Logger(ctx)
 
 	// get validator
 	val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 	if !ok || val.IsUnbonded() {
-		logger.Error("validator not found or is unbonded", providerAddr.String())
+		logger.Error("validator not found or is unbonded", "provider consensus address", providerAddr.String())
 		return
 	}
 
 	// check that the validator isn't tombstoned
 	if k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
-		logger.Info("validator is already tombstoned", "provider cons addr", providerAddr.String())
+		logger.Info("validator is already tombstoned", "provider consensus address", providerAddr.String())
 		return
 	}
 
@@ -31,9 +29,62 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 		k.stakingKeeper.Jail(ctx, providerAddr.ToSdkConsAddr())
 	}
 
-	// update jail time to end after double sign jail duration
+	// Jail the validator to trigger the unbonding of the validator
+	// (see cosmos/cosmos-sdk/blob/v0.47.0/x/staking/keeper/val_state_change.go#L194).
 	k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
 
-	// TODO: do we need to jail if we tombstone, that's what cosmos-sdk does
+	// Tombstone the validator so that we cannot slash the validator more than once
+	// (see cosmos/cosmos-sdk/blob/v0.47.0/x/evidence/keeper/infraction.go#L94).
+	// Note that we cannot simply use the fact that a validator is jailed to avoid slashing more than once
+	// because then a validator could i) perform an equivocation, ii) get jailed (e.g., through downtime)
+	// and in such a case the validator would not get slashed when calling `SlashValidator`.
 	k.slashingKeeper.Tombstone(ctx, providerAddr.ToSdkConsAddr())
+
+	//k.evidenceKeeper.SetEvidence(ctx)
+}
+
+// Slash validator based on the `providerAddr`
+func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) {
+	logger := k.Logger(ctx)
+
+	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
+	if !found {
+		logger.Error("validator not found", "provider consensus address", providerAddr.String())
+		return
+	}
+
+	if k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
+		logger.Info("validator is already tombstoned", "provider consensus address", providerAddr.String())
+		return
+	}
+
+	valOperatorAddress := val.GetOperator()
+
+	// compute the total numbers of tokens currently being undelegated
+	undelegationsInTokens := sdk.NewInt(0)
+	for _, v := range k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, valOperatorAddress) {
+		for _, entry := range v.Entries {
+			undelegationsInTokens = undelegationsInTokens.Add(entry.InitialBalance)
+		}
+	}
+
+	// compute the total numbers of tokens currently being redelegated
+	redelegationsInTokens := sdk.NewInt(0)
+	for _, v := range k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, valOperatorAddress) {
+		for _, entry := range v.Entries {
+			redelegationsInTokens = redelegationsInTokens.Add(entry.InitialBalance)
+		}
+	}
+
+	// The power we pass to staking's keeper `Slash` method is the current power of the validator together with the total
+	// power of all the currently undelegated and redelegated tokens (see docs/docs/adrs/adr-013-equivocation-slashing.md).
+	powerReduction := k.stakingKeeper.PowerReduction(ctx)
+	undelegationsAndRedelegationsInPower := sdk.TokensToConsensusPower(
+		undelegationsInTokens.Add(redelegationsInTokens), powerReduction)
+
+	power := k.stakingKeeper.GetLastValidatorPower(ctx, valOperatorAddress)
+	totalPower := power + undelegationsAndRedelegationsInPower
+	slashFraction := k.slashingKeeper.SlashFractionDoubleSign(ctx)
+
+	k.stakingKeeper.Slash(ctx, providerAddr.ToSdkConsAddr(), 0, totalPower, slashFraction, stakingtypes.DoubleSign)
 }

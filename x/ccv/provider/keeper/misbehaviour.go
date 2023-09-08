@@ -41,7 +41,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 			misbehaviour.Header1.Header.ChainID,
 			types.NewConsumerConsAddress(sdk.ConsAddress(v.Address.Bytes())),
 		)
-		k.slashValidator(ctx, providerAddr)
+		k.SlashValidator(ctx, providerAddr)
 		k.JailAndTombstoneValidator(ctx, providerAddr)
 		provAddrs = append(provAddrs, providerAddr)
 	}

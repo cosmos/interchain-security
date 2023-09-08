@@ -12,13 +12,14 @@ import (
 	types "github.com/cosmos/cosmos-sdk/types"
 	types0 "github.com/cosmos/cosmos-sdk/x/auth/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/capability/types"
+	exported "github.com/cosmos/cosmos-sdk/x/evidence/exported"
 	types2 "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	types3 "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	types4 "github.com/cosmos/cosmos-sdk/x/staking/types"
 	types5 "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	types6 "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
 	types7 "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	exported "github.com/cosmos/ibc-go/v4/modules/core/exported"
+	exported0 "github.com/cosmos/ibc-go/v4/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
 	types8 "github.com/tendermint/tendermint/abci/types"
 )
@@ -395,6 +396,18 @@ func (mr *MockEvidenceKeeperMockRecorder) HandleEquivocationEvidence(ctx, eviden
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleEquivocationEvidence", reflect.TypeOf((*MockEvidenceKeeper)(nil).HandleEquivocationEvidence), ctx, evidence)
 }
 
+// SetEvidence mocks base method.
+func (m *MockEvidenceKeeper) SetEvidence(ctx types.Context, evidence exported.Evidence) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetEvidence", ctx, evidence)
+}
+
+// SetEvidence indicates an expected call of SetEvidence.
+func (mr *MockEvidenceKeeperMockRecorder) SetEvidence(ctx, evidence interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEvidence", reflect.TypeOf((*MockEvidenceKeeper)(nil).SetEvidence), ctx, evidence)
+}
+
 // MockSlashingKeeper is a mock of SlashingKeeper interface.
 type MockSlashingKeeper struct {
 	ctrl     *gomock.Controller
@@ -581,7 +594,7 @@ func (mr *MockChannelKeeperMockRecorder) GetNextSequenceSend(ctx, portID, channe
 }
 
 // SendPacket mocks base method.
-func (m *MockChannelKeeper) SendPacket(ctx types.Context, channelCap *types1.Capability, packet exported.PacketI) error {
+func (m *MockChannelKeeper) SendPacket(ctx types.Context, channelCap *types1.Capability, packet exported0.PacketI) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendPacket", ctx, channelCap, packet)
 	ret0, _ := ret[0].(error)
@@ -595,7 +608,7 @@ func (mr *MockChannelKeeperMockRecorder) SendPacket(ctx, channelCap, packet inte
 }
 
 // WriteAcknowledgement mocks base method.
-func (m *MockChannelKeeper) WriteAcknowledgement(ctx types.Context, chanCap *types1.Capability, packet exported.PacketI, acknowledgement exported.Acknowledgement) error {
+func (m *MockChannelKeeper) WriteAcknowledgement(ctx types.Context, chanCap *types1.Capability, packet exported0.PacketI, acknowledgement exported0.Acknowledgement) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteAcknowledgement", ctx, chanCap, packet, acknowledgement)
 	ret0, _ := ret[0].(error)
@@ -707,7 +720,7 @@ func (m *MockClientKeeper) EXPECT() *MockClientKeeperMockRecorder {
 }
 
 // CheckMisbehaviourAndUpdateState mocks base method.
-func (m *MockClientKeeper) CheckMisbehaviourAndUpdateState(ctx types.Context, misbehaviour exported.Misbehaviour) error {
+func (m *MockClientKeeper) CheckMisbehaviourAndUpdateState(ctx types.Context, misbehaviour exported0.Misbehaviour) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CheckMisbehaviourAndUpdateState", ctx, misbehaviour)
 	ret0, _ := ret[0].(error)
@@ -735,7 +748,7 @@ func (mr *MockClientKeeperMockRecorder) ClientStore(ctx, clientID interface{}) *
 }
 
 // CreateClient mocks base method.
-func (m *MockClientKeeper) CreateClient(ctx types.Context, clientState exported.ClientState, consensusState exported.ConsensusState) (string, error) {
+func (m *MockClientKeeper) CreateClient(ctx types.Context, clientState exported0.ClientState, consensusState exported0.ConsensusState) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateClient", ctx, clientState, consensusState)
 	ret0, _ := ret[0].(string)
@@ -750,10 +763,10 @@ func (mr *MockClientKeeperMockRecorder) CreateClient(ctx, clientState, consensus
 }
 
 // GetClientConsensusState mocks base method.
-func (m *MockClientKeeper) GetClientConsensusState(ctx types.Context, clientID string, height exported.Height) (exported.ConsensusState, bool) {
+func (m *MockClientKeeper) GetClientConsensusState(ctx types.Context, clientID string, height exported0.Height) (exported0.ConsensusState, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClientConsensusState", ctx, clientID, height)
-	ret0, _ := ret[0].(exported.ConsensusState)
+	ret0, _ := ret[0].(exported0.ConsensusState)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -765,10 +778,10 @@ func (mr *MockClientKeeperMockRecorder) GetClientConsensusState(ctx, clientID, h
 }
 
 // GetClientState mocks base method.
-func (m *MockClientKeeper) GetClientState(ctx types.Context, clientID string) (exported.ClientState, bool) {
+func (m *MockClientKeeper) GetClientState(ctx types.Context, clientID string) (exported0.ClientState, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClientState", ctx, clientID)
-	ret0, _ := ret[0].(exported.ClientState)
+	ret0, _ := ret[0].(exported0.ClientState)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -780,10 +793,10 @@ func (mr *MockClientKeeperMockRecorder) GetClientState(ctx, clientID interface{}
 }
 
 // GetLatestClientConsensusState mocks base method.
-func (m *MockClientKeeper) GetLatestClientConsensusState(ctx types.Context, clientID string) (exported.ConsensusState, bool) {
+func (m *MockClientKeeper) GetLatestClientConsensusState(ctx types.Context, clientID string) (exported0.ConsensusState, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLatestClientConsensusState", ctx, clientID)
-	ret0, _ := ret[0].(exported.ConsensusState)
+	ret0, _ := ret[0].(exported0.ConsensusState)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -795,10 +808,10 @@ func (mr *MockClientKeeperMockRecorder) GetLatestClientConsensusState(ctx, clien
 }
 
 // GetSelfConsensusState mocks base method.
-func (m *MockClientKeeper) GetSelfConsensusState(ctx types.Context, height exported.Height) (exported.ConsensusState, error) {
+func (m *MockClientKeeper) GetSelfConsensusState(ctx types.Context, height exported0.Height) (exported0.ConsensusState, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSelfConsensusState", ctx, height)
-	ret0, _ := ret[0].(exported.ConsensusState)
+	ret0, _ := ret[0].(exported0.ConsensusState)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -810,7 +823,7 @@ func (mr *MockClientKeeperMockRecorder) GetSelfConsensusState(ctx, height interf
 }
 
 // SetClientState mocks base method.
-func (m *MockClientKeeper) SetClientState(ctx types.Context, clientID string, clientState exported.ClientState) {
+func (m *MockClientKeeper) SetClientState(ctx types.Context, clientID string, clientState exported0.ClientState) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetClientState", ctx, clientID, clientState)
 }
