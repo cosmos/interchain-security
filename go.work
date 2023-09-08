@@ -4,5 +4,3 @@ use (
 	.
 	./e2e
 )
-
-replace github.com/coinbase/rosetta-sdk-go/types => github.com/coinbase/rosetta-sdk-go/types v1.0.0
