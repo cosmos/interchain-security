@@ -98,16 +98,17 @@ func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddre
 		panic("could not get validator cons addr ")
 	}
 
-	inUse := false
-
-	for _, validatorConsumerAddrs := range k.GetAllValidatorsByConsumerAddr(ctx, nil) {
-		if sdk.ConsAddress(validatorConsumerAddrs.ConsumerAddr).Equals(consensusAddr) {
-			inUse = true
-			break
+	consumerChains := k.GetAllConsumerChains(ctx)
+	for _, consumerChain := range consumerChains {
+		if _, exist := k.GetValidatorByConsumerAddr(
+			ctx,
+			consumerChain.ChainId,
+			providertypes.NewConsumerConsAddress(consensusAddr)); exist {
+			return true
 		}
 	}
 
-	return inUse
+	return false
 }
 
 func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) error {
