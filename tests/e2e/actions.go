@@ -1682,28 +1682,6 @@ func (tr TestRun) invokeDoublesignSlash(
 	tr.waitBlocks("provi", 10, 2*time.Minute)
 }
 
-// Run an instance of the Hermes relayer in the "evidence" mode,
-// which detects the double signing evidences on the consumer chain.
-// Each infraction detected is reported to the provider chain using
-// a SubmitConsumerDoubleVoting message.
-type detectDoubleSigningEvidenceAction struct {
-	chain chainID
-}
-
-func (tr TestRun) detectDoubleSigningEvidence(
-	action detectDoubleSigningEvidenceAction,
-	verbose bool,
-) {
-	chainConfig := tr.chainConfigs[action.chain]
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", "-d", tr.containerConfig.instanceName,
-		"hermes", "evidence", "--chain", string(chainConfig.chainId)).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-	tr.waitBlocks("provi", 10, 2*time.Minute)
-}
-
 type assignConsumerPubKeyAction struct {
 	chain          chainID
 	validator      validatorID
