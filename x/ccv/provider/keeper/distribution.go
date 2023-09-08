@@ -15,6 +15,7 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 	k.TransferRewardsToFeeCollector(ctx)
 }
 
+// TODO: Depreciate in separate commit
 func (k Keeper) RegisterConsumerRewardDenom(ctx sdk.Context, denom string, sender sdk.AccAddress) error {
 	// Check if the denom is already registered
 	if k.ConsumerRewardDenomExists(ctx, denom) {
@@ -51,6 +52,14 @@ func (k Keeper) ConsumerRewardDenomExists(
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerRewardDenomsKey(denom))
 	return bz != nil
+}
+
+func (k Keeper) DeleteConsumerRewardDenom(
+	ctx sdk.Context,
+	denom string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerRewardDenomsKey(denom))
 }
 
 func (k Keeper) GetAllConsumerRewardDenoms(ctx sdk.Context) (consumerRewardDenoms []string) {

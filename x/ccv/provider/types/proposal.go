@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	ProposalTypeConsumerAddition = "ConsumerAddition"
-	ProposalTypeConsumerRemoval  = "ConsumerRemoval"
-	ProposalTypeEquivocation     = "Equivocation"
+	ProposalTypeConsumerAddition   = "ConsumerAddition"
+	ProposalTypeConsumerRemoval    = "ConsumerRemoval"
+	ProposalTypeEquivocation       = "Equivocation"
+	ProposalTypeChangeRewardDenoms = "ChangeRewardDenoms"
 )
 
 var (
@@ -227,6 +228,46 @@ func (sp *EquivocationProposal) ValidateBasic() error {
 	for i := 0; i < len(sp.Equivocations); i++ {
 		if err := sp.Equivocations[i].ValidateBasic(); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func NewChangeRewardDenomsProposal(title, description string,
+	denomsToAdd, denomsToRemove []string) govv1beta1.Content {
+	return &ChangeRewardDenomsProposal{
+		Title:          title,
+		Description:    description,
+		DenomsToAdd:    denomsToAdd,
+		DenomsToRemove: denomsToRemove,
+	}
+}
+
+// ProposalRoute returns the routing key of a change reward denoms proposal.
+func (crdp *ChangeRewardDenomsProposal) ProposalRoute() string { return RouterKey }
+
+// ProposalType returns the type of a change reward denoms proposal.
+func (crdp *ChangeRewardDenomsProposal) ProposalType() string {
+	return ProposalTypeChangeRewardDenoms
+}
+
+// ValidateBasic runs basic stateless validity checks on a ChangeRewardDenomsProposal.
+func (crdp *ChangeRewardDenomsProposal) ValidateBasic() error {
+	emptyDenomsToAdd := len(crdp.DenomsToAdd) == 0
+	emptyDenomsToRemove := len(crdp.DenomsToRemove) == 0
+	// Return error if both sets are empty or nil
+	if emptyDenomsToAdd && emptyDenomsToRemove {
+		return fmt.Errorf(
+			"invalid change reward denoms proposal: both denoms to add and denoms to remove are empty")
+	}
+
+	// Return error if a denom is in both sets
+	for _, denomToAdd := range crdp.DenomsToAdd {
+		for _, denomToRemove := range crdp.DenomsToRemove {
+			if denomToAdd == denomToRemove {
+				return fmt.Errorf(
+					"invalid change reward denoms proposal: %s cannot be both added and removed", denomToAdd)
+			}
 		}
 	}
 	return nil

@@ -27,12 +27,13 @@ func TestProviderProposalHandler(t *testing.T) {
 	equivocation := &evidencetypes.Equivocation{Height: 42}
 
 	testCases := []struct {
-		name                     string
-		content                  govv1beta1.Content
-		blockTime                time.Time
-		expValidConsumerAddition bool
-		expValidConsumerRemoval  bool
-		expValidEquivocation     bool
+		name                      string
+		content                   govv1beta1.Content
+		blockTime                 time.Time
+		expValidConsumerAddition  bool
+		expValidConsumerRemoval   bool
+		expValidEquivocation      bool
+		expValidChangeRewardDenom bool
 	}{
 		{
 			name: "valid consumer addition proposal",
@@ -71,6 +72,27 @@ func TestProviderProposalHandler(t *testing.T) {
 				"title", "description", []*evidencetypes.Equivocation{equivocation}),
 			blockTime:            hourFromNow,
 			expValidEquivocation: true,
+		},
+		{
+			name: "invalid change reward denoms proposal, none to add or remove",
+			content: providertypes.NewChangeRewardDenomsProposal(
+				"title", "description", []string{}, []string{}),
+			blockTime:                 hourFromNow,
+			expValidChangeRewardDenom: false,
+		},
+		{
+			name: "invalid change reward denoms proposal, same denom in both sets",
+			content: providertypes.NewChangeRewardDenomsProposal(
+				"title", "description", []string{"denom1"}, []string{"denom1"}),
+			blockTime:                 hourFromNow,
+			expValidChangeRewardDenom: false,
+		},
+		{
+			name: "valid change reward denoms proposal",
+			content: providertypes.NewChangeRewardDenomsProposal(
+				"title", "description", []string{"denom1"}, []string{"denom2"}),
+			blockTime:                 hourFromNow,
+			expValidChangeRewardDenom: true,
 		},
 		{
 			name:      "nil proposal",
@@ -114,6 +136,8 @@ func TestProviderProposalHandler(t *testing.T) {
 		case tc.expValidEquivocation:
 			providerKeeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(equivocation.GetConsensusAddress()))
 			mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocation)
+		case tc.expValidChangeRewardDenom:
+			// Nothing to mock
 		}
 
 		// Execution
@@ -121,7 +145,7 @@ func TestProviderProposalHandler(t *testing.T) {
 		err := proposalHandler(ctx, tc.content)
 
 		if tc.expValidConsumerAddition || tc.expValidConsumerRemoval ||
-			tc.expValidEquivocation {
+			tc.expValidEquivocation || tc.expValidChangeRewardDenom {
 			require.NoError(t, err)
 		} else {
 			require.Error(t, err)

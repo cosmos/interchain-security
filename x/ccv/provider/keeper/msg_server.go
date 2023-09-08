@@ -109,6 +109,7 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	return &types.MsgAssignConsumerKeyResponse{}, nil
 }
 
+// TODO: remove this tx and handler
 func (k msgServer) RegisterConsumerRewardDenom(goCtx context.Context, msg *types.MsgRegisterConsumerRewardDenom) (*types.MsgRegisterConsumerRewardDenomResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
