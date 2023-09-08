@@ -222,7 +222,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 		// and jail alice on the provider
 		{
 			action: detectConsumerEvidenceAction{
-				chain: chainID("consu"),
+				chain: chainID(consumerName),
 			},
 			state: State{
 				chainID("provi"): ChainState{
@@ -243,7 +243,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			// update the fork consumer client to create a light client attack
 			// which should trigger a ICS misbehaviour message
 			action: updateLightClientAction{
-				chain:         chainID("consu"),
+				chain:         chainID(consumerName),
 				clientID:      consumerClientID,
 				hostChain:     chainID("provi"),
 				relayerConfig: forkRelayerConfig, // this relayer config uses the "forked" consumer
@@ -263,7 +263,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 						},
 					},
 				},
-				chainID("consu"): ChainState{
+				chainID(consumerName): ChainState{
 					// consumer should not have learned the jailing of alice
 					// since its light client is frozen on the provider
 					ValPowers: &map[validatorID]uint{
