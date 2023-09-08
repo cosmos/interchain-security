@@ -27,12 +27,14 @@ var (
 	_ govv1beta1.Content = &ConsumerAdditionProposal{}
 	_ govv1beta1.Content = &ConsumerRemovalProposal{}
 	_ govv1beta1.Content = &EquivocationProposal{}
+	_ govv1beta1.Content = &ChangeRewardDenomsProposal{}
 )
 
 func init() {
 	govv1beta1.RegisterProposalType(ProposalTypeConsumerAddition)
 	govv1beta1.RegisterProposalType(ProposalTypeConsumerRemoval)
 	govv1beta1.RegisterProposalType(ProposalTypeEquivocation)
+	govv1beta1.RegisterProposalType(ProposalTypeChangeRewardDenoms)
 }
 
 // NewConsumerAdditionProposal creates a new consumer addition proposal.

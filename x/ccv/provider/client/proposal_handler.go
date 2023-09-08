@@ -237,7 +237,7 @@ func SubmitChangeRewardDenomsProposalTxCmd() *cobra.Command {
 		Use:   "change-reward-denoms [proposal-file]",
 		Args:  cobra.ExactArgs(1),
 		Short: "Submit a change reward denoms proposal",
-		Long: `Submit an equivocation proposal along with an initial deposit.
+		Long: `Submit an change reward denoms proposal with an initial deposit.
 		The proposal details must be supplied via a JSON file.
 
 		Example:
