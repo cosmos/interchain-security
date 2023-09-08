@@ -1793,7 +1793,7 @@ func (tr TestRun) submitChangeRewardDenomsProposal(action submitChangeRewardDeno
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	// CHANGE REWARDS DENOM PROPOSAL
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, providerChain.binaryName,
-		"tx", "gov", "submit-legacy-proposal", "change reward denoms", "/change-reward-denoms-proposal.json",
+		"tx", "gov", "submit-legacy-proposal", "change-reward-denoms", "/change-reward-denoms-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(providerChain.chainId),
 		`--home`, tr.getValidatorHome(providerChain.chainId, action.from),
