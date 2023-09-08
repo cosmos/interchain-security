@@ -1,7 +1,7 @@
 package main
 
 // Steps that make carol double sign on the provider, and bob double sign on a single consumer
-func StepsLightClientAttackOnProviderAndConsumer(consumerName string) []Step {
+func stepsLightClientAttackOnProviderAndConsumer(consumerName string) []Step {
 	return []Step{
 		{
 			// Provider double sign
