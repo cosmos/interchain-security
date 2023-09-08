@@ -177,7 +177,7 @@ func stepsCauseDoubleSignOnConsumer(consumerName string) []Step {
 				},
 			},
 		},
-		// consumer learn about the jailing
+		// consumer learns about the jailing
 		{
 			action: relayPacketsAction{
 				chainA:  chainID("provi"),

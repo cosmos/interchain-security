@@ -91,7 +91,7 @@ var changeoverSteps = concatSteps(
 var consumerMisbehaviourSteps = concatSteps(
 	// start provider and consumer chain
 	stepsStartChainsWithSoftOptOut("consu"),
-	// make consumer validator to misbehave and get jail
+	// make a consumer validator to misbehave and get jailed
 	stepsCauseConsumerMisbehaviour("consu"),
 )
 
@@ -99,6 +99,6 @@ var consumerDoubleSignSteps = concatSteps(
 	// start provider and consumer chain
 	stepsStartChains([]string{"consu"}, false),
 
-	// make consumer validator to double sign and get jail
+	// make a consumer validator to double sign and get jailed
 	stepsCauseDoubleSignOnConsumer("consu"),
 )
