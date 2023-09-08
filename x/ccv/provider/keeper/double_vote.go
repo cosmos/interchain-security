@@ -14,14 +14,13 @@ import (
 )
 
 // HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer chain ID
-// and a public key, if successful, executes the jailing of the malicious validator.
+// and a public key and, if successful, executes the jailing of the malicious validator.
 func (k Keeper) HandleConsumerDoubleVoting(
 	ctx sdk.Context,
 	evidence *tmtypes.DuplicateVoteEvidence,
 	chainID string,
 	pubkey cryptotypes.PubKey,
 ) error {
-
 	// verifies the double voting evidence using the consumer chain public key
 	if err := k.VerifyDoubleVotingEvidence(ctx, *evidence, chainID, pubkey); err != nil {
 		return err

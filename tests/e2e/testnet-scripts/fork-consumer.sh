@@ -63,7 +63,7 @@ rpc_addr = "http://$CONS_CHAIN_PREFIX.252:26658"
 rpc_timeout = "10s"
 store_prefix = "ibc"
 trusting_period = "2days"
-websocket_addr = "event_source = { mode = 'push', url = 'ws://$CONS_CHAIN_PREFIX.252:26658/websocket' , batch_delay = '50ms' }
+event_source = { mode = 'push', url = 'ws://$CONS_CHAIN_PREFIX.252:26658/websocket' , batch_delay = '50ms' }
 
 [chains.gas_price]
         denom = "stake"
@@ -85,7 +85,9 @@ rpc_addr = "http://$PROV_CHAIN_PREFIX.4:26658"
 rpc_timeout = "10s"
 store_prefix = "ibc"
 trusting_period = "2days"
-websocket_addr = "ws://$PROV_CHAIN_PREFIX.4:26658/websocket"
+event_source = { mode = 'push', url = 'ws://$PROV_CHAIN_PREFIX.4:26658/websocket' , batch_delay = '50ms' }
+
+
 
 [chains.gas_price]
         denom = "stake"
