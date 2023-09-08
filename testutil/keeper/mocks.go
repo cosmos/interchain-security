@@ -116,6 +116,34 @@ func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidators", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidators), ctx)
 }
 
+// GetRedelegationsFromSrcValidator mocks base method.
+func (m *MockStakingKeeper) GetRedelegationsFromSrcValidator(ctx types.Context, valAddr types.ValAddress) []types4.Redelegation {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRedelegationsFromSrcValidator", ctx, valAddr)
+	ret0, _ := ret[0].([]types4.Redelegation)
+	return ret0
+}
+
+// GetRedelegationsFromSrcValidator indicates an expected call of GetRedelegationsFromSrcValidator.
+func (mr *MockStakingKeeperMockRecorder) GetRedelegationsFromSrcValidator(ctx, valAddr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRedelegationsFromSrcValidator", reflect.TypeOf((*MockStakingKeeper)(nil).GetRedelegationsFromSrcValidator), ctx, valAddr)
+}
+
+// GetUnbondingDelegationsFromValidator mocks base method.
+func (m *MockStakingKeeper) GetUnbondingDelegationsFromValidator(ctx types.Context, valAddr types.ValAddress) []types4.UnbondingDelegation {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUnbondingDelegationsFromValidator", ctx, valAddr)
+	ret0, _ := ret[0].([]types4.UnbondingDelegation)
+	return ret0
+}
+
+// GetUnbondingDelegationsFromValidator indicates an expected call of GetUnbondingDelegationsFromValidator.
+func (mr *MockStakingKeeperMockRecorder) GetUnbondingDelegationsFromValidator(ctx, valAddr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUnbondingDelegationsFromValidator", reflect.TypeOf((*MockStakingKeeper)(nil).GetUnbondingDelegationsFromValidator), ctx, valAddr)
+}
+
 // GetValidator mocks base method.
 func (m *MockStakingKeeper) GetValidator(ctx types.Context, addr types.ValAddress) (types4.Validator, bool) {
 	m.ctrl.T.Helper()
@@ -781,6 +809,18 @@ func (mr *MockClientKeeperMockRecorder) GetSelfConsensusState(ctx, height interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelfConsensusState", reflect.TypeOf((*MockClientKeeper)(nil).GetSelfConsensusState), ctx, height)
 }
 
+// SetClientState mocks base method.
+func (m *MockClientKeeper) SetClientState(ctx types.Context, clientID string, clientState exported.ClientState) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetClientState", ctx, clientID, clientState)
+}
+
+// SetClientState indicates an expected call of SetClientState.
+func (mr *MockClientKeeperMockRecorder) SetClientState(ctx, clientID, clientState interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetClientState", reflect.TypeOf((*MockClientKeeper)(nil).SetClientState), ctx, clientID, clientState)
+}
+
 // MockDistributionKeeper is a mock of DistributionKeeper interface.
 type MockDistributionKeeper struct {
 	ctrl     *gomock.Controller
@@ -816,18 +856,6 @@ func (m *MockDistributionKeeper) FundCommunityPool(ctx types.Context, amount typ
 func (mr *MockDistributionKeeperMockRecorder) FundCommunityPool(ctx, amount, sender interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FundCommunityPool", reflect.TypeOf((*MockDistributionKeeper)(nil).FundCommunityPool), ctx, amount, sender)
-}
-
-// SetClientState mocks base method.
-func (m *MockClientKeeper) SetClientState(ctx types.Context, clientID string, clientState exported.ClientState) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetClientState", ctx, clientID, clientState)
-}
-
-// SetClientState indicates an expected call of SetClientState.
-func (mr *MockClientKeeperMockRecorder) SetClientState(ctx, clientID, clientState interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetClientState", reflect.TypeOf((*MockClientKeeper)(nil).SetClientState), ctx, clientID, clientState)
 }
 
 // MockConsumerHooks is a mock of ConsumerHooks interface.
