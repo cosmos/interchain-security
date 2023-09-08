@@ -97,22 +97,41 @@ func UnmarshalMapToActionType(inputMap json.RawMessage, actionType string) (inte
 
 // for marshalling/unmarshalling proposals
 type ProposalAndType struct {
-	RawProposal map[string]any
-	Type        string `json:"Type"`
+	RawProposal json.RawMessage
+	Type        string
 }
 
 type ChainStateWithProposalTypes struct {
-	ChainState
-	Proposals *map[uint]ProposalAndType `json:"Proposals"`
+	ValBalances                    *map[ValidatorID]uint
+	ValPowers                      *map[ValidatorID]uint
+	RepresentativePowers           *map[ValidatorID]uint
+	Params                         *[]Param
+	Rewards                        *Rewards
+	ConsumerChains                 *map[ChainID]bool
+	AssignedKeys                   *map[ValidatorID]string
+	ProviderKeys                   *map[ValidatorID]string
+	ConsumerChainQueueSizes        *map[ChainID]uint
+	GlobalSlashQueueSize           *uint
+	RegisteredConsumerRewardDenoms *[]string
+	Proposals                      *map[uint]ProposalAndType // the only thing changed from the real ChainState
 }
 
 // custom marshal and unmarshal functions for the chainstate that convert proposals to/from the auxiliary type with type info
 
 // transform the ChainState into a ChainStateWithProposalTypes by adding type info to the proposals
-func (c ChainState) MarshalJson() ([]byte, error) {
-	fmt.Println("Custom marshal is called")
+func (c ChainState) MarshalJSON() ([]byte, error) {
 	chainStateWithProposalTypes := ChainStateWithProposalTypes{
-		ChainState: c,
+		ValBalances:                    c.ValBalances,
+		ValPowers:                      c.ValPowers,
+		RepresentativePowers:           c.RepresentativePowers,
+		Params:                         c.Params,
+		Rewards:                        c.Rewards,
+		ConsumerChains:                 c.ConsumerChains,
+		AssignedKeys:                   c.AssignedKeys,
+		ProviderKeys:                   c.ProviderKeys,
+		ConsumerChainQueueSizes:        c.ConsumerChainQueueSizes,
+		GlobalSlashQueueSize:           c.GlobalSlashQueueSize,
+		RegisteredConsumerRewardDenoms: c.RegisteredConsumerRewardDenoms,
 	}
 	if c.Proposals != nil {
 		proposalsWithTypes := make(map[uint]ProposalAndType)
@@ -130,15 +149,24 @@ func (c ChainState) MarshalJson() ([]byte, error) {
 }
 
 // unmarshal the ChainStateWithProposalTypes into a ChainState by removing the type info from the proposals and getting back standard proposals
-func (c *ChainState) UnmarshalJson(data []byte) error {
-	fmt.Println("Custom unmarshal is called")
-
+func (c *ChainState) UnmarshalJSON(data []byte) error {
 	chainStateWithProposalTypes := ChainStateWithProposalTypes{}
 	err := json.Unmarshal(data, &chainStateWithProposalTypes)
 	if err != nil {
 		return err
 	}
-	*c = chainStateWithProposalTypes.ChainState
+	c.ValBalances = chainStateWithProposalTypes.ValBalances
+	c.ValPowers = chainStateWithProposalTypes.ValPowers
+	c.RepresentativePowers = chainStateWithProposalTypes.RepresentativePowers
+	c.Params = chainStateWithProposalTypes.Params
+	c.Rewards = chainStateWithProposalTypes.Rewards
+	c.ConsumerChains = chainStateWithProposalTypes.ConsumerChains
+	c.AssignedKeys = chainStateWithProposalTypes.AssignedKeys
+	c.ProviderKeys = chainStateWithProposalTypes.ProviderKeys
+	c.ConsumerChainQueueSizes = chainStateWithProposalTypes.ConsumerChainQueueSizes
+	c.GlobalSlashQueueSize = chainStateWithProposalTypes.GlobalSlashQueueSize
+	c.RegisteredConsumerRewardDenoms = chainStateWithProposalTypes.RegisteredConsumerRewardDenoms
+
 	if chainStateWithProposalTypes.Proposals != nil {
 		proposals := make(map[uint]Proposal)
 		for k, v := range *chainStateWithProposalTypes.Proposals {
@@ -164,7 +192,7 @@ var proposalRegistry = map[string]Proposal{
 }
 
 // UnmarshalProposalWithType takes a JSON object and a proposal type and marshals into an object of the corresponding proposal.
-func UnmarshalProposalWithType(inputMap map[string]any, proposalType string) (Proposal, error) {
+func UnmarshalProposalWithType(inputMap json.RawMessage, proposalType string) (Proposal, error) {
 	propStruct, ok := proposalRegistry[proposalType]
 	if !ok {
 		return nil, fmt.Errorf("%s is not a known proposal type", proposalType)

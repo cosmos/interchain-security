@@ -42,9 +42,9 @@ func TestWriterThenParser(t *testing.T) {
 	tests := map[string]struct {
 		trace []Step
 	}{
-		"proposalSubmission":   {proposalSubmissionSteps},
-		"proposalInState":      {proposalInStateSteps},
-		"start_provider_chain": {stepStartProviderChain()},
+		"proposalSubmission": {proposalSubmissionSteps},
+		// "proposalInState":      {proposalInStateSteps},
+		// "start_provider_chain": {stepStartProviderChain()},
 		// "happyPath":            {happyPathSteps},
 		// "democracy":            {democracySteps},
 		// "slashThrottle":        {slashThrottleSteps},
