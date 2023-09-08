@@ -32,6 +32,11 @@ func TestProposalUnmarshal(t *testing.T) {
 		Status:        "PROPOSAL_STATUS_PASSED",
 	}
 
+	type ProposalAndType struct {
+		RawProposal json.RawMessage
+		Type        string
+	}
+
 	propAndType := &ProposalAndType{}
 	err := json.Unmarshal([]byte(proposalAndTypeString), propAndType)
 	if err != nil {

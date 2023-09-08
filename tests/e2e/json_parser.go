@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -25,9 +24,7 @@ func (parser JSONParser) ReadTraceFromFile(path string) ([]Step, error) {
 	// Unmarshal the JSON into a slice of Step structs
 	var steps []Step
 
-	decoder := json.NewDecoder(bytes.NewReader(jsonData))
-	decoder.DisallowUnknownFields() // To avoid silent errors. Will cause an error if the JSON contains unknown fields
-	err = decoder.Decode(&steps)
+	err = json.Unmarshal(jsonData, &steps)
 	if err != nil {
 		return nil, err
 	}

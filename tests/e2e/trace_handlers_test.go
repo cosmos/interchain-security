@@ -43,7 +43,7 @@ func TestWriterThenParser(t *testing.T) {
 		trace []Step
 	}{
 		"proposalSubmission": {proposalSubmissionSteps},
-		// "proposalInState":      {proposalInStateSteps},
+		// "proposalInState": {proposalInStateSteps},
 		// "start_provider_chain": {stepStartProviderChain()},
 		// "happyPath":            {happyPathSteps},
 		// "democracy":            {democracySteps},
