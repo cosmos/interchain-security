@@ -66,14 +66,13 @@ type updateLightClientAction struct {
 	hostChain     chainID
 	relayerConfig string
 	clientID      string
-	hostClientID  string
 }
 
 func (tr TestRun) updateLightClient(
 	action updateLightClientAction,
 	verbose bool,
 ) {
-	trustedHeight := tr.getTrustedHeight(action.hostChain, action.hostClientID, 2)
+	trustedHeight := tr.getTrustedHeight(action.hostChain, action.clientID, 2)
 
 	// hermes clear packets ibc0 transfer channel-13
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.

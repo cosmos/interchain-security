@@ -246,7 +246,6 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 				clientID:      "07-tendermint-0",
 				hostChain:     chainID("provi"),
 				relayerConfig: forkRelayerConfig, // this relayer config uses the "forked" consumer
-				hostClientID:  "07-tendermint-0", // TODO: get client ID by querying consumer genesis
 			},
 			state: State{
 				chainID("provi"): ChainState{
@@ -264,7 +263,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 					},
 				},
 				chainID("consu"): ChainState{
-					// consumer should not have learn the jailing of alice
+					// consumer should not have learned the jailing of alice
 					// since its light client is frozen on the provider
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
