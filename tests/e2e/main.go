@@ -39,7 +39,7 @@ var (
 	parallel             = flag.Bool("parallel", false, "run all tests in parallel")
 	localSdkPath         = flag.String("local-sdk-path", "",
 		"path of a local sdk version to build and reference in integration tests")
-	useCometmock = flag.Bool("use-cometmock", false, "use cometmock instead of CometBFT")
+	useCometmock = flag.Bool("use-cometmock", false, "use cometmock instead of CometBFT. see https://github.com/informalsystems/CometMock")
 	useGorelayer = flag.Bool("use-gorelayer", false, "use go relayer instead of Hermes")
 )
 
@@ -56,6 +56,12 @@ var (
 			description: `This is like the happy path, but skips steps
 that involve starting or stopping nodes for the same chain outside of the chain setup or teardown.
 This is suited for CometMock+Gorelayer testing`,
+		},
+		"light-client-attack": {
+			testRun: DefaultTestRun(), steps: lightClientAttackSteps,
+			description: `This is like the short happy path, but will slash validators for LightClientAttackEvidence instead of DuplicateVoteEvidence.
+This is suited for CometMock+Gorelayer testing, but currently does not work with CometBFT,
+since causing light client attacks is not implemented.`,
 		},
 		"happy-path":       {testRun: DefaultTestRun(), steps: happyPathSteps, description: "happy path tests"},
 		"changeover":       {testRun: ChangeoverTestRun(), steps: changeoverSteps, description: "changeover tests"},
@@ -238,6 +244,12 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.unjailValidator(action, verbose)
 	case doublesignSlashAction:
 		tr.invokeDoublesignSlash(action, verbose)
+	case lightClientAmnesiaAttackAction:
+		tr.lightClientAmnesiaAttack(action, verbose)
+	case lightClientEquivocationAttackAction:
+		tr.lightClientEquivocationAttack(action, verbose)
+	case lightClientLunaticAttackAction:
+		tr.lightClientLunaticAttack(action, verbose)
 	case registerRepresentativeAction:
 		tr.registerRepresentative(action, verbose)
 	case assignConsumerPubKeyAction:

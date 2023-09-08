@@ -1,6 +1,7 @@
 package integration
 
 import (
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -52,8 +53,12 @@ func (s *CCVTestSuite) TestSlashRetries() {
 
 	// Construct a mock slash packet from consumer
 	tmval1 := s.providerChain.Vals.Validators[1]
-	packet1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
-
+	packetData1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes()
+	var (
+		timeoutHeight    = clienttypes.Height{}
+		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
+	)
+	packet1 := s.newPacketFromConsumer(packetData1, 1, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
 	// Mock the sending of the packet on consumer
 	consumerKeeper.AppendPendingPacket(s.consumerCtx(), ccvtypes.SlashPacket,
 		&ccvtypes.ConsumerPacketData_SlashPacketData{
@@ -105,7 +110,8 @@ func (s *CCVTestSuite) TestSlashRetries() {
 
 	// Construct and mock the sending of a second packet on consumer
 	tmval2 := s.providerChain.Vals.Validators[2]
-	packet2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
+	packetData2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes()
+	packet2 := s.newPacketFromConsumer(packetData2, 1, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
 
 	consumerKeeper.AppendPendingPacket(s.consumerCtx(), ccvtypes.SlashPacket,
 		&ccvtypes.ConsumerPacketData_SlashPacketData{

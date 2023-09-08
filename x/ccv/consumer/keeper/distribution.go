@@ -103,61 +103,73 @@ func (k Keeper) shouldSendRewardsToProvider(ctx sdk.Context) bool {
 // all the block rewards allocated for the provider
 func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 	// empty out the toSendToProviderTokens address
-	ch := k.GetDistributionTransmissionChannel(ctx)
-	transferChannel, found := k.channelKeeper.GetChannel(ctx, transfertypes.PortID, ch)
-	if found && transferChannel.State == channeltypes.OPEN {
-		tstProviderAddr := k.authKeeper.GetModuleAccount(ctx,
-			types.ConsumerToSendToProviderName).GetAddress()
-		providerAddr := k.GetProviderFeePoolAddrStr(ctx)
-		timeoutHeight := clienttypes.ZeroHeight()
-		transferTimeoutPeriod := k.GetTransferTimeoutPeriod(ctx)
-		timeoutTimestamp := uint64(ctx.BlockTime().Add(transferTimeoutPeriod).UnixNano())
-
-		sentCoins := sdk.NewCoins()
-		var allBalances sdk.Coins
-		// iterate over all whitelisted reward denoms
-		for _, denom := range k.AllowedRewardDenoms(ctx) {
-			// get the balance of the denom in the toSendToProviderTokens address
-			balance := k.bankKeeper.GetBalance(ctx, tstProviderAddr, denom)
-			allBalances = allBalances.Add(balance)
-
-			// if the balance is not zero,
-			if !balance.IsZero() {
-				packetTransfer := &transfertypes.MsgTransfer{
-					SourcePort:       transfertypes.PortID,
-					SourceChannel:    ch,
-					Token:            balance,
-					Sender:           tstProviderAddr.String(), // consumer address to send from
-					Receiver:         providerAddr,             // provider fee pool address to send to
-					TimeoutHeight:    timeoutHeight,            // timeout height disabled
-					TimeoutTimestamp: timeoutTimestamp,
-					Memo:             "consumer chain rewards distribution",
-				}
-				_, err := k.ibcTransferKeeper.Transfer(ctx, packetTransfer)
-				if err != nil {
-					return err
-				}
-				sentCoins = sentCoins.Add(balance)
-			}
-		}
-
-		k.Logger(ctx).Info("sent block rewards to provider",
-			"total fee pool", allBalances.String(),
-			"sent", sentCoins.String(),
-		)
-		currentHeight := ctx.BlockHeight()
-		ctx.EventManager().EmitEvent(
-			sdk.NewEvent(
-				ccv.EventTypeFeeDistribution,
-				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-				sdk.NewAttribute(ccv.AttributeDistributionCurrentHeight, strconv.Itoa(int(currentHeight))),
-				sdk.NewAttribute(ccv.AttributeDistributionNextHeight, strconv.Itoa(int(currentHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
-				sdk.NewAttribute(ccv.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
-				sdk.NewAttribute(ccv.AttributeDistributionTotal, allBalances.String()),
-				sdk.NewAttribute(ccv.AttributeDistributionToProvider, sentCoins.String()),
-			),
-		)
+	sourceChannelID := k.GetDistributionTransmissionChannel(ctx)
+	transferChannel, found := k.channelKeeper.GetChannel(ctx, transfertypes.PortID, sourceChannelID)
+	if !found || transferChannel.State != channeltypes.OPEN {
+		k.Logger(ctx).Info("WARNING: cannot send rewards to provider;",
+			"transmission channel not in OPEN state", "channelID", sourceChannelID)
+		return nil
 	}
+
+	// get params for sending rewards
+	toSendToProviderAddr := k.authKeeper.GetModuleAccount(ctx,
+		types.ConsumerToSendToProviderName).GetAddress() // sender address
+	providerAddr := k.GetProviderFeePoolAddrStr(ctx) // recipient address
+	timeoutHeight := clienttypes.ZeroHeight()
+	timeoutTimestamp := uint64(ctx.BlockTime().Add(k.GetTransferTimeoutPeriod(ctx)).UnixNano())
+
+	sentCoins := sdk.NewCoins()
+	var allBalances sdk.Coins
+	// iterate over all whitelisted reward denoms
+	for _, denom := range k.AllowedRewardDenoms(ctx) {
+		// get the balance of the denom in the toSendToProviderTokens address
+		balance := k.bankKeeper.GetBalance(ctx, toSendToProviderAddr, denom)
+		allBalances = allBalances.Add(balance)
+
+		// if the balance is not zero,
+		if !balance.IsZero() {
+			packetTransfer := &transfertypes.MsgTransfer{
+				SourcePort:       transfertypes.PortID,
+				SourceChannel:    sourceChannelID,
+				Token:            balance,
+				Sender:           toSendToProviderAddr.String(), // consumer address to send from
+				Receiver:         providerAddr,                  // provider fee pool address to send to
+				TimeoutHeight:    timeoutHeight,                 // timeout height disabled
+				TimeoutTimestamp: timeoutTimestamp,
+				Memo:             "consumer chain rewards distribution",
+			}
+
+			// validate MsgTransfer before calling Transfer()
+			err := packetTransfer.ValidateBasic()
+			if err != nil {
+				return err
+			}
+
+			_, err = k.ibcTransferKeeper.Transfer(ctx, packetTransfer)
+			if err != nil {
+				return err
+			}
+
+			sentCoins = sentCoins.Add(balance)
+		}
+	}
+
+	k.Logger(ctx).Info("sent block rewards to provider",
+		"total fee pool", allBalances.String(),
+		"sent", sentCoins.String(),
+	)
+	currentHeight := ctx.BlockHeight()
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			ccv.EventTypeFeeDistribution,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(ccv.AttributeDistributionCurrentHeight, strconv.Itoa(int(currentHeight))),
+			sdk.NewAttribute(ccv.AttributeDistributionNextHeight, strconv.Itoa(int(currentHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
+			sdk.NewAttribute(ccv.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
+			sdk.NewAttribute(ccv.AttributeDistributionTotal, allBalances.String()),
+			sdk.NewAttribute(ccv.AttributeDistributionToProvider, sentCoins.String()),
+		),
+	)
 
 	return nil
 }
