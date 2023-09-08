@@ -213,12 +213,12 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			},
 			state: State{},
 		},
+		// start relayer to detect IBC misbehaviour
 		{
-			// start relayer to detect ICS misbehaviour
 			action: startRelayerAction{},
 			state:  State{},
 		},
-		// detect the ics misbehaviour
+		// detect the ICS misbehaviour
 		// and jail alice on the provider
 		{
 			action: detectConsumerEvidenceAction{

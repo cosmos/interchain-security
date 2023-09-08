@@ -806,7 +806,6 @@ func (tr TestRun) getTrustedHeight(
 	var trustedHeight gjson.Result
 	for scanner.Scan() {
 		out := scanner.Text()
-		log.Println("trusted heights: " + out)
 		if len(gjson.Get(out, "result").Array()) > 0 {
 			trustedHeight = gjson.Get(out, "result").Array()[index]
 		}

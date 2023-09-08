@@ -1845,8 +1845,8 @@ func (tr TestRun) GetPathNameForGorelayer(chainA, chainB chainID) string {
 	return pathName
 }
 
-// Run an instance of the Hermes relayer "evidence" command,
-// which detects evidences in the consumer chain blocks.
+// Run an instance of the Hermes relayer using the "evidence" command,
+// which detects evidences committed to the blocks of a consumer chain.
 // Each infraction detected is reported to the provider chain using
 // either a SubmitConsumerDoubleVoting or a SubmitConsumerMisbehaviour message.
 type detectConsumerEvidenceAction struct {
