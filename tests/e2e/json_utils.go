@@ -82,6 +82,7 @@ var actionRegistry = map[string]reflect.Type{
 
 // UnmarshalMapToActionType takes a JSON object and an action type and marshals into an object of the corresponding action.
 func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string) (interface{}, error) {
+	// TODO: ERRORS PROBABLY COME FROM HERE
 	actionType, ok := actionRegistry[actionTypeString]
 	if !ok {
 		return nil, fmt.Errorf("%s is not a known action type", actionTypeString)

@@ -35,6 +35,7 @@ var proposalInStateSteps = []Step{
 }
 
 // Checks that writing, then parsing a trace results in the same trace.
+// TODO: RUN THIS AND FIX ERRORS
 func TestWriterThenParser(t *testing.T) {
 	parser := JSONParser{}
 	writer := JSONWriter{}
