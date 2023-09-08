@@ -72,9 +72,9 @@ func (tr TestRun) updateLightClient(
 	action updateLightClientAction,
 	verbose bool,
 ) {
+	// retrieve a trusted height of the consumer light client
 	trustedHeight := tr.getTrustedHeight(action.hostChain, action.clientID, 2)
 
-	// hermes clear packets ibc0 transfer channel-13
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"--config", action.relayerConfig,

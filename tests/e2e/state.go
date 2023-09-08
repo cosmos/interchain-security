@@ -778,8 +778,6 @@ func (tr TestRun) getClientFrozenHeight(chain chainID, clientID string) clientty
 	return clienttypes.Height{RevisionHeight: uint64(revHeight), RevisionNumber: uint64(revNumber)}
 }
 
-// hermes --json --config ./root/.hermes/config.toml query client consensus --chain provi --client 07-tendermint-0 | tail -n 1 | jq '.result[2].revision_height')
-
 func (tr TestRun) getTrustedHeight(
 	chain chainID,
 	clientID string,
@@ -810,7 +808,7 @@ func (tr TestRun) getTrustedHeight(
 		out := scanner.Text()
 		log.Println("trusted heights: " + out)
 		if len(gjson.Get(out, "result").Array()) > 0 {
-			trustedHeight = gjson.Get(out, "result").Array()[2]
+			trustedHeight = gjson.Get(out, "result").Array()[index]
 		}
 	}
 
