@@ -236,7 +236,8 @@ func (sp *EquivocationProposal) ValidateBasic() error {
 }
 
 func NewChangeRewardDenomsProposal(title, description string,
-	denomsToAdd, denomsToRemove []string) govv1beta1.Content {
+	denomsToAdd, denomsToRemove []string,
+) govv1beta1.Content {
 	return &ChangeRewardDenomsProposal{
 		Title:          title,
 		Description:    description,
