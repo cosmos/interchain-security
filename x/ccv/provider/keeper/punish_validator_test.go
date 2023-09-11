@@ -93,6 +93,9 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 					mocks.MockSlashingKeeper.EXPECT().JailUntil(
 						ctx, providerConsAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime).
 						Times(1),
+					mocks.MockSlashingKeeper.EXPECT().Tombstone(
+						ctx, providerConsAddr.ToSdkConsAddr()).
+						Times(1),
 				}
 			},
 		},
@@ -116,6 +119,9 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 						Times(1),
 					mocks.MockSlashingKeeper.EXPECT().JailUntil(
 						ctx, providerConsAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime).
+						Times(1),
+					mocks.MockSlashingKeeper.EXPECT().Tombstone(
+						ctx, providerConsAddr.ToSdkConsAddr()).
 						Times(1),
 				}
 			},
