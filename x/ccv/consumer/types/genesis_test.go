@@ -52,7 +52,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 
 	cases := []struct {
 		name     string
-		gs       *types.GenesisState
+		gs       *types.ConsumerGenesisState
 		expError bool
 	}{
 		{
@@ -84,7 +84,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 		},
 		{
 			"invalid new consumer genesis state: client id not empty",
-			&types.GenesisState{
+			&types.ConsumerGenesisState{
 				Params:                      params,
 				ProviderClientId:            "ccvclient",
 				ProviderChannelId:           "",
@@ -103,7 +103,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 		},
 		{
 			"invalid new consumer genesis state: channel id not empty",
-			&types.GenesisState{
+			&types.ConsumerGenesisState{
 				Params:                      params,
 				ProviderClientId:            "",
 				ProviderChannelId:           "ccvchannel",
@@ -122,7 +122,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 		},
 		{
 			"invalid new consumer genesis state: non-empty unbonding sequences",
-			&types.GenesisState{
+			&types.ConsumerGenesisState{
 				Params:                      params,
 				ProviderClientId:            "",
 				ProviderChannelId:           "",
@@ -141,7 +141,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 		},
 		{
 			"invalid new consumer genesis state: non-empty last transmission packet",
-			&types.GenesisState{
+			&types.ConsumerGenesisState{
 				Params:                      params,
 				ProviderClientId:            "",
 				ProviderChannelId:           "",
@@ -160,7 +160,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 		},
 		{
 			"invalid new consumer genesis state: non-empty pending consumer packets",
-			&types.GenesisState{
+			&types.ConsumerGenesisState{
 				Params:                      params,
 				ProviderClientId:            "",
 				ProviderChannelId:           "",
@@ -299,7 +299,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 
 	cases := []struct {
 		name     string
-		gs       *types.GenesisState
+		gs       *types.ConsumerGenesisState
 		expError bool
 	}{
 		{
@@ -347,7 +347,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		},
 		{
 			"invalid restart consumer genesis: client state defined",
-			&types.GenesisState{
+			&types.ConsumerGenesisState{
 				Params:                      params,
 				ProviderClientId:            "ccvclient",
 				ProviderChannelId:           "ccvchannel",
@@ -366,7 +366,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		},
 		{
 			"invalid restart consumer genesis: consensus state defined",
-			&types.GenesisState{
+			&types.ConsumerGenesisState{
 				Params:                      params,
 				ProviderClientId:            "ccvclient",
 				ProviderChannelId:           "ccvchannel",

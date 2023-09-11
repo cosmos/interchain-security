@@ -100,8 +100,8 @@ func TestInitGenesis(t *testing.T) {
 	testCases := []struct {
 		name         string
 		malleate     func(sdk.Context, testkeeper.MockedKeepers)
-		genesis      *ccv.GenesisState
-		assertStates func(sdk.Context, consumerkeeper.Keeper, *ccv.GenesisState)
+		genesis      *ccv.ConsumerGenesisState
+		assertStates func(sdk.Context, consumerkeeper.Keeper, *ccv.ConsumerGenesisState)
 	}{
 		{
 			"start a new chain",
@@ -118,7 +118,7 @@ func TestInitGenesis(t *testing.T) {
 				valset,
 				params,
 			),
-			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *ccv.GenesisState) {
+			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *ccv.ConsumerGenesisState) {
 				assertConsumerPortIsBound(t, ctx, &ck)
 
 				assertProviderClientID(t, ctx, &ck, provClientID)
@@ -145,7 +145,7 @@ func TestInitGenesis(t *testing.T) {
 				ccv.LastTransmissionBlockHeight{},
 				params,
 			),
-			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *ccv.GenesisState) {
+			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *ccv.ConsumerGenesisState) {
 				assertConsumerPortIsBound(t, ctx, &ck)
 
 				obtainedPendingPackets := ck.GetPendingPackets(ctx)
@@ -183,7 +183,7 @@ func TestInitGenesis(t *testing.T) {
 				ccv.LastTransmissionBlockHeight{Height: int64(100)},
 				params,
 			),
-			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *ccv.GenesisState) {
+			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *ccv.ConsumerGenesisState) {
 				assertConsumerPortIsBound(t, ctx, &ck)
 
 				gotChannelID, ok := ck.GetProviderChannel(ctx)
@@ -289,7 +289,7 @@ func TestExportGenesis(t *testing.T) {
 	testCases := []struct {
 		name       string
 		malleate   func(sdk.Context, consumerkeeper.Keeper, testkeeper.MockedKeepers)
-		expGenesis *ccv.GenesisState
+		expGenesis *ccv.ConsumerGenesisState
 	}{
 		{
 			"export a chain without an established CCV channel",
