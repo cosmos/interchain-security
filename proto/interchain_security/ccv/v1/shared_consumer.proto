@@ -17,13 +17,12 @@ import "google/protobuf/timestamp.proto";
 // but not sent over the wire. These schemas could change, only with careful consideration of effects!
 //
 
-// Params defines the parameters for CCV consumer module.
+// ConsumerParams defines the parameters for CCV consumer module.
 // 
 // Note this type is referenced in both the consumer and provider CCV modules,
 // and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis. 
 //
-// TODO: Rename to ConsumerParams. See https://github.com/cosmos/interchain-security/issues/1206
-message Params {
+message ConsumerParams {
     // TODO: Remove enabled flag and find a better way to setup integration tests
     // See: https://github.com/cosmos/interchain-security/issues/339
     bool enabled = 1;
@@ -84,7 +83,7 @@ message Params {
 // Note this type is referenced in both the consumer and provider CCV modules,
 // and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis.
 message ConsumerGenesisState {
-    Params params = 1 [ (gogoproto.nullable) = false ];
+    ConsumerParams params = 1 [ (gogoproto.nullable) = false ];
     string provider_client_id = 2; // empty for a new chain, filled in on restart.
     string provider_channel_id =
         3; // empty for a new chain, filled in on restart.
