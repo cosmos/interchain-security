@@ -50,11 +50,10 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 	// FIXME: it would be nice to set the evidence but not sure what this would mean
 	// for light client attacks.
 	var evidence exported.Evidence = &evidencetypes.Equivocation{
-		// FIXME
 		Height:           int64(misbehaviour.Header1.GetHeight().GetRevisionHeight()),
 		Time:             misbehaviour.Header2.GetTime(),
-		Power:            0,       // misbehaviour.Header1.ValidatorSet.Validators
-		ConsensusAddress: "hola!", //misbehaviour.Header1.ValidatorSet.Proposer.Address
+		Power:            0,
+		ConsensusAddress: "!",
 	}
 
 	k.evidenceKeeper.SetEvidence(ctx, evidence)

@@ -37,7 +37,7 @@ func (k Keeper) HandleConsumerDoubleVoting(
 	k.SlashValidator(ctx, providerAddr)
 	k.JailAndTombstoneValidator(ctx, providerAddr)
 
-	// verify the following values
+	// FIXME: verify the following values
 	var equivocation exported.Evidence = &evidencetypes.Equivocation{
 		Height:           evidence.Height(),
 		Time:             evidence.Time(),
