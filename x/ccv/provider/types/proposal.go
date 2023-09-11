@@ -10,6 +10,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
@@ -273,5 +274,18 @@ func (crdp *ChangeRewardDenomsProposal) ValidateBasic() error {
 			}
 		}
 	}
+
+	// Return error if any denom is "invalid"
+	for _, denom := range crdp.DenomsToAdd {
+		if !sdk.NewCoin(denom, sdk.NewInt(1)).IsValid() {
+			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
+		}
+	}
+	for _, denom := range crdp.DenomsToRemove {
+		if !sdk.NewCoin(denom, sdk.NewInt(1)).IsValid() {
+			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
+		}
+	}
+
 	return nil
 }
