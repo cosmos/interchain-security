@@ -10,7 +10,7 @@ import (
 )
 
 // TestHandleConsumerDoubleVoting verifies that handling a double voting evidence
-// of a consumer chain results in the expected jailing of the malicious validator
+// of a consumer chain results in the expected tombstoning and jailing of the malicious validator
 func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
