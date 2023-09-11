@@ -8,8 +8,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	rosettaCmd "cosmossdk.io/tools/rosetta/cmd"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
@@ -207,9 +205,6 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		txCommand(),
 		keys.Commands(providerApp.DefaultNodeHome),
 	)
-
-	// add rosetta
-	rootCmd.AddCommand(rosettaCmd.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Codec))
 }
 
 // newApp is an appCreator

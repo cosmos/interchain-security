@@ -314,7 +314,7 @@ func (tr *TestRun) startDocker() {
 		}
 	}
 	scriptStr := fmt.Sprintf(
-		"tests/e2e/testnet-scripts/start-docker.sh %s %s %s %s %s",
+		"e2e/testnet-scripts/start-docker.sh %s %s %s %s %s",
 		tr.containerConfig.containerName,
 		tr.containerConfig.instanceName,
 		localSdk,

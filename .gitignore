@@ -7,3 +7,7 @@ docs/tla/states/
 vendor/
 .vscode
 .idea
+
+# Go workspace files should not be pushed.
+go.work
+go.work.sum

@@ -28,6 +28,8 @@ brew install jq
 
 **Installing and running binaries**
 
+This repository consists of multiple go modules. In order to have a smooth development experience, please add a `go.work` file. It is enough to copy and rename the `go.work.example` file.
+
 ```bash
 # install interchain-security-pd and interchain-security-cd binaries
 make install

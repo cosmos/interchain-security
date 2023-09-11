@@ -77,7 +77,7 @@ COPY --from=is-builder /go/bin/interchain-security-cdd /usr/local/bin/interchain
 COPY --from=is-builder /go/bin/interchain-security-sd /usr/local/bin/interchain-security-sd
 
 # Copy in the shell scripts that run the testnet
-ADD ./tests/e2e/testnet-scripts /testnet-scripts
+ADD ./e2e/testnet-scripts /testnet-scripts
 
 # Copy in the hermes config
-ADD ./tests/e2e/testnet-scripts/hermes-config.toml /root/.hermes/config.toml
+ADD ./e2e/testnet-scripts/hermes-config.toml /root/.hermes/config.toml

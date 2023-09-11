@@ -16,10 +16,6 @@ import (
 	"github.com/tidwall/gjson"
 
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/client"
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 type SendTokensAction struct {
@@ -235,8 +231,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	verbose bool,
 ) {
 	spawnTime := tr.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
-	params := ccvtypes.DefaultParams()
-	prop := client.ConsumerAdditionProposalJSON{
+	prop := ConsumerAdditionProposalJSONV3{
 		Title:                             "Propose the addition of a new chain",
 		Summary:                           "Gonna be a great chain",
 		ChainId:                           string(tr.chainConfigs[action.consumerChain].chainId),
@@ -244,12 +239,12 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		GenesisHash:                       []byte("gen_hash"),
 		BinaryHash:                        []byte("bin_hash"),
 		SpawnTime:                         spawnTime,
-		ConsumerRedistributionFraction:    params.ConsumerRedistributionFraction,
-		BlocksPerDistributionTransmission: params.BlocksPerDistributionTransmission,
-		HistoricalEntries:                 params.HistoricalEntries,
-		CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
-		TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
-		UnbondingPeriod:                   params.UnbondingPeriod,
+		ConsumerRedistributionFraction:    DefaultCCVParams.ConsumerRedistributionFraction,
+		BlocksPerDistributionTransmission: DefaultCCVParams.BlocksPerDistributionTransmission,
+		HistoricalEntries:                 DefaultCCVParams.HistoricalEntries,
+		CcvTimeoutPeriod:                  DefaultCCVParams.CcvTimeoutPeriod,
+		TransferTimeoutPeriod:             DefaultCCVParams.TransferTimeoutPeriod,
+		UnbondingPeriod:                   DefaultCCVParams.UnbondingPeriod,
 		Deposit:                           fmt.Sprint(action.deposit) + `stake`,
 		DistributionTransmissionChannel:   action.distributionChannel,
 	}
@@ -306,7 +301,7 @@ func (tr TestRun) submitConsumerRemovalProposal(
 	verbose bool,
 ) {
 	stopTime := tr.containerConfig.now.Add(action.stopTimeOffset)
-	prop := client.ConsumerRemovalProposalJSON{
+	prop := ConsumerRemovalProposalJSONV3{
 		Title:    fmt.Sprintf("Stop the %v chain", action.consumerChain),
 		Summary:  "It was a great chain",
 		ChainId:  string(tr.chainConfigs[action.consumerChain].chainId),
@@ -442,18 +437,16 @@ func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAc
 	val := tr.validatorConfigs[action.validator]
 	providerChain := tr.chainConfigs[chainID("provi")]
 
-	prop := client.EquivocationProposalJSON{
-		Summary: "Validator equivocation!",
-		EquivocationProposal: types.EquivocationProposal{
-			Title:       "Validator equivocation!",
-			Description: fmt.Sprintf("Validator: %s has committed an equivocation infraction on chainID: %s", action.validator, action.chain),
-			Equivocations: []*evidencetypes.Equivocation{
-				{
-					Height:           action.height,
-					Time:             action.time,
-					Power:            action.power,
-					ConsensusAddress: val.valconsAddress,
-				},
+	prop := EquivocationProposalJSONV3{
+		Summary:     "Validator equivocation!",
+		Title:       "Validator equivocation!",
+		Description: fmt.Sprintf("Validator: %s has committed an equivocation infraction on chainID: %s", action.validator, action.chain),
+		Equivocations: []*evidencetypes.Equivocation{
+			{
+				Height:           action.height,
+				Time:             action.time,
+				Power:            action.power,
+				ConsensusAddress: val.valconsAddress,
 			},
 		},
 		Deposit: fmt.Sprint(action.deposit) + `stake`,
