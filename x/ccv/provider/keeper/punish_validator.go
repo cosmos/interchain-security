@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -74,12 +73,6 @@ func (k Keeper) ComputePowerToSlash(undelegations []stakingtypes.UnbondingDelega
 func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) {
 	logger := k.Logger(ctx)
 
-	fmt.Println(">>>>")
-	fmt.Println(ctx)
-	fmt.Println("===")
-	fmt.Println(providerAddr)
-	fmt.Println(providerAddr.ToSdkConsAddr().Bytes())
-	fmt.Println(">>>>")
 	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 	if !found {
 		logger.Error("validator not found", "provider consensus address", providerAddr.String())

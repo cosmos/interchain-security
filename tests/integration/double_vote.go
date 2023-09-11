@@ -10,7 +10,7 @@ import (
 )
 
 // TestHandleConsumerDoubleVoting verifies that handling a double voting evidence
-// of a consumer chain results in the expected tombstoning and jailing of the malicious validator
+// of a consumer chain results in the expected tombstoning, jailing, and slashing of the malicious validator
 func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
@@ -159,6 +159,9 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	consuAddr := types.NewConsumerConsAddress(sdk.ConsAddress(consuVal.Address.Bytes()))
 	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
 
+	validator, _ := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr.ToSdkConsAddr().Bytes())
+	initialTokens := validator.GetTokens().ToDec()
+
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			// reset context for each run
@@ -188,6 +191,12 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				// verifies that the tombstoning and jailing has occurred
 				s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(provCtx, provAddr.ToSdkConsAddr()))
 				s.Require().True(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(provCtx, provAddr.ToSdkConsAddr()))
+
+				// verifies that the validator gets slashed and has fewer tokens after the slashing
+				validator, _ := s.providerApp.GetTestStakingKeeper().GetValidator(provCtx, provAddr.ToSdkConsAddr().Bytes())
+				slashFraction := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(provCtx)
+				actualTokens := validator.GetTokens().ToDec()
+				s.Require().True(initialTokens.Sub(initialTokens.Mul(slashFraction)).Equal(actualTokens))
 			} else {
 				s.Require().Error(err)
 
