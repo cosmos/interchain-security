@@ -68,8 +68,12 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
 
 	// Send slash packet from the first consumer chain
-	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
-	err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
+	var (
+		timeoutHeight    = clienttypes.Height{}
+		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
+	)
+	slashPacket := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+	sequence, err := s.getFirstBundle().Path.EndpointA.SendPacket(timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
 	s.Require().NoError(err)
 
 	// Set outstanding slashing flag for first consumer, it's important to use the consumer's cons addr here
@@ -86,6 +90,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	valsetUpdateIdN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// receive the slash packet on the provider chain. RecvPacket() calls the provider endblocker twice
+	packet := s.newPacketFromConsumer(slashPacket.GetBytes(), sequence, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
 	err = s.path.EndpointB.RecvPacket(packet)
 	s.Require().NoError(err)
 
@@ -196,13 +201,12 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
 
 	// Send slash packet from the first consumer chain
-	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, 1)
-	err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
-	s.Require().NoError(err)
-
-	// receive the slash packet on the provider chain. RecvPacket() advances two blocks
-	err = s.path.EndpointB.RecvPacket(packet)
-	s.Require().NoError(err)
+	var (
+		timeoutHeight    = clienttypes.Height{}
+		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
+	)
+	slashPacket := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
+	packet := sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
 
 	// Advance a few more blocks to make sure any voting power changes would be reflected
 	s.providerChain.NextBlock()
@@ -259,9 +263,8 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 			SlashPacketData: &spd,
 		},
 	)
-	packet := channeltypes.NewPacket(cpd.GetBytes(), // Consumer always sends v1 packet data
-		1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
-		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, 0)
+	packet := s.newPacketFromConsumer(cpd.GetBytes(), // Consumer always sends v1 packet data
+		1, s.path, clienttypes.Height{}, 0)
 
 	// Map infraction height on provider so validation passes and provider returns valid ack result
 	providerKeeper.SetValsetUpdateBlockHeight(s.providerCtx(), spd.ValsetUpdateId, 47923)

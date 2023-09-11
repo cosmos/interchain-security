@@ -1599,10 +1599,10 @@ func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, dow
 
 	if tr.useCometmock {
 		// send set_signing_status either to down or up for validator
-		validatorAddress := tr.GetValidatorAddress(chain, validator)
+		validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(chain, validator)
 
 		method := "set_signing_status"
-		params := fmt.Sprintf(`{"private_key_address":"%s","status":"%s"}`, validatorAddress, lastArg)
+		params := fmt.Sprintf(`{"private_key_address":"%s","status":"%s"}`, validatorPrivateKeyAddress, lastArg)
 		address := tr.getQueryNodeRPCAddress(chain)
 
 		tr.curlJsonRPCRequest(method, params, address)
@@ -1632,10 +1632,10 @@ func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, dow
 	}
 }
 
-func (tr TestRun) GetValidatorAddress(chain chainID, validator validatorID) string {
-	var validatorAddress string
+func (tr TestRun) GetValidatorPrivateKeyAddress(chain chainID, validator validatorID) string {
+	var validatorPrivateKeyAddress string
 	if chain == chainID("provi") {
-		validatorAddress = tr.getValidatorKeyAddressFromString(tr.validatorConfigs[validator].privValidatorKey)
+		validatorPrivateKeyAddress = tr.getValidatorKeyAddressFromString(tr.validatorConfigs[validator].privValidatorKey)
 	} else {
 		var valAddressString string
 		if tr.validatorConfigs[validator].useConsumerKey {
@@ -1643,9 +1643,9 @@ func (tr TestRun) GetValidatorAddress(chain chainID, validator validatorID) stri
 		} else {
 			valAddressString = tr.validatorConfigs[validator].privValidatorKey
 		}
-		validatorAddress = tr.getValidatorKeyAddressFromString(valAddressString)
+		validatorPrivateKeyAddress = tr.getValidatorKeyAddressFromString(valAddressString)
 	}
-	return validatorAddress
+	return validatorPrivateKeyAddress
 }
 
 type unjailValidatorAction struct {
@@ -1806,10 +1806,10 @@ func (tr TestRun) invokeDoublesignSlash(
 		}
 		tr.waitBlocks("provi", 10, 2*time.Minute)
 	} else { // tr.useCometMock
-		validatorAddress := tr.GetValidatorAddress(action.chain, action.validator)
+		validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(action.chain, action.validator)
 
 		method := "cause_double_sign"
-		params := fmt.Sprintf(`{"private_key_address":"%s"}`, validatorAddress)
+		params := fmt.Sprintf(`{"private_key_address":"%s"}`, validatorPrivateKeyAddress)
 
 		address := tr.getQueryNodeRPCAddress(action.chain)
 
@@ -1817,6 +1817,81 @@ func (tr TestRun) invokeDoublesignSlash(
 		tr.waitBlocks(action.chain, 1, 10*time.Second)
 		return
 	}
+}
+
+// Cause light client attack evidence for a certain validator to appear on the given chain.
+// The evidence will look like the validator equivocated to a light client.
+// See https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability
+// for more information about light client attacks.
+type lightClientEquivocationAttackAction struct {
+	validator validatorID
+	chain     chainID
+}
+
+func (tr TestRun) lightClientEquivocationAttack(
+	action lightClientEquivocationAttackAction,
+	verbose bool,
+) {
+	tr.lightClientAttack(action.validator, action.chain, LightClientEquivocationAttack)
+}
+
+// Cause light client attack evidence for a certain validator to appear on the given chain.
+// The evidence will look like the validator tried to perform an amnesia attack.
+// See https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability
+// for more information about light client attacks.
+type lightClientAmnesiaAttackAction struct {
+	validator validatorID
+	chain     chainID
+}
+
+func (tr TestRun) lightClientAmnesiaAttack(
+	action lightClientAmnesiaAttackAction,
+	verbose bool,
+) {
+	tr.lightClientAttack(action.validator, action.chain, LightClientAmnesiaAttack)
+}
+
+// Cause light client attack evidence for a certain validator to appear on the given chain.
+// The evidence will look like the validator tried to perform a lunatic attack.
+// See https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability
+// for more information about light client attacks.
+type lightClientLunaticAttackAction struct {
+	validator validatorID
+	chain     chainID
+}
+
+func (tr TestRun) lightClientLunaticAttack(
+	action lightClientLunaticAttackAction,
+	verbose bool,
+) {
+	tr.lightClientAttack(action.validator, action.chain, LightClientLunaticAttack)
+}
+
+type LightClientAttackType string
+
+const (
+	LightClientEquivocationAttack LightClientAttackType = "Equivocation"
+	LightClientAmnesiaAttack      LightClientAttackType = "Amnesia"
+	LightClientLunaticAttack      LightClientAttackType = "Lunatic"
+)
+
+func (tr TestRun) lightClientAttack(
+	validator validatorID,
+	chain chainID,
+	attackType LightClientAttackType,
+) {
+	if !tr.useCometmock {
+		log.Fatal("light client attack is only supported with CometMock")
+	}
+	validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(chain, validator)
+
+	method := "cause_light_client_attack"
+	params := fmt.Sprintf(`{"private_key_address":"%s", "misbehaviour_type": "%s"}`, validatorPrivateKeyAddress, attackType)
+
+	address := tr.getQueryNodeRPCAddress(chain)
+
+	tr.curlJsonRPCRequest(method, params, address)
+	tr.waitBlocks(chain, 1, 10*time.Second)
 }
 
 type assignConsumerPubKeyAction struct {

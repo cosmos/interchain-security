@@ -39,9 +39,24 @@ var shortHappyPathSteps = concatSteps(
 	stepsDowntime("consu"),
 	stepsRejectEquivocationProposal("consu", 2),   // prop to tombstone bob is rejected
 	stepsDoubleSignOnProviderAndConsumer("consu"), // carol double signs on provider, bob double signs on consumer
+	stepsSubmitEquivocationProposal("consu", 2),   // now prop to tombstone bob is submitted and accepted
 	stepsStartRelayer(),
-	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
-	stepsStopChain("consu", 3),                     // stop chain
+	stepsConsumerRemovalPropNotPassing("consu", 3), // submit removal prop but vote no on it - chain should stay
+	stepsStopChain("consu", 4),                     // stop chain
+)
+
+var lightClientAttackSteps = concatSteps(
+	stepsStartChains([]string{"consu"}, false),
+	stepsDelegate("consu"),
+	stepsUnbond("consu"),
+	stepsRedelegateShort("consu"),
+	stepsDowntime("consu"),
+	stepsRejectEquivocationProposal("consu", 2),          // prop to tombstone bob is rejected
+	stepsLightClientAttackOnProviderAndConsumer("consu"), // carol double signs on provider, bob double signs on consumer
+	stepsSubmitEquivocationProposal("consu", 2),          // now prop to tombstone bob is submitted and accepted
+	stepsStartRelayer(),
+	stepsConsumerRemovalPropNotPassing("consu", 3), // submit removal prop but vote no on it - chain should stay
+	stepsStopChain("consu", 4),                     // stop chain
 )
 
 var slashThrottleSteps = concatSteps(
