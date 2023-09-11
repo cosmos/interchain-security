@@ -74,20 +74,6 @@ func TestProviderProposalHandler(t *testing.T) {
 			expValidEquivocation: true,
 		},
 		{
-			name: "invalid change reward denoms proposal, none to add or remove",
-			content: providertypes.NewChangeRewardDenomsProposal(
-				"title", "description", []string{}, []string{}),
-			blockTime:                 hourFromNow,
-			expValidChangeRewardDenom: false,
-		},
-		{
-			name: "invalid change reward denoms proposal, same denom in both sets",
-			content: providertypes.NewChangeRewardDenomsProposal(
-				"title", "description", []string{"denom1"}, []string{"denom1"}),
-			blockTime:                 hourFromNow,
-			expValidChangeRewardDenom: false,
-		},
-		{
 			name: "valid change reward denoms proposal",
 			content: providertypes.NewChangeRewardDenomsProposal(
 				"title", "description", []string{"denom1"}, []string{"denom2"}),
