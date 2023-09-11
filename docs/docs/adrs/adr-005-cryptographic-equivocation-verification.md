@@ -7,7 +7,7 @@ title: Cryptographic verification of equivocation evidence
 ## Changelog
 * 5/1/2023: First draft
 * 7/23/23: Add light client attacks handling
-* 6/9/23: Add double signing
+* 6/9/23: Add double signing attacks handling
 
 ## Status
 
@@ -20,7 +20,8 @@ Every proposal needs to go through a (two weeks) voting period before it can be 
 Given a three-week unbonding period, this means that an equivocation proposal needs to be submitted within one week since the infraction occurred.
 
 This ADR proposes a system to slash validators automatically for equivocation, immediately upon the provider chain's receipt of the evidence. Another thing to note is that we intend to introduce this system in stages, since even the partial ability to slash and/or tombstone is a strict improvement in security.
-For the first stage of this work, we will only handle light client attacks.
+Additionally, this feature will be implemented in two iterations: first we will start by handling light client attacks and secondly the double signing attack handling we be added.
+
 
 ### Light Client Attack
 
@@ -77,23 +78,52 @@ After having successfully verified a misbehaviour, the endpoint will execute the
 
 ### Double Signing
 
-A double signing attack, also known as an equivocation, occurs when a validator sends two different votes for a block in the same round of a consensus instance.
+A double signing attack, also known as an equivocation, happens when a validator sends two different votes for a block in the same round of a consensus instance.
 The Tendermint consensus operates for each block height, with multiple rounds of voting per height, and voting twice in the same round is strictly prohibited.
 
-- How equivocations are detected ?
+When a node detects two votes from the same peer, it will use these two votes to create
+a `DuplicateVoteEvidence` evidence and gossip it to the other nodes in the network, see [Tendermint equivocation detection](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#L25). 
+Each node will then verify the evidence according to the Tendermint rules defining a valid equivocation, and decide on adding the evidence to a block, see [Tendermint equivocation verification] (https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#L95).
 
-- How are they reported ?
+Note that validators sign their votes. It entails the the votes in a evidence must be correctly signed. In addition, the `ChainID` of the chain where the infraction occurred
+also used in the signature.
 
-
-- How it is verified ?
-    - note on data loss through ABCI
-
-How are the validators  punished in consequence ?
+Once an evidence is committed to a block, the consensus layer will report the equivocation to the evidence module of the Cosmos SDK application layer. The application will in its turn punish the malicious validator using jailing, tombstoning and slashing, see [handleEquivocationEvidence](https://github.com/cosmos/cosmos-sdk/blob/19389505643500b25a5efeb02715c3deef9b6ede/x/evidence/keeper/infraction.go#L27C17-L27C43).
 
 ## Decision
 
+In the second iteration of this feature, we will introduce a new endpoint `HandleConsumerDoubleVoting(
+	ctx sdk.Context,
+	evidence *tmtypes.DuplicateVoteEvidence,
+	chainID string,
+	pubkey cryptotypes.PubKey)`. 
+    
+  Simply put, the handling logic will verify a double signing evidence against a given
+  public key and chain Id and, if successful, execute the jailing of the malicious validator, which double voted.
+  
+  We will define a new `SubmitConsumerDoubleVoting` message to report double voting evidences observed on a consumer chain to the endpoint on the provider. This message will contain two fields: the double signing evidence `duplicate_vote_evidence` and the light client header for the infraction block height of the infraction `infraction_block_header`. The second field will provide the malicious validator public key and the chain Id required to verify the signature of the votes contained in the evidence.
+  
+  Note equivocations will be verified using same rules than in Tendermint with the exception that
+  the ages of the evidence won't be checked. This is mainly due to the fact the feature will only jail validators for double signing. Since the jail time isn't doesn't depend on the evidence age, in opposite 
+  of slashing, the evidence can't be ignored. Additional details of this decision a provided in the [Current limitations](#current-limitations)section below.
+  
+  
+  Upon a successful equivocation verification, the misbehaving validator will be jailed for the maximum time, see [DoubleSignJailEndTime](https://github.com/cosmos/cosmos-sdk/blob/cd272d525ae2cf244c53433b6eb1e835783d7531/x/evidence/types/params.go) the SDK evidence module.
 
- - We will introduce a new endpoint: handling a SubmitConsumerDoubleVote message
+
+
+- The logic in brief
+  - verify equivocation 
+  - jail validators
+
+  - signature verification 
+    - chain Id is signed
+    - pubkey is used to verify signature
+
+
+- Details:
+  - how we verify the signature from consumer 
+
 
  - The message contain a DuplicateVoteEvidence with the votes and their signatures
 
@@ -124,6 +154,11 @@ could be corrupted and therefore cannot be used for slashing purposes.
 
 - Currently, the endpoint can only handle "equivocation" light client attacks. This is because the "lunatic" attacks require the endpoint to possess the ability to dissociate which header is conflicted or trusted upon receiving a misbehavior message. Without this information, it's not possible to define the Byzantine validators from the conflicting headers (see [comment](https://github.com/cosmos/interchain-security/pull/826#discussion_r1268668684)).
 
+
+- Since the validators are currently, only jail for the first iteration
+  of this work the evidence age is obsolete i.e.
+
+  The reason is two folded: first we can't derived the infraction height( see limitations below), secondly the evidence timestamp isn't signed so can be trusted.
 
 ## Consequences
 
