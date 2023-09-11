@@ -618,9 +618,6 @@ func (k Keeper) HandleEquivocationProposal(ctx sdk.Context, p *types.Equivocatio
 }
 
 func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, p *types.ChangeRewardDenomsProposal) error {
-	if err := p.ValidateBasic(); err != nil {
-		return fmt.Errorf("invalid proposal: %w", err)
-	}
 
 	for _, denomToAdd := range p.DenomsToAdd {
 		// Log error and move on if one of the denoms is already registered
