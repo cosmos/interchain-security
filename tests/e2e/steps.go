@@ -99,6 +99,6 @@ var consumerDoubleSignSteps = concatSteps(
 	// start provider and consumer chain
 	stepsStartChains([]string{"consu"}, false),
 
-	// make a consumer validator to double sign and get jailed
+	// make a consumer validator double sign and get jailed
 	stepsCauseDoubleSignOnConsumer("consu"),
 )
