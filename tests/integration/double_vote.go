@@ -76,8 +76,6 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		s.consumerChain.ChainID,
 	)
 
-	provSigner.GetPubKey()
-
 	testCases := []struct {
 		name    string
 		ev      *tmtypes.DuplicateVoteEvidence
