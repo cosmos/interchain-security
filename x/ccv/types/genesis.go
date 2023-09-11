@@ -10,7 +10,7 @@ import (
 
 // NewInitialGenesisState returns a consumer GenesisState for a completely new consumer chain.
 func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
-	initValSet []abci.ValidatorUpdate, params Params,
+	initValSet []abci.ValidatorUpdate, params ConsumerParams,
 ) *GenesisState {
 	return &GenesisState{
 		Params:                 params,
@@ -30,7 +30,7 @@ func NewRestartGenesisState(
 	pendingConsumerPackets ConsumerPacketDataList,
 	outstandingDowntimes []OutstandingDowntime,
 	lastTransBlockHeight LastTransmissionBlockHeight,
-	params Params,
+	params ConsumerParams,
 ) *GenesisState {
 	return &GenesisState{
 		Params:                      params,
