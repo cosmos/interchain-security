@@ -258,6 +258,9 @@ func TestComputePowerToSlash(t *testing.T) {
 	}
 }
 
+// FIXME: Probably the following test could be a combination with computePowertoSlash ...
+// Not sure I like this
+// the actual slashing should be checked from integration tests
 // TestSlashValidator asserts that `SlashValidator` calls the staking module's `Slash` method
 // with the correct arguments (i.e., `infractionHeight` of 0 and the expected slash power)
 func TestSlashValidator(t *testing.T) {
