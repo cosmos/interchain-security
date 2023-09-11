@@ -20,7 +20,7 @@ Every proposal needs to go through a (two weeks) voting period before it can be 
 Given a three-week unbonding period, this means that an equivocation proposal needs to be submitted within one week since the infraction occurred.
 
 This ADR proposes a system to slash validators automatically for equivocation, immediately upon the provider chain's receipt of the evidence. Another thing to note is that we intend to introduce this system in stages, since even the partial ability to slash and/or tombstone is a strict improvement in security.
-Additionally, this feature will be implemented in two iterations: first, we will start by handling light client attacks, and secondly, we will add the double signing attack handling.
+In addition, this feature will be implemented in two iterations: first, we will start by handling light client attacks, and secondly, we will add the double signing attack handling.
 
 
 ### Light Client Attack
@@ -83,18 +83,17 @@ A double signing attack, also known as an equivocation,
  The Tendermint consensus operates with multiple rounds of voting at each block height
  to determine the next block, and voting twice in the same round is strictly prohibited.
 
-When a node detects two votes from the same peer, it will use these two votes to create
+When a node observes two votes from the same peer, it will use these two votes to create
  a [`DuplicateVoteEvidence`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/types/evidence.go#L35)
  evidence and gossip it to the other nodes in the network 
  (see [Tendermint equivocation detection](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#L25)).
- Each node will then verify the evidence according to the Tendermint rules that define a valid equivocation, and based on this verification,
- they will decide whether to add the evidence to a block.
- Note that validators sign their votes. This means that the votes in an evidence must be correctly signed. In addition,
- the chain ID of the chain where the infraction occurred is also used in the signature
-  (see [Tendermint equivocation verification](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#L95)).
+ Each node will then verify the evidence according to the Tendermint rules that define a valid double signing infraction, and based on this verification,
+ Note that validators sign their votes. This implies that the vote signatures in evidence must be successfully verified using the public key of the misbehaving validators, along with the ChainID of the chain where the infraction occurre (see [Tendermint equivocation verification](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#L95)).
 
 Once a double signing evidence is committed to a block, the consensus layer will report the equivocation to the evidence module of the Cosmos SDK application layer.
- The application will, in turn, punish the malicious validator through jailing, tombstoning and slashing (see [handleEquivocationEvidence](https://github.com/cosmos/cosmos-sdk/blob/19389505643500b25a5efeb02715c3deef9b6ede/x/evidence/keeper/infraction.go#L27C17-L27C43) in the SDK evidence module).
+ The application will, in turn, punish the malicious validator through jailing, tombstoning and slashing
+ (see [handleEquivocationEvidence](https://github.com/cosmos/cosmos-sdk/blob/19389505643500b25a5efeb02715c3deef9b6ede/x/evidence/keeper/infraction.go#L27C17-L27C43)
+ in the SDK evidence module).
 
 ## Decision
 
@@ -106,39 +105,45 @@ In the second iteration of this feature, we will introduce a new endpoint `Handl
  Simply put, the handling logic will verify a double signing evidence against a provided
  public key and chain ID and, if successful, execute the jailing of the malicious validator who double voted.
   
- We will define a new [`MsgSubmitConsumerDoubleVoting`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/tx.proto#L69C9-L69C38) message to report double voting evidences observed
+We will define a new
+ [`MsgSubmitConsumerDoubleVoting`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/tx.proto#L69C9-L69C38)
+ message to report a double voting evidence observed
  on a consumer chain to the endpoint on the provider chain. This message will contain two fields:
  the double signing evidence
  [`duplicate_vote_evidence`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/tx.proto#L75)
  and the light client header for the infraction block height,
- referred to as [`infraction_block_header`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/tx.proto#L77).
+ referred to as [`infraction_block_header`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/txproto#L77).
  The latter will provide the malicious validator's public key and the chain ID required to verify the signature of the votes contained in the evidence.
  
- Note that equivocations will be verified by using the same conditions than in the Tendermint [`verify(evidence types.Evidence)`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6 evidence/verify.go#L19) method, with the exception that
- the ages of the evidence won't be checked. This is primarily because for the first stage of this feature,
+Note that equivocations will be verified by using the same conditions than in the Tendermint
+ [`verify(evidence types.Evidence)`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/evidence/verify.go#L19)
+ method, with the exception that the ages of the evidence won't be checked.
+ This is primarily because, for the first stage of this feature,
  the goal is to jail validators for double signing only. Since the jail time doesn't depend on the evidence's age,
  it can be ignored. More technical details can be found in the ["Current limitations"](#current-limitations) section below.
   
   
-Upon a successful equivocation verification, the misbehaving validator will be jailed for the maximum time (see [DoubleSignJailEndTime](https://github.com/cosmos/cosmos-sdk/blob/cd272d525ae2cf244c53433b6eb1e835783d7531/x/evidence/types/params.go) in the SDK evidence module).
+Upon a successful equivocation verification, the misbehaving validator will be jailed for the maximum time
+ (see [DoubleSignJailEndTime](https://github.com/cosmos/cosmos-sdk/blob/cd272d525ae2cf244c53433b6eb1e835783d7531/x/evidence/types/params.go)
+ in the SDK evidence module).
 
 
 ### Current limitations:
 
 - We cannot derive an infraction height from the evidence, so it is only possible to jail validators, not actually slash them.
 To explain the technical reasons behind this limitation, let's recap the initial consumer initiated slashing logic.
-In a nutshell, consumer heights are mapped to provider heights through VSCPackets, namely through the so called vscIDs.
-When an infraction occurs on the consumer, a SlashPacket containing the vscID obtained from mapping the consumer infraction height
-is sent to the provider. Upon receiving the packet, the provider maps the consumer infraction height to a local infraction height,
-which is used to slash the misbehaving validator. In the context of untrusted consumer chains, all their states, including vscIDs,
-could be corrupted and therefore cannot be used for slashing purposes.
+ In a nutshell, consumer heights are mapped to provider heights through VSCPackets, namely through the so called vscIDs.
+ When an infraction occurs on the consumer, a SlashPacket containing the vscID obtained from mapping the consumer infraction height
+ is sent to the provider. Upon receiving the packet, the provider maps the consumer infraction height to a local infraction height,
+ which is used to slash the misbehaving validator. In the context of untrusted consumer chains, all their states, including vscIDs,
+ could be corrupted and therefore cannot be used for slashing purposes.
 
-- For the same reasons mentioned above: a double singing evidence age can't be checked using either its infraction height or
-its unsigned timestamp.
+- For the same reasons explained above, the age of a consumer double signing evidence can't be verified,
+ either using its infraction height nor its unsigned timestamp.
 
 - In the first stage of this feature, validators are jailed indefinitely without being tombstoned.
 The underlying reason is that a malicious validator could take advantage of getting tombstoned 
-to avoid being slashed on the provider, ([see comment](https://github.com/cosmos/interchain-security/pull/1232#issuecomment-1693127641)). 
+to avoid being slashed on the provider ([see comment](https://github.com/cosmos/interchain-security/pull/1232#issuecomment-1693127641)). 
 
 - Currently, the endpoint can only handle "equivocation" light client attacks. This is because the "lunatic" attacks require the endpoint to possess the ability to dissociate which header is conflicted or trusted upon receiving a misbehavior message. Without this information, it's not possible to define the Byzantine validators from the conflicting headers (see [comment](https://github.com/cosmos/interchain-security/pull/826#discussion_r1268668684)).
 
