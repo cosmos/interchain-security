@@ -8,11 +8,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 )
 
-// NewInitialGenesisState returns a consumer GenesisState for a completely new consumer chain.
+// NewInitialGenesisState returns a ConsumerGenesisState for a completely new consumer chain.
 func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
 	initValSet []abci.ValidatorUpdate, params ConsumerParams,
-) *GenesisState {
-	return &GenesisState{
+) *ConsumerGenesisState {
+	return &ConsumerGenesisState{
 		Params:                 params,
 		NewChain:               true,
 		ProviderClientState:    cs,
@@ -21,7 +21,7 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 	}
 }
 
-// NewRestartGenesisState returns a consumer GenesisState that has already been established.
+// NewRestartGenesisState returns a ConsumerGenesisState that has already been established.
 func NewRestartGenesisState(
 	clientID, channelID string,
 	maturingPackets []MaturingVSCPacket,
@@ -31,8 +31,8 @@ func NewRestartGenesisState(
 	outstandingDowntimes []OutstandingDowntime,
 	lastTransBlockHeight LastTransmissionBlockHeight,
 	params ConsumerParams,
-) *GenesisState {
-	return &GenesisState{
+) *ConsumerGenesisState {
+	return &ConsumerGenesisState{
 		Params:                      params,
 		ProviderClientId:            clientID,
 		ProviderChannelId:           channelID,
@@ -48,8 +48,8 @@ func NewRestartGenesisState(
 
 // DefaultGenesisState returns a default disabled consumer chain genesis state. This allows the module to be hooked up to app without getting use
 // unless explicitly specified in genesis.
-func DefaultGenesisState() *GenesisState {
-	return &GenesisState{
+func DefaultGenesisState() *ConsumerGenesisState {
+	return &ConsumerGenesisState{
 		Params: DefaultParams(),
 	}
 }
@@ -71,7 +71,7 @@ func DefaultGenesisState() *GenesisState {
 //   - MaturingVSCPackets, OutstandingDowntime, PendingConsumerPacket, LastTransmissionBlockHeight // optional
 //
 
-func (gs GenesisState) Validate() error {
+func (gs ConsumerGenesisState) Validate() error {
 	if !gs.Params.Enabled {
 		return nil
 	}

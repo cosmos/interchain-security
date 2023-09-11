@@ -9,7 +9,7 @@ func NewConsumerStates(
 	clientID,
 	channelID string,
 	initialHeight uint64,
-	genesis ccv.GenesisState,
+	genesis ccv.ConsumerGenesisState,
 	unbondingOpsIndexes []VscUnbondingOps,
 	pendingValsetChanges []ccv.ValidatorSetChangePacketData,
 	slashDowntimeAck []string,
