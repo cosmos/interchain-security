@@ -1752,7 +1752,6 @@ func (tr TestRun) registerRepresentative(
 }
 
 type submitChangeRewardDenomsProposalAction struct {
-	chain   chainID
 	denom   string
 	deposit uint
 	from    validatorID
@@ -1762,7 +1761,7 @@ func (tr TestRun) submitChangeRewardDenomsProposal(action submitChangeRewardDeno
 	providerChain := tr.chainConfigs[chainID("provi")]
 
 	prop := client.ChangeRewardDenomsProposalJSON{
-		Summary: fmt.Sprintf("Change reward denoms on %s", string(action.chain)),
+		Summary: "Change reward denoms",
 		ChangeRewardDenomsProposal: types.ChangeRewardDenomsProposal{
 			Title:          "Change reward denoms",
 			Description:    "Change reward denoms",

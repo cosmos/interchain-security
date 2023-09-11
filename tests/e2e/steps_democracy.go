@@ -134,7 +134,6 @@ func stepsDemocracy(consumerName string) []Step {
 		},
 		{
 			action: submitChangeRewardDenomsProposalAction{
-				chain:   chainID("provi"),
 				denom:   consumerRewardDenom,
 				deposit: 10000001,
 				from:    validatorID("bob"),

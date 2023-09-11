@@ -132,7 +132,6 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 		},
 		{
 			action: submitChangeRewardDenomsProposalAction{
-				chain:   chainID("provi"),
 				denom:   "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9",
 				deposit: 10000001,
 				from:    validatorID("bob"),
