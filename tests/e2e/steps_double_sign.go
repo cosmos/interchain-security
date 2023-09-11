@@ -130,15 +130,15 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 }
 
 // Steps that make bob double sign on the consumer
-func stepsCauseDoubleSignOnConsumer(consumerName string) []Step {
+func stepsCauseDoubleSignOnConsumer(consumerName, providerName string) []Step {
 	return []Step{
 		{
 			action: doublesignSlashAction{
-				chain:     chainID("consu"),
+				chain:     chainID(consumerName),
 				validator: validatorID("bob"),
 			},
 			state: State{
-				chainID("provi"): ChainState{
+				chainID(providerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 500,
 						validatorID("bob"):   500,
@@ -158,10 +158,10 @@ func stepsCauseDoubleSignOnConsumer(consumerName string) []Step {
 		// and jail bob on the provider
 		{
 			action: detectConsumerEvidenceAction{
-				chain: chainID("consu"),
+				chain: chainID(consumerName),
 			},
 			state: State{
-				chainID("provi"): ChainState{
+				chainID(providerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 500,
 						validatorID("bob"):   0,
@@ -180,13 +180,13 @@ func stepsCauseDoubleSignOnConsumer(consumerName string) []Step {
 		// consumer learns about the jailing
 		{
 			action: relayPacketsAction{
-				chainA:  chainID("provi"),
+				chainA:  chainID(providerName),
 				chainB:  chainID(consumerName),
 				port:    "provider",
 				channel: 0,
 			},
 			state: State{
-				chainID("provi"): ChainState{
+				chainID(providerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 500,
 						validatorID("bob"):   0,
