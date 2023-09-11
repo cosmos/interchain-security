@@ -9,8 +9,7 @@ import (
 
 // provider message types
 const (
-	TypeMsgAssignConsumerKey           = "assign_consumer_key"
-	TypeMsgRegisterConsumerRewardDenom = "register_consumer_reward_denom"
+	TypeMsgAssignConsumerKey = "assign_consumer_key"
 )
 
 var _ sdk.Msg = &MsgAssignConsumerKey{}
