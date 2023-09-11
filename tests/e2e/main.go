@@ -63,7 +63,9 @@ func main() {
 		{DemocracyTestRun(false), rewardDenomConsumerSteps},
 		{SlashThrottleTestRun(), slashThrottleSteps},
 		{ConsumerMisbehaviourTestRun(), consumerMisbehaviourSteps},
+		{DefaultTestRun(), consumerDoubleSignSteps},
 	}
+
 	if includeMultiConsumer != nil && *includeMultiConsumer {
 		testRuns = append(testRuns, testRunWithSteps{MultiConsumerTestRun(), multipleConsumers})
 	}

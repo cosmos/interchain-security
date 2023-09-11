@@ -128,3 +128,79 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 		},
 	}
 }
+
+// Steps that make bob double sign on the consumer
+func stepsCauseDoubleSignOnConsumer(consumerName, providerName string) []Step {
+	return []Step{
+		{
+			action: doublesignSlashAction{
+				chain:     chainID(consumerName),
+				validator: validatorID("bob"),
+			},
+			state: State{
+				chainID(providerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 500,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 500,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		// detect the double voting infraction
+		// and jail bob on the provider
+		{
+			action: detectConsumerEvidenceAction{
+				chain: chainID(consumerName),
+			},
+			state: State{
+				chainID(providerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 500,
+						validatorID("bob"):   0,
+						validatorID("carol"): 500,
+					},
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 500,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		// consumer learns about the jailing
+		{
+			action: relayPacketsAction{
+				chainA:  chainID(providerName),
+				chainB:  chainID(consumerName),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID(providerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 500,
+						validatorID("bob"):   0,
+						validatorID("carol"): 500,
+					},
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 500,
+						validatorID("bob"):   0,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+	}
+}
