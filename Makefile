@@ -52,7 +52,7 @@ test-gaia-e2e:
 
 # run only happy path E2E tests using latest tagged gaia
 test-gaia-e2e-short:
-	go run ./e2e/... --happy-path-only --use-gaia
+	go run ./e2e/... --tc happy-path --use-gaia
 
 # run full E2E tests in parallel (including multiconsumer) using latest tagged gaia
 test-gaia-e2e-parallel:
@@ -66,7 +66,7 @@ test-gaia-e2e-tagged:
 # run only happy path E2E tests using latest tagged gaia
 # usage: GAIA_TAG=v9.0.0 make test-gaia-e2e-short-tagged
 test-gaia-e2e-short-tagged:
-	go run ./e2e/... --happy-path-only --use-gaia --gaia-tag $(GAIA_TAG)
+	go run ./e2e/... --tc happy-path --use-gaia --gaia-tag $(GAIA_TAG)
 
 # run full E2E tests in parallel (including multiconsumer) using specific tagged version of gaia
 # usage: GAIA_TAG=v9.0.0 make test-gaia-e2e-parallel-tagged
