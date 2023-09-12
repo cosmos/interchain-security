@@ -116,6 +116,19 @@ message EquivocationProposal {
   repeated cosmos.evidence.v1beta1.Equivocation equivocations = 3;
 }
 
+// ChangeRewardDenomsProposal is a governance proposal on the provider chain to
+// mutate the set of denoms accepted by the provider as rewards.
+message ChangeRewardDenomsProposal {
+  // the title of the proposal
+  string title = 1;
+  // the description of the proposal
+  string description = 2;
+  // the list of consumer reward denoms to add
+  repeated string denoms_to_add = 3;
+  // the list of consumer reward denoms to remove
+  repeated string denoms_to_remove = 4;
+}
+
 // A persisted queue entry indicating that a slash packet data instance needs to
 // be handled. This type belongs in the "global" queue, to coordinate slash
 // packet handling times between consumers.
