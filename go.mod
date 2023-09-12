@@ -16,7 +16,7 @@ require (
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/kylelemons/godebug v1.1.0
-	github.com/oxyno-zeta/gomock-extra-matcher v1.1.0
+	github.com/oxyno-zeta/gomock-extra-matcher v1.2.0
 	github.com/rakyll/statik v0.1.7 // indirect
 	github.com/spf13/cast v1.5.1
 	github.com/spf13/cobra v1.7.0
@@ -182,6 +182,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/rs/zerolog v1.30.0 // indirect
+	go.uber.org/mock v0.2.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
 )
