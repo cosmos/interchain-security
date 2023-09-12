@@ -362,3 +362,52 @@ func TestEquivocationProposalValidateBasic(t *testing.T) {
 		})
 	}
 }
+
+func TestChangeRewardDenomsProposalValidateBasic(t *testing.T) {
+	tcs := []struct {
+		name        string
+		proposal    govtypes.Content
+		expectError bool
+		expectPanic bool
+	}{
+		{
+			name: "invalid change reward denoms proposal, none to add or remove",
+			proposal: types.NewChangeRewardDenomsProposal(
+				"title", "description", []string{}, []string{}),
+			expectError: true,
+		},
+		{
+			name: "invalid change reward denoms proposal, same denom in both sets",
+			proposal: types.NewChangeRewardDenomsProposal(
+				"title", "description", []string{"denom1"}, []string{"denom1"}),
+			expectError: true,
+		},
+		{
+			name: "valid change reward denoms proposal",
+			proposal: types.NewChangeRewardDenomsProposal(
+				"title", "description", []string{"denom1"}, []string{"denom2"}),
+			expectError: false,
+		},
+		{
+			name: "invalid prop, invalid denom, will panic",
+			proposal: types.NewChangeRewardDenomsProposal(
+				"title", "description", []string{"!@blah"}, []string{"denom2"}),
+			expectPanic: true,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.expectPanic {
+				require.Panics(t, func() { tc.proposal.ValidateBasic() })
+				return
+			}
+			err := tc.proposal.ValidateBasic()
+			if tc.expectError {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}

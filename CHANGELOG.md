@@ -4,6 +4,10 @@
 
 Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
 
+## v2.1.0-lsm-provider
+
+* (feature!) [#1280](https://github.com/cosmos/interchain-security/pull/1280) provider proposal for changing reward denoms
+
 ## v2.0.0-lsm
 
 Date: August 18th, 2023
