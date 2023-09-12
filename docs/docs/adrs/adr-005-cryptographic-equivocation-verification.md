@@ -78,53 +78,50 @@ After having successfully verified a misbehaviour, the endpoint will execute the
 ### Double Signing Attack
 
 A double signing attack, also known as an equivocation,
- occurs when a validator sends two different votes for a block in the same round of a consensus instance.
- The Tendermint consensus operates with multiple rounds of voting at each block height
- to determine the next block, and voting twice in the same round is strictly prohibited.
+occurs when a validator sends two different votes for a block in the same round of a consensus instance. 
+The CometBFT consensus operates with multiple rounds of voting at each block height 
+to determine the next block, and voting twice in the same round is strictly prohibited.
 
-When a node observes two votes from the same peer, it will use these two votes to create
- a [`DuplicateVoteEvidence`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/types/evidence.go#L35)
- evidence and gossip it to the other nodes in the network 
- (see [Tendermint equivocation detection](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#L25)).
- Each node will then verify the evidence according to the Tendermint rules that define a valid double signing infraction, and based on this verification, they will decide whether to add the evidence to a block.
- During the evidence verification process, the signatures of the conflicting votes must be verified successfully.
-  Note that this is achieved using the public key of the misbehaving validator, along with the `ChainID` of the chain where the infraction occurred (see [Tendermint equivocation verification](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#L95)).
+When a node observes two votes from the same peer, it will use these two votes to create 
+a [`DuplicateVoteEvidence`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/types/evidence.go#L35)
+evidence and gossip it to the other nodes in the network 
+(see [CometBFT equivocation detection](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#L25)). 
+Each node will then verify the evidence according to the CometBFT rules that define a valid double signing infraction, and based on this verification, they will decide whether to add the evidence to a block. 
+During the evidence verification process, the signatures of the conflicting votes must be verified successfully. 
+Note that this is achieved using the public key of the misbehaving validator, along with the `ChainID` of the chain where the infraction occurred (see [CometBFT equivocation verification](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#L95)).
 
-Once a double signing evidence is committed to a block, the consensus layer will report the equivocation to the evidence module of the Cosmos SDK application layer.
- The application will, in turn, punish the malicious validator through jailing, tombstoning and slashing
- (see [handleEquivocationEvidence](https://github.com/cosmos/cosmos-sdk/blob/19389505643500b25a5efeb02715c3deef9b6ede/x/evidence/keeper/infraction.go#L27C17-L27C43)).
+Once a double signing evidence is committed to a block, the consensus layer will report the equivocation to the evidence module of the Cosmos SDK application layer. 
+The application will, in turn, punish the malicious validator through jailing, tombstoning and slashing 
+(see [handleEquivocationEvidence](https://github.com/cosmos/cosmos-sdk/blob/19389505643500b25a5efeb02715c3deef9b6ede/x/evidence/keeper/infraction.go#L27C17-L27C43)).
 
 ## Decision
 
 In the second part of the feature, we will introduce a new endpoint `HandleConsumerDoubleVoting(
-	ctx sdk.Context,
-	evidence *tmtypes.DuplicateVoteEvidence,
-	chainID string,
-	pubkey cryptotypes.PubKey)`. 
- Simply put, the handling logic will verify a double signing evidence against a provided
- public key and chain ID and, if successful, execute the jailing of the malicious validator who double voted.
+ctx sdk.Context, evidence *tmtypes.DuplicateVoteEvidence, chainID string, pubkey cryptotypes.PubKey)`. 
+Simply put, the handling logic will verify a double signing evidence against a provided 
+public key and chain ID and, if successful, execute the jailing of the malicious validator who double voted.
   
-We will define a new
- [`MsgSubmitConsumerDoubleVoting`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/tx.proto#L69C9-L69C38)
- message to report a double voting evidence observed
- on a consumer chain to the endpoint of the provider chain. This message will contain two fields:
- a double signing evidence
- [`duplicate_vote_evidence`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/tx.proto#L75)
- and a light client header for the infraction block height,
- referred to as [`infraction_block_header`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/txproto#L77).
- The latter will provide the malicious validator's public key and the chain ID required to verify the signature of the votes contained in the evidence.
+We will define a new 
+[`MsgSubmitConsumerDoubleVoting`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/tx.proto#L69C9-L69C38) 
+message to report a double voting evidence observed 
+on a consumer chain to the endpoint of the provider chain. This message will contain two fields: 
+a double signing evidence 
+[`duplicate_vote_evidence`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/tx.proto#L75) 
+and a light client header for the infraction block height, 
+referred to as [`infraction_block_header`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/txproto#L77). 
+The latter will provide the malicious validator's public key and the chain ID required to verify the signature of the votes contained in the evidence.
  
-Note that double signing evidence will be verified by using the same conditions than in the Tendermint
- [`verify(evidence types.Evidence)`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/evidence/verify.go#L19)
- method, with the exception that its age won't be checked.
- This is primarily because, for the first stage of this feature,
- the goal is to jail validators for double signing only. Since the jail time doesn't depend on the evidence's age,
- it can be ignored. More technical details can be found in the ["Current limitations"](#current-limitations) section below.
+Note that double signing evidence will be verified by using the same conditions than in the CometBFT 
+[`verify(evidence types.Evidence)`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/evidence/verify.go#L19) 
+method, with the exception that its age won't be checked. 
+This is primarily because, for the first stage of this feature, 
+the goal is to jail validators for double signing only. Since the jail time doesn't depend on the evidence's age, 
+it can be ignored. More technical details can be found in the ["Current limitations"](#current-limitations) section below. 
   
   
-Upon a successful equivocation verification, the misbehaving validator will be jailed for the maximum time
- (see [DoubleSignJailEndTime](https://github.com/cosmos/cosmos-sdk/blob/cd272d525ae2cf244c53433b6eb1e835783d7531/x/evidence/types/params.go)
- in the SDK evidence module).
+Upon a successful equivocation verification, the misbehaving validator will be jailed for the maximum time 
+(see [DoubleSignJailEndTime](https://github.com/cosmos/cosmos-sdk/blob/cd272d525ae2cf244c53433b6eb1e835783d7531/x/evidence/types/params.go) 
+in the SDK evidence module).
 
 
 ### Current limitations:
@@ -137,8 +134,8 @@ To explain the technical reasons behind this limitation, let's recap the initial
  which is used to slash the misbehaving validator. In the context of untrusted consumer chains, all their states, including vscIDs,
  could be corrupted and therefore cannot be used for slashing purposes.
 
-- For the same reasons explained above, the age of a consumer double signing evidence can't be verified,
- either using its infraction height or its unsigned timestamp.
+- For the same reasons explained above, the age of a consumer double signing evidence can't be verified, 
+either using its infraction height or its unsigned timestamp.
 
 - In the first stage of this feature, validators are jailed indefinitely without being tombstoned.
 The underlying reason is that a malicious validator could take advantage of getting tombstoned 
@@ -151,8 +148,8 @@ to avoid being slashed on the provider ([see comment](https://github.com/cosmos/
 
 ### Positive
 
-- After this ADR is applied, it will be possible for the provider chain to jail validators who committed
-  light client or double signing attacks.
+- After this ADR is applied, it will be possible for the provider chain to jail validators who committed 
+light client or double signing attacks.
 
 ### Negative
 
