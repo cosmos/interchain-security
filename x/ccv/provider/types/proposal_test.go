@@ -368,6 +368,7 @@ func TestChangeRewardDenomsProposalValidateBasic(t *testing.T) {
 		name        string
 		proposal    govv1beta1.Content
 		expectError bool
+		expectPanic bool
 	}{
 		{
 			name: "invalid change reward denoms proposal, none to add or remove",
@@ -385,10 +386,20 @@ func TestChangeRewardDenomsProposalValidateBasic(t *testing.T) {
 				"title", "description", []string{"denom1"}, []string{"denom2"}),
 			expectError: false,
 		},
+		{
+			name: "invalid prop, invalid denom, will panic",
+			proposal: types.NewChangeRewardDenomsProposal(
+				"title", "description", []string{"!@blah"}, []string{"denom2"}),
+			expectPanic: true,
+		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.expectPanic {
+				require.Panics(t, func() { tc.proposal.ValidateBasic() })
+				return
+			}
 			err := tc.proposal.ValidateBasic()
 			if tc.expectError {
 				require.Error(t, err)
