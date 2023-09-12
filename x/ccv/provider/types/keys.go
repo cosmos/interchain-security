@@ -138,6 +138,8 @@ const (
 	// handled in the current block
 	VSCMaturedHandledThisBlockBytePrefix
 
+	// ChainInProposalByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
+	ChainInProposalByteKey
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -412,6 +414,11 @@ func ChainIdWithLenKey(prefix byte, chainID string) []byte {
 		// Append the chainID
 		[]byte(chainID),
 	)
+}
+
+// ChainInProposalKey returns the consumer chainId in consumerAddition gov proposal submitted before voting finishes
+func ChainInProposalKey(chainID string) []byte {
+	return append([]byte{ChainInProposalByteKey}, []byte(chainID)...)
 }
 
 // ParseChainIdAndTsKey returns the chain ID and time for a ChainIdAndTs key

@@ -178,6 +178,49 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 	store.Delete(types.ChainToChannelKey(chainID))
 }
 
+// GetChainsInProposal gets chainId in gov proposal before voting finishes
+func (k Keeper) GetChainsInProposal(ctx sdk.Context, chainID string) (string, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ChainInProposalKey(chainID))
+	if bz == nil {
+		return "", false
+	}
+
+	return string(bz), true
+}
+
+// SetChainsInProposal sets consumer chainId in gov consumerAddition proposal in store
+// the consumer chainId is only added when the voting period for consumerAddition proposal
+// does not end.
+func (k Keeper) SetChainsInProposal(ctx sdk.Context, chainID string, proposalID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ChainInProposalKey(chainID), sdk.Uint64ToBigEndian(proposalID))
+}
+
+// DeleteChainsInProposal deletes the consumer chainID from store
+// which is in gov consumerAddition proposal
+func (k Keeper) DeleteChainsInProposal(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ChainInProposalKey(chainID))
+}
+
+// GetAllChainsInProposal get consumer chainId in gov consumerAddition proposal before
+// voting period ends.
+func (k Keeper) GetAllChainsInProposal(ctx sdk.Context) []string {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainInProposalByteKey})
+	defer iterator.Close()
+
+	chainIDs := []string{}
+	for ; iterator.Valid(); iterator.Next() {
+		// remove 1 byte prefix from key to retrieve chainID
+		chainID := string(iterator.Key()[1:])
+		chainIDs = append(chainIDs, chainID)
+	}
+
+	return chainIDs
+}
+
 // GetAllConsumerChains gets all of the consumer chains, for which the provider module
 // created IBC clients. Consumer chains with created clients are also referred to as registered.
 //
