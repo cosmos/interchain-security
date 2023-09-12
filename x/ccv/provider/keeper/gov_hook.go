@@ -20,8 +20,11 @@ type GovHooks struct {
 // GovHooks exist in cosmos-sdk/x/gov/keeper/hooks.go of v0.45.16-lsm-ics and on
 var _ sdkgov.GovHooks = GovHooks{}
 
-func (k *Keeper) Hooks() Hooks {
-	return Hooks{k}
+func (k *Keeper) GovHooks(gk govkeeper.Keeper) GovHooks {
+	return GovHooks{
+		gk: gk,
+		k:  k,
+	}
 }
 
 // AfterProposalSubmission - call hook if registered
