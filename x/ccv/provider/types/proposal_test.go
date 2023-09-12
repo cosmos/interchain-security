@@ -375,12 +375,14 @@ func TestChangeRewardDenomsProposalValidateBasic(t *testing.T) {
 			proposal: types.NewChangeRewardDenomsProposal(
 				"title", "description", []string{}, []string{}),
 			expectError: true,
-		}, {
+		},
+		{
 			name: "invalid change reward denoms proposal, same denom in both sets",
 			proposal: types.NewChangeRewardDenomsProposal(
 				"title", "description", []string{"denom1"}, []string{"denom1"}),
 			expectError: true,
-		}, {
+		},
+		{
 			name: "valid change reward denoms proposal",
 			proposal: types.NewChangeRewardDenomsProposal(
 				"title", "description", []string{"denom1"}, []string{"denom2"}),
