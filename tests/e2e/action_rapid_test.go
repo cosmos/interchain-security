@@ -22,6 +22,7 @@ func TestActionMarshalling(t *testing.T) {
 }
 
 func MarshalAndUnmarshalAction(action interface{}) error {
+	// wraps the action with a step, since it needs custom unmarshalling that is called by the step unmarshaller
 	step := Step{
 		Action: action,
 	}
