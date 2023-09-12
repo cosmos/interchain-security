@@ -3,7 +3,6 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
@@ -13,22 +12,6 @@ import (
 func (k Keeper) EndBlockRD(ctx sdk.Context) {
 	// transfers all whitelisted consumer rewards to the fee collector address
 	k.TransferRewardsToFeeCollector(ctx)
-}
-
-func (k Keeper) RegisterConsumerRewardDenom(ctx sdk.Context, denom string, sender sdk.AccAddress) error {
-	// Check if the denom is already registered
-	if k.ConsumerRewardDenomExists(ctx, denom) {
-		return consumertypes.ErrConsumerRewardDenomAlreadyRegistered
-	}
-
-	// Send the consumer reward denom registration fee to the community pool
-	err := k.distributionKeeper.FundCommunityPool(ctx, sdk.NewCoins(k.GetConsumerRewardDenomRegistrationFee(ctx)), sender)
-	if err != nil {
-		return err
-	}
-	k.SetConsumerRewardDenom(ctx, denom)
-	k.Logger(ctx).Info("new consumer reward denom registered:", "denom", denom, "sender", sender.String())
-	return nil
 }
 
 func (k Keeper) GetConsumerRewardsPoolAddressStr(ctx sdk.Context) string {
@@ -51,6 +34,14 @@ func (k Keeper) ConsumerRewardDenomExists(
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerRewardDenomsKey(denom))
 	return bz != nil
+}
+
+func (k Keeper) DeleteConsumerRewardDenom(
+	ctx sdk.Context,
+	denom string,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerRewardDenomsKey(denom))
 }
 
 func (k Keeper) GetAllConsumerRewardDenoms(ctx sdk.Context) (consumerRewardDenoms []string) {
