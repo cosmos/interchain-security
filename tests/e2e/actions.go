@@ -1890,22 +1890,22 @@ const (
 )
 
 func (tr TestRun) lightClientAttack(
-	Validator ValidatorID,
-	Chain ChainID,
+	validator ValidatorID,
+	chain ChainID,
 	attackType LightClientAttackType,
 ) {
 	if !tr.useCometmock {
 		log.Fatal("light client attack is only supported with CometMock")
 	}
-	validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(Chain, Validator)
+	validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(chain, validator)
 
 	method := "cause_light_client_attack"
 	params := fmt.Sprintf(`{"private_key_address":"%s", "misbehaviour_type": "%s"}`, validatorPrivateKeyAddress, attackType)
 
-	address := tr.getQueryNodeRPCAddress(Chain)
+	address := tr.getQueryNodeRPCAddress(chain)
 
 	tr.curlJsonRPCRequest(method, params, address)
-	tr.waitBlocks(Chain, 1, 10*time.Second)
+	tr.waitBlocks(chain, 1, 10*time.Second)
 }
 
 type assignConsumerPubKeyAction struct {
