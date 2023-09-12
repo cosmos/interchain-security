@@ -95,10 +95,6 @@ message EquivocationProposal {
   repeated cosmos.evidence.v1beta1.Equivocation equivocations = 3;
 }
 
-<<<<<<< HEAD
-// A persisted queue entry indicating that a slash packet data instance needs to be handled.
-// This type belongs in the "global" queue, to coordinate slash packet handling times between consumers.
-=======
 // ChangeRewardDenomsProposal is a governance proposal on the provider chain to
 // mutate the set of denoms accepted by the provider as rewards.
 message ChangeRewardDenomsProposal {
@@ -112,10 +108,8 @@ message ChangeRewardDenomsProposal {
   repeated string denoms_to_remove = 4;
 }
 
-// A persisted queue entry indicating that a slash packet data instance needs to
-// be handled. This type belongs in the "global" queue, to coordinate slash
-// packet handling times between consumers.
->>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
+// A persisted queue entry indicating that a slash packet data instance needs to be handled.
+// This type belongs in the "global" queue, to coordinate slash packet handling times between consumers.
 message GlobalSlashEntry {
   // Block time that slash packet was received by provider chain.
   // This field is used for store key iteration ordering.

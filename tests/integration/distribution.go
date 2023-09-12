@@ -5,20 +5,11 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-<<<<<<< HEAD
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
+
 	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
-=======
-
-	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/integration"
-	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
->>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 )
 
 // This test is valid for minimal viable consumer chain
@@ -106,28 +97,8 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
 	s.Require().True(rewardCoins[ibcCoinIndex].Amount.Equal(providerExpectedRewards[0].Amount))
 
-<<<<<<< HEAD
-	// Successfully register the consumer reward denom this time
-
-	// Send the coins back to the delAddr
-	err = providerBankKeeper.SendCoinsFromModuleToAccount(s.providerCtx(), govtypes.ModuleName, delAddr, senderCoins)
-	s.Require().NoError(err)
-
-	// log the sender's coins
-	senderCoins1 := providerBankKeeper.GetAllBalances(s.providerCtx(), delAddr)
-
-	// Register the consumer reward denom
-	err = s.providerApp.GetProviderKeeper().RegisterConsumerRewardDenom(s.providerCtx(), rewardCoins[ibcCoinIndex].Denom, delAddr)
-	s.Require().NoError(err)
-
-	// Check that the delAddr has the right amount less money in it after paying the fee
-	senderCoins2 := providerBankKeeper.GetAllBalances(s.providerCtx(), delAddr)
-	consumerRewardDenomRegistrationFee := s.providerApp.GetProviderKeeper().GetConsumerRewardDenomRegistrationFee(s.providerCtx())
-	s.Require().Equal(senderCoins1.Sub(senderCoins2), sdk.NewCoins(consumerRewardDenomRegistrationFee))
-=======
 	// Set the consumer reward denom. This would be done by a governance proposal in prod
 	s.providerApp.GetProviderKeeper().SetConsumerRewardDenom(s.providerCtx(), rewardCoins[ibcCoinIndex].Denom)
->>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 
 	s.providerChain.NextBlock()
 

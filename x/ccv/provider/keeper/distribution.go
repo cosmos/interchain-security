@@ -2,13 +2,7 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-<<<<<<< HEAD
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-=======
-
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
->>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 )
 
 // EndBlockRD executes EndBlock logic for the Reward Distribution sub-protocol.

@@ -23,16 +23,10 @@ import (
 )
 
 var (
-<<<<<<< HEAD
-	ConsumerAdditionProposalHandler = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd, ConsumerAdditionProposalRESTHandler)
-	ConsumerRemovalProposalHandler  = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd, ConsumerRemovalProposalRESTHandler)
-	EquivocationProposalHandler     = govclient.NewProposalHandler(SubmitEquivocationProposalTxCmd, EquivocationProposalRESTHandler)
-=======
-	ConsumerAdditionProposalHandler   = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd)
-	ConsumerRemovalProposalHandler    = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd)
-	EquivocationProposalHandler       = govclient.NewProposalHandler(SubmitEquivocationProposalTxCmd)
-	ChangeRewardDenomsProposalHandler = govclient.NewProposalHandler(SubmitChangeRewardDenomsProposalTxCmd)
->>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
+	ConsumerAdditionProposalHandler   = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd, ConsumerAdditionProposalRESTHandler)
+	ConsumerRemovalProposalHandler    = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd, ConsumerRemovalProposalRESTHandler)
+	EquivocationProposalHandler       = govclient.NewProposalHandler(SubmitEquivocationProposalTxCmd, EquivocationProposalRESTHandler)
+	ChangeRewardDenomsProposalHandler = govclient.NewProposalHandler(SubmitChangeRewardDenomsProposalTxCmd, ChangeRewardDenomsProposalRESTHandler)
 )
 
 // SubmitConsumerAdditionPropTxCmd returns a CLI command handler for submitting
@@ -259,17 +253,12 @@ func SubmitChangeRewardDenomsProposalTxCmd() *cobra.Command {
 
 			from := clientCtx.GetFromAddress()
 
-			msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-			if err != nil {
-				return err
-			}
-
 			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
 			if err != nil {
 				return err
 			}
 
-			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary)
+			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
 			if err != nil {
 				return err
 			}
@@ -404,7 +393,6 @@ func ParseEquivocationProposalJSON(proposalFile string) (EquivocationProposalJSO
 	return proposal, nil
 }
 
-<<<<<<< HEAD
 // EquivocationProposalRESTHandler returns a ProposalRESTHandler that exposes the equivocation rest handler.
 func EquivocationProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
 	return govrest.ProposalRESTHandler{
@@ -413,9 +401,6 @@ func EquivocationProposalRESTHandler(clientCtx client.Context) govrest.ProposalR
 	}
 }
 
-func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalProposalJSON, error) {
-	proposal := ConsumerRemovalProposalJSON{}
-=======
 type ChangeRewardDenomsProposalJSON struct {
 	Summary string `json:"summary"`
 	types.ChangeRewardDenomsProposal
@@ -423,6 +408,7 @@ type ChangeRewardDenomsProposalJSON struct {
 }
 
 type ChangeRewardDenomsProposalReq struct {
+	BaseReq  rest.BaseReq   `json:"base_req"`
 	Proposer sdk.AccAddress `json:"proposer"`
 	types.ChangeRewardDenomsProposal
 	Deposit sdk.Coins `json:"deposit"`
@@ -430,7 +416,6 @@ type ChangeRewardDenomsProposalReq struct {
 
 func ParseChangeRewardDenomsProposalJSON(proposalFile string) (ChangeRewardDenomsProposalJSON, error) {
 	proposal := ChangeRewardDenomsProposalJSON{}
->>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 
 	contents, err := os.ReadFile(filepath.Clean(proposalFile))
 	if err != nil {
@@ -440,6 +425,13 @@ func ParseChangeRewardDenomsProposalJSON(proposalFile string) (ChangeRewardDenom
 		return proposal, err
 	}
 	return proposal, nil
+}
+
+func ChangeRewardDenomsProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
+	return govrest.ProposalRESTHandler{
+		SubRoute: "change_reward_denoms",
+		Handler:  postEquivocationProposalHandlerFn(clientCtx),
+	}
 }
 
 // ConsumerAdditionProposalRESTHandler returns a ProposalRESTHandler that exposes the consumer addition rest handler.
@@ -565,5 +557,33 @@ consumer unbonding: %s
 provider unbonding: %s`,
 			propUnbondingPeriod,
 			providerUnbondingTime)
+	}
+}
+
+func postChangeRewardDenomsProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req ChangeRewardDenomsProposalReq
+		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
+			return
+		}
+
+		req.BaseReq = req.BaseReq.Sanitize()
+		if !req.BaseReq.ValidateBasic(w) {
+			return
+		}
+
+		content := types.NewChangeRewardDenomsProposal(
+			req.Title, req.Description, req.DenomsToAdd, req.DenomsToRemove)
+
+		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
+
+		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
+			return
+		}
+
+		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
 	}
 }

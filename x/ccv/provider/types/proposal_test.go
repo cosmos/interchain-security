@@ -366,7 +366,7 @@ func TestEquivocationProposalValidateBasic(t *testing.T) {
 func TestChangeRewardDenomsProposalValidateBasic(t *testing.T) {
 	tcs := []struct {
 		name        string
-		proposal    govv1beta1.Content
+		proposal    govtypes.Content
 		expectError bool
 		expectPanic bool
 	}{

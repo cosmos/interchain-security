@@ -27,22 +27,13 @@ func TestProviderProposalHandler(t *testing.T) {
 	equivocation := &evidencetypes.Equivocation{Height: 42}
 
 	testCases := []struct {
-<<<<<<< HEAD
-		name                     string
-		content                  govtypes.Content
-		blockTime                time.Time
-		expValidConsumerAddition bool
-		expValidConsumerRemoval  bool
-		expValidEquivocation     bool
-=======
 		name                      string
-		content                   govv1beta1.Content
+		content                   govtypes.Content
 		blockTime                 time.Time
 		expValidConsumerAddition  bool
 		expValidConsumerRemoval   bool
 		expValidEquivocation      bool
 		expValidChangeRewardDenom bool
->>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 	}{
 		{
 			name: "valid consumer addition proposal",
