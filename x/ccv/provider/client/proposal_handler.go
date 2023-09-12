@@ -430,7 +430,7 @@ func ParseChangeRewardDenomsProposalJSON(proposalFile string) (ChangeRewardDenom
 func ChangeRewardDenomsProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
 	return govrest.ProposalRESTHandler{
 		SubRoute: "change_reward_denoms",
-		Handler:  postEquivocationProposalHandlerFn(clientCtx),
+		Handler:  postChangeRewardDenomsProposalHandlerFn(clientCtx),
 	}
 }
 
