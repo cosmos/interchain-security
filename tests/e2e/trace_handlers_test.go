@@ -11,11 +11,12 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-// define some sets of steps to test with
+// an isolated test case for a proposal submission
 var proposalSubmissionSteps = []Step{
 	{submitTextProposalAction{Title: "Proposal 1", Description: "Description 1"}, State{}},
 }
 
+// an isolated test case for a state check involving a proposal
 var proposalInStateSteps = []Step{
 	{
 		Action: submitConsumerRemovalProposalAction{},
@@ -35,7 +36,6 @@ var proposalInStateSteps = []Step{
 }
 
 // Checks that writing, then parsing a trace results in the same trace.
-// TODO: RUN THIS AND FIX ERRORS
 func TestWriterThenParser(t *testing.T) {
 	parser := JSONParser{}
 	writer := JSONWriter{}
@@ -43,16 +43,16 @@ func TestWriterThenParser(t *testing.T) {
 	tests := map[string]struct {
 		trace []Step
 	}{
-		"proposalSubmission": {proposalSubmissionSteps},
-		// "proposalInState": {proposalInStateSteps},
-		// "start_provider_chain": {stepStartProviderChain()},
-		// "happyPath":            {happyPathSteps},
-		// "democracy":            {democracySteps},
-		// "slashThrottle":        {slashThrottleSteps},
-		// "multipleConsumers":    {multipleConsumers},
-		// "shorthappy":           {shortHappyPathSteps},
-		// "rewardDenomConsumer":  {rewardDenomConsumerSteps},
-		// "changeover":           {changeoverSteps},
+		"proposalSubmission":   {proposalSubmissionSteps},
+		"proposalInState":      {proposalInStateSteps},
+		"start_provider_chain": {stepStartProviderChain()},
+		"happyPath":            {happyPathSteps},
+		"democracy":            {democracySteps},
+		"slashThrottle":        {slashThrottleSteps},
+		"multipleConsumers":    {multipleConsumers},
+		"shorthappy":           {shortHappyPathSteps},
+		"rewardDenomConsumer":  {rewardDenomConsumerSteps},
+		"changeover":           {changeoverSteps},
 	}
 
 	dir, err := os.MkdirTemp("", "example")
