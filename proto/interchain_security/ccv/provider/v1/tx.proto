@@ -10,13 +10,7 @@ import "google/protobuf/any.proto";
 
 // Msg defines the Msg service.
 service Msg {
-<<<<<<< HEAD
   rpc AssignConsumerKey(MsgAssignConsumerKey) returns (MsgAssignConsumerKeyResponse);
-  rpc RegisterConsumerRewardDenom(MsgRegisterConsumerRewardDenom) returns (MsgRegisterConsumerRewardDenomResponse);
-=======
-  rpc AssignConsumerKey(MsgAssignConsumerKey)
-      returns (MsgAssignConsumerKeyResponse);
->>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 }
 
 message MsgAssignConsumerKey {
@@ -34,7 +28,6 @@ message MsgAssignConsumerKey {
 }
 
 message MsgAssignConsumerKeyResponse {}
-<<<<<<< HEAD
 
 // MsgRegisterConsumerRewardDenom allows an account to register 
 // a consumer reward denom, i.e., add it to the list of denoms 
@@ -49,5 +42,3 @@ message MsgRegisterConsumerRewardDenom {
 
 // MsgRegisterConsumerRewardDenomResponse defines the Msg/RegisterConsumerRewardDenom response type.
 message MsgRegisterConsumerRewardDenomResponse {}
-=======
->>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))

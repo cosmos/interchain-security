@@ -7,11 +7,8 @@ import (
 	time "time"
 
 	errorsmod "cosmossdk.io/errors"
-<<<<<<< HEAD
-=======
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
->>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
@@ -26,29 +23,17 @@ const (
 )
 
 var (
-<<<<<<< HEAD
 	_ govtypes.Content = &ConsumerAdditionProposal{}
 	_ govtypes.Content = &ConsumerRemovalProposal{}
 	_ govtypes.Content = &EquivocationProposal{}
+	_ govtypes.Content = &ChangeRewardDenomsProposal{}
 )
 
 func init() {
 	govtypes.RegisterProposalType(ProposalTypeConsumerAddition)
 	govtypes.RegisterProposalType(ProposalTypeConsumerRemoval)
 	govtypes.RegisterProposalType(ProposalTypeEquivocation)
-=======
-	_ govv1beta1.Content = &ConsumerAdditionProposal{}
-	_ govv1beta1.Content = &ConsumerRemovalProposal{}
-	_ govv1beta1.Content = &EquivocationProposal{}
-	_ govv1beta1.Content = &ChangeRewardDenomsProposal{}
-)
-
-func init() {
-	govv1beta1.RegisterProposalType(ProposalTypeConsumerAddition)
-	govv1beta1.RegisterProposalType(ProposalTypeConsumerRemoval)
-	govv1beta1.RegisterProposalType(ProposalTypeEquivocation)
-	govv1beta1.RegisterProposalType(ProposalTypeChangeRewardDenoms)
->>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
+	govtypes.RegisterProposalType(ProposalTypeChangeRewardDenoms)
 }
 
 // NewConsumerAdditionProposal creates a new consumer addition proposal.
@@ -251,7 +236,7 @@ func (sp *EquivocationProposal) ValidateBasic() error {
 
 func NewChangeRewardDenomsProposal(title, description string,
 	denomsToAdd, denomsToRemove []string,
-) govv1beta1.Content {
+) govtypes.Content {
 	return &ChangeRewardDenomsProposal{
 		Title:          title,
 		Description:    description,

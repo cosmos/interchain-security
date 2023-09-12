@@ -1684,20 +1684,6 @@ type submitChangeRewardDenomsProposalAction struct {
 func (tr TestRun) submitChangeRewardDenomsProposal(action submitChangeRewardDenomsProposalAction, verbose bool) {
 	providerChain := tr.chainConfigs[chainID("provi")]
 
-<<<<<<< HEAD
-		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(action.chain),
-		`--home`, tr.getValidatorHome(action.chain, action.from),
-		`--node`, tr.getValidatorNode(action.chain, action.from),
-		`--gas`, "9000000",
-		`--keyring-backend`, `test`,
-		`-b`, `block`,
-		`-y`,
-	).CombinedOutput()
-
-	if verbose {
-		fmt.Println("redelegate cmd:", string(bz))
-=======
 	prop := client.ChangeRewardDenomsProposalJSON{
 		Summary: "Change reward denoms",
 		ChangeRewardDenomsProposal: types.ChangeRewardDenomsProposal{
@@ -1707,7 +1693,6 @@ func (tr TestRun) submitChangeRewardDenomsProposal(action submitChangeRewardDeno
 			DenomsToRemove: []string{"stake"},
 		},
 		Deposit: fmt.Sprint(action.deposit) + `stake`,
->>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 	}
 
 	bz, err := json.Marshal(prop)
@@ -1727,8 +1712,6 @@ func (tr TestRun) submitChangeRewardDenomsProposal(action submitChangeRewardDeno
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
-<<<<<<< HEAD
-=======
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	// CHANGE REWARDS DENOM PROPOSAL
@@ -1749,7 +1732,6 @@ func (tr TestRun) submitChangeRewardDenomsProposal(action submitChangeRewardDeno
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(chainID("provi"), 2, 30*time.Second)
->>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 }
 
 // Creates an additional node on selected chain
