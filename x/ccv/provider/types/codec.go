@@ -28,12 +28,17 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&MsgAssignConsumerKey{},
 	)
 	registry.RegisterImplementations(
-		(*sdk.Msg)(nil),
-		&MsgRegisterConsumerRewardDenom{},
+		(*govv1beta1.Content)(nil),
+		&EquivocationProposal{},
 	)
 	registry.RegisterImplementations(
+<<<<<<< HEAD
 		(*govtypes.Content)(nil),
 		&EquivocationProposal{},
+=======
+		(*govv1beta1.Content)(nil),
+		&ChangeRewardDenomsProposal{},
+>>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)

@@ -131,6 +131,7 @@ var (
 		mint.AppModuleBasic{},
 		distr.AppModuleBasic{},
 		gov.NewAppModuleBasic(
+<<<<<<< HEAD
 			paramsclient.ProposalHandler,
 			distrclient.ProposalHandler,
 			upgradeclient.ProposalHandler,
@@ -140,6 +141,19 @@ var (
 			ibcproviderclient.ConsumerAdditionProposalHandler,
 			ibcproviderclient.ConsumerRemovalProposalHandler,
 			ibcproviderclient.EquivocationProposalHandler,
+=======
+			[]govclient.ProposalHandler{
+				paramsclient.ProposalHandler,
+				upgradeclient.LegacyProposalHandler,
+				upgradeclient.LegacyCancelProposalHandler,
+				ibcclientclient.UpdateClientProposalHandler,
+				ibcclientclient.UpgradeProposalHandler,
+				ibcproviderclient.ConsumerAdditionProposalHandler,
+				ibcproviderclient.ConsumerRemovalProposalHandler,
+				ibcproviderclient.EquivocationProposalHandler,
+				ibcproviderclient.ChangeRewardDenomsProposalHandler,
+			},
+>>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
