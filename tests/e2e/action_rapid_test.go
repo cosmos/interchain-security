@@ -1,13 +1,51 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"pgregory.net/rapid"
 )
 
+func TestActionMarshalling(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		action := GetActionGen().Draw(t, "Action")
+		err := MarshalAndUnmarshalAction(action)
+		if err != nil {
+			t.Fatalf("error marshalling and unmarshalling action: %v", err)
+		}
+	})
+}
+
+func MarshalAndUnmarshalAction(action interface{}) error {
+	step := Step{
+		Action: action,
+	}
+	jsonobj, err := json.Marshal(step)
+	if err != nil {
+		return fmt.Errorf("error marshalling action inside step: %v", err)
+	}
+
+	var got Step
+	err = json.Unmarshal(jsonobj, &got)
+	if err != nil {
+		return fmt.Errorf("error unmarshalling action inside step: %v", err)
+	}
+
+	diff := cmp.Diff(step, got)
+	if diff != "" {
+		return fmt.Errorf("got (-), want (+): %v", diff)
+	}
+
+	return nil
+}
+
+// This needs to be adjusted manually when new actions are added and should
+// include generators for all actions that are mentioned in main.go/runStep.
 func GetActionGen() *rapid.Generator[any] {
 	return rapid.OneOf(
 		GetSendTokensActionGen().AsAny(),
@@ -22,7 +60,7 @@ func GetActionGen() *rapid.Generator[any] {
 		GetAddChainToRelayerActionGen().AsAny(),
 		GetAddIbcConnectionActionGen().AsAny(),
 		GetAddIbcChannelActionGen().AsAny(),
-		GetStartHermesActionGen().AsAny(),
+		GetStartRelayerActionGen().AsAny(),
 		GetTransferChannelCompleteActionGen().AsAny(),
 		GetRelayPacketsActionGen().AsAny(),
 		GetRelayRewardPacketsToProviderActionGen().AsAny(),
@@ -114,9 +152,9 @@ func GetSubmitConsumerRemovalProposalActionGen() *rapid.Generator[submitConsumer
 	})
 }
 
-func GetSubmitParamChangeProposalActionGen() *rapid.Generator[submitParamChangeProposalAction] {
-	return rapid.Custom(func(t *rapid.T) submitParamChangeProposalAction {
-		return submitParamChangeProposalAction{
+func GetSubmitParamChangeProposalActionGen() *rapid.Generator[submitParamChangeLegacyProposalAction] {
+	return rapid.Custom(func(t *rapid.T) submitParamChangeLegacyProposalAction {
+		return submitParamChangeLegacyProposalAction{
 			Chain:    GetChainIDGen().Draw(t, "Chain"),
 			From:     GetValidatorIDGen().Draw(t, "From"),
 			Deposit:  rapid.Uint().Draw(t, "Deposit"),
@@ -213,8 +251,8 @@ func GetAddIbcChannelActionGen() *rapid.Generator[addIbcChannelAction] {
 	})
 }
 
-func GetStartHermesActionGen() *rapid.Generator[startHermesAction] {
-	return rapid.Just(startHermesAction{})
+func GetStartRelayerActionGen() *rapid.Generator[startRelayerAction] {
+	return rapid.Just(startRelayerAction{})
 }
 
 func GetTransferChannelCompleteActionGen() *rapid.Generator[transferChannelCompleteAction] {
@@ -235,7 +273,8 @@ func GetTransferChannelCompleteActionGen() *rapid.Generator[transferChannelCompl
 func GetRelayPacketsActionGen() *rapid.Generator[relayPacketsAction] {
 	return rapid.Custom(func(t *rapid.T) relayPacketsAction {
 		return relayPacketsAction{
-			Chain:   GetChainIDGen().Draw(t, "Chain"),
+			ChainA:  GetChainIDGen().Draw(t, "Chain"),
+			ChainB:  GetChainIDGen().Draw(t, "Chain"),
 			Port:    rapid.String().Draw(t, "Port"),
 			Channel: rapid.Uint().Draw(t, "Channel"),
 		}

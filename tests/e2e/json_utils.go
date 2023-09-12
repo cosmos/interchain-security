@@ -46,8 +46,6 @@ func (step *Step) UnmarshalJSON(data []byte) error {
 
 // UnmarshalMapToActionType takes a JSON object and an action type and marshals into an object of the corresponding action.
 func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string) (interface{}, error) {
-	// TODO: ERRORS PROBABLY COME FROM HERE
-
 	switch actionTypeString {
 	case "main.submitConsumerAdditionProposalAction":
 		var a submitConsumerAdditionProposalAction
@@ -112,7 +110,7 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 			return nil, err
 		}
 		return a, nil
-	case "main.AddChainToRelayerAction":
+	case "main.addChainToRelayerAction":
 		var a addChainToRelayerAction
 		err := json.Unmarshal(rawAction, &a)
 		if err != nil {
