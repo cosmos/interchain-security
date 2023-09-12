@@ -175,9 +175,10 @@ func TestComputePowerToSlash(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	// undelegation or redelegation entries with completion time `now` have matured
 	now := ctx.BlockHeader().Time
+	// undelegation or redelegation entries with completion time one hour in the future have not yet matured
 	nowPlus1Hour := now.Add(time.Hour)
-	nowMinus1Hour := now.Add(-time.Hour)
 
 	testCases := []struct {
 		name           string
@@ -267,20 +268,20 @@ func TestComputePowerToSlash(t *testing.T) {
 			// 2000 total undelegation tokens, 250 + 100 + 500 = 850 of those are from mature undelegations,
 			// so 2000 - 850 = 1150
 			[]stakingtypes.UnbondingDelegation{
-				createUndelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, nowMinus1Hour}),
+				createUndelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, now}),
 				createUndelegation([]int64{}, []time.Time{}),
-				createUndelegation([]int64{100, 100}, []time.Time{nowMinus1Hour, nowPlus1Hour}),
+				createUndelegation([]int64{100, 100}, []time.Time{now, nowPlus1Hour}),
 				createUndelegation([]int64{800}, []time.Time{nowPlus1Hour}),
-				createUndelegation([]int64{500}, []time.Time{nowMinus1Hour})},
+				createUndelegation([]int64{500}, []time.Time{now})},
 			// 3500 total redelegation tokens, 350 + 200 + 400 = 950 of those are from mature redelegations
 			// so 3500 - 950 = 2550
 			[]stakingtypes.Redelegation{
 				createRedelegation([]int64{}, []time.Time{}),
 				createRedelegation([]int64{1600}, []time.Time{nowPlus1Hour}),
-				createRedelegation([]int64{350, 250}, []time.Time{nowMinus1Hour, nowPlus1Hour}),
-				createRedelegation([]int64{700, 200}, []time.Time{nowPlus1Hour, nowMinus1Hour}),
+				createRedelegation([]int64{350, 250}, []time.Time{now, nowPlus1Hour}),
+				createRedelegation([]int64{700, 200}, []time.Time{nowPlus1Hour, now}),
 				createRedelegation([]int64{}, []time.Time{}),
-				createRedelegation([]int64{400}, []time.Time{nowMinus1Hour}),
+				createRedelegation([]int64{400}, []time.Time{now}),
 			},
 			int64(8391),
 			sdk.NewInt(2),
@@ -305,9 +306,10 @@ func TestSlashValidator(t *testing.T) {
 	keeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	// undelegation or redelegation entries with completion time `now` have matured
 	now := ctx.BlockHeader().Time
+	// undelegation or redelegation entries with completion time one hour in the future have not yet matured
 	nowPlus1Hour := now.Add(time.Hour)
-	nowMinus1Hour := now.Add(-time.Hour)
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
@@ -321,10 +323,10 @@ func TestSlashValidator(t *testing.T) {
 	// we create 1000 tokens worth of undelegations, 750 of them are non-matured
 	// we also create 1000 tokens worth of redelegations, 750 of them are non-matured
 	undelegations := []stakingtypes.UnbondingDelegation{
-		createUndelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, nowMinus1Hour}),
+		createUndelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, now}),
 		createUndelegation([]int64{500}, []time.Time{nowPlus1Hour})}
 	redelegations := []stakingtypes.Redelegation{
-		createRedelegation([]int64{250, 250}, []time.Time{nowMinus1Hour, nowPlus1Hour}),
+		createRedelegation([]int64{250, 250}, []time.Time{now, nowPlus1Hour}),
 		createRedelegation([]int64{500}, []time.Time{nowPlus1Hour})}
 
 	// validator's current power

@@ -31,7 +31,7 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 	}
 
 	// Jail the validator to trigger the unbonding of the validator
-	// (see cosmos/cosmos-sdk/blob/v0.47.0/x/staking/keeper/val_state_change.go#L194).
+	// (see cosmos/cosmos-sdk/blob/v0.45.16-ics-lsm/x/staking/keeper/val_state_change.go#L192).
 	k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
 
 	// Tombstone the validator so that we cannot slash the validator more than once
@@ -79,7 +79,7 @@ func (k Keeper) ComputePowerToSlash(now time.Time, undelegations []stakingtypes.
 	return power + undelegationsAndRedelegationsInPower
 }
 
-// Slash validator based on the `providerAddr`
+// SlashValidator slashes validator with `providerAddr`
 func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) {
 	logger := k.Logger(ctx)
 
