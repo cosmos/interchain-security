@@ -368,22 +368,23 @@ func TestChangeRewardDenomsProposalValidateBasic(t *testing.T) {
 		name        string
 		proposal    govv1beta1.Content
 		expectError bool
-	}{{
-		name: "invalid change reward denoms proposal, none to add or remove",
-		proposal: types.NewChangeRewardDenomsProposal(
-			"title", "description", []string{}, []string{}),
-		expectError: true,
-	}, {
-		name: "invalid change reward denoms proposal, same denom in both sets",
-		proposal: types.NewChangeRewardDenomsProposal(
-			"title", "description", []string{"denom1"}, []string{"denom1"}),
-		expectError: true,
-	}, {
-		name: "valid change reward denoms proposal",
-		proposal: types.NewChangeRewardDenomsProposal(
-			"title", "description", []string{"denom1"}, []string{"denom2"}),
-		expectError: false,
-	},
+	}{
+		{
+			name: "invalid change reward denoms proposal, none to add or remove",
+			proposal: types.NewChangeRewardDenomsProposal(
+				"title", "description", []string{}, []string{}),
+			expectError: true,
+		}, {
+			name: "invalid change reward denoms proposal, same denom in both sets",
+			proposal: types.NewChangeRewardDenomsProposal(
+				"title", "description", []string{"denom1"}, []string{"denom1"}),
+			expectError: true,
+		}, {
+			name: "valid change reward denoms proposal",
+			proposal: types.NewChangeRewardDenomsProposal(
+				"title", "description", []string{"denom1"}, []string{"denom2"}),
+			expectError: false,
+		},
 	}
 
 	for _, tc := range tcs {
