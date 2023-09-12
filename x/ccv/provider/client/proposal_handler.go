@@ -23,9 +23,16 @@ import (
 )
 
 var (
+<<<<<<< HEAD
 	ConsumerAdditionProposalHandler = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd, ConsumerAdditionProposalRESTHandler)
 	ConsumerRemovalProposalHandler  = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd, ConsumerRemovalProposalRESTHandler)
 	EquivocationProposalHandler     = govclient.NewProposalHandler(SubmitEquivocationProposalTxCmd, EquivocationProposalRESTHandler)
+=======
+	ConsumerAdditionProposalHandler   = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd)
+	ConsumerRemovalProposalHandler    = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd)
+	EquivocationProposalHandler       = govclient.NewProposalHandler(SubmitEquivocationProposalTxCmd)
+	ChangeRewardDenomsProposalHandler = govclient.NewProposalHandler(SubmitChangeRewardDenomsProposalTxCmd)
+>>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 )
 
 // SubmitConsumerAdditionPropTxCmd returns a CLI command handler for submitting
@@ -215,6 +222,63 @@ Where proposal.json contains:
 	}
 }
 
+// SubmitChangeRewardDenomsProposalTxCmd returns a CLI command handler for submitting
+// a change reward denoms proposal via a transaction.
+func SubmitChangeRewardDenomsProposalTxCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "change-reward-denoms [proposal-file]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Submit a change reward denoms proposal",
+		Long: `Submit an change reward denoms proposal with an initial deposit.
+		The proposal details must be supplied via a JSON file.
+
+		Example:
+		$ <appd> tx gov submit-legacy-proposal change-reward-denoms <path/to/proposal.json> --from=<key_or_address>
+
+		Where proposal.json contains:
+		{
+			"title": "Change reward denoms",
+			"summary": "Change reward denoms",
+			"denoms_to_add": ["untrn"],
+			"denoms_to_remove": ["stake"],
+			"deposit": "10000stake"
+		}
+		`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			proposal, err := ParseChangeRewardDenomsProposalJSON(args[0])
+			if err != nil {
+				return err
+			}
+
+			content := types.NewChangeRewardDenomsProposal(proposal.Title, proposal.Summary, proposal.DenomsToAdd, proposal.DenomsToRemove)
+
+			from := clientCtx.GetFromAddress()
+
+			msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+			if err != nil {
+				return err
+			}
+
+			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
+			if err != nil {
+				return err
+			}
+
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary)
+			if err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+}
+
 type ConsumerAdditionProposalJSON struct {
 	Title         string             `json:"title"`
 	Description   string             `json:"description"`
@@ -293,6 +357,21 @@ type ConsumerRemovalProposalReq struct {
 	Deposit  sdk.Coins `json:"deposit"`
 }
 
+func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalProposalJSON, error) {
+	proposal := ConsumerRemovalProposalJSON{}
+
+	contents, err := os.ReadFile(filepath.Clean(proposalFile))
+	if err != nil {
+		return proposal, err
+	}
+
+	if err := json.Unmarshal(contents, &proposal); err != nil {
+		return proposal, err
+	}
+
+	return proposal, nil
+}
+
 type EquivocationProposalJSON struct {
 	// evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	types.EquivocationProposal
@@ -325,6 +404,7 @@ func ParseEquivocationProposalJSON(proposalFile string) (EquivocationProposalJSO
 	return proposal, nil
 }
 
+<<<<<<< HEAD
 // EquivocationProposalRESTHandler returns a ProposalRESTHandler that exposes the equivocation rest handler.
 func EquivocationProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
 	return govrest.ProposalRESTHandler{
@@ -335,16 +415,30 @@ func EquivocationProposalRESTHandler(clientCtx client.Context) govrest.ProposalR
 
 func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalProposalJSON, error) {
 	proposal := ConsumerRemovalProposalJSON{}
+=======
+type ChangeRewardDenomsProposalJSON struct {
+	Summary string `json:"summary"`
+	types.ChangeRewardDenomsProposal
+	Deposit string `json:"deposit"`
+}
+
+type ChangeRewardDenomsProposalReq struct {
+	Proposer sdk.AccAddress `json:"proposer"`
+	types.ChangeRewardDenomsProposal
+	Deposit sdk.Coins `json:"deposit"`
+}
+
+func ParseChangeRewardDenomsProposalJSON(proposalFile string) (ChangeRewardDenomsProposalJSON, error) {
+	proposal := ChangeRewardDenomsProposalJSON{}
+>>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 
 	contents, err := os.ReadFile(filepath.Clean(proposalFile))
 	if err != nil {
 		return proposal, err
 	}
-
 	if err := json.Unmarshal(contents, &proposal); err != nil {
 		return proposal, err
 	}
-
 	return proposal, nil
 }
 

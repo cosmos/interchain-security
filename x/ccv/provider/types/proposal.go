@@ -7,6 +7,11 @@ import (
 	time "time"
 
 	errorsmod "cosmossdk.io/errors"
+<<<<<<< HEAD
+=======
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+>>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
@@ -14,12 +19,14 @@ import (
 )
 
 const (
-	ProposalTypeConsumerAddition = "ConsumerAddition"
-	ProposalTypeConsumerRemoval  = "ConsumerRemoval"
-	ProposalTypeEquivocation     = "Equivocation"
+	ProposalTypeConsumerAddition   = "ConsumerAddition"
+	ProposalTypeConsumerRemoval    = "ConsumerRemoval"
+	ProposalTypeEquivocation       = "Equivocation"
+	ProposalTypeChangeRewardDenoms = "ChangeRewardDenoms"
 )
 
 var (
+<<<<<<< HEAD
 	_ govtypes.Content = &ConsumerAdditionProposal{}
 	_ govtypes.Content = &ConsumerRemovalProposal{}
 	_ govtypes.Content = &EquivocationProposal{}
@@ -29,6 +36,19 @@ func init() {
 	govtypes.RegisterProposalType(ProposalTypeConsumerAddition)
 	govtypes.RegisterProposalType(ProposalTypeConsumerRemoval)
 	govtypes.RegisterProposalType(ProposalTypeEquivocation)
+=======
+	_ govv1beta1.Content = &ConsumerAdditionProposal{}
+	_ govv1beta1.Content = &ConsumerRemovalProposal{}
+	_ govv1beta1.Content = &EquivocationProposal{}
+	_ govv1beta1.Content = &ChangeRewardDenomsProposal{}
+)
+
+func init() {
+	govv1beta1.RegisterProposalType(ProposalTypeConsumerAddition)
+	govv1beta1.RegisterProposalType(ProposalTypeConsumerRemoval)
+	govv1beta1.RegisterProposalType(ProposalTypeEquivocation)
+	govv1beta1.RegisterProposalType(ProposalTypeChangeRewardDenoms)
+>>>>>>> 48a2186 (feat!: provider proposal for changing reward denoms (#1280))
 }
 
 // NewConsumerAdditionProposal creates a new consumer addition proposal.
@@ -226,5 +246,59 @@ func (sp *EquivocationProposal) ValidateBasic() error {
 			return err
 		}
 	}
+	return nil
+}
+
+func NewChangeRewardDenomsProposal(title, description string,
+	denomsToAdd, denomsToRemove []string,
+) govv1beta1.Content {
+	return &ChangeRewardDenomsProposal{
+		Title:          title,
+		Description:    description,
+		DenomsToAdd:    denomsToAdd,
+		DenomsToRemove: denomsToRemove,
+	}
+}
+
+// ProposalRoute returns the routing key of a change reward denoms proposal.
+func (crdp *ChangeRewardDenomsProposal) ProposalRoute() string { return RouterKey }
+
+// ProposalType returns the type of a change reward denoms proposal.
+func (crdp *ChangeRewardDenomsProposal) ProposalType() string {
+	return ProposalTypeChangeRewardDenoms
+}
+
+// ValidateBasic runs basic stateless validity checks on a ChangeRewardDenomsProposal.
+func (crdp *ChangeRewardDenomsProposal) ValidateBasic() error {
+	emptyDenomsToAdd := len(crdp.DenomsToAdd) == 0
+	emptyDenomsToRemove := len(crdp.DenomsToRemove) == 0
+	// Return error if both sets are empty or nil
+	if emptyDenomsToAdd && emptyDenomsToRemove {
+		return fmt.Errorf(
+			"invalid change reward denoms proposal: both denoms to add and denoms to remove are empty")
+	}
+
+	// Return error if a denom is in both sets
+	for _, denomToAdd := range crdp.DenomsToAdd {
+		for _, denomToRemove := range crdp.DenomsToRemove {
+			if denomToAdd == denomToRemove {
+				return fmt.Errorf(
+					"invalid change reward denoms proposal: %s cannot be both added and removed", denomToAdd)
+			}
+		}
+	}
+
+	// Return error if any denom is "invalid"
+	for _, denom := range crdp.DenomsToAdd {
+		if !sdk.NewCoin(denom, sdk.NewInt(1)).IsValid() {
+			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
+		}
+	}
+	for _, denom := range crdp.DenomsToRemove {
+		if !sdk.NewCoin(denom, sdk.NewInt(1)).IsValid() {
+			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
+		}
+	}
+
 	return nil
 }
