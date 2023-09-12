@@ -16,9 +16,8 @@ import (
 	"time"
 )
 
-// FIXME: break the JailAndTombstoneValidator function into two ... seems complicated to do both at once
 // TestJailAndTombstoneValidator tests that the jailing of a validator is only executed
-// under the conditions that the validator is neither unbonded, already jailed, nor tombstoned.
+// under the conditions that the validator is neither unbonded, nor jailed, nor tombstoned.
 func TestJailAndTombstoneValidator(t *testing.T) {
 	providerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(7842334).ProviderConsAddress()
 	testCases := []struct {
@@ -142,11 +141,13 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 	}
 }
 
-func createUndelegation(tokensPerEntry []int64) stakingtypes.UnbondingDelegation {
+// createUndelegation creates an undelegation with `len(initialBalances)` entries
+func createUndelegation(initialBalances []int64, completionTimes []time.Time) stakingtypes.UnbondingDelegation {
 	var entries []stakingtypes.UnbondingDelegationEntry
-	for _, t := range tokensPerEntry {
+	for i, balance := range initialBalances {
 		entry := stakingtypes.UnbondingDelegationEntry{
-			InitialBalance: sdk.NewInt(t),
+			InitialBalance: sdk.NewInt(balance),
+			CompletionTime: completionTimes[i],
 		}
 		entries = append(entries, entry)
 	}
@@ -154,11 +155,13 @@ func createUndelegation(tokensPerEntry []int64) stakingtypes.UnbondingDelegation
 	return stakingtypes.UnbondingDelegation{Entries: entries}
 }
 
-func createRedelegation(tokensPerEntry []int64) stakingtypes.Redelegation {
+// createRedelegation creates a redelegation with `len(initialBalances)` entries
+func createRedelegation(initialBalances []int64, completionTimes []time.Time) stakingtypes.Redelegation {
 	var entries []stakingtypes.RedelegationEntry
-	for _, t := range tokensPerEntry {
+	for i, balance := range initialBalances {
 		entry := stakingtypes.RedelegationEntry{
-			InitialBalance: sdk.NewInt(t),
+			InitialBalance: sdk.NewInt(balance),
+			CompletionTime: completionTimes[i],
 		}
 		entries = append(entries, entry)
 	}
@@ -166,9 +169,15 @@ func createRedelegation(tokensPerEntry []int64) stakingtypes.Redelegation {
 	return stakingtypes.Redelegation{Entries: entries}
 }
 
+// TestComputePowerToSlash tests that `ComputePowerToSlash` computes the correct power to be slashed based on
+// the tokens in non-mature undelegation and redelegation entries, as well as the current power of the validator
 func TestComputePowerToSlash(t *testing.T) {
-	providerKeeper, _, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
+
+	now := ctx.BlockHeader().Time
+	nowPlus1Hour := now.Add(time.Hour)
+	nowMinus1Hour := now.Add(-time.Hour)
 
 	testCases := []struct {
 		name           string
@@ -182,12 +191,12 @@ func TestComputePowerToSlash(t *testing.T) {
 			"both undelegations and redelegations 1",
 			// 1000 total undelegation tokens
 			[]stakingtypes.UnbondingDelegation{
-				createUndelegation([]int64{250, 250}),
-				createUndelegation([]int64{500})},
+				createUndelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
+				createUndelegation([]int64{500}, []time.Time{nowPlus1Hour, nowPlus1Hour})},
 			// 1000 total redelegation tokens
 			[]stakingtypes.Redelegation{
-				createRedelegation([]int64{500}),
-				createRedelegation([]int64{250, 250}),
+				createRedelegation([]int64{500}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
+				createRedelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
 			},
 			int64(1000),
 			sdk.NewInt(1),
@@ -197,19 +206,19 @@ func TestComputePowerToSlash(t *testing.T) {
 			"both undelegations and redelegations 2",
 			// 2000 total undelegation tokens
 			[]stakingtypes.UnbondingDelegation{
-				createUndelegation([]int64{250, 250}),
-				createUndelegation([]int64{}),
-				createUndelegation([]int64{100, 100}),
-				createUndelegation([]int64{800}),
-				createUndelegation([]int64{500})},
+				createUndelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
+				createUndelegation([]int64{}, []time.Time{}),
+				createUndelegation([]int64{100, 100}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
+				createUndelegation([]int64{800}, []time.Time{nowPlus1Hour}),
+				createUndelegation([]int64{500}, []time.Time{nowPlus1Hour})},
 			// 3500 total redelegation tokens
 			[]stakingtypes.Redelegation{
-				createRedelegation([]int64{}),
-				createRedelegation([]int64{1600}),
-				createRedelegation([]int64{350, 250}),
-				createRedelegation([]int64{700, 200}),
-				createRedelegation([]int64{}),
-				createRedelegation([]int64{400}),
+				createRedelegation([]int64{}, []time.Time{}),
+				createRedelegation([]int64{1600}, []time.Time{nowPlus1Hour}),
+				createRedelegation([]int64{350, 250}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
+				createRedelegation([]int64{700, 200}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
+				createRedelegation([]int64{}, []time.Time{}),
+				createRedelegation([]int64{400}, []time.Time{nowPlus1Hour}),
 			},
 			int64(8391),
 			sdk.NewInt(2),
@@ -228,12 +237,12 @@ func TestComputePowerToSlash(t *testing.T) {
 			[]stakingtypes.UnbondingDelegation{},
 			// 2000 total redelegation tokens
 			[]stakingtypes.Redelegation{
-				createRedelegation([]int64{}),
-				createRedelegation([]int64{500}),
-				createRedelegation([]int64{250, 250}),
-				createRedelegation([]int64{700, 200}),
-				createRedelegation([]int64{}),
-				createRedelegation([]int64{100}),
+				createRedelegation([]int64{}, []time.Time{}),
+				createRedelegation([]int64{500}, []time.Time{nowPlus1Hour}),
+				createRedelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
+				createRedelegation([]int64{700, 200}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
+				createRedelegation([]int64{}, []time.Time{}),
+				createRedelegation([]int64{100}, []time.Time{nowPlus1Hour}),
 			},
 			int64(17),
 			sdk.NewInt(3),
@@ -243,20 +252,46 @@ func TestComputePowerToSlash(t *testing.T) {
 			"no redelegations",
 			// 2000 total undelegation tokens
 			[]stakingtypes.UnbondingDelegation{
-				createUndelegation([]int64{250, 250}),
-				createUndelegation([]int64{}),
-				createUndelegation([]int64{100, 100}),
-				createUndelegation([]int64{800}),
-				createUndelegation([]int64{500})},
+				createUndelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
+				createUndelegation([]int64{}, []time.Time{}),
+				createUndelegation([]int64{100, 100}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
+				createUndelegation([]int64{800}, []time.Time{nowPlus1Hour}),
+				createUndelegation([]int64{500}, []time.Time{nowPlus1Hour})},
 			[]stakingtypes.Redelegation{},
 			int64(1),
 			sdk.NewInt(3),
 			int64(2000/3 + 1),
 		},
+		{
+			"both (mature) undelegations and redelegations",
+			// 2000 total undelegation tokens, 250 + 100 + 500 = 850 of those are from mature undelegations,
+			// so 2000 - 850 = 1150
+			[]stakingtypes.UnbondingDelegation{
+				createUndelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, nowMinus1Hour}),
+				createUndelegation([]int64{}, []time.Time{}),
+				createUndelegation([]int64{100, 100}, []time.Time{nowMinus1Hour, nowPlus1Hour}),
+				createUndelegation([]int64{800}, []time.Time{nowPlus1Hour}),
+				createUndelegation([]int64{500}, []time.Time{nowMinus1Hour})},
+			// 3500 total redelegation tokens, 350 + 200 + 400 = 950 of those are from mature redelegations
+			// so 3500 - 950 = 2550
+			[]stakingtypes.Redelegation{
+				createRedelegation([]int64{}, []time.Time{}),
+				createRedelegation([]int64{1600}, []time.Time{nowPlus1Hour}),
+				createRedelegation([]int64{350, 250}, []time.Time{nowMinus1Hour, nowPlus1Hour}),
+				createRedelegation([]int64{700, 200}, []time.Time{nowPlus1Hour, nowMinus1Hour}),
+				createRedelegation([]int64{}, []time.Time{}),
+				createRedelegation([]int64{400}, []time.Time{nowMinus1Hour}),
+			},
+			int64(8391),
+			sdk.NewInt(2),
+			int64((1150+2550)/2 + 8391),
+		},
 	}
 
 	for _, tc := range testCases {
-		actualPower := providerKeeper.ComputePowerToSlash(tc.undelegations, tc.redelegations, tc.power, tc.powerReduction)
+		actualPower := providerKeeper.ComputePowerToSlash(now,
+			tc.undelegations, tc.redelegations, tc.power, tc.powerReduction)
+
 		if tc.expectedPower != actualPower {
 			require.Fail(t, fmt.Sprintf("\"%s\" failed", tc.name),
 				"expected is %d but actual is %d", tc.expectedPower, actualPower)
@@ -264,16 +299,16 @@ func TestComputePowerToSlash(t *testing.T) {
 	}
 }
 
-// FIXME: Probably the following test could be a combination with computePowertoSlash ...
-// Not sure I like this
-// the actual slashing should be checked from integration tests
 // TestSlashValidator asserts that `SlashValidator` calls the staking module's `Slash` method
 // with the correct arguments (i.e., `infractionHeight` of 0 and the expected slash power)
 func TestSlashValidator(t *testing.T) {
 	keeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	ctx = ctx.WithBlockTime(time.Now())
+	now := ctx.BlockHeader().Time
+	nowPlus1Hour := now.Add(time.Hour)
+	nowMinus1Hour := now.Add(-time.Hour)
+
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
@@ -283,13 +318,14 @@ func TestSlashValidator(t *testing.T) {
 	consAddr, _ := validator.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(consAddr)
 
-	// we create 1000 tokens worth of undelegations and 1000 tokens worth of redelegations
+	// we create 1000 tokens worth of undelegations, 750 of them are non-matured
+	// we also create 1000 tokens worth of redelegations, 750 of them are non-matured
 	undelegations := []stakingtypes.UnbondingDelegation{
-		createUndelegation([]int64{250, 250}),
-		createUndelegation([]int64{500})}
+		createUndelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, nowMinus1Hour}),
+		createUndelegation([]int64{500}, []time.Time{nowPlus1Hour})}
 	redelegations := []stakingtypes.Redelegation{
-		createRedelegation([]int64{250, 250}),
-		createRedelegation([]int64{500})}
+		createRedelegation([]int64{250, 250}, []time.Time{nowMinus1Hour, nowPlus1Hour}),
+		createRedelegation([]int64{500}, []time.Time{nowPlus1Hour})}
 
 	// validator's current power
 	currentPower := int64(3000)
@@ -298,9 +334,9 @@ func TestSlashValidator(t *testing.T) {
 	slashFraction, _ := sdk.NewDecFromStr("0.5")
 
 	// the call to `Slash` should provide an `infractionHeight` of 0 and an expected power of
-	// (1000 (undelegations) + 1000 (redelegations)) / 2 (= powerReduction) + 3000 (currentPower) = 4000
+	// (750 (undelegations) + 750 (redelegations)) / 2 (= powerReduction) + 3000 (currentPower) = 3750
 	expectedInfractionHeight := int64(0)
-	expectedSlashPower := int64(4000)
+	expectedSlashPower := int64(3750)
 
 	expectedCalls := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().

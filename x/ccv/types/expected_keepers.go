@@ -2,7 +2,6 @@ package types
 
 import (
 	context "context"
-	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -51,7 +50,6 @@ type StakingKeeper interface {
 
 type EvidenceKeeper interface {
 	HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
-	SetEvidence(ctx sdk.Context, evidence exported.Evidence)
 }
 
 // SlashingKeeper defines the contract expected to perform ccv slashing

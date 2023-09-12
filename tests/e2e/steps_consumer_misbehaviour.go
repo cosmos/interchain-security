@@ -219,7 +219,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			state:  State{},
 		},
 		// detect the ICS misbehaviour
-		// and jail alice on the provider
+		// and jail and slash alice on the provider
 		{
 			action: detectConsumerEvidenceAction{
 				chain: chainID(consumerName),
@@ -229,6 +229,10 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
 						validatorID("bob"):   20,
+					},
+					RepresentativePowers: &map[validatorID]uint{
+						validatorID("alice"): 511000000,
+						validatorID("bob"):   20000000,
 					},
 				},
 				chainID(consumerName): ChainState{
@@ -254,6 +258,12 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 0,
 						validatorID("bob"):   20,
+					},
+					// "alice" should be slashed on the provider, hence representative
+					// power is 511000000 - 0.05 * 511000000 = 485450000
+					RepresentativePowers: &map[validatorID]uint{
+						validatorID("alice"): 485450000,
+						validatorID("bob"):   20000000,
 					},
 					// The consumer light client should be frozen on the provider
 					ClientsFrozenHeights: &map[string]clienttypes.Height{

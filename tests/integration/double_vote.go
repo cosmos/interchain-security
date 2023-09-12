@@ -188,9 +188,9 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			if tc.expPass {
 				s.Require().NoError(err)
 
-				// verifies that the tombstoning and jailing has occurred
-				s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(provCtx, provAddr.ToSdkConsAddr()))
+				// verifies that the jailing and tombstoning has occurred
 				s.Require().True(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(provCtx, provAddr.ToSdkConsAddr()))
+				s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(provCtx, provAddr.ToSdkConsAddr()))
 
 				// verifies that the validator gets slashed and has fewer tokens after the slashing
 				validator, _ := s.providerApp.GetTestStakingKeeper().GetValidator(provCtx, provAddr.ToSdkConsAddr().Bytes())
@@ -200,8 +200,9 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			} else {
 				s.Require().Error(err)
 
-				// verifies that no jailing and has occurred
+				// verifies that no jailing and no tombstoning has occurred
 				s.Require().False(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(provCtx, provAddr.ToSdkConsAddr()))
+				s.Require().False(s.providerApp.GetTestSlashingKeeper().IsTombstoned(provCtx, provAddr.ToSdkConsAddr()))
 			}
 		})
 	}

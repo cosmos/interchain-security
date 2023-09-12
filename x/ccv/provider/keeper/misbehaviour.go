@@ -3,8 +3,6 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
@@ -46,17 +44,6 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 		k.JailAndTombstoneValidator(ctx, providerAddr)
 		provAddrs = append(provAddrs, providerAddr)
 	}
-
-	// FIXME: it would be nice to set the evidence but not sure what this would mean
-	// for light client attacks.
-	var evidence exported.Evidence = &evidencetypes.Equivocation{
-		Height:           int64(misbehaviour.Header1.GetHeight().GetRevisionHeight()),
-		Time:             misbehaviour.Header2.GetTime(),
-		Power:            0,
-		ConsensusAddress: "!",
-	}
-
-	k.evidenceKeeper.SetEvidence(ctx, evidence)
 
 	logger.Info(
 		"confirmed equivocation light client attack",

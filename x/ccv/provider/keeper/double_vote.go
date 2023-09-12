@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
@@ -36,16 +33,6 @@ func (k Keeper) HandleConsumerDoubleVoting(
 
 	k.SlashValidator(ctx, providerAddr)
 	k.JailAndTombstoneValidator(ctx, providerAddr)
-
-	// FIXME: verify the following values
-	var equivocation exported.Evidence = &evidencetypes.Equivocation{
-		Height:           evidence.Height(),
-		Time:             evidence.Time(),
-		Power:            evidence.ValidatorPower,
-		ConsensusAddress: evidence.VoteA.ValidatorAddress.String(),
-	}
-
-	k.evidenceKeeper.SetEvidence(ctx, equivocation)
 
 	k.Logger(ctx).Info(
 		"confirmed equivocation",
