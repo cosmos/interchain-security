@@ -626,7 +626,7 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, p *types.Chan
 		}
 		k.SetConsumerRewardDenom(ctx, denomToAdd)
 		ctx.EventManager().EmitEvent(sdk.NewEvent(
-			ccv.EventTypeRegisterConsumerRewardDenom,
+			ccv.EventTypeAddConsumerRewardDenom,
 			sdk.NewAttribute(ccv.AttributeConsumerRewardDenom, denomToAdd),
 		))
 	}
@@ -637,6 +637,10 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, p *types.Chan
 			continue
 		}
 		k.DeleteConsumerRewardDenom(ctx, denomToRemove)
+		ctx.EventManager().EmitEvent(sdk.NewEvent(
+			ccv.EventTypeRemoveConsumerRewardDenom,
+			sdk.NewAttribute(ccv.AttributeConsumerRewardDenom, denomToRemove),
+		))
 	}
 	return nil
 }
