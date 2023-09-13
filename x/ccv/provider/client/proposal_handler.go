@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -379,7 +379,7 @@ func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalPropo
 }
 
 type EquivocationProposalJSON struct {
-	// evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	// evidencetypes "cosmossdk.io/x/evidence/types"
 	Summary string `json:"summary"`
 	types.EquivocationProposal
 
@@ -389,7 +389,7 @@ type EquivocationProposalJSON struct {
 type EquivocationProposalReq struct {
 	Proposer sdk.AccAddress `json:"proposer"`
 
-	// evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	// evidencetypes "cosmossdk.io/x/evidence/types"
 	types.EquivocationProposal
 
 	Deposit sdk.Coins `json:"deposit"`

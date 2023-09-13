@@ -5,7 +5,7 @@ import (
 	cryptoEd25519 "crypto/ed25519"
 	"testing"
 
-	mock "github.com/cosmos/ibc-go/v7/testing/mock"
+	mock "github.com/cosmos/ibc-go/v8/testing/mock"
 
 	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"

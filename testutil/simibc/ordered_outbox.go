@@ -1,6 +1,6 @@
 package simibc
 
-import channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+import channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 // Ack represents a (sent) ack committed to block state
 type Ack struct {
