@@ -49,6 +49,10 @@ func MarshalAndUnmarshalAction(action interface{}) error {
 // include generators for all actions that are mentioned in main.go/runStep.
 func GetActionGen() *rapid.Generator[any] {
 	return rapid.OneOf(
+		GetStartSovereignChainActionGen().AsAny(),
+		GetSubmitLegacyUpgradeProposalActionGen().AsAny(),
+		GetWaitUntilBlockActionGen().AsAny(),
+		GetChangeoverChainActionGen().AsAny(),
 		GetSendTokensActionGen().AsAny(),
 		GetStartChainActionGen().AsAny(),
 		GetSubmitTextProposalActionGen().AsAny(),
@@ -74,7 +78,70 @@ func GetActionGen() *rapid.Generator[any] {
 		GetDoublesignSlashActionGen().AsAny(),
 		GetAssignConsumerPubKeyActionGen().AsAny(),
 		GetSlashThrottleDequeueGen().AsAny(),
+		GetCreateIbcClientsActionGen().AsAny(),
+		CreateCancelUnbondTokensActionGen().AsAny(),
 	)
+}
+
+func CreateCancelUnbondTokensActionGen() *rapid.Generator[cancelUnbondTokensAction] {
+	return rapid.Custom(func(t *rapid.T) cancelUnbondTokensAction {
+		return cancelUnbondTokensAction{
+			Chain:     GetChainIDGen().Draw(t, "Chain"),
+			Amount:    rapid.Uint().Draw(t, "Amount"),
+			Delegator: GetValidatorIDGen().Draw(t, "Delegator"),
+			Validator: GetValidatorIDGen().Draw(t, "Validator"),
+		}
+	})
+}
+
+func GetCreateIbcClientsActionGen() *rapid.Generator[createIbcClientsAction] {
+	return rapid.Custom(func(t *rapid.T) createIbcClientsAction {
+		return createIbcClientsAction{
+			ChainA: GetChainIDGen().Draw(t, "ChainA"),
+			ChainB: GetChainIDGen().Draw(t, "ChainB"),
+		}
+	})
+}
+
+func GetStartSovereignChainActionGen() *rapid.Generator[StartSovereignChainAction] {
+	return rapid.Custom(func(t *rapid.T) StartSovereignChainAction {
+		return StartSovereignChainAction{
+			Chain:          GetChainIDGen().Draw(t, "Chain"),
+			Validators:     GetStartChainValidatorsGen().Draw(t, "Validators"),
+			GenesisChanges: rapid.String().Draw(t, "GenesisChanges"),
+		}
+	})
+}
+
+func GetSubmitLegacyUpgradeProposalActionGen() *rapid.Generator[LegacyUpgradeProposalAction] {
+	return rapid.Custom(func(t *rapid.T) LegacyUpgradeProposalAction {
+		return LegacyUpgradeProposalAction{
+			ChainID:       GetChainIDGen().Draw(t, "ChainID"),
+			UpgradeTitle:  rapid.String().Draw(t, "UpgradeTitle"),
+			Proposer:      GetValidatorIDGen().Draw(t, "Proposer"),
+			UpgradeHeight: rapid.Uint64().Draw(t, "UpgradeHeight"),
+		}
+	})
+}
+
+func GetWaitUntilBlockActionGen() *rapid.Generator[waitUntilBlockAction] {
+	return rapid.Custom(func(t *rapid.T) waitUntilBlockAction {
+		return waitUntilBlockAction{
+			Chain: GetChainIDGen().Draw(t, "Chain"),
+			Block: rapid.Uint().Draw(t, "Block"),
+		}
+	})
+}
+
+func GetChangeoverChainActionGen() *rapid.Generator[ChangeoverChainAction] {
+	return rapid.Custom(func(t *rapid.T) ChangeoverChainAction {
+		return ChangeoverChainAction{
+			SovereignChain: GetChainIDGen().Draw(t, "SovereignChain"),
+			ProviderChain:  GetChainIDGen().Draw(t, "ProviderChain"),
+			Validators:     GetStartChainValidatorsGen().Draw(t, "Validators"),
+			GenesisChanges: rapid.String().Draw(t, "GenesisChanges"),
+		}
+	})
 }
 
 func GetSendTokensActionGen() *rapid.Generator[SendTokensAction] {

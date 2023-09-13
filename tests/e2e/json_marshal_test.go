@@ -54,10 +54,10 @@ func TestProposalUnmarshal(t *testing.T) {
 }
 
 type ChainStateTestCase struct {
-	name              string
-	jsonBytes         []byte
-	chainState        ChainState
-	expectedErrorText string
+	name                       string
+	jsonBytes                  []byte
+	chainState                 ChainState
+	expectedUnmarshalErrorText string
 }
 
 var testCases = []ChainStateTestCase{
@@ -71,8 +71,8 @@ var testCases = []ChainStateTestCase{
 			},
 			"Proposals": {
 				"1": {
-					"ProposalType": "main.ConsumerAdditionProposal",
-					"Proposal": {
+					"Type": "main.ConsumerAdditionProposal",
+					"RawProposal": {
 						"Deposit": 10000001,
 						"Chain": "consu",
 						"SpawnTime": 0,
@@ -100,12 +100,12 @@ var testCases = []ChainStateTestCase{
 				},
 			},
 		},
-		expectedErrorText: "",
+		expectedUnmarshalErrorText: "",
 	},
 	{
-		name:              "invalid JSON",
-		jsonBytes:         []byte(`thisisnotagoodjsonstring`),
-		expectedErrorText: "invalid json",
+		name:                       "invalid JSON",
+		jsonBytes:                  []byte(`thisisnotagoodjsonstring`),
+		expectedUnmarshalErrorText: "invalid json",
 	},
 	{
 		name: "unknown proposal type",
@@ -117,8 +117,8 @@ var testCases = []ChainStateTestCase{
 			},
 			"Proposals": {
 				"1": {
-					"ProposalType": "main.NotAProposalTypeProposal",
-					"Proposal": {
+					"Type": "main.NotAProposalTypeProposal",
+					"RawProposal": {
 						"Deposit": 10000001,
 						"Chain": "consu",
 						"SpawnTime": 0,
@@ -130,7 +130,7 @@ var testCases = []ChainStateTestCase{
 				}
 			},
 		}`),
-		expectedErrorText: "not a known proposal type",
+		expectedUnmarshalErrorText: "not a known proposal type",
 	},
 }
 
@@ -139,43 +139,50 @@ func TestUnmarshalJSON(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var result ChainState
 			err := result.UnmarshalJSON(tc.jsonBytes)
-			if err != nil && tc.expectedErrorText == "" {
-				t.Errorf("Unexpected error: %v", err)
+			if err != nil && tc.expectedUnmarshalErrorText == "" {
+				t.Errorf("Test case %v: Unexpected error: %v", tc.name, err)
 			}
 
-			if err == nil && tc.expectedErrorText != "" {
-				t.Errorf("Expected error to contain: %v, but got no error", tc.expectedErrorText)
+			if err == nil && tc.expectedUnmarshalErrorText != "" {
+				t.Errorf("Test case %v: Expected error to contain: %v, but got no error", tc.name, tc.expectedUnmarshalErrorText)
 			}
 
-			if err != nil && tc.expectedErrorText != "" && strings.Contains(err.Error(), tc.expectedErrorText) {
-				t.Errorf("Expected error to contain: %v, but got: %v", tc.expectedErrorText, err)
+			if err != nil && tc.expectedUnmarshalErrorText != "" && strings.Contains(err.Error(), tc.expectedUnmarshalErrorText) {
+				t.Errorf("Test case %v: Expected error to contain: %v, but got: %v", tc.name, tc.expectedUnmarshalErrorText, err)
 			}
 
 			if !reflect.DeepEqual(result, tc.chainState) {
-				t.Errorf("Expected ChainState: %v, but got: %v", tc.chainState, result)
+				t.Errorf("Test case %v: Expected ChainState: %v, but got: %v", tc.name, tc.chainState, result)
 			}
 		})
 	}
 }
 
 func TestMarshalJSON(t *testing.T) {
+	// checks that marshalling and unmarshalling is the identity
+	// would optimally check that the marshalled JSON is the same as the expected JSON,
+	// but the marshalled JSON will specifically list null fields
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := tc.chainState.MarshalJSON()
-			if err != nil && tc.expectedErrorText == "" {
-				t.Errorf("Unexpected error: %v", err)
+			if err != nil {
+				t.Errorf("Test case %v: Unexpected error while marshalling: %v", tc.name, err)
 			}
 
-			if err == nil && tc.expectedErrorText != "" {
-				t.Errorf("Expected error to contain: %v, but got no error", tc.expectedErrorText)
+			if tc.expectedUnmarshalErrorText != "" {
+				// unmarshalling to compare does not make sense, since we expect it to
+				// fail, so just test that marshalling works and continue
+				return
 			}
 
-			if err != nil && tc.expectedErrorText != "" && strings.Contains(err.Error(), tc.expectedErrorText) {
-				t.Errorf("Expected error to contain: %v, but got: %v", tc.expectedErrorText, err)
+			unmarshalledResult := ChainState{}
+			err = unmarshalledResult.UnmarshalJSON(result)
+			if err != nil {
+				t.Errorf("Test case %v: Unexpected error while unmarshalling: %v", tc.name, err)
 			}
 
-			if !reflect.DeepEqual(result, tc.jsonBytes) {
-				t.Errorf("Expected JSON: %v, but got: %v", string(tc.jsonBytes), string(result))
+			if !reflect.DeepEqual(unmarshalledResult, tc.chainState) {
+				t.Errorf("Test case %v: Expected: %v, but got: %v", tc.name, string(tc.jsonBytes), string(result))
 			}
 		})
 	}
