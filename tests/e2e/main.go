@@ -50,27 +50,67 @@ var (
 
 var (
 	testSelection TestSet
-	testMap       map[string]*testRunWithSteps = map[string]*testRunWithSteps{
-		"happy-path-short": {
-			testRun: DefaultTestRun(), steps: shortHappyPathSteps,
-			description: `This is like the happy path, but skips steps
-that involve starting or stopping nodes for the same chain outside of the chain setup or teardown.
-This is suited for CometMock+Gorelayer testing`,
-		},
-		"light-client-attack": {
-			testRun: DefaultTestRun(), steps: lightClientAttackSteps,
-			description: `This is like the short happy path, but will slash validators for LightClientAttackEvidence instead of DuplicateVoteEvidence.
-This is suited for CometMock+Gorelayer testing, but currently does not work with CometBFT,
-since causing light client attacks is not implemented.`,
-		},
-		"happy-path":       {testRun: DefaultTestRun(), steps: happyPathSteps, description: "happy path tests"},
-		"changeover":       {testRun: ChangeoverTestRun(), steps: changeoverSteps, description: "changeover tests"},
-		"democracy-reward": {testRun: DemocracyTestRun(true), steps: democracySteps, description: "democracy tests allowing rewards"},
-		"democracy":        {testRun: DemocracyTestRun(false), steps: rewardDenomConsumerSteps, description: "democracy tests"},
-		"slash-throttle":   {testRun: SlashThrottleTestRun(), steps: slashThrottleSteps, description: "slash throttle tests"},
-		"multiconsumer":    {testRun: MultiConsumerTestRun(), steps: multipleConsumers, description: "multi consumer tests"},
+	testRuns      = map[string]TestRunChoice{
+		"default":          {name: "default", testRun: DefaultTestRun(), description: "default test run"},
+		"changeover":       {name: "changeover", testRun: ChangeoverTestRun(), description: "changeover test run"},
+		"democracy":        {name: "democracy", testRun: DemocracyTestRun(false), description: "democracy test run"},
+		"democracy-reward": {name: "democracy-reward", testRun: DemocracyTestRun(true), description: "democracy test run with rewards"},
+		"slash-throttle":   {name: "slash-throttle", testRun: SlashThrottleTestRun(), description: "slash throttle test run"},
+		"multiconsumer":    {name: "multiconsumer", testRun: MultiConsumerTestRun(), description: "multi consumer test run"},
 	}
+	// helper function to get the test run choices by matching test runs
 )
+
+var stepChoices = []StepChoice{
+	{
+		name:        "happy-path-short",
+		steps:       shortHappyPathSteps,
+		description: `This is like the happy path, but skips steps that involve starting or stopping nodes for the same chain outside of the chain setup or teardown. This is suited for CometMock+Gorelayer testing`,
+		testRuns:    []TestRunChoice{testRuns["default"]},
+	},
+	{
+		name:        "light-client-attack",
+		steps:       lightClientAttackSteps,
+		description: `This is like the short happy path, but will slash validators for LightClientAttackEvidence instead of DuplicateVoteEvidence. This is suited for CometMock+Gorelayer testing, but currently does not work with CometBFT, since causing light client attacks is not implemented.`,
+		testRuns:    []TestRunChoice{testRuns["default"]},
+	},
+	{
+		name:        "happy-path",
+		steps:       happyPathSteps,
+		description: "happy path tests",
+		testRuns:    []TestRunChoice{testRuns["default"]},
+	},
+	{
+		name:        "changeover",
+		steps:       changeoverSteps,
+		description: "changeover tests",
+		testRuns:    []TestRunChoice{testRuns["changeover"]},
+	},
+	{
+		name:        "democracy-reward",
+		steps:       democracySteps,
+		description: "democracy tests allowing rewards",
+		testRuns:    []TestRunChoice{testRuns["democracy-reward"]},
+	},
+	{
+		name:        "democracy",
+		steps:       rewardDenomConsumerSteps,
+		description: "democracy tests",
+		testRuns:    []TestRunChoice{testRuns["democracy"]},
+	},
+	{
+		name:        "slash-throttle",
+		steps:       slashThrottleSteps,
+		description: "slash throttle tests",
+		testRuns:    []TestRunChoice{testRuns["slash-throttle"]},
+	},
+	{
+		name:        "multiconsumer",
+		steps:       multipleConsumers,
+		description: "multi consumer tests",
+		testRuns:    []TestRunChoice{testRuns["multiconsumer"]},
+	},
+}
 
 func executeTests(tests []testRunWithSteps) (err error) {
 	if parallel != nil && *parallel {
@@ -99,7 +139,7 @@ func executeTests(tests []testRunWithSteps) (err error) {
 
 func parseArguments() (err error) {
 	flag.Var(&testSelection, "tc",
-		fmt.Sprintf("Selection of test cases to be executed:\n%s,\n%s",
+		fmt.Sprintf("Selection of test cases with their corresponding test runners to be executed:\n%s,\n%s",
 			func() string {
 				var keys []string
 				for k, v := range testMap {
@@ -107,7 +147,7 @@ func parseArguments() (err error) {
 				}
 				return strings.Join(keys, "\n")
 			}(),
-			"Example: -tc multiconsumer -tc happy-path "))
+			"Example: -tc multiconsumer/multiconsumer -tc happy-path/default"))
 	flag.Parse()
 
 	// Enforce go-relayer in case of cometmock as hermes is not yet supported
@@ -125,6 +165,11 @@ func parseArguments() (err error) {
 		}
 	}
 	return
+}
+
+type testRunWithSteps struct {
+	testRun TestRun
+	steps   []Step
 }
 
 func getTestCases(selection TestSet) (tests []testRunWithSteps) {
@@ -182,9 +227,17 @@ func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag 
 	tr.teardownDocker()
 }
 
-type testRunWithSteps struct {
-	testRun     TestRun
+type StepChoice struct {
+	name        string
 	steps       []Step
+	description string
+	// the set of test runs that this step choice is valid for
+	testRuns []TestRunChoice
+}
+
+type TestRunChoice struct {
+	name        string
+	testRun     TestRun
 	description string
 }
 
