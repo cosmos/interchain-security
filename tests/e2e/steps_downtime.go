@@ -309,15 +309,33 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   0, // bob is jailed
+						validatorID("bob"):   0, // bob is jailed on provider
 						validatorID("carol"): 500,
 					},
 				},
 				chainID(consumerName): ChainState{
-					// VSC packet applying jailing is not yet relayed to consumer
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   500,
+						// VSC packet applying jailing may or may not be relayed to consumer
+						// depending on hermes vs gorelayer behavior. Therefore skip asserting bob's consumer power
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			// After relaying one more time, vsc packet applying jailing should be seen on consumer
+			action: relayPacketsAction{
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   0,
 						validatorID("carol"): 500,
 					},
 				},
@@ -340,7 +358,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   500, // VSC packet applying bob jailing is not yet relayed to consumer
+						validatorID("bob"):   0,
 						validatorID("carol"): 500,
 					},
 				},
@@ -364,7 +382,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   0, // VSC packet applying bob jailing is also relayed and recv by consumer
+						validatorID("bob"):   0,
 						validatorID("carol"): 500,
 					},
 				},
