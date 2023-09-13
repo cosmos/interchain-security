@@ -74,16 +74,6 @@ type ConsumerRemovalProposal struct {
 
 func (p ConsumerRemovalProposal) isProposal() {}
 
-type EquivocationProposal struct {
-	Height           uint
-	Power            uint
-	ConsensusAddress string
-	Deposit          uint
-	Status           string
-}
-
-func (p EquivocationProposal) isProposal() {}
-
 type Rewards struct {
 	IsRewarded map[validatorID]bool
 	// if true it will calculate if the validator/delegator is rewarded between 2 successive blocks,
@@ -452,15 +442,6 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			Status:   status,
 			Chain:    chain,
 			StopTime: int(stopTime.Milliseconds()),
-		}
-
-	case "/interchain_security.ccv.provider.v1.EquivocationProposal":
-		return EquivocationProposal{
-			Deposit:          uint(deposit),
-			Status:           status,
-			Height:           uint(gjson.Get(string(bz), `content.equivocations.0.height`).Uint()),
-			Power:            uint(gjson.Get(string(bz), `content.equivocations.0.power`).Uint()),
-			ConsensusAddress: gjson.Get(string(bz), `content.equivocations.0.consensus_address`).String(),
 		}
 
 	case "/cosmos.params.v1beta1.ParameterChangeProposal":

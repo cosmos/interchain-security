@@ -74,37 +74,6 @@ Minimal example:
 }
 ```
 
-## `EquivocationProposal`
-:::tip
-`EquivocationProposal` will only be accepted on the provider chain if at least one of the consumer chains submits equivocation evidence to the provider.
-Sending equivocation evidence to the provider is handled automatically by the interchain security protocol when an equivocation infraction is detected on the consumer chain.
-:::
-
-Proposal type used to suggest slashing a validator for double signing on consumer chain.
-When proposals of this type are passed, the validator in question will be slashed for equivocation on the provider chain.
-
-:::warning
-Take note that an equivocation slash causes a validator to be tombstoned (can never re-enter the active set).
-Tombstoning a validator on the provider chain will remove the validator from the validator set of all consumer chains.
-:::
-
-Minimal example:
-```js
-{
-  "title": "Validator-1 double signed on consumerchain-1",
-  "description": "Here is more information about the infraction so you can verify it yourself",
-	// the list of equivocations that will be processed
-  "equivocations": [
-    {
-        "height": 14444680,
-        "time": "2023-02-28T20:40:00.000000Z",
-        "power": 5500000,
-        "consensus_address": "<consensus address ON THE PROVIDER>"
-    }
-  ]
-}
-```
-
 ## ChangeRewardDenomProposal
 :::tip
 `ChangeRewardDenomProposal` will only be accepted on the provider chain if at least one of the denomsToAdd or denomsToRemove fields is populated with at least one denom. Also, a denom cannot be repeated in both sets.
@@ -121,30 +90,3 @@ Minimal example:
   "denomsToRemove": []
 }
 ```
-
-### Notes
-When submitting equivocation evidence through an `EquivocationProposal` please take note that you need to use the consensus address (`valcons`) of the offending validator on the **provider chain**.
-Besides that, the `height` and the `time` fields should be mapped to the **provider chain** to avoid your evidence being rejected.
-
-Before submitting the proposal please check that the evidence is not outdated by comparing the infraction height with the `max_age_duration` and `max_age_num_blocks` consensus parameters of the **provider chain**.
-
-### Gaia example:
-```
-➜  ~ cat genesis.json | jq ".consensus_params"
-{
-  "block": {
-    ...
-  },
-  "evidence": {
-    "max_age_duration": "172800000000000",
-    "max_age_num_blocks": "1000000",
-    "max_bytes": "50000"
-  },
-  "validator": {
-    ...
-  },
-  "version": {}
-}
-```
-
-Any `EquivocationProposal` transactions that submit evidence with `height` older than `max_age_num_blocks` and `time` older than `max_age_duration` will be considered invalid.

@@ -48,7 +48,6 @@ import (
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/evidence"
-	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
@@ -139,7 +138,6 @@ var (
 			ibcclientclient.UpgradeProposalHandler,
 			ibcproviderclient.ConsumerAdditionProposalHandler,
 			ibcproviderclient.ConsumerRemovalProposalHandler,
-			ibcproviderclient.EquivocationProposalHandler,
 			ibcproviderclient.ChangeRewardDenomsProposalHandler,
 		),
 		params.AppModuleBasic{},
@@ -207,7 +205,6 @@ type App struct { // nolint: golint
 	UpgradeKeeper  upgradekeeper.Keeper
 	ParamsKeeper   paramskeeper.Keeper
 	IBCKeeper      *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	EvidenceKeeper evidencekeeper.Keeper
 	TransferKeeper ibctransferkeeper.Keeper
 	ProviderKeeper ibcproviderkeeper.Keeper
 
@@ -390,14 +387,6 @@ func New(
 		scopedIBCKeeper,
 	)
 
-	// create evidence keeper with router
-	app.EvidenceKeeper = *evidencekeeper.NewKeeper(
-		appCodec,
-		keys[evidencetypes.StoreKey],
-		app.StakingKeeper,
-		app.SlashingKeeper,
-	)
-
 	app.ProviderKeeper = ibcproviderkeeper.NewKeeper(
 		appCodec,
 		keys[providertypes.StoreKey],
@@ -410,7 +399,6 @@ func New(
 		app.StakingKeeper,
 		app.SlashingKeeper,
 		app.AccountKeeper,
-		app.EvidenceKeeper,
 		app.DistrKeeper,
 		app.BankKeeper,
 		authtypes.FeeCollectorName,
@@ -481,7 +469,6 @@ func New(
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		upgrade.NewAppModule(app.UpgradeKeeper),
-		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
@@ -585,7 +572,6 @@ func New(
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		params.NewAppModule(app.ParamsKeeper),
-		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
 	)

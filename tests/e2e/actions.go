@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
 
@@ -407,75 +406,6 @@ func (tr TestRun) submitParamChangeProposal(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--gas`, "900000",
-		`--keyring-backend`, `test`,
-		`-b`, `block`,
-		`-y`,
-	).CombinedOutput()
-
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-}
-
-type submitEquivocationProposalAction struct {
-	chain     chainID
-	height    int64
-	time      time.Time
-	power     int64
-	validator validatorID
-	deposit   uint
-	from      validatorID
-}
-
-func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAction, verbose bool) {
-	val := tr.validatorConfigs[action.validator]
-	providerChain := tr.chainConfigs[chainID("provi")]
-
-	prop := client.EquivocationProposalJSON{
-		EquivocationProposal: types.EquivocationProposal{
-			Title:       "Validator equivocation!",
-			Description: fmt.Sprintf("Validator: %s has committed an equivocation infraction on chainID: %s", action.validator, action.chain),
-			Equivocations: []*evidencetypes.Equivocation{
-				{
-					Height:           action.height,
-					Time:             action.time,
-					Power:            action.power,
-					ConsensusAddress: val.valconsAddress,
-				},
-			},
-		},
-		Deposit: fmt.Sprint(action.deposit) + `stake`,
-	}
-
-	bz, err := json.Marshal(prop)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	jsonStr := string(bz)
-	if strings.Contains(jsonStr, "'") {
-		log.Fatal("prop json contains single quote")
-	}
-
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName,
-		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/equivocation-proposal.json")).CombinedOutput()
-
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, providerChain.binaryName,
-
-		"tx", "gov", "submit-proposal", "equivocation",
-		"/equivocation-proposal.json",
-
-		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(providerChain.chainId),
-		`--home`, tr.getValidatorHome(providerChain.chainId, action.from),
-		`--node`, tr.getValidatorNode(providerChain.chainId, action.from),
-		`--gas`, "9000000",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
