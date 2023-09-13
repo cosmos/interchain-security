@@ -524,7 +524,7 @@ func (tr TestRun) voteGovProposal(
 	}
 
 	wg.Wait()
-	time.Sleep((time.Duration(tr.chainConfigs[action.chain].votingWaitTime)) * time.Second)
+	time.Sleep(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
 }
 
 type startConsumerChainAction struct {
@@ -841,7 +841,6 @@ func (tr TestRun) addChainToHermes(
 
 	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, mnemonic, "/root/.hermes/mnemonic.txt")
 	fmt.Println("Add to hermes", action.validator)
-	fmt.Println(mnemonic)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
 		saveMnemonicCommand,
@@ -1849,15 +1848,16 @@ func (tr TestRun) GetPathNameForGorelayer(chainA, chainB chainID) string {
 // which detects evidences committed to the blocks of a consumer chain.
 // Each infraction detected is reported to the provider chain using
 // either a SubmitConsumerDoubleVoting or a SubmitConsumerMisbehaviour message.
-type detectConsumerEvidenceAction struct {
+type startConsumerEvidenceDetectorAction struct {
 	chain chainID
 }
 
-func (tr TestRun) detectConsumerEvidence(
-	action detectConsumerEvidenceAction,
+func (tr TestRun) startConsumerEvidenceDetector(
+	action startConsumerEvidenceDetectorAction,
 	verbose bool,
 ) {
 	chainConfig := tr.chainConfigs[action.chain]
+	// run in detached mode so it will keep running in the background
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", "-d", tr.containerConfig.instanceName,
 		"hermes", "evidence", "--chain", string(chainConfig.chainId)).CombinedOutput()

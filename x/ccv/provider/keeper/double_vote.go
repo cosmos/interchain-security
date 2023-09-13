@@ -59,9 +59,6 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	// Note that since we're only jailing validators for double voting on a consumer chain,
 	// the age of the evidence is irrelevant and therefore isn't checked.
 
-	// TODO: check the age of the evidence once we slash
-	// validators for double voting on a consumer chain
-
 	// H/R/S must be the same
 	if evidence.VoteA.Height != evidence.VoteB.Height ||
 		evidence.VoteA.Round != evidence.VoteB.Round ||
@@ -73,7 +70,7 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 			evidence.VoteB.Height, evidence.VoteB.Round, evidence.VoteB.Type)
 	}
 
-	// Address must be the same
+	// Addresses must be the same
 	if !bytes.Equal(evidence.VoteA.ValidatorAddress, evidence.VoteB.ValidatorAddress) {
 		return sdkerrors.Wrapf(
 			ccvtypes.ErrInvalidEvidence,

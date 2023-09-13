@@ -49,8 +49,8 @@ message MsgRegisterConsumerRewardDenom {
 // MsgRegisterConsumerRewardDenomResponse defines the Msg/RegisterConsumerRewardDenom response type.
 message MsgRegisterConsumerRewardDenomResponse {}
 
-// MsgSubmitConsumerMisbehaviour defines a message that reports a misbehaviour
-// observed on a consumer chain
+// MsgSubmitConsumerMisbehaviour defines a message that reports a light client attack,
+//  also known as misbehaviour, observed on a consumer chain
 // Note that the misbheaviour' headers must contain the same trusted states
 message MsgSubmitConsumerMisbehaviour {
   option (gogoproto.equal) = false;
@@ -64,8 +64,8 @@ message MsgSubmitConsumerMisbehaviour {
 message MsgSubmitConsumerMisbehaviourResponse {}
 
 
-// MsgSubmitConsumerDoubleVoting defines a message that reports an equivocation
-// observed on a consumer chain
+// MsgSubmitConsumerDoubleVoting defines a message that reports 
+// a double signing infraction observed on a consumer chain
 message MsgSubmitConsumerDoubleVoting {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;

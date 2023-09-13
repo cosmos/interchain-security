@@ -155,7 +155,17 @@ func NewSubmitConsumerDoubleVotingCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "submit-consumer-double-voting [evidence] [infraction_header]",
 		Short: "submit a double voting evidence for a consumer chain",
-		Args:  cobra.ExactArgs(2),
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Submit a Tendermint duplicated vote evidence detected on a consumer chain along with
+ an IBC light client header at the infraction height.
+ The DuplicateVoteEvidence type definition can be found in the Tendermint type messages,
+ see cometbft/proto/tendermint/types/evidence.proto and the light client header
+ definition is available in ibc-go/proto/ibc/lightclients/tendermint/v1/tendermint.proto.
+
+Examples:
+%s tx provider submit-consumer-double-voting [path/to/evidence.json] --from node0 --home ../node0 --chain-id $CID
+`, version.AppName)),
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
