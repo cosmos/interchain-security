@@ -33,7 +33,7 @@ Besides undelegations and redelegations, the validator's delegations need to als
 This is performed by deducting the appropriate amount of tokens from the validator. Note that this deduction is computed based on the voting `power` the misbehaving validator had at the height of the equivocation. As a result of the tokens deduction, 
 the [tokens per share](https://docs.cosmos.network/v0.47/modules/staking#delegator-shares)
 reduce and hence later on, when delegators undelegate or redelegate, the delegators retrieve back less
-tokens, effectively having their tokens slashed. The rationale behind this slashing mechanism, as mentioned in the [Cosmos SDK documentation](https://docs.cosmos.network/v0.47/modules/staking#delegator-shares):
+tokens, effectively having their tokens slashed. The rationale behind this slashing mechanism, as mentioned in the [Cosmos SDK documentation](https://docs.cosmos.network/v0.47/modules/staking#delegator-shares) 
 > [...] is to simplify the accounting around slashing. Rather than iteratively slashing the tokens of every delegation entry, instead the Validators total bonded tokens can be slashed, effectively reducing the value of each issued delegator share.
 
 This approach of slashing delegations does not utilize the
@@ -97,6 +97,10 @@ The following logic needs to be added to the [HandleConsumerDoubleVoting](https:
 undelegationsInTokens := sdk.NewInt(0)
 for _, v := range k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, validatorAddress) {
     for _, entry := range v.Entries {
+        if entry.IsMature(now) && !entry.OnHold() {
+			// undelegation no longer eligible for slashing, skip it
+			continue
+		}
         undelegationsInTokens = undelegationsInTokens.Add(entry.InitialBalance)
     }
 }
@@ -104,6 +108,10 @@ for _, v := range k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, vali
 redelegationsInTokens := sdk.NewInt(0)
 for _, v := range k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, validatorAddress) {
     for _, entry := range v.Entries {
+        if entry.IsMature(now) && !entry.OnHold() {
+            // redelegation no longer eligible for slashing, skip it
+            continue
+        }
         redelegationsInTokens = redelegationsInTokens.Add(entry.InitialBalance)
     }
 }
