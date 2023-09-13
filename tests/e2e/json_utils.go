@@ -271,6 +271,27 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 			return nil, err
 		}
 		return a, nil
+	case "main.lightClientEquivocationAttackAction":
+		var a lightClientEquivocationAttackAction
+		err := json.Unmarshal(rawAction, &a)
+		if err != nil {
+			return nil, err
+		}
+		return a, nil
+	case "main.lightClientAmnesiaAttackAction":
+		var a lightClientAmnesiaAttackAction
+		err := json.Unmarshal(rawAction, &a)
+		if err != nil {
+			return nil, err
+		}
+		return a, nil
+	case "main.lightClientLunaticAttackAction":
+		var a lightClientLunaticAttackAction
+		err := json.Unmarshal(rawAction, &a)
+		if err != nil {
+			return nil, err
+		}
+		return a, nil
 	default:
 		return nil, fmt.Errorf("unknown action name: %s", actionTypeString)
 	}
