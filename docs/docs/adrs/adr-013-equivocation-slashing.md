@@ -1,6 +1,6 @@
 ---
 sidebar_position: 14
-title: ADR Template
+title: Slashing on the provider for consumer equivocation
 ---
 # ADR 013: Slashing on the provider for consumer equivocation
 
