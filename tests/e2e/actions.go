@@ -1758,35 +1758,63 @@ func (tr TestRun) registerRepresentative(
 	wg.Wait()
 }
 
-type registerConsumerRewardDenomAction struct {
-	Chain ChainID
-	From  ValidatorID
-	Denom string
+type submitChangeRewardDenomsProposalAction struct {
+	Denom   string
+	Deposit uint
+	From    ValidatorID
 }
 
-func (tr TestRun) registerConsumerRewardDenom(action registerConsumerRewardDenomAction, verbose bool) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.Chain].BinaryName,
-		"tx", "provider", "register-consumer-reward-denom", action.Denom,
+func (tr TestRun) submitChangeRewardDenomsProposal(action submitChangeRewardDenomsProposalAction, verbose bool) {
+	providerChain := tr.chainConfigs[ChainID("provi")]
 
-		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(action.Chain),
-		`--home`, tr.getValidatorHome(action.Chain, action.From),
-		`--node`, tr.getValidatorNode(action.Chain, action.From),
-		`--gas`, "9000000",
-		`--keyring-backend`, `test`,
-		`-y`,
-	).CombinedOutput()
-
-	if verbose {
-		fmt.Println("redelegate cmd:", string(bz))
+	prop := client.ChangeRewardDenomsProposalJSON{
+		Summary: "Change reward denoms",
+		ChangeRewardDenomsProposal: types.ChangeRewardDenomsProposal{
+			Title:          "Change reward denoms",
+			Description:    "Change reward denoms",
+			DenomsToAdd:    []string{action.Denom},
+			DenomsToRemove: []string{"stake"},
+		},
+		Deposit: fmt.Sprint(action.Deposit) + `stake`,
 	}
+
+	bz, err := json.Marshal(prop)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	jsonStr := string(bz)
+	if strings.Contains(jsonStr, "'") {
+		log.Fatal("prop json contains single quote")
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.InstanceName,
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/change-reward-denoms-proposal.json")).CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	tr.waitBlocks(action.Chain, 2, 10*time.Second)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// CHANGE REWARDS DENOM PROPOSAL
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.InstanceName, providerChain.BinaryName,
+		"tx", "gov", "submit-legacy-proposal", "change-reward-denoms", "/change-reward-denoms-proposal.json",
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(providerChain.ChainId),
+		`--home`, tr.getValidatorHome(providerChain.ChainId, action.From),
+		`--node`, tr.getValidatorNode(providerChain.ChainId, action.From),
+		`--gas`, "9000000",
+		`--keyring-backend`, `test`,
+		`-y`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
 }
 
 // Creates an additional node on selected chain

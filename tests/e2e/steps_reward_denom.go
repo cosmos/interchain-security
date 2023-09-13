@@ -131,19 +131,29 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 			},
 		},
 		{
-			Action: registerConsumerRewardDenomAction{
-				Chain: ChainID("provi"),
-				From:  ValidatorID("bob"),
-				Denom: "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9",
+			Action: submitChangeRewardDenomsProposalAction{
+				Denom:   "ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9",
+				Deposit: 10000001,
+				From:    ValidatorID("bob"),
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					// Denom not yet registered, gov prop needs to pass first
+					RegisteredConsumerRewardDenoms: &[]string{},
+				},
+			},
+		},
+		{
+			Action: voteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
+				Vote:       []string{"yes", "yes", "yes"},
+				PropNumber: 2,
 			},
 			State: State{
 				ChainID("provi"): ChainState{
 					// Check that the denom is registered on provider chain
 					RegisteredConsumerRewardDenoms: &[]string{"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9"},
-					ValBalances: &map[ValidatorID]uint{
-						// make sure that bob's account was debited
-						ValidatorID("bob"): 9490000000,
-					},
 				},
 			},
 		},
