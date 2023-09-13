@@ -21,6 +21,11 @@ func NewMigrator(ccvConsumerKeeper Keeper, ccvConsumerParamSpace paramtypes.Subs
 	return Migrator{ccvConsumerKeeper: ccvConsumerKeeper, ccvConsumerParamSpace: ccvConsumerParamSpace}
 }
 
+// Migrate1to2 migrates x/ccvconsumer state from consensus version 1 to 2.
+func (m Migrator) Migrate1to2(ctx sdk.Context) error {
+	return m.ccvConsumerKeeper.MigrateConsumerPacketData(ctx)
+}
+
 // MigrateConsumerPacketData migrates consumer packet data according to
 // https://github.com/cosmos/interchain-security/pull/1037
 //
