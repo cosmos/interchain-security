@@ -180,8 +180,8 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 			return nil, err
 		}
 		return a, nil
-	case "main.registerConsumerRewardDenomAction":
-		var a registerConsumerRewardDenomAction
+	case "main.submitChangeRewardDenomsProposalAction":
+		var a submitChangeRewardDenomsProposalAction
 		err := json.Unmarshal(rawAction, &a)
 		if err != nil {
 			return nil, err
