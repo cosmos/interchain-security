@@ -98,9 +98,9 @@ undelegationsInTokens := sdk.NewInt(0)
 for _, v := range k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, validatorAddress) {
     for _, entry := range v.Entries {
         if entry.IsMature(now) && !entry.OnHold() {
-			// undelegation no longer eligible for slashing, skip it
-			continue
-		}
+            // undelegation no longer eligible for slashing, skip it
+            continue
+        }
         undelegationsInTokens = undelegationsInTokens.Add(entry.InitialBalance)
     }
 }
