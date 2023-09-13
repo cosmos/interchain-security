@@ -22,9 +22,9 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	"cosmossdk.io/log"
 	tmdb "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"

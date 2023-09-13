@@ -13,7 +13,7 @@ import (
 	types "github.com/cometbft/cometbft/abci/types"
 	types0 "github.com/cosmos/cosmos-sdk/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/auth/types"
-	types2 "github.com/cosmos/cosmos-sdk/x/capability/types"
+	types2 "github.com/cosmos/ibc-go/modules/capability/types"
 	types3 "cosmossdk.io/x/evidence/types"
 	types4 "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	types5 "github.com/cosmos/cosmos-sdk/x/staking/types"

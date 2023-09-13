@@ -13,9 +13,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	"cosmossdk.io/log"
 	tmdb "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/log"
 
 	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
 	appConsumerDemocracy "github.com/cosmos/interchain-security/v3/app/consumer-democracy"
