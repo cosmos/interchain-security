@@ -80,7 +80,37 @@ func GetActionGen() *rapid.Generator[any] {
 		GetSlashThrottleDequeueGen().AsAny(),
 		GetCreateIbcClientsActionGen().AsAny(),
 		CreateCancelUnbondTokensActionGen().AsAny(),
+		CreateLightClientEquivocationAttackActionGen().AsAny(),
+		CreateLightClientAmnesiaAttackActionGen().AsAny(),
+		CreateLightClientLunaticAttackActionGen().AsAny(),
 	)
+}
+
+func CreateLightClientEquivocationAttackActionGen() *rapid.Generator[lightClientEquivocationAttackAction] {
+	return rapid.Custom(func(t *rapid.T) lightClientEquivocationAttackAction {
+		return lightClientEquivocationAttackAction{
+			Validator: GetValidatorIDGen().Draw(t, "Validator"),
+			Chain:     GetChainIDGen().Draw(t, "Chain"),
+		}
+	})
+}
+
+func CreateLightClientAmnesiaAttackActionGen() *rapid.Generator[lightClientAmnesiaAttackAction] {
+	return rapid.Custom(func(t *rapid.T) lightClientAmnesiaAttackAction {
+		return lightClientAmnesiaAttackAction{
+			Validator: GetValidatorIDGen().Draw(t, "Validator"),
+			Chain:     GetChainIDGen().Draw(t, "Chain"),
+		}
+	})
+}
+
+func CreateLightClientLunaticAttackActionGen() *rapid.Generator[lightClientLunaticAttackAction] {
+	return rapid.Custom(func(t *rapid.T) lightClientLunaticAttackAction {
+		return lightClientLunaticAttackAction{
+			Validator: GetValidatorIDGen().Draw(t, "Validator"),
+			Chain:     GetChainIDGen().Draw(t, "Chain"),
+		}
+	})
 }
 
 func CreateCancelUnbondTokensActionGen() *rapid.Generator[cancelUnbondTokensAction] {
