@@ -3,7 +3,6 @@ package keeper
 import (
 	"bytes"
 	"fmt"
-  
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"

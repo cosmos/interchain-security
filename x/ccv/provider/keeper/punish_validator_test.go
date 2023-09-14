@@ -4,7 +4,7 @@ import (
 	"fmt"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
-  sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	cryptotestutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
@@ -12,7 +12,7 @@ import (
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
 
-  "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
 	tmtypes "github.com/tendermint/tendermint/types"
 	"testing"
 	"time"
