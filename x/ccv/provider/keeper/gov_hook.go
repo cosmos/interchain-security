@@ -48,7 +48,7 @@ func (gh GovHooks) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) {
 		return
 	}
 
-	if consadditionProp.ProposalType() == types.ProposalTypeConsumerRemoval {
+	if consadditionProp.ProposalType() == types.ProposalTypeConsumerAddition {
 		gh.k.SetChainsInProposal(ctx, consadditionProp.ChainId, proposalID)
 	}
 }
@@ -73,6 +73,9 @@ func (gh GovHooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID ui
 
 	// if the proposal is not ConsumerAdditionProposal, return
 	if err := proto.Unmarshal(msgLegacyContent.Content.Value, &consadditionProp); err != nil {
+		return
+	}
+	if consadditionProp.ProposalType() != types.ProposalTypeConsumerAddition {
 		return
 	}
 
