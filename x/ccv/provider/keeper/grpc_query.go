@@ -147,13 +147,11 @@ func (k Keeper) QueryThrottleState(goCtx context.Context, req *types.QueryThrott
 	meter := k.GetSlashMeter(ctx)
 	allowance := k.GetSlashMeterAllowance(ctx)
 	candidate := k.GetSlashMeterReplenishTimeCandidate(ctx) // always UTC
-	packets := []*types.ThrottledSlashPacket{}
 
 	return &types.QueryThrottleStateResponse{
 		SlashMeter:             meter.Int64(),
 		SlashMeterAllowance:    allowance.Int64(),
 		NextReplenishCandidate: candidate,
-		Packets:                packets,
 	}, nil
 }
 

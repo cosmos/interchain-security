@@ -150,8 +150,6 @@ message QueryThrottleStateResponse {
   // full
   google.protobuf.Timestamp next_replenish_candidate = 3
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
-  // data relevant to currently throttled slash packets
-  repeated ThrottledSlashPacket packets = 4;
 }
 
 message QueryThrottledConsumerPacketDataRequest { string chain_id = 1; }
