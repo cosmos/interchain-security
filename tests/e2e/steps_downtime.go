@@ -444,10 +444,10 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				//
 				// We've already waited 60 seconds for unjailValidatorAction
 				//
-				// So timeout should be 100 - 60 + buffer = 80 seconds
-
-				// timeout: 200 * time.Second,
-				timeout: 80 * time.Second,
+				// So timeout should be 100 - 60
+				// + large buffer to consider that cometmock did not pass blocks during unjail step
+				// = 100 seconds
+				timeout: 100 * time.Second,
 			},
 			state: State{
 				chainID("provi"): ChainState{
