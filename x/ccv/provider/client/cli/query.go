@@ -291,7 +291,7 @@ func CmdThrottledConsumerPacketData() *cobra.Command {
 		Use:   "throttled-consumer-packet-data [chainid]",
 		Short: "[DEPRECATED] Returns an empty set.",
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`[DEPRECIATED] Returns an empty set. 
+			fmt.Sprintf(`[DEPRECATED] Returns an empty set. 
 Example:
 $ %s query provider throttled-consumer-packet-data foochain
 `,
