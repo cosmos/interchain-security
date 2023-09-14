@@ -341,17 +341,19 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				},
 			},
 		},
-		// Invoke carol downtime slash on consumer
+		// Next we unjail bob so that there's enough active VP to continue these steps
 		{
-			action: downtimeSlashAction{
-				chain:     chainID(consumerName),
-				validator: validatorID("carol"),
+			action: unjailValidatorAction{
+				provider:  chainID("provi"),
+				validator: validatorID("bob"),
 			},
 			state: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   0,
+						// bob's stake should not be slashed
+						// since the slash was initiated from consumer
+						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
 				},
@@ -372,17 +374,57 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				channel: 0,
 			},
 			state: State{
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   500, // unjail now seen on consumer
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		// Next we invoke carol downtime slash on consumer
+		{
+			action: downtimeSlashAction{
+				chain:     chainID(consumerName),
+				validator: validatorID("carol"),
+			},
+			state: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   0,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: relayPacketsAction{
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
 						validatorID("carol"): 500, // slash packet for carol recv by provider, carol not slashed due to throttling
 					},
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   0,
+						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
 				},
@@ -394,16 +436,24 @@ func stepsThrottledDowntime(consumerName string) []Step {
 			action: slashMeterReplenishmentAction{
 				targetValue: 0, // We just want slash meter to be non-negative
 
-				// Slash meter replenish fraction is set to 10%, replenish period is 20 seconds, see config.go
-				// Meter is initially at 10%, decremented to -23% from bob being jailed. It'll then take three replenishments
-				// for meter to become positive again. 3*20 = 60 seconds + buffer = 100 seconds
-				timeout: 100 * time.Second,
+				// Slash meter replenish fraction is set to 5%, replenish period is 20 seconds, see config.go
+				// Meter is initially at 10%, decremented to -23% from bob being jailed. It'll then take five replenishments
+				// for meter to become positive again.
+				//
+				// 5 * 20 = 100 seconds.
+				//
+				// We've already waited 60 seconds for unjailValidatorAction
+				//
+				// So timeout should be 100 - 60 + buffer = 80 seconds
+
+				// timeout: 200 * time.Second,
+				timeout: 80 * time.Second,
 			},
 			state: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   0,
+						validatorID("bob"):   500,
 						validatorID("carol"): 500, // Carol still not slashed, packet must be retried
 					},
 				},
@@ -411,7 +461,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 					// no updates received on consumer
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   0,
+						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
 				},
