@@ -34,3 +34,19 @@ The offending validator will effectively get slashed and tombstoned on all consu
 
 <!-- markdown-link-check-disable-next-line -->
 You can find instructions on creating `EquivocationProposal`s [here](./proposals#equivocationproposal).
+
+# Cryptographic verification of equivocation
+The Cryptographic verification of equivocation allows external agents to submit evidences of light client and double signing attack observed on a consumer chain. When a valid evidence is received, the malicious validators will be permanently jailed on the provider.
+
+The feature is outlined in this [ADR-005](../adrs/adr-005-cryptographic-equivocation-verification.md)
+
+By sending a `MsgSubmitConsumerMisbehaviour` or a `MsgSubmitConsumerDoubleVoting` transaction, the provider will
+ verify the reported equivocation and, if successful, jail the malicious validator.
+
+:::info
+Note that this feature can only lead to the jailing of the validators responsible for an attack on a consumer chain. However, an [equivocation proposal](#double-signing-equivocation) can still be submitted to execute the slashing and the tombstoning of the a malicious validator afterwards. 
+:::
+
+
+
+
