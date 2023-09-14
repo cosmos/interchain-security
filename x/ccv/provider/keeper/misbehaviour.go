@@ -34,7 +34,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 
 	provAddrs := make([]types.ProviderConsAddress, len(byzantineValidators))
 
-	// jailthe Byzantine validators
+	// jail the Byzantine validators
 	for _, v := range byzantineValidators {
 		providerAddr := k.GetProviderAddrFromConsumerAddr(
 			ctx,
@@ -125,15 +125,15 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 
 	// Check that the headers are at the same height to ensure that
 	// the misbehaviour is for a light client attack and not a time violation,
-	// https://github.com/cosmos/ibc-go/blob/v4.2.0/modules/light-clients/07-tendermint/types/misbehaviour_handle.go#L53-L58
+	// see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 	if !misbehaviour.Header1.GetHeight().EQ(misbehaviour.Header2.GetHeight()) {
 		return sdkerrors.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
 	}
 
 	// CheckMisbehaviourAndUpdateState verifies the misbehaviour against the trusted consensus states
 	// but does NOT update the light client state.
-	// Note that the CometBFT CheckMisbehaviourAndUpdateState method returns an error if the trusted consensus states are expired,
-	// see https://github.com/cosmos/ibc-go/blob/v4.2.0/modules/light-clients/07-tendermint/types/misbehaviour_handle.go#L120
+	// Note that the IBC CheckMisbehaviourAndUpdateState method returns an error if the trusted consensus states are expired,
+	// see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 	_, err := clientState.CheckMisbehaviourAndUpdateState(ctx, k.cdc, clientStore, &misbehaviour)
 	if err != nil {
 		return err

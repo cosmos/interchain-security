@@ -10,6 +10,7 @@ const (
 	EventTypeAssignConsumerKey           = "assign_consumer_key"
 	EventTypeRegisterConsumerRewardDenom = "register_consumer_reward_denom"
 	EventTypeSubmitConsumerMisbehaviour  = "submit_consumer_misbehaviour"
+	EventTypeSubmitConsumerDoubleVoting  = "submit_consumer_double_voting"
 	EventTypeExecuteConsumerChainSlash   = "execute_consumer_chain_slash"
 	EventTypeFeeDistribution             = "fee_distribution"
 	EventTypeConsumerSlashRequest        = "consumer_slash_request"

@@ -133,7 +133,7 @@ func (k msgServer) RegisterConsumerRewardDenom(goCtx context.Context, msg *types
 func (k msgServer) SubmitConsumerMisbehaviour(goCtx context.Context, msg *types.MsgSubmitConsumerMisbehaviour) (*types.MsgSubmitConsumerMisbehaviourResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	if err := k.Keeper.HandleConsumerMisbehaviour(ctx, *msg.Misbehaviour); err != nil {
-		return &types.MsgSubmitConsumerMisbehaviourResponse{}, err
+		return nil, err
 	}
 
 	ctx.EventManager().EmitEvents(sdk.Events{
@@ -171,7 +171,7 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 	_, validator := valset.GetByAddress(evidence.VoteA.ValidatorAddress)
 	if validator == nil {
 		return nil, errorsmod.Wrapf(
-			ccvtypes.ErrInvalidEvidence,
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"misbehaving validator %s cannot be found in the infraction block header validator set",
 			evidence.VoteA.ValidatorAddress)
 	}
@@ -189,7 +189,7 @@ func (k msgServer) SubmitConsumerDoubleVoting(goCtx context.Context, msg *types.
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
-			ccvtypes.EventTypeSubmitConsumerMisbehaviour,
+			ccvtypes.EventTypeSubmitConsumerDoubleVoting,
 			sdk.NewAttribute(ccvtypes.AttributeConsumerDoubleVoting, msg.DuplicateVoteEvidence.String()),
 			sdk.NewAttribute(ccvtypes.AttributeChainID, msg.InfractionBlockHeader.Header.ChainID),
 			sdk.NewAttribute(ccvtypes.AttributeSubmitterAddress, msg.Submitter),

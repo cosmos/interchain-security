@@ -22,6 +22,7 @@ const (
 var (
 	_ sdk.Msg = &MsgAssignConsumerKey{}
 	_ sdk.Msg = &MsgSubmitConsumerMisbehaviour{}
+	_ sdk.Msg = &MsgSubmitConsumerDoubleVoting{}
 )
 
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
@@ -220,6 +221,10 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 
 	if msg.InfractionBlockHeader.SignedHeader.Header == nil {
 		return fmt.Errorf("invalid signed header in infraction block header, 'SignedHeader.Header' is nil")
+	}
+
+	if msg.InfractionBlockHeader.ValidatorSet == nil {
+		return fmt.Errorf("invalid infraction block header, validator set is nil")
 	}
 
 	return nil

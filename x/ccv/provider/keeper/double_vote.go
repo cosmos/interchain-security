@@ -64,7 +64,7 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 		evidence.VoteA.Round != evidence.VoteB.Round ||
 		evidence.VoteA.Type != evidence.VoteB.Type {
 		return sdkerrors.Wrapf(
-			ccvtypes.ErrInvalidEvidence,
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"h/r/s does not match: %d/%d/%v vs %d/%d/%v",
 			evidence.VoteA.Height, evidence.VoteA.Round, evidence.VoteA.Type,
 			evidence.VoteB.Height, evidence.VoteB.Round, evidence.VoteB.Type)
@@ -73,7 +73,7 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	// Addresses must be the same
 	if !bytes.Equal(evidence.VoteA.ValidatorAddress, evidence.VoteB.ValidatorAddress) {
 		return sdkerrors.Wrapf(
-			ccvtypes.ErrInvalidEvidence,
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"validator addresses do not match: %X vs %X",
 			evidence.VoteA.ValidatorAddress,
 			evidence.VoteB.ValidatorAddress,
@@ -83,7 +83,7 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	// BlockIDs must be different
 	if evidence.VoteA.BlockID.Equals(evidence.VoteB.BlockID) {
 		return sdkerrors.Wrapf(
-			ccvtypes.ErrInvalidEvidence,
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"block IDs are the same (%v) - not a real duplicate vote",
 			evidence.VoteA.BlockID,
 		)
