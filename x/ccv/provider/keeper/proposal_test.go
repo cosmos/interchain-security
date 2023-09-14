@@ -18,7 +18,6 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	cryptoutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
@@ -524,28 +523,6 @@ func TestStopConsumerChain(t *testing.T) {
 				// No mocks, meaning no external keeper methods are allowed to be called.
 			},
 			expErr: true,
-		},
-		{
-			description: "valid stop of consumer chain, throttle related queues are cleaned",
-			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
-
-				// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
-				gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
-
-				providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
-					ctx.BlockTime(), "chainID", 1, cryptoutil.NewCryptoIdentityFromIntSeed(90).ProviderConsAddress()))
-
-				err := providerKeeper.QueueThrottledSlashPacketData(ctx, "chainID", 1, testkeeper.GetNewSlashPacketData())
-				if err != nil {
-					t.Fatal(err)
-				}
-				err = providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chainID", 2, testkeeper.GetNewVSCMaturedPacketData())
-				if err != nil {
-					t.Fatal(err)
-				}
-			},
-			expErr: false,
 		},
 		{
 			description: "valid stop of consumer chain, all mock calls hit",

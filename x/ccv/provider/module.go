@@ -137,6 +137,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	am.keeper.BeginBlockInit(ctx)
 	// Stop and remove state for any consumer chains that are due to be stopped via pending consumer removal proposals
 	am.keeper.BeginBlockCCR(ctx)
+	// Check for replenishing slash meter before any slash packets are processed for this block
+	am.keeper.BeginBlockCIS(ctx)
 }
 
 // EndBlock implements the AppModule interface

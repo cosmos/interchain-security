@@ -242,8 +242,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.registerRepresentative(action, verbose)
 	case assignConsumerPubKeyAction:
 		tr.assignConsumerPubKey(action, verbose)
-	case slashThrottleDequeue:
-		tr.waitForSlashThrottleDequeue(action, verbose)
+	case slashMeterReplenishmentAction:
+		tr.waitForSlashMeterReplenishment(action, verbose)
 	case startRelayerAction:
 		tr.startRelayer(action, verbose)
 	case registerConsumerRewardDenomAction:

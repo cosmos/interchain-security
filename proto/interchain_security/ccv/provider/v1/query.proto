@@ -65,14 +65,6 @@ service Query {
         "/interchain_security/ccv/provider/throttle_state";
   }
 
-  // QueryThrottledConsumerPacketData returns a list of pending packet data
-  // instances (slash packet and vsc matured) for a single consumer chain
-  rpc QueryThrottledConsumerPacketData(QueryThrottledConsumerPacketDataRequest)
-      returns (QueryThrottledConsumerPacketDataResponse) {
-    option (google.api.http).get =
-        "/interchain_security/ccv/provider/pending_consumer_packets";
-  }
-
   // QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
   // denoms that are registered
   rpc QueryRegisteredConsumerRewardDenoms(
@@ -151,35 +143,6 @@ message QueryThrottleStateResponse {
   // full
   google.protobuf.Timestamp next_replenish_candidate = 3
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
-  // data relevant to currently throttled slash packets
-  repeated ThrottledSlashPacket packets = 4;
-}
-
-message QueryThrottledConsumerPacketDataRequest { string chain_id = 1; }
-
-message QueryThrottledConsumerPacketDataResponse {
-  string chain_id = 1;
-  uint64 size = 2;
-  repeated ThrottledPacketDataWrapper packetDataInstances = 3
-      [ (gogoproto.nullable) = false ];
-}
-
-// A query wrapper type for the global entry and data relevant to a throttled
-// slash packet.
-message ThrottledSlashPacket {
-  interchain_security.ccv.provider.v1.GlobalSlashEntry global_entry = 1
-      [ (gogoproto.nullable) = false ];
-  interchain_security.ccv.v1.SlashPacketData data = 2
-      [ (gogoproto.nullable) = false ];
-}
-
-// ThrottledPacketDataWrapper contains either SlashPacketData or
-// VSCMaturedPacketData
-message ThrottledPacketDataWrapper {
-  oneof data {
-    interchain_security.ccv.v1.SlashPacketData slash_packet = 1;
-    interchain_security.ccv.v1.VSCMaturedPacketData vsc_matured_packet = 2;
-  }
 }
 
 message QueryRegisteredConsumerRewardDenomsRequest {}
