@@ -132,19 +132,29 @@ func stepsDemocracy(consumerName string) []Step {
 			},
 		},
 		{
-			action: registerConsumerRewardDenomAction{
-				chain: chainID("provi"),
-				from:  validatorID("bob"),
-				denom: consumerRewardDenom,
+			action: submitChangeRewardDenomsProposalAction{
+				denom:   consumerRewardDenom,
+				deposit: 10000001,
+				from:    validatorID("bob"),
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					// Denom not yet registered, gov prop needs to pass first
+					RegisteredConsumerRewardDenoms: &[]string{},
+				},
+			},
+		},
+		{
+			action: voteGovProposalAction{
+				chain:      chainID("provi"),
+				from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
+				vote:       []string{"yes", "yes", "yes"},
+				propNumber: 2,
 			},
 			state: State{
 				chainID("provi"): ChainState{
 					// Check that the denom is registered on provider chain
 					RegisteredConsumerRewardDenoms: &[]string{consumerRewardDenom},
-					ValBalances: &map[validatorID]uint{
-						// make sure that bob's account was debited
-						validatorID("bob"): 9490000000,
-					},
 				},
 			},
 		},

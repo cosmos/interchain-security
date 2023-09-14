@@ -18,9 +18,6 @@ func NewHandler(k *keeper.Keeper) sdk.Handler {
 		case *types.MsgAssignConsumerKey:
 			res, err := msgServer.AssignConsumerKey(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgRegisterConsumerRewardDenom:
-			res, err := msgServer.RegisterConsumerRewardDenom(sdk.WrapSDKContext(ctx), msg)
-			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgSubmitConsumerMisbehaviour:
 			res, err := msgServer.SubmitConsumerMisbehaviour(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)

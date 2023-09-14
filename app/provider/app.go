@@ -140,6 +140,7 @@ var (
 			ibcproviderclient.ConsumerAdditionProposalHandler,
 			ibcproviderclient.ConsumerRemovalProposalHandler,
 			ibcproviderclient.EquivocationProposalHandler,
+			ibcproviderclient.ChangeRewardDenomsProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},

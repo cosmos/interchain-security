@@ -14,7 +14,6 @@ import "tendermint/types/evidence.proto";
 // Msg defines the Msg service.
 service Msg {
   rpc AssignConsumerKey(MsgAssignConsumerKey) returns (MsgAssignConsumerKeyResponse);
-  rpc RegisterConsumerRewardDenom(MsgRegisterConsumerRewardDenom) returns (MsgRegisterConsumerRewardDenomResponse);
   rpc SubmitConsumerMisbehaviour(MsgSubmitConsumerMisbehaviour) returns (MsgSubmitConsumerMisbehaviourResponse);
   rpc SubmitConsumerDoubleVoting(MsgSubmitConsumerDoubleVoting) returns (MsgSubmitConsumerDoubleVotingResponse);
 }
@@ -35,19 +34,6 @@ message MsgAssignConsumerKey {
 
 message MsgAssignConsumerKeyResponse {}
 
-// MsgRegisterConsumerRewardDenom allows an account to register 
-// a consumer reward denom, i.e., add it to the list of denoms 
-// accepted by the provider as rewards.
-message MsgRegisterConsumerRewardDenom {
-  option (gogoproto.equal)           = false;
-  option (gogoproto.goproto_getters) = false;
-
-  string denom = 1;
-  string depositor = 2;
-}
-
-// MsgRegisterConsumerRewardDenomResponse defines the Msg/RegisterConsumerRewardDenom response type.
-message MsgRegisterConsumerRewardDenomResponse {}
 
 // MsgSubmitConsumerMisbehaviour defines a message that reports a light client attack,
 //  also known as a misbehaviour, observed on a consumer chain

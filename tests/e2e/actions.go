@@ -334,8 +334,9 @@ func (tr TestRun) submitConsumerRemovalProposal(
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
-		`--keyring-backend`, `test`,
+		`--gas`, `auto`,
 		`-b`, `block`,
+		`--keyring-backend`, `test`,
 		`-y`,
 	).CombinedOutput()
 
@@ -1430,6 +1431,74 @@ func (tr TestRun) unbondTokens(
 	tr.waitBlocks(action.chain, 1, 10*time.Second)
 }
 
+type cancelUnbondTokensAction struct {
+	chain     chainID
+	delegator validatorID
+	validator validatorID
+	amount    uint
+}
+
+func (tr TestRun) cancelUnbondTokens(
+	action cancelUnbondTokensAction,
+	verbose bool,
+) {
+	validator := tr.validatorConfigs[action.validator].valoperAddress
+	if tr.validatorConfigs[action.validator].useConsumerKey {
+		validator = tr.validatorConfigs[action.validator].consumerValoperAddress
+	}
+
+	// get creation-height from state
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+		"q", "staking", "unbonding-delegation",
+		tr.validatorConfigs[action.delegator].delAddress,
+		validator,
+		`--home`, tr.getValidatorHome(action.chain, action.delegator),
+		`--node`, tr.getValidatorNode(action.chain, action.delegator),
+		`-o`, `json`,
+	)
+	if verbose {
+		fmt.Println("get unbonding delegations cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+	creationHeight := gjson.Get(string(bz), "entries.0.creation_height").Int()
+	if creationHeight == 0 {
+		log.Fatal("invalid creation height")
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+		"tx", "staking", "cancel-unbond",
+		validator,
+		fmt.Sprint(action.amount)+`stake`,
+		fmt.Sprint(creationHeight),
+		`--from`, `validator`+fmt.Sprint(action.delegator),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--home`, tr.getValidatorHome(action.chain, action.delegator),
+		`--node`, tr.getValidatorNode(action.chain, action.delegator),
+		`--gas`, "900000",
+		`--keyring-backend`, `test`,
+		`-o`, `json`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("unbond cmd:", cmd.String())
+	}
+
+	bz, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.chain, 2, 20*time.Second)
+}
+
 type redelegateTokensAction struct {
 	chain    chainID
 	src      validatorID
@@ -1602,7 +1671,6 @@ func (tr TestRun) registerRepresentative(
 				`--commission-rate`, "0.1",
 				`--commission-max-rate`, "0.2",
 				`--commission-max-change-rate`, "0.01",
-				`--min-self-delegation`, "1",
 				`--from`, `validator`+fmt.Sprint(val),
 				`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 				`--home`, tr.getValidatorHome(action.chain, val),
@@ -1620,34 +1688,63 @@ func (tr TestRun) registerRepresentative(
 	wg.Wait()
 }
 
-type registerConsumerRewardDenomAction struct {
-	chain chainID
-	from  validatorID
-	denom string
+type submitChangeRewardDenomsProposalAction struct {
+	denom   string
+	deposit uint
+	from    validatorID
 }
 
-func (tr TestRun) registerConsumerRewardDenom(action registerConsumerRewardDenomAction, verbose bool) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-		"tx", "provider", "register-consumer-reward-denom", action.denom,
+func (tr TestRun) submitChangeRewardDenomsProposal(action submitChangeRewardDenomsProposalAction, verbose bool) {
+	providerChain := tr.chainConfigs[chainID("provi")]
 
-		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(action.chain),
-		`--home`, tr.getValidatorHome(action.chain, action.from),
-		`--node`, tr.getValidatorNode(action.chain, action.from),
-		`--gas`, "9000000",
-		`--keyring-backend`, `test`,
-		`-b`, `block`,
-		`-y`,
-	).CombinedOutput()
-
-	if verbose {
-		fmt.Println("redelegate cmd:", string(bz))
+	prop := client.ChangeRewardDenomsProposalJSON{
+		Summary: "Change reward denoms",
+		ChangeRewardDenomsProposal: types.ChangeRewardDenomsProposal{
+			Title:          "Change reward denoms",
+			Description:    "Change reward denoms",
+			DenomsToAdd:    []string{action.denom},
+			DenomsToRemove: []string{"stake"},
+		},
+		Deposit: fmt.Sprint(action.deposit) + `stake`,
 	}
+
+	bz, err := json.Marshal(prop)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	jsonStr := string(bz)
+	if strings.Contains(jsonStr, "'") {
+		log.Fatal("prop json contains single quote")
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName,
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/change-reward-denoms-proposal.json")).CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// CHANGE REWARDS DENOM PROPOSAL
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, providerChain.binaryName,
+		"tx", "gov", "submit-legacy-proposal", "change-reward-denoms", "/change-reward-denoms-proposal.json",
+		`--from`, `validator`+fmt.Sprint(action.from),
+		`--chain-id`, string(providerChain.chainId),
+		`--home`, tr.getValidatorHome(providerChain.chainId, action.from),
+		`--node`, tr.getValidatorNode(providerChain.chainId, action.from),
+		`--gas`, "9000000",
+		`--keyring-backend`, `test`,
+		`-y`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(chainID("provi"), 2, 30*time.Second)
 }
 
 // Creates an additional node on selected chain

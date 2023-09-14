@@ -2,19 +2,20 @@ package types
 
 // CCV events
 const (
-	EventTypeTimeout                     = "timeout"
-	EventTypePacket                      = "ccv_packet"
-	EventTypeChannelEstablished          = "channel_established"
-	EventTypeFeeTransferChannelOpened    = "fee_transfer_channel_opened"
-	EventTypeConsumerClientCreated       = "consumer_client_created"
-	EventTypeAssignConsumerKey           = "assign_consumer_key"
-	EventTypeRegisterConsumerRewardDenom = "register_consumer_reward_denom"
-	EventTypeSubmitConsumerMisbehaviour  = "submit_consumer_misbehaviour"
-	EventTypeSubmitConsumerDoubleVoting  = "submit_consumer_double_voting"
-	EventTypeExecuteConsumerChainSlash   = "execute_consumer_chain_slash"
-	EventTypeFeeDistribution             = "fee_distribution"
-	EventTypeConsumerSlashRequest        = "consumer_slash_request"
-	EventTypeVSCMatured                  = "vsc_matured"
+	EventTypeTimeout                    = "timeout"
+	EventTypePacket                     = "ccv_packet"
+	EventTypeChannelEstablished         = "channel_established"
+	EventTypeFeeTransferChannelOpened   = "fee_transfer_channel_opened"
+	EventTypeConsumerClientCreated      = "consumer_client_created"
+	EventTypeAssignConsumerKey          = "assign_consumer_key"
+	EventTypeSubmitConsumerMisbehaviour = "submit_consumer_misbehaviour"
+	EventTypeSubmitConsumerDoubleVoting = "submit_consumer_double_voting"
+	EventTypeExecuteConsumerChainSlash  = "execute_consumer_chain_slash"
+	EventTypeFeeDistribution            = "fee_distribution"
+	EventTypeConsumerSlashRequest       = "consumer_slash_request"
+	EventTypeVSCMatured                 = "vsc_matured"
+	EventTypeAddConsumerRewardDenom     = "add_consumer_reward_denom"
+	EventTypeRemoveConsumerRewardDenom  = "remove_consumer_reward_denom"
 
 	AttributeKeyAckSuccess = "success"
 	AttributeKeyAck        = "acknowledgement"
@@ -47,6 +48,5 @@ const (
 	AttributeDistributionTotal         = "total"
 	AttributeDistributionToProvider    = "provider_amount"
 
-	AttributeConsumerRewardDenom     = "consumer_reward_denom"
-	AttributeConsumerRewardDepositor = "consumer_reward_depositor"
+	AttributeConsumerRewardDenom = "consumer_reward_denom"
 )
