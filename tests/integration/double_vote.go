@@ -10,7 +10,7 @@ import (
 )
 
 // TestHandleConsumerDoubleVoting verifies that handling a double voting evidence
-// of a consumer chain results in the expected tombstoning, jailing, and slashing of the malicious validator
+// of a consumer chain results in the expected tombstoning and jailing the misbehaved validator
 func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
@@ -24,7 +24,6 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	consuValSet, err := tmtypes.ValidatorSetFromProto(s.consumerChain.LastHeader.ValidatorSet)
 	s.Require().NoError(err)
 	consuVal := consuValSet.Validators[0]
-	s.Require().NoError(err)
 	consuSigner := s.consumerChain.Signers[consuVal.Address.String()]
 
 	provValSet, err := tmtypes.ValidatorSetFromProto(s.providerChain.LastHeader.ValidatorSet)
@@ -206,4 +205,111 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			}
 		})
 	}
+}
+
+// TestHandleConsumerDoubleVotingSlashesUndelegations verifies that handling a successful double voting
+// evidence of a consumer chain results in the expected slashing of the misbehave validator undelegations
+func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegations() {
+	s.SetupCCVChannel(s.path)
+	// required to have the consumer client revision height greater than 0
+	s.SendEmptyVSCPacket()
+
+	// create signing info for all validators
+	for _, v := range s.providerChain.Vals.Validators {
+		s.setDefaultValSigningInfo(*v)
+	}
+
+	consuValSet, err := tmtypes.ValidatorSetFromProto(s.consumerChain.LastHeader.ValidatorSet)
+	s.Require().NoError(err)
+	consuVal := consuValSet.Validators[0]
+	consuSigner := s.consumerChain.Signers[consuVal.Address.String()]
+
+	blockID1 := testutil.MakeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
+	blockID2 := testutil.MakeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
+
+	// create two votes using the consumer validator key
+	consuVote := testutil.MakeAndSignVote(
+		blockID1,
+		s.consumerCtx().BlockHeight(),
+		s.consumerCtx().BlockTime(),
+		consuValSet,
+		consuSigner,
+		s.consumerChain.ChainID,
+	)
+
+	consuBadVote := testutil.MakeAndSignVote(
+		blockID2,
+		s.consumerCtx().BlockHeight(),
+		s.consumerCtx().BlockTime(),
+		consuValSet,
+		consuSigner,
+		s.consumerChain.ChainID,
+	)
+
+	// In order to create an evidence for a consumer chain,
+	// we create two votes that only differ by their Block IDs and
+	// signed them using the same validator private key and chain ID
+	// of the consumer chain
+	evidence := &tmtypes.DuplicateVoteEvidence{
+		VoteA:            consuVote,
+		VoteB:            consuBadVote,
+		ValidatorPower:   consuVal.VotingPower,
+		TotalVotingPower: consuVal.VotingPower,
+		Timestamp:        s.consumerCtx().BlockTime(),
+	}
+
+	chainID := s.consumerChain.ChainID
+	pubKey := consuVal.PubKey
+
+	consuAddr := types.NewConsumerConsAddress(sdk.ConsAddress(consuVal.Address.Bytes()))
+	provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
+
+	validator, found := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr.ToSdkConsAddr().Bytes())
+	s.Require().True(found)
+
+	s.Run("slash undelegations when getting double voting evidence", func() {
+		// convert validator public key
+		pk, err := cryptocodec.FromTmPubKeyInterface(pubKey)
+		s.Require().NoError(err)
+
+		// perform a delegation and an undelegation of the whole amount
+		bondAmt := sdk.NewInt(10000000)
+		delAddr := s.providerChain.SenderAccount.GetAddress()
+
+		// in order to perform a delegation we need to know the validator's `idx` (that might not be 0)
+		// loop through all validators to find the right `idx`
+		idx := 0
+		for i := 0; i <= len(s.providerChain.Vals.Validators); i = i + 1 {
+			_, valAddr := s.getValByIdx(i)
+			if validator.OperatorAddress == valAddr.String() {
+				idx = i
+				break
+			}
+		}
+
+		_, shares, valAddr := delegateByIdx(s, delAddr, bondAmt, idx)
+		_ = undelegate(s, delAddr, valAddr, shares)
+
+		_, shares, _ = delegateByIdx(s, delAddr, sdk.NewInt(50000000), idx)
+		_ = undelegate(s, delAddr, valAddr, shares)
+
+		err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
+			s.providerCtx(),
+			evidence,
+			chainID,
+			pk,
+		)
+		s.Require().NoError(err)
+
+		slashFraction := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(s.providerCtx())
+
+		// check undelegations are slashed
+		ubds, _ := s.providerApp.GetTestStakingKeeper().GetUnbondingDelegation(s.providerCtx(), delAddr, validator.GetOperator())
+		s.Require().True(len(ubds.Entries) > 0)
+		for _, unb := range ubds.Entries {
+			initialBalance := unb.InitialBalance.ToDec()
+			currentBalance := unb.Balance.ToDec()
+			s.Require().True(initialBalance.Sub(initialBalance.Mul(slashFraction)).Equal(currentBalance))
+		}
+	})
 }
