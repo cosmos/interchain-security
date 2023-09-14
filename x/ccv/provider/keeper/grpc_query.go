@@ -155,29 +155,6 @@ func (k Keeper) QueryThrottleState(goCtx context.Context, req *types.QueryThrott
 	}, nil
 }
 
-func (k Keeper) QueryThrottledConsumerPacketData(goCtx context.Context, req *types.QueryThrottledConsumerPacketDataRequest) (*types.QueryThrottledConsumerPacketDataResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
-
-	if req.ChainId == "" {
-		return nil, status.Error(codes.InvalidArgument, "invalid chain-id")
-	}
-
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	if _, found := k.GetChainToChannel(ctx, req.ChainId); !found {
-		return nil, status.Error(codes.InvalidArgument, "invalid chain-id")
-	}
-
-	packetDataInstances := []types.ThrottledPacketDataWrapper{}
-
-	return &types.QueryThrottledConsumerPacketDataResponse{
-		ChainId:             req.ChainId,
-		Size_:               0,
-		PacketDataInstances: packetDataInstances,
-	}, nil
-}
-
 func (k Keeper) QueryRegisteredConsumerRewardDenoms(goCtx context.Context, req *types.QueryRegisteredConsumerRewardDenomsRequest) (*types.QueryRegisteredConsumerRewardDenomsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
