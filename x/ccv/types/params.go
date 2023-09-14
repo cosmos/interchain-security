@@ -86,7 +86,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		SoftOptOutThreshold:               softOptOutThreshold,
 		RewardDenoms:                      rewardDenoms,
 		ProviderRewardDenoms:              providerRewardDenoms,
-		RetryDelayPeriod:                  DefaultRetryDelayPeriod,
+		RetryDelayPeriod:                  retryDelayPeriod,
 	}
 }
 
