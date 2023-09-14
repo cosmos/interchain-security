@@ -56,7 +56,8 @@ func stepsDowntime(consumerName string) []Step {
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   500,
+						// Bob's stake may or may not be slashed at this point depending on comet vs cometmock
+						// See https://github.com/cosmos/interchain-security/issues/1304
 						validatorID("carol"): 501,
 					},
 				},
@@ -342,7 +343,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   500, // VSC packet applying bob jailing is not yet relayed to consumer
+						validatorID("bob"):   500, // VSC packet jailing bob is not yet relayed to consumer
 						validatorID("carol"): 500,
 					},
 					PendingPacketQueueSize: uintPtr(1), // carol's downtime slash packet is queued

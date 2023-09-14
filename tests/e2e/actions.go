@@ -1970,7 +1970,7 @@ func (tr TestRun) waitForSlashMeterReplenishment(
 			panic(fmt.Sprintf("\n\nwaitForSlashMeterReplenishment has timed out after: %s\n\n", action.timeout))
 		}
 
-		time.Sleep(500 * time.Millisecond)
+		tr.WaitTime(5 * time.Second)
 	}
 }
 
