@@ -32,7 +32,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	}
 
 	if err := k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data); err != nil {
-		return channeltypes.NewErrorAcknowledgement(fmt.Errorf(
+		return ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf(
 			"failed to queue VSCMatured packet data: %s", err.Error()))
 	}
 
@@ -114,8 +114,18 @@ func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
 		// Attempt to complete unbonding in staking module
 		err := k.stakingKeeper.UnbondingCanComplete(ctx, id)
 		if err != nil {
-			// UnbondingCanComplete fails if the unbonding operation was not found,
-			// which means that the state of the x/staking module of cosmos-sdk is invalid.
+			if stakingtypes.ErrUnbondingNotFound.Is(err) {
+				// The unbonding was not found.
+				unbondingType, found := k.stakingKeeper.GetUnbondingType(ctx, id)
+				if found && unbondingType == stakingtypes.UnbondingType_UnbondingDelegation {
+					// If this is an unbonding delegation, it may have been removed
+					// after through a CancelUnbondingDelegation message
+					k.Logger(ctx).Debug("unbonding delegation was already removed:", "unbondingID", id)
+					continue
+				}
+			}
+			// UnbondingCanComplete failing means that the state of the x/staking module
+			// of cosmos-sdk is invalid. An exception is the case handled above
 			panic(fmt.Sprintf("could not complete unbonding op: %s", err.Error()))
 		}
 		k.Logger(ctx).Debug("unbonding operation matured on all consumers", "opID", id)
@@ -319,7 +329,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 			"vscID", data.ValsetUpdateId,
 			"infractionType", data.Infraction,
 		)
-		return channeltypes.NewErrorAcknowledgement(err)
+		return ccv.NewErrorAcknowledgementWithLog(ctx, err)
 	}
 
 	// The slash packet validator address may be known only on the consumer chain,
@@ -355,7 +365,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
 	// to enforce order of handling between the two packet data types.
 	if err := k.QueueThrottledSlashPacketData(ctx, chainID, packet.Sequence, data); err != nil {
-		return channeltypes.NewErrorAcknowledgement(fmt.Errorf("failed to queue slash packet data: %s", err.Error()))
+		return ccv.NewErrorAcknowledgementWithLog(ctx, fmt.Errorf("failed to queue slash packet data: %s", err.Error()))
 	}
 
 	k.Logger(ctx).Info("slash packet received and enqueued",

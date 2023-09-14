@@ -28,12 +28,22 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&MsgAssignConsumerKey{},
 	)
 	registry.RegisterImplementations(
-		(*sdk.Msg)(nil),
-		&MsgRegisterConsumerRewardDenom{},
+		(*govtypes.Content)(nil),
+		&EquivocationProposal{},
 	)
 	registry.RegisterImplementations(
 		(*govtypes.Content)(nil),
-		&EquivocationProposal{},
+		&ChangeRewardDenomsProposal{},
+	)
+
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&MsgSubmitConsumerMisbehaviour{},
+	)
+
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&MsgSubmitConsumerDoubleVoting{},
 	)
 
 	registry.RegisterImplementations(

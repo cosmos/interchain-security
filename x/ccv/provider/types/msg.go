@@ -13,15 +13,15 @@ import (
 
 // provider message types
 const (
-	TypeMsgAssignConsumerKey           = "assign_consumer_key"
-	TypeMsgRegisterConsumerRewardDenom = "register_consumer_reward_denom"
-	TypeMsgSubmitConsumerMisbehaviour  = "submit_consumer_misbehaviour"
-	TypeMsgSubmitConsumerDoubleVoting  = "submit_consumer_double_vote"
+	TypeMsgAssignConsumerKey          = "assign_consumer_key"
+	TypeMsgSubmitConsumerMisbehaviour = "submit_consumer_misbehaviour"
+	TypeMsgSubmitConsumerDoubleVoting = "submit_consumer_double_vote"
 )
 
 var (
 	_ sdk.Msg = &MsgAssignConsumerKey{}
 	_ sdk.Msg = &MsgSubmitConsumerMisbehaviour{}
+	_ sdk.Msg = &MsgSubmitConsumerDoubleVoting{}
 )
 
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
@@ -104,51 +104,6 @@ func ParseConsumerKeyFromJson(jsonStr string) (pkType, key string, err error) {
 	return pubKey.Type, pubKey.Key, nil
 }
 
-// NewMsgRegisterConsumerRewardDenom returns a new MsgRegisterConsumerRewardDenom with a sender and
-// a funding amount.
-func NewMsgRegisterConsumerRewardDenom(denom string, depositor sdk.AccAddress) *MsgRegisterConsumerRewardDenom {
-	return &MsgRegisterConsumerRewardDenom{
-		Denom:     denom,
-		Depositor: depositor.String(),
-	}
-}
-
-// Route returns the MsgRegisterConsumerRewardDenom message route.
-func (msg MsgRegisterConsumerRewardDenom) Route() string { return ModuleName }
-
-// Type returns the MsgRegisterConsumerRewardDenom message type.
-func (msg MsgRegisterConsumerRewardDenom) Type() string { return TypeMsgRegisterConsumerRewardDenom }
-
-// GetSigners returns the signer addresses that are expected to sign the result
-// of GetSignBytes.
-func (msg MsgRegisterConsumerRewardDenom) GetSigners() []sdk.AccAddress {
-	depoAddr, err := sdk.AccAddressFromBech32(msg.Depositor)
-	if err != nil {
-		panic(err)
-	}
-	return []sdk.AccAddress{depoAddr}
-}
-
-// GetSignBytes returns the raw bytes for a MsgRegisterConsumerRewardDenom message that
-// the expected signer needs to sign.
-func (msg MsgRegisterConsumerRewardDenom) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
-}
-
-// ValidateBasic performs basic MsgRegisterConsumerRewardDenom message validation.
-func (msg MsgRegisterConsumerRewardDenom) ValidateBasic() error {
-	if !sdk.NewCoin(msg.Denom, sdk.NewInt(0)).IsValid() {
-		return ErrInvalidConsumerRewardDenom
-	}
-	_, err := sdk.AccAddressFromBech32(msg.Depositor)
-	if err != nil {
-		return ErrInvalidDepositorAddress
-	}
-
-	return nil
-}
-
 func NewMsgSubmitConsumerMisbehaviour(submitter sdk.AccAddress, misbehaviour *ibctmtypes.Misbehaviour) (*MsgSubmitConsumerMisbehaviour, error) {
 	return &MsgSubmitConsumerMisbehaviour{Submitter: submitter.String(), Misbehaviour: misbehaviour}, nil
 }
@@ -220,6 +175,10 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 
 	if msg.InfractionBlockHeader.SignedHeader.Header == nil {
 		return fmt.Errorf("invalid signed header in infraction block header, 'SignedHeader.Header' is nil")
+	}
+
+	if msg.InfractionBlockHeader.ValidatorSet == nil {
+		return fmt.Errorf("invalid infraction block header, validator set is nil")
 	}
 
 	return nil

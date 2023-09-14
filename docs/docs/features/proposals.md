@@ -48,7 +48,7 @@ Minimal example:
     "distribution_transmission_channel": "channel-123"
 }
 ```
-More examples can be found in the replicated security testnet repository [here](https://github.com/cosmos/testnets/blob/master/replicated-security/baryon-1/proposal-baryon-1.json) and [here](https://github.com/cosmos/testnets/blob/master/replicated-security/noble-1/start-proposal-noble-1.json).
+More examples can be found in the replicated security testnet repository [here](https://github.com/cosmos/testnets/blob/master/replicated-security/stopped/baryon-1/proposal-baryon-1.json) and [here](https://github.com/cosmos/testnets/blob/master/replicated-security/stopped/noble-1/start-proposal-noble-1.json).
 
 ## `ConsumerRemovalProposal`
 Proposal type used to suggest removing an existing consumer chain.
@@ -102,6 +102,23 @@ Minimal example:
         "consensus_address": "<consensus address ON THE PROVIDER>"
     }
   ]
+}
+```
+
+## ChangeRewardDenomProposal
+:::tip
+`ChangeRewardDenomProposal` will only be accepted on the provider chain if at least one of the denomsToAdd or denomsToRemove fields is populated with at least one denom. Also, a denom cannot be repeated in both sets.
+:::
+
+Proposal type used to mutate the set of denoms accepted by the provider as rewards.
+
+Minimal example:
+```js
+{
+  "title": "Add untrn as a reward denom",
+  "description": "Here is more information about the proposal",
+  "denomsToAdd": ["untrn"],
+  "denomsToRemove": []
 }
 ```
 

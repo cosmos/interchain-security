@@ -143,6 +143,20 @@ func (m *MockStakingKeeper) GetUnbondingDelegationsFromValidator(ctx types.Conte
 func (mr *MockStakingKeeperMockRecorder) GetUnbondingDelegationsFromValidator(ctx, valAddr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUnbondingDelegationsFromValidator", reflect.TypeOf((*MockStakingKeeper)(nil).GetUnbondingDelegationsFromValidator), ctx, valAddr)
+
+// GetUnbondingType mocks base method.
+func (m *MockStakingKeeper) GetUnbondingType(ctx types.Context, id uint64) (types4.UnbondingType, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUnbondingType", ctx, id)
+	ret0, _ := ret[0].(types4.UnbondingType)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetUnbondingType indicates an expected call of GetUnbondingType.
+func (mr *MockStakingKeeperMockRecorder) GetUnbondingType(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUnbondingType", reflect.TypeOf((*MockStakingKeeper)(nil).GetUnbondingType), ctx, id)
 }
 
 // GetValidator mocks base method.
@@ -720,7 +734,7 @@ func (m *MockClientKeeper) EXPECT() *MockClientKeeperMockRecorder {
 }
 
 // CheckMisbehaviourAndUpdateState mocks base method.
-func (m *MockClientKeeper) CheckMisbehaviourAndUpdateState(ctx types.Context, misbehaviour exported0.Misbehaviour) error {
+func (m *MockClientKeeper) CheckMisbehaviourAndUpdateState(ctx types.Context, misbehaviour exported.Misbehaviour) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CheckMisbehaviourAndUpdateState", ctx, misbehaviour)
 	ret0, _ := ret[0].(error)
@@ -763,10 +777,10 @@ func (mr *MockClientKeeperMockRecorder) CreateClient(ctx, clientState, consensus
 }
 
 // GetClientConsensusState mocks base method.
-func (m *MockClientKeeper) GetClientConsensusState(ctx types.Context, clientID string, height exported0.Height) (exported0.ConsensusState, bool) {
+func (m *MockClientKeeper) GetClientConsensusState(ctx types.Context, clientID string, height exported.Height) (exported.ConsensusState, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClientConsensusState", ctx, clientID, height)
-	ret0, _ := ret[0].(exported0.ConsensusState)
+	ret0, _ := ret[0].(exported.ConsensusState)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -869,6 +883,18 @@ func (m *MockDistributionKeeper) FundCommunityPool(ctx types.Context, amount typ
 func (mr *MockDistributionKeeperMockRecorder) FundCommunityPool(ctx, amount, sender interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FundCommunityPool", reflect.TypeOf((*MockDistributionKeeper)(nil).FundCommunityPool), ctx, amount, sender)
+}
+
+// SetClientState mocks base method.
+func (m *MockClientKeeper) SetClientState(ctx types.Context, clientID string, clientState exported.ClientState) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetClientState", ctx, clientID, clientState)
+}
+
+// SetClientState indicates an expected call of SetClientState.
+func (mr *MockClientKeeperMockRecorder) SetClientState(ctx, clientID, clientState interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetClientState", reflect.TypeOf((*MockClientKeeper)(nil).SetClientState), ctx, clientID, clientState)
 }
 
 // MockConsumerHooks is a mock of ConsumerHooks interface.

@@ -23,9 +23,10 @@ import (
 )
 
 var (
-	ConsumerAdditionProposalHandler = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd, ConsumerAdditionProposalRESTHandler)
-	ConsumerRemovalProposalHandler  = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd, ConsumerRemovalProposalRESTHandler)
-	EquivocationProposalHandler     = govclient.NewProposalHandler(SubmitEquivocationProposalTxCmd, EquivocationProposalRESTHandler)
+	ConsumerAdditionProposalHandler   = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd, ConsumerAdditionProposalRESTHandler)
+	ConsumerRemovalProposalHandler    = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd, ConsumerRemovalProposalRESTHandler)
+	EquivocationProposalHandler       = govclient.NewProposalHandler(SubmitEquivocationProposalTxCmd, EquivocationProposalRESTHandler)
+	ChangeRewardDenomsProposalHandler = govclient.NewProposalHandler(SubmitChangeRewardDenomsProposalTxCmd, ChangeRewardDenomsProposalRESTHandler)
 )
 
 // SubmitConsumerAdditionPropTxCmd returns a CLI command handler for submitting
@@ -215,6 +216,58 @@ Where proposal.json contains:
 	}
 }
 
+// SubmitChangeRewardDenomsProposalTxCmd returns a CLI command handler for submitting
+// a change reward denoms proposal via a transaction.
+func SubmitChangeRewardDenomsProposalTxCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "change-reward-denoms [proposal-file]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Submit a change reward denoms proposal",
+		Long: `Submit an change reward denoms proposal with an initial deposit.
+		The proposal details must be supplied via a JSON file.
+
+		Example:
+		$ <appd> tx gov submit-proposal change-reward-denoms <path/to/proposal.json> --from=<key_or_address>
+
+		Where proposal.json contains:
+		{
+			"title": "Change reward denoms",
+			"summary": "Change reward denoms",
+			"denoms_to_add": ["untrn"],
+			"denoms_to_remove": ["stake"],
+			"deposit": "10000stake"
+		}
+		`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			proposal, err := ParseChangeRewardDenomsProposalJSON(args[0])
+			if err != nil {
+				return err
+			}
+
+			content := types.NewChangeRewardDenomsProposal(proposal.Title, proposal.Summary, proposal.DenomsToAdd, proposal.DenomsToRemove)
+
+			from := clientCtx.GetFromAddress()
+
+			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
+			if err != nil {
+				return err
+			}
+
+			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			if err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+}
+
 type ConsumerAdditionProposalJSON struct {
 	Title         string             `json:"title"`
 	Description   string             `json:"description"`
@@ -293,6 +346,21 @@ type ConsumerRemovalProposalReq struct {
 	Deposit  sdk.Coins `json:"deposit"`
 }
 
+func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalProposalJSON, error) {
+	proposal := ConsumerRemovalProposalJSON{}
+
+	contents, err := os.ReadFile(filepath.Clean(proposalFile))
+	if err != nil {
+		return proposal, err
+	}
+
+	if err := json.Unmarshal(contents, &proposal); err != nil {
+		return proposal, err
+	}
+
+	return proposal, nil
+}
+
 type EquivocationProposalJSON struct {
 	// evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	types.EquivocationProposal
@@ -333,19 +401,37 @@ func EquivocationProposalRESTHandler(clientCtx client.Context) govrest.ProposalR
 	}
 }
 
-func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalProposalJSON, error) {
-	proposal := ConsumerRemovalProposalJSON{}
+type ChangeRewardDenomsProposalJSON struct {
+	Summary string `json:"summary"`
+	types.ChangeRewardDenomsProposal
+	Deposit string `json:"deposit"`
+}
+
+type ChangeRewardDenomsProposalReq struct {
+	BaseReq  rest.BaseReq   `json:"base_req"`
+	Proposer sdk.AccAddress `json:"proposer"`
+	types.ChangeRewardDenomsProposal
+	Deposit sdk.Coins `json:"deposit"`
+}
+
+func ParseChangeRewardDenomsProposalJSON(proposalFile string) (ChangeRewardDenomsProposalJSON, error) {
+	proposal := ChangeRewardDenomsProposalJSON{}
 
 	contents, err := os.ReadFile(filepath.Clean(proposalFile))
 	if err != nil {
 		return proposal, err
 	}
-
 	if err := json.Unmarshal(contents, &proposal); err != nil {
 		return proposal, err
 	}
-
 	return proposal, nil
+}
+
+func ChangeRewardDenomsProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
+	return govrest.ProposalRESTHandler{
+		SubRoute: "change_reward_denoms",
+		Handler:  postChangeRewardDenomsProposalHandlerFn(clientCtx),
+	}
 }
 
 // ConsumerAdditionProposalRESTHandler returns a ProposalRESTHandler that exposes the consumer addition rest handler.
@@ -471,5 +557,33 @@ consumer unbonding: %s
 provider unbonding: %s`,
 			propUnbondingPeriod,
 			providerUnbondingTime)
+	}
+}
+
+func postChangeRewardDenomsProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req ChangeRewardDenomsProposalReq
+		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
+			return
+		}
+
+		req.BaseReq = req.BaseReq.Sanitize()
+		if !req.BaseReq.ValidateBasic(w) {
+			return
+		}
+
+		content := types.NewChangeRewardDenomsProposal(
+			req.Title, req.Description, req.DenomsToAdd, req.DenomsToRemove)
+
+		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
+
+		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
+			return
+		}
+
+		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
 	}
 }

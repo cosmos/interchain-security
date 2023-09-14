@@ -204,7 +204,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 	forkRelayerConfig := "/root/.hermes/config_fork.toml"
 	return []Step{
 		{
-			// fork the consumer chain by cloning of its validator node
+			// fork the consumer chain by cloning the alice validator node
 			action: forkConsumerChainAction{
 				consumerChain: chainID(consumerName),
 				providerChain: chainID("provi"),
@@ -218,10 +218,10 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			action: startRelayerAction{},
 			state:  State{},
 		},
-		// detect the ICS misbehaviour
-		// and jail and slash alice on the provider
+		// run Hermes relayer instance to detect the ICS misbehaviour
+		// and jail alice on the provider
 		{
-			action: detectConsumerEvidenceAction{
+			action: startConsumerEvidenceDetectorAction{
 				chain: chainID(consumerName),
 			},
 			state: State{

@@ -158,6 +158,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.delegateTokens(action, verbose)
 	case unbondTokensAction:
 		tr.unbondTokens(action, verbose)
+	case cancelUnbondTokensAction:
+		tr.cancelUnbondTokens(action, verbose)
 	case redelegateTokensAction:
 		tr.redelegateTokens(action, verbose)
 	case downtimeSlashAction:
@@ -174,16 +176,16 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.waitForSlashThrottleDequeue(action, verbose)
 	case startRelayerAction:
 		tr.startRelayer(action, verbose)
-	case registerConsumerRewardDenomAction:
-		tr.registerConsumerRewardDenom(action, verbose)
 	case forkConsumerChainAction:
 		tr.forkConsumerChain(action, verbose)
 	case updateLightClientAction:
 		tr.updateLightClient(action, verbose)
 	case assertChainIsHaltedAction:
 		tr.assertChainIsHalted(action, verbose)
-	case detectConsumerEvidenceAction:
-		tr.detectConsumerEvidence(action, verbose)
+	case startConsumerEvidenceDetectorAction:
+		tr.startConsumerEvidenceDetector(action, verbose)
+	case submitChangeRewardDenomsProposalAction:
+		tr.submitChangeRewardDenomsProposal(action, verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", tr.name, action)
 	}

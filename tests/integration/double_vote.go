@@ -160,7 +160,6 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 
 	validator, _ := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr.ToSdkConsAddr().Bytes())
 	initialTokens := validator.GetTokens().ToDec()
-
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			// reset context for each run

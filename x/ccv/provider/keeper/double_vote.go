@@ -3,7 +3,9 @@ package keeper
 import (
 	"bytes"
 	"fmt"
+  
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
@@ -57,24 +59,21 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	// Note that since we're only jailing validators for double voting on a consumer chain,
 	// the age of the evidence is irrelevant and therefore isn't checked.
 
-	// TODO: check the age of the evidence once we slash
-	// validators for double voting on a consumer chain
-
 	// H/R/S must be the same
 	if evidence.VoteA.Height != evidence.VoteB.Height ||
 		evidence.VoteA.Round != evidence.VoteB.Round ||
 		evidence.VoteA.Type != evidence.VoteB.Type {
 		return sdkerrors.Wrapf(
-			ccvtypes.ErrInvalidEvidence,
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"h/r/s does not match: %d/%d/%v vs %d/%d/%v",
 			evidence.VoteA.Height, evidence.VoteA.Round, evidence.VoteA.Type,
 			evidence.VoteB.Height, evidence.VoteB.Round, evidence.VoteB.Type)
 	}
 
-	// Address must be the same
+	// Addresses must be the same
 	if !bytes.Equal(evidence.VoteA.ValidatorAddress, evidence.VoteB.ValidatorAddress) {
 		return sdkerrors.Wrapf(
-			ccvtypes.ErrInvalidEvidence,
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"validator addresses do not match: %X vs %X",
 			evidence.VoteA.ValidatorAddress,
 			evidence.VoteB.ValidatorAddress,
@@ -84,7 +83,7 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	// BlockIDs must be different
 	if evidence.VoteA.BlockID.Equals(evidence.VoteB.BlockID) {
 		return sdkerrors.Wrapf(
-			ccvtypes.ErrInvalidEvidence,
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"block IDs are the same (%v) - not a real duplicate vote",
 			evidence.VoteA.BlockID,
 		)

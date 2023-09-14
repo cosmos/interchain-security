@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+// forkConsumerChainAction forks the consumer chain by cloning of a validator node
+// Note that the chain fork is running in an different network
 type forkConsumerChainAction struct {
 	consumerChain chainID
 	providerChain chainID
