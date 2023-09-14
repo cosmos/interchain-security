@@ -693,255 +693,6 @@ func (m *QueryThrottleStateResponse) GetNextReplenishCandidate() time.Time {
 	return time.Time{}
 }
 
-type QueryThrottledConsumerPacketDataRequest struct {
-	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-}
-
-func (m *QueryThrottledConsumerPacketDataRequest) Reset() {
-	*m = QueryThrottledConsumerPacketDataRequest{}
-}
-func (m *QueryThrottledConsumerPacketDataRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryThrottledConsumerPacketDataRequest) ProtoMessage()    {}
-func (*QueryThrottledConsumerPacketDataRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{15}
-}
-func (m *QueryThrottledConsumerPacketDataRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryThrottledConsumerPacketDataRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryThrottledConsumerPacketDataRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryThrottledConsumerPacketDataRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryThrottledConsumerPacketDataRequest.Merge(m, src)
-}
-func (m *QueryThrottledConsumerPacketDataRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryThrottledConsumerPacketDataRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryThrottledConsumerPacketDataRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryThrottledConsumerPacketDataRequest proto.InternalMessageInfo
-
-func (m *QueryThrottledConsumerPacketDataRequest) GetChainId() string {
-	if m != nil {
-		return m.ChainId
-	}
-	return ""
-}
-
-type QueryThrottledConsumerPacketDataResponse struct {
-	ChainId             string                       `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	Size_               uint64                       `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
-	PacketDataInstances []ThrottledPacketDataWrapper `protobuf:"bytes,3,rep,name=packetDataInstances,proto3" json:"packetDataInstances"`
-}
-
-func (m *QueryThrottledConsumerPacketDataResponse) Reset() {
-	*m = QueryThrottledConsumerPacketDataResponse{}
-}
-func (m *QueryThrottledConsumerPacketDataResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryThrottledConsumerPacketDataResponse) ProtoMessage()    {}
-func (*QueryThrottledConsumerPacketDataResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{16}
-}
-func (m *QueryThrottledConsumerPacketDataResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryThrottledConsumerPacketDataResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryThrottledConsumerPacketDataResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryThrottledConsumerPacketDataResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryThrottledConsumerPacketDataResponse.Merge(m, src)
-}
-func (m *QueryThrottledConsumerPacketDataResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryThrottledConsumerPacketDataResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryThrottledConsumerPacketDataResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryThrottledConsumerPacketDataResponse proto.InternalMessageInfo
-
-func (m *QueryThrottledConsumerPacketDataResponse) GetChainId() string {
-	if m != nil {
-		return m.ChainId
-	}
-	return ""
-}
-
-func (m *QueryThrottledConsumerPacketDataResponse) GetSize_() uint64 {
-	if m != nil {
-		return m.Size_
-	}
-	return 0
-}
-
-func (m *QueryThrottledConsumerPacketDataResponse) GetPacketDataInstances() []ThrottledPacketDataWrapper {
-	if m != nil {
-		return m.PacketDataInstances
-	}
-	return nil
-}
-
-// A query wrapper type for the global entry and data relevant to a throttled
-// slash packet.
-type ThrottledSlashPacket struct {
-	GlobalEntry GlobalSlashEntry      `protobuf:"bytes,1,opt,name=global_entry,json=globalEntry,proto3" json:"global_entry"`
-	Data        types.SlashPacketData `protobuf:"bytes,2,opt,name=data,proto3" json:"data"`
-}
-
-func (m *ThrottledSlashPacket) Reset()         { *m = ThrottledSlashPacket{} }
-func (m *ThrottledSlashPacket) String() string { return proto.CompactTextString(m) }
-func (*ThrottledSlashPacket) ProtoMessage()    {}
-func (*ThrottledSlashPacket) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{17}
-}
-func (m *ThrottledSlashPacket) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ThrottledSlashPacket) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ThrottledSlashPacket.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ThrottledSlashPacket) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ThrottledSlashPacket.Merge(m, src)
-}
-func (m *ThrottledSlashPacket) XXX_Size() int {
-	return m.Size()
-}
-func (m *ThrottledSlashPacket) XXX_DiscardUnknown() {
-	xxx_messageInfo_ThrottledSlashPacket.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ThrottledSlashPacket proto.InternalMessageInfo
-
-func (m *ThrottledSlashPacket) GetGlobalEntry() GlobalSlashEntry {
-	if m != nil {
-		return m.GlobalEntry
-	}
-	return GlobalSlashEntry{}
-}
-
-func (m *ThrottledSlashPacket) GetData() types.SlashPacketData {
-	if m != nil {
-		return m.Data
-	}
-	return types.SlashPacketData{}
-}
-
-// ThrottledPacketDataWrapper contains either SlashPacketData or
-// VSCMaturedPacketData
-type ThrottledPacketDataWrapper struct {
-	// Types that are valid to be assigned to Data:
-	//	*ThrottledPacketDataWrapper_SlashPacket
-	//	*ThrottledPacketDataWrapper_VscMaturedPacket
-	Data isThrottledPacketDataWrapper_Data `protobuf_oneof:"data"`
-}
-
-func (m *ThrottledPacketDataWrapper) Reset()         { *m = ThrottledPacketDataWrapper{} }
-func (m *ThrottledPacketDataWrapper) String() string { return proto.CompactTextString(m) }
-func (*ThrottledPacketDataWrapper) ProtoMessage()    {}
-func (*ThrottledPacketDataWrapper) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{18}
-}
-func (m *ThrottledPacketDataWrapper) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ThrottledPacketDataWrapper) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ThrottledPacketDataWrapper.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ThrottledPacketDataWrapper) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ThrottledPacketDataWrapper.Merge(m, src)
-}
-func (m *ThrottledPacketDataWrapper) XXX_Size() int {
-	return m.Size()
-}
-func (m *ThrottledPacketDataWrapper) XXX_DiscardUnknown() {
-	xxx_messageInfo_ThrottledPacketDataWrapper.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ThrottledPacketDataWrapper proto.InternalMessageInfo
-
-type isThrottledPacketDataWrapper_Data interface {
-	isThrottledPacketDataWrapper_Data()
-	MarshalTo([]byte) (int, error)
-	Size() int
-}
-
-type ThrottledPacketDataWrapper_SlashPacket struct {
-	SlashPacket *types.SlashPacketData `protobuf:"bytes,1,opt,name=slash_packet,json=slashPacket,proto3,oneof" json:"slash_packet,omitempty"`
-}
-type ThrottledPacketDataWrapper_VscMaturedPacket struct {
-	VscMaturedPacket *types.VSCMaturedPacketData `protobuf:"bytes,2,opt,name=vsc_matured_packet,json=vscMaturedPacket,proto3,oneof" json:"vsc_matured_packet,omitempty"`
-}
-
-func (*ThrottledPacketDataWrapper_SlashPacket) isThrottledPacketDataWrapper_Data()      {}
-func (*ThrottledPacketDataWrapper_VscMaturedPacket) isThrottledPacketDataWrapper_Data() {}
-
-func (m *ThrottledPacketDataWrapper) GetData() isThrottledPacketDataWrapper_Data {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
-func (m *ThrottledPacketDataWrapper) GetSlashPacket() *types.SlashPacketData {
-	if x, ok := m.GetData().(*ThrottledPacketDataWrapper_SlashPacket); ok {
-		return x.SlashPacket
-	}
-	return nil
-}
-
-func (m *ThrottledPacketDataWrapper) GetVscMaturedPacket() *types.VSCMaturedPacketData {
-	if x, ok := m.GetData().(*ThrottledPacketDataWrapper_VscMaturedPacket); ok {
-		return x.VscMaturedPacket
-	}
-	return nil
-}
-
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*ThrottledPacketDataWrapper) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
-		(*ThrottledPacketDataWrapper_SlashPacket)(nil),
-		(*ThrottledPacketDataWrapper_VscMaturedPacket)(nil),
-	}
-}
-
 type QueryRegisteredConsumerRewardDenomsRequest struct {
 }
 
@@ -953,7 +704,7 @@ func (m *QueryRegisteredConsumerRewardDenomsRequest) String() string {
 }
 func (*QueryRegisteredConsumerRewardDenomsRequest) ProtoMessage() {}
 func (*QueryRegisteredConsumerRewardDenomsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{19}
+	return fileDescriptor_422512d7b7586cd7, []int{15}
 }
 func (m *QueryRegisteredConsumerRewardDenomsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -994,7 +745,7 @@ func (m *QueryRegisteredConsumerRewardDenomsResponse) String() string {
 }
 func (*QueryRegisteredConsumerRewardDenomsResponse) ProtoMessage() {}
 func (*QueryRegisteredConsumerRewardDenomsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{20}
+	return fileDescriptor_422512d7b7586cd7, []int{16}
 }
 func (m *QueryRegisteredConsumerRewardDenomsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1046,10 +797,6 @@ func init() {
 	proto.RegisterType((*QueryValidatorProviderAddrResponse)(nil), "interchain_security.ccv.provider.v1.QueryValidatorProviderAddrResponse")
 	proto.RegisterType((*QueryThrottleStateRequest)(nil), "interchain_security.ccv.provider.v1.QueryThrottleStateRequest")
 	proto.RegisterType((*QueryThrottleStateResponse)(nil), "interchain_security.ccv.provider.v1.QueryThrottleStateResponse")
-	proto.RegisterType((*QueryThrottledConsumerPacketDataRequest)(nil), "interchain_security.ccv.provider.v1.QueryThrottledConsumerPacketDataRequest")
-	proto.RegisterType((*QueryThrottledConsumerPacketDataResponse)(nil), "interchain_security.ccv.provider.v1.QueryThrottledConsumerPacketDataResponse")
-	proto.RegisterType((*ThrottledSlashPacket)(nil), "interchain_security.ccv.provider.v1.ThrottledSlashPacket")
-	proto.RegisterType((*ThrottledPacketDataWrapper)(nil), "interchain_security.ccv.provider.v1.ThrottledPacketDataWrapper")
 	proto.RegisterType((*QueryRegisteredConsumerRewardDenomsRequest)(nil), "interchain_security.ccv.provider.v1.QueryRegisteredConsumerRewardDenomsRequest")
 	proto.RegisterType((*QueryRegisteredConsumerRewardDenomsResponse)(nil), "interchain_security.ccv.provider.v1.QueryRegisteredConsumerRewardDenomsResponse")
 }
@@ -1059,89 +806,74 @@ func init() {
 }
 
 var fileDescriptor_422512d7b7586cd7 = []byte{
-	// 1304 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x57, 0xd1, 0x6f, 0x14, 0x45,
-	0x18, 0xbf, 0x6d, 0x4b, 0x6d, 0xa7, 0x28, 0x38, 0x20, 0x96, 0x85, 0xf4, 0x70, 0x89, 0x5a, 0x40,
-	0x77, 0xe9, 0x11, 0x13, 0x40, 0xcb, 0x71, 0x57, 0x6a, 0x21, 0x40, 0xa8, 0x5b, 0x02, 0x89, 0x1a,
-	0xd6, 0xe9, 0xee, 0x78, 0xb7, 0x71, 0x6f, 0x67, 0x99, 0x99, 0xbb, 0x52, 0x8d, 0x0f, 0x6a, 0xa2,
-	0x3c, 0x92, 0x18, 0xdf, 0x7c, 0xe0, 0x1f, 0xf1, 0x9d, 0x37, 0x51, 0x5e, 0x78, 0x42, 0x53, 0x7c,
-	0xf0, 0xd1, 0xf8, 0x6e, 0x62, 0x76, 0x66, 0x76, 0xef, 0xae, 0xb7, 0xbd, 0xdb, 0x3b, 0xfa, 0x76,
-	0x3b, 0x33, 0xdf, 0xef, 0xfb, 0xfd, 0xbe, 0xfb, 0xe6, 0xdb, 0xdf, 0x02, 0xcb, 0x0f, 0x39, 0xa6,
-	0x6e, 0x1d, 0xf9, 0xa1, 0xc3, 0xb0, 0xdb, 0xa4, 0x3e, 0xdf, 0xb4, 0x5c, 0xb7, 0x65, 0x45, 0x94,
-	0xb4, 0x7c, 0x0f, 0x53, 0xab, 0xb5, 0x60, 0xdd, 0x6d, 0x62, 0xba, 0x69, 0x46, 0x94, 0x70, 0x02,
-	0x8f, 0x67, 0x04, 0x98, 0xae, 0xdb, 0x32, 0x93, 0x00, 0xb3, 0xb5, 0xa0, 0x1f, 0xad, 0x11, 0x52,
-	0x0b, 0xb0, 0x85, 0x22, 0xdf, 0x42, 0x61, 0x48, 0x38, 0xe2, 0x3e, 0x09, 0x99, 0x84, 0xd0, 0x0f,
-	0xd6, 0x48, 0x8d, 0x88, 0x9f, 0x56, 0xfc, 0x4b, 0xad, 0x16, 0x55, 0x8c, 0x78, 0x5a, 0x6f, 0x7e,
-	0x6e, 0x71, 0xbf, 0x81, 0x19, 0x47, 0x8d, 0x48, 0x1d, 0x28, 0xe5, 0xa1, 0x9a, 0xb2, 0x90, 0x31,
-	0xa7, 0x77, 0x8a, 0x69, 0x2d, 0x58, 0xac, 0x8e, 0x28, 0xf6, 0x1c, 0x97, 0x84, 0xac, 0xd9, 0x48,
-	0x23, 0xde, 0xec, 0x13, 0xb1, 0xe1, 0x53, 0x2c, 0x8f, 0x19, 0x67, 0xc1, 0x91, 0x8f, 0xe2, 0xaa,
-	0x2c, 0xa9, 0xe8, 0x15, 0x1c, 0x62, 0xe6, 0x33, 0x1b, 0xdf, 0x6d, 0x62, 0xc6, 0xe1, 0x61, 0x30,
-	0x25, 0x21, 0x7c, 0x6f, 0x56, 0x3b, 0xa6, 0xcd, 0x4f, 0xdb, 0x2f, 0x89, 0xe7, 0x2b, 0x9e, 0xc1,
-	0xc0, 0xd1, 0xec, 0x48, 0x16, 0x91, 0x90, 0x61, 0xb8, 0x06, 0x5e, 0xae, 0xc9, 0x25, 0x87, 0x71,
-	0xc4, 0xb1, 0x88, 0x9f, 0x29, 0xcd, 0x9b, 0x3b, 0x15, 0xbe, 0xb5, 0x60, 0x2a, 0x8c, 0xb5, 0xf8,
-	0x7c, 0x75, 0xe2, 0xd1, 0xb3, 0x62, 0xc1, 0xde, 0x5b, 0xeb, 0x58, 0x33, 0x8e, 0x02, 0xbd, 0x2b,
-	0xe9, 0x52, 0x0c, 0x93, 0xb0, 0x35, 0xd0, 0x36, 0x31, 0xc9, 0xae, 0x62, 0x54, 0x05, 0x93, 0x22,
-	0x2d, 0x9b, 0xd5, 0x8e, 0x8d, 0xcf, 0xcf, 0x94, 0x4e, 0x9a, 0x39, 0x7a, 0xc0, 0x14, 0x20, 0xb6,
-	0x8a, 0x34, 0x4e, 0x80, 0xb7, 0x7b, 0x53, 0xac, 0x71, 0x44, 0xf9, 0x2a, 0x25, 0x11, 0x61, 0x28,
-	0x48, 0xd9, 0xdc, 0xd7, 0xc0, 0xfc, 0xe0, 0xb3, 0x8a, 0xdb, 0xa7, 0x60, 0x3a, 0x4a, 0x16, 0x55,
-	0xa5, 0x2e, 0xe4, 0xa3, 0xa7, 0xc0, 0x2b, 0x9e, 0xe7, 0xc7, 0xcd, 0xd9, 0x86, 0x6e, 0x03, 0x1a,
-	0xf3, 0xe0, 0xad, 0x2c, 0x26, 0x24, 0xea, 0x21, 0xfd, 0xbd, 0x96, 0x2d, 0xb0, 0xeb, 0xa8, 0xe2,
-	0xfc, 0x49, 0x2f, 0xe7, 0xc5, 0xa1, 0x38, 0xdb, 0xb8, 0x41, 0x5a, 0x28, 0xc8, 0xa4, 0x5c, 0x06,
-	0x7b, 0x44, 0xea, 0x3e, 0x2d, 0x08, 0x8f, 0x80, 0x69, 0x37, 0xf0, 0x71, 0xc8, 0xe3, 0xbd, 0x31,
-	0xb1, 0x37, 0x25, 0x17, 0xae, 0x78, 0xc6, 0x0f, 0x1a, 0x78, 0x43, 0x28, 0xb9, 0x85, 0x02, 0xdf,
-	0x43, 0x9c, 0xd0, 0x8e, 0x52, 0xd1, 0xc1, 0x0d, 0x0e, 0x17, 0xc1, 0xfe, 0x84, 0xb4, 0x83, 0x3c,
-	0x8f, 0x62, 0xc6, 0x64, 0x92, 0x2a, 0xfc, 0xf7, 0x59, 0xf1, 0x95, 0x4d, 0xd4, 0x08, 0xce, 0x1b,
-	0x6a, 0xc3, 0xb0, 0xf7, 0x25, 0x67, 0x2b, 0x72, 0xe5, 0xfc, 0xd4, 0xfd, 0x87, 0xc5, 0xc2, 0xdf,
-	0x0f, 0x8b, 0x05, 0xe3, 0x06, 0x30, 0xfa, 0x11, 0x51, 0xd5, 0x3c, 0x01, 0xf6, 0x27, 0x57, 0x38,
-	0x4d, 0x27, 0x19, 0xed, 0x73, 0x3b, 0xce, 0xc7, 0xc9, 0x7a, 0xa5, 0xad, 0x76, 0x24, 0xcf, 0x27,
-	0xad, 0x27, 0x57, 0x1f, 0x69, 0xdb, 0xf2, 0xf7, 0x93, 0xd6, 0x4d, 0xa4, 0x2d, 0xad, 0xa7, 0x92,
-	0x4a, 0xda, 0xb6, 0xaa, 0x19, 0x47, 0xc0, 0x61, 0x01, 0x78, 0xb3, 0x4e, 0x09, 0xe7, 0x01, 0x16,
-	0xd7, 0x3e, 0x69, 0xce, 0xdf, 0x34, 0x75, 0xfd, 0xb7, 0xed, 0xaa, 0x34, 0x45, 0x30, 0xc3, 0x02,
-	0xc4, 0xea, 0x4e, 0x03, 0x73, 0x4c, 0x45, 0x86, 0x71, 0x1b, 0x88, 0xa5, 0xeb, 0xf1, 0x0a, 0x2c,
-	0x81, 0xd7, 0x3a, 0x0e, 0x38, 0x28, 0x08, 0xc8, 0x06, 0x0a, 0x5d, 0x2c, 0xb4, 0x8f, 0xdb, 0x07,
-	0xda, 0x47, 0x2b, 0xc9, 0x16, 0xbc, 0x03, 0x66, 0x43, 0x7c, 0x8f, 0x3b, 0x14, 0x47, 0x01, 0x0e,
-	0x7d, 0x56, 0x77, 0x5c, 0x14, 0x7a, 0xb1, 0x58, 0x3c, 0x3b, 0x2e, 0x7a, 0x5e, 0x37, 0xe5, 0xc4,
-	0x37, 0x93, 0x89, 0x6f, 0xde, 0x4c, 0x26, 0x7e, 0x75, 0x2a, 0x9e, 0x61, 0x0f, 0xfe, 0x28, 0x6a,
-	0xf6, 0xa1, 0x18, 0xc5, 0x4e, 0x40, 0x96, 0x12, 0x0c, 0xe3, 0x92, 0xba, 0x6f, 0x89, 0x24, 0x2f,
-	0x69, 0x8e, 0x55, 0xe4, 0x7e, 0x81, 0xf9, 0x25, 0xc4, 0x51, 0x8e, 0x61, 0xfc, 0x7b, 0x32, 0x6b,
-	0xfa, 0xc2, 0xa8, 0x3a, 0xf5, 0x69, 0x0c, 0x08, 0x26, 0x98, 0xff, 0xa5, 0x2c, 0xc8, 0x84, 0x2d,
-	0x7e, 0xc3, 0x0d, 0x70, 0x20, 0x4a, 0x41, 0xae, 0x84, 0x8c, 0xc7, 0x75, 0x61, 0xb3, 0xe3, 0x62,
-	0x86, 0x96, 0x73, 0x5d, 0xf8, 0x94, 0x55, 0x9b, 0xcd, 0x6d, 0x8a, 0xa2, 0x08, 0x53, 0x35, 0xe5,
-	0xb3, 0x32, 0x18, 0xbf, 0x68, 0xe0, 0x60, 0x1a, 0xb9, 0x16, 0xff, 0x37, 0x32, 0x1c, 0xde, 0x01,
-	0x7b, 0x6b, 0x01, 0x59, 0x47, 0x81, 0x83, 0x43, 0x4e, 0x37, 0xd5, 0xec, 0x79, 0x2f, 0x17, 0x95,
-	0x15, 0x11, 0x28, 0xd0, 0x96, 0xe3, 0x60, 0x45, 0x60, 0x46, 0x02, 0x8a, 0x25, 0xb8, 0x0c, 0x26,
-	0x3c, 0xc4, 0x91, 0xa8, 0xc2, 0x4c, 0xe9, 0x54, 0xbf, 0x37, 0x56, 0x07, 0xad, 0x98, 0xbc, 0x42,
-	0x13, 0xe1, 0xc6, 0x53, 0x0d, 0xe8, 0x3b, 0x2b, 0x87, 0xab, 0x60, 0xaf, 0xec, 0x46, 0xa9, 0x5d,
-	0xa9, 0x18, 0x26, 0xdb, 0xe5, 0x82, 0x2d, 0x3b, 0x5e, 0xd5, 0xe5, 0x33, 0x00, 0x5b, 0xcc, 0x75,
-	0x1a, 0x88, 0x37, 0x63, 0x47, 0xa0, 0x70, 0xa5, 0x8a, 0xd3, 0xfd, 0x70, 0x6f, 0xad, 0x2d, 0x5d,
-	0x97, 0x41, 0x5d, 0xe0, 0xfb, 0x5b, 0xcc, 0xed, 0x5a, 0xaf, 0x4e, 0xca, 0xca, 0x18, 0xef, 0x80,
-	0x93, 0xa2, 0xdd, 0x6c, 0x5c, 0xf3, 0x19, 0xc7, 0xb4, 0xdd, 0x6f, 0x36, 0xde, 0x40, 0xd4, 0xbb,
-	0x84, 0x43, 0xd2, 0x48, 0x5f, 0x2a, 0xcb, 0xe0, 0x54, 0xae, 0xd3, 0xaa, 0x3f, 0x0f, 0x81, 0x49,
-	0x4f, 0xac, 0x88, 0xf7, 0xf4, 0xb4, 0xad, 0x9e, 0x4a, 0x3f, 0xbf, 0x0a, 0xf6, 0x08, 0x1c, 0xb8,
-	0xa5, 0x81, 0x83, 0x59, 0xe6, 0x03, 0x5e, 0xcc, 0xd5, 0x03, 0x7d, 0x1c, 0x8f, 0x5e, 0x79, 0x01,
-	0x04, 0xc9, 0xdf, 0x58, 0xfe, 0xf6, 0xc9, 0x5f, 0x3f, 0x8e, 0x95, 0xe1, 0xe2, 0x60, 0x53, 0x9a,
-	0x4e, 0x61, 0xe5, 0x72, 0xac, 0xaf, 0x92, 0x9b, 0xf9, 0x35, 0x7c, 0xa2, 0x81, 0x03, 0x19, 0x76,
-	0x06, 0x96, 0x87, 0x67, 0xd8, 0x65, 0x93, 0xf4, 0x8b, 0xa3, 0x03, 0x28, 0x85, 0xe7, 0x84, 0xc2,
-	0x33, 0x70, 0x61, 0x08, 0x85, 0xd2, 0x40, 0xc1, 0x6f, 0xc6, 0xc0, 0xec, 0x0e, 0xae, 0x88, 0xc1,
-	0x6b, 0x23, 0x32, 0xcb, 0x34, 0x60, 0xfa, 0xf5, 0x5d, 0x42, 0x53, 0xa2, 0x2f, 0x0b, 0xd1, 0x55,
-	0x78, 0x71, 0x58, 0xd1, 0xb1, 0xff, 0xa5, 0xdc, 0x49, 0xbd, 0x0d, 0xfc, 0x4f, 0x03, 0xaf, 0x67,
-	0x9b, 0x2c, 0x06, 0xaf, 0x8e, 0x4c, 0xba, 0xd7, 0xcd, 0xe9, 0xd7, 0x76, 0x07, 0x4c, 0x15, 0x60,
-	0x45, 0x14, 0xa0, 0x02, 0xcb, 0x23, 0x14, 0x80, 0x44, 0x1d, 0xfa, 0xff, 0x49, 0xde, 0xe3, 0x99,
-	0x8e, 0x08, 0x7e, 0x98, 0x9f, 0x75, 0x3f, 0x6f, 0xa7, 0xaf, 0xbc, 0x30, 0x8e, 0x12, 0x5e, 0x11,
-	0xc2, 0xdf, 0x87, 0xe7, 0x72, 0x7c, 0x65, 0x26, 0x40, 0x4e, 0x97, 0xc1, 0xca, 0x90, 0xdc, 0xe9,
-	0x94, 0x46, 0x92, 0x9c, 0xe1, 0xf9, 0x46, 0x92, 0x9c, 0x65, 0xd9, 0x46, 0x93, 0xdc, 0x65, 0xf2,
-	0xe0, 0xaf, 0x1a, 0x80, 0xbd, 0x6e, 0x0d, 0x5e, 0xc8, 0x4f, 0x31, 0xcb, 0x04, 0xea, 0xe5, 0x91,
-	0xe3, 0x95, 0xb4, 0xb3, 0x42, 0x5a, 0x09, 0x9e, 0x1e, 0x2c, 0x8d, 0x2b, 0x00, 0xf9, 0x05, 0x0b,
-	0xbf, 0x1b, 0x03, 0xc7, 0x06, 0xb9, 0xac, 0x61, 0x66, 0xd8, 0x60, 0xcf, 0x37, 0xcc, 0x0c, 0xcb,
-	0x61, 0xfd, 0x8c, 0xaa, 0xd0, 0xfe, 0x01, 0x3c, 0x3f, 0x58, 0x7b, 0x84, 0x43, 0xcf, 0x0f, 0x6b,
-	0xed, 0x3e, 0x96, 0x76, 0x82, 0xc1, 0x9f, 0xc6, 0xc0, 0xf1, 0x1c, 0xaf, 0x73, 0x78, 0x23, 0x3f,
-	0xf5, 0x5c, 0x36, 0x42, 0x5f, 0xdd, 0x3d, 0x40, 0x55, 0x8e, 0xab, 0xa2, 0x1c, 0xcb, 0x70, 0x69,
-	0x70, 0x39, 0x68, 0x8a, 0xd8, 0xae, 0x08, 0x15, 0x98, 0x8e, 0xb4, 0x27, 0xd5, 0xdb, 0x8f, 0xb6,
-	0xe6, 0xb4, 0xc7, 0x5b, 0x73, 0xda, 0x9f, 0x5b, 0x73, 0xda, 0x83, 0xe7, 0x73, 0x85, 0xc7, 0xcf,
-	0xe7, 0x0a, 0x4f, 0x9f, 0xcf, 0x15, 0x3e, 0x5e, 0xac, 0xf9, 0xbc, 0xde, 0x5c, 0x37, 0x5d, 0xd2,
-	0xb0, 0x5c, 0xc2, 0x1a, 0x84, 0x75, 0xe4, 0x7b, 0x37, 0xcd, 0xd7, 0x3a, 0x63, 0xdd, 0xdb, 0xd6,
-	0x7f, 0x9b, 0x11, 0x66, 0xeb, 0x93, 0xe2, 0xc3, 0xe2, 0xcc, 0xff, 0x01, 0x00, 0x00, 0xff, 0xff,
-	0x64, 0xd5, 0x6b, 0xb8, 0xe4, 0x12, 0x00, 0x00,
+	// 1059 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x57, 0xcf, 0x6f, 0xdc, 0x44,
+	0x14, 0x5e, 0x27, 0x34, 0x24, 0x13, 0x20, 0xd5, 0xb4, 0x94, 0xad, 0x13, 0xed, 0x16, 0x57, 0xc0,
+	0xb6, 0x80, 0xdd, 0xdd, 0x5c, 0xda, 0xa2, 0x74, 0xb3, 0x1b, 0x42, 0xa8, 0xda, 0xaa, 0xc1, 0xa9,
+	0x40, 0x02, 0x84, 0x35, 0xb1, 0x87, 0x5d, 0x4b, 0x5e, 0x8f, 0x3b, 0x33, 0xeb, 0x34, 0x42, 0x1c,
+	0xe0, 0x00, 0x3d, 0x56, 0x42, 0x70, 0xee, 0x9f, 0xd3, 0x1b, 0x45, 0xbd, 0x70, 0x2a, 0x28, 0xe1,
+	0xc0, 0x11, 0x71, 0x47, 0x42, 0x1e, 0x8f, 0xbd, 0xbf, 0x9c, 0x5d, 0x67, 0x9b, 0x5b, 0xf6, 0xcd,
+	0x7b, 0xdf, 0xfb, 0xbe, 0xa7, 0x37, 0xf3, 0x39, 0xc0, 0x70, 0x7d, 0x8e, 0xa9, 0xdd, 0x46, 0xae,
+	0x6f, 0x31, 0x6c, 0x77, 0xa9, 0xcb, 0xf7, 0x0d, 0xdb, 0x0e, 0x8d, 0x80, 0x92, 0xd0, 0x75, 0x30,
+	0x35, 0xc2, 0xaa, 0x71, 0xbf, 0x8b, 0xe9, 0xbe, 0x1e, 0x50, 0xc2, 0x09, 0xbc, 0x98, 0x51, 0xa0,
+	0xdb, 0x76, 0xa8, 0x27, 0x05, 0x7a, 0x58, 0x55, 0x57, 0x5a, 0x84, 0xb4, 0x3c, 0x6c, 0xa0, 0xc0,
+	0x35, 0x90, 0xef, 0x13, 0x8e, 0xb8, 0x4b, 0x7c, 0x16, 0x43, 0xa8, 0x67, 0x5b, 0xa4, 0x45, 0xc4,
+	0x9f, 0x46, 0xf4, 0x97, 0x8c, 0x96, 0x65, 0x8d, 0xf8, 0xb5, 0xdb, 0xfd, 0xda, 0xe0, 0x6e, 0x07,
+	0x33, 0x8e, 0x3a, 0x81, 0x4c, 0xa8, 0xe5, 0xa1, 0x9a, 0xb2, 0x88, 0x6b, 0xae, 0x1c, 0x55, 0x13,
+	0x56, 0x0d, 0xd6, 0x46, 0x14, 0x3b, 0x96, 0x4d, 0x7c, 0xd6, 0xed, 0xa4, 0x15, 0x6f, 0x8d, 0xa9,
+	0xd8, 0x73, 0x29, 0x8e, 0xd3, 0xb4, 0xab, 0x60, 0xf9, 0x93, 0x68, 0x2a, 0x1b, 0xb2, 0x7a, 0x0b,
+	0xfb, 0x98, 0xb9, 0xcc, 0xc4, 0xf7, 0xbb, 0x98, 0x71, 0x78, 0x1e, 0xcc, 0xc7, 0x10, 0xae, 0x53,
+	0x54, 0x2e, 0x28, 0x95, 0x05, 0xf3, 0x65, 0xf1, 0xfb, 0xa6, 0xa3, 0x31, 0xb0, 0x92, 0x5d, 0xc9,
+	0x02, 0xe2, 0x33, 0x0c, 0x77, 0xc0, 0xab, 0xad, 0x38, 0x64, 0x31, 0x8e, 0x38, 0x16, 0xf5, 0x8b,
+	0xb5, 0x8a, 0x7e, 0xd4, 0xe0, 0xc3, 0xaa, 0x2e, 0x31, 0x76, 0xa2, 0xfc, 0xe6, 0x4b, 0x4f, 0x9e,
+	0x97, 0x0b, 0xe6, 0x2b, 0xad, 0xbe, 0x98, 0xb6, 0x02, 0xd4, 0x81, 0xa6, 0x1b, 0x11, 0x4c, 0xc2,
+	0x56, 0x43, 0x43, 0x62, 0x92, 0x53, 0xc9, 0xa8, 0x09, 0xe6, 0x44, 0x5b, 0x56, 0x54, 0x2e, 0xcc,
+	0x56, 0x16, 0x6b, 0x97, 0xf5, 0x1c, 0x3b, 0xa0, 0x0b, 0x10, 0x53, 0x56, 0x6a, 0x97, 0xc0, 0x3b,
+	0xa3, 0x2d, 0x76, 0x38, 0xa2, 0x7c, 0x9b, 0x92, 0x80, 0x30, 0xe4, 0xa5, 0x6c, 0x1e, 0x2a, 0xa0,
+	0x32, 0x39, 0x57, 0x72, 0xfb, 0x12, 0x2c, 0x04, 0x49, 0x50, 0x4e, 0xea, 0x46, 0x3e, 0x7a, 0x12,
+	0xbc, 0xe1, 0x38, 0x6e, 0xb4, 0x9c, 0x3d, 0xe8, 0x1e, 0xa0, 0x56, 0x01, 0x6f, 0x67, 0x31, 0x21,
+	0xc1, 0x08, 0xe9, 0x1f, 0x94, 0x6c, 0x81, 0x03, 0xa9, 0x92, 0xf3, 0x17, 0xa3, 0x9c, 0xd7, 0x8e,
+	0xc5, 0xd9, 0xc4, 0x1d, 0x12, 0x22, 0x2f, 0x93, 0x72, 0x1d, 0x9c, 0x12, 0xad, 0xc7, 0xac, 0x20,
+	0x5c, 0x06, 0x0b, 0xb6, 0xe7, 0x62, 0x9f, 0x47, 0x67, 0x33, 0xe2, 0x6c, 0x3e, 0x0e, 0xdc, 0x74,
+	0xb4, 0x1f, 0x15, 0xf0, 0xa6, 0x50, 0xf2, 0x29, 0xf2, 0x5c, 0x07, 0x71, 0x42, 0xfb, 0x46, 0x45,
+	0x27, 0x2f, 0x38, 0x5c, 0x03, 0xa7, 0x13, 0xd2, 0x16, 0x72, 0x1c, 0x8a, 0x19, 0x8b, 0x9b, 0x34,
+	0xe1, 0xbf, 0xcf, 0xcb, 0xaf, 0xed, 0xa3, 0x8e, 0x77, 0x5d, 0x93, 0x07, 0x9a, 0xb9, 0x94, 0xe4,
+	0x36, 0xe2, 0xc8, 0xf5, 0xf9, 0x87, 0x8f, 0xcb, 0x85, 0xbf, 0x1f, 0x97, 0x0b, 0xda, 0x5d, 0xa0,
+	0x8d, 0x23, 0x22, 0xa7, 0x79, 0x09, 0x9c, 0x4e, 0xae, 0x70, 0xda, 0x2e, 0x66, 0xb4, 0x64, 0xf7,
+	0xe5, 0x47, 0xcd, 0x46, 0xa5, 0x6d, 0xf7, 0x35, 0xcf, 0x27, 0x6d, 0xa4, 0xd7, 0x18, 0x69, 0x43,
+	0xfd, 0xc7, 0x49, 0x1b, 0x24, 0xd2, 0x93, 0x36, 0x32, 0x49, 0x29, 0x6d, 0x68, 0x6a, 0xda, 0x32,
+	0x38, 0x2f, 0x00, 0xef, 0xb5, 0x29, 0xe1, 0xdc, 0xc3, 0xe2, 0xda, 0x27, 0xcb, 0xf9, 0x9b, 0x22,
+	0xaf, 0xff, 0xd0, 0xa9, 0x6c, 0x53, 0x06, 0x8b, 0xcc, 0x43, 0xac, 0x6d, 0x75, 0x30, 0xc7, 0x54,
+	0x74, 0x98, 0x35, 0x81, 0x08, 0xdd, 0x89, 0x22, 0xb0, 0x06, 0x5e, 0xef, 0x4b, 0xb0, 0x90, 0xe7,
+	0x91, 0x3d, 0xe4, 0xdb, 0x58, 0x68, 0x9f, 0x35, 0xcf, 0xf4, 0x52, 0x1b, 0xc9, 0x11, 0xfc, 0x0a,
+	0x14, 0x7d, 0xfc, 0x80, 0x5b, 0x14, 0x07, 0x1e, 0xf6, 0x5d, 0xd6, 0xb6, 0x6c, 0xe4, 0x3b, 0x91,
+	0x58, 0x5c, 0x9c, 0x15, 0x3b, 0xaf, 0xea, 0xf1, 0x8b, 0xaf, 0x27, 0x2f, 0xbe, 0x7e, 0x2f, 0x79,
+	0xf1, 0x9b, 0xf3, 0xd1, 0x1b, 0xf6, 0xe8, 0x8f, 0xb2, 0x62, 0x9e, 0x8b, 0x50, 0xcc, 0x04, 0x64,
+	0x23, 0xc1, 0xd0, 0xde, 0x03, 0x97, 0x85, 0x24, 0x13, 0xb7, 0x5c, 0xc6, 0x31, 0xc5, 0x4e, 0xef,
+	0x76, 0xec, 0x21, 0xea, 0x7c, 0x88, 0x7d, 0xd2, 0x49, 0xaf, 0xe7, 0x26, 0x78, 0x37, 0x57, 0xb6,
+	0x9c, 0xc8, 0x39, 0x30, 0xe7, 0x88, 0x88, 0x78, 0xf1, 0x16, 0x4c, 0xf9, 0xab, 0xf6, 0xcb, 0x12,
+	0x38, 0x25, 0x70, 0xe0, 0x81, 0x02, 0xce, 0x66, 0x3d, 0xe3, 0x70, 0x3d, 0xd7, 0x4d, 0x1e, 0xe3,
+	0x1d, 0x6a, 0xe3, 0x05, 0x10, 0x62, 0xfe, 0xda, 0xe6, 0xf7, 0xcf, 0xfe, 0xfa, 0x69, 0xa6, 0x0e,
+	0xd7, 0x26, 0xdb, 0x7b, 0xba, 0xcf, 0xd2, 0x2f, 0x8c, 0x6f, 0x92, 0xe5, 0xff, 0x16, 0x3e, 0x53,
+	0xc0, 0x99, 0x0c, 0x63, 0x80, 0xf5, 0xe3, 0x33, 0x1c, 0x30, 0x1c, 0x75, 0x7d, 0x7a, 0x00, 0xa9,
+	0xf0, 0x9a, 0x50, 0xb8, 0x0a, 0xab, 0xc7, 0x50, 0x18, 0x5b, 0x11, 0xfc, 0x6e, 0x06, 0x14, 0x8f,
+	0xf0, 0x17, 0x06, 0x6f, 0x4f, 0xc9, 0x2c, 0xd3, 0xca, 0xd4, 0x3b, 0x27, 0x84, 0x26, 0x45, 0x7f,
+	0x2c, 0x44, 0x37, 0xe1, 0xfa, 0x71, 0x45, 0x47, 0x5f, 0x12, 0x94, 0x5b, 0xa9, 0x4b, 0xc0, 0xff,
+	0x14, 0xf0, 0x46, 0xb6, 0x5d, 0x31, 0x78, 0x6b, 0x6a, 0xd2, 0xa3, 0xbe, 0xa8, 0xde, 0x3e, 0x19,
+	0x30, 0x39, 0x80, 0x2d, 0x31, 0x80, 0x06, 0xac, 0x4f, 0x31, 0x00, 0x12, 0xf4, 0xe9, 0xff, 0x27,
+	0x79, 0x11, 0x33, 0xbd, 0x05, 0x7e, 0x94, 0x9f, 0xf5, 0x38, 0x97, 0x54, 0xb7, 0x5e, 0x18, 0x47,
+	0x0a, 0x6f, 0x08, 0xe1, 0x1f, 0xc0, 0x6b, 0x39, 0xbe, 0xd7, 0x13, 0x20, 0x6b, 0xc0, 0xaa, 0x32,
+	0x24, 0xf7, 0x7b, 0xce, 0x54, 0x92, 0x33, 0xdc, 0x73, 0x2a, 0xc9, 0x59, 0xe6, 0x37, 0x9d, 0xe4,
+	0x01, 0xbb, 0x84, 0xbf, 0x2a, 0x00, 0x8e, 0xfa, 0x1e, 0xbc, 0x91, 0x9f, 0x62, 0x96, 0x9d, 0xaa,
+	0xf5, 0xa9, 0xeb, 0xa5, 0xb4, 0xab, 0x42, 0x5a, 0x0d, 0x5e, 0x99, 0x2c, 0x8d, 0x4b, 0x80, 0xf8,
+	0x7f, 0x01, 0xf8, 0xf3, 0x0c, 0xb8, 0x98, 0xc3, 0xc8, 0xe0, 0xdd, 0xfc, 0x14, 0x73, 0x19, 0xa8,
+	0xba, 0x7d, 0x72, 0x80, 0x72, 0x08, 0xb7, 0xc4, 0x10, 0x36, 0xe1, 0xc6, 0xe4, 0x21, 0xd0, 0x14,
+	0xb1, 0xb7, 0xd3, 0x54, 0x60, 0x5a, 0xb1, 0x31, 0x37, 0x3f, 0x7b, 0x72, 0x50, 0x52, 0x9e, 0x1e,
+	0x94, 0x94, 0x3f, 0x0f, 0x4a, 0xca, 0xa3, 0xc3, 0x52, 0xe1, 0xe9, 0x61, 0xa9, 0xf0, 0xfb, 0x61,
+	0xa9, 0xf0, 0xf9, 0x5a, 0xcb, 0xe5, 0xed, 0xee, 0xae, 0x6e, 0x93, 0x8e, 0x61, 0x13, 0xd6, 0x21,
+	0xac, 0xaf, 0xdf, 0xfb, 0x69, 0xbf, 0x70, 0xd5, 0x78, 0x30, 0x34, 0xf9, 0xfd, 0x00, 0xb3, 0xdd,
+	0x39, 0xf1, 0x71, 0xb2, 0xfa, 0x7f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x94, 0x26, 0xbd, 0x0a, 0x28,
+	0x0f, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1175,8 +907,6 @@ type QueryClient interface {
 	// QueryThrottleState returns the main on-chain state relevant to currently
 	// throttled slash packets
 	QueryThrottleState(ctx context.Context, in *QueryThrottleStateRequest, opts ...grpc.CallOption) (*QueryThrottleStateResponse, error)
-	// [DEPRECATED] Returns an empty set.
-	QueryThrottledConsumerPacketData(ctx context.Context, in *QueryThrottledConsumerPacketDataRequest, opts ...grpc.CallOption) (*QueryThrottledConsumerPacketDataResponse, error)
 	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
 	// denoms that are registered
 	QueryRegisteredConsumerRewardDenoms(ctx context.Context, in *QueryRegisteredConsumerRewardDenomsRequest, opts ...grpc.CallOption) (*QueryRegisteredConsumerRewardDenomsResponse, error)
@@ -1253,15 +983,6 @@ func (c *queryClient) QueryThrottleState(ctx context.Context, in *QueryThrottleS
 	return out, nil
 }
 
-func (c *queryClient) QueryThrottledConsumerPacketData(ctx context.Context, in *QueryThrottledConsumerPacketDataRequest, opts ...grpc.CallOption) (*QueryThrottledConsumerPacketDataResponse, error) {
-	out := new(QueryThrottledConsumerPacketDataResponse)
-	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryThrottledConsumerPacketData", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *queryClient) QueryRegisteredConsumerRewardDenoms(ctx context.Context, in *QueryRegisteredConsumerRewardDenomsRequest, opts ...grpc.CallOption) (*QueryRegisteredConsumerRewardDenomsResponse, error) {
 	out := new(QueryRegisteredConsumerRewardDenomsResponse)
 	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryRegisteredConsumerRewardDenoms", in, out, opts...)
@@ -1292,8 +1013,6 @@ type QueryServer interface {
 	// QueryThrottleState returns the main on-chain state relevant to currently
 	// throttled slash packets
 	QueryThrottleState(context.Context, *QueryThrottleStateRequest) (*QueryThrottleStateResponse, error)
-	// [DEPRECATED] Returns an empty set.
-	QueryThrottledConsumerPacketData(context.Context, *QueryThrottledConsumerPacketDataRequest) (*QueryThrottledConsumerPacketDataResponse, error)
 	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
 	// denoms that are registered
 	QueryRegisteredConsumerRewardDenoms(context.Context, *QueryRegisteredConsumerRewardDenomsRequest) (*QueryRegisteredConsumerRewardDenomsResponse, error)
@@ -1323,9 +1042,6 @@ func (*UnimplementedQueryServer) QueryValidatorProviderAddr(ctx context.Context,
 }
 func (*UnimplementedQueryServer) QueryThrottleState(ctx context.Context, req *QueryThrottleStateRequest) (*QueryThrottleStateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryThrottleState not implemented")
-}
-func (*UnimplementedQueryServer) QueryThrottledConsumerPacketData(ctx context.Context, req *QueryThrottledConsumerPacketDataRequest) (*QueryThrottledConsumerPacketDataResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QueryThrottledConsumerPacketData not implemented")
 }
 func (*UnimplementedQueryServer) QueryRegisteredConsumerRewardDenoms(ctx context.Context, req *QueryRegisteredConsumerRewardDenomsRequest) (*QueryRegisteredConsumerRewardDenomsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryRegisteredConsumerRewardDenoms not implemented")
@@ -1461,24 +1177,6 @@ func _Query_QueryThrottleState_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_QueryThrottledConsumerPacketData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryThrottledConsumerPacketDataRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).QueryThrottledConsumerPacketData(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryThrottledConsumerPacketData",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).QueryThrottledConsumerPacketData(ctx, req.(*QueryThrottledConsumerPacketDataRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Query_QueryRegisteredConsumerRewardDenoms_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryRegisteredConsumerRewardDenomsRequest)
 	if err := dec(in); err != nil {
@@ -1528,10 +1226,6 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "QueryThrottleState",
 			Handler:    _Query_QueryThrottleState_Handler,
-		},
-		{
-			MethodName: "QueryThrottledConsumerPacketData",
-			Handler:    _Query_QueryThrottledConsumerPacketData_Handler,
 		},
 		{
 			MethodName: "QueryRegisteredConsumerRewardDenoms",
@@ -2016,202 +1710,6 @@ func (m *QueryThrottleStateResponse) MarshalToSizedBuffer(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryThrottledConsumerPacketDataRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryThrottledConsumerPacketDataRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryThrottledConsumerPacketDataRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.ChainId) > 0 {
-		i -= len(m.ChainId)
-		copy(dAtA[i:], m.ChainId)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryThrottledConsumerPacketDataResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryThrottledConsumerPacketDataResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryThrottledConsumerPacketDataResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.PacketDataInstances) > 0 {
-		for iNdEx := len(m.PacketDataInstances) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.PacketDataInstances[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintQuery(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x1a
-		}
-	}
-	if m.Size_ != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Size_))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.ChainId) > 0 {
-		i -= len(m.ChainId)
-		copy(dAtA[i:], m.ChainId)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ThrottledSlashPacket) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ThrottledSlashPacket) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ThrottledSlashPacket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.Data.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintQuery(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.GlobalEntry.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintQuery(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *ThrottledPacketDataWrapper) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ThrottledPacketDataWrapper) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ThrottledPacketDataWrapper) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Data != nil {
-		{
-			size := m.Data.Size()
-			i -= size
-			if _, err := m.Data.MarshalTo(dAtA[i:]); err != nil {
-				return 0, err
-			}
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ThrottledPacketDataWrapper_SlashPacket) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ThrottledPacketDataWrapper_SlashPacket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.SlashPacket != nil {
-		{
-			size, err := m.SlashPacket.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintQuery(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-func (m *ThrottledPacketDataWrapper_VscMaturedPacket) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ThrottledPacketDataWrapper_VscMaturedPacket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.VscMaturedPacket != nil {
-		{
-			size, err := m.VscMaturedPacket.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintQuery(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	return len(dAtA) - i, nil
-}
 func (m *QueryRegisteredConsumerRewardDenomsRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -2473,90 +1971,6 @@ func (m *QueryThrottleStateResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryThrottledConsumerPacketDataRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ChainId)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	return n
-}
-
-func (m *QueryThrottledConsumerPacketDataResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ChainId)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	if m.Size_ != 0 {
-		n += 1 + sovQuery(uint64(m.Size_))
-	}
-	if len(m.PacketDataInstances) > 0 {
-		for _, e := range m.PacketDataInstances {
-			l = e.Size()
-			n += 1 + l + sovQuery(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *ThrottledSlashPacket) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.GlobalEntry.Size()
-	n += 1 + l + sovQuery(uint64(l))
-	l = m.Data.Size()
-	n += 1 + l + sovQuery(uint64(l))
-	return n
-}
-
-func (m *ThrottledPacketDataWrapper) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Data != nil {
-		n += m.Data.Size()
-	}
-	return n
-}
-
-func (m *ThrottledPacketDataWrapper_SlashPacket) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.SlashPacket != nil {
-		l = m.SlashPacket.Size()
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	return n
-}
-func (m *ThrottledPacketDataWrapper_VscMaturedPacket) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.VscMaturedPacket != nil {
-		l = m.VscMaturedPacket.Size()
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	return n
-}
 func (m *QueryRegisteredConsumerRewardDenomsRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -3813,459 +3227,6 @@ func (m *QueryThrottleStateResponse) Unmarshal(dAtA []byte) error {
 			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.NextReplenishCandidate, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryThrottledConsumerPacketDataRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryThrottledConsumerPacketDataRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryThrottledConsumerPacketDataRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ChainId = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryThrottledConsumerPacketDataResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryThrottledConsumerPacketDataResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryThrottledConsumerPacketDataResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ChainId = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Size_", wireType)
-			}
-			m.Size_ = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Size_ |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PacketDataInstances", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.PacketDataInstances = append(m.PacketDataInstances, ThrottledPacketDataWrapper{})
-			if err := m.PacketDataInstances[len(m.PacketDataInstances)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ThrottledSlashPacket) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ThrottledSlashPacket: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ThrottledSlashPacket: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field GlobalEntry", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.GlobalEntry.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Data.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ThrottledPacketDataWrapper) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ThrottledPacketDataWrapper: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ThrottledPacketDataWrapper: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SlashPacket", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &types.SlashPacketData{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Data = &ThrottledPacketDataWrapper_SlashPacket{v}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field VscMaturedPacket", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &types.VSCMaturedPacketData{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Data = &ThrottledPacketDataWrapper_VscMaturedPacket{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
