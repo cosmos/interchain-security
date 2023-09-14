@@ -56,7 +56,8 @@ func stepsDowntime(consumerName string) []Step {
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   500,
+						// Bob's stake may or may not be slashed at this point depending on comet vs cometmock
+						// See https://github.com/cosmos/interchain-security/issues/1304
 						validatorID("carol"): 501,
 					},
 				},
