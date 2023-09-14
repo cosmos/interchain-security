@@ -341,7 +341,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
-						validatorID("bob"):   500, // VSC packet applying bob jailing is not yet relayed to consumer
+						validatorID("bob"):   500, // VSC packet jailing bob is not yet relayed to consumer
 						validatorID("carol"): 500,
 					},
 				},
