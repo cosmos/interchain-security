@@ -278,7 +278,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegations() {
 		// in order to perform a delegation we need to know the validator's `idx` (that might not be 0)
 		// loop through all validators to find the right `idx`
 		idx := 0
-		for i := 0; i <= len(s.providerChain.Vals.Validators); i = i + 1 {
+		for i := 0; i <= len(s.providerChain.Vals.Validators); i++ {
 			_, valAddr := s.getValByIdx(i)
 			if validator.OperatorAddress == valAddr.String() {
 				idx = i
