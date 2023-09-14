@@ -178,17 +178,6 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 	store.Delete(types.ChainToChannelKey(chainID))
 }
 
-// GetChainsInProposal gets chainId in gov proposal before voting finishes
-func (k Keeper) GetChainsInProposal(ctx sdk.Context, chainID string) (string, bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ChainInProposalKey(chainID))
-	if bz == nil {
-		return "", false
-	}
-
-	return string(bz), true
-}
-
 // SetChainsInProposal sets consumer chainId in gov consumerAddition proposal in store
 // the consumer chainId is only added when the voting period for consumerAddition proposal
 // does not end.

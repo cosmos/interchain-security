@@ -79,7 +79,6 @@ func (gh GovHooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID ui
 	gh.k.DeleteChainsInProposal(ctx, consadditionProp.ChainId)
 }
 
-func (gh GovHooks) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress) {
-}
+func (gh GovHooks) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress) {}
 func (gh GovHooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress) {}
-func (gh GovHooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64)               {}
+func (gh GovHooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64) {}
