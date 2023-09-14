@@ -54,7 +54,8 @@ func (k Keeper) QueryProviderInfo(c context.Context, //nolint:golint
 }
 
 func (k Keeper) QueryThrottleState(c context.Context,
-	req *types.QueryThrottleStateRequest) (*types.QueryThrottleStateResponse, error) {
+	req *types.QueryThrottleStateRequest,
+) (*types.QueryThrottleStateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
 	resp := types.QueryThrottleStateResponse{}
