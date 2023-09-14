@@ -173,8 +173,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.waitForSlashThrottleDequeue(action, verbose)
 	case startRelayerAction:
 		tr.startRelayer(action, verbose)
-	case registerConsumerRewardDenomAction:
-		tr.registerConsumerRewardDenom(action, verbose)
+	case submitChangeRewardDenomsProposalAction:
+		tr.submitChangeRewardDenomsProposal(action, verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", tr.name, action)
 	}
