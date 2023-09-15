@@ -238,7 +238,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 func (k Keeper) MakeConsumerGenesis(
 	ctx sdk.Context,
 	prop *types.ConsumerAdditionProposal,
-) (gen ccv.GenesisState, nextValidatorsHash []byte, err error) {
+) (gen ccv.ConsumerGenesisState, nextValidatorsHash []byte, err error) {
 	chainID := prop.ChainId
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
@@ -316,7 +316,7 @@ func (k Keeper) MakeConsumerGenesis(
 		[]string{},
 	)
 
-	gen = *ccv.NewInitialGenesisState(
+	gen = *ccv.NewInitialConsumerGenesisState(
 		clientState,
 		consState.(*ibctmtypes.ConsensusState),
 		initialUpdatesWithConsumerKeys,

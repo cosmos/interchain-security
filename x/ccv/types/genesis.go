@@ -8,11 +8,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 )
 
-// NewInitialGenesisState returns a consumer GenesisState for a completely new consumer chain.
-func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
-	initValSet []abci.ValidatorUpdate, params Params,
-) *GenesisState {
-	return &GenesisState{
+// NewInitialConsumerGenesisState returns a ConsumerGenesisState for a completely new consumer chain.
+func NewInitialConsumerGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
+	initValSet []abci.ValidatorUpdate, params ConsumerParams,
+) *ConsumerGenesisState {
+	return &ConsumerGenesisState{
 		Params:                 params,
 		NewChain:               true,
 		ProviderClientState:    cs,
@@ -21,8 +21,8 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 	}
 }
 
-// NewRestartGenesisState returns a consumer GenesisState that has already been established.
-func NewRestartGenesisState(
+// NewRestartConsumerGenesisState returns a ConsumerGenesisState that has already been established.
+func NewRestartConsumerGenesisState(
 	clientID, channelID string,
 	maturingPackets []MaturingVSCPacket,
 	initValSet []abci.ValidatorUpdate,
@@ -30,9 +30,9 @@ func NewRestartGenesisState(
 	pendingConsumerPackets ConsumerPacketDataList,
 	outstandingDowntimes []OutstandingDowntime,
 	lastTransBlockHeight LastTransmissionBlockHeight,
-	params Params,
-) *GenesisState {
-	return &GenesisState{
+	params ConsumerParams,
+) *ConsumerGenesisState {
+	return &ConsumerGenesisState{
 		Params:                      params,
 		ProviderClientId:            clientID,
 		ProviderChannelId:           channelID,
@@ -46,10 +46,10 @@ func NewRestartGenesisState(
 	}
 }
 
-// DefaultGenesisState returns a default disabled consumer chain genesis state. This allows the module to be hooked up to app without getting use
+// DefaultConsumerGenesisState returns a default disabled consumer chain genesis state. This allows the module to be hooked up to app without getting use
 // unless explicitly specified in genesis.
-func DefaultGenesisState() *GenesisState {
-	return &GenesisState{
+func DefaultConsumerGenesisState() *ConsumerGenesisState {
+	return &ConsumerGenesisState{
 		Params: DefaultParams(),
 	}
 }
@@ -71,7 +71,7 @@ func DefaultGenesisState() *GenesisState {
 //   - MaturingVSCPackets, OutstandingDowntime, PendingConsumerPacket, LastTransmissionBlockHeight // optional
 //
 
-func (gs GenesisState) Validate() error {
+func (gs ConsumerGenesisState) Validate() error {
 	if !gs.Params.Enabled {
 		return nil
 	}
