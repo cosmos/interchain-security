@@ -44,16 +44,16 @@ func TestWriterThenParser(t *testing.T) {
 	tests := map[string]struct {
 		trace []Step
 	}{
-		"proposalSubmission":   {proposalSubmissionSteps},
-		"proposalInState":      {proposalInStateSteps},
-		"start_provider_chain": {stepStartProviderChain()},
-		"happyPath":            {happyPathSteps},
-		"democracy":            {democracySteps},
-		"slashThrottle":        {slashThrottleSteps},
-		"multipleConsumers":    {multipleConsumers},
-		"shorthappy":           {shortHappyPathSteps},
-		"rewardDenomConsumer":  {rewardDenomConsumerSteps},
-		"changeover":           {changeoverSteps},
+		"proposalSubmission":    {proposalSubmissionSteps},
+		"proposalInState":       {proposalInStateSteps},
+		"start_provider_chain":  {stepStartProviderChain()},
+		"happyPath":             {happyPathSteps},
+		"democracy":             {democracySteps},
+		"slashThrottle":         {slashThrottleSteps},
+		"multipleConsumers":     {multipleConsumers},
+		"shorthappy":            {shortHappyPathSteps},
+		"democracyRewardsSteps": {democracyRewardsSteps},
+		"changeover":            {changeoverSteps},
 	}
 
 	dir, err := os.MkdirTemp("", "example")

@@ -89,13 +89,13 @@ var stepChoices = map[string]StepChoice{
 	},
 	"democracy-reward": {
 		name:        "democracy-reward",
-		steps:       democracySteps,
+		steps:       democracyRewardsSteps,
 		description: "democracy tests allowing rewards",
 		testRuns:    []string{"democracy-reward"},
 	},
 	"democracy": {
 		name:        "democracy",
-		steps:       rewardDenomConsumerSteps,
+		steps:       democracySteps,
 		description: "democracy tests",
 		testRuns:    []string{"democracy"},
 	},
@@ -142,6 +142,7 @@ func getTestCaseUsageString() string {
 	var builder strings.Builder
 
 	// Test case selection
+	builder.WriteString("This flag is used to reference existing, defined test cases to be run.")
 	builder.WriteString("Test case selection:\nSelection of test steps to be executed:\n")
 	for _, stepChoice := range stepChoices {
 		builder.WriteString(fmt.Sprintf("- %s : %s. Compatible with test runners: %s\n", stepChoice.name, stepChoice.description, strings.Join(stepChoice.testRuns, ",")))
@@ -161,9 +162,16 @@ func getTestCaseUsageString() string {
 	return builder.String()
 }
 
+func getTestFileUsageString() string {
+}
+
 func parseArguments() (err error) {
 	flag.Var(&testSelection, "tc",
 		getTestCaseUsageString())
+	flag.Parse()
+
+	flag.Var(&testSelection, "test-files",
+		getTestFileUsageString())
 	flag.Parse()
 
 	// Enforce go-relayer in case of cometmock as hermes is not yet supported
