@@ -185,8 +185,8 @@ func getTestCases(selection TestSet) (tests []testRunWithSteps) {
 	// Run default tests if no test cases were selected
 	if len(selection) == 0 {
 		selection = TestSet{
-			"changeover", "happy-path",
-			"democracy-reward", "democracy", "slash-throttle",
+			"changeover/changeover", "happy-path/default",
+			"democracy-reward/democracy-reward", "democracy/democracy", "slash-throttle/slash-throttle",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selection = append(selection, "multiconsumer")
@@ -204,7 +204,7 @@ func getTestCases(selection TestSet) (tests []testRunWithSteps) {
 		stepsName := splitTcString[0]
 		testRunnerName := splitTcString[1]
 
-		if _, exists := stepChoices[tc]; !exists {
+		if _, exists := stepChoices[stepsName]; !exists {
 			log.Fatalf("Step choice '%s' not found.\nsee usage info:\n%s", tc, getTestCaseUsageString())
 		}
 
@@ -216,8 +216,8 @@ func getTestCases(selection TestSet) (tests []testRunWithSteps) {
 
 		testRunChoice := testRuns[testRunnerName]
 
-		if slices.Contains(stepChoice.testRuns, testRunChoice.name) {
-			log.Fatalf("Test runner '%s' is not compatible with step choice '%s'.\nsee usage info:\n%s", testRunnerName, stepsName, getTestCaseUsageString())
+		if !slices.Contains(stepChoice.testRuns, testRunChoice.name) {
+			log.Fatalf("Step choice '%s' is not compatible with test runner '%s'. compatible test runs: %s", stepsName, testRunnerName, strings.Join(stepChoice.testRuns, ","))
 		}
 
 		tests = append(tests, testRunWithSteps{
