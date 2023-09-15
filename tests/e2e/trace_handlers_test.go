@@ -90,14 +90,14 @@ func TestWriteExamples(t *testing.T) {
 	tests := map[string]struct {
 		trace []Step
 	}{
-		"start_provider_chain": {stepStartProviderChain()},
-		"happyPath":            {happyPathSteps},
-		"democracy":            {democracySteps},
-		"slashThrottle":        {slashThrottleSteps},
-		"multipleConsumers":    {multipleConsumers},
-		"shorthappy":           {shortHappyPathSteps},
-		"rewardDenomConsumer":  {rewardDenomConsumerSteps},
-		"changeover":           {changeoverSteps},
+		"start_provider_chain":  {stepStartProviderChain()},
+		"happyPath":             {happyPathSteps},
+		"democracy":             {democracySteps},
+		"slashThrottle":         {slashThrottleSteps},
+		"multipleConsumers":     {multipleConsumers},
+		"shorthappy":            {shortHappyPathSteps},
+		"democracyRewardsSteps": {democracyRewardsSteps},
+		"changeover":            {changeoverSteps},
 	}
 
 	dir := "tracehandler_testdata"

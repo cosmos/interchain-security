@@ -157,12 +157,28 @@ func getTestCaseUsageString() string {
 	builder.WriteString("\n")
 
 	// Example
-	builder.WriteString("Example: -tc multiconsumer/multiconsumer -tc happy-path/default")
+	builder.WriteString("Example: -tc multiconsumer::multiconsumer -tc happy-path::default")
 
 	return builder.String()
 }
 
 func getTestFileUsageString() string {
+	var builder strings.Builder
+
+	builder.WriteString("This flag is used to reference files containing step traces to be run.\n")
+	builder.WriteString("Each filename should be separated by '::' from the test runner name.\n")
+
+	// Test runner selection
+	builder.WriteString("Test runner selection:\nSelection of test runners to be executed:\n")
+	for _, testRunChoice := range testRuns {
+		builder.WriteString(fmt.Sprintf("- %s : %s\n", testRunChoice.name, testRunChoice.description))
+	}
+	builder.WriteString("\n")
+
+	// Example
+	builder.WriteString("Example: -test-file awesome-trace.json::default -test-file other-trace.json::default")
+
+	return builder.String()
 }
 
 func parseArguments() (err error) {
@@ -170,7 +186,7 @@ func parseArguments() (err error) {
 		getTestCaseUsageString())
 	flag.Parse()
 
-	flag.Var(&testSelection, "test-files",
+	flag.Var(&testSelection, "test-file",
 		getTestFileUsageString())
 	flag.Parse()
 
@@ -193,11 +209,11 @@ func getTestCases(selection TestSet) (tests []testRunWithSteps) {
 	// Run default tests if no test cases were selected
 	if len(selection) == 0 {
 		selection = TestSet{
-			"changeover/changeover", "happy-path/default",
-			"democracy-reward/democracy-reward", "democracy/democracy", "slash-throttle/slash-throttle",
+			"changeover::changeover", "happy-path::default",
+			"democracy-reward::democracy-reward", "democracy::democracy", "slash-throttle::slash-throttle",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
-			selection = append(selection, "multiconsumer/multiconsumer")
+			selection = append(selection, "multiconsumer::multiconsumer")
 		}
 	}
 
@@ -205,7 +221,7 @@ func getTestCases(selection TestSet) (tests []testRunWithSteps) {
 	tests = []testRunWithSteps{}
 	for _, tc := range selection {
 		// first part of tc is the test runner, second part is the test case
-		splitTcString := strings.Split(tc, "/")
+		splitTcString := strings.Split(tc, "::")
 		if len(splitTcString) != 2 {
 			log.Fatalf("Test case '%s' is invalid.\nsee usage info:\n%s", tc, getTestCaseUsageString())
 		}
