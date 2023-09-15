@@ -20,7 +20,7 @@ jobs:
         with:
           go-version: "1.20" # The Go version to download (if necessary) and use.
       - name: E2E happy-path test
-        run: go run ./tests/e2e/... --tc happy-path
+        run: go run ./tests/e2e/... --tc happy-path/default
   changeover-test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -36,7 +36,7 @@ jobs:
         with:
           go-version: "1.20" # The Go version to download (if necessary) and use.
       - name: E2E changeover test
-        run: go run ./tests/e2e/... --tc changeover
+        run: go run ./tests/e2e/... --tc changeover/changeover
   democracy-reward-test:
       runs-on: ubuntu-latest
       timeout-minutes: 20
@@ -68,7 +68,7 @@ jobs:
           with:
             go-version: "1.20" # The Go version to download (if necessary) and use.
         - name: E2E democracy tests
-          run: go run ./tests/e2e/... --tc democracy
+          run: go run ./tests/e2e/... --tc democracy/democracy
   slash-throttle-test:
       runs-on: ubuntu-latest
       timeout-minutes: 20
@@ -84,7 +84,7 @@ jobs:
           with:
             go-version: "1.20" # The Go version to download (if necessary) and use.
         - name: E2E slash-throttle tests
-          run: go run ./tests/e2e/... --tc slash-throttle
+          run: go run ./tests/e2e/... --tc slash-throttle/slash-throttle
   multiconsumer-test:
       runs-on: ubuntu-latest
       timeout-minutes: 40
@@ -100,4 +100,4 @@ jobs:
           with:
             go-version: "1.20" # The Go version to download (if necessary) and use.
         - name: E2E multi-consumer tests
-          run: go run ./tests/e2e/... --tc multiconsumer
+          run: go run ./tests/e2e/... --tc multiconsumer/multiconsumer

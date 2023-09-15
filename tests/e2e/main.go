@@ -189,7 +189,7 @@ func getTestCases(selection TestSet) (tests []testRunWithSteps) {
 			"democracy-reward/democracy-reward", "democracy/democracy", "slash-throttle/slash-throttle",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
-			selection = append(selection, "multiconsumer")
+			selection = append(selection, "multiconsumer/multiconsumer")
 		}
 	}
 
