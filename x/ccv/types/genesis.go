@@ -8,8 +8,8 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 )
 
-// NewInitialGenesisState returns a ConsumerGenesisState for a completely new consumer chain.
-func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
+// NewInitialConsumerGenesisState returns a ConsumerGenesisState for a completely new consumer chain.
+func NewInitialConsumerGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
 	initValSet []abci.ValidatorUpdate, params ConsumerParams,
 ) *ConsumerGenesisState {
 	return &ConsumerGenesisState{
@@ -21,8 +21,8 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 	}
 }
 
-// NewRestartGenesisState returns a ConsumerGenesisState that has already been established.
-func NewRestartGenesisState(
+// NewRestartConsumerGenesisState returns a ConsumerGenesisState that has already been established.
+func NewRestartConsumerGenesisState(
 	clientID, channelID string,
 	maturingPackets []MaturingVSCPacket,
 	initValSet []abci.ValidatorUpdate,
@@ -46,9 +46,9 @@ func NewRestartGenesisState(
 	}
 }
 
-// DefaultGenesisState returns a default disabled consumer chain genesis state. This allows the module to be hooked up to app without getting use
+// DefaultConsumerGenesisState returns a default disabled consumer chain genesis state. This allows the module to be hooked up to app without getting use
 // unless explicitly specified in genesis.
-func DefaultGenesisState() *ConsumerGenesisState {
+func DefaultConsumerGenesisState() *ConsumerGenesisState {
 	return &ConsumerGenesisState{
 		Params: DefaultParams(),
 	}

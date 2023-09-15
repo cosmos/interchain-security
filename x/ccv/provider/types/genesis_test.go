@@ -782,5 +782,5 @@ func getInitialConsumerGenesis(t *testing.T, chainID string) ccv.ConsumerGenesis
 
 	params := ccv.DefaultParams()
 	params.Enabled = true
-	return *ccv.NewInitialGenesisState(cs, consensusState, valUpdates, params)
+	return *ccv.NewInitialConsumerGenesisState(cs, consensusState, valUpdates, params)
 }

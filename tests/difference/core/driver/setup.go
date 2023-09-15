@@ -540,7 +540,7 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *ccv.Con
 		[]string{},
 		[]string{},
 	)
-	return ccv.NewInitialGenesisState(client, providerConsState, valUpdates, params)
+	return ccv.NewInitialConsumerGenesisState(client, providerConsState, valUpdates, params)
 }
 
 // The state of the data returned is equivalent to the state of two chains

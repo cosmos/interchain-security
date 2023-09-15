@@ -118,7 +118,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *ccv.ConsumerGenesisState) []
 func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *ccv.ConsumerGenesisState) {
 	params := k.GetConsumerParams(ctx)
 	if !params.Enabled {
-		return ccv.DefaultGenesisState()
+		return ccv.DefaultConsumerGenesisState()
 	}
 
 	// export the current validator set
@@ -137,7 +137,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *ccv.ConsumerGenesisStat
 			panic("provider client does not exist although provider channel does exist")
 		}
 
-		genesis = ccv.NewRestartGenesisState(
+		genesis = ccv.NewRestartConsumerGenesisState(
 			clientID,
 			channelID,
 			k.GetAllPacketMaturityTimes(ctx),
@@ -153,11 +153,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *ccv.ConsumerGenesisStat
 		// if provider clientID and channelID don't exist on the consumer chain,
 		// then CCV protocol is disabled for this chain return a default genesis state
 		if !ok {
-			return ccv.DefaultGenesisState()
+			return ccv.DefaultConsumerGenesisState()
 		}
 
 		// export client states and pending slashing requests into a new chain genesis
-		genesis = ccv.NewRestartGenesisState(
+		genesis = ccv.NewRestartConsumerGenesisState(
 			clientID,
 			"",
 			nil,

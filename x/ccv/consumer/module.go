@@ -52,7 +52,7 @@ func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) 
 // DefaultGenesis returns default genesis state as raw bytes for the ibc
 // consumer module.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(ccvtypes.DefaultGenesisState())
+	return cdc.MustMarshalJSON(ccvtypes.DefaultConsumerGenesisState())
 }
 
 // ValidateGenesis performs genesis state validation for the ibc consumer module.

@@ -88,7 +88,7 @@ message ConsumerGenesisState {
     string provider_channel_id =
         3; // empty for a new chain, filled in on restart.
     bool new_chain =
-        4; // true for new chain ConsumerConsumerGenesisState, false for chain restart.
+        4; // true for new chain, false for chain restart.
     // ProviderClientState filled in on new chain, nil on restart.
     ibc.lightclients.tendermint.v1.ClientState provider_client_state = 5;
     // ProviderConsensusState filled in on new chain, nil on restart.

@@ -316,7 +316,7 @@ func (k Keeper) MakeConsumerGenesis(
 		[]string{},
 	)
 
-	gen = *ccv.NewInitialGenesisState(
+	gen = *ccv.NewInitialConsumerGenesisState(
 		clientState,
 		consState.(*ibctmtypes.ConsensusState),
 		initialUpdatesWithConsumerKeys,

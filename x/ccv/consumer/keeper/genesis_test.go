@@ -112,7 +112,7 @@ func TestInitGenesis(t *testing.T) {
 					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 1),
 				)
 			},
-			ccv.NewInitialGenesisState(
+			ccv.NewInitialConsumerGenesisState(
 				provClientState,
 				provConsState,
 				valset,
@@ -134,7 +134,7 @@ func TestInitGenesis(t *testing.T) {
 					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 2),
 				)
 			},
-			ccv.NewRestartGenesisState(
+			ccv.NewRestartConsumerGenesisState(
 				provClientID,
 				"",
 				matPackets,
@@ -170,7 +170,7 @@ func TestInitGenesis(t *testing.T) {
 				)
 			},
 			// create a genesis for a restarted chain
-			ccv.NewRestartGenesisState(
+			ccv.NewRestartConsumerGenesisState(
 				provClientID,
 				provChannelID,
 				matPackets,
@@ -307,7 +307,7 @@ func TestExportGenesis(t *testing.T) {
 
 				ck.SetHeightValsetUpdateID(ctx, defaultHeightValsetUpdateIDs[0].Height, defaultHeightValsetUpdateIDs[0].ValsetUpdateId)
 			},
-			ccv.NewRestartGenesisState(
+			ccv.NewRestartConsumerGenesisState(
 				provClientID,
 				"",
 				nil,
@@ -343,7 +343,7 @@ func TestExportGenesis(t *testing.T) {
 				ck.SetOutstandingDowntime(ctx, sdk.ConsAddress(validator.Address.Bytes()))
 				ck.SetLastTransmissionBlockHeight(ctx, ltbh)
 			},
-			ccv.NewRestartGenesisState(
+			ccv.NewRestartConsumerGenesisState(
 				provClientID,
 				provChannelID,
 				matPackets,
