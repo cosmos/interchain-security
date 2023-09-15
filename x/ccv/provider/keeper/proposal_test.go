@@ -813,7 +813,8 @@ func TestMakeConsumerGenesis(t *testing.T) {
 			"unbonding_period": 1728000000000000,
 			"soft_opt_out_threshold": "0.05",
 			"reward_denoms": [],
-			"provider_reward_denoms": []
+			"provider_reward_denoms": [],
+			"retry_delay_period": 3600000000000
 		},
 		"new_chain": true,
 		"provider_client_state": {
