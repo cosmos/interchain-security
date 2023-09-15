@@ -6,7 +6,7 @@ package main
 // consumer-initiated slash steps are executed after consumer-initiated downtime
 // slashes have already occurred. However slash packet throttling is
 // pseudo-disabled in this test by setting the slash meter replenish
-// frAction to 1.0 in the config file.
+// fraction to 1.0 in the config file.
 //
 // only double sign on provider chain will cause slashing and tombstoning
 func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
