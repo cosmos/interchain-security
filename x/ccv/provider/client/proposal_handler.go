@@ -227,7 +227,7 @@ func SubmitChangeRewardDenomsProposalTxCmd() *cobra.Command {
 		The proposal details must be supplied via a JSON file.
 
 		Example:
-		$ <appd> tx gov submit-legacy-proposal change-reward-denoms <path/to/proposal.json> --from=<key_or_address>
+		$ <appd> tx gov submit-proposal change-reward-denoms <path/to/proposal.json> --from=<key_or_address>
 
 		Where proposal.json contains:
 		{
