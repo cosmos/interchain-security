@@ -50,7 +50,7 @@ var (
 )
 
 var (
-	testSelection TestSet
+	selectedTests TestSet
 	testRuns      = map[string]TestRunChoice{
 		"default":          {name: "default", testRun: DefaultTestRun(), description: "default test run"},
 		"changeover":       {name: "changeover", testRun: ChangeoverTestRun(), description: "changeover test run"},
@@ -61,6 +61,8 @@ var (
 	}
 	// helper function to get the test run choices by matching test runs
 )
+
+var selectedTestfiles TestSet
 
 var stepChoices = map[string]StepChoice{
 	"happy-path-short": {
@@ -182,11 +184,10 @@ func getTestFileUsageString() string {
 }
 
 func parseArguments() (err error) {
-	flag.Var(&testSelection, "tc",
+	flag.Var(&selectedTests, "tc",
 		getTestCaseUsageString())
-	flag.Parse()
 
-	flag.Var(&testSelection, "test-file",
+	flag.Var(&selectedTestfiles, "test-file",
 		getTestFileUsageString())
 	flag.Parse()
 
@@ -205,22 +206,22 @@ type testRunWithSteps struct {
 	steps   []Step
 }
 
-func getTestCases(selection TestSet) (tests []testRunWithSteps) {
+func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet) (tests []testRunWithSteps) {
 	// Run default tests if no test cases were selected
-	if len(selection) == 0 {
-		selection = TestSet{
+	if len(selectedPredefinedTests) == 0 && len(selectedTestFiles) == 0 {
+		selectedPredefinedTests = TestSet{
 			"changeover::changeover", "happy-path::default",
 			"democracy-reward::democracy-reward", "democracy::democracy", "slash-throttle::slash-throttle",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
-			selection = append(selection, "multiconsumer::multiconsumer")
+			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer::multiconsumer")
 		}
 	}
 
-	// Get tests from selection
 	tests = []testRunWithSteps{}
-	for _, tc := range selection {
-		// first part of tc is the test runner, second part is the test case
+	// Get predefined from selection
+	for _, tc := range selectedPredefinedTests {
+		// first part of tc is the steps, second part is the test runner
 		splitTcString := strings.Split(tc, "::")
 		if len(splitTcString) != 2 {
 			log.Fatalf("Test case '%s' is invalid.\nsee usage info:\n%s", tc, getTestCaseUsageString())
@@ -250,6 +251,35 @@ func getTestCases(selection TestSet) (tests []testRunWithSteps) {
 		},
 		)
 	}
+
+	// get test cases from files
+	for _, testFile := range selectedTestFiles {
+		// first part is the file, second part is the test runner
+		splitTcString := strings.Split(testFile, "::")
+		if len(splitTcString) != 2 {
+			log.Fatalf("Test file '%s' is invalid.\nsee usage info:\n%s", testFile, getTestFileUsageString())
+		}
+
+		testFileName := splitTcString[0]
+		testRunnerName := splitTcString[1]
+
+		if _, exists := testRuns[testRunnerName]; !exists {
+			log.Fatalf("Test runner '%s' not found.\nsee usage info:\n%s", testRunnerName, getTestFileUsageString())
+		}
+
+		testRunChoice := testRuns[testRunnerName]
+
+		testCase, err := GlobalJSONParser.ReadTraceFromFile(testFileName)
+		if err != nil {
+			log.Fatalf("Error reading test file '%s': %s", testFileName, err)
+		}
+
+		tests = append(tests, testRunWithSteps{
+			testRun: testRunChoice.testRun,
+			steps:   testCase,
+		})
+	}
+
 	return tests
 }
 
@@ -262,7 +292,7 @@ func main() {
 		log.Fatalf("Error parsing command arguments %s\n", err)
 	}
 
-	testCases := getTestCases(testSelection)
+	testCases := getTestCases(selectedTests, selectedTestfiles)
 
 	start := time.Now()
 	err := executeTests(testCases)

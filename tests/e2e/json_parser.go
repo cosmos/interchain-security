@@ -14,6 +14,8 @@ type TraceParser interface {
 // JSONParser is a simple parser that reads steps by unmarshalling from a file.
 type JSONParser struct{}
 
+var GlobalJSONParser = JSONParser{}
+
 func (parser JSONParser) ReadTraceFromFile(path string) ([]Step, error) {
 	// Open the JSON file and read into a bite array
 	jsonData, err := os.ReadFile(filepath.Clean(path))

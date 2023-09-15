@@ -38,9 +38,6 @@ var proposalInStateSteps = []Step{
 
 // Checks that writing, then parsing a trace results in the same trace.
 func TestWriterThenParser(t *testing.T) {
-	parser := JSONParser{}
-	writer := JSONWriter{}
-
 	tests := map[string]struct {
 		trace []Step
 	}{
@@ -65,12 +62,12 @@ func TestWriterThenParser(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			filename := filepath.Join(dir, "trace.json")
-			err := WriteAndReadTrace(parser, writer, tc.trace, filename)
+			err := WriteAndReadTrace(GlobalJSONParser, GlobalJSONWriter, tc.trace, filename)
 			if err != nil {
 				t.Fatalf("in testcase %v, got error writing trace to file: %v", name, err)
 			}
 
-			got, err := parser.ReadTraceFromFile(filename)
+			got, err := GlobalJSONParser.ReadTraceFromFile(filename)
 			if err != nil {
 				t.Fatalf("in testcase %v, got error reading trace from file: %v", name, err)
 			}
@@ -85,8 +82,6 @@ func TestWriterThenParser(t *testing.T) {
 
 // Checks that writing a trace does not result in an error.
 func TestWriteExamples(t *testing.T) {
-	writer := JSONWriter{}
-
 	tests := map[string]struct {
 		trace []Step
 	}{
@@ -105,7 +100,7 @@ func TestWriteExamples(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			filename := filepath.Join(dir, name+".json")
-			err := writer.WriteTraceToFile(filename, tc.trace)
+			err := GlobalJSONWriter.WriteTraceToFile(filename, tc.trace)
 			if err != nil {
 				t.Fatalf("error writing trace to file: %v", err)
 			}

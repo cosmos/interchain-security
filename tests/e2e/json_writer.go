@@ -14,6 +14,8 @@ type TraceWriter interface {
 // To identify which type of action is being used, we add a field to the Step struct.
 type JSONWriter struct{}
 
+var GlobalJSONWriter = JSONWriter{}
+
 func (writer JSONWriter) WriteTraceToFile(filepath string, trace []Step) error {
 	// collect missing action types, if any. this way, we can provide a more helpful error message.
 
