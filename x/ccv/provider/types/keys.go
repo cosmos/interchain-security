@@ -417,8 +417,12 @@ func ChainIdWithLenKey(prefix byte, chainID string) []byte {
 }
 
 // ChainInProposalKey returns the consumer chainId in consumerAddition gov proposal submitted before voting finishes
-func ChainInProposalKey(chainID string) []byte {
-	return append([]byte{ChainInProposalByteKey}, []byte(chainID)...)
+func ChainInProposalKey(chainID string, proposalID uint64) []byte {
+	return ccvtypes.AppendMany(
+		[]byte{ChainInProposalByteKey},
+		[]byte(chainID),
+		sdk.Uint64ToBigEndian(proposalID),
+		)
 }
 
 // ParseChainIdAndTsKey returns the chain ID and time for a ChainIdAndTs key

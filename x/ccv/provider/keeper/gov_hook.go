@@ -36,20 +36,22 @@ func (gh GovHooks) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) {
 	}
 	msgs := p.GetMessages()
 
-	var msgLegacyContent v1.MsgExecLegacyContent
-	err := proto.Unmarshal(msgs[0].Value, &msgLegacyContent)
-	if err != nil {
-		panic(fmt.Errorf("failed to unmarshal proposal content in gov hook: %w", err))
-	}
+	for _, msg := range msgs {
+		var msgLegacyContent v1.MsgExecLegacyContent
+		err := proto.Unmarshal(msg.Value, &msgLegacyContent)
+		if err != nil {
+			panic(fmt.Errorf("failed to unmarshal proposal content in gov hook: %w", err))
+		}
 
-	// if the proposal is not ConsumerAdditionProposal, return
-	var consadditionProp types.ConsumerAdditionProposal
-	if err := proto.Unmarshal(msgLegacyContent.Content.Value, &consadditionProp); err != nil {
-		return
-	}
+		// if the proposal is not ConsumerAdditionProposal, return
+		var consAdditionProp types.ConsumerAdditionProposal
+		if err := proto.Unmarshal(msgLegacyContent.Content.Value, &consAdditionProp); err != nil {
+			return
+		}
 
-	if consadditionProp.ProposalType() == types.ProposalTypeConsumerAddition {
-		gh.k.SetChainsInProposal(ctx, consadditionProp.ChainId, proposalID)
+		if consAdditionProp.ProposalType() == types.ProposalTypeConsumerAddition {
+			gh.k.SetChainsInProposal(ctx, consAdditionProp.ChainId, proposalID)
+		}
 	}
 }
 
@@ -64,22 +66,24 @@ func (gh GovHooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID ui
 	}
 	msgs := p.GetMessages()
 
-	var msgLegacyContent v1.MsgExecLegacyContent
-	err := proto.Unmarshal(msgs[0].Value, &msgLegacyContent)
-	if err != nil {
-		panic(fmt.Errorf("failed to unmarshal proposal content in gov hook: %w", err))
-	}
-	var consadditionProp types.ConsumerAdditionProposal
+	for _, msg := range msgs {
+		var msgLegacyContent v1.MsgExecLegacyContent
+		err := proto.Unmarshal(msg.Value, &msgLegacyContent)
+		if err != nil {
+			panic(fmt.Errorf("failed to unmarshal proposal content in gov hook: %w", err))
+		}
+		var consAdditionProp types.ConsumerAdditionProposal
 
-	// if the proposal is not ConsumerAdditionProposal, return
-	if err := proto.Unmarshal(msgLegacyContent.Content.Value, &consadditionProp); err != nil {
-		return
-	}
-	if consadditionProp.ProposalType() != types.ProposalTypeConsumerAddition {
-		return
-	}
+		// if the proposal is not ConsumerAdditionProposal, return
+		if err := proto.Unmarshal(msgLegacyContent.Content.Value, &consAdditionProp); err != nil {
+			return
+		}
+		if consAdditionProp.ProposalType() != types.ProposalTypeConsumerAddition {
+			return
+		}
 
-	gh.k.DeleteChainsInProposal(ctx, consadditionProp.ChainId)
+		gh.k.DeleteChainsInProposal(ctx, consAdditionProp.ChainId, proposalID)
+	}
 }
 
 func (gh GovHooks) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress) {}
