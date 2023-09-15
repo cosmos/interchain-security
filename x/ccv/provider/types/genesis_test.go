@@ -452,7 +452,7 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				[]types.ConsumerState{{
 					ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
-					ConsumerGenesis: ccv.GenesisState{},
+					ConsumerGenesis: ccv.ConsumerGenesisState{},
 				}},
 				nil,
 				nil,
@@ -757,7 +757,7 @@ func TestValidateGenesisState(t *testing.T) {
 	}
 }
 
-func getInitialConsumerGenesis(t *testing.T, chainID string) ccv.GenesisState {
+func getInitialConsumerGenesis(t *testing.T, chainID string) ccv.ConsumerGenesisState {
 	t.Helper()
 	// generate validator public key
 	cId := crypto.NewCryptoIdentityFromIntSeed(239668)
@@ -782,5 +782,5 @@ func getInitialConsumerGenesis(t *testing.T, chainID string) ccv.GenesisState {
 
 	params := ccv.DefaultParams()
 	params.Enabled = true
-	return *ccv.NewInitialGenesisState(cs, consensusState, valUpdates, params)
+	return *ccv.NewInitialConsumerGenesisState(cs, consensusState, valUpdates, params)
 }

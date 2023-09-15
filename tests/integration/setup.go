@@ -182,7 +182,7 @@ func (s *CCVTestSuite) getSentPacket(chain *ibctesting.TestChain, sequence uint6
 func initConsumerChain(
 	s *CCVTestSuite,
 	chainID string,
-	genesisState *ccv.GenesisState,
+	genesisState *ccv.ConsumerGenesisState,
 ) {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	bundle := s.consumerBundles[chainID]

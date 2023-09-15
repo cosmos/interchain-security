@@ -51,7 +51,7 @@ func ConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter {
 			},
 		)
 		// Feed consumer genesis with provider validators
-		var consumerGenesis ccvtypes.GenesisState
+		var consumerGenesis ccvtypes.ConsumerGenesisState
 		encoding.Codec.MustUnmarshalJSON(genesisState[consumertypes.ModuleName], &consumerGenesis)
 		consumerGenesis.InitialValSet = initValPowers
 		consumerGenesis.Params.Enabled = true
@@ -69,7 +69,7 @@ func DemocracyConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter
 		genesisState := appConsumerDemocracy.NewDefaultGenesisState(encoding.Codec)
 		// Feed consumer genesis with provider validators
 		// TODO See if useful for democracy
-		var consumerGenesis ccvtypes.GenesisState
+		var consumerGenesis ccvtypes.ConsumerGenesisState
 		encoding.Codec.MustUnmarshalJSON(genesisState[consumertypes.ModuleName], &consumerGenesis)
 		consumerGenesis.InitialValSet = initValPowers
 		consumerGenesis.Params.Enabled = true
