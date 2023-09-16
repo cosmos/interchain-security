@@ -52,7 +52,7 @@ func TestDemocracyTestSuite(t *testing.T) {
 	// Pass in concrete app type that implement the interface defined in /testutil/e2e/interfaces.go
 	// IMPORTANT: the concrete app type passed in as a type parameter here must match the
 	// concrete app type returned by the relevant app initer.
-	democSuite := intg.NewDemocracyTestSuite[*appDemocracy.App](
+	democSuite := intg.NewConsumerDemocracyTestSuite[*appDemocracy.App](
 		// Pass in ibctesting.AppIniter for democracy consumer.
 		icstestingutils.DemocracyConsumerAppIniter)
 

@@ -30,7 +30,7 @@ func runCCVTestByName(t *testing.T, methodName string) {
 // democracy consumer defined in this repo.
 func runConsumerDemocracyTestByName(t *testing.T, methodName string) {
 	t.Helper()
-	suite := integr.NewDemocracyTestSuite[*appConsumerDemocracy.App](
+	suite := integr.NewConsumerDemocracyTestSuite[*appConsumerDemocracy.App](
 		icstestingutils.DemocracyConsumerAppIniter)
 	suite.SetT(t)
 	suite.SetupTest()
