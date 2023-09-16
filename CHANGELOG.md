@@ -1,16 +1,46 @@
 # CHANGELOG
 
-## [Unreleased]
+## [Unreleased for Provider]
 
-Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
+Add an entry to the unreleased provider section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a provider release.
 
+* (feature!) [#1280](https://github.com/cosmos/interchain-security/pull/1280) provider proposal for changing reward denoms
+* (feature!) [#1244](https://github.com/cosmos/interchain-security/pull/1244) Update the default consumer unbonding period to 2 weeks.
+* (deps) [#1259](https://github.com/cosmos/interchain-security/pull/1259) Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to [v0.47.5](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.5).
+* (deps!) [#1258](https://github.com/cosmos/interchain-security/pull/1258) Bump [ibc-go](https://github.com/cosmos/ibc-go) to [v7.3.0](https://github.com/cosmos/ibc-go/releases/tag/v7.3.0).
+* (deps) [#1258](https://github.com/cosmos/interchain-security/pull/1258) Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to [v0.47.4](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.4).
 * (deps!) [#1196](https://github.com/cosmos/interchain-security/pull/1196) Bump [ibc-go](https://github.com/cosmos/ibc-go) to [v7.2.0](https://github.com/cosmos/ibc-go/releases/tag/v7.2.0).
 * `[x/ccv/provider]` (fix) [#1076](https://github.com/cosmos/interchain-security/pull/1076) Add `InitTimeoutTimestamps` and `ExportedVscSendTimestamps` to exported genesis.
-* (feat!) [#1024](https://github.com/cosmos/interchain-security/pull/1024) throttle with retries, consumer changes  
-* (fix!) revert consumer packet data changes from #1037 [#1150](https://github.com/cosmos/interchain-security/pull/1150)
-* (fix!) proper deletion of pending packets [#1146](https://github.com/cosmos/interchain-security/pull/1146)
-* (feat!) optimize pending packets storage on consumer, with migration! [#1037](https://github.com/cosmos/interchain-security/pull/1037)
-* (feat) introduce the gRPC query `/interchain_security/ccv/consumer/provider-info` and CLI command `interchain-security-cd q ccvconsumer provider-info`to retrieve provider info from the consumer chain.
+
+## [Unreleased for Consumer]
+
+Add an entry to the unreleased consumer section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a consumer release.
+
+## v3.2.0-consumer
+
+Date September 6th, 2023
+
+A minor version upgrade to the CONSUMER CCV module. This release includes various changes involving throttling v2 functionality, validation, and bumps to deps like cosmos-sdk and ibc-go.
+
+Note:
+
+* This release is ONLY RELEVANT TO CONSUMERS. The most recent provider release is v3.1.0, and will eventually be a release postfixed with `-provider`.
+* this is the first upgrade to the consumer module with a separate semver cycle from the provider module. See [contributing.md](./CONTRIBUTING.md#semantic-versioning) and [associated ADR](docs/docs/adrs/adr-012-separate-releasing.md) for more info.
+
+Changes:
+
+* (fix!) [#1262](https://github.com/cosmos/interchain-security/pull/1262) Remove incorrect address validation on `ProviderFeePoolAddrStr` param.
+* (feature!) [#1244](https://github.com/cosmos/interchain-security/pull/1244) Update the default consumer unbonding period to 2 weeks.
+* (fix!) [#1244](https://github.com/cosmos/interchain-security/pull/1244) Validate token transfer messages before calling `Transfer()`.
+* (deps) [#1259](https://github.com/cosmos/interchain-security/pull/1259) Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to [v0.47.5](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.5).
+* (deps!) [#1258](https://github.com/cosmos/interchain-security/pull/1258) Bump [ibc-go](https://github.com/cosmos/ibc-go) to [v7.3.0](https://github.com/cosmos/ibc-go/releases/tag/v7.3.0).
+* (deps) [#1258](https://github.com/cosmos/interchain-security/pull/1258) Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to [v0.47.4](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.4).
+* (deps!) [#1196](https://github.com/cosmos/interchain-security/pull/1196) Bump [ibc-go](https://github.com/cosmos/ibc-go) to [v7.2.0](https://github.com/cosmos/ibc-go/releases/tag/v7.2.0).
+* (feat!) [#1024](https://github.com/cosmos/interchain-security/pull/1024) Throttle with retries, consumer changes.  
+* (fix!) [#1150](https://github.com/cosmos/interchain-security/pull/1150) Revert consumer packet data changes from #1037.
+* (fix!) [#1146](https://github.com/cosmos/interchain-security/pull/1146) Proper deletion of pending packets.
+* (feat!) [#1037](https://github.com/cosmos/interchain-security/pull/1037) Optimize pending packets storage on consumer, with migration.
+* (feat) [#1164](https://github.com/cosmos/interchain-security/pull/1164) Introduce the gRPC query `/interchain_security/ccv/consumer/provider-info` and CLI command `interchain-security-cd q ccvconsumer provider-info` to retrieve provider info from the consumer chain.
 
 ## v3.1.0
 

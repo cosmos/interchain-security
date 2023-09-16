@@ -207,7 +207,10 @@ func GetNewVSCMaturedPacketData() types.VSCMaturedPacketData {
 }
 
 // SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
-// which asserts that a consumer chain was properly stopped from StopConsumerChain().
+// which assert that a consumer chain was properly setup to be later stopped from `StopConsumerChain`.
+// Note: This function only setups and tests that we correctly setup a consumer chain that we could later stop when
+// calling `StopConsumerChain` -- this does NOT necessarily mean that the consumer chain is stopped.
+// Also see `TestProviderStateIsCleanedAfterConsumerChainIsStopped`.
 func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers,
 ) {
@@ -215,7 +218,6 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
 		"chainID", clienttypes.NewHeight(4, 5))
 	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
-	expectations = append(expectations, GetMocksForStopConsumerChain(ctx, &mocks)...)
 
 	gomock.InOrder(expectations...)
 
@@ -224,6 +226,43 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	require.NoError(t, err)
 	err = providerKeeper.SetConsumerChain(ctx, "channelID")
 	require.NoError(t, err)
+}
+
+// TestProviderStateIsCleanedAfterConsumerChainIsStopped executes test assertions for the provider's state being cleaned
+// after a stopped consumer chain.
+func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
+	expectedChainID, expectedChannelID string,
+) {
+	t.Helper()
+	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
+	require.False(t, found)
+	_, found = providerKeeper.GetChainToChannel(ctx, expectedChainID)
+	require.False(t, found)
+	_, found = providerKeeper.GetChannelToChain(ctx, expectedChannelID)
+	require.False(t, found)
+	_, found = providerKeeper.GetInitChainHeight(ctx, expectedChainID)
+	require.False(t, found)
+	acks := providerKeeper.GetSlashAcks(ctx, expectedChainID)
+	require.Empty(t, acks)
+	_, found = providerKeeper.GetInitTimeoutTimestamp(ctx, expectedChainID)
+	require.False(t, found)
+
+	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, expectedChainID))
+
+	// test key assignment state is cleaned
+	require.Empty(t, providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &expectedChainID))
+	require.Empty(t, providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &expectedChainID))
+	require.Empty(t, providerKeeper.GetAllKeyAssignmentReplacements(ctx, expectedChainID))
+	require.Empty(t, providerKeeper.GetAllConsumerAddrsToPrune(ctx, expectedChainID))
+
+	allGlobalEntries := providerKeeper.GetAllGlobalSlashEntries(ctx)
+	for _, entry := range allGlobalEntries {
+		require.NotEqual(t, expectedChainID, entry.ConsumerChainID)
+	}
+
+	slashPacketData, vscMaturedPacketData, _, _ := providerKeeper.GetAllThrottledPacketData(ctx, expectedChainID)
+	require.Empty(t, slashPacketData)
+	require.Empty(t, vscMaturedPacketData)
 }
 
 func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
@@ -235,13 +274,13 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 		[]byte("gen_hash"),
 		[]byte("bin_hash"),
 		time.Now(),
-		consumertypes.DefaultConsumerRedistributeFrac,
-		consumertypes.DefaultBlocksPerDistributionTransmission,
+		types.DefaultConsumerRedistributeFrac,
+		types.DefaultBlocksPerDistributionTransmission,
 		"",
-		consumertypes.DefaultHistoricalEntries,
+		types.DefaultHistoricalEntries,
 		types.DefaultCCVTimeoutPeriod,
-		consumertypes.DefaultTransferTimeoutPeriod,
-		consumertypes.DefaultConsumerUnbondingPeriod,
+		types.DefaultTransferTimeoutPeriod,
+		types.DefaultConsumerUnbondingPeriod,
 	).(*providertypes.ConsumerAdditionProposal)
 
 	return prop

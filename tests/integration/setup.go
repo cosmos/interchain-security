@@ -1,22 +1,28 @@
 package integration
 
 import (
+	"context"
+	"fmt"
+	"sync"
 	"testing"
 
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/cosmos/ibc-go/v7/testing/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 
-	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v3/testutil/simibc"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -59,11 +65,16 @@ type CCVTestSuite struct {
 	// The preferred way to access chains, apps, and paths when designing tests around multiple consumers.
 	consumerBundles map[string]*icstestingutils.ConsumerBundle
 	skippedTests    map[string]bool
+
+	// packetSniffers maps a chain and a packetSniffer
+	packetSniffers map[*ibctesting.TestChain]*packetSniffer
 }
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
 func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
-	providerAppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string,
+	providerAppIniter icstestingutils.AppIniter,
+	consumerAppIniter icstestingutils.ValSetAppIniter,
+	skippedTests []string,
 ) *CCVTestSuite {
 	ccvSuite := new(CCVTestSuite)
 
@@ -108,9 +119,12 @@ func (suite *CCVTestSuite) BeforeTest(suiteName, testName string) {
 
 // SetupTest sets up in-mem state before every test
 func (suite *CCVTestSuite) SetupTest() {
+	suite.packetSniffers = make(map[*ibctesting.TestChain]*packetSniffer)
+
 	// Instantiate new coordinator and provider chain using callback
 	suite.coordinator, suite.providerChain,
 		suite.providerApp = suite.setupProviderCallback(suite.T())
+	suite.registerPacketSniffer(suite.providerChain)
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 
 	// re-assign all validator keys for the first consumer chain
@@ -122,6 +136,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	for i := 0; i < numConsumers; i++ {
 		bundle := suite.setupConsumerCallback(&suite.Suite, suite.coordinator, i)
 		suite.consumerBundles[bundle.Chain.ChainID] = bundle
+		suite.registerPacketSniffer(bundle.Chain)
 	}
 
 	// initialize each consumer chain with it's corresponding genesis state
@@ -148,11 +163,26 @@ func (suite *CCVTestSuite) SetupTest() {
 	}
 }
 
+func (s *CCVTestSuite) registerPacketSniffer(chain *ibctesting.TestChain) {
+	if s.packetSniffers == nil {
+		s.packetSniffers = make(map[*ibctesting.TestChain]*packetSniffer)
+	}
+	p := newPacketSniffer()
+	chain.App.GetBaseApp().SetStreamingService(p)
+	s.packetSniffers[chain] = p
+}
+
+func (s *CCVTestSuite) getSentPacket(chain *ibctesting.TestChain, sequence uint64, channelID string) (packet channeltypes.Packet, found bool) {
+	key := getSentPacketKey(sequence, channelID)
+	packet, found = s.packetSniffers[chain].packets[key]
+	return
+}
+
 // initConsumerChain initializes a consumer chain given a genesis state
 func initConsumerChain(
 	s *CCVTestSuite,
 	chainID string,
-	genesisState *consumertypes.GenesisState,
+	genesisState *ccv.ConsumerGenesisState,
 ) {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	bundle := s.consumerBundles[chainID]
@@ -293,7 +323,7 @@ func (suite *CCVTestSuite) SetupTransferChannel() {
 
 func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) { //nolint:govet // this is a test so we can copy locks
 	consumerKeeper := consumerBundle.GetKeeper()
-	providerStakingKeeper := s.providerApp.GetStakingKeeper()
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 	consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(consumerBundle.GetCtx())
 	cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(),
@@ -343,3 +373,46 @@ func preProposalKeyAssignment(s *CCVTestSuite, chainID string) {
 		s.Require().NoError(err)
 	}
 }
+
+// packetSniffer implements the StreamingService interface.
+// Implements ListenEndBlock to record packets from events.
+type packetSniffer struct {
+	packets map[string]channeltypes.Packet
+}
+
+var _ baseapp.StreamingService = &packetSniffer{}
+
+func newPacketSniffer() *packetSniffer {
+	return &packetSniffer{
+		packets: make(map[string]channeltypes.Packet),
+	}
+}
+
+func (ps *packetSniffer) ListenEndBlock(ctx context.Context, req abci.RequestEndBlock, res abci.ResponseEndBlock) error {
+	packets := simibc.ParsePacketsFromEvents(simibc.ABCIToSDKEvents(res.GetEvents()))
+	for _, packet := range packets {
+		ps.packets[getSentPacketKey(packet.Sequence, packet.SourceChannel)] = packet
+	}
+	return nil
+}
+
+// getSentPacketKey returns a key for accessing a sent packet,
+// given an ibc sequence number and the channel ID for the source endpoint.
+func getSentPacketKey(sequence uint64, channelID string) string {
+	return fmt.Sprintf("%s-%d", channelID, sequence)
+}
+
+func (*packetSniffer) ListenBeginBlock(ctx context.Context, req abci.RequestBeginBlock, res abci.ResponseBeginBlock) error {
+	return nil
+}
+
+func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit) error {
+	return nil
+}
+
+func (*packetSniffer) ListenDeliverTx(ctx context.Context, req abci.RequestDeliverTx, res abci.ResponseDeliverTx) error {
+	return nil
+}
+func (*packetSniffer) Close() error                                        { return nil }
+func (*packetSniffer) Listeners() map[store.StoreKey][]store.WriteListener { return nil }
+func (*packetSniffer) Stream(wg *sync.WaitGroup) error                     { return nil }

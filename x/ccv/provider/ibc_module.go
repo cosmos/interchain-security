@@ -83,7 +83,7 @@ func (am AppModule) OnChanOpenTry(
 		return "", err
 	}
 
-	md := providertypes.HandshakeMetadata{
+	md := ccv.HandshakeMetadata{
 		// NOTE that the fee pool collector address string provided to the
 		// the consumer chain must be excluded from the blocked addresses
 		// blacklist or all all ibc-transfers from the consumer chain to the
@@ -209,11 +209,15 @@ func (am AppModule) OnRecvPacket(
 }
 
 func UnmarshalConsumerPacket(packet channeltypes.Packet) (consumerPacket ccv.ConsumerPacketData, err error) {
+	return UnmarshalConsumerPacketData(packet.GetData())
+}
+
+func UnmarshalConsumerPacketData(packetData []byte) (consumerPacket ccv.ConsumerPacketData, err error) {
 	// First try unmarshaling into ccv.ConsumerPacketData type
-	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacket); err != nil {
+	if err := ccv.ModuleCdc.UnmarshalJSON(packetData, &consumerPacket); err != nil {
 		// If failed, packet should be a v1 slash packet, retry for ConsumerPacketDataV1 packet type
 		var v1Packet ccv.ConsumerPacketDataV1
-		errV1 := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &v1Packet)
+		errV1 := ccv.ModuleCdc.UnmarshalJSON(packetData, &v1Packet)
 		if errV1 != nil {
 			// If neither worked, return error
 			return ccv.ConsumerPacketData{}, errV1

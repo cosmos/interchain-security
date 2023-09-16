@@ -15,7 +15,6 @@ import (
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	"github.com/cosmos/interchain-security/v3/testutil/crypto"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
@@ -453,7 +452,7 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				[]types.ConsumerState{{
 					ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
-					ConsumerGenesis: consumertypes.GenesisState{},
+					ConsumerGenesis: ccv.ConsumerGenesisState{},
 				}},
 				nil,
 				nil,
@@ -758,7 +757,7 @@ func TestValidateGenesisState(t *testing.T) {
 	}
 }
 
-func getInitialConsumerGenesis(t *testing.T, chainID string) consumertypes.GenesisState {
+func getInitialConsumerGenesis(t *testing.T, chainID string) ccv.ConsumerGenesisState {
 	t.Helper()
 	// generate validator public key
 	cId := crypto.NewCryptoIdentityFromIntSeed(239668)
@@ -781,7 +780,7 @@ func getInitialConsumerGenesis(t *testing.T, chainID string) consumertypes.Genes
 		[]string{"upgrade", "upgradedIBCState"})
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
 
-	params := consumertypes.DefaultParams()
+	params := ccv.DefaultParams()
 	params.Enabled = true
-	return *consumertypes.NewInitialGenesisState(cs, consensusState, valUpdates, params)
+	return *ccv.NewInitialConsumerGenesisState(cs, consensusState, valUpdates, params)
 }

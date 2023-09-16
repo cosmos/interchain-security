@@ -19,7 +19,6 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
@@ -239,7 +238,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 func (k Keeper) MakeConsumerGenesis(
 	ctx sdk.Context,
 	prop *types.ConsumerAdditionProposal,
-) (gen consumertypes.GenesisState, nextValidatorsHash []byte, err error) {
+) (gen ccv.ConsumerGenesisState, nextValidatorsHash []byte, err error) {
 	chainID := prop.ChainId
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
@@ -302,7 +301,7 @@ func (k Keeper) MakeConsumerGenesis(
 	}
 	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
 
-	consumerGenesisParams := consumertypes.NewParams(
+	consumerGenesisParams := ccv.NewParams(
 		true,
 		prop.BlocksPerDistributionTransmission,
 		prop.DistributionTransmissionChannel,
@@ -317,7 +316,7 @@ func (k Keeper) MakeConsumerGenesis(
 		[]string{},
 	)
 
-	gen = *consumertypes.NewInitialGenesisState(
+	gen = *ccv.NewInitialConsumerGenesisState(
 		clientState,
 		consState.(*ibctmtypes.ConsensusState),
 		initialUpdatesWithConsumerKeys,
@@ -614,6 +613,34 @@ func (k Keeper) HandleEquivocationProposal(ctx sdk.Context, p *types.Equivocatio
 			return fmt.Errorf("no equivocation record found for validator %s", ev.GetConsensusAddress().String())
 		}
 		k.evidenceKeeper.HandleEquivocationEvidence(ctx, ev)
+	}
+	return nil
+}
+
+func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, p *types.ChangeRewardDenomsProposal) error {
+	for _, denomToAdd := range p.DenomsToAdd {
+		// Log error and move on if one of the denoms is already registered
+		if k.ConsumerRewardDenomExists(ctx, denomToAdd) {
+			ctx.Logger().Error("denom %s already registered", denomToAdd)
+			continue
+		}
+		k.SetConsumerRewardDenom(ctx, denomToAdd)
+		ctx.EventManager().EmitEvent(sdk.NewEvent(
+			ccv.EventTypeAddConsumerRewardDenom,
+			sdk.NewAttribute(ccv.AttributeConsumerRewardDenom, denomToAdd),
+		))
+	}
+	for _, denomToRemove := range p.DenomsToRemove {
+		// Log error and move on if one of the denoms is not registered
+		if !k.ConsumerRewardDenomExists(ctx, denomToRemove) {
+			ctx.Logger().Error("denom %s not registered", denomToRemove)
+			continue
+		}
+		k.DeleteConsumerRewardDenom(ctx, denomToRemove)
+		ctx.EventManager().EmitEvent(sdk.NewEvent(
+			ccv.EventTypeRemoveConsumerRewardDenom,
+			sdk.NewAttribute(ccv.AttributeConsumerRewardDenom, denomToRemove),
+		))
 	}
 	return nil
 }

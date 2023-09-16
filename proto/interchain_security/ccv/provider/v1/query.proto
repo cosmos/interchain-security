@@ -6,9 +6,9 @@ option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/provider/typ
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
-import "interchain_security/ccv/v1/ccv.proto";
-import "interchain_security/ccv/consumer/v1/genesis.proto";
 import "interchain_security/ccv/provider/v1/provider.proto";
+import "interchain_security/ccv/v1/shared_consumer.proto";
+import "interchain_security/ccv/v1/wire.proto";
 
 service Query {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
@@ -86,7 +86,7 @@ service Query {
 message QueryConsumerGenesisRequest { string chain_id = 1; }
 
 message QueryConsumerGenesisResponse {
-  interchain_security.ccv.consumer.v1.GenesisState genesis_state = 1
+  interchain_security.ccv.v1.ConsumerGenesisState genesis_state = 1
       [ (gogoproto.nullable) = false ];
 }
 
