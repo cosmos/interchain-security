@@ -731,7 +731,6 @@ rpc_addr = "%s"
 rpc_timeout = "10s"
 store_prefix = "ibc"
 trusting_period = "14days"
-websocket_addr = "%s"
 
 [chains.gas_price]
 	denom = "stake"
@@ -822,14 +821,12 @@ func (tr TestRun) addChainToHermes(
 	keyName := "query"
 	rpcAddr := "http://" + queryNodeIP + ":26658"
 	grpcAddr := "tcp://" + queryNodeIP + ":9091"
-	wsAddr := "ws://" + queryNodeIP + ":26658/websocket"
 
 	chainConfig := fmt.Sprintf(hermesChainConfigTemplate,
 		grpcAddr,
 		chainId,
 		keyName,
 		rpcAddr,
-		wsAddr,
 		// action.consumer,
 	)
 
