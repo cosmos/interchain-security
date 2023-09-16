@@ -100,8 +100,8 @@ func (s *CoreSuite) consAddr(i int64) sdk.ConsAddress {
 
 // isJailed returns the jail status of validator with id (ix) i
 func (s *CoreSuite) isJailed(i int64) bool {
-	val, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-	s.Require().Truef(found, "GetValidator() -> !found")
+	val, err := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
+	s.Require().NoError(err)
 	return val.IsJailed()
 }
 

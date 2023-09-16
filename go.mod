@@ -39,7 +39,7 @@ require (
 	cloud.google.com/go/iam v1.1.1 // indirect
 	cloud.google.com/go/storage v1.31.0 // indirect
 	cosmossdk.io/api v0.7.1
-	cosmossdk.io/core v0.12.0 // indirect
+	cosmossdk.io/core v0.12.0
 	cosmossdk.io/depinject v1.0.0-alpha.4 // indirect
 	cosmossdk.io/tools/rosetta v0.2.1
 	filippo.io/edwards25519 v1.0.0 // indirect
@@ -158,10 +158,13 @@ require (
 )
 
 require (
+	cosmossdk.io/client/v2 v2.0.0-20230818115413-c402c51a1508
 	cosmossdk.io/log v1.2.1
 	cosmossdk.io/store v1.0.0-rc.0
+	cosmossdk.io/x/circuit v0.0.0-20230818115413-c402c51a1508
 	cosmossdk.io/x/evidence v0.0.0-20230913185058-9b5a203d35bc
 	cosmossdk.io/x/feegrant v0.0.0-20230913185058-9b5a203d35bc
+	cosmossdk.io/x/tx v0.10.0
 	cosmossdk.io/x/upgrade v0.0.0-20230915075604-076dc1ee9619
 	github.com/cosmos/cosmos-db v1.0.0
 	github.com/cosmos/ibc-go/modules/capability v1.0.0-rc5
@@ -171,10 +174,7 @@ require (
 )
 
 require (
-	cosmossdk.io/client/v2 v2.0.0-20230818115413-c402c51a1508 // indirect
 	cosmossdk.io/collections v0.4.0 // indirect
-	cosmossdk.io/x/circuit v0.0.0-20230818115413-c402c51a1508 // indirect
-	cosmossdk.io/x/tx v0.10.0 // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
 	github.com/bits-and-blooms/bitset v1.8.0 // indirect
 	github.com/cockroachdb/errors v1.11.1 // indirect

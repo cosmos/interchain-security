@@ -112,7 +112,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 
 	// check that the fee pool has the expected amount of coins
 	communityCoins := s.providerApp.GetTestDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
-	s.Require().True(communityCoins[ibcCoinIndex].Amount.Equal(sdkmath.LegacyNewDecCoinFromCoin(providerExpectedRewards[0]).Amount))
+	s.Require().True(communityCoins[ibcCoinIndex].Amount.Equal(sdk.NewDecCoinFromCoin(providerExpectedRewards[0]).Amount))
 }
 
 // TestSendRewardsRetries tests that failed reward transmissions are retried every BlocksPerDistributionTransmission blocks
