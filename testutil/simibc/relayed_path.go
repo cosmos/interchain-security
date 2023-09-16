@@ -2,7 +2,6 @@ package simibc
 
 import (
 	"testing"
-	"time"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
@@ -104,28 +103,6 @@ func (f *RelayedPath) DeliverAcks(chainID string, num int) {
 			f.t.Fatal("deliverAcks")
 		}
 	}
-}
-
-// EndAndBeginBlock calls EndBlock and commits block state, storing the header which can later
-// be used to update the client on the counterparty chain. After committing, the chain local
-// time progresses by dt, and BeginBlock is called with a header timestamped for the new time.
-//
-// preCommitCallback is called after EndBlock and before Commit, allowing arbitrary access to
-// the sdk.Context after EndBlock. The callback is useful for testing purposes to execute
-// arbitrary code before the chain sdk context is cleared in .Commit().
-// For example, app.EndBlock may lead to a new state, which you would like to query
-// to check that it is correct. However, the sdk context is cleared after .Commit(),
-// so you can query the state inside the callback.
-func (f *RelayedPath) EndAndBeginBlock(chainID string, dt time.Duration, preCommitCallback func()) {
-	c := f.Chain(chainID)
-
-	header, packets := EndBlock(c, preCommitCallback)
-	f.clientHeaders[chainID] = append(f.clientHeaders[chainID], header)
-	for _, p := range packets {
-		f.Outboxes.AddPacket(chainID, p)
-	}
-	f.Outboxes.Commit(chainID)
-	BeginBlock(c, dt)
 }
 
 // counterparty is a helper returning the counterparty chainID

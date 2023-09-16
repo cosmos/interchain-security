@@ -970,7 +970,7 @@ func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPowe
 
 	if checkPower {
 		valPower := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(
-			s.providerCtx(), sdkVal.GetOperator())
+			s.providerCtx(), sdk.ValAddress(sdkVal.OperatorAddress))
 		s.Require().Equal(int64(0), valPower)
 	}
 }
@@ -980,7 +980,7 @@ func (s *CCVTestSuite) confirmValidatorNotJailed(tmVal tmtypes.Validator, expect
 		s.providerCtx(), sdk.ValAddress(tmVal.Address))
 	s.Require().True(found)
 	valPower := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(
-		s.providerCtx(), sdkVal.GetOperator())
+		s.providerCtx(), sdk.ValAddress(sdkVal.OperatorAddress))
 	s.Require().Equal(expectedPower, valPower)
 	s.Require().False(sdkVal.IsJailed())
 }
