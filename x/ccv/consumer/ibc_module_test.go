@@ -3,20 +3,20 @@ package consumer_test
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
-	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
-
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
 )
 
 // TestOnChanOpenInit validates the consumer's OnChanOpenInit implementation against the spec.
@@ -261,7 +261,7 @@ func TestOnChanOpenAck(t *testing.T) {
 		{
 			"invalid: mismatched serialized version",
 			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
-				md := providertypes.HandshakeMetadata{
+				md := ccv.HandshakeMetadata{
 					ProviderFeePoolAddr: "", // dummy address used
 					Version:             "bunkVersion",
 				}
@@ -287,7 +287,7 @@ func TestOnChanOpenAck(t *testing.T) {
 			counterpartyChannelID: "providerCCVChannelID",
 		}
 
-		metadata := providertypes.HandshakeMetadata{
+		metadata := ccv.HandshakeMetadata{
 			ProviderFeePoolAddr: "someAcct",
 			Version:             ccv.Version,
 		}

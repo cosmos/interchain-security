@@ -245,17 +245,11 @@ ICS adheres to the [trunk based development branching model](https://trunkbasedd
 
 ### Semantic Versioning
 
-ICS uses a variation of [semantic versioning](https://semver.org/).
+ICS follows [semantic versioning](https://semver.org), but with the following deviations (similar to [IBC-Go](https://github.com/cosmos/ibc-go/blob/main/RELEASES.md)):
 
-Note that state breaking changes are a subset of consensus breaking changes. Therefore we'll only refer to the latter when talking about versioning.
-
-ICS is a distributed, IBC based protocol in which multiple blockchains could be affected by a version bump. Therefore incrementing a MAJOR version number indicates that the PR updates, or is a breaking change to the way that the provider and consumer(s) communicate with one another over IBC. If a PR is consensus breaking to both the provider and consumer(s), then it requires a MAJOR version bump.
-
-Incrementing a MINOR version number indicates that a PR is only consensus breaking to the provider, or only to the consumers, where IBC communication remains unchanged.
-
-Incrementing a PATCH version number indicates that a PR is not consensus breaking to the provider or consumers. This could include node API changes, or other miscellaneous and often rare changes.
-
-Pure documentation, testing, and refactoring PRs do not require a version bump.
+- A library API breaking change to EITHER the provider or consumer module will result in an increase of the MAJOR version number for BOTH modules (X.y.z-provider AND X.y.z-consumer).
+- A state breaking change (change requiring coordinated upgrade and/or state migration) will result in an increase of the MINOR version number for the AFFECTED module(s) (x.Y.z-provider AND/OR x.Y.z-consumer).
+- Any other changes (including node API breaking changes) will result in an increase of the PATCH version number for the AFFECTED module(s) (x.y.Z-provider AND/OR x.y.Z-consumer).
 
 ### Backwards Compatibility
 

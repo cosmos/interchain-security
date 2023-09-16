@@ -3,9 +3,11 @@ package types
 import (
 	"fmt"
 
-	errorsmod "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+
+	errorsmod "cosmossdk.io/errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
@@ -15,13 +17,15 @@ func NewGenesisState(
 	vscIdToHeights []ValsetUpdateIdToHeight,
 	consumerStates []ConsumerState,
 	unbondingOps []UnbondingOp,
-	matureUbdOps *ccv.MaturedUnbondingOps,
+	matureUbdOps *MaturedUnbondingOps,
 	additionProposals []ConsumerAdditionProposal,
 	removalProposals []ConsumerRemovalProposal,
 	params Params,
 	validatorConsumerPubkeys []ValidatorConsumerPubKey,
 	validatorsByConsumerAddr []ValidatorByConsumerAddr,
 	consumerAddrsToPrune []ConsumerAddrsToPrune,
+	initTimeoutTimestamps []InitTimeoutTimestamp,
+	exportedVscSendTimestamps []ExportedVscSendTimestamp,
 ) *GenesisState {
 	return &GenesisState{
 		ValsetUpdateId:            vscID,
@@ -35,6 +39,8 @@ func NewGenesisState(
 		ValidatorConsumerPubkeys:  validatorConsumerPubkeys,
 		ValidatorsByConsumerAddr:  validatorsByConsumerAddr,
 		ConsumerAddrsToPrune:      consumerAddrsToPrune,
+		InitTimeoutTimestamps:     initTimeoutTimestamps,
+		ExportedVscSendTimestamps: exportedVscSendTimestamps,
 	}
 }
 

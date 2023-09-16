@@ -6,17 +6,18 @@ import (
 	"testing"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"github.com/stretchr/testify/require"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
-	ibcsimapp "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+
 	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
-
-	"github.com/stretchr/testify/require"
 )
 
 const consumer = "consumer"
@@ -155,7 +156,7 @@ func TestPendingVSCs(t *testing.T) {
 	pending := providerKeeper.GetPendingVSCPackets(ctx, chainID)
 	require.Len(t, pending, 0)
 
-	pks := ibcsimapp.CreateTestPubKeys(4)
+	_, pks, _ := ibctesting.GenerateKeys(t, 4)
 	var ppks [4]tmprotocrypto.PublicKey
 	for i, pk := range pks {
 		ppks[i], _ = cryptocodec.ToTmProtoPublicKey(pk)

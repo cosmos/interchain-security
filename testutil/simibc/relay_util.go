@@ -1,16 +1,19 @@
 package simibc
 
 import (
-	errorsmod "cosmossdk.io/errors"
-	tmtypes "github.com/cometbft/cometbft/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	simapp "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
-	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	simapp "github.com/cosmos/ibc-go/v7/testing/simapp"
 	"github.com/stretchr/testify/require"
+
+	errorsmod "cosmossdk.io/errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	tmtypes "github.com/cometbft/cometbft/types"
 )
 
 // UpdateReceiverClient DELIVERs a header to the receiving endpoint
@@ -20,7 +23,7 @@ import (
 // must have a client of the sender chain that it can update.
 //
 // NOTE: this function MAY be used independently of the rest of simibc.
-func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, header *ibctmtypes.Header) (err error) {
+func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmtypes.Header) (err error) {
 	err = augmentHeader(sender.Chain, receiver.Chain, receiver.ClientID, header)
 
 	if err != nil {
@@ -65,7 +68,7 @@ func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endp
 // The packet must be sent from the sender chain to the receiver chain, and the
 // receiver chain must have a client for the sender chain which has been updated
 // to a recent height of the sender chain so that it can verify the packet.
-func TryRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
+func TryRecvPacket(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
 	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 	proof, proofHeight := sender.Chain.QueryProof(packetKey)
 
@@ -107,7 +110,7 @@ func TryRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, p
 // to packet which was previously delivered from the receiver to the sender.
 // The receiver chain must have a client for the sender chain which has been
 // updated to a recent height of the sender chain so that it can verify the packet.
-func TryRecvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet, ack []byte) (err error) {
+func TryRecvAck(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packet, ack []byte) (err error) {
 	p := packet
 	packetKey := host.PacketAcknowledgementKey(p.GetDestPort(), p.GetDestChannel(), p.GetSequence())
 	proof, proofHeight := sender.Chain.QueryProof(packetKey)
@@ -141,7 +144,7 @@ func TryRecvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, pack
 
 // augmentHeader is a helper that augments the header with the height and validators that are most recently trusted
 // by the receiver chain. If there is an error, the header will not be modified.
-func augmentHeader(sender *ibctesting.TestChain, receiver *ibctesting.TestChain, clientID string, header *ibctmtypes.Header) error {
+func augmentHeader(sender, receiver *ibctesting.TestChain, clientID string, header *ibctmtypes.Header) error {
 	trustedHeight := receiver.GetClientState(clientID).GetLatestHeight().(clienttypes.Height)
 
 	var (

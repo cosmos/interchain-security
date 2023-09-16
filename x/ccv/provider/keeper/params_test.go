@@ -4,14 +4,15 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/stretchr/testify/require"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	"github.com/stretchr/testify/require"
 )
 
 // TestParams tests the getting/setting of provider ccv module params.

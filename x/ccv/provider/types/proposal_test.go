@@ -5,18 +5,16 @@ import (
 	"testing"
 	"time"
 
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck // see: https://github.com/cosmos/interchain-security/issues/236
 	"github.com/stretchr/testify/require"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
@@ -358,6 +356,55 @@ func TestEquivocationProposalValidateBasic(t *testing.T) {
 
 			if tt.expectedError != "" {
 				require.EqualError(t, err, tt.expectedError)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestChangeRewardDenomsProposalValidateBasic(t *testing.T) {
+	tcs := []struct {
+		name        string
+		proposal    govv1beta1.Content
+		expectError bool
+		expectPanic bool
+	}{
+		{
+			name: "invalid change reward denoms proposal, none to add or remove",
+			proposal: types.NewChangeRewardDenomsProposal(
+				"title", "description", []string{}, []string{}),
+			expectError: true,
+		},
+		{
+			name: "invalid change reward denoms proposal, same denom in both sets",
+			proposal: types.NewChangeRewardDenomsProposal(
+				"title", "description", []string{"denom1"}, []string{"denom1"}),
+			expectError: true,
+		},
+		{
+			name: "valid change reward denoms proposal",
+			proposal: types.NewChangeRewardDenomsProposal(
+				"title", "description", []string{"denom1"}, []string{"denom2"}),
+			expectError: false,
+		},
+		{
+			name: "invalid prop, invalid denom, will panic",
+			proposal: types.NewChangeRewardDenomsProposal(
+				"title", "description", []string{"!@blah"}, []string{"denom2"}),
+			expectPanic: true,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.expectPanic {
+				require.Panics(t, func() { tc.proposal.ValidateBasic() })
+				return
+			}
+			err := tc.proposal.ValidateBasic()
+			if tc.expectError {
+				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)

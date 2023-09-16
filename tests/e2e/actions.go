@@ -12,13 +12,14 @@ import (
 	"sync"
 	"time"
 
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"github.com/tidwall/gjson"
 
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/client"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	"github.com/tidwall/gjson"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 type SendTokensAction struct {
@@ -234,7 +235,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	verbose bool,
 ) {
 	spawnTime := tr.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
-	params := consumertypes.DefaultParams()
+	params := ccvtypes.DefaultParams()
 	prop := client.ConsumerAdditionProposalJSON{
 		Title:                             "Propose the addition of a new chain",
 		Summary:                           "Gonna be a great chain",
@@ -537,7 +538,7 @@ func (tr *TestRun) voteGovProposal(
 	wg.Wait()
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(action.chain, 1, 10*time.Second)
-	time.Sleep(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
+	tr.WaitTime(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
 }
 
 type startConsumerChainAction struct {
@@ -1308,6 +1309,7 @@ func (tr TestRun) relayPacketsGorelayer(
 	}
 
 	tr.waitBlocks(action.chainA, 1, 30*time.Second)
+	tr.waitBlocks(action.chainB, 1, 30*time.Second)
 }
 
 func (tr TestRun) relayPacketsHermes(
@@ -1331,6 +1333,7 @@ func (tr TestRun) relayPacketsHermes(
 	}
 
 	tr.waitBlocks(action.chainA, 1, 30*time.Second)
+	tr.waitBlocks(action.chainB, 1, 30*time.Second)
 }
 
 type relayRewardPacketsToProviderAction struct {
@@ -1603,21 +1606,10 @@ func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, dow
 
 	if tr.useCometmock {
 		// send set_signing_status either to down or up for validator
-		var validatorAddress string
-		if chain == chainID("provi") {
-			validatorAddress = tr.getValidatorKeyAddressFromString(tr.validatorConfigs[validator].privValidatorKey)
-		} else {
-			var valAddressString string
-			if tr.validatorConfigs[validator].useConsumerKey {
-				valAddressString = tr.validatorConfigs[validator].consumerPrivValidatorKey
-			} else {
-				valAddressString = tr.validatorConfigs[validator].privValidatorKey
-			}
-			validatorAddress = tr.getValidatorKeyAddressFromString(valAddressString)
-		}
+		validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(chain, validator)
 
 		method := "set_signing_status"
-		params := fmt.Sprintf(`{"private_key_address":"%s","status":"%s"}`, validatorAddress, lastArg)
+		params := fmt.Sprintf(`{"private_key_address":"%s","status":"%s"}`, validatorPrivateKeyAddress, lastArg)
 		address := tr.getQueryNodeRPCAddress(chain)
 
 		tr.curlJsonRPCRequest(method, params, address)
@@ -1647,6 +1639,22 @@ func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, dow
 	}
 }
 
+func (tr TestRun) GetValidatorPrivateKeyAddress(chain chainID, validator validatorID) string {
+	var validatorPrivateKeyAddress string
+	if chain == chainID("provi") {
+		validatorPrivateKeyAddress = tr.getValidatorKeyAddressFromString(tr.validatorConfigs[validator].privValidatorKey)
+	} else {
+		var valAddressString string
+		if tr.validatorConfigs[validator].useConsumerKey {
+			valAddressString = tr.validatorConfigs[validator].consumerPrivValidatorKey
+		} else {
+			valAddressString = tr.validatorConfigs[validator].privValidatorKey
+		}
+		validatorPrivateKeyAddress = tr.getValidatorKeyAddressFromString(valAddressString)
+	}
+	return validatorPrivateKeyAddress
+}
+
 type unjailValidatorAction struct {
 	provider  chainID
 	validator validatorID
@@ -1654,8 +1662,8 @@ type unjailValidatorAction struct {
 
 // Sends an unjail transaction to the provider chain
 func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
-	// wait a block to be sure downtime_jail_duration has elapsed
-	time.Sleep(61 * time.Second)
+	// wait until downtime_jail_duration has elapsed, to make sure the validator can be unjailed
+	tr.WaitTime(61 * time.Second)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
@@ -1743,35 +1751,63 @@ func (tr TestRun) registerRepresentative(
 	wg.Wait()
 }
 
-type registerConsumerRewardDenomAction struct {
-	chain chainID
-	from  validatorID
-	denom string
+type submitChangeRewardDenomsProposalAction struct {
+	denom   string
+	deposit uint
+	from    validatorID
 }
 
-func (tr TestRun) registerConsumerRewardDenom(action registerConsumerRewardDenomAction, verbose bool) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
-		"tx", "provider", "register-consumer-reward-denom", action.denom,
+func (tr TestRun) submitChangeRewardDenomsProposal(action submitChangeRewardDenomsProposalAction, verbose bool) {
+	providerChain := tr.chainConfigs[chainID("provi")]
 
-		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, string(action.chain),
-		`--home`, tr.getValidatorHome(action.chain, action.from),
-		`--node`, tr.getValidatorNode(action.chain, action.from),
-		`--gas`, "9000000",
-		`--keyring-backend`, `test`,
-		`-y`,
-	).CombinedOutput()
-
-	if verbose {
-		fmt.Println("redelegate cmd:", string(bz))
+	prop := client.ChangeRewardDenomsProposalJSON{
+		Summary: "Change reward denoms",
+		ChangeRewardDenomsProposal: types.ChangeRewardDenomsProposal{
+			Title:          "Change reward denoms",
+			Description:    "Change reward denoms",
+			DenomsToAdd:    []string{action.denom},
+			DenomsToRemove: []string{"stake"},
+		},
+		Deposit: fmt.Sprint(action.deposit) + `stake`,
 	}
+
+	bz, err := json.Marshal(prop)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	jsonStr := string(bz)
+	if strings.Contains(jsonStr, "'") {
+		log.Fatal("prop json contains single quote")
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName,
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/change-reward-denoms-proposal.json")).CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	tr.waitBlocks(action.chain, 2, 10*time.Second)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// CHANGE REWARDS DENOM PROPOSAL
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, providerChain.binaryName,
+		"tx", "gov", "submit-legacy-proposal", "change-reward-denoms", "/change-reward-denoms-proposal.json",
+		`--from`, `validator`+fmt.Sprint(action.from),
+		`--chain-id`, string(providerChain.chainId),
+		`--home`, tr.getValidatorHome(providerChain.chainId, action.from),
+		`--node`, tr.getValidatorNode(providerChain.chainId, action.from),
+		`--gas`, "9000000",
+		`--keyring-backend`, `test`,
+		`-y`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(chainID("provi"), 2, 30*time.Second)
 }
 
 // Creates an additional node on selected chain
@@ -1794,15 +1830,103 @@ func (tr TestRun) invokeDoublesignSlash(
 	action doublesignSlashAction,
 	verbose bool,
 ) {
-	chainConfig := tr.chainConfigs[action.chain]
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
-		"/testnet-scripts/cause-doublesign.sh", chainConfig.binaryName, string(action.validator),
-		string(chainConfig.chainId), chainConfig.ipPrefix).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
+	if !tr.useCometmock {
+		chainConfig := tr.chainConfigs[action.chain]
+		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+		bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
+			"/testnet-scripts/cause-doublesign.sh", chainConfig.binaryName, string(action.validator),
+			string(chainConfig.chainId), chainConfig.ipPrefix).CombinedOutput()
+		if err != nil {
+			log.Fatal(err, "\n", string(bz))
+		}
+		tr.waitBlocks("provi", 10, 2*time.Minute)
+	} else { // tr.useCometMock
+		validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(action.chain, action.validator)
+
+		method := "cause_double_sign"
+		params := fmt.Sprintf(`{"private_key_address":"%s"}`, validatorPrivateKeyAddress)
+
+		address := tr.getQueryNodeRPCAddress(action.chain)
+
+		tr.curlJsonRPCRequest(method, params, address)
+		tr.waitBlocks(action.chain, 1, 10*time.Second)
+		return
 	}
-	tr.waitBlocks("provi", 10, 2*time.Minute)
+}
+
+// Cause light client attack evidence for a certain validator to appear on the given chain.
+// The evidence will look like the validator equivocated to a light client.
+// See https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability
+// for more information about light client attacks.
+type lightClientEquivocationAttackAction struct {
+	validator validatorID
+	chain     chainID
+}
+
+func (tr TestRun) lightClientEquivocationAttack(
+	action lightClientEquivocationAttackAction,
+	verbose bool,
+) {
+	tr.lightClientAttack(action.validator, action.chain, LightClientEquivocationAttack)
+}
+
+// Cause light client attack evidence for a certain validator to appear on the given chain.
+// The evidence will look like the validator tried to perform an amnesia attack.
+// See https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability
+// for more information about light client attacks.
+type lightClientAmnesiaAttackAction struct {
+	validator validatorID
+	chain     chainID
+}
+
+func (tr TestRun) lightClientAmnesiaAttack(
+	action lightClientAmnesiaAttackAction,
+	verbose bool,
+) {
+	tr.lightClientAttack(action.validator, action.chain, LightClientAmnesiaAttack)
+}
+
+// Cause light client attack evidence for a certain validator to appear on the given chain.
+// The evidence will look like the validator tried to perform a lunatic attack.
+// See https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability
+// for more information about light client attacks.
+type lightClientLunaticAttackAction struct {
+	validator validatorID
+	chain     chainID
+}
+
+func (tr TestRun) lightClientLunaticAttack(
+	action lightClientLunaticAttackAction,
+	verbose bool,
+) {
+	tr.lightClientAttack(action.validator, action.chain, LightClientLunaticAttack)
+}
+
+type LightClientAttackType string
+
+const (
+	LightClientEquivocationAttack LightClientAttackType = "Equivocation"
+	LightClientAmnesiaAttack      LightClientAttackType = "Amnesia"
+	LightClientLunaticAttack      LightClientAttackType = "Lunatic"
+)
+
+func (tr TestRun) lightClientAttack(
+	validator validatorID,
+	chain chainID,
+	attackType LightClientAttackType,
+) {
+	if !tr.useCometmock {
+		log.Fatal("light client attack is only supported with CometMock")
+	}
+	validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(chain, validator)
+
+	method := "cause_light_client_attack"
+	params := fmt.Sprintf(`{"private_key_address":"%s", "misbehaviour_type": "%s"}`, validatorPrivateKeyAddress, attackType)
+
+	address := tr.getQueryNodeRPCAddress(chain)
+
+	tr.curlJsonRPCRequest(method, params, address)
+	tr.waitBlocks(chain, 1, 10*time.Second)
 }
 
 type assignConsumerPubKeyAction struct {
@@ -1812,14 +1936,21 @@ type assignConsumerPubKeyAction struct {
 	// reconfigureNode will change keys the node uses and restart
 	reconfigureNode bool
 	// executing the action should raise an error
-	expectError bool
+	expectError   bool
+	expectedError string
 }
 
 func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbose bool) {
 	valCfg := tr.validatorConfigs[action.validator]
 
+	// Note: to get error response reported back from this command '--gas auto' needs to be set.
+	gas := "auto"
+	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
+	if tr.useCometmock {
+		gas = "9000000"
+	}
 	assignKey := fmt.Sprintf(
-		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 90000 --keyring-backend test -y -o json`,
+		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
 		tr.chainConfigs[chainID("provi")].binaryName,
 		string(tr.chainConfigs[action.chain].chainId),
 		action.consumerPubkey,
@@ -1827,6 +1958,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		tr.chainConfigs[chainID("provi")].chainId,
 		tr.getValidatorHome(chainID("provi"), action.validator),
 		tr.getValidatorNode(chainID("provi"), action.validator),
+		gas,
 	)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -1845,9 +1977,13 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		log.Fatalf("unexpected error during key assignment - output: %s, err: %s", string(bz), err)
 	}
 
-	if action.expectError {
+	if action.expectError && !tr.useCometmock { // error report ony works with --gas auto, which does not work with CometMock, so ignore
+		if err == nil || !strings.Contains(string(bz), action.expectedError) {
+			log.Fatalf("expected error not raised: expected: '%s', got '%s'", action.expectedError, (bz))
+		}
+
 		if verbose {
-			fmt.Printf("got expected error during key assignment | err: %s \n", err.Error())
+			fmt.Printf("got expected error during key assignment | err: %s | output: %s \n", err, string(bz))
 		}
 	}
 
@@ -1965,6 +2101,8 @@ func (tr TestRun) GetPathNameForGorelayer(chainA, chainB chainID) string {
 }
 
 // WaitTime waits for the given duration.
+// To make sure that the new timestamp is visible on-chain, it also waits until at least one block has been
+// produced on each chain after waiting.
 // The CometMock version of this takes a pointer to the TestRun as it needs to manipulate
 // information in the testrun that stores how much each chain has waited, to keep times in sync.
 // Be careful that all functions calling WaitTime should therefore also take a pointer to the TestRun.
@@ -1978,6 +2116,7 @@ func (tr *TestRun) WaitTime(duration time.Duration) {
 				continue
 			}
 			tr.AdvanceTimeForChain(chain, duration)
+			tr.waitBlocks(chain, 1, 2*time.Second)
 		}
 	}
 }

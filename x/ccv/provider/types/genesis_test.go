@@ -4,19 +4,19 @@ import (
 	"testing"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmtypes "github.com/cometbft/cometbft/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/stretchr/testify/require"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmtypes "github.com/cometbft/cometbft/types"
 
 	"github.com/cosmos/interchain-security/v3/testutil/crypto"
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
-
-	"github.com/stretchr/testify/require"
 )
 
 // Tests validation of consumer states and params within a provider genesis state
@@ -37,6 +37,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				types.DefaultParams(),
+				nil,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -62,6 +64,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			true,
 		},
@@ -78,6 +82,8 @@ func TestValidateGenesisState(t *testing.T) {
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
 					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, 30*time.Minute, time.Hour, "0.1", 400, sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}),
+				nil,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -100,6 +106,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			false,
 		},
@@ -119,6 +127,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			false,
 		},
@@ -135,6 +145,8 @@ func TestValidateGenesisState(t *testing.T) {
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
 					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, 30*time.Minute, time.Hour, "0.1", 400, sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}),
+				nil,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -163,6 +175,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			false,
 		},
@@ -185,6 +199,8 @@ func TestValidateGenesisState(t *testing.T) {
 					types.DefaultSlashMeterReplenishPeriod,
 					types.DefaultSlashMeterReplenishFraction,
 					types.DefaultMaxThrottledPackets, sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}),
+				nil,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -213,6 +229,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			false,
 		},
@@ -235,6 +253,8 @@ func TestValidateGenesisState(t *testing.T) {
 					types.DefaultSlashMeterReplenishPeriod,
 					types.DefaultSlashMeterReplenishFraction,
 					types.DefaultMaxThrottledPackets, sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}),
+				nil,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -263,6 +283,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			false,
 		},
@@ -285,6 +307,8 @@ func TestValidateGenesisState(t *testing.T) {
 					0, // 0 slash meter replenish period here
 					types.DefaultSlashMeterReplenishFraction,
 					types.DefaultMaxThrottledPackets, sdk.Coin{Denom: "stake", Amount: sdk.NewInt(10000000)}),
+				nil,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -313,6 +337,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			false,
 		},
@@ -338,6 +364,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			false,
 		},
@@ -352,6 +380,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				types.DefaultParams(),
+				nil,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -372,6 +402,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			false,
 		},
@@ -386,6 +418,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				types.DefaultParams(),
+				nil,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -406,6 +440,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			false,
 		},
@@ -416,13 +452,15 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				[]types.ConsumerState{{
 					ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
-					ConsumerGenesis: consumertypes.GenesisState{},
+					ConsumerGenesis: ccv.ConsumerGenesisState{},
 				}},
 				nil,
 				nil,
 				nil,
 				nil,
 				types.DefaultParams(),
+				nil,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -447,6 +485,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			false,
 		},
@@ -465,6 +505,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				types.DefaultParams(),
+				nil,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -493,6 +535,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			false,
 		},
@@ -518,6 +562,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			false,
 		},
@@ -540,6 +586,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				types.DefaultParams(),
+				nil,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -574,6 +622,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				types.DefaultParams(),
+				nil,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -623,6 +673,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			false,
 		},
@@ -640,6 +692,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				types.DefaultParams(),
+				nil,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -662,6 +716,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				nil,
+				nil,
+				nil,
 			),
 			false,
 		},
@@ -678,6 +734,8 @@ func TestValidateGenesisState(t *testing.T) {
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
 					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, 30*time.Minute, time.Hour, "0.1", 400, sdk.Coin{Denom: "stake", Amount: sdk.NewInt(-1000000)}),
+				nil,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -699,7 +757,7 @@ func TestValidateGenesisState(t *testing.T) {
 	}
 }
 
-func getInitialConsumerGenesis(t *testing.T, chainID string) consumertypes.GenesisState {
+func getInitialConsumerGenesis(t *testing.T, chainID string) ccv.ConsumerGenesisState {
 	t.Helper()
 	// generate validator public key
 	cId := crypto.NewCryptoIdentityFromIntSeed(239668)
@@ -722,7 +780,7 @@ func getInitialConsumerGenesis(t *testing.T, chainID string) consumertypes.Genes
 		[]string{"upgrade", "upgradedIBCState"})
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
 
-	params := consumertypes.DefaultParams()
+	params := ccv.DefaultParams()
 	params.Enabled = true
-	return *consumertypes.NewInitialGenesisState(cs, consensusState, valUpdates, params)
+	return *ccv.NewInitialConsumerGenesisState(cs, consensusState, valUpdates, params)
 }

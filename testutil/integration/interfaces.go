@@ -3,8 +3,10 @@ package integration
 import (
 	"time"
 
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+
 	"cosmossdk.io/math"
-	abci "github.com/cometbft/cometbft/abci/types"
+
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -16,7 +18,8 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
+	abci "github.com/cometbft/cometbft/abci/types"
+
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"

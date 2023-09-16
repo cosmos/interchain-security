@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
@@ -368,6 +369,10 @@ func (s *CCVTestSuite) TestRedelegationNoConsumer() {
 		redelegations[0].Entries[0],
 		s.providerCtx().BlockTime().Add(stakingKeeper.UnbondingTime(s.providerCtx())),
 	)
+
+	// required before call to incrementTimeByUnbondingPeriod or else a panic
+	// occurs in ibc-go because trusted validators don't match last trusted.
+	s.providerChain.NextBlock()
 
 	// Increment time so that the unbonding period passes on the provider
 	incrementTimeByUnbondingPeriod(s, Provider)

@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package interchain_security.ccv.consumer.v1;
+import "interchain_security/ccv/v1/shared_consumer.proto";
 option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types";
 
 import "gogoproto/gogo.proto";
@@ -18,6 +19,10 @@ service Query {
   // QueryParams queries the ccv/consumer module parameters.
   rpc QueryParams(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/interchain_security/ccv/consumer/params";
+  }
+
+  rpc QueryProviderInfo(QueryProviderInfoRequest) returns (QueryProviderInfoResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/consumer/provider-info";
   }
 }
 
@@ -50,5 +55,19 @@ message QueryParamsRequest {}
 // QueryParamsResponse is response type for the Query/Params RPC method.
 message QueryParamsResponse {
   // params holds all the parameters of this module.
-  Params params = 1 [ (gogoproto.nullable) = false ];
+  interchain_security.ccv.v1.ConsumerParams params = 1 [ (gogoproto.nullable) = false ];
+}
+
+message QueryProviderInfoRequest {}
+
+message QueryProviderInfoResponse {
+  ChainInfo consumer = 1 [ (gogoproto.nullable) = false ];
+  ChainInfo provider = 2 [ (gogoproto.nullable) = false ];
+}
+
+message ChainInfo {
+  string chainID = 1;
+  string clientID = 2;
+  string connectionID = 3;
+  string channelID = 4;
 }

@@ -85,6 +85,10 @@ func TestEndBlockRD(t *testing.T) {
 	runCCVTestByName(t, "TestEndBlockRD")
 }
 
+func TestSendRewardsToProvider(t *testing.T) {
+	runCCVTestByName(t, "TestSendRewardsToProvider")
+}
+
 //
 // Expired client tests
 //
@@ -155,10 +159,6 @@ func TestStopConsumerChain(t *testing.T) {
 
 func TestStopConsumerOnChannelClosed(t *testing.T) {
 	runCCVTestByName(t, "TestStopConsumerOnChannelClosed")
-}
-
-func TestProviderChannelClosed(t *testing.T) {
-	runCCVTestByName(t, "TestProviderChannelClosed")
 }
 
 //
@@ -255,4 +255,12 @@ func TestQueueAndSendVSCMaturedPackets(t *testing.T) {
 
 func TestRecycleTransferChannel(t *testing.T) {
 	runCCVTestByName(t, "TestRecycleTransferChannel")
+}
+
+//
+// Throttle retry tests
+//
+
+func TestSlashRetries(t *testing.T) {
+	runCCVTestByName(t, "TestSlashRetries")
 }

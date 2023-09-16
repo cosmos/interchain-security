@@ -1,20 +1,28 @@
 package ibc_testing
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"github.com/stretchr/testify/suite"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/cometbft/cometbft/abci/types"
+	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
+	tmtypes "github.com/cometbft/cometbft/types"
+
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+)
 
-	"github.com/stretchr/testify/suite"
-
-	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
-	tmtypes "github.com/cometbft/cometbft/types"
+type (
+	AppIniter       func() (ibctesting.TestingApp, map[string]json.RawMessage)
+	ValSetAppIniter func([]types.ValidatorUpdate) AppIniter
 )
 
 // Contains generic setup code for running integration tests against a provider, consumer,
@@ -22,10 +30,18 @@ import (
 // to run integration tests against your app.go implementations!
 
 var (
-	FirstConsumerChainID = ibctesting.GetChainID(2)
-	provChainID          = ibctesting.GetChainID(1)
-	democConsumerChainID = ibctesting.GetChainID(5000)
+	FirstConsumerChainID string
+	provChainID          string
+	democConsumerChainID string
 )
+
+func init() {
+	// Disable revision format
+	ibctesting.ChainIDSuffix = ""
+	FirstConsumerChainID = ibctesting.GetChainID(2)
+	provChainID = ibctesting.GetChainID(1)
+	democConsumerChainID = ibctesting.GetChainID(5000)
+}
 
 // ConsumerBundle serves as a way to store useful in-mem consumer app chain state
 // and relevant IBC paths in the context of CCV integration testing.
@@ -47,11 +63,12 @@ func (cb ConsumerBundle) GetKeeper() consumerkeeper.Keeper {
 }
 
 // AddProvider adds a new provider chain to the coordinator and returns the test chain and app type
-func AddProvider[T testutil.ProviderApp](t *testing.T, coordinator *ibctesting.Coordinator, appIniter ibctesting.AppIniter) (
+func AddProvider[T testutil.ProviderApp](t *testing.T, coordinator *ibctesting.Coordinator, appIniter AppIniter) (
 	*ibctesting.TestChain, T,
 ) {
 	t.Helper()
-	provider := ibctesting.NewTestChain(t, coordinator, appIniter, provChainID)
+	ibctesting.DefaultTestingAppInit = appIniter
+	provider := ibctesting.NewTestChain(t, coordinator, provChainID)
 	coordinator.Chains[provChainID] = provider
 
 	providerToReturn, ok := provider.App.(T)
@@ -63,11 +80,18 @@ func AddProvider[T testutil.ProviderApp](t *testing.T, coordinator *ibctesting.C
 }
 
 // AddDemocracyConsumer adds a new democ consumer chain to the coordinator and returns the test chain and app type
-func AddDemocracyConsumer[T testutil.DemocConsumerApp](t *testing.T, coordinator *ibctesting.Coordinator,
-	appIniter ibctesting.AppIniter,
+func AddDemocracyConsumer[T testutil.DemocConsumerApp](
+	coordinator *ibctesting.Coordinator,
+	s *suite.Suite,
+	appIniter ValSetAppIniter,
 ) (*ibctesting.TestChain, T) {
-	t.Helper()
-	democConsumer := ibctesting.NewTestChain(t, coordinator, appIniter, democConsumerChainID)
+	s.T().Helper()
+
+	// generate validators private/public key
+	valSet, valUpdates, signers := testutil.CreateValidators(s.T(), 4)
+
+	ibctesting.DefaultTestingAppInit = appIniter(valUpdates)
+	democConsumer := ibctesting.NewTestChainWithValSet(s.T(), coordinator, democConsumerChainID, valSet, signers)
 	coordinator.Chains[democConsumerChainID] = democConsumer
 
 	democConsumerToReturn, ok := democConsumer.App.(T)
@@ -88,7 +112,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	coordinator *ibctesting.Coordinator,
 	s *suite.Suite,
 	index int,
-	appIniter ibctesting.AppIniter,
+	appIniter ValSetAppIniter,
 ) *ConsumerBundle {
 	// consumer chain ID
 	chainID := ibctesting.GetChainID(index + 2)
@@ -134,8 +158,9 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	}
 
 	// create and instantiate consumer chain
-	testChain := ibctesting.NewTestChainWithValSet(s.T(), coordinator,
-		appIniter, chainID, tmtypes.NewValidatorSet(valz), providerChain.Signers)
+	ibctesting.DefaultTestingAppInit = appIniter(consumerGenesisState.InitialValSet)
+	testChain := ibctesting.NewTestChainWithValSet(s.T(), coordinator, chainID,
+		tmtypes.NewValidatorSet(valz), providerChain.Signers)
 	coordinator.Chains[chainID] = testChain
 
 	consumerToReturn, ok := testChain.App.(Tc)

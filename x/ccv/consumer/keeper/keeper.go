@@ -6,21 +6,22 @@ import (
 	"reflect"
 	"time"
 
-	errorsmod "cosmossdk.io/errors"
-	"github.com/cosmos/cosmos-sdk/codec"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 
-	tmtypes "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/log"
+	errorsmod "cosmossdk.io/errors"
+
+	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	tmtypes "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -63,7 +64,7 @@ func NewKeeper(
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
-		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
+		paramSpace = paramSpace.WithKeyTable(ccv.ParamKeyTable())
 	}
 
 	k := Keeper{
@@ -308,7 +309,7 @@ func (k Keeper) DeletePreCCV(ctx sdk.Context) {
 
 func (k Keeper) SetInitialValSet(ctx sdk.Context, initialValSet []tmtypes.ValidatorUpdate) {
 	store := ctx.KVStore(k.storeKey)
-	initialValSetState := types.GenesisState{
+	initialValSetState := ccv.ConsumerGenesisState{
 		InitialValSet: initialValSet,
 	}
 	bz := k.cdc.MustMarshal(&initialValSetState)
@@ -317,7 +318,7 @@ func (k Keeper) SetInitialValSet(ctx sdk.Context, initialValSet []tmtypes.Valida
 
 func (k Keeper) GetInitialValSet(ctx sdk.Context) []tmtypes.ValidatorUpdate {
 	store := ctx.KVStore(k.storeKey)
-	initialValSet := types.GenesisState{}
+	initialValSet := ccv.ConsumerGenesisState{}
 	bz := store.Get(types.InitialValSetKey())
 	if bz != nil {
 		k.cdc.MustUnmarshal(bz, &initialValSet)
@@ -335,14 +336,14 @@ func (k Keeper) GetLastStandaloneValidators(ctx sdk.Context) []stakingtypes.Vali
 
 // GetElapsedPacketMaturityTimes returns a slice of already elapsed PacketMaturityTimes, sorted by maturity times,
 // i.e., the slice contains the IDs of the matured VSCPackets.
-func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []types.MaturingVSCPacket) {
+func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []ccv.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		var maturingVSCPacket types.MaturingVSCPacket
+		var maturingVSCPacket ccv.MaturingVSCPacket
 		if err := maturingVSCPacket.Unmarshal(iterator.Value()); err != nil {
 			// An error here would indicate something is very wrong,
 			// the MaturingVSCPackets are assumed to be correctly serialized in SetPacketMaturityTime.
@@ -367,13 +368,13 @@ func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPacke
 // PacketMaturityTimeBytePrefix | maturityTime.UnixNano() | vscID
 // Thus, the returned array is in ascending order of maturityTimes.
 // If two entries have the same maturityTime, then they are ordered by vscID.
-func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []types.MaturingVSCPacket) {
+func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []ccv.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		var maturingVSCPacket types.MaturingVSCPacket
+		var maturingVSCPacket ccv.MaturingVSCPacket
 		if err := maturingVSCPacket.Unmarshal(iterator.Value()); err != nil {
 			// An error here would indicate something is very wrong,
 			// the MaturingVSCPackets are assumed to be correctly serialized in SetPacketMaturityTime.
@@ -388,7 +389,7 @@ func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets [
 // SetPacketMaturityTime sets the maturity time for a given received VSC packet id
 func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, vscId uint64, maturityTime time.Time) {
 	store := ctx.KVStore(k.storeKey)
-	maturingVSCPacket := types.MaturingVSCPacket{
+	maturingVSCPacket := ccv.MaturingVSCPacket{
 		VscId:        vscId,
 		MaturityTime: maturityTime,
 	}
@@ -468,7 +469,7 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 // Note that the block height to vscID mapping is stored under keys with the following format:
 // HeightValsetUpdateIDBytePrefix | height
 // Thus, the returned array is in ascending order of heights.
-func (k Keeper) GetAllHeightToValsetUpdateIDs(ctx sdk.Context) (heightToValsetUpdateIDs []types.HeightToValsetUpdateID) {
+func (k Keeper) GetAllHeightToValsetUpdateIDs(ctx sdk.Context) (heightToValsetUpdateIDs []ccv.HeightToValsetUpdateID) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
 
@@ -477,7 +478,7 @@ func (k Keeper) GetAllHeightToValsetUpdateIDs(ctx sdk.Context) (heightToValsetUp
 		height := binary.BigEndian.Uint64(iterator.Key()[1:])
 		vscID := binary.BigEndian.Uint64(iterator.Value())
 
-		heightToValsetUpdateIDs = append(heightToValsetUpdateIDs, types.HeightToValsetUpdateID{
+		heightToValsetUpdateIDs = append(heightToValsetUpdateIDs, ccv.HeightToValsetUpdateID{
 			Height:         height,
 			ValsetUpdateId: vscID,
 		})
@@ -514,7 +515,7 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 // Note that the outstanding downtime flags are stored under keys with the following format:
 // OutstandingDowntimeBytePrefix | consAddress
 // Thus, the returned array is in ascending order of consAddresses.
-func (k Keeper) GetAllOutstandingDowntimes(ctx sdk.Context) (downtimes []types.OutstandingDowntime) {
+func (k Keeper) GetAllOutstandingDowntimes(ctx sdk.Context) (downtimes []ccv.OutstandingDowntime) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
 
@@ -523,7 +524,7 @@ func (k Keeper) GetAllOutstandingDowntimes(ctx sdk.Context) (downtimes []types.O
 		addrBytes := iterator.Key()[1:]
 		addr := sdk.ConsAddress(addrBytes).String()
 
-		downtimes = append(downtimes, types.OutstandingDowntime{
+		downtimes = append(downtimes, ccv.OutstandingDowntime{
 			ValidatorConsensusAddress: addr,
 		})
 	}
@@ -592,48 +593,111 @@ func (k Keeper) GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Val
 	return validators
 }
 
-// SetPendingPackets sets the pending CCV packets
-func (k Keeper) SetPendingPackets(ctx sdk.Context, packets ccv.ConsumerPacketDataList) {
+// getAndIncrementPendingPacketsIdx returns the current pending packets index and increments it.
+// This index is used for implementing a FIFO queue of pending packets in the KV store.
+func (k Keeper) getAndIncrementPendingPacketsIdx(ctx sdk.Context) (toReturn uint64) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := packets.Marshal()
-	if err != nil {
-		// This should never happen
-		panic(fmt.Errorf("failed to marshal ConsumerPacketDataList: %w", err))
+	bz := store.Get(types.PendingPacketsIndexKey())
+	if bz != nil {
+		toReturn = sdk.BigEndianToUint64(bz)
 	}
-	store.Set(types.PendingDataPacketsKey(), bz)
+	toStore := toReturn + 1
+	store.Set(types.PendingPacketsIndexKey(), sdk.Uint64ToBigEndian(toStore))
+	return toReturn
 }
 
-// GetPendingPackets returns the pending CCV packets from the store
-func (k Keeper) GetPendingPackets(ctx sdk.Context) ccv.ConsumerPacketDataList {
-	var packets ccv.ConsumerPacketDataList
-
+// DeleteHeadOfPendingPackets deletes the head of the pending packets queue.
+func (k Keeper) DeleteHeadOfPendingPackets(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PendingDataPacketsKey())
-	if bz == nil {
-		return packets
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	defer iterator.Close()
+	if !iterator.Valid() {
+		return
 	}
+	store.Delete(iterator.Key())
+}
 
-	err := packets.Unmarshal(bz)
-	if err != nil {
-		// An error here would indicate something is very wrong,
-		// the PendingPackets are assumed to be correctly serialized in SetPendingPackets.
-		panic(fmt.Errorf("failed to unmarshal pending data packets: %w", err))
+// GetPendingPackets returns ALL the pending CCV packets from the store without indexes.
+func (k Keeper) GetPendingPackets(ctx sdk.Context) []ccv.ConsumerPacketData {
+	ppWithIndexes := k.GetAllPendingPacketsWithIdx(ctx)
+	var ppList []ccv.ConsumerPacketData
+	for _, ppWithIndex := range ppWithIndexes {
+		ppList = append(ppList, ppWithIndex.ConsumerPacketData)
 	}
+	return ppList
+}
 
+// ConsumerPacketDataWithIdx is a wrapper around ConsumerPacketData
+// that also stores the index of the packet in the pending packets queue.
+//
+// Note this type is a shim to avoid changing the schema of ConsumerPacketData and breaking the wire.
+type ConsumerPacketDataWithIdx struct {
+	ccv.ConsumerPacketData // Struct embedding
+	Idx                    uint64
+}
+
+// GetAllPendingPacketsWithIdx returns ALL pending consumer packet data from the store
+// with indexes relevant to the pending packets queue.
+func (k Keeper) GetAllPendingPacketsWithIdx(ctx sdk.Context) []ConsumerPacketDataWithIdx {
+	packets := []ConsumerPacketDataWithIdx{}
+	store := ctx.KVStore(k.storeKey)
+	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
+	// See consistency with PendingDataPacketsKey().
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		var packet ccv.ConsumerPacketData
+		bz := iterator.Value()
+		err := packet.Unmarshal(bz)
+		if err != nil {
+			// An error here would indicate something is very wrong,
+			panic(fmt.Errorf("failed to unmarshal pending data packet: %w", err))
+		}
+		packetWithIdx := ConsumerPacketDataWithIdx{
+			ConsumerPacketData: packet,
+			// index stored in key after prefix, see PendingDataPacketsKey()
+			Idx: sdk.BigEndianToUint64(iterator.Key()[1:]),
+		}
+		packets = append(packets, packetWithIdx)
+	}
 	return packets
 }
 
-// DeletePendingDataPackets clears the pending data packets in store
-func (k Keeper) DeletePendingDataPackets(ctx sdk.Context) {
+// DeletePendingDataPackets deletes pending data packets with given indexes
+func (k Keeper) DeletePendingDataPackets(ctx sdk.Context, idxs ...uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.PendingDataPacketsKey())
+	for _, idx := range idxs {
+		store.Delete(types.PendingDataPacketsKey(idx))
+	}
 }
 
-// AppendPendingDataPacket appends the given data packet to the pending data packets in store
-func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...ccv.ConsumerPacketData) {
-	pending := k.GetPendingPackets(ctx)
-	list := append(pending.GetList(), packet...)
-	k.SetPendingPackets(ctx, ccv.ConsumerPacketDataList{List: list})
+func (k Keeper) DeleteAllPendingDataPackets(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
+	// See consistency with PendingDataPacketsKey().
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	keysToDel := [][]byte{}
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	for _, key := range keysToDel {
+		store.Delete(key)
+	}
+}
+
+// AppendPendingPacket enqueues the given data packet to the end of the pending data packets queue
+func (k Keeper) AppendPendingPacket(ctx sdk.Context, packetType ccv.ConsumerPacketDataType, data ccv.ExportedIsConsumerPacketData_Data) {
+	idx := k.getAndIncrementPendingPacketsIdx(ctx) // for FIFO queue
+	key := types.PendingDataPacketsKey(idx)
+	store := ctx.KVStore(k.storeKey)
+	cpd := ccv.NewConsumerPacketData(packetType, data)
+	bz, err := cpd.Marshal()
+	if err != nil {
+		// This should never happen
+		panic(fmt.Errorf("failed to marshal ConsumerPacketData: %w", err))
+	}
+	store.Set(key, bz)
 }
 
 func (k Keeper) MarkAsPrevStandaloneChain(ctx sdk.Context) {

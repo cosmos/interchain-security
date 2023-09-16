@@ -8,7 +8,7 @@ slug: /faq
 
 VSR simply means that the same validator set is used to secure both the provider and consumer chains. VSR is ensured through ICS protocol which keeps consumers up to date with the validator set of the provider.
 
-## What even is a consumer chain?
+## What is a consumer chain?
 
 Consumer chain is blockchain operated by the same validator operators as the provider chain. The ICS protocol ensures the validator set replication properties (informs consumer chain about the current state of the validator set on the provider)
 
@@ -102,6 +102,7 @@ To become a consumer chain use this [checklist](./consumer-development/onboardin
 Currently supported versions:
 
 - Hermes 1.4.1
+- Support for the CCV module was added to the Go [relayer](https://github.com/cosmos/relayer) in v2.2.0 but v2.4.0 has significant performance fixes which makes it the earliest suggested version to use.
 
 ## How does key delegation work in ICS?
 
