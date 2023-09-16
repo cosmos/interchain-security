@@ -8,6 +8,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
@@ -110,7 +111,7 @@ func DefaultParams() Params {
 		// Following the pattern from cosmos-sdk/staking/types/params.go
 		sdk.Coin{
 			Denom:  sdk.DefaultBondDenom,
-			Amount: sdk.NewInt(10000000),
+			Amount: sdkmath.NewInt(10000000),
 		},
 	)
 }

@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	sdkmath "cosmossdk.io/math"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
@@ -30,11 +32,11 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 
 	// Setup mock account balance
 	fracParam := consumerKeeper.GetConsumerRedistributionFrac(ctx)
-	fracDec, err := sdk.NewDecFromStr(fracParam)
+	fracDec, err := sdkmath.LegacyNewDecFromStr(fracParam)
 	require.NoError(t, err)
 	feeAmount := sdk.Coin{
 		Denom:  "MOCK",
-		Amount: sdk.NewInt(100),
+		Amount: sdkmath.NewInt(100),
 	}
 	feeAmountCoins := sdk.Coins([]sdk.Coin{feeAmount})
 	feeAmountDec := sdk.NewDecCoinsFromCoins(feeAmountCoins...)

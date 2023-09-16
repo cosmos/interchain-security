@@ -10,6 +10,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
@@ -56,7 +57,7 @@ func (k Keeper) DistributeRewardsInternally(ctx sdk.Context) {
 	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
 
 	// split the fee pool, send the consumer's fraction to the consumer redistribution address
-	frac, err := sdk.NewDecFromStr(k.GetConsumerRedistributionFrac(ctx))
+	frac, err := sdkmath.LegacyNewDecFromStr(k.GetConsumerRedistributionFrac(ctx))
 	if err != nil {
 		// ConsumerRedistributionFrac was already validated when set as a param
 		panic(fmt.Errorf("ConsumerRedistributionFrac is invalid: %w", err))
@@ -253,7 +254,7 @@ func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) types.NextFeeDi
 	total := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
 
 	fracParam := k.GetConsumerRedistributionFrac(ctx)
-	frac, err := sdk.NewDecFromStr(fracParam)
+	frac, err := sdkmath.LegacyNewDecFromStr(fracParam)
 	if err != nil {
 		// ConsumerRedistributionFrac was already validated when set as a param
 		panic(fmt.Errorf("ConsumerRedistributionFrac is invalid: %w", err))

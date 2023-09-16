@@ -56,7 +56,7 @@ func NewAppModule(cdc codec.Codec,
 	}
 }
 
-func (am AppModule) EndBlock(ctx sdk.Context, request abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx sdk.Context) []abci.ValidatorUpdate {
 	am.keeper.IterateActiveProposalsQueue(ctx, ctx.BlockHeader().Time, func(proposal govv1.Proposal) bool {
 		// if there are forbidden proposals in active proposals queue, refund deposit, delete votes for that proposal
 		// and delete proposal from all storages

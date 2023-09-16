@@ -97,7 +97,7 @@ The meter is replenished to an amount equal to the slash meter allowance for tha
 ### SlashMeterReplenishFraction
 exists on the provider as the portion (in range [0, 1]) of total voting power that is replenished to the slash meter when a replenishment occurs.
 
-This param also serves as a maximum fraction of total voting power that the slash meter can hold. The param is set/persisted as a string, and converted to a `sdk.Dec` when used.
+This param also serves as a maximum fraction of total voting power that the slash meter can hold. The param is set/persisted as a string, and converted to a `sdkmath.LegacyDec` when used.
 
 ### MaxThrottledPackets
 exists on the provider as the maximum amount of throttled slash or vsc matured packets that can be queued from a single consumer before the provider chain halts, it should be set to a large value.

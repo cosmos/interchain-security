@@ -13,6 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	sdkmath "cosmossdk.io/math"
 	evidencetypes "cosmossdk.io/x/evidence/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -796,7 +797,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		MaxThrottledPackets:         providertypes.DefaultMaxThrottledPackets,
 		ConsumerRewardDenomRegistrationFee: sdk.Coin{
 			Denom:  "stake",
-			Amount: sdk.NewInt(1000000),
+			Amount: sdkmath.NewInt(1000000),
 		},
 	}
 	providerKeeper.SetParams(ctx, moduleParams)

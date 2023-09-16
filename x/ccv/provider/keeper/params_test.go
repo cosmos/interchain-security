@@ -9,6 +9,7 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/stretchr/testify/require"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
@@ -47,7 +48,7 @@ func TestParams(t *testing.T) {
 		100,
 		sdk.Coin{
 			Denom:  "stake",
-			Amount: sdk.NewInt(10000000),
+			Amount: sdkmath.NewInt(10000000),
 		},
 	)
 	providerKeeper.SetParams(ctx, newParams)

@@ -402,7 +402,7 @@ func getSentPacketKey(sequence uint64, channelID string) string {
 	return fmt.Sprintf("%s-%d", channelID, sequence)
 }
 
-func (*packetSniffer) ListenBeginBlock(ctx context.Context, req abci.RequestBeginBlock, res abci.ResponseBeginBlock) error {
+func (*packetSniffer) ListenBeginBlock(ctx context.Context) error {
 	return nil
 }
 
@@ -410,9 +410,9 @@ func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit)
 	return nil
 }
 
-func (*packetSniffer) ListenDeliverTx(ctx context.Context, req abci.RequestDeliverTx, res abci.ResponseDeliverTx) error {
+func (*packetSniffer) ListenDeliverTx(ctx context.Context) error {
 	return nil
 }
-func (*packetSniffer) Close() error                                        { return nil }
-func (*packetSniffer) Listeners() map[store.StoreKey][]store.WriteListener { return nil }
-func (*packetSniffer) Stream(wg *sync.WaitGroup) error                     { return nil }
+func (*packetSniffer) Close() error                                         { return nil }
+func (*packetSniffer) Listeners() map[store.StoreKey][]store.MemoryListener { return nil }
+func (*packetSniffer) Stream(wg *sync.WaitGroup) error                      { return nil }

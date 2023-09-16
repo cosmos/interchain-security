@@ -4,6 +4,7 @@ import (
 	fmt "fmt"
 	time "time"
 
+	sdkmath "cosmossdk.io/math"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -188,14 +189,14 @@ func ValidateSoftOptOutThreshold(i interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
-	dec, err := sdktypes.NewDecFromStr(str)
+	dec, err := sdkmath.LegacyNewDecFromStr(str)
 	if err != nil {
 		return err
 	}
 	if dec.IsNegative() {
 		return fmt.Errorf("soft opt out threshold cannot be negative, got %s", str)
 	}
-	if !dec.Sub(sdktypes.MustNewDecFromStr("0.2")).IsNegative() {
+	if !dec.Sub(sdkmath.LegacyMustNewDecFromStr("0.2")).IsNegative() {
 		return fmt.Errorf("soft opt out threshold cannot be greater than 0.2, got %s", str)
 	}
 	return nil
@@ -211,7 +212,7 @@ func ValidateDenoms(i interface{}) error {
 	for _, denom := range v {
 		coin := sdktypes.Coin{
 			Denom:  denom,
-			Amount: sdktypes.NewInt(0),
+			Amount: sdkmath.NewInt(0),
 		}
 
 		if err := coin.Validate(); err != nil {

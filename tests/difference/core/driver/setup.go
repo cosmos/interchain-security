@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -133,7 +134,7 @@ func (b *Builder) getAppBytesAndSenders(
 
 		bal := banktypes.Balance{
 			Address: acc.GetAddress().String(),
-			Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewIntFromUint64(amt))),
+			Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewIntFromUint64(amt))),
 		}
 
 		accounts = append(accounts, acc)
@@ -155,7 +156,7 @@ func (b *Builder) getAppBytesAndSenders(
 	delegations := make([]stakingtypes.Delegation, 0, len(validators.Validators))
 
 	// Sum bonded is needed for BondedPool account
-	sumBonded := sdk.NewInt(0)
+	sumBonded := sdkmath.NewInt(0)
 	initValPowers := []abci.ValidatorUpdate{}
 
 	for i, val := range validators.Validators {
@@ -163,13 +164,13 @@ func (b *Builder) getAppBytesAndSenders(
 		delegation := b.initState.ValStates.Delegation[i]
 		extra := b.initState.ValStates.ValidatorExtraTokens[i]
 
-		tokens := sdk.NewInt(int64(delegation + extra))
+		tokens := sdkmath.NewInt(int64(delegation + extra))
 		b.suite.Require().Equal(status, stakingtypes.Bonded, "All genesis validators should be bonded")
 		sumBonded = sumBonded.Add(tokens)
 		// delegator account receives delShares shares
-		delShares := sdk.NewDec(int64(delegation))
+		delShares := sdkmath.LegacyNewDec(int64(delegation))
 		// validator has additional sumShares due to extra units
-		sumShares := sdk.NewDec(int64(delegation + extra))
+		sumShares := sdkmath.LegacyNewDec(int64(delegation + extra))
 
 		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
 		require.NoError(b.suite.T(), err)
@@ -186,8 +187,8 @@ func (b *Builder) getAppBytesAndSenders(
 			Description:       stakingtypes.Description{},
 			UnbondingHeight:   int64(0),
 			UnbondingTime:     time.Unix(0, 0).UTC(),
-			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-			MinSelfDelegation: sdk.ZeroInt(),
+			Commission:        stakingtypes.NewCommission(sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec()),
+			MinSelfDelegation: sdkmath.ZeroInt(),
 		}
 
 		stakingValidators = append(stakingValidators, validator)
@@ -238,7 +239,7 @@ func (b *Builder) getAppBytesAndSenders(
 	// add unbonded amount
 	balances = append(balances, banktypes.Balance{
 		Address: authtypes.NewModuleAddress(stakingtypes.NotBondedPoolName).String(),
-		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, sdk.ZeroInt())},
+		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, sdkmath.ZeroInt())},
 	})
 
 	// update total funds supply
@@ -274,18 +275,6 @@ func (b *Builder) newChain(
 	)
 
 	app.Commit()
-
-	app.BeginBlock(
-		abci.RequestBeginBlock{
-			Header: tmproto.Header{
-				ChainID:            chainID,
-				Height:             app.LastBlockHeight() + 1,
-				AppHash:            app.LastCommitID().Hash,
-				ValidatorsHash:     validators.Hash(),
-				NextValidatorsHash: validators.Hash(),
-			},
-		},
-	)
 
 	chain := &ibctesting.TestChain{
 		T:           b.suite.T(),
@@ -404,7 +393,7 @@ func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
 // validators in the setup process.
 func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	d := b.provider().SenderAccounts[del].SenderAccount.GetAddress()
-	coins := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
+	coins := sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(amt))
 	msg := stakingtypes.NewMsgDelegate(d, val, coins)
 	providerStaking := b.providerStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(&providerStaking)
@@ -415,7 +404,7 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 // addValidatorToStakingModule creates an additional validator with zero commission
 // and zero tokens (zero voting power).
 func (b *Builder) addValidatorToStakingModule(privVal mock.PV) {
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(0))
 
 	pubKey, err := privVal.GetPubKey()
 	require.NoError(b.suite.T(), err)
@@ -432,8 +421,8 @@ func (b *Builder) addValidatorToStakingModule(privVal mock.PV) {
 		sdkPK,
 		coin,
 		stakingtypes.Description{},
-		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-		sdk.ZeroInt())
+		stakingtypes.NewCommissionRates(sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec(), sdkmath.LegacyZeroDec()),
+		sdkmath.ZeroInt())
 	b.suite.Require().NoError(err)
 	providerStaking := b.providerStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(&providerStaking)

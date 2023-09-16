@@ -5,8 +5,8 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
+	sdkmath "cosmossdk.io/math"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -19,7 +19,7 @@ func (s *CCVTestSuite) TestPacketRoundtrip() {
 	s.SetupTransferChannel()
 
 	// Bond some tokens on provider to change validator powers
-	bondAmt := sdk.NewInt(1000000)
+	bondAmt := sdkmath.NewInt(1000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	delegate(s, delAddr, bondAmt)
 

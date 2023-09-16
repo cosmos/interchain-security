@@ -7,6 +7,7 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/stretchr/testify/suite"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -117,24 +118,24 @@ func (s *CoreSuite) consumerPower(i int64) (int64, error) {
 // delegation returns the number of delegated tokens in the delegation from
 // the delegator account to the validator with id (ix) i
 func (s *CoreSuite) delegation(i int64) int64 {
-	d, found := s.providerStakingKeeper().GetDelegation(s.ctx(P), s.delegator(), s.validator(i))
-	s.Require().Truef(found, "GetDelegation() -> !found")
+	d, err := s.providerStakingKeeper().GetDelegation(s.ctx(P), s.delegator(), s.validator(i))
+	s.Require().NoError(err)
 	return d.Shares.TruncateInt64()
 }
 
 // validatorStatus returns the validator status for validator with id (ix) i
 // on the provider chain
 func (s *CoreSuite) validatorStatus(i int64) stakingtypes.BondStatus {
-	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-	s.Require().Truef(found, "GetValidator() -> !found")
+	v, err := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
+	s.Require().NoError(err)
 	return v.GetStatus()
 }
 
 // providerTokens returns the number of tokens that the validator with
 // id (ix) i has delegated to it in total on the provider chain
 func (s *CoreSuite) providerTokens(i int64) int64 {
-	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-	s.Require().Truef(found, "GetValidator() -> !found")
+	v, err := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
+	s.Require().NoError(err)
 	return v.Tokens.Int64()
 }
 
@@ -149,7 +150,7 @@ func (s *CoreSuite) delegatorBalance() int64 {
 func (s *CoreSuite) delegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
@@ -162,7 +163,7 @@ func (s *CoreSuite) delegate(val, amt int64) {
 func (s *CoreSuite) undelegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
@@ -180,7 +181,7 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool)
 	}
 	ctx := s.ctx(C)
 	before := len(ctx.EventManager().Events())
-	s.consumerKeeper().SlashWithInfractionReason(ctx, val, h, 0, sdk.Dec{}, kind)
+	s.consumerKeeper().SlashWithInfractionReason(ctx, val, h, 0, sdkmath.LegacyDec{}, kind)
 	// consumer module emits packets on slash, so these must be collected.
 	evts := ctx.EventManager().Events()
 	packets := simibc.ParsePacketsFromEvents(evts[before:])

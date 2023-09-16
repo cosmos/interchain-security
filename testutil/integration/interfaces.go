@@ -7,6 +7,7 @@ import (
 
 	"cosmossdk.io/math"
 
+	sdkmath "cosmossdk.io/math"
 	evidencetypes "cosmossdk.io/x/evidence/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -53,7 +54,7 @@ type ProviderApp interface {
 type ConsumerApp interface {
 	ibctesting.TestingApp
 
-	BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock
+	BeginBlocker(ctx sdk.Context) abci.ResponseBeginBlock
 	GetConsumerKeeper() consumerkeeper.Keeper
 	GetSubspace(moduleName string) paramstypes.Subspace
 
@@ -91,11 +92,11 @@ type DemocConsumerApp interface {
 type TestStakingKeeper interface {
 	ccvtypes.StakingKeeper
 	Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc types.BondStatus,
-		validator types.Validator, subtractAccount bool) (newShares sdk.Dec, err error)
-	Undelegate(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec,
+		validator types.Validator, subtractAccount bool) (newShares sdkmath.LegacyDec, err error)
+	Undelegate(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdkmath.LegacyDec,
 	) (time.Time, error)
 	BeginRedelegation(ctx sdk.Context, delAddr sdk.AccAddress, valSrcAddr, valDstAddr sdk.ValAddress,
-		sharesAmount sdk.Dec) (completionTime time.Time, err error)
+		sharesAmount sdkmath.LegacyDec) (completionTime time.Time, err error)
 	GetUnbondingDelegationByUnbondingID(ctx sdk.Context, id uint64,
 	) (ubd types.UnbondingDelegation, found bool)
 	GetRedelegations(ctx sdk.Context, delegator sdk.AccAddress,
@@ -141,7 +142,7 @@ type TestDistributionKeeper interface {
 	GetDistributionAccount(ctx sdk.Context) authtypes.ModuleAccountI
 	GetValidatorOutstandingRewards(ctx sdk.Context,
 		val sdk.ValAddress) (rewards distributiontypes.ValidatorOutstandingRewards)
-	GetCommunityTax(ctx sdk.Context) (percent sdk.Dec)
+	GetCommunityTax(ctx sdk.Context) (percent sdkmath.LegacyDec)
 }
 
 type TestMintKeeper interface {

@@ -5,7 +5,7 @@ import (
 
 	"cosmossdk.io/math"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
 
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -89,7 +89,7 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 		providerKeeper.SetVscTimeoutPeriod(s.providerCtx(), providerUnbondingPeriod+consumerUnbondingPeriod+24*time.Hour)
 
 		// delegate bondAmt and undelegate tc.shareDiv of it
-		bondAmt := sdk.NewInt(10000000)
+		bondAmt := sdkmath.NewInt(10000000)
 		delAddr := s.providerChain.SenderAccount.GetAddress()
 		initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, tc.shareDiv)
 		// - check that staking unbonding op was created and onHold is true
@@ -110,7 +110,7 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 		// - check that staking unbonding op has been deleted
 		checkStakingUnbondingOps(s, valsetUpdateID, false, false, "test: "+tc.name)
 		// - check that necessary delegated coins have been returned
-		unbondAmt := bondAmt.Sub(bondAmt.Quo(sdk.NewInt(tc.shareDiv)))
+		unbondAmt := bondAmt.Sub(bondAmt.Quo(sdkmath.NewInt(tc.shareDiv)))
 		s.Require().Equal(
 			initBalance.Sub(unbondAmt),
 			getBalance(s, s.providerCtx(), delAddr),
@@ -137,7 +137,7 @@ func (s *CCVTestSuite) TestUndelegationVscTimeout() {
 	vscTimeout := providerKeeper.GetVscTimeoutPeriod(s.providerCtx())
 
 	// delegate bondAmt and undelegate 1/2 of it
-	bondAmt := sdk.NewInt(10000000)
+	bondAmt := sdkmath.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, 2)
 	// - check that staking unbonding op was created and onHold is true
@@ -177,7 +177,7 @@ func (s *CCVTestSuite) TestUndelegationVscTimeout() {
 	// - check that staking unbonding op has been deleted
 	checkStakingUnbondingOps(s, valsetUpdateID, false, false)
 	// - check that necessary delegated coins have been returned
-	unbondAmt := bondAmt.Sub(bondAmt.Quo(sdk.NewInt(2)))
+	unbondAmt := bondAmt.Sub(bondAmt.Quo(sdkmath.NewInt(2)))
 	s.Require().Equal(
 		initBalance.Sub(unbondAmt),
 		getBalance(s, s.providerCtx(), delAddr),
@@ -218,7 +218,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 		stakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 		// delegate bondAmt and undelegate 1/2 of it
-		bondAmt := sdk.NewInt(10000000)
+		bondAmt := sdkmath.NewInt(10000000)
 		delAddr := s.providerChain.SenderAccount.GetAddress()
 		initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, 2)
 		// - check that staking unbonding op was created and onHold is true
@@ -283,7 +283,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 			checkStakingUnbondingOps(s, valsetUpdateID, false, false, "test: "+tc.name)
 			// - check that one quarter the delegated coins have been returned
 			s.Require().Equal(
-				initBalance.Sub(bondAmt).Sub(bondAmt.Quo(sdk.NewInt(2))),
+				initBalance.Sub(bondAmt).Sub(bondAmt.Quo(sdkmath.NewInt(2))),
 				getBalance(s, s.providerCtx(), delAddr),
 				"unexpected initial balance after unbonding; test: %s", tc.name,
 			)
@@ -312,7 +312,7 @@ func (s *CCVTestSuite) TestUnbondingNoConsumer() {
 	}
 
 	// delegate bondAmt and undelegate 1/2 of it
-	bondAmt := sdk.NewInt(10000000)
+	bondAmt := sdkmath.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, 2)
 	// - check that staking unbonding op was created and onHold is FALSE
@@ -333,7 +333,7 @@ func (s *CCVTestSuite) TestUnbondingNoConsumer() {
 	// - check that staking unbonding op has been deleted
 	checkStakingUnbondingOps(s, valsetUpdateID, false, false)
 	// - check that half the coins have been returned
-	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
+	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdkmath.NewInt(2)))))
 }
 
 // TestRedelegationNoConsumer tests a redelegate transaction
@@ -347,7 +347,7 @@ func (s *CCVTestSuite) TestRedelegationNoConsumer() {
 	s.Require().NoError(err)
 
 	// Setup delegator, bond amount, and src/dst validators
-	bondAmt := sdk.NewInt(10000000)
+	bondAmt := sdkmath.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	_, srcVal := s.getValByIdx(0)
 	_, dstVal := s.getValByIdx(1)
@@ -400,7 +400,7 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 	providerKeeper.SetVscTimeoutPeriod(s.providerCtx(), providerUnbondingPeriod+consumerUnbondingPeriod+24*time.Hour)
 
 	// Setup delegator, bond amount, and src/dst validators
-	bondAmt := sdk.NewInt(10000000)
+	bondAmt := sdkmath.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	_, srcVal := s.getValByIdx(0)
 	_, dstVal := s.getValByIdx(1)

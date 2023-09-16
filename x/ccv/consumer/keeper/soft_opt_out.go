@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"sort"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
@@ -20,7 +21,7 @@ func (k Keeper) SetSmallestNonOptOutPower(ctx sdk.Context, power uint64) {
 // is less than [SoftOptOutThreshold] of the total power of all validators.
 func (k Keeper) UpdateSmallestNonOptOutPower(ctx sdk.Context) {
 	// get soft opt-out threshold
-	optOutThreshold := sdk.MustNewDecFromStr(k.GetSoftOptOutThreshold(ctx))
+	optOutThreshold := sdkmath.LegacyMustNewDecFromStr(k.GetSoftOptOutThreshold(ctx))
 	if optOutThreshold.IsZero() {
 		// If the SoftOptOutThreshold is zero, then soft opt-out is disable.
 		// Setting the smallest non-opt-out power to zero, fixes the diff-testing
@@ -44,15 +45,15 @@ func (k Keeper) UpdateSmallestNonOptOutPower(ctx sdk.Context) {
 	})
 
 	// get total power in set
-	totalPower := sdk.ZeroDec()
+	totalPower := sdkmath.LegacyZeroDec()
 	for _, val := range valset {
-		totalPower = totalPower.Add(sdk.NewDecFromInt(sdk.NewInt(val.Power)))
+		totalPower = totalPower.Add(sdkmath.LegacyNewDecFromInt(sdkmath.NewInt(val.Power)))
 	}
 
 	// get power of the smallest validator that cannot soft opt out
-	powerSum := sdk.ZeroDec()
+	powerSum := sdkmath.LegacyZeroDec()
 	for _, val := range valset {
-		powerSum = powerSum.Add(sdk.NewDecFromInt(sdk.NewInt(val.Power)))
+		powerSum = powerSum.Add(sdkmath.LegacyNewDecFromInt(sdkmath.NewInt(val.Power)))
 		// if powerSum / totalPower > SoftOptOutThreshold
 		if powerSum.Quo(totalPower).GT(optOutThreshold) {
 			// set smallest non opt out power

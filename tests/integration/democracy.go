@@ -8,6 +8,7 @@ import (
 
 	"cosmossdk.io/math"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -76,13 +77,13 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	bankKeeper := s.consumerApp.GetTestBankKeeper()
 	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
 
-	currentRepresentativesRewards := map[string]sdk.Dec{}
-	nextRepresentativesRewards := map[string]sdk.Dec{}
+	currentRepresentativesRewards := map[string]sdkmath.LegacyDec{}
+	nextRepresentativesRewards := map[string]sdkmath.LegacyDec{}
 	representativesTokens := map[string]math.Int{}
 
 	for _, representative := range stakingKeeper.GetAllValidators(s.consumerCtx()) {
-		currentRepresentativesRewards[representative.OperatorAddress] = sdk.NewDec(0)
-		nextRepresentativesRewards[representative.OperatorAddress] = sdk.NewDec(0)
+		currentRepresentativesRewards[representative.OperatorAddress] = sdkmath.LegacyNewDec(0)
+		nextRepresentativesRewards[representative.OperatorAddress] = sdkmath.LegacyNewDec(0)
 		representativesTokens[representative.OperatorAddress] = representative.GetTokens()
 	}
 
@@ -90,8 +91,8 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	providerRedistributeAccount := accountKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName)
 	// balance of consumer redistribute address will always be 0 when checked between 2 NextBlock() calls
 
-	currentDistrModuleAccountBalance := sdk.NewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
-	currentProviderFeeAccountBalance := sdk.NewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), providerRedistributeAccount.GetAddress(), bondDenom).Amount)
+	currentDistrModuleAccountBalance := sdkmath.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
+	currentProviderFeeAccountBalance := sdkmath.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), providerRedistributeAccount.GetAddress(), bondDenom).Amount)
 	currentCommunityPoolBalance := distrKeeper.GetFeePoolCommunityCoins(s.consumerCtx()).AmountOf(bondDenom)
 	for key := range currentRepresentativesRewards {
 		representativeAddr, _ := sdk.ValAddressFromBech32(key)
@@ -101,8 +102,8 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 
 	s.consumerChain.NextBlock()
 
-	nextDistrModuleAccountBalance := sdk.NewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
-	nextProviderFeeAccountBalance := sdk.NewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), providerRedistributeAccount.GetAddress(), bondDenom).Amount)
+	nextDistrModuleAccountBalance := sdkmath.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
+	nextProviderFeeAccountBalance := sdkmath.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), providerRedistributeAccount.GetAddress(), bondDenom).Amount)
 	nextCommunityPoolBalance := distrKeeper.GetFeePoolCommunityCoins(s.consumerCtx()).AmountOf(bondDenom)
 	for key := range nextRepresentativesRewards {
 		representativeAddr, _ := sdk.ValAddressFromBech32(key)
@@ -113,7 +114,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	distrModuleDifference := nextDistrModuleAccountBalance.Sub(currentDistrModuleAccountBalance)
 	providerDifference := nextProviderFeeAccountBalance.Sub(currentProviderFeeAccountBalance)
 	communityPoolDifference := nextCommunityPoolBalance.Sub(currentCommunityPoolBalance)
-	representativeDifference := map[string]sdk.Dec{}
+	representativeDifference := map[string]sdkmath.LegacyDec{}
 	consumerRedistributeDifference := communityPoolDifference
 
 	for key, currentReward := range currentRepresentativesRewards {
@@ -121,7 +122,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 		consumerRedistributeDifference = consumerRedistributeDifference.Add(representativeDifference[key])
 	}
 
-	consumerRedistributionFraction := sdk.MustNewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
+	consumerRedistributionFraction := sdkmath.LegacyMustNewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
 
 	// confirm that the total amount given to the community pool plus all representatives is equal to the total amount taken out of distribution
 	s.Require().Equal(distrModuleDifference, consumerRedistributeDifference)
@@ -135,13 +136,13 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	// check that the fraction actually kept by the provider is the correct fraction. using InEpsilon because the math code uses truncations
 	s.Require().InEpsilon(providerDifference.Quo(
 		providerDifference.Add(distrModuleDifference)).MustFloat64(),
-		sdk.NewDec(1).Sub(consumerRedistributionFraction).MustFloat64(), float64(0.0001))
+		sdkmath.LegacyNewDec(1).Sub(consumerRedistributionFraction).MustFloat64(), float64(0.0001))
 
 	totalRepresentativePower := stakingKeeper.GetValidatorSet().TotalBondedTokens(s.consumerCtx())
 
 	// check that each representative has gotten the correct amount of rewards
 	for key, representativeTokens := range representativesTokens {
-		powerFraction := sdk.NewDecFromInt(representativeTokens).QuoTruncate(sdk.NewDecFromInt(totalRepresentativePower))
+		powerFraction := sdkmath.LegacyNewDecFromInt(representativeTokens).QuoTruncate(sdkmath.LegacyNewDecFromInt(totalRepresentativePower))
 		s.Require().Equal(powerFraction, representativeDifference[key].Quo(consumerRedistributeDifference.Sub(communityPoolDifference)))
 	}
 }
@@ -154,7 +155,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	accountKeeper := s.consumerApp.GetTestAccountKeeper()
 	mintKeeper := s.consumerApp.GetTestMintKeeper()
 	newAuthParamValue := uint64(128)
-	newMintParamValue := sdk.NewDecWithPrec(1, 1) // "0.100000000000000000"
+	newMintParamValue := sdkmath.LegacyNewDecWithPrec(1, 1) // "0.100000000000000000"
 	votingAccounts := s.consumerChain.SenderAccounts
 	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
 	depositAmount := params.MinDeposit

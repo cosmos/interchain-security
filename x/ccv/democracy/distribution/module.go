@@ -3,6 +3,7 @@ package distribution
 import (
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -81,7 +82,7 @@ func (am AppModule) AllocateTokens(
 	// (and distributed to the current representatives)
 	feeCollector := am.accountKeeper.GetModuleAccount(ctx, consumertypes.ConsumerRedistributeName)
 	feesCollectedInt := am.bankKeeper.GetAllBalances(ctx, feeCollector.GetAddress())
-	feesCollected := sdk.NewDecCoinsFromCoins(feesCollectedInt...)
+	feesCollected := sdk.LegacyNewDecCoinsFromCoins(feesCollectedInt...)
 
 	// transfer collected fees to the distribution module account
 	err := am.bankKeeper.SendCoinsFromModuleToModule(ctx, consumertypes.ConsumerRedistributeName, distrtypes.ModuleName, feesCollectedInt)
@@ -105,12 +106,12 @@ func (am AppModule) AllocateTokens(
 	// e.g. if community tax is 0.02, representatives fraction will be 0.98 (2% goes to the community pool and the rest to the representatives)
 	remaining := feesCollected
 	communityTax := am.keeper.GetCommunityTax(ctx)
-	representativesFraction := sdk.OneDec().Sub(communityTax)
+	representativesFraction := sdkmath.LegacyOneDec().Sub(communityTax)
 
 	// allocate tokens proportionally to representatives voting power
 	vs.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) bool {
 		// we get this validator's percentage of the total power by dividing their tokens by the total bonded tokens
-		powerFraction := sdk.NewDecFromInt(validator.GetTokens()).QuoTruncate(sdk.NewDecFromInt(totalBondedTokens))
+		powerFraction := sdkmath.LegacyNewDecFromInt(validator.GetTokens()).QuoTruncate(sdkmath.LegacyNewDecFromInt(totalBondedTokens))
 		// we truncate here again, which means that the reward will be slightly lower than it should be
 		reward := feesCollected.MulDecTruncate(representativesFraction).MulDecTruncate(powerFraction)
 		am.keeper.AllocateTokensToValidator(ctx, validator, reward)

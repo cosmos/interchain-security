@@ -3,6 +3,7 @@ package integration
 import (
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -31,11 +32,11 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	// define variables required for test setup
 	var (
 		// bond amount
-		bondAmt = sdk.NewInt(1000000)
+		bondAmt = sdkmath.NewInt(1000000)
 		// number of unbonding operations performed
 		ubdOpsNum = 4
 		// store new shares created
-		testShares sdk.Dec
+		testShares sdkmath.LegacyDec
 	)
 
 	// populate the provider chain states to setup the test using the following operations:

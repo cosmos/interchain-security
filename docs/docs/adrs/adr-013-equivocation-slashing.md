@@ -94,7 +94,7 @@ We do not act on evidence that was signed by a validator [consensus key](https:/
 ### Implementation
 The following logic needs to be added to the [HandleConsumerDoubleVoting](https://github.com/cosmos/interchain-security/pull/1232) and [HandleConsumerMisbehaviour](https://github.com/cosmos/interchain-security/pull/826) methods:
 ```go
-undelegationsInTokens := sdk.NewInt(0)
+undelegationsInTokens := sdkmath.NewInt(0)
 for _, v := range k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, validatorAddress) {
     for _, entry := range v.Entries {
         if entry.IsMature(now) && !entry.OnHold() {
@@ -105,7 +105,7 @@ for _, v := range k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, vali
     }
 }
 
-redelegationsInTokens := sdk.NewInt(0)
+redelegationsInTokens := sdkmath.NewInt(0)
 for _, v := range k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, validatorAddress) {
     for _, entry := range v.Entries {
         if entry.IsMature(now) && !entry.OnHold() {
