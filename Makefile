@@ -8,6 +8,7 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cd
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cdd
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-sd
+		
 
 # run all tests: unit, integration, diff, and E2E
 test:
