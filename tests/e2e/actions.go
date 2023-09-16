@@ -731,7 +731,11 @@ rpc_addr = "%s"
 rpc_timeout = "10s"
 store_prefix = "ibc"
 trusting_period = "14days"
-websocket_addr = "%s"
+
+[chains.event_source]
+mode = "push"
+url = "%s"
+batch_delay = "500ms"
 
 [chains.gas_price]
 	denom = "stake"
