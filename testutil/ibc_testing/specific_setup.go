@@ -7,15 +7,15 @@ package ibc_testing
 import (
 	"encoding/json"
 
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	"cosmossdk.io/log"
 	tmdb "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/log"
 
 	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
 	appConsumerDemocracy "github.com/cosmos/interchain-security/v3/app/consumer-democracy"
@@ -43,7 +43,7 @@ func ConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter {
 		encoding := appConsumer.MakeTestEncodingConfig()
 		testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, simtestutil.EmptyAppOptions{})
 		genesisState := appConsumer.NewDefaultGenesisState(encoding.Codec)
-		// NOTE ibc-go/v7/testing.SetupWithGenesisValSet requires a staking module
+		// NOTE ibc-go/v8/testing.SetupWithGenesisValSet requires a staking module
 		// genesisState or it panics. Feed a minimum one.
 		genesisState[stakingtypes.ModuleName] = encoding.Codec.MustMarshalJSON(
 			&stakingtypes.GenesisState{

@@ -81,7 +81,7 @@ test-no-cache:
 ###                                Linting                                  ###
 ###############################################################################
 
-golangci_version=v1.52.2
+golangci_version=v1.52.4
 
 lint:
 	@echo "--> Running linter"
@@ -116,7 +116,7 @@ $(BUILDDIR)/:
 DOCKER := $(shell which docker)
 HTTPS_GIT := https://github.com/cosmos/interchain-security.git
 
-containerProtoVer=0.13.0
+containerProtoVer=0.14.0
 containerProtoImage=ghcr.io/cosmos/proto-builder:$(containerProtoVer)
 
 protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(containerProtoImage)
