@@ -266,7 +266,7 @@ func (b *Builder) newChain(
 	stateBytes, senderAccounts := b.getAppBytesAndSenders(chainID, app, genesis, validators)
 
 	app.InitChain(
-		abci.RequestInitChain{
+		&abci.RequestInitChain{
 			ChainId:         chainID,
 			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: b.initState.ConsensusParams,

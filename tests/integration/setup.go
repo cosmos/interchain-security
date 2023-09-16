@@ -388,7 +388,7 @@ func newPacketSniffer() *packetSniffer {
 	}
 }
 
-func (ps *packetSniffer) ListenEndBlock(ctx context.Context, req abci.RequestEndBlock, res abci.ResponseEndBlock) error {
+func (ps *packetSniffer) ListenEndBlock(ctx context.Context) error {
 	packets := simibc.ParsePacketsFromEvents(simibc.ABCIToSDKEvents(res.GetEvents()))
 	for _, packet := range packets {
 		ps.packets[getSentPacketKey(packet.Sequence, packet.SourceChannel)] = packet
