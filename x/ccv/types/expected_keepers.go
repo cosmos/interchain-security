@@ -10,6 +10,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 
+	"cosmossdk.io/core/address"
 	"cosmossdk.io/math"
 
 	evidencetypes "cosmossdk.io/x/evidence/types"
@@ -30,7 +31,7 @@ type StakingKeeper interface {
 	UnbondingCanComplete(ctx sdk.Context, id uint64) error
 	UnbondingTime(ctx sdk.Context) time.Duration
 	GetValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) (validator stakingtypes.Validator, found bool)
-	GetLastValidatorPower(ctx sdk.Context, operator sdk.ValAddress) (power int64)
+	GetLastValidatorPower(ctx context.Context, operator sdk.ValAddress) (power int64)
 	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
 	Jail(sdk.Context, sdk.ConsAddress) // jail a validator
 	Slash(sdk.Context, sdk.ConsAddress, int64, int64, math.LegacyDec) math.Int
@@ -39,7 +40,7 @@ type StakingKeeper interface {
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
 	PowerReduction(ctx sdk.Context) math.Int
-	PutUnbondingOnHold(ctx sdk.Context, id uint64) error
+	PutUnbondingOnHold(ctx context.Context, id uint64) error
 	IterateValidators(ctx sdk.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool))
 	Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.ValidatorI
 	IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool
@@ -50,6 +51,10 @@ type StakingKeeper interface {
 	GetLastValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
 	GetUnbondingType(ctx sdk.Context, id uint64) (unbondingType stakingtypes.UnbondingType, found bool)
 	BondDenom(ctx sdk.Context) (res string)
+
+	// v50 staking keeper requires this
+	ValidatorAddressCodec() address.Codec
+	ConsensusAddressCodec() address.Codec
 }
 
 type EvidenceKeeper interface {

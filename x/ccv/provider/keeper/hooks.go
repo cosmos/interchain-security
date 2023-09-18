@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"context"
+
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -22,10 +24,13 @@ func (k *Keeper) Hooks() Hooks {
 }
 
 // This stores a record of each unbonding op from staking, allowing us to track which consumer chains have unbonded
-func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
+func (h Hooks) AfterUnbondingInitiated(ctx context.Context, id uint64) error {
 	var consumerChainIDS []string
 
-	for _, chain := range h.k.GetAllConsumerChains(ctx) {
+	// TODO: @MSalopek -> use context.Context in all ccv methods
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	for _, chain := range h.k.GetAllConsumerChains(sdkCtx) {
 		consumerChainIDS = append(consumerChainIDS, chain.ChainId)
 	}
 
@@ -43,11 +48,11 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
 
 		// This change should be updated for SDK v0.48 because it will include changes in handling
 		// check: https://github.com/cosmos/cosmos-sdk/pull/16043
-		ctx.Logger().Error("unbonding could not be put on hold: %w", err)
+		h.k.Logger(ctx).Error("unbonding could not be put on hold: %w", err)
 		return nil
 	}
 
-	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
+	valsetUpdateID := h.k.GetValidatorSetUpdateId(sdkCtx)
 	unbondingOp := providertypes.UnbondingOp{
 		Id:                      id,
 		UnbondingConsumerChains: consumerChainIDS,
@@ -55,12 +60,12 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
 
 	// Add to indexes
 	for _, consumerChainID := range consumerChainIDS {
-		index, _ := h.k.GetUnbondingOpIndex(ctx, consumerChainID, valsetUpdateID)
+		index, _ := h.k.GetUnbondingOpIndex(sdkCtx, consumerChainID, valsetUpdateID)
 		index = append(index, id)
-		h.k.SetUnbondingOpIndex(ctx, consumerChainID, valsetUpdateID, index)
+		h.k.SetUnbondingOpIndex(sdkCtx, consumerChainID, valsetUpdateID, index)
 	}
 
-	h.k.SetUnbondingOp(ctx, unbondingOp)
+	h.k.SetUnbondingOp(sdkCtx, unbondingOp)
 
 	// NOTE: This is a temporary fix for v0.47 -> we should not panic in this edge case
 	// since the AfterUnbondInitiatedHook can be called with a non-existing UnbondingEntry.id
@@ -102,7 +107,7 @@ func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddre
 	inUse := false
 
 	for _, validatorConsumerAddrs := range k.GetAllValidatorsByConsumerAddr(ctx, nil) {
-		if sdk.ConsAddress(validatorConsumerAddrs.ConsumerAddr).Equals(consensusAddr) {
+		if sdk.ConsAddress(validatorConsumerAddrs.ConsumerAddr).Equals(sdk.ConsAddress(consensusAddr)) {
 			inUse = true
 			break
 		}
@@ -111,16 +116,22 @@ func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddre
 	return inUse
 }
 
-func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) error {
-	if ValidatorConsensusKeyInUse(h.k, ctx, valAddr) {
+func (h Hooks) AfterValidatorCreated(ctx context.Context, valAddr sdk.ValAddress) error {
+	// TODO: @MSalopek -> use context.Context in all ccv methods
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	if ValidatorConsensusKeyInUse(h.k, sdkCtx, valAddr) {
 		// Abort TX, do NOT allow validator to be created
 		panic("cannot create a validator with a consensus key that is already in use or was recently in use as an assigned consumer chain key")
 	}
 	return nil
 }
 
-func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddress, valAddr sdk.ValAddress) error {
-	for _, validatorConsumerPubKey := range h.k.GetAllValidatorConsumerPubKeys(ctx, nil) {
+func (h Hooks) AfterValidatorRemoved(ctx context.Context, valConsAddr sdk.ConsAddress, valAddr sdk.ValAddress) error {
+	// TODO: @MSalopek -> use context.Context in all ccv methods
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	for _, validatorConsumerPubKey := range h.k.GetAllValidatorConsumerPubKeys(sdkCtx, nil) {
 		if sdk.ConsAddress(validatorConsumerPubKey.ProviderAddr).Equals(valConsAddr) {
 			consumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(*validatorConsumerPubKey.ConsumerKey)
 			if err != nil {
@@ -128,43 +139,43 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddres
 				panic("cannot get address of consumer key")
 			}
 			consumerAddr := providertypes.NewConsumerConsAddress(consumerAddrTmp)
-			h.k.DeleteValidatorByConsumerAddr(ctx, validatorConsumerPubKey.ChainId, consumerAddr)
+			h.k.DeleteValidatorByConsumerAddr(sdkCtx, validatorConsumerPubKey.ChainId, consumerAddr)
 			providerAddr := providertypes.NewProviderConsAddress(validatorConsumerPubKey.ProviderAddr)
-			h.k.DeleteValidatorConsumerPubKey(ctx, validatorConsumerPubKey.ChainId, providerAddr)
+			h.k.DeleteValidatorConsumerPubKey(sdkCtx, validatorConsumerPubKey.ChainId, providerAddr)
 		}
 	}
 
 	return nil
 }
 
-func (h Hooks) BeforeDelegationCreated(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
+func (h Hooks) BeforeDelegationCreated(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) BeforeDelegationSharesModified(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
+func (h Hooks) BeforeDelegationSharesModified(_ context.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) AfterDelegationModified(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
+func (h Hooks) AfterDelegationModified(_ context.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) BeforeValidatorSlashed(_ sdk.Context, _ sdk.ValAddress, _ math.LegacyDec) error {
+func (h Hooks) BeforeValidatorSlashed(_ context.Context, _ sdk.ValAddress, _ math.LegacyDec) error {
 	return nil
 }
 
-func (h Hooks) BeforeValidatorModified(_ sdk.Context, _ sdk.ValAddress) error {
+func (h Hooks) BeforeValidatorModified(_ context.Context, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) AfterValidatorBonded(_ sdk.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
+func (h Hooks) AfterValidatorBonded(_ context.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) AfterValidatorBeginUnbonding(_ sdk.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
+func (h Hooks) AfterValidatorBeginUnbonding(_ context.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
 	return nil
 }
 
-func (h Hooks) BeforeDelegationRemoved(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
+func (h Hooks) BeforeDelegationRemoved(_ context.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
 	return nil
 }

@@ -131,25 +131,30 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 // ConsensusVersion implements AppModule/ConsensusVersion.
 func (AppModule) ConsensusVersion() uint64 { return 2 }
 
+// NOTE: @MSalopek -> swapped sdk.Context with context.Context
 // BeginBlock implements the AppModule interface
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx context.Context) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	// Create clients to consumer chains that are due to be spawned via pending consumer addition proposals
-	am.keeper.BeginBlockInit(ctx)
+	am.keeper.BeginBlockInit(sdkCtx)
 	// Stop and remove state for any consumer chains that are due to be stopped via pending consumer removal proposals
-	am.keeper.BeginBlockCCR(ctx)
+	am.keeper.BeginBlockCCR(sdkCtx)
 }
 
+// NOTE: @MSalopek -> swapped sdk.Context with context.Context
 // EndBlock implements the AppModule interface
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx context.Context) []abci.ValidatorUpdate {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
 	// EndBlock logic needed for the Consumer Initiated Slashing sub-protocol.
 	// Important: EndBlockCIS must be called before EndBlockVSU
-	am.keeper.EndBlockCIS(ctx)
+	am.keeper.EndBlockCIS(sdkCtx)
 	// EndBlock logic needed for the Consumer Chain Removal sub-protocol
-	am.keeper.EndBlockCCR(ctx)
+	am.keeper.EndBlockCCR(sdkCtx)
 	// EndBlock logic needed for the Validator Set Update sub-protocol
-	am.keeper.EndBlockVSU(ctx)
+	am.keeper.EndBlockVSU(sdkCtx)
 	// EndBlock logic need for the  Reward Distribution sub-protocol
-	am.keeper.EndBlockRD(ctx)
+	am.keeper.EndBlockRD(sdkCtx)
 
 	return []abci.ValidatorUpdate{}
 }
@@ -160,8 +165,9 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 }
 
+// TODO: @MSalopek -> check if anython broke with swapping sdk.StoreDecoderRegistry -> simtypes.StoreDecoderRegistry
 // RegisterStoreDecoder registers a decoder for provider module's types
-func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
+func (am AppModule) RegisterStoreDecoder(sdr simtypes.StoreDecoderRegistry) {
 }
 
 // WeightedOperations returns the all the provider module operations with their respective weights.

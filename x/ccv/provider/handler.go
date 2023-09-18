@@ -3,6 +3,7 @@ package provider
 import (
 	errorsmod "cosmossdk.io/errors"
 
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -10,7 +11,8 @@ import (
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
-func NewHandler(k *keeper.Keeper) sdk.Handler {
+// TODO: @MSalopek I dont think this is correct
+func NewHandler(k *keeper.Keeper) baseapp.MsgServiceHandler {
 	msgServer := keeper.NewMsgServerImpl(k)
 
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
