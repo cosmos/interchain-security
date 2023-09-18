@@ -400,18 +400,16 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   0,
 						validatorID("carol"): 500,
 					},
+					ConsumerPendingPacketQueueSize: uintPtr(1), // packet still queued
 				},
 			},
 		},
-
-		// TODO: Use new consumer query to make this retry a bit more apparent
-
-		// Wait for retry
+		// Wait for retry delay period to pass
 		{
 			action: slashPacketRetryAction{
 				consumer: chainID(consumerName),
 			},
-			state: State{ // Packet should at this point be committed on consumer, not yet relayed
+			state: State{
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
@@ -425,10 +423,11 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   0,
 						validatorID("carol"): 500,
 					},
+					ConsumerPendingPacketQueueSize: uintPtr(1), // packet still queued
 				},
 			},
 		},
-		// Relay and confirm provider applies jailing
+		// Relay now that retry delay period has passed, confirm provider applies jailing
 		{
 			action: relayPacketsAction{
 				chainA:  chainID("provi"),
@@ -443,6 +442,9 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   0,
 						validatorID("carol"): 0, // jailed!
 					},
+				},
+				chainID(consumerName): ChainState{
+					ConsumerPendingPacketQueueSize: uintPtr(0), // relayed slash packet handled ack clears consumer queue
 				},
 			},
 		},
