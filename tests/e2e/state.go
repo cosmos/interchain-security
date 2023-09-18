@@ -26,8 +26,7 @@ type ChainState struct {
 	ConsumerChains                 *map[chainID]bool
 	AssignedKeys                   *map[validatorID]string
 	ProviderKeys                   *map[validatorID]string // validatorID: validator provider key
-	ConsumerChainQueueSizes        *map[chainID]uint
-	GlobalSlashQueueSize           *uint
+	ConsumerPendingPacketQueueSize *uint                   // Only relevant to consumer chains
 	RegisteredConsumerRewardDenoms *[]string
 }
 
@@ -171,6 +170,11 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 	if modelState.RegisteredConsumerRewardDenoms != nil {
 		registeredConsumerRewardDenoms := tr.getRegisteredConsumerRewardDenoms(chain)
 		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
+	}
+
+	if modelState.ConsumerPendingPacketQueueSize != nil {
+		pendingPacketQueueSize := tr.getPendingPacketQueueSize(chain)
+		chainState.ConsumerPendingPacketQueueSize = &pendingPacketQueueSize
 	}
 
 	if *verbose {
@@ -694,6 +698,27 @@ func (tr TestRun) getRegisteredConsumerRewardDenoms(chain chainID) []string {
 	return rewardDenoms
 }
 
+func (tr TestRun) getPendingPacketQueueSize(chain chainID) uint {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+
+		"query", "ccvconsumer", "throttle-state",
+		`--node`, tr.getQueryNode(chain),
+		`-o`, `json`,
+	)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	if !gjson.ValidBytes(bz) {
+		panic("invalid json response from query ccvconsumer throttle-state: " + string(bz))
+	}
+
+	packetData := gjson.Get(string(bz), "packet_data_queue").Array()
+	return uint(len(packetData))
+}
+
 func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {
 	// for CometMock, validatorNodes are all the same address as the query node (which is CometMocks address)
 	if tr.useCometmock {
@@ -741,4 +766,8 @@ func (tr TestRun) curlJsonRPCRequest(method, params, address string) {
 
 	verbosity := false
 	executeCommandWithVerbosity(cmd, "curlJsonRPCRequest", verbosity)
+}
+
+func uintPtr(i uint) *uint {
+	return &i
 }
