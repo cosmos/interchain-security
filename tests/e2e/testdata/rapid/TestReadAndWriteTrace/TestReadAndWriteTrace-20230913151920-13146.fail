@@ -1,0 +1,11 @@
+# 2023/09/13 15:19:20 TestReadAndWriteTrace [rapid] draw Trace: []main.Step{main.Step{Action:main.lightClientEquivocationAttackAction{Validator:"", Chain:""}, State:main.State{}}}
+# 2023/09/13 15:19:20 TestReadAndWriteTrace error writing and reading trace: error reading trace from file: unknown action name: main.lightClientEquivocationAttackAction
+# 
+v0.4.8#17668525343613541116
+0x5555555555555
+0xc05c654ab866b
+0x1f
+0x0
+0x0
+0x0
+0x0

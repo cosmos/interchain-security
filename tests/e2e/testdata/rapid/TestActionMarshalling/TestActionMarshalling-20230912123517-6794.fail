@@ -1,0 +1,14 @@
+# 2023/09/12 12:35:17 TestActionMarshalling [rapid] draw Action: main.SendTokensAction{Chain:"", From:"", To:"", Amount:0x0}
+# 2023/09/12 12:35:17 TestActionMarshalling error marshalling and unmarshalling action: got (+), want (-):   any(
+# - 	main.SendTokensAction{},
+# + 	map[string]any{"Amount": float64(0), "Chain": string(""), "From": string(""), "To": string("")},
+#   )
+# 
+v0.4.8#14250065908211800578
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
