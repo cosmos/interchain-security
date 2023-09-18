@@ -711,6 +711,10 @@ func (tr TestRun) getPendingPacketQueueSize(chain chainID) uint {
 		log.Fatal(err, "\n", string(bz))
 	}
 
+	if !gjson.ValidBytes(bz) {
+		panic("invalid json response from query ccvconsumer throttle-state: " + string(bz))
+	}
+
 	packetData := gjson.Get(string(bz), "packet_data_queue").Array()
 	return uint(len(packetData))
 }
