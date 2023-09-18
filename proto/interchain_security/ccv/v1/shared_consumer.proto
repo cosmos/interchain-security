@@ -77,6 +77,10 @@ message Params {
     // Provider-originated reward denoms. These are denoms coming from the
     // provider which are allowed to be used as rewards. e.g. "uatom"
     repeated string provider_reward_denoms = 12;
+
+    // The period after which a consumer can retry sending a throttled packet.
+    google.protobuf.Duration retry_delay_period = 13
+        [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 }
 
 // GenesisState defines the CCV consumer chain genesis state.
