@@ -347,6 +347,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				},
 			},
 		},
+		// Relay slash packet to provider, and ack back to consumer
 		{
 			action: relayPacketsAction{
 				chainA:  chainID("provi"),
@@ -371,8 +372,6 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				},
 			},
 		},
-		// TODO(Shawn): Improve this test to have the consumer retry it's downtime slash, and to assert queue size on consumer.
-		// See https://github.com/cosmos/interchain-security/issues/1103 and https://github.com/cosmos/interchain-security/issues/1233
 		{
 			action: slashMeterReplenishmentAction{
 				targetValue: 0, // We just want slash meter to be non-negative
@@ -396,6 +395,49 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("alice"): 511,
 						validatorID("bob"):   0,
 						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+
+		// TODO: Use new consumer query to make this retry a bit more apparent
+
+		// Wait for retry
+		{
+			action: slashPacketRetryAction{
+				consumer: chainID(consumerName),
+			},
+			state: State{ // Packet should at this point be committed on consumer, not yet relayed
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   0,
+						validatorID("carol"): 500,
+					},
+				},
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   0,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		// Relay and confirm provider applies jailing
+		{
+			action: relayPacketsAction{
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   0,
+						validatorID("carol"): 0, // jailed!
 					},
 				},
 			},

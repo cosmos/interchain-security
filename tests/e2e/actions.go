@@ -1974,6 +1974,17 @@ func (tr TestRun) waitForSlashMeterReplenishment(
 	}
 }
 
+type slashPacketRetryAction struct {
+	consumer chainID
+}
+
+func (tr TestRun) waitForSlashRetry(
+	action slashPacketRetryAction,
+	verbose bool,
+) {
+	// Retry delay period is set to 10 seconds, see config.go
+}
+
 // GetPathNameForGorelayer returns the name of the path between two given chains used by Gorelayer.
 // Since paths are bidirectional, we need either chain to be able to be provided as first or second argument
 // and still return the same name, so we sort the chain names alphabetically.
