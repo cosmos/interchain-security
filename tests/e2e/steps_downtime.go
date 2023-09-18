@@ -410,19 +410,14 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				consumer: chainID(consumerName),
 			},
 			state: State{
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   0,
-						validatorID("carol"): 500,
-					},
-				},
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 511,
 						validatorID("bob"):   0,
 						validatorID("carol"): 500,
 					},
+				},
+				chainID(consumerName): ChainState{
 					ConsumerPendingPacketQueueSize: uintPtr(1), // packet still queued
 				},
 			},
