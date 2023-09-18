@@ -26,7 +26,7 @@ type ChainState struct {
 	ConsumerChains                 *map[chainID]bool
 	AssignedKeys                   *map[validatorID]string
 	ProviderKeys                   *map[validatorID]string // validatorID: validator provider key
-	PendingPacketQueueSize         *uint                   // Only relevant to consumer chains
+	ConsumerPendingPacketQueueSize *uint                   // Only relevant to consumer chains
 	RegisteredConsumerRewardDenoms *[]string
 }
 
@@ -172,9 +172,9 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
 	}
 
-	if modelState.PendingPacketQueueSize != nil {
+	if modelState.ConsumerPendingPacketQueueSize != nil {
 		pendingPacketQueueSize := tr.getPendingPacketQueueSize(chain)
-		chainState.PendingPacketQueueSize = &pendingPacketQueueSize
+		chainState.ConsumerPendingPacketQueueSize = &pendingPacketQueueSize
 	}
 
 	if *verbose {

@@ -293,7 +293,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
-					PendingPacketQueueSize: uintPtr(1), // bob's downtime slash packet is queued
+					ConsumerPendingPacketQueueSize: uintPtr(1), // bob's downtime slash packet is queued
 				},
 			},
 		},
@@ -322,7 +322,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
-					PendingPacketQueueSize: uintPtr(0), // slash packet handled ack clears consumer queue
+					ConsumerPendingPacketQueueSize: uintPtr(0), // slash packet handled ack clears consumer queue
 				},
 			},
 		},
@@ -346,7 +346,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   500, // VSC packet jailing bob is not yet relayed to consumer
 						validatorID("carol"): 500,
 					},
-					PendingPacketQueueSize: uintPtr(1), // carol's downtime slash packet is queued
+					ConsumerPendingPacketQueueSize: uintPtr(1), // carol's downtime slash packet is queued
 				},
 			},
 		},
@@ -371,7 +371,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   0, // VSC packet applying bob jailing is also relayed and recv by consumer
 						validatorID("carol"): 500,
 					},
-					PendingPacketQueueSize: uintPtr(1), // slash packet bounced ack keeps carol's downtime slash packet queued
+					ConsumerPendingPacketQueueSize: uintPtr(1), // slash packet bounced ack keeps carol's downtime slash packet queued
 				},
 			},
 		},
