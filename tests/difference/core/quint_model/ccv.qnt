@@ -1,4 +1,5 @@
-module ccv_logic {
+-*- mode: Bluespec; -*-
+module ccv {
     import extraSpells.* from "./extraSpells"
 
     // Things that are not modelled:
@@ -11,17 +12,12 @@ module ccv_logic {
     // * VSC packets mature
     // * Consumers can be forcefully dropped due to timeouts, or stop on their own volition
     
-    // ===================
     // TYPE DEFINITIONS
-    // ===================
     type Node = str
     type Chain = str
-    type Power = int
-    type ValidatorSet = Node -> Power
+    type ValidatorSet = Node -> int
     type Height = int
     type Timestamp = int
-    // a list of validator sets per blocks, ordered by recency
-    type VotingPowerHistory = List[ValidatorSet]
 
     // --PACKETS
     type VSCPacket =
@@ -42,719 +38,582 @@ module ccv_logic {
             timeout: Timestamp
         }
     
-    // possible consumer statuses
-    pure val STOPPED = "stopped" // the chain was once a consumer chain, but has been dropped by the provider.
-    pure val RUNNING = "running" // the chain is currently a consumer chain. Running chains are those that get sent VSCPackets.
-    pure val UNUSED = "unused" // the chain has never been a consumer chain, and is available to become one.
-    // When a chain is dropped, it cannot become a consumer again - we assume that would be done by another consumer becoming running.
+    // MODEL PARAMETERS
+        
 
+    // set of identifiers of potential nodes
+    pure val Nodes: Set[Node] = 
+        Set("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
 
-    // state that each chain needs to store, whether consumer or provider.
-    type ChainState = {
-        // Stores the list of voting powers that corresponded to voting powers 
-        // at blocks over the chains entire existence.
-        // Voting powers should be ordered by recency in descending order.
-        votingPowerHistory: VotingPowerHistory,
+    // the set of consumer chains
+    pure val ConsumerChains: Set[Chain] = 
+        Set("chain1", "chain2", "chain3")
 
-        // the current validator set on each chain.
-        // this will be included in the next block, but might not be final yet,
-        // e.g. there may be more modifications in the current block.
-        currentValidatorSet: ValidatorSet,
+    // The singular provider chain.
+    pure val ProviderChain: Chain = 
+        "provider"
+        
+    pure val chains = ConsumerChains.union(Set(ProviderChain))
 
-        // the latest timestamp that was comitted on chain
-        lastTimestamp: Timestamp,
-    }
+    // length of the unbonding period on each chain
+    pure val UnbondingPeriod: Chain -> int = chains.mapBy(
+        (chain) => 
+        10
+    )
 
-    // Defines the current state of the provider chain. Essentially, all information here is stored by the provider on-chain (or could be derived purely by information that is on-chain).
-    type ProviderState =
+    // the time until a packet times out
+    pure val PacketTimeout: int = 
+        5
+
+    // the time until a consumer chain is dropped by the provider due to inactivity
+    pure val InactivityTimeout: int =
+        10
+
+    // consumer statuses
+    pure val STOPPED = "stopped"
+    pure val RUNNING = "running"
+    pure val UNUSED = "unused"
+
+    // utility: a map assigning each chain to 0, used for not advancing timestamps
+    pure val NoTimeAdvancement: Chain -> int = chains.mapBy(
+        (chain) => 
+        0
+    )
+
+    // utility: a struct summarizing the current state
+    val state = 
         {
-            // the state that each chain needs to store
-            chainState: ChainState,
-
-            // Stores, for each consumer chain, the list of packets that have been sent to the consumer chain
-            // and have not been received yet.
-            // In the implementation, this would roughly be the unacknowledged packets on an ibc channel.
-            outstandingPacketsToConsumer: Chain -> List[VSCPacket],
-
-            // the set of received VSCMaturedPackets
-            receivedMaturations: Set[VSCMaturedPacket],
-
-            // stores which VSC Packets have been sent to compare with receivedMaturations to detect timeouts due to non-responsiveness
-            sentVSCPackets: Chain -> Set[VSCPacket],
-
-            // stores whether, in this block, the validator set has changed.
-            // this is needed because the validator set might be considered to have changed, even though
-            // it is still technically identical at our level of abstraction, e.g. a validator power change on the provider
-            // might leave the validator set the same because a delegation and undelegation cancel each other out.
-            providerValidatorSetChangedInThisBlock: bool,
-
-            // stores, for each consumer chain, its current status -
-            // unused, running, or stopped
-            consumerStatus: Chain -> str,
+            votingPowerHistories: votingPowerHistories,
+            runningValidatorSet: runningValidatorSet,
+            curChainTimes: curChainTimes,
+            consumerStatus: consumerStatus,
+            outstandingPacketsToProvider: outstandingPacketsToProvider,
+            outstandingPacketsToConsumer: outstandingPacketsToConsumer,
+            maturationTimes: maturationTimes,
+            receivedMaturations: receivedMaturations,
+            sentVSCPackets: sentVSCPackets,
         }
 
-    // Defines the current state of a consumer chain. This information is accessible to that consumer on-chain.
-    type ConsumerState = {
-        // the state that each chain needs to store
-        chainState: ChainState,
 
-        // Stores the maturation times for VSCPackets received by this consumer
-        maturationTimes: VSCPacket -> Timestamp,
+    // utility: a map assigning each chain to false, used for not advancing consumer status
+    pure val NoStatusAdvancement: Chain -> bool = chains.mapBy(
+        (chain) => 
+        false
+    )
 
-        // Stores the list of packets that have been sent to the provider chain by this consumer
-        // and have not been received yet.
-        // In the implementation, essentially unacknowledged IBC packets.
-        outstandingPacketsToProvider: Chain -> List[VSCMaturedPacket],
+    // utility: the set of consumers currently running
+    val RunningConsumers: Set[Chain] = 
+        ConsumerChains.filter(chain => consumerStatus.get(chain) == RUNNING)
 
-        // Stores the list of voting powers that corresponded to voting powers 
-        // at blocks over the chains entire existence.
-        // Voting powers should be ordered by recency in descending order.
-        votingPowerHistory: VotingPowerHistory,
+    // MODEL STATE
+    // --SHARED STATE
+
+    // Stores, for each chain, the list of voting powers that corresponded to voting powers 
+    // at blocks over its entire existence.
+    // Voting powers should be ordered by recency in descending order.
+    var votingPowerHistories: Chain -> List[ValidatorSet]
+
+    // the current validator set on each chain.
+    // this will be included in the next block, but might not be final yet,
+    // e.g. there may be more modifications in the current block.
+    var runningValidatorSet: Chain -> ValidatorSet
+
+    // the current timestamp for each chain
+    var curChainTimes: Chain -> Timestamp
+
+    // stores, for each chain, its current status -
+    // unused, running, or stopped
+    var consumerStatus: Chain -> str
+
+    // --CHANNELS
+    // Stores, for each consumer chain, the list of packets that have been sent to the provider chain
+    // and have not been received yet.
+    var outstandingPacketsToProvider: Chain -> List[VSCMaturedPacket]
+
+    // Stores, for each consumer chain, the list of packets that have been sent to the consumer chain
+    // and have not been received yet.
+    var outstandingPacketsToConsumer: Chain -> List[VSCPacket]
+
+
+    // --CONSUMER STATE
+    // Stores the maturation times for VSCPackets received by consumers
+    var maturationTimes: Chain -> (VSCPacket -> Timestamp)
+
+    // --PROVIDER STATE
+    // the set of VSCMaturedPackets received by the provider chain
+    var receivedMaturations: Set[VSCMaturedPacket]
+
+    // stores which VSC Packets have been sent to compare with receivedMaturations to detect timeouts due to non-responsiveness
+    var sentVSCPackets: Chain -> Set[VSCPacket]
+
+    // stores whether, in this step, the validator set considered to be changed.
+    // this is needed because the validator set might be considered to have changed, even though
+    // it is still technically identical at our level of abstraction, e.g. a validator power change on the provider
+    // might leave the validator set the same because a delegation and undelegation cancel each other out.
+    var providerValidatorSetChangedInThisBlock: bool
+
+
+    // UTILITY FUNCTIONS & ACTIONS
+    def wasValidatorSetOnProvider(validatorSet: ValidatorSet): bool = {
+        votingPowerHistories.get(ProviderChain).toSet().exists(
+            historicalValSet => historicalValSet == validatorSet
+        )
     }
 
-    // the state of the protocol consists of the composition of the state of one provider chain with potentially many consumer chains.
-    type ProtocolState = {
-        providerState: ProviderState,
-        // the state of each consumer chain.
-        // note that we assume that this contains all consumer chains that may ever exist,
-        // and consumer chains that are currently not running will have providerState.consumerStatus == UNUSED or STOPPED
-        consumerStates: Set[ConsumerState]
-    }
+    def getCurrentValidatorSet(chain: Chain): ValidatorSet = 
+        votingPowerHistories.get(chain).head()
 
-    type Error = {
-        message: str
-    }
-
-    // we return either a result or an error.
-    // if hasError is true, newState may be arbitrary, but the error will be meaningful.
-    // if hasError is false, error may be arbitrary, but newState will be meaningful.
-    type Result = {
-        hasError: bool,
-        newState: ProtocolState,
-        error: Error
-    }
-
-    pure def Ok(newState: ProtocolState): Result = {
-        {
-            hasError: false,
-            newState: newState,
-            error: {
-                message: ""
-            }
-        }
-    }
-
-    pure def Err(msg: str): Result = {
-        {
-            hasError: true,
-            newState: {
-                providerState: {
-                    chainState: {
-                        votingPowerHistory: List(),
-                        currentValidatorSet: Map(),
-                        lastTimestamp: 0
-                    },
-                    outstandingPacketsToConsumer: Map(),
-                    receivedMaturations: Set(),
-                    sentVSCPackets: Map(),
-                    providerValidatorSetChangedInThisBlock: false,
-                    consumerStatus: Map()
-                },
-                consumerStates: Set()
-            },
-            error: {
-                message: msg
-            }
-        }
-    }
-
-    // ===================
-    // PROTOCOL LOGIC
-    // ===================
-
-    pure def getUpdatedValidatorSet(oldValidatorSet: ValidatorSet, validator: Node, newVotingPower: int): ValidatorSet =
+    def getUpdatedValidatorSet(oldValidatorSet: ValidatorSet, validator: Node, newVotingPower: int): ValidatorSet =
         if (newVotingPower > 0) 
         oldValidatorSet.put(validator, newVotingPower)
         else
         oldValidatorSet.mapRemove(validator)
+
+    // returns true if the consumer has timed out and should be dropped
+    def consumerTimedOut(consumer: Chain): bool =
+        any {
+            // either a package from provider to consumer has timed out
+            outstandingPacketsToConsumer.get(consumer).select(
+                packet => packet.timeout <= curChainTimes.get(consumer)
+            ).length() > 0,
+            // or a package from consumer to provider has timed out
+            outstandingPacketsToProvider.get(consumer).select(
+                packet => packet.timeout <= curChainTimes.get(ProviderChain)
+            ).length() > 0,
+            // or the inactivity timeout has passed since a VSCPacket was sent to the consumer, but the
+            // provider has not received a VSCMaturedPacket for it
+            val packetsWithoutResponse = sentVSCPackets.get(consumer).filter( // get packets without response
+                packet => 
+                not(receivedMaturations.exists(
+                    maturedPacket => maturedPacket.id == packet.id
+                ))
+            )
+            // among those, get packets where inactivity timeout has passed
+            packetsWithoutResponse.filter(
+                packet => 
+                val sentAt = curChainTimes.get(ProviderChain) - PacketTimeout // compute when the packet was sent
+                val timesOutAt = sentAt + InactivityTimeout // compute when the packet times out
+                timesOutAt <= curChainTimes.get(ProviderChain)
+            ).size() > 0
+        }
+
+    // utility action that leaves all provider state untouched
+    action PROVIDER_NOOP(): bool = 
+        all {
+            receivedMaturations' = receivedMaturations,
+        }
+
+    // utility action that leaves all consumer state untouched
+    action CONSUMER_NOOP(): bool = 
+        all {
+            maturationTimes' = maturationTimes,
+        }
     
+
+    // MODEL ACTIONS
+
     // the power of a validator on the provider chain is changed to the given amount. We do not care how this happens,
     // e.g. via undelegations, or delegations, ...
-    pure def votingPowerChange(currentState: ProtocolState, validator: Node, amount: int): Result =
-            // adjust the current validator set on the provider - it is not entered in the voting history yet because that happens only on block end
-            val currentValidatorSet = currentState.providerState.currentValidatorSet
-            // val newValidatorSet = getUpdatedValidatorSet(currentValidatorSet, validator, amount)
-            // val newProviderState = currentState.providerState.with(
-            //     "currentValidatorSet", newValidatorSet
-            // )
-            // val newState = currentState.with(
-            //     "providerState", newProviderState
-            // )
-            Err("not implemented")
-}
+    action votingPowerChange(validator: Node, amount: int): bool =
+        // for the provider chain, we need to adjust the voting power history
+        // by adding a new set
+        all {
+            amount >= 0,
+            val newValidatorSet = getCurrentValidatorSet(ProviderChain).getUpdatedValidatorSet(validator, amount)
+            // set the running validator set on the provider chain, but don't update the history yet
+            runningValidatorSet' = runningValidatorSet.set(ProviderChain, newValidatorSet),
+            // no packets are sent yet, these are only sent on endAndBeginBlock
+            RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
+            outstandingPacketsToProvider' = outstandingPacketsToProvider,
+            receivedMaturations' = receivedMaturations,
+            CONSUMER_NOOP,
+            // voting power history is only updated on endAndBeginBlock
+            votingPowerHistories' = votingPowerHistories,
+            // consumer statusses do not change
+            consumerStatus' = consumerStatus,
+            // chain times do not change
+            curChainTimes' = curChainTimes,
+            // the validator set is considered to have changed
+            providerValidatorSetChangedInThisBlock' = true,
+        }
 
-module ccv_tests {
-    import ccv_logic.*
+    // deliver the next outstanding packet from the consumer to the provider.
+    // since this model assumes a single provider chain, this just takes a single chain as argument.
+    action recvPacketOnProvider(consumer: Chain): bool = all {
+        // ensure there is a packet to be received
+        outstandingPacketsToProvider.get(consumer).length() > 0,
+        // remove packet from outstanding packets
+        val newPacketQueue = outstandingPacketsToProvider.get(consumer).tail()
+        outstandingPacketsToProvider' = outstandingPacketsToProvider.set(consumer, newPacketQueue),
+        // register the packet as received
+        val maturedPacket = outstandingPacketsToProvider.get(consumer).head()
+        receivedMaturations' = receivedMaturations.add(maturedPacket),
+        CONSUMER_NOOP,
+        RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
+        votingPowerHistories' = votingPowerHistories,
+        // no validator set changes are made
+        runningValidatorSet' = runningValidatorSet,
+        // consumer statusses do not change
+        consumerStatus' = consumerStatus,
+        // chain times do not change
+        curChainTimes' = curChainTimes,
+        // the validator set was not changed by this action (but might have been changed before in this block)
+        providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
+    }
 
-    // // UTILITY FUNCTIONS & ACTIONS
-    // def wasValidatorSetOnProvider(validatorSet: ValidatorSet): bool = {
-    //     votingPowerHistories.get(ProviderChain).toSet().exists(
-    //         historicalValSet => historicalValSet == validatorSet
-    //     )
-    // }
+    // deliver the next outstanding packet from the provider to the consumer.
+    // since this model assumes a single provider chain, this just takes a single chain as argument.
+    action recvPacketOnConsumer(consumer: Chain): bool = all {
+        // ensure there is a packet to be received
+        outstandingPacketsToConsumer.get(consumer).length() > 0,
+        // remove packet from outstanding packets
+        val newPacketQueue = outstandingPacketsToConsumer.get(consumer).tail()
+        val newOutstandingPackets = outstandingPacketsToConsumer.set(consumer, newPacketQueue)
+        RegisterNewOutstandingPackets(newOutstandingPackets),
+        val packet = outstandingPacketsToConsumer.get(consumer).head()
+        all {
+            // update the running validator set, but not the history yet,
+            // as that only happens when the next block is started
+            runningValidatorSet' = runningValidatorSet.set(consumer, packet.validatorSet),
+            // add the new packet and store its maturation time
+            val newMaturationTimes = maturationTimes.get(consumer).put(packet, curChainTimes.get(consumer) + UnbondingPeriod.get(consumer))
+            maturationTimes' = maturationTimes.set(consumer, newMaturationTimes)
+        },
+        PROVIDER_NOOP,
+        votingPowerHistories' = votingPowerHistories,
+        outstandingPacketsToProvider' = outstandingPacketsToProvider,
+        // consumer statusses do not change
+        consumerStatus' = consumerStatus,
+        // chain times do not change
+        curChainTimes' = curChainTimes,
+        // the validator set was not changed by this action (but might have been changed before in this block)
+        providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
+    }
 
-    // def getCurrentValidatorSet(chain: Chain): ValidatorSet = 
-    //     votingPowerHistories.get(chain).head()
+    // ends the current block and starts the next block for a given chain.
+    action endAndBeginBlock(chain: Chain): bool = any {
+        all {
+          chain == ProviderChain,
+          endAndBeginBlockForProvider,
+        },
+        all {
+            chain != ProviderChain,
+            endAndBeginBlockForConsumer(chain),
+        }
+    }
 
-    // // returns true if the consumer has timed out and should be dropped
-    // def consumerTimedOut(consumer: Chain): bool =
-    //     any {
-    //         // either a package from provider to consumer has timed out
-    //         outstandingPacketsToConsumer.get(consumer).select(
-    //             packet => packet.timeout <= curChainTimes.get(consumer)
-    //         ).length() > 0,
-    //         // or a package from consumer to provider has timed out
-    //         outstandingPacketsToProvider.get(consumer).select(
-    //             packet => packet.timeout <= curChainTimes.get(ProviderChain)
-    //         ).length() > 0,
-    //         // or the inactivity timeout has passed since a VSCPacket was sent to the consumer, but the
-    //         // provider has not received a VSCMaturedPacket for it
-    //         val packetsWithoutResponse = sentVSCPackets.get(consumer).filter( // get packets without response
-    //             packet => 
-    //             not(receivedMaturations.exists(
-    //                 maturedPacket => maturedPacket.id == packet.id
-    //             ))
-    //         )
-    //         // among those, get packets where inactivity timeout has passed
-    //         packetsWithoutResponse.filter(
-    //             packet => 
-    //             val sentAt = curChainTimes.get(ProviderChain) - PacketTimeout // compute when the packet was sent
-    //             val timesOutAt = sentAt + InactivityTimeout // compute when the packet times out
-    //             timesOutAt <= curChainTimes.get(ProviderChain)
-    //         ).size() > 0
-    //     }
-
-    // // utility action that leaves all provider state untouched
-    // action PROVIDER_NOOP(): bool = 
-    //     all {
-    //         receivedMaturations' = receivedMaturations,
-    //     }
-
-    // // utility action that leaves all consumer state untouched
-    // action CONSUMER_NOOP(): bool = 
-    //     all {
-    //         maturationTimes' = maturationTimes,
-    //     }
-    
-
-    // // MODEL ACTIONS
-
-    // // the power of a validator on the provider chain is changed to the given amount. We do not care how this happens,
-    // // e.g. via undelegations, or delegations, ...
-    // action doVotingPowerChange(validator: Node, amount: int): bool =
-    //     // for the provider chain, we need to adjust the voting power history
-    //     // by adding a new set
-    //     all {
-    //         amount >= 0,
-    //         val newValidatorSet = getCurrentValidatorSet(ProviderChain).getUpdatedValidatorSet(validator, amount)
-    //         // set the running validator set on the provider chain, but don't update the history yet
-    //         runningValidatorSet' = runningValidatorSet.set(ProviderChain, newValidatorSet),
-    //         // no packets are sent yet, these are only sent on endAndBeginBlock
-    //         RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
-    //         outstandingPacketsToProvider' = outstandingPacketsToProvider,
-    //         receivedMaturations' = receivedMaturations,
-    //         CONSUMER_NOOP,
-    //         // voting power history is only updated on endAndBeginBlock
-    //         votingPowerHistories' = votingPowerHistories,
-    //         // consumer statusses do not change
-    //         consumerStatus' = consumerStatus,
-    //         // chain times do not change
-    //         curChainTimes' = curChainTimes,
-    //         // the validator set is considered to have changed
-    //         providerValidatorSetChangedInThisBlock' = true,
-    //     }
-
-    // // deliver the next outstanding packet from the consumer to the provider.
-    // // since this model assumes a single provider chain, this just takes a single chain as argument.
-    // action recvPacketOnProvider(consumer: Chain): bool = all {
-    //     // ensure there is a packet to be received
-    //     outstandingPacketsToProvider.get(consumer).length() > 0,
-    //     // remove packet from outstanding packets
-    //     val newPacketQueue = outstandingPacketsToProvider.get(consumer).tail()
-    //     outstandingPacketsToProvider' = outstandingPacketsToProvider.set(consumer, newPacketQueue),
-    //     // register the packet as received
-    //     val maturedPacket = outstandingPacketsToProvider.get(consumer).head()
-    //     receivedMaturations' = receivedMaturations.add(maturedPacket),
-    //     CONSUMER_NOOP,
-    //     RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
-    //     votingPowerHistories' = votingPowerHistories,
-    //     // no validator set changes are made
-    //     runningValidatorSet' = runningValidatorSet,
-    //     // consumer statusses do not change
-    //     consumerStatus' = consumerStatus,
-    //     // chain times do not change
-    //     curChainTimes' = curChainTimes,
-    //     // the validator set was not changed by this action (but might have been changed before in this block)
-    //     providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
-    // }
-
-    // // deliver the next outstanding packet from the provider to the consumer.
-    // // since this model assumes a single provider chain, this just takes a single chain as argument.
-    // action recvPacketOnConsumer(consumer: Chain): bool = all {
-    //     // ensure there is a packet to be received
-    //     outstandingPacketsToConsumer.get(consumer).length() > 0,
-    //     // remove packet from outstanding packets
-    //     val newPacketQueue = outstandingPacketsToConsumer.get(consumer).tail()
-    //     val newOutstandingPackets = outstandingPacketsToConsumer.set(consumer, newPacketQueue)
-    //     RegisterNewOutstandingPackets(newOutstandingPackets),
-    //     val packet = outstandingPacketsToConsumer.get(consumer).head()
-    //     all {
-    //         // update the running validator set, but not the history yet,
-    //         // as that only happens when the next block is started
-    //         runningValidatorSet' = runningValidatorSet.set(consumer, packet.validatorSet),
-    //         // add the new packet and store its maturation time
-    //         val newMaturationTimes = maturationTimes.get(consumer).put(packet, curChainTimes.get(consumer) + UnbondingPeriod.get(consumer))
-    //         maturationTimes' = maturationTimes.set(consumer, newMaturationTimes)
-    //     },
-    //     PROVIDER_NOOP,
-    //     votingPowerHistories' = votingPowerHistories,
-    //     outstandingPacketsToProvider' = outstandingPacketsToProvider,
-    //     // consumer statusses do not change
-    //     consumerStatus' = consumerStatus,
-    //     // chain times do not change
-    //     curChainTimes' = curChainTimes,
-    //     // the validator set was not changed by this action (but might have been changed before in this block)
-    //     providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
-    // }
-
-    // // ends the current block and starts the next block for a given chain.
-    // action endAndBeginBlock(chain: Chain): bool = any {
-    //     all {
-    //       chain == ProviderChain,
-    //       endAndBeginBlockForProvider,
-    //     },
-    //     all {
-    //         chain != ProviderChain,
-    //         endAndBeginBlockForConsumer(chain),
-    //     }
-    // }
-
-    // // gets the updated history for the current chain when ending a block, i.e. the
-    // // running validator set is added to the history if different from the last one.
-    // def getUpdatedHistory(chain: Chain): List[ValidatorSet] =
-    //     // update voting power history if the validator set changed
-    //     val newValidatorSet = runningValidatorSet.get(ProviderChain)
-    //     val oldValidatorSet = votingPowerHistories.get(ProviderChain).head()
-    //     if (newValidatorSet != oldValidatorSet) 
-    //         votingPowerHistories.get(ProviderChain).prepend(newValidatorSet)
-    //     else
-    //         votingPowerHistories.get(ProviderChain)
+    // gets the updated history for the current chain when ending a block, i.e. the
+    // running validator set is added to the history if different from the last one.
+    def getUpdatedHistory(chain: Chain): List[ValidatorSet] =
+        // update voting power history if the validator set changed
+        val newValidatorSet = runningValidatorSet.get(ProviderChain)
+        val oldValidatorSet = votingPowerHistories.get(ProviderChain).head()
+        if (newValidatorSet != oldValidatorSet) 
+            votingPowerHistories.get(ProviderChain).prepend(newValidatorSet)
+        else
+            votingPowerHistories.get(ProviderChain)
 
 
-    // action endAndBeginBlockForProvider(): bool = all {
-    //     // update the voting power history
-    //     votingPowerHistories' = votingPowerHistories.set(ProviderChain, getUpdatedHistory(ProviderChain)),
-    //     // the running validator set is now for sure the current validator set,
-    //     // so start with it in the next block
-    //     runningValidatorSet' = runningValidatorSet,
-    //     // send VSCPackets to consumers
-    //     val newOutstandingPackets = 
-    //         // if running validator set is considered to have changed
-    //         if (providerValidatorSetChangedInThisBlock)
-    //             // then send a packet to each running consumer
-    //             outstandingPacketsToConsumer.keys().mapBy(
-    //                 (consumer) => 
-    //                 val packetQueue = outstandingPacketsToConsumer.get(consumer)
-    //                 if (consumerStatus.get(consumer) == RUNNING) {
-    //                     packetQueue.append(
-    //                         {
-    //                             id: packetQueue.length(),
-    //                             validatorSet: runningValidatorSet.get(ProviderChain),
-    //                             timeout: curChainTimes.get(ProviderChain) + PacketTimeout
-    //                         }
-    //                     )
-    //                 } else {
-    //                     packetQueue
-    //                 }
-    //             )
-    //         else
-    //             // otherwise, don't send any packets
-    //             outstandingPacketsToConsumer
-    //     RegisterNewOutstandingPackets(newOutstandingPackets),
-    //     CONSUMER_NOOP,
-    //     // no packets are sent to the provider
-    //     outstandingPacketsToProvider' = outstandingPacketsToProvider,
-    //     // do not receive any maturations
-    //     receivedMaturations' = receivedMaturations,
-    //     // consumer statusses do not change
-    //     consumerStatus' = consumerStatus,
-    //     // chain times do not change
-    //     curChainTimes' = curChainTimes,
-    //     // the validator set was definitely not changed in the new block yet, so set to false
-    //     providerValidatorSetChangedInThisBlock' = false
-    // }
+    action endAndBeginBlockForProvider(): bool = all {
+        // update the voting power history
+        votingPowerHistories' = votingPowerHistories.set(ProviderChain, getUpdatedHistory(ProviderChain)),
+        // the running validator set is now for sure the current validator set,
+        // so start with it in the next block
+        runningValidatorSet' = runningValidatorSet,
+        // send VSCPackets to consumers
+        val newOutstandingPackets = 
+            // if running validator set is considered to have changed
+            if (providerValidatorSetChangedInThisBlock)
+                // then send a packet to each running consumer
+                outstandingPacketsToConsumer.keys().mapBy(
+                    (consumer) => 
+                    val packetQueue = outstandingPacketsToConsumer.get(consumer)
+                    if (consumerStatus.get(consumer) == RUNNING) {
+                        packetQueue.append(
+                            {
+                                id: packetQueue.length(),
+                                validatorSet: runningValidatorSet.get(ProviderChain),
+                                timeout: curChainTimes.get(ProviderChain) + PacketTimeout
+                            }
+                        )
+                    } else {
+                        packetQueue
+                    }
+                )
+            else
+                // otherwise, don't send any packets
+                outstandingPacketsToConsumer
+        RegisterNewOutstandingPackets(newOutstandingPackets),
+        CONSUMER_NOOP,
+        // no packets are sent to the provider
+        outstandingPacketsToProvider' = outstandingPacketsToProvider,
+        // do not receive any maturations
+        receivedMaturations' = receivedMaturations,
+        // consumer statusses do not change
+        consumerStatus' = consumerStatus,
+        // chain times do not change
+        curChainTimes' = curChainTimes,
+        // the validator set was definitely not changed in the new block yet, so set to false
+        providerValidatorSetChangedInThisBlock' = false
+    }
 
-    // action endAndBeginBlockForConsumer(consumer: Chain): bool = all {
-    //     ConsumerChains.contains(consumer),
-    //     // update the voting power history
-    //     votingPowerHistories' = votingPowerHistories.set(consumer, getUpdatedHistory(consumer)),
-    //     // the running validator set is now for sure the current validator set,
-    //     // so start with it in the next block
-    //     runningValidatorSet' = runningValidatorSet,
-    //     // compute mature packets whose maturation time has passed
-    //     val maturedPackets = maturationTimes.get(consumer).keys().filter(
-    //         packet => 
-    //         val maturationTime = maturationTimes.get(consumer).get(packet)
-    //         maturationTime <= curChainTimes.get(consumer)
-    //     )
-    //     all {
-    //         // remove matured packets from the maturation times
-    //         maturationTimes' = maturationTimes.set(consumer, maturationTimes.get(consumer).mapRemoveAll(maturedPackets)),
-    //         // send matured packets
-    //         outstandingPacketsToProvider' = outstandingPacketsToProvider.set(
-    //             consumer, 
-    //             // construct VSCMaturedPackets from the matured VSCPackets
-    //             outstandingPacketsToProvider.get(consumer).concat(
-    //                 maturedPackets.map(packet => {id: packet.id, timeout: 5}).toList()
-    //             )
-    //         )
-    //     },
-    //     PROVIDER_NOOP,
-    //     // no packets are sent to consumer or received by it
-    //     RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
-    //     // consumer statusses do not change
-    //     consumerStatus' = consumerStatus,
-    //     // chain times do not change
-    //     curChainTimes' = curChainTimes,
-    //     // the validator set was not changed by this action (but might have been changed before in this block)
-    //     // also, this is only a new block for a consumer, so the change variable shouldn't be reset
-    //     providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
-    // }
+    action endAndBeginBlockForConsumer(consumer: Chain): bool = all {
+        ConsumerChains.contains(consumer),
+        // update the voting power history
+        votingPowerHistories' = votingPowerHistories.set(consumer, getUpdatedHistory(consumer)),
+        // the running validator set is now for sure the current validator set,
+        // so start with it in the next block
+        runningValidatorSet' = runningValidatorSet,
+        // compute mature packets whose maturation time has passed
+        val maturedPackets = maturationTimes.get(consumer).keys().filter(
+            packet => 
+            val maturationTime = maturationTimes.get(consumer).get(packet)
+            maturationTime <= curChainTimes.get(consumer)
+        )
+        all {
+            // remove matured packets from the maturation times
+            maturationTimes' = maturationTimes.set(consumer, maturationTimes.get(consumer).mapRemoveAll(maturedPackets)),
+            // send matured packets
+            outstandingPacketsToProvider' = outstandingPacketsToProvider.set(
+                consumer, 
+                // construct VSCMaturedPackets from the matured VSCPackets
+                outstandingPacketsToProvider.get(consumer).concat(
+                    maturedPackets.map(packet => {id: packet.id, timeout: 5}).toList()
+                )
+            )
+        },
+        PROVIDER_NOOP,
+        // no packets are sent to consumer or received by it
+        RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
+        // consumer statusses do not change
+        consumerStatus' = consumerStatus,
+        // chain times do not change
+        curChainTimes' = curChainTimes,
+        // the validator set was not changed by this action (but might have been changed before in this block)
+        // also, this is only a new block for a consumer, so the change variable shouldn't be reset
+        providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
+    }
 
-    // // advance timestamps for maps nondeterministically
-    // action AdvanceTime(): bool = 
-    //         val advanceAmounts = curChainTimes.keys().mapBy(
-    //             chain =>    
-    //             nondet amount = oneOf(1.to(10))
-    //             amount
-    //         )
-    //         AdvanceTimeByMap(advanceAmounts)
+    // advance timestamps for maps nondeterministically
+    action AdvanceTime(): bool = 
+            val advanceAmounts = curChainTimes.keys().mapBy(
+                chain =>    
+                nondet amount = oneOf(1.to(10))
+                amount
+            )
+            AdvanceTimeByMap(advanceAmounts)
 
-    // // the timestamp for each chain is advanced by the given amount
-    // action AdvanceTimeByMap(advancementAmount: Chain -> int): bool = all
-    //     {
-    //         curChainTimes' = curChainTimes.keys().mapBy(
-    //             chain => 
-    //             curChainTimes.get(chain) + advancementAmount.get(chain)
-    //         ),
-    //         // all other variables are left untouched
-    //         votingPowerHistories' = votingPowerHistories,
-    //         runningValidatorSet' = runningValidatorSet,
-    //         outstandingPacketsToProvider' = outstandingPacketsToProvider,
-    //         RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
-    //         receivedMaturations' = receivedMaturations,
-    //         maturationTimes' = maturationTimes,
-    //         // chain times do not change
-    //         consumerStatus' = consumerStatus,
-    //         // the validator set was not changed by this action (but might have been changed before in this block)
-    //         providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
-    //     }
+    // the timestamp for each chain is advanced by the given amount
+    action AdvanceTimeByMap(advancementAmount: Chain -> int): bool = all
+        {
+            curChainTimes' = curChainTimes.keys().mapBy(
+                chain => 
+                curChainTimes.get(chain) + advancementAmount.get(chain)
+            ),
+            // all other variables are left untouched
+            votingPowerHistories' = votingPowerHistories,
+            runningValidatorSet' = runningValidatorSet,
+            outstandingPacketsToProvider' = outstandingPacketsToProvider,
+            RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
+            receivedMaturations' = receivedMaturations,
+            maturationTimes' = maturationTimes,
+            // chain times do not change
+            consumerStatus' = consumerStatus,
+            // the validator set was not changed by this action (but might have been changed before in this block)
+            providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
+        }
 
-    // // each consumer chain may advance in the order
-    // // some events may necessitate a transition, e.g. timeouts.
-    // // shouldAdvance gives, for each consumer chain, whether it should advance if possible.
-    // // if a chain has to advance, e.g. due to timeouts, or may not advance, the value will have no effect.
-    // action AdvanceConsumers(shouldAdvance: Chain -> bool): bool = 
-    //     val newConsumerStatus = consumerStatus.keys().mapBy(
-    //         chain => 
-    //         val curStatus = consumerStatus.get(chain)
-    //         if (curStatus == UNUSED) {
-    //             if (shouldAdvance.get(chain))
-    //             {
-    //                 RUNNING
-    //             } else {
-    //                 UNUSED
-    //             }
-    //         }
-    //         else if (curStatus == RUNNING) {
-    //             // the chain may transition to stopped.
-    //             // it is *forced* to stop if a packet timed out,
-    //             // or if the inactivity timeout has passed
-    //             if(consumerTimedOut(chain)) {
-    //                 STOPPED
-    //             } else {
-    //                 if (shouldAdvance.get(chain)) {
-    //                     RUNNING
-    //                 } else {
-    //                     STOPPED
-    //                 }
-    //             }
-    //         } else {
-    //             // stopped chains cannot restart, we assume a new chain would be started in that case
-    //             STOPPED
-    //         }
-    //         )
-    //     all {
-    //         consumerStatus' = newConsumerStatus,
-    //         // all other variables are left untouched
-    //         votingPowerHistories' = votingPowerHistories,
-    //         runningValidatorSet' = runningValidatorSet.keys().mapBy(
-    //             chain => 
-    //             if (newConsumerStatus.get(chain) == RUNNING and consumerStatus.get(chain) == UNUSED) 
-    //             // consumers that went from unused to running start with the current validator set on the provider
-    //             { 
-    //                 runningValidatorSet.get(ProviderChain) 
-    //             } else {
-    //                 runningValidatorSet.get(chain)
-    //             }
-    //         ),
-    //         outstandingPacketsToProvider' = outstandingPacketsToProvider,
-    //         RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
-    //         receivedMaturations' = receivedMaturations,
-    //         maturationTimes' = maturationTimes,
-    //         // chain times do not change
-    //         curChainTimes' = curChainTimes,
-    //         // the validator set was not changed by this action (but might have been changed before in this block)
-    //         providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
-    //     }
+    // each consumer chain may advance in the order
+    // some events may necessitate a transition, e.g. timeouts.
+    // shouldAdvance gives, for each consumer chain, whether it should advance if possible.
+    // if a chain has to advance, e.g. due to timeouts, or may not advance, the value will have no effect.
+    action AdvanceConsumers(shouldAdvance: Chain -> bool): bool = 
+        val newConsumerStatus = consumerStatus.keys().mapBy(
+            chain => 
+            val curStatus = consumerStatus.get(chain)
+            if (curStatus == UNUSED) {
+                if (shouldAdvance.get(chain))
+                {
+                    RUNNING
+                } else {
+                    UNUSED
+                }
+            }
+            else if (curStatus == RUNNING) {
+                // the chain may transition to stopped.
+                // it is *forced* to stop if a packet timed out,
+                // or if the inactivity timeout has passed
+                if(consumerTimedOut(chain)) {
+                    STOPPED
+                } else {
+                    if (shouldAdvance.get(chain)) {
+                        RUNNING
+                    } else {
+                        STOPPED
+                    }
+                }
+            } else {
+                // stopped chains cannot restart, we assume a new chain would be started in that case
+                STOPPED
+            }
+            )
+        all {
+            consumerStatus' = newConsumerStatus,
+            // all other variables are left untouched
+            votingPowerHistories' = votingPowerHistories,
+            runningValidatorSet' = runningValidatorSet.keys().mapBy(
+                chain => 
+                if (newConsumerStatus.get(chain) == RUNNING and consumerStatus.get(chain) == UNUSED) 
+                // consumers that went from unused to running start with the current validator set on the provider
+                { 
+                    runningValidatorSet.get(ProviderChain) 
+                } else {
+                    runningValidatorSet.get(chain)
+                }
+            ),
+            outstandingPacketsToProvider' = outstandingPacketsToProvider,
+            RegisterNewOutstandingPackets(outstandingPacketsToConsumer),
+            receivedMaturations' = receivedMaturations,
+            maturationTimes' = maturationTimes,
+            // chain times do not change
+            curChainTimes' = curChainTimes,
+            // the validator set was not changed by this action (but might have been changed before in this block)
+            providerValidatorSetChangedInThisBlock' = providerValidatorSetChangedInThisBlock
+        }
 
-    // // Updates the outstandingPacketsToConsumer and sentVSCPackets variables
-    // action RegisterNewOutstandingPackets(newOutstandingPackets: Chain -> List[VSCPacket]): bool = 
-    //     all {
-    //         outstandingPacketsToConsumer' = newOutstandingPackets,
-    //         StoreSentPackets(newOutstandingPackets),
-    //     }
+    // Updates the outstandingPacketsToConsumer and sentVSCPackets variables
+    action RegisterNewOutstandingPackets(newOutstandingPackets: Chain -> List[VSCPacket]): bool = 
+        all {
+            outstandingPacketsToConsumer' = newOutstandingPackets,
+            StoreSentPackets(newOutstandingPackets),
+        }
 
 
-    // // stores the VSCPackets sent in this step in sentVSCPackets
-    // action StoreSentPackets(newOutstandingPackets: Chain -> List[VSCPacket]): bool = 
-    //     sentVSCPackets' = sentVSCPackets.keys().mapBy(
-    //         (chain) => 
-    //         sentVSCPackets.get(chain).union(newOutstandingPackets.get(chain).toSet())
-    //     )
+    // stores the VSCPackets sent in this step in sentVSCPackets
+    action StoreSentPackets(newOutstandingPackets: Chain -> List[VSCPacket]): bool = 
+        sentVSCPackets' = sentVSCPackets.keys().mapBy(
+            (chain) => 
+            sentVSCPackets.get(chain).union(newOutstandingPackets.get(chain).toSet())
+        )
 
     
-    // // the main step action 
-    // action step: bool = any {
-    //     AdvanceTime,
-    //     nondet node = oneOf(Nodes)
-    //     nondet amount = oneOf(1.to(10))
-    //     votingPowerChange(node, amount),
-    //     recvPacketOnProvider(oneOf(ConsumerChains)),
-    //     recvPacketOnConsumer(oneOf(ConsumerChains)),
-    //     nondet chain = oneOf(chains)
-    //     endAndBeginBlock(chain),
-    //     val shouldAdvance = ConsumerChains.mapBy(
-    //         chain => 
-    //         nondet should = oneOf(Set(true, false))
-    //         should
-    //     )
-    //     AdvanceConsumers(shouldAdvance),
-    // }
+    // the main step action 
+    action step: bool = any {
+        AdvanceTime,
+        nondet node = oneOf(Nodes)
+        nondet amount = oneOf(1.to(10))
+        votingPowerChange(node, amount),
+        recvPacketOnProvider(oneOf(ConsumerChains)),
+        recvPacketOnConsumer(oneOf(ConsumerChains)),
+        nondet chain = oneOf(chains)
+        endAndBeginBlock(chain),
+        val shouldAdvance = ConsumerChains.mapBy(
+            chain => 
+            nondet should = oneOf(Set(true, false))
+            should
+        )
+        AdvanceConsumers(shouldAdvance),
+    }
 
-    // pure val nodePowerSet = Nodes.powerset()
+    pure val nodePowerSet = Nodes.powerset()
 
-    // def getArbitraryValidatorSet(): ValidatorSet = 
-    //     nondet numValidators = oneOf(1.to(Nodes.size()))
-    //     // toList has nondeterministic behaviour, so this gets arbitrary validators
-    //     nondet validators = oneOf(nodePowerSet.filter(s => s.size() == numValidators))
-    //     validators.mapBy(
-    //         validator => 
-    //         nondet votingPower = oneOf(1.to(10))
-    //         votingPower
-    //     )
+    def getArbitraryValidatorSet(): ValidatorSet = 
+        nondet numValidators = oneOf(1.to(Nodes.size()))
+        // toList has nondeterministic behaviour, so this gets arbitrary validators
+        nondet validators = oneOf(nodePowerSet.filter(s => s.size() == numValidators))
+        validators.mapBy(
+            validator => 
+            nondet votingPower = oneOf(1.to(10))
+            votingPower
+        )
 
-    // // INITIALIZATION
-    // action init: bool = 
-    // all {
-    //     val validatorSets = chains.mapBy(
-    //         (chain) => 
-    //     // provider chain gets an arbitrary validator set, consumer chains have none
-    //         if (chain == ProviderChain) getArbitraryValidatorSet else Map()
-    //     )
-    //     all {
-    //         votingPowerHistories' = chains.mapBy(
-    //             (chain) => 
-    //             List(validatorSets.get(chain))
-    //         ),
-    //         runningValidatorSet' = validatorSets,
-    //     },
-    //     // each chain starts at time 0
-    //     curChainTimes' = chains.mapBy(
-    //         (chain) => 0
-    //     ),
-    //     // all consumer chains are unused
-    //     consumerStatus' = chains.mapBy(chain => UNUSED),
-    //     // no packets are outstanding
-    //     outstandingPacketsToProvider' = chains.mapBy(chain => List()),
-    //     outstandingPacketsToConsumer' = chains.mapBy(chain => List()),
-    //     // no maturations have been received by provider
-    //     receivedMaturations' = Set(),
-    //     // no packets have been sent to consumers
-    //     sentVSCPackets' = chains.mapBy(chain => Set()),
-    //     // no packets have been received by consumers, so no maturation times set
-    //     maturationTimes' = chains.mapBy(chain => Map()),
-    //     // validator set was not changed yet
-    //     providerValidatorSetChangedInThisBlock' = false
-    // }
+    // INITIALIZATION
+    action init: bool = 
+    all {
+        val validatorSets = chains.mapBy(
+            (chain) => 
+        // provider chain gets an arbitrary validator set, consumer chains have none
+            if (chain == ProviderChain) getArbitraryValidatorSet else Map()
+        )
+        all {
+            votingPowerHistories' = chains.mapBy(
+                (chain) => 
+                List(validatorSets.get(chain))
+            ),
+            runningValidatorSet' = validatorSets,
+        },
+        // each chain starts at time 0
+        curChainTimes' = chains.mapBy(
+            (chain) => 0
+        ),
+        // all consumer chains are unused
+        consumerStatus' = chains.mapBy(chain => UNUSED),
+        // no packets are outstanding
+        outstandingPacketsToProvider' = chains.mapBy(chain => List()),
+        outstandingPacketsToConsumer' = chains.mapBy(chain => List()),
+        // no maturations have been received by provider
+        receivedMaturations' = Set(),
+        // no packets have been sent to consumers
+        sentVSCPackets' = chains.mapBy(chain => Set()),
+        // no packets have been received by consumers, so no maturation times set
+        maturationTimes' = chains.mapBy(chain => Map()),
+        // validator set was not changed yet
+        providerValidatorSetChangedInThisBlock' = false
+    }
 
-    // // PROPERTIES
+    // PROPERTIES
 
-    // // Every validator set on any consumer chain MUST either be or
-    // // have been a validator set on the provider chain.
-    // val ValidatorSetReplication: bool = 
-    //     chains.forall(
-    //         chain => chain.getCurrentValidatorSet().wasValidatorSetOnProvider()
-    //     )
+    // Every validator set on any consumer chain MUST either be or
+    // have been a validator set on the provider chain.
+    val ValidatorSetReplication: bool = 
+        chains.forall(
+            chain => chain.getCurrentValidatorSet().wasValidatorSetOnProvider()
+        )
 
-    // // TESTS
-    // run VSCHappyPathTest: bool = {
-    //     init
-    //     // trigger a votingPowerChange on the provider chain
-    //     .then(votingPowerChange("A", 10))
-    //     // endAndBeginBlock on provider. No consumer chains are running, so no packets are sent
-    //     .then(endAndBeginBlock(ProviderChain))
-    //     .then(all {
-    //         // no packet was sent
-    //         assert(outstandingPacketsToConsumer.get("chain1").length() == 0),
-    //         // advance chain1 to running
-    //         AdvanceConsumers(NoStatusAdvancement.set("chain1", true))
-    //     })
-    //     // consumer chain should have current validator set from provider
-    //     .then(
-    //         all { 
-    //             // since consumer chain just started, its assumed to have the validator set from provider
-    //             assert(runningValidatorSet.get("chain1") == runningValidatorSet.get(ProviderChain)),
-    //             // trigger a votingPowerChange on the provider chain
-    //             votingPowerChange("B", 10)
-    //         }
-    //     )
-    //     .then(
-    //         val valSet = runningValidatorSet.get(ProviderChain)
-    //         endAndBeginBlock(ProviderChain)
-    //         // now the provider should send a packet on block end
-    //         .then(all {
-    //             // a packet was sent
-    //             assert(outstandingPacketsToConsumer.get("chain1").length() == 1),
-    //             // deliver the packet to the consumer
-    //             recvPacketOnConsumer("chain1")
-    //         })
-    //         .then(
-    //             // consumer needs to end a block before it has the new validator set
-    //             endAndBeginBlock("chain1")
-    //         )
-    //         .then(all {
-    //             // the consumer should have the new validator set
-    //             assert(runningValidatorSet.get("chain1") == valSet),
-    //             // put a last action to satisfy the action effect
-    //             AdvanceConsumers(NoStatusAdvancement)
-    //         })
-    //     )
-    // }
-
-    // // utility: the set of consumers currently running
-    // val RunningConsumers: Set[Chain] = 
-    //     ConsumerChains.filter(chain => consumerStatus.get(chain) == RUNNING)
-
-    // // MODEL STATE
-    // // --SHARED STATE
-
-    // // Stores, for each chain, the list of voting powers that corresponded to voting powers 
-    // // at blocks over its entire existence.
-    // // Voting powers should be ordered by recency in descending order.
-    // var votingPowerHistories: Chain -> List[ValidatorSet]
-
-    // // the current validator set on each chain.
-    // // this will be included in the next block, but might not be final yet,
-    // // e.g. there may be more modifications in the current block.
-    // var runningValidatorSet: Chain -> ValidatorSet
-
-    // // the current timestamp for each chain
-    // var curChainTimes: Chain -> Timestamp
-
-    // // stores, for each chain, its current status -
-    // // unused, running, or stopped
-    // var consumerStatus: Chain -> str
-
-    // // --CHANNELS
-    // // Stores, for each consumer chain, the list of packets that have been sent to the provider chain
-    // // and have not been received yet.
-    // var outstandingPacketsToProvider: Chain -> List[VSCMaturedPacket]
-
-    // // Stores, for each consumer chain, the list of packets that have been sent to the consumer chain
-    // // and have not been received yet.
-    // var outstandingPacketsToConsumer: Chain -> List[VSCPacket]
+    // TESTS
+    run VSCHappyPathTest: bool = {
+        init
+        // trigger a votingPowerChange on the provider chain
+        .then(votingPowerChange("A", 10))
+        // endAndBeginBlock on provider. No consumer chains are running, so no packets are sent
+        .then(endAndBeginBlock(ProviderChain))
+        .then(all {
+            // no packet was sent
+            assert(outstandingPacketsToConsumer.get("chain1").length() == 0),
+            // advance chain1 to running
+            AdvanceConsumers(NoStatusAdvancement.set("chain1", true))
+        })
+        // consumer chain should have current validator set from provider
+        .then(
+            all { 
+                // since consumer chain just started, its assumed to have the validator set from provider
+                assert(runningValidatorSet.get("chain1") == runningValidatorSet.get(ProviderChain)),
+                // trigger a votingPowerChange on the provider chain
+                votingPowerChange("B", 10)
+            }
+        )
+        .then(
+            val valSet = runningValidatorSet.get(ProviderChain)
+            endAndBeginBlock(ProviderChain)
+            // now the provider should send a packet on block end
+            .then(all {
+                // a packet was sent
+                assert(outstandingPacketsToConsumer.get("chain1").length() == 1),
+                // deliver the packet to the consumer
+                recvPacketOnConsumer("chain1")
+            })
+            .then(
+                // consumer needs to end a block before it has the new validator set
+                endAndBeginBlock("chain1")
+            )
+            .then(all {
+                // the consumer should have the new validator set
+                assert(runningValidatorSet.get("chain1") == valSet),
+                // put a last action to satisfy the action effect
+                AdvanceConsumers(NoStatusAdvancement)
+            })
+        )
+    }
 
 
-    // // --CONSUMER STATE
-    // // Stores the maturation times for VSCPackets received by consumers
-    // var maturationTimes: Chain -> (VSCPacket -> Timestamp)
-
-    // // --PROVIDER STATE
-    // // the set of VSCMaturedPackets received by the provider chain
-    // var receivedMaturations: Set[VSCMaturedPacket]
-
-    // // stores which VSC Packets have been sent to compare with receivedMaturations to detect timeouts due to non-responsiveness
-    // var sentVSCPackets: Chain -> Set[VSCPacket]
-
-    // // stores whether, in this step, the validator set considered to be changed.
-    // // this is needed because the validator set might be considered to have changed, even though
-    // // it is still technically identical at our level of abstraction, e.g. a validator power change on the provider
-    // // might leave the validator set the same because a delegation and undelegation cancel each other out.
-    // var providerValidatorSetChangedInThisBlock: bool
-
-    // // utility: a struct summarizing the current state
-    // val state = 
-    //     {
-    //         votingPowerHistories: votingPowerHistories,
-    //         runningValidatorSet: runningValidatorSet,
-    //         curChainTimes: curChainTimes,
-    //         consumerStatus: consumerStatus,
-    //         outstandingPacketsToProvider: outstandingPacketsToProvider,
-    //         outstandingPacketsToConsumer: outstandingPacketsToConsumer,
-    //         maturationTimes: maturationTimes,
-    //         receivedMaturations: receivedMaturations,
-    //         sentVSCPackets: sentVSCPackets,
-    //     }
-
-    // // set of identifiers of potential nodes
-    // pure val Nodes: Set[Node] = 
-    //     Set("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
-
-    // // the set of consumer chains
-    // pure val ConsumerChains: Set[Chain] = 
-    //     Set("chain1", "chain2", "chain3")
-
-    // // The singular provider chain.
-    // pure val ProviderChain: Chain = 
-    //     "provider"
-        
-    // pure val chains = ConsumerChains.union(Set(ProviderChain))
-
-    // // length of the unbonding period on each chain
-    // pure val UnbondingPeriod: Chain -> int = chains.mapBy(
-    //     (chain) => 
-    //     10
-    // )
-
-    // // the time until a packet times out
-    // pure val PacketTimeout: int = 
-    //     5
-
-    // // the time until a consumer chain is dropped by the provider due to inactivity
-    // pure val InactivityTimeout: int =
-    //     10
-
-    // // utility: a map assigning each chain to 0, used for not advancing timestamps
-    // pure val NoTimeAdvancement: Chain -> int = chains.mapBy(
-    //     (chain) => 
-    //     0
-    // )
-
-
-    // // utility: a map assigning each chain to false, used for not advancing consumer status
-    // pure val NoStatusAdvancement: Chain -> bool = chains.mapBy(
-    //     (chain) => 
-    //     false
-    // )
 }
