@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 var _ types.QueryServer = Keeper{} //nolint:golint
@@ -50,4 +51,26 @@ func (k Keeper) QueryProviderInfo(c context.Context, //nolint:golint
 	}
 
 	return k.GetProviderInfo(ctx)
+}
+
+func (k Keeper) QueryThrottleState(c context.Context,
+	req *types.QueryThrottleStateRequest,
+) (*types.QueryThrottleStateResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
+
+	resp := types.QueryThrottleStateResponse{}
+
+	slashRecord, found := k.GetSlashRecord(ctx)
+	if found {
+		resp.SlashRecord = &slashRecord
+	} else {
+		resp.SlashRecord = nil
+	}
+
+	resp.PacketDataQueue = make([]ccvtypes.ConsumerPacketData, 0)
+	pendingPackets := k.GetAllPendingPacketsWithIdx(ctx)
+	for _, packet := range pendingPackets {
+		resp.PacketDataQueue = append(resp.PacketDataQueue, packet.ConsumerPacketData)
+	}
+	return &resp, nil
 }

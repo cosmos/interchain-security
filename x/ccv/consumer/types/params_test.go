@@ -77,6 +77,10 @@ func TestValidateParams(t *testing.T) {
 			"custom invalid params, retry delay period is negative",
 			ccvtypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "0.05", []string{}, []string{}, -2*time.Hour), false,
 		},
+		{
+			"custom invalid params, retry delay period is zero",
+			ccvtypes.NewParams(true, 5, "", "", 5, 1005, "0.5", 1000, 24*21*time.Hour, "0.05", []string{}, []string{}, 0), false,
+		},
 	}
 
 	for _, tc := range testCases {
