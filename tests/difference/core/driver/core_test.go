@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"cosmossdk.io/math"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/stretchr/testify/suite"
 
@@ -149,7 +150,7 @@ func (s *CoreSuite) delegatorBalance() int64 {
 func (s *CoreSuite) delegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
@@ -162,7 +163,7 @@ func (s *CoreSuite) delegate(val, amt int64) {
 func (s *CoreSuite) undelegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
@@ -180,7 +181,7 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool)
 	}
 	ctx := s.ctx(C)
 	before := len(ctx.EventManager().Events())
-	s.consumerKeeper().SlashWithInfractionReason(ctx, val, h, 0, sdk.Dec{}, kind)
+	s.consumerKeeper().SlashWithInfractionReason(ctx, val, h, 0, math.LegacyDec{}, kind)
 	// consumer module emits packets on slash, so these must be collected.
 	evts := ctx.EventManager().Events()
 	packets := simibc.ParsePacketsFromEvents(evts[before:])

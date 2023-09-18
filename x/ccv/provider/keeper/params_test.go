@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
@@ -47,7 +48,7 @@ func TestParams(t *testing.T) {
 		100,
 		sdk.Coin{
 			Denom:  "stake",
-			Amount: sdk.NewInt(10000000),
+			Amount: math.NewInt(10000000),
 		},
 	)
 	providerKeeper.SetParams(ctx, newParams)

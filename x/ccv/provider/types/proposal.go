@@ -9,6 +9,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 
 	evidencetypes "cosmossdk.io/x/evidence/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -277,12 +278,12 @@ func (crdp *ChangeRewardDenomsProposal) ValidateBasic() error {
 
 	// Return error if any denom is "invalid"
 	for _, denom := range crdp.DenomsToAdd {
-		if !sdk.NewCoin(denom, sdk.NewInt(1)).IsValid() {
+		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
 			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
 		}
 	}
 	for _, denom := range crdp.DenomsToRemove {
-		if !sdk.NewCoin(denom, sdk.NewInt(1)).IsValid() {
+		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
 			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
 		}
 	}

@@ -3,6 +3,7 @@ package integration
 import (
 	"time"
 
+	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -572,7 +573,7 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 	// Confirm total power is now 3000 once updated by staking end blocker
 	s.providerChain.NextBlock()
 	totalPower := s.providerApp.GetTestStakingKeeper().GetLastTotalPower(s.providerCtx())
-	s.Require().Equal(sdk.NewInt(3000), totalPower)
+	s.Require().Equal(math.NewInt(3000), totalPower)
 
 	// Now change replenish frac to 0.67 and fully replenish the meter.
 	params.SlashMeterReplenishFraction = "0.67"
@@ -599,10 +600,10 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 
 	// Setup first val with 1000 power and the rest with 10 power.
 	delAddr := s.providerChain.SenderAccount.GetAddress()
-	delegateByIdx(s, delAddr, sdk.NewInt(999999999), 0)
-	delegateByIdx(s, delAddr, sdk.NewInt(9999999), 1)
-	delegateByIdx(s, delAddr, sdk.NewInt(9999999), 2)
-	delegateByIdx(s, delAddr, sdk.NewInt(9999999), 3)
+	delegateByIdx(s, delAddr, math.NewInt(999999999), 0)
+	delegateByIdx(s, delAddr, math.NewInt(9999999), 1)
+	delegateByIdx(s, delAddr, math.NewInt(9999999), 2)
+	delegateByIdx(s, delAddr, math.NewInt(9999999), 3)
 	s.providerChain.NextBlock()
 
 	// Initialize slash meter
@@ -863,7 +864,7 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 	s.Require().Equal(len(globalEntries), 50*5)
 
 	// Set slash meter to negative value to not allow any slash packets to be handled.
-	providerKeeper.SetSlashMeter(s.providerCtx(), sdk.NewInt(-1))
+	providerKeeper.SetSlashMeter(s.providerCtx(), math.NewInt(-1))
 
 	// Set replenish time candidate so that no replenishment happens next block.
 	providerKeeper.SetSlashMeterReplenishTimeCandidate(s.providerCtx())

@@ -1,9 +1,9 @@
 package integration
 
 import (
+	"cosmossdk.io/math"
 	"github.com/cosmos/ibc-go/v8/testing/mock"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
@@ -69,7 +69,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				}
 
 				// Bond some tokens on provider to change validator powers
-				bondAmt := sdk.NewInt(1000000)
+				bondAmt := math.NewInt(1000000)
 				delAddr := s.providerChain.SenderAccount.GetAddress()
 				delegate(s, delAddr, bondAmt)
 
@@ -206,7 +206,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 		if !tc.expError {
 			// Bond some tokens on provider to change validator powers
-			bondAmt := sdk.NewInt(1000000)
+			bondAmt := math.NewInt(1000000)
 			delAddr := s.providerChain.SenderAccount.GetAddress()
 			delegate(s, delAddr, bondAmt)
 

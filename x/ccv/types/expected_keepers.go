@@ -33,8 +33,8 @@ type StakingKeeper interface {
 	GetLastValidatorPower(ctx sdk.Context, operator sdk.ValAddress) (power int64)
 	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
 	Jail(sdk.Context, sdk.ConsAddress) // jail a validator
-	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec) math.Int
-	SlashWithInfractionReason(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec, stakingtypes.Infraction) math.Int
+	Slash(sdk.Context, sdk.ConsAddress, int64, int64, math.LegacyDec) math.Int
+	SlashWithInfractionReason(sdk.Context, sdk.ConsAddress, int64, int64, math.LegacyDec, stakingtypes.Infraction) math.Int
 	Unjail(ctx sdk.Context, addr sdk.ConsAddress)
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
@@ -61,8 +61,8 @@ type SlashingKeeper interface {
 	JailUntil(sdk.Context, sdk.ConsAddress, time.Time) // called from provider keeper only
 	GetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress) (info slashingtypes.ValidatorSigningInfo, found bool)
 	DowntimeJailDuration(sdk.Context) time.Duration
-	SlashFractionDowntime(sdk.Context) sdk.Dec
-	SlashFractionDoubleSign(ctx sdk.Context) (res sdk.Dec)
+	SlashFractionDowntime(sdk.Context) math.LegacyDec
+	SlashFractionDoubleSign(ctx sdk.Context) (res math.LegacyDec)
 	Tombstone(sdk.Context, sdk.ConsAddress)
 	IsTombstoned(sdk.Context, sdk.ConsAddress) bool
 }

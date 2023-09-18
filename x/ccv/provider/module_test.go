@@ -3,12 +3,12 @@ package provider_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
@@ -143,7 +143,7 @@ func TestInitGenesis(t *testing.T) {
 		if !tc.expPanic {
 			orderedCalls = append(orderedCalls,
 				mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-					ctx).Return(sdk.NewInt(100)).Times(1), // Return total voting power as 100
+					ctx).Return(math.NewInt(100)).Times(1), // Return total voting power as 100
 			)
 		}
 
@@ -179,9 +179,9 @@ func TestInitGenesis(t *testing.T) {
 		// Expect slash meter to be initialized to it's allowance value
 		// (replenish fraction * mocked value defined above)
 		slashMeter := providerKeeper.GetSlashMeter(ctx)
-		replenishFraction, err := sdk.NewDecFromStr(providerKeeper.GetParams(ctx).SlashMeterReplenishFraction)
+		replenishFraction, err := math.LegacyNewDecFromStr(providerKeeper.GetParams(ctx).SlashMeterReplenishFraction)
 		require.NoError(t, err)
-		expectedSlashMeterValue := sdk.NewInt(replenishFraction.MulInt(sdk.NewInt(100)).RoundInt64())
+		expectedSlashMeterValue := math.NewInt(replenishFraction.MulInt(math.NewInt(100)).RoundInt64())
 		require.Equal(t, expectedSlashMeterValue, slashMeter)
 
 		// Expect slash meter replenishment time candidate to be set to the current block time + replenish period

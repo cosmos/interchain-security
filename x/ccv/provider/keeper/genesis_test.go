@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -137,7 +138,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 			ctx, host.PortPath(ccv.ProviderPortID),
 		).Return(nil, true).Times(1),
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-			ctx).Return(sdk.NewInt(100)).Times(1), // Return total voting power as 100
+			ctx).Return(math.NewInt(100)).Times(1), // Return total voting power as 100
 	)
 
 	// init provider chain
@@ -146,9 +147,9 @@ func TestInitAndExportGenesis(t *testing.T) {
 	// Expect slash meter to be initialized to it's allowance value
 	// (replenish fraction * mocked value defined above)
 	slashMeter := pk.GetSlashMeter(ctx)
-	replenishFraction, err := sdk.NewDecFromStr(pk.GetParams(ctx).SlashMeterReplenishFraction)
+	replenishFraction, err := math.LegacyNewDecFromStr(pk.GetParams(ctx).SlashMeterReplenishFraction)
 	require.NoError(t, err)
-	expectedSlashMeterValue := sdk.NewInt(replenishFraction.MulInt(sdk.NewInt(100)).RoundInt64())
+	expectedSlashMeterValue := math.NewInt(replenishFraction.MulInt(math.NewInt(100)).RoundInt64())
 	require.Equal(t, expectedSlashMeterValue, slashMeter)
 
 	// Expect slash meter replenishment time candidate to be set to the current block time + replenish period

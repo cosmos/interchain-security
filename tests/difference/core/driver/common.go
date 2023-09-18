@@ -3,6 +3,7 @@ package core
 import (
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -29,8 +30,8 @@ type InitState struct {
 	NumValidators          int
 	MaxValidators          int
 	InitialDelegatorTokens int
-	SlashDoublesign        sdk.Dec
-	SlashDowntime          sdk.Dec
+	SlashDoublesign        math.LegacyDec
+	SlashDowntime          math.LegacyDec
 	UnbondingP             time.Duration
 	UnbondingC             time.Duration
 	Trusting               time.Duration
@@ -45,7 +46,7 @@ var initStateVar InitState
 
 func init() {
 	//	tokens === power
-	sdk.DefaultPowerReduction = sdk.NewInt(1)
+	sdk.DefaultPowerReduction = math.NewInt(1)
 	initStateVar = InitState{
 		PKSeeds: []string{
 			// Fixed seeds are used to create the private keys for validators.
@@ -59,8 +60,8 @@ func init() {
 		NumValidators:          4,
 		MaxValidators:          2,
 		InitialDelegatorTokens: 10000000000000,
-		SlashDoublesign:        sdk.NewDec(0),
-		SlashDowntime:          sdk.NewDec(0),
+		SlashDoublesign:        math.LegacyNewDec(0),
+		SlashDowntime:          math.LegacyNewDec(0),
 		UnbondingP:             time.Second * 70,
 		UnbondingC:             time.Second * 50,
 		Trusting:               time.Second * 49,

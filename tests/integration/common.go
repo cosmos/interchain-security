@@ -147,12 +147,12 @@ func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
 }
 
 // delegate delegates bondAmt to the first validator
-func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int) (initBalance math.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
+func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int) (initBalance math.Int, shares math.LegacyDec, valAddr sdk.ValAddress) {
 	return delegateByIdx(s, delAddr, bondAmt, 0)
 }
 
 // delegateByIdx delegates bondAmt to the validator at specified index in provider val set
-func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int, idx int) (initBalance math.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
+func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int, idx int) (initBalance math.Int, shares math.LegacyDec, valAddr sdk.ValAddress) {
 	initBalance = getBalance(s, s.providerCtx(), delAddr)
 	// choose a validator
 	validator, valAddr := s.getValByIdx(idx)
@@ -172,7 +172,7 @@ func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int, id
 }
 
 // undelegate unbonds an amount of delegator shares from a given validator
-func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (valsetUpdateId uint64) {
+func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount math.LegacyDec) (valsetUpdateId uint64) {
 	_, err := s.providerApp.GetTestStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, sharesAmount)
 	s.Require().NoError(err)
 
@@ -185,7 +185,7 @@ func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 // Executes a BeginRedelegation (unbonding and redelegation) operation
 // on the provider chain using delegated funds from delAddr
 func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
-	valDstAddr sdk.ValAddress, sharesAmount sdk.Dec,
+	valDstAddr sdk.ValAddress, sharesAmount math.LegacyDec,
 ) {
 	stakingKeeper := s.providerApp.GetTestStakingKeeper()
 	ctx := s.providerCtx()
@@ -595,7 +595,7 @@ func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
 func (s *CCVTestSuite) setupValidatorPowers() {
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	for idx := range s.providerChain.Vals.Validators {
-		delegateByIdx(s, delAddr, sdk.NewInt(999999999), idx)
+		delegateByIdx(s, delAddr, math.NewInt(999999999), idx)
 	}
 
 	s.providerChain.NextBlock()

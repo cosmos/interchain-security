@@ -8,6 +8,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	"cosmossdk.io/math"
 	evidencetypes "cosmossdk.io/x/evidence/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -93,7 +94,7 @@ func TestProviderProposalHandler(t *testing.T) {
 				Title:       "title",
 				Description: "desc",
 				Recipient:   "",
-				Amount:      sdk.NewCoins(sdk.NewCoin("communityfunds", sdk.NewInt(10))),
+				Amount:      sdk.NewCoins(sdk.NewCoin("communityfunds", math.NewInt(10))),
 			},
 		},
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
@@ -110,7 +111,7 @@ func DefaultParams() Params {
 		// Following the pattern from cosmos-sdk/staking/types/params.go
 		sdk.Coin{
 			Denom:  sdk.DefaultBondDenom,
-			Amount: sdk.NewInt(10000000),
+			Amount: math.NewInt(10000000),
 		},
 	)
 }
