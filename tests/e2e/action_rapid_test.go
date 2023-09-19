@@ -258,7 +258,7 @@ func GetSubmitParamChangeProposalActionGen() *rapid.Generator[submitParamChangeL
 			Deposit:  rapid.Uint().Draw(t, "Deposit"),
 			Subspace: rapid.String().Draw(t, "Subspace"),
 			Key:      rapid.String().Draw(t, "Key"),
-			Value:    rapid.String().Draw(t, "Value"), // TODO: make this more generic
+			Value:    rapid.String().Draw(t, "Value"), // could make this more generic in the future, since Value takes interfaces
 		}
 	})
 }
