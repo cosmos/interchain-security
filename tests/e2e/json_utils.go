@@ -46,255 +46,222 @@ func (step *Step) UnmarshalJSON(data []byte) error {
 
 // UnmarshalMapToActionType takes a JSON object and an action type and marshals into an object of the corresponding action.
 func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string) (interface{}, error) {
+	var err error
 	switch actionTypeString {
 	case "main.submitConsumerAdditionProposalAction":
 		var a submitConsumerAdditionProposalAction
-		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		err = json.Unmarshal(rawAction, &a)
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.SendTokensAction":
 		var a SendTokensAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.StartChainAction":
 		var a StartChainAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.submitTextProposalAction":
 		var a submitTextProposalAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.submitConsumerRemovalProposalAction":
 		var a submitConsumerRemovalProposalAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.submitEquivocationProposalAction":
 		var a submitEquivocationProposalAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.submitParamChangeLegacyProposalAction":
 		var a submitParamChangeLegacyProposalAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.voteGovProposalAction":
 		var a voteGovProposalAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.startConsumerChainAction":
 		var a startConsumerChainAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.addChainToRelayerAction":
 		var a addChainToRelayerAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.addIbcConnectionAction":
 		var a addIbcConnectionAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.addIbcChannelAction":
 		var a addIbcChannelAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.transferChannelCompleteAction":
 		var a transferChannelCompleteAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.unjailValidatorAction":
 		var a unjailValidatorAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.assignConsumerPubKeyAction":
 		var a assignConsumerPubKeyAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.delegateTokensAction":
 		var a delegateTokensAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.relayPacketsAction":
 		var a relayPacketsAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.registerRepresentativeAction":
 		var a registerRepresentativeAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.relayRewardPacketsToProviderAction":
 		var a relayRewardPacketsToProviderAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.submitChangeRewardDenomsProposalAction":
 		var a submitChangeRewardDenomsProposalAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.downtimeSlashAction":
 		var a downtimeSlashAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.unbondTokensAction":
 		var a unbondTokensAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.cancelUnbondTokensAction":
 		var a cancelUnbondTokensAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.redelegateTokensAction":
 		var a redelegateTokensAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.doublesignSlashAction":
 		var a doublesignSlashAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.startRelayerAction":
 		var a startRelayerAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.slashThrottleDequeue":
 		var a slashThrottleDequeue
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.createIbcClientsAction":
 		var a createIbcClientsAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.LegacyUpgradeProposalAction":
 		var a LegacyUpgradeProposalAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.waitUntilBlockAction":
 		var a waitUntilBlockAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.ChangeoverChainAction":
 		var a ChangeoverChainAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.StartSovereignChainAction":
 		var a StartSovereignChainAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.lightClientEquivocationAttackAction":
 		var a lightClientEquivocationAttackAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.lightClientAmnesiaAttackAction":
 		var a lightClientAmnesiaAttackAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	case "main.lightClientLunaticAttackAction":
 		var a lightClientLunaticAttackAction
 		err := json.Unmarshal(rawAction, &a)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return a, nil
 		}
-		return a, nil
 	default:
 		return nil, fmt.Errorf("unknown action name: %s", actionTypeString)
 	}
+	return nil, err
 }
 
 // custom marshal and unmarshal functions for the chainstate that convert proposals to/from the auxiliary type with type info
@@ -399,50 +366,47 @@ func (c *ChainState) UnmarshalJSON(data []byte) error {
 
 // UnmarshalProposalWithType takes a JSON object and a proposal type and marshals into an object of the corresponding proposal.
 func UnmarshalProposalWithType(inputMap json.RawMessage, proposalType string) (Proposal, error) {
+	var err error
 	switch proposalType {
 	case "main.TextProposal":
 		prop := TextProposal{}
 		err := json.Unmarshal(inputMap, &prop)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return prop, nil
 		}
-		return prop, nil
 	case "main.ConsumerAdditionProposal":
 		prop := ConsumerAdditionProposal{}
 		err := json.Unmarshal(inputMap, &prop)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return prop, nil
 		}
-		return prop, nil
 	case "main.UpgradeProposal":
 		prop := UpgradeProposal{}
 		err := json.Unmarshal(inputMap, &prop)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return prop, nil
 		}
-		return prop, nil
 	case "main.ConsumerRemovalProposal":
 		prop := ConsumerRemovalProposal{}
 		err := json.Unmarshal(inputMap, &prop)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return prop, nil
 		}
-		return prop, nil
 	case "main.EquivocationProposal":
 		prop := EquivocationProposal{}
 		err := json.Unmarshal(inputMap, &prop)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return prop, nil
 		}
-		return prop, nil
 	case "main.ParamsProposal":
 		prop := ParamsProposal{}
 		err := json.Unmarshal(inputMap, &prop)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return prop, nil
 		}
-		return prop, nil
 	default:
 		return nil, fmt.Errorf("%s is not a known proposal type", proposalType)
 	}
+
+	return nil, err
 }
