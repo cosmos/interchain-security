@@ -198,6 +198,13 @@ message QueryRegisteredConsumerRewardDenomsResponse {
 }
 
 message QueryProposedChainIDsRequest {}
+
 message QueryProposedChainIDsResponse{
-  repeated string proposedChainIDs = 1;
+  repeated ProposedChain proposedChains = 1
+  [ (gogoproto.nullable) = false ];
+}
+
+message ProposedChain {
+  string chainID = 1;
+  uint64 proposalID = 2;
 }

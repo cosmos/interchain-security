@@ -195,19 +195,26 @@ func (k Keeper) DeleteChainsInProposal(ctx sdk.Context, chainID string, proposal
 
 // GetAllChainsInProposal get consumer chainId in gov consumerAddition proposal before
 // voting period ends.
-func (k Keeper) GetAllChainsInProposal(ctx sdk.Context) []string {
+func (k Keeper) GetAllChainsInProposal(ctx sdk.Context) []types.ProposedChain {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainInProposalByteKey})
 	defer iterator.Close()
 
-	chainIDs := []string{}
+	proposedChains := []types.ProposedChain{}
 	for ; iterator.Valid(); iterator.Next() {
-		// remove 1 byte prefix from key to retrieve chainID
-		chainID := string(iterator.Key()[1:])
-		chainIDs = append(chainIDs, chainID)
+		chainID, proposalID, err := types.ParseChainInProposalKey(types.ChainInProposalByteKey, iterator.Key())
+		if err != nil {
+			panic(fmt.Errorf("proposed chains cannot be parsed: %w", err))
+		}
+
+		proposedChains = append(proposedChains, types.ProposedChain{
+			ChainID: chainID,
+			ProposalID: proposalID,
+		})
+
 	}
 
-	return chainIDs
+	return proposedChains
 }
 
 // GetAllConsumerChains gets all of the consumer chains, for which the provider module

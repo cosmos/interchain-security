@@ -7,7 +7,6 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -416,15 +415,6 @@ func ChainIdWithLenKey(prefix byte, chainID string) []byte {
 	)
 }
 
-// ChainInProposalKey returns the consumer chainId in consumerAddition gov proposal submitted before voting finishes
-func ChainInProposalKey(chainID string, proposalID uint64) []byte {
-	return ccvtypes.AppendMany(
-		[]byte{ChainInProposalByteKey},
-		[]byte(chainID),
-		sdk.Uint64ToBigEndian(proposalID),
-		)
-}
-
 // ParseChainIdAndTsKey returns the chain ID and time for a ChainIdAndTs key
 func ParseChainIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
 	expectedPrefix := []byte{prefix}
@@ -493,6 +483,31 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 
 func VSCMaturedHandledThisBlockKey() []byte {
 	return []byte{VSCMaturedHandledThisBlockBytePrefix}
+}
+
+// ChainInProposalKey returns the consumer chainId in consumerAddition gov proposal submitted before voting finishes
+func ChainInProposalKey(chainID string, proposalID uint64) []byte {
+	chainIdL := len(chainID)
+	return ccvtypes.AppendMany(
+		[]byte{ChainInProposalByteKey},
+		sdk.Uint64ToBigEndian(uint64(chainIdL)),
+		[]byte(chainID),
+		sdk.Uint64ToBigEndian(proposalID),
+	)
+}
+
+
+func ParseChainInProposalKey(prefix byte, bz []byte) (string, uint64, error) {
+	expectedPrefix := []byte{prefix}
+	prefixL := len(expectedPrefix)
+	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
+		return "", 0, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
+	}
+	chainIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
+	proposalID :=  sdk.BigEndianToUint64(bz[prefixL+8+int(chainIdL):])
+
+	return chainID, proposalID, nil
 }
 
 //

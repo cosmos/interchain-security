@@ -264,6 +264,6 @@ func (k Keeper) QueryProposedConsumerChainIDs(goCtx context.Context, req *types.
 	chains := k.GetAllChainsInProposal(ctx)
 
 	return &types.QueryProposedChainIDsResponse{
-		ProposedChainIDs: chains,
+		ProposedChains: chains,
 	}, nil
 }
