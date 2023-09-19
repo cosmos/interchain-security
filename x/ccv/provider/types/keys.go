@@ -137,8 +137,8 @@ const (
 	// handled in the current block
 	VSCMaturedHandledThisBlockBytePrefix
 
-	// ChainInProposalByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
-	ChainInProposalByteKey
+	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
+	ProposedConsumerChainByteKey
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -489,7 +489,7 @@ func VSCMaturedHandledThisBlockKey() []byte {
 func ChainInProposalKey(chainID string, proposalID uint64) []byte {
 	chainIdL := len(chainID)
 	return ccvtypes.AppendMany(
-		[]byte{ChainInProposalByteKey},
+		[]byte{ProposedConsumerChainByteKey},
 		sdk.Uint64ToBigEndian(uint64(chainIdL)),
 		[]byte(chainID),
 		sdk.Uint64ToBigEndian(proposalID),
@@ -497,7 +497,7 @@ func ChainInProposalKey(chainID string, proposalID uint64) []byte {
 }
 
 
-func ParseChainInProposalKey(prefix byte, bz []byte) (string, uint64, error) {
+func ParseProposedConsumerChainKey(prefix byte, bz []byte) (string, uint64, error) {
 	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
 	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {

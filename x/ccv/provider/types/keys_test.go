@@ -54,7 +54,7 @@ func getAllKeyPrefixes() []byte {
 		providertypes.ConsumerAddrsToPruneBytePrefix,
 		providertypes.SlashLogBytePrefix,
 		providertypes.VSCMaturedHandledThisBlockBytePrefix,
-		providertypes.ChainInProposalByteKey,
+		providertypes.ProposedConsumerChainByteKey,
 	}
 }
 

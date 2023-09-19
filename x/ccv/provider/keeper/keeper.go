@@ -193,16 +193,15 @@ func (k Keeper) DeleteChainsInProposal(ctx sdk.Context, chainID string, proposal
 	store.Delete(types.ChainInProposalKey(chainID, proposalID))
 }
 
-// GetAllChainsInProposal get consumer chainId in gov consumerAddition proposal before
-// voting period ends.
-func (k Keeper) GetAllChainsInProposal(ctx sdk.Context) []types.ProposedChain {
+// GetAllProposedConsumerChainIDs get consumer chainId in gov consumerAddition proposal before voting period ends.
+func (k Keeper) GetAllProposedConsumerChainIDs(ctx sdk.Context) []types.ProposedChain {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainInProposalByteKey})
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ProposedConsumerChainByteKey})
 	defer iterator.Close()
 
 	proposedChains := []types.ProposedChain{}
 	for ; iterator.Valid(); iterator.Next() {
-		chainID, proposalID, err := types.ParseChainInProposalKey(types.ChainInProposalByteKey, iterator.Key())
+		chainID, proposalID, err := types.ParseProposedConsumerChainKey(types.ProposedConsumerChainByteKey, iterator.Key())
 		if err != nil {
 			panic(fmt.Errorf("proposed chains cannot be parsed: %w", err))
 		}

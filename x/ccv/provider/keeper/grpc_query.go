@@ -261,7 +261,7 @@ func (k Keeper) QueryProposedConsumerChainIDs(goCtx context.Context, req *types.
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	chains := k.GetAllChainsInProposal(ctx)
+	chains := k.GetAllProposedConsumerChainIDs(ctx)
 
 	return &types.QueryProposedChainIDsResponse{
 		ProposedChains: chains,
