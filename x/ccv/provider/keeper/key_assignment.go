@@ -379,14 +379,12 @@ func (k Keeper) AssignConsumerKey(
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
 	consAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(consumerKey)
-	fmt.Println("#consAddrTmp", err)
 	if err != nil {
 		return err
 	}
 	consumerAddr := types.NewConsumerConsAddress(consAddrTmp)
 
 	consAddrTmp, err = validator.GetConsAddr()
-	fmt.Println("2 #consAddrTmp", err)
 	if err != nil {
 		return err
 	}
@@ -478,7 +476,6 @@ func (k Keeper) AssignConsumerKey(
 		// get the previous key assigned for this validator on this consumer chain
 		if oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
 			oldConsumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
-			fmt.Println("6 #ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)", err)
 			if err != nil {
 				return err
 			}

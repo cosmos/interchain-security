@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"bytes"
+	"fmt"
 	"math/rand"
 	"sort"
 	"testing"
@@ -814,7 +815,11 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			// in the provider valset and return its power.
 			for i, id := range providerIDS {
 				// TODO: @MSalopek -> double check
-				if id.SDKStakingValidator().GetOperator() == valAddr.String() {
+				valAddrFromHex, err := sdk.ValAddressFromHex(id.SDKStakingValidator().GetOperator())
+				if err != nil {
+					panic(fmt.Sprintf("could not get val address from hex: %s", err))
+				}
+				if valAddrFromHex.String() == valAddr.String() {
 					return providerValset.power[i]
 				}
 			}
