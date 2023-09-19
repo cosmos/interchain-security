@@ -404,10 +404,13 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				},
 			},
 		},
-		// Wait for retry delay period to pass
+		// Wait for retry delay period to pass.
+		// Retry delay period is set to 30 seconds, see config.go,
+		// wait this amount of time to elapse the period.
 		{
-			action: slashPacketRetryAction{
+			action: WaitTimeAction{
 				consumer: chainID(consumerName),
+				waitTime: 30 * time.Second,
 			},
 			state: State{
 				chainID("provi"): ChainState{

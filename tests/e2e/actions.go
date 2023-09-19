@@ -1974,17 +1974,16 @@ func (tr TestRun) waitForSlashMeterReplenishment(
 	}
 }
 
-type slashPacketRetryAction struct {
+type WaitTimeAction struct {
 	consumer chainID
+	waitTime time.Duration
 }
 
-func (tr TestRun) waitForSlashRetry(
-	action slashPacketRetryAction,
+func (tr TestRun) waitForTime(
+	action WaitTimeAction,
 	verbose bool,
 ) {
-	// Retry delay period is set to 30 seconds, see config.go
-	// wait this amount of time to elapse the period
-	tr.WaitTime(30 * time.Second)
+	tr.WaitTime(action.waitTime)
 }
 
 // GetPathNameForGorelayer returns the name of the path between two given chains used by Gorelayer.
