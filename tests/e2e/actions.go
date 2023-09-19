@@ -189,7 +189,6 @@ type submitTextProposalAction struct {
 	Chain       ChainID
 	From        ValidatorID
 	Deposit     uint
-	PropType    string
 	Title       string
 	Description string
 }
@@ -204,7 +203,6 @@ func (tr TestRun) submitTextProposal(
 		"tx", "gov", "submit-legacy-proposal",
 		`--title`, action.Title,
 		`--description`, action.Description,
-		`--type`, action.PropType,
 		`--deposit`, fmt.Sprint(action.Deposit)+`stake`,
 		`--from`, `validator`+fmt.Sprint(action.From),
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
