@@ -1,8 +1,8 @@
 package main
 
 type Step struct {
-	action interface{}
-	state  State
+	Action interface{}
+	State  State
 }
 
 func concatSteps(steps ...[]Step) []Step {
@@ -66,7 +66,7 @@ var slashThrottleSteps = concatSteps(
 	stepsStopChain("consu", 2),
 )
 
-var democracySteps = concatSteps(
+var democracyRewardsSteps = concatSteps(
 	// democracySteps requires a transfer channel
 	stepsStartChains([]string{"democ"}, true),
 	// delegation needs to happen so the first VSC packet can be delivered
@@ -74,7 +74,7 @@ var democracySteps = concatSteps(
 	stepsDemocracy("democ"),
 )
 
-var rewardDenomConsumerSteps = concatSteps(
+var democracySteps = concatSteps(
 	// democracySteps requires a transfer channel
 	stepsStartChains([]string{"democ"}, true),
 	// delegation needs to happen so the first VSC packet can be delivered

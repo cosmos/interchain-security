@@ -7,35 +7,35 @@ func stepsRejectEquivocationProposal(consumerName string, propNumber uint) []Ste
 	return []Step{
 		{
 			// bob submits a proposal to slash himself
-			action: submitEquivocationProposalAction{
-				chain:     chainID("consu"),
-				from:      validatorID("bob"),
-				deposit:   10000001,
-				height:    10,
-				time:      time.Now(),
-				power:     500,
-				validator: validatorID("bob"),
+			Action: submitEquivocationProposalAction{
+				Chain:     ChainID("consu"),
+				From:      ValidatorID("bob"),
+				Deposit:   10000001,
+				Height:    10,
+				Time:      time.Now(),
+				Power:     500,
+				Validator: ValidatorID("bob"),
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 495,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 495,
 					},
-					ValBalances: &map[validatorID]uint{
-						validatorID("bob"): 9500000000,
+					ValBalances: &map[ValidatorID]uint{
+						ValidatorID("bob"): 9500000000,
 					},
 					Proposals: &map[uint]Proposal{
 						// proposal does not exist
 						propNumber: TextProposal{},
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 495,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 495,
 					},
 				},
 			},
@@ -48,24 +48,24 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 	s := []Step{
 		{
 			// bob submits a proposal to slash himself
-			action: submitEquivocationProposalAction{
-				chain:     chainID("consu"),
-				from:      validatorID("bob"),
-				deposit:   10000001,
-				height:    10,
-				time:      time.Now(), // not sure what time in equivocations means
-				power:     500,
-				validator: validatorID("bob"),
+			Action: submitEquivocationProposalAction{
+				Chain:     ChainID("consu"),
+				From:      ValidatorID("bob"),
+				Deposit:   10000001,
+				Height:    10,
+				Time:      time.Now(), // not sure what time in equivocations means
+				Power:     500,
+				Validator: ValidatorID("bob"),
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
-					ValBalances: &map[validatorID]uint{
-						validatorID("bob"): 9489999999,
+					ValBalances: &map[ValidatorID]uint{
+						ValidatorID("bob"): 9489999999,
 					},
 					Proposals: &map[uint]Proposal{
 						propNumber: EquivocationProposal{
@@ -77,28 +77,28 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 						},
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
 		},
 		{
-			action: voteGovProposalAction{
-				chain:      chainID("provi"),
-				from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
-				vote:       []string{"yes", "yes", "yes"},
-				propNumber: propNumber,
+			Action: voteGovProposalAction{
+				Chain:      ChainID("provi"),
+				From:       []ValidatorID{ValidatorID("alice"), ValidatorID("bob"), ValidatorID("carol")},
+				Vote:       []string{"yes", "yes", "yes"},
+				PropNumber: propNumber,
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   0, // bob is tombstoned after proposal passes
-						validatorID("carol"): 0,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   0, // bob is tombstoned after proposal passes
+						ValidatorID("carol"): 0,
 					},
 					Proposals: &map[uint]Proposal{
 						propNumber: EquivocationProposal{
@@ -110,36 +110,36 @@ func stepsSubmitEquivocationProposal(consumerName string, propNumber uint) []Ste
 						},
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   500, // slash not reflected in consumer chain
-						validatorID("carol"): 0,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   500, // slash not reflected in consumer chain
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
 		},
 		{
 			// relay power change to consumer1
-			action: relayPacketsAction{
-				chainA:  chainID("provi"),
-				chainB:  chainID(consumerName),
-				port:    "provider",
-				channel: 0,
+			Action: relayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID(consumerName),
+				Port:    "provider",
+				Channel: 0,
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   0,
-						validatorID("carol"): 0,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 0,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   0, // slash relayed to consumer chain
-						validatorID("carol"): 0,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						ValidatorID("bob"):   0, // slash relayed to consumer chain
+						ValidatorID("carol"): 0,
 					},
 				},
 			},
