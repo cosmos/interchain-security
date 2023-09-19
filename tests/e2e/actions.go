@@ -1974,6 +1974,18 @@ func (tr TestRun) waitForSlashMeterReplenishment(
 	}
 }
 
+type WaitTimeAction struct {
+	consumer chainID
+	waitTime time.Duration
+}
+
+func (tr TestRun) waitForTime(
+	action WaitTimeAction,
+	verbose bool,
+) {
+	tr.WaitTime(action.waitTime)
+}
+
 // GetPathNameForGorelayer returns the name of the path between two given chains used by Gorelayer.
 // Since paths are bidirectional, we need either chain to be able to be provided as first or second argument
 // and still return the same name, so we sort the chain names alphabetically.

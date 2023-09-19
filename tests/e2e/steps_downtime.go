@@ -350,6 +350,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				},
 			},
 		},
+		// Relay slash packet to provider, and ack back to consumer
 		{
 			action: relayPacketsAction{
 				chainA:  chainID("provi"),
@@ -375,8 +376,6 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				},
 			},
 		},
-		// TODO(Shawn): Improve this test to have the consumer retry it's downtime slash, and to assert queue size on consumer.
-		// See https://github.com/cosmos/interchain-security/issues/1103 and https://github.com/cosmos/interchain-security/issues/1233
 		{
 			action: slashMeterReplenishmentAction{
 				targetValue: 0, // We just want slash meter to be non-negative
@@ -401,6 +400,49 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   0,
 						validatorID("carol"): 500,
 					},
+					ConsumerPendingPacketQueueSize: uintPtr(1), // packet still queued
+				},
+			},
+		},
+		// Wait for retry delay period to pass.
+		// Retry delay period is set to 30 seconds, see config.go,
+		// wait this amount of time to elapse the period.
+		{
+			action: WaitTimeAction{
+				consumer: chainID(consumerName),
+				waitTime: 30 * time.Second,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   0,
+						validatorID("carol"): 500,
+					},
+				},
+				chainID(consumerName): ChainState{
+					ConsumerPendingPacketQueueSize: uintPtr(1), // packet still queued
+				},
+			},
+		},
+		// Relay now that retry delay period has passed, confirm provider applies jailing
+		{
+			action: relayPacketsAction{
+				chainA:  chainID("provi"),
+				chainB:  chainID(consumerName),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   0,
+						validatorID("carol"): 0, // jailed!
+					},
+				},
+				chainID(consumerName): ChainState{
+					ConsumerPendingPacketQueueSize: uintPtr(0), // relayed slash packet handled ack clears consumer queue
 				},
 			},
 		},
