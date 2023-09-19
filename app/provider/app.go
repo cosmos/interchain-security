@@ -442,7 +442,7 @@ func New(
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 	govConfig := govtypes.DefaultConfig()
 
-	app.GovKeeper = *govkeeper.NewKeeper(
+	govKeeper := govkeeper.NewKeeper(
 		appCodec,
 		keys[govtypes.StoreKey],
 		app.AccountKeeper,
@@ -454,7 +454,12 @@ func New(
 	)
 
 	// Set legacy router for backwards compatibility with gov v1beta1
-	app.GovKeeper.SetLegacyRouter(govRouter)
+	govKeeper.SetLegacyRouter(govRouter)
+
+	govHook := app.ProviderKeeper.GovHooks(govKeeper)
+	app.GovKeeper = *govKeeper.SetHooks(
+		govtypes.NewMultiGovHooks(govHook),
+		)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
