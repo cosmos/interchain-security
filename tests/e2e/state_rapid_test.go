@@ -17,6 +17,9 @@ func TestChainStateMarshalling(t *testing.T) {
 	})
 }
 
+// Below this are utility functions for Rapid that define generators for the various structs that can appear in testing.
+// These are used in the rapid tests and generate arbitrary test traces for fuzzing.
+// These traces will not in general be useful to execute as e2e tests, since they are filled with essentially completely random values.
 func GetStateGen() *rapid.Generator[State] {
 	return rapid.Custom(func(t *rapid.T) State {
 		return rapid.MapOf(GetChainIDGen(), GetChainStateGen()).Draw(t, "State")
