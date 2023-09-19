@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/kylelemons/godebug/pretty"
+	"golang.org/x/exp/slices"
 )
 
 // The list of test cases to be executed
@@ -49,28 +50,70 @@ var (
 )
 
 var (
-	testSelection TestSet
-	testMap       map[string]*testRunWithSteps = map[string]*testRunWithSteps{
-		"happy-path-short": {
-			testRun: DefaultTestRun(), steps: shortHappyPathSteps,
-			description: `This is like the happy path, but skips steps
-that involve starting or stopping nodes for the same chain outside of the chain setup or teardown.
-This is suited for CometMock+Gorelayer testing`,
-		},
-		"light-client-attack": {
-			testRun: DefaultTestRun(), steps: lightClientAttackSteps,
-			description: `This is like the short happy path, but will slash validators for LightClientAttackEvidence instead of DuplicateVoteEvidence.
-This is suited for CometMock+Gorelayer testing, but currently does not work with CometBFT,
-since causing light client attacks is not implemented.`,
-		},
-		"happy-path":       {testRun: DefaultTestRun(), steps: happyPathSteps, description: "happy path tests"},
-		"changeover":       {testRun: ChangeoverTestRun(), steps: changeoverSteps, description: "changeover tests"},
-		"democracy-reward": {testRun: DemocracyTestRun(true), steps: democracyRewardsSteps, description: "democracy tests allowing rewards"},
-		"democracy":        {testRun: DemocracyTestRun(false), steps: democracySteps, description: "democracy tests"},
-		"slash-throttle":   {testRun: SlashThrottleTestRun(), steps: slashThrottleSteps, description: "slash throttle tests"},
-		"multiconsumer":    {testRun: MultiConsumerTestRun(), steps: multipleConsumers, description: "multi consumer tests"},
+	selectedTests TestSet
+	testRuns      = map[string]TestRunChoice{
+		"default":          {name: "default", testRun: DefaultTestRun(), description: "default test run"},
+		"changeover":       {name: "changeover", testRun: ChangeoverTestRun(), description: "changeover test run"},
+		"democracy":        {name: "democracy", testRun: DemocracyTestRun(false), description: "democracy test run"},
+		"democracy-reward": {name: "democracy-reward", testRun: DemocracyTestRun(true), description: "democracy test run with rewards"},
+		"slash-throttle":   {name: "slash-throttle", testRun: SlashThrottleTestRun(), description: "slash throttle test run"},
+		"multiconsumer":    {name: "multiconsumer", testRun: MultiConsumerTestRun(), description: "multi consumer test run"},
 	}
+	// helper function to get the test run choices by matching test runs
 )
+
+var selectedTestfiles TestSet
+
+var stepChoices = map[string]StepChoice{
+	"happy-path-short": {
+		name:        "happy-path-short",
+		steps:       shortHappyPathSteps,
+		description: `This is like the happy path, but skips steps that involve starting or stopping nodes for the same chain outside of the chain setup or teardown. This is suited for CometMock+Gorelayer testing`,
+		testRuns:    []string{"default"},
+	},
+	"light-client-attack": {
+		name:        "light-client-attack",
+		steps:       lightClientAttackSteps,
+		description: `This is like the short happy path, but will slash validators for LightClientAttackEvidence instead of DuplicateVoteEvidence. This is suited for CometMock+Gorelayer testing, but currently does not work with CometBFT, since causing light client attacks is not implemented`,
+		testRuns:    []string{"default"},
+	},
+	"happy-path": {
+		name:        "happy-path",
+		steps:       happyPathSteps,
+		description: "happy path tests",
+		testRuns:    []string{"default"},
+	},
+	"changeover": {
+		name:        "changeover",
+		steps:       changeoverSteps,
+		description: "changeover tests",
+		testRuns:    []string{"changeover"},
+	},
+	"democracy-reward": {
+		name:        "democracy-reward",
+		steps:       democracyRewardsSteps,
+		description: "democracy tests allowing rewards",
+		testRuns:    []string{"democracy-reward"},
+	},
+	"democracy": {
+		name:        "democracy",
+		steps:       democracySteps,
+		description: "democracy tests",
+		testRuns:    []string{"democracy"},
+	},
+	"slash-throttle": {
+		name:        "slash-throttle",
+		steps:       slashThrottleSteps,
+		description: "slash throttle tests",
+		testRuns:    []string{"slash-throttle"},
+	},
+	"multiconsumer": {
+		name:        "multiconsumer",
+		steps:       multipleConsumers,
+		description: "multi consumer tests",
+		testRuns:    []string{"multiconsumer"},
+	},
+}
 
 func executeTests(tests []testRunWithSteps) (err error) {
 	if parallel != nil && *parallel {
@@ -97,57 +140,147 @@ func executeTests(tests []testRunWithSteps) (err error) {
 	return
 }
 
+func getTestCaseUsageString() string {
+	var builder strings.Builder
+
+	// Test case selection
+	builder.WriteString("This flag is used to reference existing, defined test cases to be run.")
+	builder.WriteString("Test case selection:\nSelection of test steps to be executed:\n")
+	for _, stepChoice := range stepChoices {
+		builder.WriteString(fmt.Sprintf("- %s : %s. Compatible with test runners: %s\n", stepChoice.name, stepChoice.description, strings.Join(stepChoice.testRuns, ",")))
+	}
+	builder.WriteString("\n")
+
+	// Test runner selection
+	builder.WriteString("Test runner selection:\nSelection of test runners to be executed:\n")
+	for _, testRunChoice := range testRuns {
+		builder.WriteString(fmt.Sprintf("- %s : %s\n", testRunChoice.name, testRunChoice.description))
+	}
+	builder.WriteString("\n")
+
+	// Example
+	builder.WriteString("Example: -tc multiconsumer::multiconsumer -tc happy-path::default")
+
+	return builder.String()
+}
+
+func getTestFileUsageString() string {
+	var builder strings.Builder
+
+	builder.WriteString("This flag is used to reference files containing step traces to be run.\n")
+	builder.WriteString("Each filename should be separated by '::' from the test runner name.\n")
+
+	// Test runner selection
+	builder.WriteString("Test runner selection:\nSelection of test runners to be executed:\n")
+	for _, testRunChoice := range testRuns {
+		builder.WriteString(fmt.Sprintf("- %s : %s\n", testRunChoice.name, testRunChoice.description))
+	}
+	builder.WriteString("\n")
+
+	// Example
+	builder.WriteString("Example: -test-file awesome-trace.json::default -test-file other-trace.json::default")
+
+	return builder.String()
+}
+
 func parseArguments() (err error) {
-	flag.Var(&testSelection, "tc",
-		fmt.Sprintf("Selection of test cases to be executed:\n%s,\n%s",
-			func() string {
-				var keys []string
-				for k, v := range testMap {
-					keys = append(keys, fmt.Sprintf("- %s : %s", k, v.description))
-				}
-				return strings.Join(keys, "\n")
-			}(),
-			"Example: -tc multiconsumer -tc happy-path "))
+	flag.Var(&selectedTests, "tc",
+		getTestCaseUsageString())
+
+	flag.Var(&selectedTestfiles, "test-file",
+		getTestFileUsageString())
 	flag.Parse()
 
 	// Enforce go-relayer in case of cometmock as hermes is not yet supported
 	if useCometmock != nil && *useCometmock && (useGorelayer == nil || !*useGorelayer) {
 		fmt.Println("Enforcing go-relayer as cometmock is requested")
 		if err = flag.Set("use-gorelayer", "true"); err != nil {
-			return
-		}
-	}
-	// check if specified test case exists
-	for _, tc := range testSelection {
-		if _, hasKey := testMap[tc]; !hasKey {
-			err := fmt.Errorf("unknown test case '%s'", tc)
 			return err
 		}
 	}
-	return
+	return nil
 }
 
-func getTestCases(selection TestSet) (tests []testRunWithSteps) {
+type testRunWithSteps struct {
+	testRun TestRun
+	steps   []Step
+}
+
+func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet) (tests []testRunWithSteps) {
 	// Run default tests if no test cases were selected
-	if len(selection) == 0 {
-		selection = TestSet{
-			"changeover", "happy-path",
-			"democracy-reward", "democracy", "slash-throttle",
+	if len(selectedPredefinedTests) == 0 && len(selectedTestFiles) == 0 {
+		selectedPredefinedTests = TestSet{
+			"changeover::changeover", "happy-path::default",
+			"democracy-reward::democracy-reward", "democracy::democracy", "slash-throttle::slash-throttle",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
-			selection = append(selection, "multiconsumer")
+			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer::multiconsumer")
 		}
 	}
 
-	// Get tests from selection
 	tests = []testRunWithSteps{}
-	for _, tc := range selection {
-		if _, exists := testMap[tc]; !exists {
-			log.Fatalf("Test case '%s' not found", tc)
+	// Get predefined from selection
+	for _, tc := range selectedPredefinedTests {
+		// first part of tc is the steps, second part is the test runner
+		splitTcString := strings.Split(tc, "::")
+		if len(splitTcString) != 2 {
+			log.Fatalf("Test case '%s' is invalid.\nsee usage info:\n%s", tc, getTestCaseUsageString())
 		}
-		tests = append(tests, *testMap[tc])
+		stepsName := splitTcString[0]
+		testRunnerName := splitTcString[1]
+
+		if _, exists := stepChoices[stepsName]; !exists {
+			log.Fatalf("Step choice '%s' not found.\nsee usage info:\n%s", tc, getTestCaseUsageString())
+		}
+
+		stepChoice := stepChoices[stepsName]
+
+		if _, exists := testRuns[testRunnerName]; !exists {
+			log.Fatalf("Test runner '%s' not found.\nsee usage info:\n%s", testRunnerName, getTestCaseUsageString())
+		}
+
+		testRunChoice := testRuns[testRunnerName]
+
+		if !slices.Contains(stepChoice.testRuns, testRunChoice.name) {
+			log.Fatalf("Step choice '%s' is not compatible with test runner '%s'. compatible test runs: %s", stepsName, testRunnerName, strings.Join(stepChoice.testRuns, ","))
+		}
+
+		tests = append(tests, testRunWithSteps{
+			testRun: testRunChoice.testRun,
+			steps:   stepChoice.steps,
+		},
+		)
 	}
-	return
+
+	// get test cases from files
+	for _, testFile := range selectedTestFiles {
+		// first part is the file, second part is the test runner
+		splitTcString := strings.Split(testFile, "::")
+		if len(splitTcString) != 2 {
+			log.Fatalf("Test file '%s' is invalid.\nsee usage info:\n%s", testFile, getTestFileUsageString())
+		}
+
+		testFileName := splitTcString[0]
+		testRunnerName := splitTcString[1]
+
+		if _, exists := testRuns[testRunnerName]; !exists {
+			log.Fatalf("Test runner '%s' not found.\nsee usage info:\n%s", testRunnerName, getTestFileUsageString())
+		}
+
+		testRunChoice := testRuns[testRunnerName]
+
+		testCase, err := GlobalJSONParser.ReadTraceFromFile(testFileName)
+		if err != nil {
+			log.Fatalf("Error reading test file '%s': %s", testFileName, err)
+		}
+
+		tests = append(tests, testRunWithSteps{
+			testRun: testRunChoice.testRun,
+			steps:   testCase,
+		})
+	}
+
+	return tests
 }
 
 // runs E2E tests
@@ -159,7 +292,7 @@ func main() {
 		log.Fatalf("Error parsing command arguments %s\n", err)
 	}
 
-	testCases := getTestCases(testSelection)
+	testCases := getTestCases(selectedTests, selectedTestfiles)
 
 	start := time.Now()
 	err := executeTests(testCases)
@@ -182,9 +315,17 @@ func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag 
 	tr.teardownDocker()
 }
 
-type testRunWithSteps struct {
-	testRun     TestRun
+type StepChoice struct {
+	name        string
 	steps       []Step
+	description string
+	// contains the names of the test runs that are compatible with this step choice
+	testRuns []string
+}
+
+type TestRunChoice struct {
+	name        string
+	testRun     TestRun
 	description string
 }
 
