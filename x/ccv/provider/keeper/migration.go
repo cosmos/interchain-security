@@ -5,6 +5,7 @@ import (
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
@@ -37,7 +38,6 @@ func (k Keeper) MigrateQueuedPackets(ctx sdktypes.Context) error {
 		k.DeleteThrottledPacketDataForConsumer(ctx, consumer.ChainId)
 	}
 	return nil
-
 }
 
 // Pending packet data type enum, used to encode the type of packet data stored at each entry in the mutual queue.

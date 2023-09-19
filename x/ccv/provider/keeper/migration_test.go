@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	testutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/stretchr/testify/require"
+
+	testutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
 )
 
 func TestMigrate2To3(t *testing.T) {
