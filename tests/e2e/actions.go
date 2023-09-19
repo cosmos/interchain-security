@@ -35,7 +35,7 @@ func (tr TestRun) sendTokens(
 	action SendTokensAction,
 	verbose bool,
 ) {
-	BinaryName := tr.chainConfigs[action.Chain].BinaryName
+	binaryName := tr.chainConfigs[action.Chain].BinaryName
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, BinaryName,
 
