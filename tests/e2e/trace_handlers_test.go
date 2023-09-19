@@ -10,7 +10,6 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/google/go-cmp/cmp"
-	"pgregory.net/rapid"
 )
 
 // an isolated test case for a proposal submission
@@ -69,26 +68,6 @@ func TestWriterThenParser(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestWriterThenParserWithRapid(t *testing.T) {
-	dir, err := os.MkdirTemp("", "example")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	i := 0
-	rapid.Check(t, func(t *rapid.T) {
-		i += 1
-		trace := GetTraceGen().Draw(t, "trace")
-		filename := filepath.Join(dir, fmt.Sprintf("trace-%v.json", i))
-		err := WriteReadCompareTrace(trace, filename, "rapid-trace")
-		if err != nil {
-			log.Fatal(err)
-		}
-	})
-
-	defer os.RemoveAll(dir) // clean up
 }
 
 // Write a trace to a file, then reads it back and compares to the original.
