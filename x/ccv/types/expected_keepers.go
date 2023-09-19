@@ -10,7 +10,6 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 
-	"cosmossdk.io/core/address"
 	"cosmossdk.io/math"
 
 	evidencetypes "cosmossdk.io/x/evidence/types"
@@ -27,34 +26,30 @@ import (
 // of the provider validator set. This version of the interchain-security protocol will mirror the provider chain's changes
 // so we do not need a registry module between the staking module and CCV.
 type StakingKeeper interface {
-	GetValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
-	UnbondingCanComplete(ctx sdk.Context, id uint64) error
-	UnbondingTime(ctx sdk.Context) time.Duration
-	GetValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) (validator stakingtypes.Validator, found bool)
+	GetValidatorUpdates(ctx context.Context) []abci.ValidatorUpdate
+	UnbondingCanComplete(ctx context.Context, id uint64) error
+	UnbondingTime(ctx context.Context) time.Duration
+	GetValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) (validator stakingtypes.Validator, found bool)
 	GetLastValidatorPower(ctx context.Context, operator sdk.ValAddress) (power int64)
 	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
 	Jail(sdk.Context, sdk.ConsAddress) // jail a validator
 	Slash(sdk.Context, sdk.ConsAddress, int64, int64, math.LegacyDec) math.Int
 	SlashWithInfractionReason(sdk.Context, sdk.ConsAddress, int64, int64, math.LegacyDec, stakingtypes.Infraction) math.Int
-	Unjail(ctx sdk.Context, addr sdk.ConsAddress)
-	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
-	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
-	PowerReduction(ctx sdk.Context) math.Int
+	Unjail(ctx context.Context, addr sdk.ConsAddress)
+	GetValidator(ctx context.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
+	IterateLastValidatorPowers(ctx context.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
+	PowerReduction(ctx context.Context) math.Int
 	PutUnbondingOnHold(ctx context.Context, id uint64) error
-	IterateValidators(ctx sdk.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool))
-	Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.ValidatorI
-	IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool
-	ValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) stakingtypes.ValidatorI
-	Delegation(ctx sdk.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) stakingtypes.DelegationI
-	MaxValidators(ctx sdk.Context) uint32
-	GetLastTotalPower(ctx sdk.Context) math.Int
-	GetLastValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
-	GetUnbondingType(ctx sdk.Context, id uint64) (unbondingType stakingtypes.UnbondingType, found bool)
-	BondDenom(ctx sdk.Context) (res string)
-
-	// v50 staking keeper requires this
-	ValidatorAddressCodec() address.Codec
-	ConsensusAddressCodec() address.Codec
+	IterateValidators(ctx context.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool))
+	Validator(ctx context.Context, addr sdk.ValAddress) stakingtypes.ValidatorI
+	IsValidatorJailed(ctx context.Context, addr sdk.ConsAddress) bool
+	ValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) stakingtypes.ValidatorI
+	Delegation(ctx context.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) stakingtypes.DelegationI
+	MaxValidators(ctx context.Context) uint32
+	GetLastTotalPower(ctx context.Context) math.Int
+	GetLastValidators(ctx context.Context) (validators []stakingtypes.Validator)
+	GetUnbondingType(ctx context.Context, id uint64) (unbondingType stakingtypes.UnbondingType, found bool)
+	BondDenom(ctx context.Context) (res string)
 }
 
 type EvidenceKeeper interface {
