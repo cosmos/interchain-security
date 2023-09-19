@@ -84,3 +84,34 @@ func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID 
 
 	return slashData, vscMaturedData
 }
+
+// Note this method is adapted from throttle v1 code.
+func (k Keeper) QueueThrottledPacketDataOnlyForTesting(
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{},
+) error {
+	store := ctx.KVStore(k.storeKey)
+
+	var bz []byte
+	var err error
+	switch data := packetData.(type) {
+	case ccvtypes.SlashPacketData:
+		bz, err = data.Marshal()
+		if err != nil {
+			return fmt.Errorf("failed to marshal slash packet data: %v", err)
+		}
+		bz = append([]byte{slashPacketData}, bz...)
+	case ccvtypes.VSCMaturedPacketData:
+		bz, err = data.Marshal()
+		if err != nil {
+			return fmt.Errorf("failed to marshal vsc matured packet data: %v", err)
+		}
+		bz = append([]byte{vscMaturedPacketData}, bz...)
+	default:
+		// Indicates a developer error, this method should only be called
+		// by tests, QueueThrottledSlashPacketData, or QueueThrottledVSCMaturedPacketData.
+		panic(fmt.Sprintf("unexpected packet data type: %T", data))
+	}
+
+	store.Set(providertypes.ThrottledPacketDataKey(consumerChainID, ibcSeqNum), bz)
+	return nil
+}
