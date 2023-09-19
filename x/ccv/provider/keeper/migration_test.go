@@ -100,7 +100,7 @@ func TestMigrate2To3(t *testing.T) {
 	require.Empty(t, slash3)
 	require.Empty(t, vscm3)
 
-	// Confirm unbonding op indexes are deleted, meaning vsc matured packets were handled
+	// Confirm timestamps are deleted, meaning vsc matured packets were handled
 	for _, data := range vscm1 {
 		_, found := consumerKeeper.GetVscSendTimestamp(ctx, "chain-1", data.ValsetUpdateId)
 		require.False(t, found)
