@@ -10,6 +10,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/google/go-cmp/cmp"
+	"pgregory.net/rapid"
 )
 
 // an isolated test case for a proposal submission
@@ -62,22 +63,51 @@ func TestWriterThenParser(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			filename := filepath.Join(dir, "trace.json")
-			err := WriteAndReadTrace(GlobalJSONParser, GlobalJSONWriter, tc.trace, filename)
+			err := WriteReadCompareTrace(tc.trace, filename, name)
 			if err != nil {
-				t.Fatalf("in testcase %v, got error writing trace to file: %v", name, err)
-			}
-
-			got, err := GlobalJSONParser.ReadTraceFromFile(filename)
-			if err != nil {
-				t.Fatalf("in testcase %v, got error reading trace from file: %v", name, err)
-			}
-			diff := cmp.Diff(tc.trace, got, cmp.AllowUnexported(Step{}))
-			if diff != "" {
-				t.Log("Got a difference for testcase " + name)
-				t.Errorf("(-want +got):\n%s", diff)
+				log.Fatal(err)
 			}
 		})
 	}
+}
+
+func TestWriterThenParserWithRapid(t *testing.T) {
+	dir, err := os.MkdirTemp("", "example")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	i := 0
+	rapid.Check(t, func(t *rapid.T) {
+		i += 1
+		trace := GetTraceGen().Draw(t, "trace")
+		filename := filepath.Join(dir, fmt.Sprintf("trace-%v.json", i))
+		err := WriteReadCompareTrace(trace, filename, "rapid-trace")
+		if err != nil {
+			log.Fatal(err)
+		}
+	})
+
+	defer os.RemoveAll(dir) // clean up
+}
+
+// Write a trace to a file, then reads it back and compares to the original.
+func WriteReadCompareTrace(trace []Step, filename string, name string) error {
+	err := WriteAndReadTrace(GlobalJSONParser, GlobalJSONWriter, trace, filename)
+	if err != nil {
+		return fmt.Errorf("in testcase %v, got error writing trace to file: %v", name, err)
+	}
+
+	got, err := GlobalJSONParser.ReadTraceFromFile(filename)
+	if err != nil {
+		return fmt.Errorf("in testcase %v, got error reading trace from file: %v", name, err)
+	}
+	diff := cmp.Diff(trace, got, cmp.AllowUnexported(Step{}))
+	if diff != "" {
+		return fmt.Errorf("Got a difference for testcase %s (-want +got):\n%s", name, diff)
+	}
+
+	return nil
 }
 
 // Checks that writing a trace does not result in an error.
