@@ -48,7 +48,7 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer1),
 				Port:    "provider",
-				Channel: 0, // consumer1 Channel
+				Channel: 0, // consumer1 channel
 			},
 			State: State{
 				ChainID("provi"): ChainState{
@@ -80,7 +80,7 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer2),
 				Port:    "provider",
-				Channel: 1, // consumer2 Channel
+				Channel: 1, // consumer2 channel
 			},
 			State: State{
 				ChainID("provi"): ChainState{
@@ -142,7 +142,7 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer1),
 				Port:    "provider",
-				Channel: 0, // consumer1 Channel
+				Channel: 0, // consumer1 channel
 			},
 			State: State{
 				ChainID("provi"): ChainState{
@@ -174,7 +174,7 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer1),
 				Port:    "provider",
-				Channel: 0, // consumer1 Channel
+				Channel: 0, // consumer1 channel
 			},
 			State: State{
 				ChainID("provi"): ChainState{
@@ -206,7 +206,7 @@ func stepsMultiConsumerDoubleSign(consumer1, consumer2 string) []Step {
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumer2),
 				Port:    "provider",
-				Channel: 1, // consumer2 Channel
+				Channel: 1, // consumer2 channel
 			},
 			State: State{
 				ChainID(consumer1): ChainState{
