@@ -137,58 +137,62 @@ func (AppModule) ConsensusVersion() uint64 {
 // BeginBlock implements the AppModule interface
 // Set the VSC ID for the subsequent block to the same value as the current block
 // Panic if the provider's channel was established and then closed
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
-	// Update smallest validator power that cannot opt out.
-	am.keeper.UpdateSmallestNonOptOutPower(ctx)
+func (am AppModule) BeginBlock(ctx context.Context) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	channelID, found := am.keeper.GetProviderChannel(ctx)
-	if found && am.keeper.IsChannelClosed(ctx, channelID) {
+	// Update smallest validator power that cannot opt out.
+	am.keeper.UpdateSmallestNonOptOutPower(sdkCtx)
+
+	channelID, found := am.keeper.GetProviderChannel(sdkCtx)
+	if found && am.keeper.IsChannelClosed(sdkCtx, channelID) {
 		// The CCV channel was established, but it was then closed;
 		// the consumer chain is not secured anymore, but we allow it to run as a POA chain and log an error.
 		channelClosedMsg := fmt.Sprintf("CCV channel %q was closed - shutdown consumer chain since it is not secured anymore", channelID)
-		am.keeper.Logger(ctx).Error(channelClosedMsg)
+		am.keeper.Logger(sdkCtx).Error(channelClosedMsg)
 	}
 
 	// map next block height to the vscID of the current block height
-	blockHeight := uint64(ctx.BlockHeight())
-	vID := am.keeper.GetHeightValsetUpdateID(ctx, blockHeight)
-	am.keeper.SetHeightValsetUpdateID(ctx, blockHeight+1, vID)
-	am.keeper.Logger(ctx).Debug("block height was mapped to vscID", "height", blockHeight+1, "vscID", vID)
+	blockHeight := uint64(sdkCtx.BlockHeight())
+	vID := am.keeper.GetHeightValsetUpdateID(sdkCtx, blockHeight)
+	am.keeper.SetHeightValsetUpdateID(sdkCtx, blockHeight+1, vID)
+	am.keeper.Logger(sdkCtx).Debug("block height was mapped to vscID", "height", blockHeight+1, "vscID", vID)
 
-	am.keeper.TrackHistoricalInfo(ctx)
+	am.keeper.TrackHistoricalInfo(sdkCtx)
 }
 
 // EndBlock implements the AppModule interface
 // Flush PendingChanges to ABCI, send pending packets, write acknowledgements for packets that have finished unbonding.
 //
 // TODO: e2e tests confirming behavior with and without standalone -> consumer changeover
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx context.Context) []abci.ValidatorUpdate {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
 	// If PreCCV state is active, consumer is a previously standalone chain
 	// that was just upgraded to include the consumer ccv module, execute changeover logic.
-	if am.keeper.IsPreCCV(ctx) {
-		initialValUpdates := am.keeper.ChangeoverToConsumer(ctx)
+	if am.keeper.IsPreCCV(sdkCtx) {
+		initialValUpdates := am.keeper.ChangeoverToConsumer(sdkCtx)
 		return initialValUpdates
 	}
 
 	// Execute EndBlock logic for the Reward Distribution sub-protocol
-	am.keeper.EndBlockRD(ctx)
+	am.keeper.EndBlockRD(sdkCtx)
 
 	// NOTE: Slash packets are queued in BeginBlock via the Slash function
 	// Packet ordering is managed by the PendingPackets queue.
-	am.keeper.QueueVSCMaturedPackets(ctx)
+	am.keeper.QueueVSCMaturedPackets(sdkCtx)
 
 	// panics on invalid packets and unexpected send errors
-	am.keeper.SendPackets(ctx)
+	am.keeper.SendPackets(sdkCtx)
 
-	data, ok := am.keeper.GetPendingChanges(ctx)
+	data, ok := am.keeper.GetPendingChanges(sdkCtx)
 	if !ok {
 		return []abci.ValidatorUpdate{}
 	}
 	// apply changes to cross-chain validator set
-	tendermintUpdates := am.keeper.ApplyCCValidatorChanges(ctx, data.ValidatorUpdates)
-	am.keeper.DeletePendingChanges(ctx)
+	tendermintUpdates := am.keeper.ApplyCCValidatorChanges(sdkCtx, data.ValidatorUpdates)
+	am.keeper.DeletePendingChanges(sdkCtx)
 
-	am.keeper.Logger(ctx).Debug("sending validator updates to consensus engine", "len updates", len(tendermintUpdates))
+	am.keeper.Logger(sdkCtx).Debug("sending validator updates to consensus engine", "len updates", len(tendermintUpdates))
 
 	return tendermintUpdates
 }
@@ -202,7 +206,7 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 
 // RegisterStoreDecoder registers a decoder for consumer module's types
 // TODO
-func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
+func (am AppModule) RegisterStoreDecoder(sdr simtypes.StoreDecoderRegistry) {
 }
 
 // WeightedOperations returns the all the consumer module operations with their respective weights.

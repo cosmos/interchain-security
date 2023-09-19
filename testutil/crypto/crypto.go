@@ -77,7 +77,7 @@ func (v *CryptoIdentity) TMCryptoPubKey() tmcrypto.PubKey {
 }
 
 func (v *CryptoIdentity) SDKStakingValidator() sdkstakingtypes.Validator {
-	ret, err := sdkstakingtypes.NewValidator(v.SDKValOpAddress(), v.ConsensusSDKPubKey(), sdkstakingtypes.Description{})
+	ret, err := sdkstakingtypes.NewValidator(v.SDKValOpAddressString(), v.ConsensusSDKPubKey(), sdkstakingtypes.Description{})
 	if err != nil {
 		panic(err)
 	}
@@ -94,6 +94,10 @@ func (v *CryptoIdentity) OperatorSDKPubKey() sdkcryptotypes.PubKey {
 
 func (v *CryptoIdentity) SDKValOpAddress() sdktypes.ValAddress {
 	return sdktypes.ValAddress(v.OperatorSDKPubKey().Address())
+}
+
+func (v *CryptoIdentity) SDKValOpAddressString() string {
+	return v.OperatorSDKPubKey().Address().String()
 }
 
 func (v *CryptoIdentity) SDKValConsAddress() sdktypes.ConsAddress {

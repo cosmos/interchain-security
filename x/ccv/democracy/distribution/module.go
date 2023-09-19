@@ -14,8 +14,6 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
@@ -62,7 +60,7 @@ func NewAppModule(
 
 // BeginBlocker mirror functionality of cosmos-sdk/distribution BeginBlocker
 // however it allocates no proposer reward
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context) {
 	defer telemetry.ModuleMeasureSince(distrtypes.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 
 	// TODO this is Tendermint-dependent

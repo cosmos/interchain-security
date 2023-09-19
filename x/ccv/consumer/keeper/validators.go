@@ -263,7 +263,8 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 			// to be stored correctly in ApplyCCValidatorChanges.
 			panic(err)
 		}
-		val, err := stakingtypes.NewValidator(nil, pk, stakingtypes.Description{})
+		// NOTE: @MSalopek -> not sure about pk.Address().String()
+		val, err := stakingtypes.NewValidator(pk.Address().String(), pk, stakingtypes.Description{})
 		if err != nil {
 			// This should never happen as the pubkey is assumed
 			// to be stored correctly in ApplyCCValidatorChanges.
@@ -278,7 +279,7 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	}
 
 	// Create historical info entry which sorts the validator set by voting power
-	historicalEntry := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), lastVals, sdk.DefaultPowerReduction)
+	historicalEntry := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), stakingtypes.Validators{Validators: lastVals, ValidatorCodec: k.validatorAddressCodec}, sdk.DefaultPowerReduction)
 
 	// Set latest HistoricalInfo at current height
 	k.SetHistoricalInfo(ctx, ctx.BlockHeight(), &historicalEntry)

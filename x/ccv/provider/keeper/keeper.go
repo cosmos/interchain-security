@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"time"
 
+	addresscodec "cosmossdk.io/core/address"
+
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -53,6 +55,9 @@ type Keeper struct {
 	distributionKeeper ccv.DistributionKeeper
 	bankKeeper         ccv.BankKeeper
 	feeCollectorName   string
+
+	validatorAddressCodec addresscodec.Codec
+	consensusAddressCodec addresscodec.Codec
 }
 
 // NewKeeper creates a new provider Keeper instance
@@ -63,7 +68,8 @@ func NewKeeper(
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
 	accountKeeper ccv.AccountKeeper, evidenceKeeper ccv.EvidenceKeeper,
 	distributionKeeper ccv.DistributionKeeper, bankKeeper ccv.BankKeeper,
-	feeCollectorName, authority string,
+	feeCollectorName, authority string, validatorAddressCodec,
+	consensusAddressCodec addresscodec.Codec,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -96,6 +102,16 @@ func NewKeeper(
 // GetAuthority returns the x/ccv/provider module's authority.
 func (k Keeper) GetAuthority() string {
 	return k.authority
+}
+
+// ValidatorAddressCodec returns the app validator address codec.
+func (k Keeper) ValidatorAddressCodec() addresscodec.Codec {
+	return k.validatorAddressCodec
+}
+
+// ConsensusAddressCodec returns the app consensus address codec.
+func (k Keeper) ConsensusAddressCodec() addresscodec.Codec {
+	return k.consensusAddressCodec
 }
 
 // SetParamSpace sets the param space for the provider keeper.

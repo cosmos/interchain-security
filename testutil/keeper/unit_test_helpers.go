@@ -11,19 +11,23 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/store"
+	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"cosmossdk.io/log"
-	tmdb "github.com/cometbft/cometbft-db"
+	dbm "github.com/cosmos/cosmos-db"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
@@ -45,11 +49,11 @@ type InMemKeeperParams struct {
 // NewInMemKeeperParams instantiates in-memory keeper params with default values
 func NewInMemKeeperParams(tb testing.TB) InMemKeeperParams {
 	tb.Helper()
-	storeKey := sdk.NewKVStoreKey(types.StoreKey)
+	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
+	db := dbm.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db, log.NewNopLogger(), metrics.NewNoOpMetrics())
 	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
 	require.NoError(tb, stateStore.LoadLatestVersion())
@@ -128,6 +132,9 @@ func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) provi
 		mocks.MockDistributionKeeper,
 		mocks.MockBankKeeper,
 		authtypes.FeeCollectorName,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		address.NewBech32Codec("cosmosvaloper"),
+		address.NewBech32Codec("cosmosvalcons"),
 	)
 }
 

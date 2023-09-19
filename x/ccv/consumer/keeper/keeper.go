@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"time"
 
+	addresscodec "cosmossdk.io/core/address"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -50,6 +51,9 @@ type Keeper struct {
 	ibcTransferKeeper       ccv.IBCTransferKeeper
 	ibcCoreKeeper           ccv.IBCCoreKeeper
 	feeCollectorName        string
+
+	validatorAddressCodec addresscodec.Codec
+	consensusAddressCodec addresscodec.Codec
 }
 
 // NewKeeper creates a new Consumer Keeper instance
