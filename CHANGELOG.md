@@ -28,6 +28,7 @@ Note:
 
 Changes:
 
+* (feat) [#1295](https://github.com/cosmos/interchain-security/pull/1295) increment consumer consensus version and register consumer packet migration.
 * (fix!) [#1262](https://github.com/cosmos/interchain-security/pull/1262) Remove incorrect address validation on `ProviderFeePoolAddrStr` param.
 * (feature!) [#1244](https://github.com/cosmos/interchain-security/pull/1244) Update the default consumer unbonding period to 2 weeks.
 * (fix!) [#1244](https://github.com/cosmos/interchain-security/pull/1244) Validate token transfer messages before calling `Transfer()`.
