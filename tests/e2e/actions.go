@@ -1982,9 +1982,9 @@ func (tr TestRun) waitForSlashRetry(
 	action slashPacketRetryAction,
 	verbose bool,
 ) {
-	// Retry delay period is set to 200 seconds, see config.go
+	// Retry delay period is set to 30 seconds, see config.go
 	// wait this amount of time to elapse the period
-	tr.WaitTime(200 * time.Second)
+	tr.WaitTime(30 * time.Second)
 }
 
 // GetPathNameForGorelayer returns the name of the path between two given chains used by Gorelayer.
