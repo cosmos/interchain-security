@@ -34,6 +34,7 @@ func (k Keeper) MigrateQueuedPackets(ctx sdktypes.Context) error {
 		for _, data := range vscmData {
 			k.HandleVSCMaturedPacket(ctx, consumer.ChainId, data)
 		}
+		k.DeleteThrottledPacketDataForConsumer(ctx, consumer.ChainId)
 	}
 	return nil
 
@@ -83,6 +84,26 @@ func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID 
 	}
 
 	return slashData, vscMaturedData
+}
+
+// Note this method is copy/pasted from throttle v1 code.
+func (k Keeper) DeleteThrottledPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
+	store := ctx.KVStore(k.storeKey)
+	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
+	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
+	defer iterator.Close()
+
+	keysToDel := [][]byte{}
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	// Delete data for this consumer
+	for _, key := range keysToDel {
+		store.Delete(key)
+	}
+
+	// Delete size of data queue for this consumer
+	store.Delete(providertypes.ThrottledPacketDataSizeKey(consumerChainID))
 }
 
 // Note this method is adapted from throttle v1 code.
