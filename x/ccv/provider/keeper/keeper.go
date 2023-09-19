@@ -127,9 +127,18 @@ func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
 	// Ensures no fields are missed in this validation
-	fmt.Println(reflect.ValueOf(k).NumField())
 	if reflect.ValueOf(k).NumField() != 19 {
 		panic("number of fields in provider keeper is not 19")
+	}
+
+	// TODO: @MSalopek -> validate once connected and AccountKeeper interface is updated
+	// ensure that authority is a valid AccAddress
+	// if _, err := k.accountKeeper.AddressCodec().StringToBytes(k.authority); err != nil {
+	// 	panic("authority is not a valid acc address")
+	// }
+
+	if k.validatorAddressCodec == nil || k.consensusAddressCodec == nil {
+		panic("validator and/or consensus address codec are nil")
 	}
 
 	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                                     // 1

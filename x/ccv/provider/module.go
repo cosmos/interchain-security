@@ -132,8 +132,8 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // NOTE: @MSalopek -> swapped sdk.Context with context.Context
-// BeginBlock implements the AppModule interface
-func (am AppModule) BeginBlock(ctx context.Context) {
+// NOTE: @MSalopek -> renamed BeginBlock to BeginBlocker
+func (am AppModule) BeginBlocker(ctx context.Context) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	// Create clients to consumer chains that are due to be spawned via pending consumer addition proposals
 	am.keeper.BeginBlockInit(sdkCtx)
@@ -142,8 +142,8 @@ func (am AppModule) BeginBlock(ctx context.Context) {
 }
 
 // NOTE: @MSalopek -> swapped sdk.Context with context.Context
-// EndBlock implements the AppModule interface
-func (am AppModule) EndBlock(ctx context.Context) []abci.ValidatorUpdate {
+// NOTE: @MSalopek -> renamed EndBlock to EndBlocker
+func (am AppModule) EndBlocker(ctx context.Context) []abci.ValidatorUpdate {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// EndBlock logic needed for the Consumer Initiated Slashing sub-protocol.

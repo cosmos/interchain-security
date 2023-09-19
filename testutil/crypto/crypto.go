@@ -61,7 +61,7 @@ func (v *CryptoIdentity) TMValidator(power int64) *tmtypes.Validator {
 }
 
 func (v *CryptoIdentity) TMProtoCryptoPublicKey() tmprotocrypto.PublicKey {
-	ret, err := sdkcryptocodec.ToTmProtoPublicKey(v.ConsensusSDKPubKey())
+	ret, err := sdkcryptocodec.ToCmtProtoPublicKey(v.ConsensusSDKPubKey())
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +69,7 @@ func (v *CryptoIdentity) TMProtoCryptoPublicKey() tmprotocrypto.PublicKey {
 }
 
 func (v *CryptoIdentity) TMCryptoPubKey() tmcrypto.PubKey {
-	ret, err := sdkcryptocodec.ToTmPubKeyInterface(v.ConsensusSDKPubKey())
+	ret, err := sdkcryptocodec.ToCmtPubKeyInterface(v.ConsensusSDKPubKey())
 	if err != nil {
 		panic(err)
 	}

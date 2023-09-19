@@ -70,7 +70,8 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 		tt.setup(ctx, k)
 
 		t.Run(tt.name, func(t *testing.T) {
-			if actual := providerkeeper.ValidatorConsensusKeyInUse(&k, ctx, sdk.ValAddress(newValidator.SDKStakingValidator().OperatorAddress)); actual != tt.expect {
+			// NOTE: @MSalopek -> this line has issues resulting in mock expectations not being met
+			if actual := providerkeeper.ValidatorConsensusKeyInUse(&k, ctx, newValidator.SDKValOpAddress()); actual != tt.expect {
 				t.Errorf("validatorConsensusKeyInUse() = %v, want %v", actual, tt.expect)
 			}
 		})

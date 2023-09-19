@@ -379,12 +379,14 @@ func (k Keeper) AssignConsumerKey(
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
 	consAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(consumerKey)
+	fmt.Println("#consAddrTmp", err)
 	if err != nil {
 		return err
 	}
 	consumerAddr := types.NewConsumerConsAddress(consAddrTmp)
 
 	consAddrTmp, err = validator.GetConsAddr()
+	fmt.Println("2 #consAddrTmp", err)
 	if err != nil {
 		return err
 	}
@@ -439,20 +441,21 @@ func (k Keeper) AssignConsumerKey(
 			)
 		} else {
 			// the validator had no key assigned on this consumer chain
-			providerKey, err := validator.TmConsPublicKey()
+			providerKey, err := validator.CmtConsPublicKey()
 			if err != nil {
 				return err
 			}
 			oldConsumerKey = providerKey
 		}
 
-		valBz, err := k.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
+		// NOTE: @MSalopek validator.GetOperator() now returns a Hex string instead of sdk.ValAddress
+		valAddrBech32, err := sdk.ValAddressFromHex(validator.GetOperator())
 		if err != nil {
 			return err
 		}
 
 		// check whether the validator is valid, i.e., its power is positive
-		power := k.stakingKeeper.GetLastValidatorPower(ctx.Context(), valBz)
+		power := k.stakingKeeper.GetLastValidatorPower(ctx.Context(), valAddrBech32)
 		if 0 < power {
 			// to enable multiple calls of AssignConsumerKey in the same block by the same validator
 
@@ -475,6 +478,7 @@ func (k Keeper) AssignConsumerKey(
 		// get the previous key assigned for this validator on this consumer chain
 		if oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
 			oldConsumerAddrTmp, err := ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)
+			fmt.Println("6 #ccvtypes.TMCryptoPublicKeyToConsAddr(oldConsumerKey)", err)
 			if err != nil {
 				return err
 			}
