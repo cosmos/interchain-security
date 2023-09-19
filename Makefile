@@ -31,12 +31,12 @@ test-diff:
 
 # run only happy path E2E tests
 test-e2e-short:
-	go run ./tests/e2e/... --tc happy-path
+	go run ./tests/e2e/... --tc happy-path::default
 
 # run only happy path E2E tests with cometmock
 # this set of traces does not test equivocation but it does check downtime
 test-e2e-short-cometmock:
-	go run ./tests/e2e/... --tc happy-path-short --use-cometmock --use-gorelayer
+	go run ./tests/e2e/... --tc happy-path-short::default --use-cometmock --use-gorelayer
 
 # run full E2E tests in sequence (including multiconsumer)
 test-e2e-multi-consumer:
@@ -52,7 +52,7 @@ test-gaia-e2e:
 
 # run only happy path E2E tests using latest tagged gaia
 test-gaia-e2e-short:
-	go run ./tests/e2e/... --tc happy-path --use-gaia
+	go run ./tests/e2e/... --tc happy-path::default --use-gaia
 
 # run full E2E tests in parallel (including multiconsumer) using latest tagged gaia
 test-gaia-e2e-parallel:
@@ -66,7 +66,7 @@ test-gaia-e2e-tagged:
 # run only happy path E2E tests using latest tagged gaia
 # usage: GAIA_TAG=v9.0.0 make test-gaia-e2e-short-tagged
 test-gaia-e2e-short-tagged:
-	go run ./tests/e2e/... --tc happy-path --use-gaia --gaia-tag $(GAIA_TAG)
+	go run ./tests/e2e/... --tc happy-path::default --use-gaia --gaia-tag $(GAIA_TAG)
 
 # run full E2E tests in parallel (including multiconsumer) using specific tagged version of gaia
 # usage: GAIA_TAG=v9.0.0 make test-gaia-e2e-parallel-tagged
@@ -76,6 +76,10 @@ test-gaia-e2e-parallel-tagged:
 # run all tests with caching disabled
 test-no-cache:
 	go test ./... -count=1 && go run ./tests/e2e/...
+
+# test reading a trace from a file
+test-trace:
+	go run ./tests/e2e/... --test-file tests/e2e/tracehandler_testdata/happyPath.json::default
 
 ###############################################################################
 ###                                Linting                                  ###
@@ -97,8 +101,6 @@ mockgen_cmd=go run github.com/golang/mock/mockgen
 mocks:
 	$(mockgen_cmd) -package=keeper -destination=testutil/keeper/mocks.go -source=x/ccv/types/expected_keepers.go
 
-
-BUILDDIR ?= $(CURDIR)/build
 BUILD_TARGETS := build
 
 build: BUILD_ARGS=-o $(BUILDDIR)/
