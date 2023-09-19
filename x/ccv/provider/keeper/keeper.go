@@ -77,22 +77,24 @@ func NewKeeper(
 	}
 
 	k := Keeper{
-		cdc:                cdc,
-		storeKey:           key,
-		authority:          authority,
-		paramSpace:         paramSpace,
-		scopedKeeper:       scopedKeeper,
-		channelKeeper:      channelKeeper,
-		portKeeper:         portKeeper,
-		connectionKeeper:   connectionKeeper,
-		clientKeeper:       clientKeeper,
-		stakingKeeper:      stakingKeeper,
-		slashingKeeper:     slashingKeeper,
-		accountKeeper:      accountKeeper,
-		evidenceKeeper:     evidenceKeeper,
-		distributionKeeper: distributionKeeper,
-		bankKeeper:         bankKeeper,
-		feeCollectorName:   feeCollectorName,
+		cdc:                   cdc,
+		storeKey:              key,
+		authority:             authority,
+		paramSpace:            paramSpace,
+		scopedKeeper:          scopedKeeper,
+		channelKeeper:         channelKeeper,
+		portKeeper:            portKeeper,
+		connectionKeeper:      connectionKeeper,
+		clientKeeper:          clientKeeper,
+		stakingKeeper:         stakingKeeper,
+		slashingKeeper:        slashingKeeper,
+		accountKeeper:         accountKeeper,
+		evidenceKeeper:        evidenceKeeper,
+		distributionKeeper:    distributionKeeper,
+		bankKeeper:            bankKeeper,
+		feeCollectorName:      feeCollectorName,
+		validatorAddressCodec: validatorAddressCodec,
+		consensusAddressCodec: consensusAddressCodec,
 	}
 
 	k.mustValidateFields()
@@ -120,29 +122,36 @@ func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
 	k.paramSpace = ps
 }
 
+// TODO: @MSalopek -> redo validation; some fields will be removed
 // Validates that the provider keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 15 {
-		panic("number of fields in provider keeper is not 15")
+	fmt.Println(reflect.ValueOf(k).NumField())
+	if reflect.ValueOf(k).NumField() != 19 {
+		panic("number of fields in provider keeper is not 19")
 	}
 
-	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                               // 1
-	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                     // 2
-	ccv.PanicIfZeroOrNil(k.paramSpace, "paramSpace")                 // 3
-	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")             // 4
-	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")           // 5
-	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")                 // 6
-	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")     // 7
-	ccv.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")           // 8
-	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")             // 9
-	ccv.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")           // 10
-	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")         // 11
-	ccv.PanicIfZeroOrNil(k.evidenceKeeper, "evidenceKeeper")         // 12
-	ccv.PanicIfZeroOrNil(k.distributionKeeper, "distributionKeeper") // 13
-	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                 // 14
-	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")     // 15
+	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                                     // 1
+	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                           // 2
+	ccv.PanicIfZeroOrNil(k.paramSpace, "paramSpace")                       // 3
+	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")                   // 4
+	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")                 // 5
+	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")                       // 6
+	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")           // 7
+	ccv.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")                 // 8
+	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")                   // 9
+	ccv.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")                 // 10
+	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")               // 11
+	ccv.PanicIfZeroOrNil(k.evidenceKeeper, "evidenceKeeper")               // 12
+	ccv.PanicIfZeroOrNil(k.distributionKeeper, "distributionKeeper")       // 13
+	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                       // 14
+	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")           // 15
+	ccv.PanicIfZeroOrNil(k.authority, "authority")                         // 16
+	ccv.PanicIfZeroOrNil(k.validatorAddressCodec, "validatorAddressCodec") // 17
+	ccv.PanicIfZeroOrNil(k.consensusAddressCodec, "consensusAddressCodec") // 18
+	// TODO: @MSalopek -> validate once connected
+	// ccv.PanicIfZeroOrNil(k.storeService, "storeService")                   // 19
 }
 
 // Logger returns a module-specific logger.
