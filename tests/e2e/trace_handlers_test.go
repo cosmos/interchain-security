@@ -71,7 +71,7 @@ func TestWriterThenParser(t *testing.T) {
 }
 
 // Write a trace to a file, then reads it back and compares to the original.
-func WriteReadCompareTrace(trace []Step, filename string, name string) error {
+func WriteReadCompareTrace(trace []Step, filename, name string) error {
 	err := WriteAndReadTrace(GlobalJSONParser, GlobalJSONWriter, trace, filename)
 	if err != nil {
 		return fmt.Errorf("in testcase %v, got error writing trace to file: %v", name, err)
