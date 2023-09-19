@@ -253,3 +253,17 @@ func (k Keeper) QueryRegisteredConsumerRewardDenoms(goCtx context.Context, req *
 		Denoms: denoms,
 	}, nil
 }
+
+func (k Keeper) QueryProposedConsumerChainIDs(goCtx context.Context, req *types.QueryProposedChainIDsRequest) (*types.QueryProposedChainIDsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	chains := k.GetAllChainsInProposal(ctx)
+
+	return &types.QueryProposedChainIDsResponse{
+		ProposedChainIDs: chains,
+	}, nil
+}

@@ -81,6 +81,15 @@ service Query {
     option (google.api.http).get =
         "/interchain_security/ccv/provider/registered_consumer_reward_denoms";
   }
+
+  // QueryProposedConsumerChainIDs query chainIDs in consumerAdditionProposals
+  // before voting period finishes, after voting period finishes, this chainID will be removed from the result
+  rpc QueryProposedConsumerChainIDs(
+      QueryProposedChainIDsRequest)
+      returns (QueryProposedChainIDsResponse) {
+  option (google.api.http).get =
+      "/interchain_security/ccv/provider/proposed_consumer_chainids";
+      }
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
@@ -186,4 +195,9 @@ message QueryRegisteredConsumerRewardDenomsRequest {}
 
 message QueryRegisteredConsumerRewardDenomsResponse {
   repeated string denoms = 1;
+}
+
+message QueryProposedChainIDsRequest {}
+message QueryProposedChainIDsResponse{
+  repeated string proposedChainIDs = 1;
 }
