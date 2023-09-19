@@ -103,8 +103,9 @@ module ccv_logic {
 
         // Stores the list of packets that have been sent to the provider chain by this consumer
         // and have not been received yet.
+        // ordered by recency, so the head is the oldest packet.
         // In the implementation, essentially unacknowledged IBC packets.
-        outstandingPacketsToProvider: Chain -> List[VSCMaturedPacket],
+        outstandingPacketsToProvider: List[VSCMaturedPacket],
 
         // Stores the list of voting powers that corresponded to voting powers 
         // at blocks over the chains entire existence.
@@ -118,7 +119,7 @@ module ccv_logic {
         // the state of each consumer chain.
         // note that we assume that this contains all consumer chains that may ever exist,
         // and consumer chains that are currently not running will have providerState.consumerStatus == UNUSED or STOPPED
-        consumerStates: Set[ConsumerState]
+        consumerStates: Chain -> ConsumerState
     }
 
     type Error = {
@@ -160,7 +161,7 @@ module ccv_logic {
                     providerValidatorSetChangedInThisBlock: false,
                     consumerStatus: Map()
                 },
-                consumerStates: Set()
+                consumerStates: Map(),
             },
             error: {
                 message: msg
@@ -171,26 +172,105 @@ module ccv_logic {
     // ===================
     // PROTOCOL LOGIC
     // ===================
+    
+    // the power of a validator on the provider chain is changed to the given amount. We do not care how this happens,
+    // e.g. via undelegations, or delegations, ...
+    pure def votingPowerChange(currentState: ProtocolState, validator: Node, amount: int): Result = {
+            if (amount < 0) {
+                Err("Voting power changes must be positive")
+            } else {
+                pure val currentValidatorSet = currentState.providerState.chainState.currentValidatorSet
+                pure val newValidatorSet = getUpdatedValidatorSet(currentValidatorSet, validator, amount)
+                pure val newState = setProviderValidatorSet(currentState, newValidatorSet)
+                Ok(newState)
+            }
+    }
+
+    // Delivers the next queued VSCMaturedPacket from a consumer chain to the provider chain.
+    // Only argument is the consumer chain, from which the packet will be delivered.
+    pure def deliverPacketToProvider(currentState: ProtocolState, sender: Chain): Result = {
+        if (not(isCurrentlyConsumer(sender, currentState))) {
+            Err("Sender is not currently a consumer - must have 'running' status!")
+        } else if (length(currentState.consumerStates.get(sender).outstandingPacketsToProvider) == 0) {
+            Err("No outstanding packets to deliver")
+        } else {
+            val packet = currentState.consumerStates.get(sender).outstandingPacketsToProvider.head()
+            val result = recvPacketOnProvider(currentState, sender, packet)
+            val tmpState = result.newState
+            if (result.hasError) {
+                Err(result.error.message)
+            } else {
+                val result2 = removeOutstandingPacketFromConsumer(tmpState, sender)
+                val tmpState2 = result2.newState
+                val err2 = result2.error
+                if (result2.hasError) {
+                    Err(err2.message)
+                } else {
+                    Ok(tmpState2)
+                }
+            }
+        }
+    }
+
+    // ===================
+    // UTILITY FUNCTIONS
+    // ===================
+
+    // receives a given packet on the provider. The arguments are the consumer chain that sent the packet, and the packet itself.
+    pure def recvPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VSCMaturedPacket): Result = {
+        if (not(isCurrentlyConsumer(sender, currentState))) {
+            Err("Sender is not currently a consumer - must have 'running' status!")
+        } else {
+            val currentReceivedMaturations = currentState.providerState.receivedMaturations
+            val newReceivedMaturations = currentReceivedMaturations.add(packet)
+            val newProviderState = currentState.providerState.with(
+                "receivedMaturations", newReceivedMaturations
+            )
+            val newState = currentState.with(
+                "providerState", newProviderState
+            )
+            Ok(newState)
+        }
+    }
+
+    // removes the oldest outstanding packet from the consumer. on-chain, this would happen when the packet is acknowledged.
+    // only the oldest packet can be removed, since we model ordered channels.
+    pure def removeOutstandingPacketFromConsumer(currentState: ProtocolState, sender: Chain): Result = {
+        val currentOutstandingPackets = currentState.consumerStates.get(sender).outstandingPacketsToProvider
+        val newOutstandingPackets = currentOutstandingPackets.tail()
+        val newConsumerState = currentState.consumerState.get(sender).with(
+            "outstandingPacketsToProvider", newOutstandingPackets
+        )
+        val newConsumerStates = currentState.consumerStates.set(sender, newConsumerState)
+        val newState = currentState.with(
+            "consumerStates", newConsumerStates
+        )
+        Ok(newState)
+        // Err("Not implemented")
+    }
 
     pure def getUpdatedValidatorSet(oldValidatorSet: ValidatorSet, validator: Node, newVotingPower: int): ValidatorSet =
         if (newVotingPower > 0) 
         oldValidatorSet.put(validator, newVotingPower)
         else
         oldValidatorSet.mapRemove(validator)
-    
-    // the power of a validator on the provider chain is changed to the given amount. We do not care how this happens,
-    // e.g. via undelegations, or delegations, ...
-    pure def votingPowerChange(currentState: ProtocolState, validator: Node, amount: int): Result =
-            // adjust the current validator set on the provider - it is not entered in the voting history yet because that happens only on block end
-            val currentValidatorSet = currentState.providerState.currentValidatorSet
-            // val newValidatorSet = getUpdatedValidatorSet(currentValidatorSet, validator, amount)
-            // val newProviderState = currentState.providerState.with(
-            //     "currentValidatorSet", newValidatorSet
-            // )
-            // val newState = currentState.with(
-            //     "providerState", newProviderState
-            // )
-            Err("not implemented")
+
+    pure def setProviderValidatorSet(currentState: ProtocolState, newValidatorSet: ValidatorSet): ProtocolState = {
+        pure val newChainState = currentState.providerState.chainState.with(
+            "currentValidatorSet", newValidatorSet
+        )
+        currentState.with(
+            "providerState", 
+                currentState.providerState.with(
+                    "chainState", newChainState
+            )
+        )
+    }
+
+    pure def isCurrentlyConsumer(chain: Chain, currentState: ProtocolState): bool = {
+        val status = currentState.providerState.consumerStatus.get(chain)
+        status == RUNNING
+    }
 }
 
 module ccv_tests {
