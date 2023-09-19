@@ -611,8 +611,8 @@ func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRe
 // Proposal will be accepted if a record in the SlashLog exists for a given validator address.
 func (k Keeper) HandleEquivocationProposal(ctx sdk.Context, p *types.EquivocationProposal) error {
 	for _, ev := range p.Equivocations {
-		if !k.GetSlashLog(ctx, types.NewProviderConsAddress(ev.GetConsensusAddress(k.stakingKeeper.ConsensusAddressCodec()))) {
-			return fmt.Errorf("no equivocation record found for validator %s", ev.GetConsensusAddress(k.stakingKeeper.ConsensusAddressCodec()).String())
+		if !k.GetSlashLog(ctx, types.NewProviderConsAddress(ev.GetConsensusAddress(k.ConsensusAddressCodec()))) {
+			return fmt.Errorf("no equivocation record found for validator %s", ev.GetConsensusAddress(k.ConsensusAddressCodec()).String())
 		}
 		k.evidenceKeeper.HandleEquivocationEvidence(ctx, ev)
 	}

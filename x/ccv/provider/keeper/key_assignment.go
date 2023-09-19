@@ -446,7 +446,7 @@ func (k Keeper) AssignConsumerKey(
 			oldConsumerKey = providerKey
 		}
 
-		valBz, err := k.stakingKeeper.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
+		valBz, err := k.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
 		if err != nil {
 			return err
 		}

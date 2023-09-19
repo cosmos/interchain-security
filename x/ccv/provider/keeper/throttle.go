@@ -84,7 +84,7 @@ func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
 		return math.ZeroInt()
 	} else {
 		// Otherwise, return the staking keeper's LastValidatorPower value.
-		valBz, err := k.stakingKeeper.ValidatorAddressCodec().StringToBytes(val.GetOperator())
+		valBz, err := k.ValidatorAddressCodec().StringToBytes(val.GetOperator())
 		if err != nil {
 			panic(fmt.Sprintf("could not decode address: %s", err))
 		}
