@@ -13,7 +13,7 @@ import (
 func TestValidateParams(t *testing.T) {
 	testCases := []struct {
 		name    string
-		params  ccvtypes.Params
+		params  ccvtypes.ConsumerParams
 		expPass bool
 	}{
 		{"default params", ccvtypes.DefaultParams(), true},

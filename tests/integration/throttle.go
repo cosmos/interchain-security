@@ -3,7 +3,7 @@ package integration
 import (
 	"time"
 
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -58,12 +58,16 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		for _, val := range vals {
 			s.Require().False(val.IsJailed())
 		}
+		var (
+			timeoutHeight    = clienttypes.Height{}
+			timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
+		)
 
 		// Send a slash packet from consumer to provider
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
 		tmVal := s.providerChain.Vals.Validators[0]
-		packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
-		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
+		slashPacket := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
 
 		// Assert validator 0 is jailed and has no power
 		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
@@ -81,8 +85,8 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		// Now send a second slash packet from consumer to provider for a different validator.
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
 		tmVal = s.providerChain.Vals.Validators[2]
-		packet = s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 2)
-		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
+		slashPacket = s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
 
 		// Require that slash packet has not been handled, a bounce result would have
 		// been returned, but the IBC helper throws out acks.
@@ -184,13 +188,13 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 		// Send downtime slash packet from consumer to provider
 		tmVal := s.providerChain.Vals.Validators[idx]
 		valsToSlash = append(valsToSlash, *tmVal)
-		packet := s.constructSlashPacketFromConsumer(
+		slashPacket := s.constructSlashPacketFromConsumer(
 			*bundle,
 			*tmVal,
 			stakingtypes.Infraction_INFRACTION_DOWNTIME,
 			1, // all consumers use 1 seq num
 		)
-		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
+		sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
 
 		idx++
 	}
@@ -282,8 +286,8 @@ func (s *CCVTestSuite) TestPacketSpam() {
 	providerKeeper.SetParams(s.providerCtx(), params)
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
 
-	// The packets to be recv in a single block, ordered as they will be recv.
-	packets := []channeltypes.Packet{}
+	// The packets data to be recv in a single block, ordered as they will be recv.
+	var packetsData [][]byte
 
 	firstBundle := s.getFirstBundle()
 
@@ -307,13 +311,19 @@ func (s *CCVTestSuite) TestPacketSpam() {
 			infractionType = stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 		}
 		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
-		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum))
+		slashPacket := s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType)
+		packetsData = append(packetsData, slashPacket.GetBytes())
 	}
 
 	// Recv 500 packets from consumer to provider in same block
-	for _, packet := range packets {
-		consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+	var (
+		timeoutHeight    = clienttypes.Height{}
+		timeoutTimestamp = uint64(firstBundle.GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
+	)
+	for sequence, data := range packetsData {
+		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
+		packet := s.newPacketFromConsumer(data, uint64(sequence), firstBundle.Path, timeoutHeight, timeoutTimestamp)
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
@@ -341,8 +351,8 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 	providerKeeper.SetParams(s.providerCtx(), params)
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
 
-	// The packets to be recv in a single block, ordered as they will be recv.
-	packets := []channeltypes.Packet{}
+	// The packetsData to be recv in a single block, ordered as they will be recv.
+	var packetsData [][]byte
 
 	firstBundle := s.getFirstBundle()
 
@@ -358,13 +368,19 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 		// Increment ibc seq num for each packet (starting at 1)
 		ibcSeqNum++
 		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
-		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, ibcSeqNum))
+		slashPacket := s.constructSlashPacketFromConsumer(firstBundle, *valToJail, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
+		packetsData = append(packetsData, slashPacket.GetBytes())
 	}
 
 	// Recv 500 packets from consumer to provider in same block
-	for _, packet := range packets {
-		consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+	var (
+		timeoutHeight    = clienttypes.Height{}
+		timeoutTimestamp = uint64(firstBundle.GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
+	)
+	for sequence, data := range packetsData {
+		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
+		packet := s.newPacketFromConsumer(data, uint64(sequence), firstBundle.Path, timeoutHeight, timeoutTimestamp)
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
@@ -429,15 +445,19 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[3])
 
 	// Send slash packets from consumer to provider for small validators.
+	var (
+		timeoutHeight    = clienttypes.Height{}
+		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
+	)
 	tmval1 := s.providerChain.Vals.Validators[1]
 	tmval2 := s.providerChain.Vals.Validators[2]
 	tmval3 := s.providerChain.Vals.Validators[3]
-	packet1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
-	packet2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME, 2)
-	packet3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Infraction_INFRACTION_DOWNTIME, 3)
-	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet1)
-	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet2)
-	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet3)
+	slashPacket1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+	slashPacket2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+	slashPacket3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket1.GetBytes())
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket2.GetBytes())
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket3.GetBytes())
 
 	// Default slash meter replenish fraction is 0.05, so all sent packets should be handled immediately.
 	vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
@@ -500,33 +520,34 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
 
 	// The packets to be recv in a single block, ordered as they will be recv.
-	packets := []channeltypes.Packet{}
-
-	// Track and increment ibc seq num for each packet, since these need to be unique.
-	ibcSeqNum := uint64(1)
+	var packetsData [][]byte
 
 	// Instantiate a slash packet for each validator,
 	// these first 4 packets should jail 100% of the total power.
 	for _, val := range s.providerChain.Vals.Validators {
 		s.setDefaultValSigningInfo(*val)
-		packets = append(packets, s.constructSlashPacketFromConsumer(
-			s.getFirstBundle(), *val, stakingtypes.Infraction_INFRACTION_DOWNTIME, ibcSeqNum))
-		ibcSeqNum++
+		packetsData = append(packetsData, s.constructSlashPacketFromConsumer(
+			s.getFirstBundle(), *val, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes())
 	}
 
 	// add 5 more slash packets for each validator, that will be handled in the same block.
 	for _, val := range s.providerChain.Vals.Validators {
 		for i := 0; i < 5; i++ {
-			packets = append(packets, s.constructSlashPacketFromConsumer(
-				s.getFirstBundle(), *val, stakingtypes.Infraction_INFRACTION_DOWNTIME, ibcSeqNum))
-			ibcSeqNum++
+			packetsData = append(packetsData, s.constructSlashPacketFromConsumer(
+				s.getFirstBundle(), *val, stakingtypes.Infraction_INFRACTION_DOWNTIME).GetBytes())
 		}
 	}
 
 	// Recv and queue all slash packets.
-	for _, packet := range packets {
-		consumerPacketData, err := provider.UnmarshalConsumerPacket(packet) // Same func used by provider's OnRecvPacket
+	var (
+		timeoutHeight    = clienttypes.Height{}
+		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
+	)
+	for i, data := range packetsData {
+		ibcSeqNum := uint64(i)
+		consumerPacketData, err := provider.UnmarshalConsumerPacketData(data) // Same func used by provider's OnRecvPacket
 		s.Require().NoError(err)
+		packet := s.newPacketFromConsumer(data, ibcSeqNum, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 

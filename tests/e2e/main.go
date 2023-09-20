@@ -39,7 +39,7 @@ var (
 	parallel             = flag.Bool("parallel", false, "run all tests in parallel")
 	localSdkPath         = flag.String("local-sdk-path", "",
 		"path of a local sdk version to build and reference in integration tests")
-	useCometmock = flag.Bool("use-cometmock", false, "use cometmock instead of CometBFT")
+	useCometmock = flag.Bool("use-cometmock", false, "use cometmock instead of CometBFT. see https://github.com/informalsystems/CometMock")
 	useGorelayer = flag.Bool("use-gorelayer", false, "use go relayer instead of Hermes")
 )
 
@@ -57,10 +57,16 @@ var (
 that involve starting or stopping nodes for the same chain outside of the chain setup or teardown.
 This is suited for CometMock+Gorelayer testing`,
 		},
+		"light-client-attack": {
+			testRun: DefaultTestRun(), steps: lightClientAttackSteps,
+			description: `This is like the short happy path, but will slash validators for LightClientAttackEvidence instead of DuplicateVoteEvidence.
+This is suited for CometMock+Gorelayer testing, but currently does not work with CometBFT,
+since causing light client attacks is not implemented.`,
+		},
 		"happy-path":       {testRun: DefaultTestRun(), steps: happyPathSteps, description: "happy path tests"},
 		"changeover":       {testRun: ChangeoverTestRun(), steps: changeoverSteps, description: "changeover tests"},
-		"democracy-reward": {testRun: DemocracyTestRun(true), steps: democracySteps, description: "democracy tests allowing rewards"},
-		"democracy":        {testRun: DemocracyTestRun(false), steps: rewardDenomConsumerSteps, description: "democracy tests"},
+		"democracy-reward": {testRun: DemocracyTestRun(true), steps: democracyRewardsSteps, description: "democracy tests allowing rewards"},
+		"democracy":        {testRun: DemocracyTestRun(false), steps: democracySteps, description: "democracy tests"},
 		"slash-throttle":   {testRun: SlashThrottleTestRun(), steps: slashThrottleSteps, description: "slash throttle tests"},
 		"multiconsumer":    {testRun: MultiConsumerTestRun(), steps: multipleConsumers, description: "multi consumer tests"},
 	}
@@ -183,7 +189,7 @@ type testRunWithSteps struct {
 }
 
 func (tr *TestRun) runStep(step Step, verbose bool) {
-	switch action := step.action.(type) {
+	switch action := step.Action.(type) {
 	case StartChainAction:
 		tr.startChain(action, verbose)
 	case StartSovereignChainAction:
@@ -238,6 +244,12 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.unjailValidator(action, verbose)
 	case doublesignSlashAction:
 		tr.invokeDoublesignSlash(action, verbose)
+	case lightClientAmnesiaAttackAction:
+		tr.lightClientAmnesiaAttack(action, verbose)
+	case lightClientEquivocationAttackAction:
+		tr.lightClientEquivocationAttack(action, verbose)
+	case lightClientLunaticAttackAction:
+		tr.lightClientLunaticAttack(action, verbose)
 	case registerRepresentativeAction:
 		tr.registerRepresentative(action, verbose)
 	case assignConsumerPubKeyAction:
@@ -248,19 +260,19 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.waitForTime(action, verbose)
 	case startRelayerAction:
 		tr.startRelayer(action, verbose)
-	case registerConsumerRewardDenomAction:
-		tr.registerConsumerRewardDenom(action, verbose)
+	case submitChangeRewardDenomsProposalAction:
+		tr.submitChangeRewardDenomsProposal(action, verbose)
 	default:
 		log.Fatalf("unknown action in testRun %s: %#v", tr.name, action)
 	}
 
-	modelState := step.state
-	actualState := tr.getState(step.state)
+	modelState := step.State
+	actualState := tr.getState(step.State)
 
 	// Check state
 	if !reflect.DeepEqual(actualState, modelState) {
 		fmt.Printf("=============== %s FAILED ===============\n", tr.name)
-		fmt.Println("FAILED action", reflect.TypeOf(step.action).Name())
+		fmt.Println("FAILED action", reflect.TypeOf(step.Action).Name())
 		pretty.Print("actual state", actualState)
 		pretty.Print("model state", modelState)
 		log.Fatal(`actual state (-) not equal to model state (+): ` + pretty.Compare(actualState, modelState))
@@ -275,7 +287,7 @@ func (tr *TestRun) executeSteps(steps []Step) {
 	for i, step := range steps {
 		// print something the show the test is alive
 		fmt.Printf("running %s: step %d == %s \n",
-			tr.name, i+1, reflect.TypeOf(step.action).Name())
+			tr.name, i+1, reflect.TypeOf(step.Action).Name())
 		tr.runStep(step, *verbose)
 	}
 
@@ -305,8 +317,8 @@ func (tr *TestRun) startDocker() {
 	}
 	scriptStr := fmt.Sprintf(
 		"tests/e2e/testnet-scripts/start-docker.sh %s %s %s %s %s",
-		tr.containerConfig.containerName,
-		tr.containerConfig.instanceName,
+		tr.containerConfig.ContainerName,
+		tr.containerConfig.InstanceName,
 		localSdk,
 		useGaia,
 		gaiaTag,
@@ -349,7 +361,7 @@ func (tr *TestRun) startDocker() {
 func (tr *TestRun) teardownDocker() {
 	fmt.Printf("===============  tearing down %s testRun ===============\n", tr.name)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "kill", tr.containerConfig.instanceName)
+	cmd := exec.Command("docker", "kill", tr.containerConfig.InstanceName)
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {

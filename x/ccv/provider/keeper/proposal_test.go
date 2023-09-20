@@ -885,7 +885,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		]
 	}`
 
-	var expectedGenesis ccvtypes.GenesisState
+	var expectedGenesis ccvtypes.ConsumerGenesisState
 	err = json.Unmarshal([]byte(jsonString), &expectedGenesis) // ignores tabs, newlines and spaces
 	require.NoError(t, err)
 

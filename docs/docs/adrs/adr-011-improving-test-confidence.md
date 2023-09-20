@@ -1,6 +1,6 @@
 ---
 sidebar_position: 12
-title: ADR Template
+title: Improving testing and increasing confidence
 ---
 # ADR 11: Improving testing and increasing confidence
 

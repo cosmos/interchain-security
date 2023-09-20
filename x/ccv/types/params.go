@@ -62,7 +62,7 @@ var (
 
 // ParamKeyTable type declaration for parameters
 func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
+	return paramtypes.NewKeyTable().RegisterParamSet(&ConsumerParams{})
 }
 
 // NewParams creates new consumer parameters with provided arguments
@@ -91,7 +91,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 }
 
 // DefaultParams is the default params for the consumer module
-func DefaultParams() Params {
+func DefaultParams() ConsumerParams {
 	var rewardDenoms []string
 	var provideRewardDenoms []string
 	return NewParams(
@@ -112,7 +112,7 @@ func DefaultParams() Params {
 }
 
 // Validate all ccv-consumer module parameters
-func (p Params) Validate() error {
+func (p ConsumerParams) Validate() error {
 	if err := ValidateBool(p.Enabled); err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (p Params) Validate() error {
 }
 
 // ParamSetPairs implements params.ParamSet
-func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
+func (p *ConsumerParams) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, ValidateBool),
 		paramtypes.NewParamSetPair(KeyBlocksPerDistributionTransmission,

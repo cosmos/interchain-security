@@ -4,7 +4,6 @@ import (
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -71,8 +70,7 @@ func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
 	)
 
 	// send first packet
-	packet := channeltypes.NewPacket(pd.GetBytes(), 1, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, ccv.ConsumerPortID, suite.path.EndpointA.ChannelID,
-		clienttypes.NewHeight(1, 0), 0)
+	packet := suite.newPacketFromProvider(pd.GetBytes(), 1, suite.path, clienttypes.NewHeight(1, 0), 0)
 	ack := consumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
 	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
 	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")

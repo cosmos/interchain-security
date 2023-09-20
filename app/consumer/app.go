@@ -16,6 +16,8 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 	tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	ibctestingtypes "github.com/cosmos/ibc-go/v7/testing/types"
 	"github.com/spf13/cast"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
@@ -86,8 +88,6 @@ import (
 	tmos "github.com/cometbft/cometbft/libs/os"
 
 	appparams "github.com/cosmos/interchain-security/v3/app/params"
-	ibctestingcore "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
 	ibcconsumer "github.com/cosmos/interchain-security/v3/x/ccv/consumer"
 	ibcconsumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
@@ -732,7 +732,7 @@ func (app *App) GetBaseApp() *baseapp.BaseApp {
 }
 
 // GetStakingKeeper implements the TestingApp interface.
-func (app *App) GetStakingKeeper() ibctestingcore.StakingKeeper {
+func (app *App) GetStakingKeeper() ibctestingtypes.StakingKeeper {
 	return app.ConsumerKeeper
 }
 
