@@ -101,6 +101,7 @@ mockgen_cmd=go run github.com/golang/mock/mockgen
 mocks:
 	$(mockgen_cmd) -package=keeper -destination=testutil/keeper/mocks.go -source=x/ccv/types/expected_keepers.go
 
+
 BUILDDIR ?= $(CURDIR)/build
 BUILD_TARGETS := build
 
