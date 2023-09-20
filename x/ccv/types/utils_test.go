@@ -3,18 +3,18 @@ package types_test
 import (
 	"testing"
 
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	ibcsimapp "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 func TestAccumulateChanges(t *testing.T) {
-	testKeys := ibcsimapp.CreateTestPubKeys(2)
+	_, testKeys, _ := ibctesting.GenerateKeys(t, 2)
 
 	tmPubKey, _ := cryptocodec.ToTmProtoPublicKey(testKeys[0])
 	tmPubKey2, _ := cryptocodec.ToTmProtoPublicKey(testKeys[1])
@@ -84,7 +84,7 @@ func TestAccumulateChanges(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			changes := types.AccumulateChanges(tc.changes1, tc.changes2)
-			require.Equal(t, tc.expected, changes)
+			require.ElementsMatch(t, tc.expected, changes)
 		})
 	}
 }

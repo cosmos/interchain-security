@@ -64,7 +64,7 @@ message ConsumerState {
   // InitalHeight defines the initial block height for the consumer chain
   uint64 initial_height = 4;
   // ConsumerGenesis defines the initial consumer chain genesis states
-  interchain_security.ccv.v1.GenesisState consumer_genesis = 5
+  interchain_security.ccv.v1.ConsumerGenesisState consumer_genesis = 5
       [ (gogoproto.nullable) = false ];
   // PendingValsetChanges defines the pending validator set changes for the
   // consumer chain

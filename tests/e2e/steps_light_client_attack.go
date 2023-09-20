@@ -1,16 +1,16 @@
 package main
 
 // Steps that make carol double sign on the provider, and bob double sign on a single consumer
-func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
+func stepsLightClientAttackOnProviderAndConsumer(consumerName string) []Step {
 	return []Step{
 		{
-			// provider double sign
-			Action: doublesignSlashAction{
+			// Provider double sign
+			Action: lightClientEquivocationAttackAction{
 				Chain:     ChainID("provi"),
 				Validator: ValidatorID("carol"),
 			},
 			State: State{
-				// slash on provider
+				// Slash on provider
 				ChainID("provi"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 509,
@@ -28,7 +28,7 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 			},
 		},
 		{
-			// relay power change to consumerName
+			// Relay power change to consumerName
 			Action: relayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),
@@ -53,11 +53,11 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 			},
 		},
 		{
-			// consumer double sign
-			// provider will only log the double sign slash
+			// Consumer double sign
+			// Provider will only log the double sign slash
 			// stepsSubmitEquivocationProposal will cause the double sign slash to be executed
-			Action: doublesignSlashAction{
-				Chain:     ChainID("consu"),
+			Action: lightClientEquivocationAttackAction{
+				Chain:     ChainID(consumerName),
 				Validator: ValidatorID("bob"),
 			},
 			State: State{
@@ -102,7 +102,7 @@ func stepsDoubleSignOnProviderAndConsumer(consumerName string) []Step {
 			},
 		},
 		{
-			// consumer learns about the double sign
+			// Consumer learns about the double sign
 			Action: relayPacketsAction{
 				ChainA:  ChainID("provi"),
 				ChainB:  ChainID(consumerName),

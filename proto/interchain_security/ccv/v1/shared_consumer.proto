@@ -17,13 +17,12 @@ import "google/protobuf/timestamp.proto";
 // but not sent over the wire. These schemas could change, only with careful consideration of effects!
 //
 
-// Params defines the parameters for CCV consumer module.
+// ConsumerParams defines the parameters for CCV consumer module.
 // 
 // Note this type is referenced in both the consumer and provider CCV modules,
 // and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis. 
 //
-// TODO: Rename to ConsumerParams. See https://github.com/cosmos/interchain-security/issues/1206
-message Params {
+message ConsumerParams {
     // TODO: Remove enabled flag and find a better way to setup integration tests
     // See: https://github.com/cosmos/interchain-security/issues/339
     bool enabled = 1;
@@ -83,19 +82,17 @@ message Params {
         [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 }
 
-// GenesisState defines the CCV consumer chain genesis state.
+// ConsumerGenesisState defines the CCV consumer chain genesis state.
 // 
 // Note this type is referenced in both the consumer and provider CCV modules,
 // and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis.
-// 
-// TODO: Rename to ConsumerGenesisState. See https://github.com/cosmos/interchain-security/issues/1206
-message GenesisState {
-    Params params = 1 [ (gogoproto.nullable) = false ];
+message ConsumerGenesisState {
+    ConsumerParams params = 1 [ (gogoproto.nullable) = false ];
     string provider_client_id = 2; // empty for a new chain, filled in on restart.
     string provider_channel_id =
         3; // empty for a new chain, filled in on restart.
     bool new_chain =
-        4; // true for new chain GenesisState, false for chain restart.
+        4; // true for new chain, false for chain restart.
     // ProviderClientState filled in on new chain, nil on restart.
     ibc.lightclients.tendermint.v1.ClientState provider_client_state = 5;
     // ProviderConsensusState filled in on new chain, nil on restart.
