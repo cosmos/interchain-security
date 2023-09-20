@@ -93,6 +93,16 @@ func GetActionGen() *rapid.Generator[any] {
 	)
 }
 
+func CreateSubmitChangeRewardDenomsProposalActionGen() *rapid.Generator[submitChangeRewardDenomsProposalAction] {
+	return rapid.Custom(func(t *rapid.T) submitChangeRewardDenomsProposalAction {
+		return submitChangeRewardDenomsProposalAction{
+			From:    GetValidatorIDGen().Draw(t, "From"),
+			Deposit: rapid.Uint().Draw(t, "Deposit"),
+			Denom:   rapid.String().Draw(t, "Denom"),
+		}
+	})
+}
+
 func CreateLightClientEquivocationAttackActionGen() *rapid.Generator[lightClientEquivocationAttackAction] {
 	return rapid.Custom(func(t *rapid.T) lightClientEquivocationAttackAction {
 		return lightClientEquivocationAttackAction{
