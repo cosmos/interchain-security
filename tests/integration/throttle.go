@@ -13,7 +13,6 @@ import (
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -167,7 +166,7 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 
 	var (
 		timeoutHeight    = clienttypes.Height{}
-		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
+		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
 	)
 
 	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
