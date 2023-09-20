@@ -162,3 +162,4 @@ light client or double signing attacks.
 * [ICS misbehaviour handling PR](https://github.com/cosmos/interchain-security/pull/826)
 * [Consumer double voting handler PR](https://github.com/cosmos/interchain-security/pull/1232)
 * [Architectural diagrams](https://docs.google.com/document/d/1fe1uSJl1ZIYWXoME3Yf4Aodvz7V597Ric875JH-rigM/edit#heading=h.rv4t8i6d6jfn)
+* [ADR on equivocation slashing](https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/adr-013-equivocation-slashing.md)
