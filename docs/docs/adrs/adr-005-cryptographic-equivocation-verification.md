@@ -20,7 +20,7 @@ Every proposal needs to go through a (two weeks) voting period before it can be 
 Given a three-week unbonding period, this means that an equivocation proposal needs to be submitted within one week since the infraction occurred.
 
 This ADR proposes a system to slash validators automatically for equivocation, immediately upon the provider chain's receipt of the evidence. Another thing to note is that we intend to introduce this system in stages, since even the partial ability to slash and/or tombstone is a strict improvement in security.
-The feature will be implemented in two parts, each with its dedicated endpoint. One endpoint will handle light client attacks, while the other will handle double signing attacks.
+The feature is implemented in two parts, each with its dedicated endpoint. One endpoint handles light client attacks, while the other handles double signing attacks.
 
 ### Light Client Attack
 
@@ -77,10 +77,11 @@ After having successfully verified a misbehaviour, the endpoint will execute the
 
 ### Double Signing Attack
 
-A double signing attack, also known as an equivocation,
-occurs when a validator sends two different votes for a block in the same round of a consensus instance. 
-The CometBFT consensus operates with multiple rounds of voting at each block height 
-to determine the next block, and voting twice in the same round is strictly prohibited.
+A double signing attack, also known as equivocation, 
+occurs when a validator votes for two different blocks in the same round of the CometBFT consensus. 
+This consensus mechanism operates with multiple voting rounds at each block height, 
+and it strictly prohibits sending two votes of the same type during a round 
+(see [CometBFT State Machine Overview](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/consensus.md#state-machine-overview)).
 
 When a node observes two votes from the same peer, it will use these two votes to create 
 a [`DuplicateVoteEvidence`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/types/evidence.go#L35)
@@ -88,7 +89,7 @@ evidence and gossip it to the other nodes in the network
 (see [CometBFT equivocation detection](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#detection)). 
 Each node will then verify the evidence according to the CometBFT rules that define a valid double signing infraction, and based on this verification, they will decide whether to add the evidence to a block. 
 During the evidence verification process, the signatures of the conflicting votes must be verified successfully. 
-Note that this is achieved using the public key of the misbehaving validator, along with the `ChainID` of the chain where the infraction occurred (see [CometBFT equivocation verification](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#verification)).
+Note that this is achieved using the public key of the misbehaving validator, along with the chain ID of the chain where the infraction occurred (see [CometBFT equivocation verification](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#verification)).
 
 Once a double signing evidence is committed to a block, the consensus layer will report the equivocation to the evidence module of the Cosmos SDK application layer. 
 The application will, in turn, punish the malicious validator through jailing, tombstoning and slashing 
