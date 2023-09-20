@@ -256,7 +256,7 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.assignConsumerPubKey(action, verbose)
 	case slashMeterReplenishmentAction:
 		tr.waitForSlashMeterReplenishment(action, verbose)
-	case WaitTimeAction:
+	case waitTimeAction:
 		tr.waitForTime(action, verbose)
 	case startRelayerAction:
 		tr.startRelayer(action, verbose)

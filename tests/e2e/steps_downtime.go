@@ -53,12 +53,12 @@ func stepsDowntime(consumerName string) []Step {
 						ValidatorID("carol"): 501,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
 						// Bob's stake may or may not be slashed at this point depending on comet vs cometmock
 						// See https://github.com/cosmos/interchain-security/issues/1304
-						validatorID("carol"): 501,
+						ValidatorID("carol"): 501,
 					},
 				},
 			},
@@ -278,13 +278,13 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				Chain:     ChainID(consumerName),
 				Validator: ValidatorID("bob"),
 			},
-			state: State{
+			State: State{
 				// slash packet queued for bob on consumer, but powers not affected on either chain yet
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
 					},
 				},
 				ChainID(consumerName): ChainState{
@@ -332,19 +332,19 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				Chain:     ChainID(consumerName),
 				Validator: ValidatorID("carol"),
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   0,
-						validatorID("carol"): 500,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   500, // VSC packet jailing bob is not yet relayed to consumer
-						validatorID("carol"): 500,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500, // VSC packet jailing bob is not yet relayed to consumer
+						ValidatorID("carol"): 500,
 					},
 					ConsumerPendingPacketQueueSize: uintPtr(1), // carol's downtime slash packet is queued
 				},
@@ -358,39 +358,39 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				Port:    "provider",
 				Channel: 0,
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   0,
-						validatorID("carol"): 500, // slash packet for carol recv by provider, carol not slashed due to throttling
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 500, // slash packet for carol recv by provider, carol not slashed due to throttling
 					},
 				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   0, // VSC packet applying bob jailing is also relayed and recv by consumer
-						validatorID("carol"): 500,
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0, // VSC packet applying bob jailing is also relayed and recv by consumer
+						ValidatorID("carol"): 500,
 					},
 					ConsumerPendingPacketQueueSize: uintPtr(1), // slash packet bounced ack keeps carol's downtime slash packet queued
 				},
 			},
 		},
 		{
-			action: slashMeterReplenishmentAction{
-				targetValue: 0, // We just want slash meter to be non-negative
+			Action: slashMeterReplenishmentAction{
+				TargetValue: 0, // We just want slash meter to be non-negative
 
 				// Slash meter replenish fraction is set to 10%, replenish period is 20 seconds, see config.go
 				// Meter is initially at 10%, decremented to -23% from bob being jailed. It'll then take three replenishments
 				// for meter to become positive again. 3*20 = 60 seconds + buffer = 100 seconds
-				timeout: 100 * time.Second,
+				Timeout: 100 * time.Second,
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   0,
-						validatorID("carol"): 500, // Carol still not slashed, packet must be retried
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 500, // Carol still not slashed, packet must be retried
 					},
 				},
 				ChainID(consumerName): ChainState{
@@ -408,19 +408,19 @@ func stepsThrottledDowntime(consumerName string) []Step {
 		// Retry delay period is set to 30 seconds, see config.go,
 		// wait this amount of time to elapse the period.
 		{
-			action: WaitTimeAction{
-				consumer: chainID(consumerName),
-				waitTime: 30 * time.Second,
+			Action: waitTimeAction{
+				Consumer: ChainID(consumerName),
+				WaitTime: 30 * time.Second,
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   0,
-						validatorID("carol"): 500,
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 500,
 					},
 				},
-				chainID(consumerName): ChainState{
+				ChainID(consumerName): ChainState{
 					ConsumerPendingPacketQueueSize: uintPtr(1), // packet still queued
 				},
 			},
@@ -433,15 +433,15 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				Port:    "provider",
 				Channel: 0,
 			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511,
-						validatorID("bob"):   0,
-						validatorID("carol"): 0, // jailed!
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 0, // jailed!
 					},
 				},
-				chainID(consumerName): ChainState{
+				ChainID(consumerName): ChainState{
 					ConsumerPendingPacketQueueSize: uintPtr(0), // relayed slash packet handled ack clears consumer queue
 				},
 			},

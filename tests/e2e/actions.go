@@ -2047,16 +2047,16 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 
 // slashMeterReplenishmentAction polls the slash meter on provider until value is achieved
 type slashMeterReplenishmentAction struct {
-	targetValue int64
+	TargetValue int64
 	// panic if timeout is exceeded
-	timeout time.Duration
+	Timeout time.Duration
 }
 
 func (tr TestRun) waitForSlashMeterReplenishment(
 	action slashMeterReplenishmentAction,
 	verbose bool,
 ) {
-	timeout := time.Now().Add(action.timeout)
+	timeout := time.Now().Add(action.Timeout)
 	initialSlashMeter := tr.getSlashMeter()
 
 	if initialSlashMeter >= 0 {
@@ -2070,28 +2070,28 @@ func (tr TestRun) waitForSlashMeterReplenishment(
 		}
 
 		// check if meter has reached target value
-		if slashMeter >= action.targetValue {
+		if slashMeter >= action.TargetValue {
 			break
 		}
 
 		if time.Now().After(timeout) {
-			panic(fmt.Sprintf("\n\nwaitForSlashMeterReplenishment has timed out after: %s\n\n", action.timeout))
+			panic(fmt.Sprintf("\n\nwaitForSlashMeterReplenishment has timed out after: %s\n\n", action.Timeout))
 		}
 
 		tr.WaitTime(5 * time.Second)
 	}
 }
 
-type WaitTimeAction struct {
-	consumer chainID
-	waitTime time.Duration
+type waitTimeAction struct {
+	Consumer ChainID
+	WaitTime time.Duration
 }
 
 func (tr TestRun) waitForTime(
-	action WaitTimeAction,
+	action waitTimeAction,
 	verbose bool,
 ) {
-	tr.WaitTime(action.waitTime)
+	tr.WaitTime(action.WaitTime)
 }
 
 // GetPathNameForGorelayer returns the name of the path between two given chains used by Gorelayer.

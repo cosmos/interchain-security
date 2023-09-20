@@ -23,9 +23,9 @@ type ChainState struct {
 	RepresentativePowers           *map[ValidatorID]uint
 	Params                         *[]Param
 	Rewards                        *Rewards
-	ConsumerChains                 *map[chainID]bool
-	AssignedKeys                   *map[validatorID]string
-	ProviderKeys                   *map[validatorID]string // validatorID: validator provider key
+	ConsumerChains                 *map[ChainID]bool
+	AssignedKeys                   *map[ValidatorID]string
+	ProviderKeys                   *map[ValidatorID]string // validatorID: validator provider key
 	ConsumerPendingPacketQueueSize *uint                   // Only relevant to consumer chains
 	RegisteredConsumerRewardDenoms *[]string
 }
@@ -661,7 +661,7 @@ func (tr TestRun) getProviderAddressFromConsumer(consumerChain ChainID, validato
 func (tr TestRun) getSlashMeter() int64 {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
-		tr.containerConfig.instanceName, tr.chainConfigs[chainID("provi")].binaryName,
+		tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
 
 		"query", "provider", "throttle-state",
 		`--node`, tr.getQueryNode(ChainID("provi")),
@@ -698,9 +698,9 @@ func (tr TestRun) getRegisteredConsumerRewardDenoms(chain ChainID) []string {
 	return rewardDenoms
 }
 
-func (tr TestRun) getPendingPacketQueueSize(chain chainID) uint {
+func (tr TestRun) getPendingPacketQueueSize(chain ChainID) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 
 		"query", "ccvconsumer", "throttle-state",
 		`--node`, tr.getQueryNode(chain),
@@ -719,7 +719,7 @@ func (tr TestRun) getPendingPacketQueueSize(chain chainID) uint {
 	return uint(len(packetData))
 }
 
-func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {
+func (tr TestRun) getValidatorNode(chain ChainID, validator ValidatorID) string {
 	// for CometMock, validatorNodes are all the same address as the query node (which is CometMocks address)
 	if tr.useCometmock {
 		return tr.getQueryNode(chain)

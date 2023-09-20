@@ -72,8 +72,8 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	consumerRedistributionFraction string, historicalEntries int64,
 	consumerUnbondingPeriod time.Duration, softOptOutThreshold string,
 	rewardDenoms, providerRewardDenoms []string, retryDelayPeriod time.Duration,
-) Params {
-	return Params{
+) ConsumerParams {
+	return ConsumerParams{
 		Enabled:                           enabled,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
 		DistributionTransmissionChannel:   distributionTransmissionChannel,

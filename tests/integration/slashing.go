@@ -72,8 +72,8 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 		timeoutHeight    = clienttypes.Height{}
 		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 	)
-	slashPacket := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME)
-	sequence, err := s.getFirstBundle().Path.EndpointA.SendPacket(timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
+	slashPacket := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
+	sequence, err := s.getFirstBundle().Path.EndpointA.SendPacket(timeoutHeight, timeoutTimestamp, slashPacket.GetData())
 	s.Require().NoError(err)
 
 	// Set outstanding slashing flag for first consumer, it's important to use the consumer's cons addr here
