@@ -713,7 +713,7 @@ func New(
 				return fromVM, fmt.Errorf("failed to unmarshal genesis state: %w", err)
 			}
 
-			consumerGenesis := ccvtypes.GenesisState{}
+			consumerGenesis := ccvtypes.ConsumerGenesisState{}
 			appCodec.MustUnmarshalJSON(appState[consumertypes.ModuleName], &consumerGenesis)
 
 			consumerGenesis.PreCCV = true

@@ -4,6 +4,7 @@
 
 Add an entry to the unreleased provider section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a provider release.
 
+* (feature!) [#1280](https://github.com/cosmos/interchain-security/pull/1280) provider proposal for changing reward denoms
 * (feature!) [#1244](https://github.com/cosmos/interchain-security/pull/1244) Update the default consumer unbonding period to 2 weeks.
 * (deps) [#1259](https://github.com/cosmos/interchain-security/pull/1259) Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to [v0.47.5](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.5).
 * (deps!) [#1258](https://github.com/cosmos/interchain-security/pull/1258) Bump [ibc-go](https://github.com/cosmos/ibc-go) to [v7.3.0](https://github.com/cosmos/ibc-go/releases/tag/v7.3.0).
@@ -28,6 +29,7 @@ Note:
 
 Changes:
 
+* (feat) [#1295](https://github.com/cosmos/interchain-security/pull/1295) increment consumer consensus version and register consumer packet migration.
 * (fix!) [#1262](https://github.com/cosmos/interchain-security/pull/1262) Remove incorrect address validation on `ProviderFeePoolAddrStr` param.
 * (feature!) [#1244](https://github.com/cosmos/interchain-security/pull/1244) Update the default consumer unbonding period to 2 weeks.
 * (fix!) [#1244](https://github.com/cosmos/interchain-security/pull/1244) Validate token transfer messages before calling `Transfer()`.

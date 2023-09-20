@@ -95,7 +95,7 @@ service Query {
 message QueryConsumerGenesisRequest { string chain_id = 1; }
 
 message QueryConsumerGenesisResponse {
-  interchain_security.ccv.v1.GenesisState genesis_state = 1
+  interchain_security.ccv.v1.ConsumerGenesisState genesis_state = 1
       [ (gogoproto.nullable) = false ];
 }
 
