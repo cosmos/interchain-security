@@ -17,7 +17,7 @@ type JSONParser struct{}
 var GlobalJSONParser = JSONParser{}
 
 func (parser JSONParser) ReadTraceFromFile(path string) ([]Step, error) {
-	// Open the JSON file and read into a bite array
+	// Open the JSON file and read into a byte array
 	jsonData, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
