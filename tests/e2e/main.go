@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/kylelemons/godebug/pretty"
-	"golang.org/x/exp/slices"
 )
 
 // The list of test cases to be executed
@@ -51,15 +50,17 @@ var (
 
 var (
 	selectedTests TestSet
-	testRuns      = map[string]TestRunChoice{
-		"default":          {name: "default", testRun: DefaultTestRun(), description: "default test run"},
-		"changeover":       {name: "changeover", testRun: ChangeoverTestRun(), description: "changeover test run"},
-		"democracy":        {name: "democracy", testRun: DemocracyTestRun(false), description: "democracy test run"},
-		"democracy-reward": {name: "democracy-reward", testRun: DemocracyTestRun(true), description: "democracy test run with rewards"},
-		"slash-throttle":   {name: "slash-throttle", testRun: SlashThrottleTestRun(), description: "slash throttle test run"},
-		"multiconsumer":    {name: "multiconsumer", testRun: MultiConsumerTestRun(), description: "multi consumer test run"},
+
+	// map the test config names to their structs to allow for easy selection of test configs,
+	// and also to programatically set parameters, i.e. see DemocracyTestConfig
+	testConfigs = map[string]TestConfig{
+		"default":          DefaultTestConfig(),
+		"changeover":       ChangeoverTestConfig(),
+		"democracy":        DemocracyTestConfig(false),
+		"democracy-reward": DemocracyTestConfig(true),
+		"slash-throttle":   SlashThrottleTestConfig(),
+		"multiconsumer":    MultiConsumerTestConfig(),
 	}
-	// helper function to get the test run choices by matching test runs
 )
 
 var selectedTestfiles TestSet
@@ -69,53 +70,53 @@ var stepChoices = map[string]StepChoice{
 		name:        "happy-path-short",
 		steps:       shortHappyPathSteps,
 		description: `This is like the happy path, but skips steps that involve starting or stopping nodes for the same chain outside of the chain setup or teardown. This is suited for CometMock+Gorelayer testing`,
-		testRuns:    []string{"default"},
+		testConfig:  DefaultTestConfig(),
 	},
 	"light-client-attack": {
 		name:        "light-client-attack",
 		steps:       lightClientAttackSteps,
 		description: `This is like the short happy path, but will slash validators for LightClientAttackEvidence instead of DuplicateVoteEvidence. This is suited for CometMock+Gorelayer testing, but currently does not work with CometBFT, since causing light client attacks is not implemented`,
-		testRuns:    []string{"default"},
+		testConfig:  DefaultTestConfig(),
 	},
 	"happy-path": {
 		name:        "happy-path",
 		steps:       happyPathSteps,
 		description: "happy path tests",
-		testRuns:    []string{"default"},
+		testConfig:  DefaultTestConfig(),
 	},
 	"changeover": {
 		name:        "changeover",
 		steps:       changeoverSteps,
 		description: "changeover tests",
-		testRuns:    []string{"changeover"},
+		testConfig:  ChangeoverTestConfig(),
 	},
 	"democracy-reward": {
 		name:        "democracy-reward",
 		steps:       democracyRewardsSteps,
 		description: "democracy tests allowing rewards",
-		testRuns:    []string{"democracy-reward"},
+		testConfig:  DemocracyTestConfig(true),
 	},
 	"democracy": {
 		name:        "democracy",
 		steps:       democracySteps,
 		description: "democracy tests",
-		testRuns:    []string{"democracy"},
+		testConfig:  DemocracyTestConfig(false),
 	},
 	"slash-throttle": {
 		name:        "slash-throttle",
 		steps:       slashThrottleSteps,
 		description: "slash throttle tests",
-		testRuns:    []string{"slash-throttle"},
+		testConfig:  SlashThrottleTestConfig(),
 	},
 	"multiconsumer": {
 		name:        "multiconsumer",
 		steps:       multipleConsumers,
 		description: "multi consumer tests",
-		testRuns:    []string{"multiconsumer"},
+		testConfig:  MultiConsumerTestConfig(),
 	},
 }
 
-func executeTests(tests []testRunWithSteps) (err error) {
+func executeTests(tests []testStepsWithConfig) (err error) {
 	if parallel != nil && *parallel {
 		fmt.Println("=============== running all tests in parallel ===============")
 	}
@@ -124,7 +125,7 @@ func executeTests(tests []testRunWithSteps) (err error) {
 	for _, testCase := range tests {
 		if parallel != nil && *parallel {
 			wg.Add(1)
-			go func(run testRunWithSteps) {
+			go func(run testStepsWithConfig) {
 				defer wg.Done()
 				run.testRun.Run(run.steps, *localSdkPath, *useGaia, *gaiaTag)
 			}(testCase)
@@ -147,14 +148,14 @@ func getTestCaseUsageString() string {
 	builder.WriteString("This flag is used to reference existing, defined test cases to be run.")
 	builder.WriteString("Test case selection:\nSelection of test steps to be executed:\n")
 	for _, stepChoice := range stepChoices {
-		builder.WriteString(fmt.Sprintf("- %s : %s. Compatible with test runners: %s\n", stepChoice.name, stepChoice.description, strings.Join(stepChoice.testRuns, ",")))
+		builder.WriteString(fmt.Sprintf("- %s : %s.\n", stepChoice.name, stepChoice.description))
 	}
 	builder.WriteString("\n")
 
 	// Test runner selection
 	builder.WriteString("Test runner selection:\nSelection of test runners to be executed:\n")
-	for _, testRunChoice := range testRuns {
-		builder.WriteString(fmt.Sprintf("- %s : %s\n", testRunChoice.name, testRunChoice.description))
+	for _, testConfig := range testConfigs {
+		builder.WriteString(fmt.Sprintf("- %s\n", testConfig.name))
 	}
 	builder.WriteString("\n")
 
@@ -172,8 +173,8 @@ func getTestFileUsageString() string {
 
 	// Test runner selection
 	builder.WriteString("Test runner selection:\nSelection of test runners to be executed:\n")
-	for _, testRunChoice := range testRuns {
-		builder.WriteString(fmt.Sprintf("- %s : %s\n", testRunChoice.name, testRunChoice.description))
+	for _, testConfig := range testConfigs {
+		builder.WriteString(fmt.Sprintf("- %s\n", testConfig.name))
 	}
 	builder.WriteString("\n")
 
@@ -201,52 +202,36 @@ func parseArguments() (err error) {
 	return nil
 }
 
-type testRunWithSteps struct {
-	testRun TestRun
+type testStepsWithConfig struct {
+	testRun TestConfig
 	steps   []Step
 }
 
-func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet) (tests []testRunWithSteps) {
+func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet) (tests []testStepsWithConfig) {
 	// Run default tests if no test cases were selected
 	if len(selectedPredefinedTests) == 0 && len(selectedTestFiles) == 0 {
 		selectedPredefinedTests = TestSet{
-			"changeover::changeover", "happy-path::default",
-			"democracy-reward::democracy-reward", "democracy::democracy", "slash-throttle::slash-throttle",
+			"changeover", "happy-path",
+			"democracy-reward", "democracy", "slash-throttle",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
-			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer::multiconsumer")
+			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")
 		}
 	}
 
-	tests = []testRunWithSteps{}
+	tests = []testStepsWithConfig{}
 	// Get predefined from selection
 	for _, tc := range selectedPredefinedTests {
 		// first part of tc is the steps, second part is the test runner
-		splitTcString := strings.Split(tc, "::")
-		if len(splitTcString) != 2 {
-			log.Fatalf("Test case '%s' is invalid.\nsee usage info:\n%s", tc, getTestCaseUsageString())
-		}
-		stepsName := splitTcString[0]
-		testRunnerName := splitTcString[1]
 
-		if _, exists := stepChoices[stepsName]; !exists {
+		if _, exists := stepChoices[tc]; !exists {
 			log.Fatalf("Step choice '%s' not found.\nsee usage info:\n%s", tc, getTestCaseUsageString())
 		}
 
-		stepChoice := stepChoices[stepsName]
+		stepChoice := stepChoices[tc]
 
-		if _, exists := testRuns[testRunnerName]; !exists {
-			log.Fatalf("Test runner '%s' not found.\nsee usage info:\n%s", testRunnerName, getTestCaseUsageString())
-		}
-
-		testRunChoice := testRuns[testRunnerName]
-
-		if !slices.Contains(stepChoice.testRuns, testRunChoice.name) {
-			log.Fatalf("Step choice '%s' is not compatible with test runner '%s'. compatible test runs: %s", stepsName, testRunnerName, strings.Join(stepChoice.testRuns, ","))
-		}
-
-		tests = append(tests, testRunWithSteps{
-			testRun: testRunChoice.testRun,
+		tests = append(tests, testStepsWithConfig{
+			testRun: stepChoice.testConfig,
 			steps:   stepChoice.steps,
 		},
 		)
@@ -263,19 +248,19 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet) (tests []t
 		testFileName := splitTcString[0]
 		testRunnerName := splitTcString[1]
 
-		if _, exists := testRuns[testRunnerName]; !exists {
+		if _, exists := testConfigs[testRunnerName]; !exists {
 			log.Fatalf("Test runner '%s' not found.\nsee usage info:\n%s", testRunnerName, getTestFileUsageString())
 		}
 
-		testRunChoice := testRuns[testRunnerName]
+		testConfig := testConfigs[testRunnerName]
 
 		testCase, err := GlobalJSONParser.ReadTraceFromFile(testFileName)
 		if err != nil {
 			log.Fatalf("Error reading test file '%s': %s", testFileName, err)
 		}
 
-		tests = append(tests, testRunWithSteps{
-			testRun: testRunChoice.testRun,
+		tests = append(tests, testStepsWithConfig{
+			testRun: testConfig,
 			steps:   testCase,
 		})
 	}
@@ -304,7 +289,7 @@ func main() {
 
 // Run sets up docker container and executes the steps in the test run.
 // Docker containers are torn down after the test run is complete.
-func (tr *TestRun) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag string) {
+func (tr *TestConfig) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag string) {
 	tr.SetDockerConfig(localSdkPath, useGaia, gaiaTag)
 	tr.SetCometMockConfig(*useCometmock)
 	tr.SetRelayerConfig(*useGorelayer)
@@ -319,17 +304,10 @@ type StepChoice struct {
 	name        string
 	steps       []Step
 	description string
-	// contains the names of the test runs that are compatible with this step choice
-	testRuns []string
+	testConfig  TestConfig
 }
 
-type TestRunChoice struct {
-	name        string
-	testRun     TestRun
-	description string
-}
-
-func (tr *TestRun) runStep(step Step, verbose bool) {
+func (tr *TestConfig) runStep(step Step, verbose bool) {
 	switch action := step.Action.(type) {
 	case StartChainAction:
 		tr.startChain(action, verbose)
@@ -419,7 +397,7 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 }
 
 // executeSteps sequentially runs steps.
-func (tr *TestRun) executeSteps(steps []Step) {
+func (tr *TestConfig) executeSteps(steps []Step) {
 	fmt.Printf("=============== started %s tests ===============\n", tr.name)
 
 	start := time.Now()
@@ -433,7 +411,7 @@ func (tr *TestRun) executeSteps(steps []Step) {
 	fmt.Printf("=============== finished %s tests in %v ===============\n", tr.name, time.Since(start))
 }
 
-func (tr *TestRun) startDocker() {
+func (tr *TestConfig) startDocker() {
 	fmt.Printf("=============== building %s testRun ===============\n", tr.name)
 	localSdk := tr.localSdkPath
 	if localSdk == "" {
@@ -497,7 +475,7 @@ func (tr *TestRun) startDocker() {
 
 // remove docker container to reduce resource usage
 // otherwise the chain will keep running in the background
-func (tr *TestRun) teardownDocker() {
+func (tr *TestConfig) teardownDocker() {
 	fmt.Printf("===============  tearing down %s testRun ===============\n", tr.name)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "kill", tr.containerConfig.InstanceName)

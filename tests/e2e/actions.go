@@ -31,7 +31,7 @@ type SendTokensAction struct {
 
 const done = "done!!!!!!!!"
 
-func (tr TestRun) sendTokens(
+func (tr TestConfig) sendTokens(
 	action SendTokensAction,
 	verbose bool,
 ) {
@@ -76,7 +76,7 @@ type StartChainValidator struct {
 	Stake      uint
 }
 
-func (tr *TestRun) startChain(
+func (tr *TestConfig) startChain(
 	action StartChainAction,
 	verbose bool,
 ) {
@@ -193,7 +193,7 @@ type submitTextProposalAction struct {
 	Description string
 }
 
-func (tr TestRun) submitTextProposal(
+func (tr TestConfig) submitTextProposal(
 	action submitTextProposalAction,
 	verbose bool,
 ) {
@@ -230,7 +230,7 @@ type submitConsumerAdditionProposalAction struct {
 	DistributionChannel string
 }
 
-func (tr TestRun) submitConsumerAdditionProposal(
+func (tr TestConfig) submitConsumerAdditionProposal(
 	action submitConsumerAdditionProposalAction,
 	verbose bool,
 ) {
@@ -301,7 +301,7 @@ type submitConsumerRemovalProposalAction struct {
 	StopTimeOffset time.Duration // offset from time.Now()
 }
 
-func (tr TestRun) submitConsumerRemovalProposal(
+func (tr TestConfig) submitConsumerRemovalProposal(
 	action submitConsumerRemovalProposalAction,
 	verbose bool,
 ) {
@@ -377,7 +377,7 @@ type paramChangeJSON struct {
 	Value    interface{} `json:"value"`
 }
 
-func (tr TestRun) submitParamChangeProposal(
+func (tr TestConfig) submitParamChangeProposal(
 	action submitParamChangeLegacyProposalAction,
 	verbose bool,
 ) {
@@ -441,7 +441,7 @@ type submitEquivocationProposalAction struct {
 	From      ValidatorID
 }
 
-func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAction, verbose bool) {
+func (tr TestConfig) submitEquivocationProposal(action submitEquivocationProposalAction, verbose bool) {
 	val := tr.validatorConfigs[action.Validator]
 	providerChain := tr.chainConfigs[ChainID("provi")]
 
@@ -510,7 +510,7 @@ type voteGovProposalAction struct {
 	PropNumber uint
 }
 
-func (tr *TestRun) voteGovProposal(
+func (tr *TestConfig) voteGovProposal(
 	action voteGovProposalAction,
 	verbose bool,
 ) {
@@ -553,7 +553,7 @@ type startConsumerChainAction struct {
 	GenesisChanges string
 }
 
-func (tr *TestRun) startConsumerChain(
+func (tr *TestConfig) startConsumerChain(
 	action startConsumerChainAction,
 	verbose bool,
 ) {
@@ -597,7 +597,7 @@ type ChangeoverChainAction struct {
 	GenesisChanges string
 }
 
-func (tr TestRun) changeoverChain(
+func (tr TestConfig) changeoverChain(
 	action ChangeoverChainAction,
 	verbose bool,
 ) {
@@ -634,7 +634,7 @@ func (tr TestRun) changeoverChain(
 	}, verbose)
 }
 
-func (tr TestRun) startChangeover(
+func (tr TestConfig) startChangeover(
 	action ChangeoverChainAction,
 	verbose bool,
 ) {
@@ -769,7 +769,7 @@ const gorelayerChainConfigTemplate = `
 	}
 }`
 
-func (tr TestRun) addChainToRelayer(
+func (tr TestConfig) addChainToRelayer(
 	action addChainToRelayerAction,
 	verbose bool,
 ) {
@@ -780,7 +780,7 @@ func (tr TestRun) addChainToRelayer(
 	}
 }
 
-func (tr TestRun) addChainToGorelayer(
+func (tr TestConfig) addChainToGorelayer(
 	action addChainToRelayerAction,
 	verbose bool,
 ) {
@@ -818,7 +818,7 @@ func (tr TestRun) addChainToGorelayer(
 	executeCommand(keyRestoreCommand, "restore keys")
 }
 
-func (tr TestRun) addChainToHermes(
+func (tr TestConfig) addChainToHermes(
 	action addChainToRelayerAction,
 	verbose bool,
 ) {
@@ -897,7 +897,7 @@ type addIbcConnectionAction struct {
 	ClientB uint
 }
 
-func (tr TestRun) addIbcConnection(
+func (tr TestConfig) addIbcConnection(
 	action addIbcConnectionAction,
 	verbose bool,
 ) {
@@ -908,7 +908,7 @@ func (tr TestRun) addIbcConnection(
 	}
 }
 
-func (tr TestRun) addIbcConnectionGorelayer(
+func (tr TestConfig) addIbcConnectionGorelayer(
 	action addIbcConnectionAction,
 	verbose bool,
 ) {
@@ -966,7 +966,7 @@ type createIbcClientsAction struct {
 // if clients are not provided hermes will first
 // create new clients and then a new connection
 // otherwise, it would use client provided as CLI argument (-a-client)
-func (tr TestRun) createIbcClientsHermes(
+func (tr TestConfig) createIbcClientsHermes(
 	action createIbcClientsAction,
 	verbose bool,
 ) {
@@ -1003,7 +1003,7 @@ func (tr TestRun) createIbcClientsHermes(
 	}
 }
 
-func (tr TestRun) addIbcConnectionHermes(
+func (tr TestConfig) addIbcConnectionHermes(
 	action addIbcConnectionAction,
 	verbose bool,
 ) {
@@ -1053,7 +1053,7 @@ type addIbcChannelAction struct {
 
 type startRelayerAction struct{}
 
-func (tr TestRun) startRelayer(
+func (tr TestConfig) startRelayer(
 	action startRelayerAction,
 	verbose bool,
 ) {
@@ -1064,7 +1064,7 @@ func (tr TestRun) startRelayer(
 	}
 }
 
-func (tr TestRun) startGorelayer(
+func (tr TestConfig) startGorelayer(
 	action startRelayerAction,
 	verbose bool,
 ) {
@@ -1083,7 +1083,7 @@ func (tr TestRun) startGorelayer(
 	}
 }
 
-func (tr TestRun) startHermes(
+func (tr TestConfig) startHermes(
 	action startRelayerAction,
 	verbose bool,
 ) {
@@ -1102,7 +1102,7 @@ func (tr TestRun) startHermes(
 	}
 }
 
-func (tr TestRun) addIbcChannel(
+func (tr TestConfig) addIbcChannel(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
@@ -1113,7 +1113,7 @@ func (tr TestRun) addIbcChannel(
 	}
 }
 
-func (tr TestRun) addIbcChannelGorelayer(
+func (tr TestConfig) addIbcChannelGorelayer(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
@@ -1131,7 +1131,7 @@ func (tr TestRun) addIbcChannelGorelayer(
 	executeCommand(cmd, "addChannel")
 }
 
-func (tr TestRun) addIbcChannelHermes(
+func (tr TestConfig) addIbcChannelHermes(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
@@ -1194,7 +1194,7 @@ type transferChannelCompleteAction struct {
 	ChannelB    uint
 }
 
-func (tr TestRun) transferChannelComplete(
+func (tr TestConfig) transferChannelComplete(
 	action transferChannelCompleteAction,
 	verbose bool,
 ) {
@@ -1282,7 +1282,7 @@ type relayPacketsAction struct {
 	Channel uint
 }
 
-func (tr TestRun) relayPackets(
+func (tr TestConfig) relayPackets(
 	action relayPacketsAction,
 	verbose bool,
 ) {
@@ -1293,7 +1293,7 @@ func (tr TestRun) relayPackets(
 	}
 }
 
-func (tr TestRun) relayPacketsGorelayer(
+func (tr TestConfig) relayPacketsGorelayer(
 	action relayPacketsAction,
 	verbose bool,
 ) {
@@ -1317,7 +1317,7 @@ func (tr TestRun) relayPacketsGorelayer(
 	tr.waitBlocks(action.ChainB, 1, 30*time.Second)
 }
 
-func (tr TestRun) relayPacketsHermes(
+func (tr TestConfig) relayPacketsHermes(
 	action relayPacketsAction,
 	verbose bool,
 ) {
@@ -1348,7 +1348,7 @@ type relayRewardPacketsToProviderAction struct {
 	Channel       uint
 }
 
-func (tr TestRun) relayRewardPacketsToProvider(
+func (tr TestConfig) relayRewardPacketsToProvider(
 	action relayRewardPacketsToProviderAction,
 	verbose bool,
 ) {
@@ -1369,7 +1369,7 @@ type delegateTokensAction struct {
 	Amount uint
 }
 
-func (tr TestRun) delegateTokens(
+func (tr TestConfig) delegateTokens(
 	action delegateTokensAction,
 	verbose bool,
 ) {
@@ -1413,7 +1413,7 @@ type unbondTokensAction struct {
 	Amount     uint
 }
 
-func (tr TestRun) unbondTokens(
+func (tr TestConfig) unbondTokens(
 	action unbondTokensAction,
 	verbose bool,
 ) {
@@ -1458,7 +1458,7 @@ type cancelUnbondTokensAction struct {
 	Amount    uint
 }
 
-func (tr TestRun) cancelUnbondTokens(
+func (tr TestConfig) cancelUnbondTokens(
 	action cancelUnbondTokensAction,
 	verbose bool,
 ) {
@@ -1527,7 +1527,7 @@ type redelegateTokensAction struct {
 	Amount   uint
 }
 
-func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) {
+func (tr TestConfig) redelegateTokens(action redelegateTokensAction, verbose bool) {
 	srcCfg := tr.validatorConfigs[action.Src]
 	dstCfg := tr.validatorConfigs[action.Dst]
 
@@ -1580,7 +1580,7 @@ type downtimeSlashAction struct {
 // takes a string representation of the private key like
 // `{"address":"DF090A4880B54CD57B2A79E64D9E969BD7514B09","pub_key":{"type":"tendermint/PubKeyEd25519","value":"ujY14AgopV907IYgPAk/5x8c9267S4fQf89nyeCPTes="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TRJgf7lkTjs/sj43pyweEOanyV7H7fhnVivOi0A4yjW6NjXgCCilX3TshiA8CT/nHxz3brtLh9B/z2fJ4I9N6w=="}}`
 // and returns the value of the "address" field
-func (tr TestRun) getValidatorKeyAddressFromString(keystring string) string {
+func (tr TestConfig) getValidatorKeyAddressFromString(keystring string) string {
 	var key struct {
 		Address string `json:"address"`
 	}
@@ -1591,7 +1591,7 @@ func (tr TestRun) getValidatorKeyAddressFromString(keystring string) string {
 	return key.Address
 }
 
-func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) {
+func (tr TestConfig) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) {
 	// Bring validator down
 	tr.setValidatorDowntime(action.Chain, action.Validator, true, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
@@ -1601,7 +1601,7 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 }
 
 // Sets validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
-func (tr TestRun) setValidatorDowntime(chain ChainID, validator ValidatorID, down, verbose bool) {
+func (tr TestConfig) setValidatorDowntime(chain ChainID, validator ValidatorID, down, verbose bool) {
 	var lastArg string
 	if down {
 		lastArg = "down"
@@ -1644,7 +1644,7 @@ func (tr TestRun) setValidatorDowntime(chain ChainID, validator ValidatorID, dow
 	}
 }
 
-func (tr TestRun) GetValidatorPrivateKeyAddress(chain ChainID, validator ValidatorID) string {
+func (tr TestConfig) GetValidatorPrivateKeyAddress(chain ChainID, validator ValidatorID) string {
 	var validatorPrivateKeyAddress string
 	if chain == ChainID("provi") {
 		validatorPrivateKeyAddress = tr.getValidatorKeyAddressFromString(tr.validatorConfigs[validator].PrivValidatorKey)
@@ -1666,7 +1666,7 @@ type unjailValidatorAction struct {
 }
 
 // Sends an unjail transaction to the provider chain
-func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
+func (tr TestConfig) unjailValidator(action unjailValidatorAction, verbose bool) {
 	// wait until downtime_jail_duration has elapsed, to make sure the validator can be unjailed
 	tr.WaitTime(61 * time.Second)
 
@@ -1705,7 +1705,7 @@ type registerRepresentativeAction struct {
 	Stakes          []uint
 }
 
-func (tr TestRun) registerRepresentative(
+func (tr TestConfig) registerRepresentative(
 	action registerRepresentativeAction,
 	verbose bool,
 ) {
@@ -1762,7 +1762,7 @@ type submitChangeRewardDenomsProposalAction struct {
 	From    ValidatorID
 }
 
-func (tr TestRun) submitChangeRewardDenomsProposal(action submitChangeRewardDenomsProposalAction, verbose bool) {
+func (tr TestConfig) submitChangeRewardDenomsProposal(action submitChangeRewardDenomsProposalAction, verbose bool) {
 	providerChain := tr.chainConfigs[ChainID("provi")]
 
 	prop := client.ChangeRewardDenomsProposalJSON{
@@ -1831,7 +1831,7 @@ type doublesignSlashAction struct {
 	Chain     ChainID
 }
 
-func (tr TestRun) invokeDoublesignSlash(
+func (tr TestConfig) invokeDoublesignSlash(
 	action doublesignSlashAction,
 	verbose bool,
 ) {
@@ -1868,7 +1868,7 @@ type lightClientEquivocationAttackAction struct {
 	Chain     ChainID
 }
 
-func (tr TestRun) lightClientEquivocationAttack(
+func (tr TestConfig) lightClientEquivocationAttack(
 	action lightClientEquivocationAttackAction,
 	verbose bool,
 ) {
@@ -1884,7 +1884,7 @@ type lightClientAmnesiaAttackAction struct {
 	Chain     ChainID
 }
 
-func (tr TestRun) lightClientAmnesiaAttack(
+func (tr TestConfig) lightClientAmnesiaAttack(
 	action lightClientAmnesiaAttackAction,
 	verbose bool,
 ) {
@@ -1900,7 +1900,7 @@ type lightClientLunaticAttackAction struct {
 	Chain     ChainID
 }
 
-func (tr TestRun) lightClientLunaticAttack(
+func (tr TestConfig) lightClientLunaticAttack(
 	action lightClientLunaticAttackAction,
 	verbose bool,
 ) {
@@ -1915,7 +1915,7 @@ const (
 	LightClientLunaticAttack      LightClientAttackType = "Lunatic"
 )
 
-func (tr TestRun) lightClientAttack(
+func (tr TestConfig) lightClientAttack(
 	validator ValidatorID,
 	chain ChainID,
 	attackType LightClientAttackType,
@@ -1945,7 +1945,7 @@ type assignConsumerPubKeyAction struct {
 	ExpectedError string
 }
 
-func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbose bool) {
+func (tr TestConfig) assignConsumerPubKey(action assignConsumerPubKeyAction, verbose bool) {
 	valCfg := tr.validatorConfigs[action.Validator]
 
 	// Note: to get error response reported back from this command '--gas auto' needs to be set.
@@ -2054,7 +2054,7 @@ type slashThrottleDequeue struct {
 	Timeout time.Duration
 }
 
-func (tr TestRun) waitForSlashThrottleDequeue(
+func (tr TestConfig) waitForSlashThrottleDequeue(
 	action slashThrottleDequeue,
 	verbose bool,
 ) {
@@ -2094,7 +2094,7 @@ func uintPointer(i uint) *uint {
 // GetPathNameForGorelayer returns the name of the path between two given chains used by Gorelayer.
 // Since paths are bidirectional, we need either chain to be able to be provided as first or second argument
 // and still return the same name, so we sort the chain names alphabetically.
-func (tr TestRun) GetPathNameForGorelayer(chainA, chainB ChainID) string {
+func (tr TestConfig) GetPathNameForGorelayer(chainA, chainB ChainID) string {
 	var pathName string
 	if string(chainA) < string(chainB) {
 		pathName = string(chainA) + "-" + string(chainB)
@@ -2108,10 +2108,10 @@ func (tr TestRun) GetPathNameForGorelayer(chainA, chainB ChainID) string {
 // WaitTime waits for the given duration.
 // To make sure that the new timestamp is visible on-chain, it also waits until at least one block has been
 // produced on each chain after waiting.
-// The CometMock version of this takes a pointer to the TestRun as it needs to manipulate
+// The CometMock version of this takes a pointer to the TestConfig as it needs to manipulate
 // information in the testrun that stores how much each chain has waited, to keep times in sync.
-// Be careful that all functions calling WaitTime should therefore also take a pointer to the TestRun.
-func (tr *TestRun) WaitTime(duration time.Duration) {
+// Be careful that all functions calling WaitTime should therefore also take a pointer to the TestConfig.
+func (tr *TestConfig) WaitTime(duration time.Duration) {
 	if !tr.useCometmock {
 		time.Sleep(duration)
 	} else {
@@ -2126,7 +2126,7 @@ func (tr *TestRun) WaitTime(duration time.Duration) {
 	}
 }
 
-func (tr TestRun) AdvanceTimeForChain(chain ChainID, duration time.Duration) {
+func (tr TestConfig) AdvanceTimeForChain(chain ChainID, duration time.Duration) {
 	// cometmock avoids sleeping, and instead advances time for all chains
 	method := "advance_time"
 	params := fmt.Sprintf(`{"duration_in_seconds": "%d"}`, int(math.Ceil(duration.Seconds())))
