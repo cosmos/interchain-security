@@ -89,7 +89,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	valsetUpdateIdN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// receive the slash packet on the provider chain. RecvPacket() calls the provider endblocker twice
-	packet := s.newPacketFromConsumer(slashPacket.GetBytes(), sequence, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
+	packet := s.newPacketFromConsumer(slashPacket.GetData(), sequence, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
 	err = s.path.EndpointB.RecvPacket(packet)
 	s.Require().NoError(err)
 
@@ -202,8 +202,8 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 		timeoutHeight    = clienttypes.Height{}
 		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 	)
-	slashPacket := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
-	packet := sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket.GetBytes())
+	slashPacket := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, 1)
+	packet := sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket.GetData())
 
 	// Advance a few more blocks to make sure any voting power changes would be reflected
 	s.providerChain.NextBlock()
