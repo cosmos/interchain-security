@@ -84,7 +84,7 @@ and it strictly prohibits sending two votes of the same type during a round
 (see [CometBFT State Machine Overview](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/consensus.md#state-machine-overview)).
 
 When a node observes two votes from the same peer, it will use these two votes to create 
-a [`DuplicateVoteEvidence`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/types/evidence.go#L35)
+a [`DuplicateVoteEvidence`](https://github.com/cometbft/cometbft/blob/v0.34.28/types/evidence.go#L35) 
 evidence and gossip it to the other nodes in the network 
 (see [CometBFT equivocation detection](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#detection)). 
 Each node will then verify the evidence according to the CometBFT rules that define a valid double signing infraction, and based on this verification, they will decide whether to add the evidence to a block. 
