@@ -19,6 +19,7 @@ type State map[chainID]ChainState
 type ChainState struct {
 	ValBalances                    *map[validatorID]uint
 	Proposals                      *map[uint]Proposal
+	ProposedConsumerChains         []string
 	ValPowers                      *map[validatorID]uint
 	RepresentativePowers           *map[validatorID]uint
 	Params                         *[]Param
@@ -130,6 +131,11 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 	if modelState.Proposals != nil {
 		proposals := tr.getProposals(chain, *modelState.Proposals)
 		chainState.Proposals = &proposals
+	}
+
+	if modelState.ProposedConsumerChains != nil {
+		proposedConsumerChains := tr.getProposedConsumerChains(chain)
+		chainState.ProposedConsumerChains = proposedConsumerChains
 	}
 
 	if modelState.ValPowers != nil {
@@ -771,4 +777,26 @@ func (tr TestRun) curlJsonRPCRequest(method, params, address string) {
 
 	verbosity := false
 	executeCommandWithVerbosity(cmd, "curlJsonRPCRequest", verbosity)
+}
+
+
+func (tr TestRun) getProposedConsumerChains(chain chainID) []string {
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+
+		"query", "provider", "list-proposed-consumer-chains",
+		`--node`, tr.getQueryNode(chain),
+		`-o`, `json`,
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	arr := gjson.Get(string(bz), "proposedChains").Array()
+	chains := []string{}
+	for _, c := range arr {
+		cid := c.Get("chainID").String()
+		chains = append(chains, cid)
+	}
+
+	return chains
 }

@@ -22,6 +22,7 @@ func stepStartProviderChain() []Step {
 						validatorID("bob"):   9500000000,
 						validatorID("carol"): 9500000000,
 					},
+					ProposedConsumerChains: []string{},
 				},
 			},
 		},
@@ -54,6 +55,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 							Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
 						},
 					},
+					ProposedConsumerChains: []string{consumerName},
 				},
 			},
 		},
@@ -133,6 +135,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 							Status:        "PROPOSAL_STATUS_PASSED",
 						},
 					},
+					ProposedConsumerChains: []string{},
 					ValBalances: &map[validatorID]uint{
 						validatorID("alice"): 9500000000,
 						validatorID("bob"):   9500000000,
