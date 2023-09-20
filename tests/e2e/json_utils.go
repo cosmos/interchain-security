@@ -204,7 +204,7 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 		if err == nil {
 			return a, nil
 		}
-	case "main.slashThrottleDequeue":
+	case "main.slashThrottleDequeueAction":
 		var a slashThrottleDequeueAction
 		err := json.Unmarshal(rawAction, &a)
 		if err == nil {
@@ -259,7 +259,7 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 			return a, nil
 		}
 	default:
-		return nil, fmt.Errorf("unknown action name: %s", actionTypeString)
+		return nil, fmt.Errorf("unknown action type: %s", actionTypeString)
 	}
 	return nil, err
 }
