@@ -85,10 +85,10 @@ to determine the next block, and voting twice in the same round is strictly proh
 When a node observes two votes from the same peer, it will use these two votes to create 
 a [`DuplicateVoteEvidence`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/types/evidence.go#L35)
 evidence and gossip it to the other nodes in the network 
-(see [CometBFT equivocation detection](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#L25)). 
+(see [CometBFT equivocation detection](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#detection)). 
 Each node will then verify the evidence according to the CometBFT rules that define a valid double signing infraction, and based on this verification, they will decide whether to add the evidence to a block. 
 During the evidence verification process, the signatures of the conflicting votes must be verified successfully. 
-Note that this is achieved using the public key of the misbehaving validator, along with the `ChainID` of the chain where the infraction occurred (see [CometBFT equivocation verification](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#L95)).
+Note that this is achieved using the public key of the misbehaving validator, along with the `ChainID` of the chain where the infraction occurred (see [CometBFT equivocation verification](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/spec/consensus/evidence.md#verification)).
 
 Once a double signing evidence is committed to a block, the consensus layer will report the equivocation to the evidence module of the Cosmos SDK application layer. 
 The application will, in turn, punish the malicious validator through jailing, tombstoning and slashing 
@@ -108,7 +108,7 @@ on a consumer chain to the endpoint of the provider chain. This message will con
 a double signing evidence 
 [`duplicate_vote_evidence`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/tx.proto#L75) 
 and a light client header for the infraction block height, 
-referred to as [`infraction_block_header`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/txproto#L77). 
+referred to as [`infraction_block_header`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/tx.proto#L77). 
 The latter will provide the malicious validator's public key and the chain ID required to verify the signature of the votes contained in the evidence.
  
 Note that double signing evidence will be verified by using the same conditions than in the CometBFT 
