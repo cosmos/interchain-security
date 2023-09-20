@@ -65,7 +65,7 @@ jobs:
         with:
           go-version: "1.20" # The Go version to download (if necessary) and use.
       - name: E2E democracy-reward tests
-        run: go run ./tests/e2e/... --tc democracy-reward-reward
+        run: go run ./tests/e2e/... --tc democracy-reward
   democracy-test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -97,7 +97,7 @@ jobs:
         with:
           go-version: "1.20" # The Go version to download (if necessary) and use.
       - name: E2E slash-throttle tests
-        run: go run ./tests/e2e/... --tc slash-throttle-throttle
+        run: go run ./tests/e2e/... --tc slash-throttle
   multiconsumer-test:
     runs-on: ubuntu-latest
     timeout-minutes: 40
