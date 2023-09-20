@@ -1,1 +1,1578 @@
-[{"ActionType":"main.StartChainAction","Action":{"Chain":"provi","Validators":[{"Id":"bob","Allocation":10000000000,"Stake":500000000},{"Id":"alice","Allocation":10000000000,"Stake":500000000},{"Id":"carol","Allocation":10000000000,"Stake":500000000}],"GenesisChanges":"","SkipGentx":false},"State":{"provi":{"ValBalances":{"alice":9500000000,"bob":9500000000,"carol":9500000000},"ValPowers":null,"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.submitConsumerAdditionProposalAction","Action":{"PreCCV":false,"Chain":"provi","From":"alice","Deposit":10000001,"ConsumerChain":"consu","SpawnTime":0,"InitialHeight":{"revision_height":1},"DistributionChannel":""},"State":{"provi":{"ValBalances":{"alice":9489999999,"bob":9500000000},"ValPowers":null,"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":{"1":{"RawProposal":{"Deposit":10000001,"Chain":"consu","SpawnTime":0,"InitialHeight":{"revision_height":1},"Status":"PROPOSAL_STATUS_VOTING_PERIOD"},"Type":"main.ConsumerAdditionProposal"}}}}},{"ActionType":"main.assignConsumerPubKeyAction","Action":{"Chain":"consu","Validator":"carol","ConsumerPubkey":"{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=\"}","ReconfigureNode":false,"ExpectError":false,"ExpectedError":""},"State":{"consu":{"ValBalances":null,"ValPowers":null,"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":{"carol":"cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"},"ProviderKeys":{"carol":"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"},"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.assignConsumerPubKeyAction","Action":{"Chain":"consu","Validator":"carol","ConsumerPubkey":"{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=\"}","ReconfigureNode":false,"ExpectError":true,"ExpectedError":"a validator has assigned the consumer key already: consumer key is already in use by a validator"},"State":{}},{"ActionType":"main.assignConsumerPubKeyAction","Action":{"Chain":"consu","Validator":"bob","ConsumerPubkey":"{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=\"}","ReconfigureNode":false,"ExpectError":true,"ExpectedError":"a validator has assigned the consumer key already: consumer key is already in use by a validator"},"State":{"consu":{"ValBalances":null,"ValPowers":null,"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":{"bob":"","carol":"cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"},"ProviderKeys":{"carol":"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"},"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.voteGovProposalAction","Action":{"Chain":"provi","From":["alice","bob","carol"],"Vote":["yes","yes","yes"],"PropNumber":1},"State":{"provi":{"ValBalances":{"alice":9500000000,"bob":9500000000},"ValPowers":null,"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":{"1":{"RawProposal":{"Deposit":10000001,"Chain":"consu","SpawnTime":0,"InitialHeight":{"revision_height":1},"Status":"PROPOSAL_STATUS_PASSED"},"Type":"main.ConsumerAdditionProposal"}}}}},{"ActionType":"main.startConsumerChainAction","Action":{"ConsumerChain":"consu","ProviderChain":"provi","Validators":[{"Id":"bob","Allocation":10000000000,"Stake":500000000},{"Id":"alice","Allocation":10000000000,"Stake":500000000},{"Id":"carol","Allocation":10000000000,"Stake":500000000}],"GenesisChanges":".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\""},"State":{"consu":{"ValBalances":{"alice":10000000000,"bob":10000000000,"carol":10000000000},"ValPowers":null,"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":{"alice":9500000000,"bob":9500000000,"carol":9500000000},"ValPowers":null,"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.addIbcConnectionAction","Action":{"ChainA":"consu","ChainB":"provi","ClientA":0,"ClientB":0},"State":{}},{"ActionType":"main.addIbcChannelAction","Action":{"ChainA":"consu","ChainB":"provi","ConnectionA":0,"PortA":"consumer","PortB":"provider","Order":"ordered","Version":""},"State":{}},{"ActionType":"main.delegateTokensAction","Action":{"Chain":"provi","From":"alice","To":"alice","Amount":11000000},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":500,"bob":500,"carol":500},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":511,"bob":500,"carol":500},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.SendTokensAction","Action":{"Chain":"consu","From":"alice","To":"bob","Amount":1},"State":{"consu":{"ValBalances":{"alice":10000000000,"bob":10000000000},"ValPowers":null,"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.relayPacketsAction","Action":{"ChainA":"provi","ChainB":"consu","Port":"provider","Channel":0},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":511,"bob":500,"carol":500},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.SendTokensAction","Action":{"Chain":"consu","From":"alice","To":"bob","Amount":1},"State":{"consu":{"ValBalances":{"alice":9999999999,"bob":10000000001},"ValPowers":null,"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.unbondTokensAction","Action":{"Chain":"provi","Sender":"alice","UnbondFrom":"alice","Amount":1000000},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":511,"bob":500,"carol":500},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":510,"bob":500,"carol":500},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.relayPacketsAction","Action":{"ChainA":"provi","ChainB":"consu","Port":"provider","Channel":0},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":510,"bob":500,"carol":500},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.redelegateTokensAction","Action":{"Chain":"provi","Src":"alice","Dst":"carol","TxSender":"alice","Amount":1000000},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":510,"bob":500,"carol":500},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":501},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.relayPacketsAction","Action":{"ChainA":"provi","ChainB":"consu","Port":"provider","Channel":0},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":501},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.downtimeSlashAction","Action":{"Chain":"consu","Validator":"bob"},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":501},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":501},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.relayPacketsAction","Action":{"ChainA":"provi","ChainB":"consu","Port":"provider","Channel":0},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":501},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":509,"bob":0,"carol":501},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.relayPacketsAction","Action":{"ChainA":"provi","ChainB":"consu","Port":"provider","Channel":0},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":0,"carol":501},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.unjailValidatorAction","Action":{"Provider":"provi","Validator":"bob"},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":0,"carol":501},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":501},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.relayPacketsAction","Action":{"ChainA":"provi","ChainB":"consu","Port":"provider","Channel":0},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":501},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.downtimeSlashAction","Action":{"Chain":"provi","Validator":"carol"},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":501},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.relayPacketsAction","Action":{"ChainA":"provi","ChainB":"consu","Port":"provider","Channel":0},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.unjailValidatorAction","Action":{"Provider":"provi","Validator":"carol"},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":495},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.relayPacketsAction","Action":{"ChainA":"provi","ChainB":"consu","Port":"provider","Channel":0},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":495},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.submitEquivocationProposalAction","Action":{"Chain":"consu","Height":10,"Time":"2023-09-19T13:25:50.602464+02:00","Power":500,"Validator":"bob","Deposit":10000001,"From":"bob"},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":495},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":{"bob":9500000000},"ValPowers":{"alice":509,"bob":500,"carol":495},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":{"2":{"RawProposal":{"Title":"","Description":"","Deposit":0,"Status":""},"Type":"main.TextProposal"}}}}},{"ActionType":"main.doublesignSlashAction","Action":{"Validator":"carol","Chain":"provi"},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":495},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.relayPacketsAction","Action":{"ChainA":"provi","ChainB":"consu","Port":"provider","Channel":0},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.doublesignSlashAction","Action":{"Validator":"bob","Chain":"consu"},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.relayPacketsAction","Action":{"ChainA":"provi","ChainB":"consu","Port":"provider","Channel":0},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.relayPacketsAction","Action":{"ChainA":"provi","ChainB":"consu","Port":"provider","Channel":0},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.submitEquivocationProposalAction","Action":{"Chain":"consu","Height":10,"Time":"2023-09-19T13:25:50.602466+02:00","Power":500,"Validator":"bob","Deposit":10000001,"From":"bob"},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":{"bob":9489999999},"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":{"2":{"RawProposal":{"Height":10,"Power":500,"ConsensusAddress":"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39","Deposit":10000001,"Status":"PROPOSAL_STATUS_VOTING_PERIOD"},"Type":"main.EquivocationProposal"}}}}},{"ActionType":"main.voteGovProposalAction","Action":{"Chain":"provi","From":["alice","bob","carol"],"Vote":["yes","yes","yes"],"PropNumber":2},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":500,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":509,"bob":0,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":{"2":{"RawProposal":{"Height":10,"Power":500,"ConsensusAddress":"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39","Deposit":10000001,"Status":"PROPOSAL_STATUS_PASSED"},"Type":"main.EquivocationProposal"}}}}},{"ActionType":"main.relayPacketsAction","Action":{"ChainA":"provi","ChainB":"consu","Port":"provider","Channel":0},"State":{"consu":{"ValBalances":null,"ValPowers":{"alice":509,"bob":0,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null},"provi":{"ValBalances":null,"ValPowers":{"alice":509,"bob":0,"carol":0},"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":null,"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":null}}},{"ActionType":"main.startRelayerAction","Action":{},"State":{}},{"ActionType":"main.submitConsumerRemovalProposalAction","Action":{"Chain":"provi","From":"bob","Deposit":10000001,"ConsumerChain":"consu","StopTimeOffset":0},"State":{"provi":{"ValBalances":{"bob":9489999999},"ValPowers":null,"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":{"consu":true},"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":{"3":{"RawProposal":{"Deposit":10000001,"Chain":"consu","StopTime":0,"Status":"PROPOSAL_STATUS_VOTING_PERIOD"},"Type":"main.ConsumerRemovalProposal"}}}}},{"ActionType":"main.voteGovProposalAction","Action":{"Chain":"provi","From":["alice","bob","carol"],"Vote":["no","no","no"],"PropNumber":3},"State":{"provi":{"ValBalances":{"bob":9500000000},"ValPowers":null,"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":{"consu":true},"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":{"3":{"RawProposal":{"Deposit":10000001,"Chain":"consu","StopTime":0,"Status":"PROPOSAL_STATUS_REJECTED"},"Type":"main.ConsumerRemovalProposal"}}}}},{"ActionType":"main.submitConsumerRemovalProposalAction","Action":{"Chain":"provi","From":"bob","Deposit":10000001,"ConsumerChain":"consu","StopTimeOffset":0},"State":{"provi":{"ValBalances":{"bob":9489999999},"ValPowers":null,"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":{"consu":true},"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":{"4":{"RawProposal":{"Deposit":10000001,"Chain":"consu","StopTime":0,"Status":"PROPOSAL_STATUS_VOTING_PERIOD"},"Type":"main.ConsumerRemovalProposal"}}}}},{"ActionType":"main.voteGovProposalAction","Action":{"Chain":"provi","From":["alice","bob","carol"],"Vote":["yes","yes","yes"],"PropNumber":4},"State":{"provi":{"ValBalances":{"bob":9500000000},"ValPowers":null,"RepresentativePowers":null,"Params":null,"Rewards":null,"ConsumerChains":{},"AssignedKeys":null,"ProviderKeys":null,"ConsumerChainQueueSizes":null,"GlobalSlashQueueSize":null,"RegisteredConsumerRewardDenoms":null,"Proposals":{"4":{"RawProposal":{"Deposit":10000001,"Chain":"consu","StopTime":0,"Status":"PROPOSAL_STATUS_PASSED"},"Type":"main.ConsumerRemovalProposal"}}}}}]
+[
+  {
+    "ActionType": "main.StartChainAction",
+    "Action": {
+      "Chain": "provi",
+      "Validators": [
+        {
+          "Id": "bob",
+          "Allocation": 10000000000,
+          "Stake": 500000000
+        },
+        {
+          "Id": "alice",
+          "Allocation": 10000000000,
+          "Stake": 500000000
+        },
+        {
+          "Id": "carol",
+          "Allocation": 10000000000,
+          "Stake": 500000000
+        }
+      ],
+      "GenesisChanges": "",
+      "SkipGentx": false
+    },
+    "State": {
+      "provi": {
+        "ValBalances": {
+          "alice": 9500000000,
+          "bob": 9500000000,
+          "carol": 9500000000
+        },
+        "ValPowers": null,
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.submitConsumerAdditionProposalAction",
+    "Action": {
+      "PreCCV": false,
+      "Chain": "provi",
+      "From": "alice",
+      "Deposit": 10000001,
+      "ConsumerChain": "consu",
+      "SpawnTime": 0,
+      "InitialHeight": {
+        "revision_height": 1
+      },
+      "DistributionChannel": ""
+    },
+    "State": {
+      "provi": {
+        "ValBalances": {
+          "alice": 9489999999,
+          "bob": 9500000000
+        },
+        "ValPowers": null,
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": {
+          "1": {
+            "RawProposal": {
+              "Deposit": 10000001,
+              "Chain": "consu",
+              "SpawnTime": 0,
+              "InitialHeight": {
+                "revision_height": 1
+              },
+              "Status": "PROPOSAL_STATUS_VOTING_PERIOD"
+            },
+            "Type": "main.ConsumerAdditionProposal"
+          }
+        }
+      }
+    }
+  },
+  {
+    "ActionType": "main.assignConsumerPubKeyAction",
+    "Action": {
+      "Chain": "consu",
+      "Validator": "carol",
+      "ConsumerPubkey": "{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=\"}",
+      "ReconfigureNode": false,
+      "ExpectError": false,
+      "ExpectedError": ""
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": null,
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": {
+          "carol": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
+        },
+        "ProviderKeys": {
+          "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
+        },
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.assignConsumerPubKeyAction",
+    "Action": {
+      "Chain": "consu",
+      "Validator": "carol",
+      "ConsumerPubkey": "{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=\"}",
+      "ReconfigureNode": false,
+      "ExpectError": true,
+      "ExpectedError": "a validator has assigned the consumer key already: consumer key is already in use by a validator"
+    },
+    "State": {}
+  },
+  {
+    "ActionType": "main.assignConsumerPubKeyAction",
+    "Action": {
+      "Chain": "consu",
+      "Validator": "bob",
+      "ConsumerPubkey": "{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=\"}",
+      "ReconfigureNode": false,
+      "ExpectError": true,
+      "ExpectedError": "a validator has assigned the consumer key already: consumer key is already in use by a validator"
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": null,
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": {
+          "bob": "",
+          "carol": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
+        },
+        "ProviderKeys": {
+          "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
+        },
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.voteGovProposalAction",
+    "Action": {
+      "Chain": "provi",
+      "From": [
+        "alice",
+        "bob",
+        "carol"
+      ],
+      "Vote": [
+        "yes",
+        "yes",
+        "yes"
+      ],
+      "PropNumber": 1
+    },
+    "State": {
+      "provi": {
+        "ValBalances": {
+          "alice": 9500000000,
+          "bob": 9500000000
+        },
+        "ValPowers": null,
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": {
+          "1": {
+            "RawProposal": {
+              "Deposit": 10000001,
+              "Chain": "consu",
+              "SpawnTime": 0,
+              "InitialHeight": {
+                "revision_height": 1
+              },
+              "Status": "PROPOSAL_STATUS_PASSED"
+            },
+            "Type": "main.ConsumerAdditionProposal"
+          }
+        }
+      }
+    }
+  },
+  {
+    "ActionType": "main.startConsumerChainAction",
+    "Action": {
+      "ConsumerChain": "consu",
+      "ProviderChain": "provi",
+      "Validators": [
+        {
+          "Id": "bob",
+          "Allocation": 10000000000,
+          "Stake": 500000000
+        },
+        {
+          "Id": "alice",
+          "Allocation": 10000000000,
+          "Stake": 500000000
+        },
+        {
+          "Id": "carol",
+          "Allocation": 10000000000,
+          "Stake": 500000000
+        }
+      ],
+      "GenesisChanges": ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\""
+    },
+    "State": {
+      "consu": {
+        "ValBalances": {
+          "alice": 10000000000,
+          "bob": 10000000000,
+          "carol": 10000000000
+        },
+        "ValPowers": null,
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": {
+          "alice": 9500000000,
+          "bob": 9500000000,
+          "carol": 9500000000
+        },
+        "ValPowers": null,
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.addIbcConnectionAction",
+    "Action": {
+      "ChainA": "consu",
+      "ChainB": "provi",
+      "ClientA": 0,
+      "ClientB": 0
+    },
+    "State": {}
+  },
+  {
+    "ActionType": "main.addIbcChannelAction",
+    "Action": {
+      "ChainA": "consu",
+      "ChainB": "provi",
+      "ConnectionA": 0,
+      "PortA": "consumer",
+      "PortB": "provider",
+      "Order": "ordered",
+      "Version": ""
+    },
+    "State": {}
+  },
+  {
+    "ActionType": "main.delegateTokensAction",
+    "Action": {
+      "Chain": "provi",
+      "From": "alice",
+      "To": "alice",
+      "Amount": 11000000
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 500,
+          "bob": 500,
+          "carol": 500
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 511,
+          "bob": 500,
+          "carol": 500
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.SendTokensAction",
+    "Action": {
+      "Chain": "consu",
+      "From": "alice",
+      "To": "bob",
+      "Amount": 1
+    },
+    "State": {
+      "consu": {
+        "ValBalances": {
+          "alice": 10000000000,
+          "bob": 10000000000
+        },
+        "ValPowers": null,
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.relayPacketsAction",
+    "Action": {
+      "ChainA": "provi",
+      "ChainB": "consu",
+      "Port": "provider",
+      "Channel": 0
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 511,
+          "bob": 500,
+          "carol": 500
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.SendTokensAction",
+    "Action": {
+      "Chain": "consu",
+      "From": "alice",
+      "To": "bob",
+      "Amount": 1
+    },
+    "State": {
+      "consu": {
+        "ValBalances": {
+          "alice": 9999999999,
+          "bob": 10000000001
+        },
+        "ValPowers": null,
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.unbondTokensAction",
+    "Action": {
+      "Chain": "provi",
+      "Sender": "alice",
+      "UnbondFrom": "alice",
+      "Amount": 1000000
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 511,
+          "bob": 500,
+          "carol": 500
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 510,
+          "bob": 500,
+          "carol": 500
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.relayPacketsAction",
+    "Action": {
+      "ChainA": "provi",
+      "ChainB": "consu",
+      "Port": "provider",
+      "Channel": 0
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 510,
+          "bob": 500,
+          "carol": 500
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.redelegateTokensAction",
+    "Action": {
+      "Chain": "provi",
+      "Src": "alice",
+      "Dst": "carol",
+      "TxSender": "alice",
+      "Amount": 1000000
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 510,
+          "bob": 500,
+          "carol": 500
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 501
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.relayPacketsAction",
+    "Action": {
+      "ChainA": "provi",
+      "ChainB": "consu",
+      "Port": "provider",
+      "Channel": 0
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 501
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.downtimeSlashAction",
+    "Action": {
+      "Chain": "consu",
+      "Validator": "bob"
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 501
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 501
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.relayPacketsAction",
+    "Action": {
+      "ChainA": "provi",
+      "ChainB": "consu",
+      "Port": "provider",
+      "Channel": 0
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 501
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 0,
+          "carol": 501
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.relayPacketsAction",
+    "Action": {
+      "ChainA": "provi",
+      "ChainB": "consu",
+      "Port": "provider",
+      "Channel": 0
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 0,
+          "carol": 501
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.unjailValidatorAction",
+    "Action": {
+      "Provider": "provi",
+      "Validator": "bob"
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 0,
+          "carol": 501
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 501
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.relayPacketsAction",
+    "Action": {
+      "ChainA": "provi",
+      "ChainB": "consu",
+      "Port": "provider",
+      "Channel": 0
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 501
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.downtimeSlashAction",
+    "Action": {
+      "Chain": "provi",
+      "Validator": "carol"
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 501
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.relayPacketsAction",
+    "Action": {
+      "ChainA": "provi",
+      "ChainB": "consu",
+      "Port": "provider",
+      "Channel": 0
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.unjailValidatorAction",
+    "Action": {
+      "Provider": "provi",
+      "Validator": "carol"
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 495
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.relayPacketsAction",
+    "Action": {
+      "ChainA": "provi",
+      "ChainB": "consu",
+      "Port": "provider",
+      "Channel": 0
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 495
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.submitEquivocationProposalAction",
+    "Action": {
+      "Chain": "consu",
+      "Height": 10,
+      "Time": "2023-09-20T18:24:51.823231+02:00",
+      "Power": 500,
+      "Validator": "bob",
+      "Deposit": 10000001,
+      "From": "bob"
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 495
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": {
+          "bob": 9500000000
+        },
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 495
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": {
+          "2": {
+            "RawProposal": {
+              "Title": "",
+              "Description": "",
+              "Deposit": 0,
+              "Status": ""
+            },
+            "Type": "main.TextProposal"
+          }
+        }
+      }
+    }
+  },
+  {
+    "ActionType": "main.doublesignSlashAction",
+    "Action": {
+      "Validator": "carol",
+      "Chain": "provi"
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 495
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.relayPacketsAction",
+    "Action": {
+      "ChainA": "provi",
+      "ChainB": "consu",
+      "Port": "provider",
+      "Channel": 0
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.doublesignSlashAction",
+    "Action": {
+      "Validator": "bob",
+      "Chain": "consu"
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.relayPacketsAction",
+    "Action": {
+      "ChainA": "provi",
+      "ChainB": "consu",
+      "Port": "provider",
+      "Channel": 0
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.relayPacketsAction",
+    "Action": {
+      "ChainA": "provi",
+      "ChainB": "consu",
+      "Port": "provider",
+      "Channel": 0
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.submitEquivocationProposalAction",
+    "Action": {
+      "Chain": "consu",
+      "Height": 10,
+      "Time": "2023-09-20T18:24:51.823235+02:00",
+      "Power": 500,
+      "Validator": "bob",
+      "Deposit": 10000001,
+      "From": "bob"
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": {
+          "bob": 9489999999
+        },
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": {
+          "2": {
+            "RawProposal": {
+              "Height": 10,
+              "Power": 500,
+              "ConsensusAddress": "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
+              "Deposit": 10000001,
+              "Status": "PROPOSAL_STATUS_VOTING_PERIOD"
+            },
+            "Type": "main.EquivocationProposal"
+          }
+        }
+      }
+    }
+  },
+  {
+    "ActionType": "main.voteGovProposalAction",
+    "Action": {
+      "Chain": "provi",
+      "From": [
+        "alice",
+        "bob",
+        "carol"
+      ],
+      "Vote": [
+        "yes",
+        "yes",
+        "yes"
+      ],
+      "PropNumber": 2
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 500,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 0,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": {
+          "2": {
+            "RawProposal": {
+              "Height": 10,
+              "Power": 500,
+              "ConsensusAddress": "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
+              "Deposit": 10000001,
+              "Status": "PROPOSAL_STATUS_PASSED"
+            },
+            "Type": "main.EquivocationProposal"
+          }
+        }
+      }
+    }
+  },
+  {
+    "ActionType": "main.relayPacketsAction",
+    "Action": {
+      "ChainA": "provi",
+      "ChainB": "consu",
+      "Port": "provider",
+      "Channel": 0
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 0,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 509,
+          "bob": 0,
+          "carol": 0
+        },
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.startRelayerAction",
+    "Action": {},
+    "State": {}
+  },
+  {
+    "ActionType": "main.submitConsumerRemovalProposalAction",
+    "Action": {
+      "Chain": "provi",
+      "From": "bob",
+      "Deposit": 10000001,
+      "ConsumerChain": "consu",
+      "StopTimeOffset": 0
+    },
+    "State": {
+      "provi": {
+        "ValBalances": {
+          "bob": 9489999999
+        },
+        "ValPowers": null,
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": {
+          "consu": true
+        },
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": {
+          "3": {
+            "RawProposal": {
+              "Deposit": 10000001,
+              "Chain": "consu",
+              "StopTime": 0,
+              "Status": "PROPOSAL_STATUS_VOTING_PERIOD"
+            },
+            "Type": "main.ConsumerRemovalProposal"
+          }
+        }
+      }
+    }
+  },
+  {
+    "ActionType": "main.voteGovProposalAction",
+    "Action": {
+      "Chain": "provi",
+      "From": [
+        "alice",
+        "bob",
+        "carol"
+      ],
+      "Vote": [
+        "no",
+        "no",
+        "no"
+      ],
+      "PropNumber": 3
+    },
+    "State": {
+      "provi": {
+        "ValBalances": {
+          "bob": 9500000000
+        },
+        "ValPowers": null,
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": {
+          "consu": true
+        },
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": {
+          "3": {
+            "RawProposal": {
+              "Deposit": 10000001,
+              "Chain": "consu",
+              "StopTime": 0,
+              "Status": "PROPOSAL_STATUS_REJECTED"
+            },
+            "Type": "main.ConsumerRemovalProposal"
+          }
+        }
+      }
+    }
+  },
+  {
+    "ActionType": "main.submitConsumerRemovalProposalAction",
+    "Action": {
+      "Chain": "provi",
+      "From": "bob",
+      "Deposit": 10000001,
+      "ConsumerChain": "consu",
+      "StopTimeOffset": 0
+    },
+    "State": {
+      "provi": {
+        "ValBalances": {
+          "bob": 9489999999
+        },
+        "ValPowers": null,
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": {
+          "consu": true
+        },
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": {
+          "4": {
+            "RawProposal": {
+              "Deposit": 10000001,
+              "Chain": "consu",
+              "StopTime": 0,
+              "Status": "PROPOSAL_STATUS_VOTING_PERIOD"
+            },
+            "Type": "main.ConsumerRemovalProposal"
+          }
+        }
+      }
+    }
+  },
+  {
+    "ActionType": "main.voteGovProposalAction",
+    "Action": {
+      "Chain": "provi",
+      "From": [
+        "alice",
+        "bob",
+        "carol"
+      ],
+      "Vote": [
+        "yes",
+        "yes",
+        "yes"
+      ],
+      "PropNumber": 4
+    },
+    "State": {
+      "provi": {
+        "ValBalances": {
+          "bob": 9500000000
+        },
+        "ValPowers": null,
+        "RepresentativePowers": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": {},
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "Proposals": {
+          "4": {
+            "RawProposal": {
+              "Deposit": 10000001,
+              "Chain": "consu",
+              "StopTime": 0,
+              "Status": "PROPOSAL_STATUS_PASSED"
+            },
+            "Type": "main.ConsumerRemovalProposal"
+          }
+        }
+      }
+    }
+  }
+]

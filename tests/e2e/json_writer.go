@@ -18,7 +18,7 @@ type JSONWriter struct{}
 var GlobalJSONWriter = JSONWriter{}
 
 func (writer JSONWriter) WriteTraceToFile(filepath string, trace []Step) error {
-	jsonobj, err := json.Marshal(trace)
+	jsonobj, err := json.MarshalIndent(trace, "", "  ")
 	if err != nil {
 		panic(err)
 	}
