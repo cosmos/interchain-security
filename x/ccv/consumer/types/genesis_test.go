@@ -16,7 +16,8 @@ import (
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	"github.com/cosmos/interchain-security/v3/testutil/crypto"
-	types "github.com/cosmos/interchain-security/v3/x/ccv/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 const (
@@ -47,144 +48,149 @@ func TestValidateInitialGenesisState(t *testing.T) {
 	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath)
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
 
-	params := types.DefaultParams()
+	params := ccv.DefaultParams()
 	params.Enabled = true
 
 	cases := []struct {
 		name     string
-		gs       *types.ConsumerGenesisState
+		gs       *types.PrivateConsumerGenesisState
 		expError bool
 	}{
 		{
 			"valid new consumer genesis state",
-			types.NewInitialConsumerGenesisState(cs, consensusState, valUpdates, params),
+			types.NewPrivateInitialConsumerGenesisState(cs, consensusState, valUpdates, params),
 			false,
 		},
 		{
 			"invalid new consumer genesis state: nil client state",
-			types.NewInitialConsumerGenesisState(nil, consensusState, valUpdates, params),
+			types.NewPrivateInitialConsumerGenesisState(nil, consensusState, valUpdates, params),
 			true,
 		},
 		{
 			"invalid new consumer genesis state: invalid client state",
-			types.NewInitialConsumerGenesisState(&ibctmtypes.ClientState{ChainId: "badClientState"},
+			types.NewPrivateInitialConsumerGenesisState(&ibctmtypes.ClientState{ChainId: "badClientState"},
 				consensusState, valUpdates, params),
 			true,
 		},
 		{
 			"invalid new consumer genesis state: nil consensus state",
-			types.NewInitialConsumerGenesisState(cs, nil, valUpdates, params),
+			types.NewPrivateInitialConsumerGenesisState(cs, nil, valUpdates, params),
 			true,
 		},
 		{
 			"invalid new consumer genesis state: invalid consensus state",
-			types.NewInitialConsumerGenesisState(cs, &ibctmtypes.ConsensusState{Timestamp: time.Now()},
+			types.NewPrivateInitialConsumerGenesisState(cs, &ibctmtypes.ConsensusState{Timestamp: time.Now()},
 				valUpdates, params),
 			true,
 		},
 		{
 			"invalid new consumer genesis state: client id not empty",
-			&types.ConsumerGenesisState{
-				Params:                      params,
-				ProviderClientId:            "ccvclient",
-				ProviderChannelId:           "",
-				NewChain:                    true,
-				ProviderClientState:         cs,
-				ProviderConsensusState:      consensusState,
+			&types.PrivateConsumerGenesisState{
+				Params:            params,
+				ProviderClientId:  "ccvclient",
+				ProviderChannelId: "",
+				NewChain:          true,
+				Provider: ccv.ProviderInfo{ClientState: cs,
+					ConsensusState: consensusState,
+					InitialValSet:  valUpdates,
+				},
 				MaturingPackets:             nil,
-				InitialValSet:               valUpdates,
 				HeightToValsetUpdateId:      nil,
 				OutstandingDowntimeSlashing: nil,
-				PendingConsumerPackets:      types.ConsumerPacketDataList{},
-				LastTransmissionBlockHeight: types.LastTransmissionBlockHeight{},
+				PendingConsumerPackets:      ccv.ConsumerPacketDataList{},
+				LastTransmissionBlockHeight: ccv.LastTransmissionBlockHeight{},
 				PreCCV:                      false,
 			},
 			true,
 		},
 		{
 			"invalid new consumer genesis state: channel id not empty",
-			&types.ConsumerGenesisState{
-				Params:                      params,
-				ProviderClientId:            "",
-				ProviderChannelId:           "ccvchannel",
-				NewChain:                    true,
-				ProviderClientState:         cs,
-				ProviderConsensusState:      consensusState,
+			&types.PrivateConsumerGenesisState{
+				Params:            params,
+				ProviderClientId:  "",
+				ProviderChannelId: "ccvchannel",
+				NewChain:          true,
+				Provider: ccv.ProviderInfo{ClientState: cs,
+					ConsensusState: consensusState,
+					InitialValSet:  valUpdates,
+				},
 				MaturingPackets:             nil,
-				InitialValSet:               valUpdates,
 				HeightToValsetUpdateId:      nil,
 				OutstandingDowntimeSlashing: nil,
-				PendingConsumerPackets:      types.ConsumerPacketDataList{},
-				LastTransmissionBlockHeight: types.LastTransmissionBlockHeight{},
+				PendingConsumerPackets:      ccv.ConsumerPacketDataList{},
+				LastTransmissionBlockHeight: ccv.LastTransmissionBlockHeight{},
 				PreCCV:                      false,
 			},
 			true,
 		},
 		{
 			"invalid new consumer genesis state: non-empty unbonding sequences",
-			&types.ConsumerGenesisState{
-				Params:                      params,
-				ProviderClientId:            "",
-				ProviderChannelId:           "",
-				NewChain:                    true,
-				ProviderClientState:         cs,
-				ProviderConsensusState:      consensusState,
-				MaturingPackets:             []types.MaturingVSCPacket{{}},
-				InitialValSet:               valUpdates,
+			&types.PrivateConsumerGenesisState{
+				Params:            params,
+				ProviderClientId:  "",
+				ProviderChannelId: "",
+				NewChain:          true,
+				Provider: ccv.ProviderInfo{ClientState: cs,
+					ConsensusState: consensusState,
+					InitialValSet:  valUpdates,
+				},
+				MaturingPackets:             []ccv.MaturingVSCPacket{{}},
 				HeightToValsetUpdateId:      nil,
 				OutstandingDowntimeSlashing: nil,
-				PendingConsumerPackets:      types.ConsumerPacketDataList{},
-				LastTransmissionBlockHeight: types.LastTransmissionBlockHeight{},
+				PendingConsumerPackets:      ccv.ConsumerPacketDataList{},
+				LastTransmissionBlockHeight: ccv.LastTransmissionBlockHeight{},
 				PreCCV:                      false,
 			},
 			true,
 		},
 		{
 			"invalid new consumer genesis state: non-empty last transmission packet",
-			&types.ConsumerGenesisState{
-				Params:                      params,
-				ProviderClientId:            "",
-				ProviderChannelId:           "",
-				NewChain:                    true,
-				ProviderClientState:         cs,
-				ProviderConsensusState:      consensusState,
+			&types.PrivateConsumerGenesisState{
+				Params:            params,
+				ProviderClientId:  "",
+				ProviderChannelId: "",
+				NewChain:          true,
+				Provider: ccv.ProviderInfo{ClientState: cs,
+					ConsensusState: consensusState,
+					InitialValSet:  valUpdates,
+				},
 				MaturingPackets:             nil,
-				InitialValSet:               valUpdates,
 				HeightToValsetUpdateId:      nil,
 				OutstandingDowntimeSlashing: nil,
-				PendingConsumerPackets:      types.ConsumerPacketDataList{},
-				LastTransmissionBlockHeight: types.LastTransmissionBlockHeight{Height: 1},
+				PendingConsumerPackets:      ccv.ConsumerPacketDataList{},
+				LastTransmissionBlockHeight: ccv.LastTransmissionBlockHeight{Height: 1},
 				PreCCV:                      false,
 			},
 			true,
 		},
 		{
 			"invalid new consumer genesis state: non-empty pending consumer packets",
-			&types.ConsumerGenesisState{
-				Params:                      params,
-				ProviderClientId:            "",
-				ProviderChannelId:           "",
-				NewChain:                    true,
-				ProviderClientState:         cs,
-				ProviderConsensusState:      consensusState,
+			&types.PrivateConsumerGenesisState{
+				Params:            params,
+				ProviderClientId:  "",
+				ProviderChannelId: "",
+				NewChain:          true,
+				Provider: ccv.ProviderInfo{ClientState: cs,
+					ConsensusState: consensusState,
+					InitialValSet:  valUpdates,
+				},
 				MaturingPackets:             nil,
-				InitialValSet:               valUpdates,
 				HeightToValsetUpdateId:      nil,
 				OutstandingDowntimeSlashing: nil,
-				PendingConsumerPackets:      types.ConsumerPacketDataList{List: []types.ConsumerPacketData{{}}},
-				LastTransmissionBlockHeight: types.LastTransmissionBlockHeight{},
+				PendingConsumerPackets:      ccv.ConsumerPacketDataList{List: []ccv.ConsumerPacketData{{}}},
+				LastTransmissionBlockHeight: ccv.LastTransmissionBlockHeight{},
 				PreCCV:                      false,
 			},
 			true,
 		},
 		{
 			"invalid new consumer genesis state: nil initial validator set",
-			types.NewInitialConsumerGenesisState(cs, consensusState, nil, params),
+			types.NewPrivateInitialConsumerGenesisState(cs, consensusState, nil, params),
 			true,
 		},
 		{
 			"invalid new consumer genesis state: invalid consensus state validator set hash",
-			types.NewInitialConsumerGenesisState(
+			types.NewPrivateInitialConsumerGenesisState(
 				cs, ibctmtypes.NewConsensusState(
 					time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), []byte("wrong_length_hash")),
 				valUpdates, params),
@@ -192,7 +198,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 		},
 		{
 			"invalid new consumer genesis state: initial validator set does not match validator set hash",
-			types.NewInitialConsumerGenesisState(
+			types.NewPrivateInitialConsumerGenesisState(
 				cs, ibctmtypes.NewConsensusState(
 					time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), []byte("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")),
 				valUpdates, params),
@@ -200,7 +206,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 		},
 		{
 			"invalid new consumer genesis state: initial validator set does not match validator set hash",
-			types.NewInitialConsumerGenesisState(
+			types.NewPrivateInitialConsumerGenesisState(
 				cs, ibctmtypes.NewConsensusState(
 					time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), []byte("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")),
 				valUpdates, params),
@@ -208,18 +214,18 @@ func TestValidateInitialGenesisState(t *testing.T) {
 		},
 		{
 			"invalid new consumer genesis state: invalid params - ccvTimeoutPeriod",
-			types.NewInitialConsumerGenesisState(cs, consensusState, valUpdates,
-				types.NewParams(
+			types.NewPrivateInitialConsumerGenesisState(cs, consensusState, valUpdates,
+				ccv.NewParams(
 					true,
-					types.DefaultBlocksPerDistributionTransmission,
+					ccv.DefaultBlocksPerDistributionTransmission,
 					"",
 					"",
 					0, // CCV timeout period cannot be 0
-					types.DefaultTransferTimeoutPeriod,
-					types.DefaultConsumerRedistributeFrac,
-					types.DefaultHistoricalEntries,
-					types.DefaultConsumerUnbondingPeriod,
-					types.DefaultSoftOptOutThreshold,
+					ccv.DefaultTransferTimeoutPeriod,
+					ccv.DefaultConsumerRedistributeFrac,
+					ccv.DefaultHistoricalEntries,
+					ccv.DefaultConsumerUnbondingPeriod,
+					ccv.DefaultSoftOptOutThreshold,
 					[]string{},
 					[]string{},
 				)),
@@ -227,18 +233,18 @@ func TestValidateInitialGenesisState(t *testing.T) {
 		},
 		{
 			"invalid new consumer genesis state: invalid params - distributionTransmissionChannel",
-			types.NewInitialConsumerGenesisState(cs, consensusState, valUpdates,
-				types.NewParams(
+			types.NewPrivateInitialConsumerGenesisState(cs, consensusState, valUpdates,
+				ccv.NewParams(
 					true,
-					types.DefaultBlocksPerDistributionTransmission,
+					ccv.DefaultBlocksPerDistributionTransmission,
 					"badchannel/",
 					"",
-					types.DefaultCCVTimeoutPeriod,
-					types.DefaultTransferTimeoutPeriod,
-					types.DefaultConsumerRedistributeFrac,
-					types.DefaultHistoricalEntries,
-					types.DefaultConsumerUnbondingPeriod,
-					types.DefaultSoftOptOutThreshold,
+					ccv.DefaultCCVTimeoutPeriod,
+					ccv.DefaultTransferTimeoutPeriod,
+					ccv.DefaultConsumerRedistributeFrac,
+					ccv.DefaultHistoricalEntries,
+					ccv.DefaultConsumerUnbondingPeriod,
+					ccv.DefaultSoftOptOutThreshold,
 					[]string{},
 					[]string{},
 				)),
@@ -269,17 +275,17 @@ func TestValidateRestartConsumerGenesisState(t *testing.T) {
 	valHash := valSet.Hash()
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(valSet)
 
-	matConsumerPacket := types.ConsumerPacketData{
-		Type: types.VscMaturedPacket,
-		Data: &types.ConsumerPacketData_VscMaturedPacketData{
-			VscMaturedPacketData: types.NewVSCMaturedPacketData(1),
+	matConsumerPacket := ccv.ConsumerPacketData{
+		Type: ccv.VscMaturedPacket,
+		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
+			VscMaturedPacketData: ccv.NewVSCMaturedPacketData(1),
 		},
 	}
 
-	slashConsumerPacket := types.ConsumerPacketData{
-		Type: types.SlashPacket,
-		Data: &types.ConsumerPacketData_SlashPacketData{
-			SlashPacketData: types.NewSlashPacketData(
+	slashConsumerPacket := ccv.ConsumerPacketData{
+		Type: ccv.SlashPacket,
+		Data: &ccv.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: ccv.NewSlashPacketData(
 				abci.Validator{Address: pubKey.Address(), Power: int64(1)},
 				1,
 				stakingtypes.Infraction_INFRACTION_DOWNTIME),
@@ -287,159 +293,163 @@ func TestValidateRestartConsumerGenesisState(t *testing.T) {
 	}
 
 	// create default height to validator set update id mapping
-	heightToValsetUpdateID := []types.HeightToValsetUpdateID{
+	heightToValsetUpdateID := []ccv.HeightToValsetUpdateID{
 		{Height: 0, ValsetUpdateId: 0},
 	}
 
 	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath)
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
 
-	params := types.DefaultParams()
+	params := ccv.DefaultParams()
 	params.Enabled = true
 
 	cases := []struct {
 		name     string
-		gs       *types.ConsumerGenesisState
+		gs       *types.PrivateConsumerGenesisState
 		expError bool
 	}{
 		{
 			"valid restart consumer genesis state: empty maturing packets",
 			types.NewRestartConsumerGenesisState("ccvclient", "ccvchannel", nil, valUpdates, heightToValsetUpdateID,
-				types.ConsumerPacketDataList{List: []types.ConsumerPacketData{matConsumerPacket, slashConsumerPacket}},
-				nil, types.LastTransmissionBlockHeight{Height: 100}, params),
+				ccv.ConsumerPacketDataList{List: []ccv.ConsumerPacketData{matConsumerPacket, slashConsumerPacket}},
+				nil, ccv.LastTransmissionBlockHeight{Height: 100}, params),
 			false,
 		},
 		{
 			"valid restart consumer genesis state: handshake in progress ",
 			types.NewRestartConsumerGenesisState("ccvclient", "", nil, valUpdates, heightToValsetUpdateID,
-				types.ConsumerPacketDataList{List: []types.ConsumerPacketData{slashConsumerPacket}}, nil, types.LastTransmissionBlockHeight{}, params),
+				ccv.ConsumerPacketDataList{List: []ccv.ConsumerPacketData{slashConsumerPacket}}, nil, ccv.LastTransmissionBlockHeight{}, params),
 			false,
 		},
 		{
 			"valid restart consumer genesis state: maturing packets",
-			types.NewRestartConsumerGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
+			types.NewRestartConsumerGenesisState("ccvclient", "ccvchannel", []ccv.MaturingVSCPacket{
 				{VscId: 1, MaturityTime: time.Now().UTC()},
 				{VscId: 3, MaturityTime: time.Now().UTC()},
 				{VscId: 5, MaturityTime: time.Now().UTC()},
-			}, valUpdates, heightToValsetUpdateID, types.ConsumerPacketDataList{},
-				[]types.OutstandingDowntime{{ValidatorConsensusAddress: sdk.ConsAddress(validator.Address.Bytes()).String()}},
-				types.LastTransmissionBlockHeight{}, params),
+			}, valUpdates, heightToValsetUpdateID, ccv.ConsumerPacketDataList{},
+				[]ccv.OutstandingDowntime{{ValidatorConsensusAddress: sdk.ConsAddress(validator.Address.Bytes()).String()}},
+				ccv.LastTransmissionBlockHeight{}, params),
 			false,
 		},
 		{
 			"invalid restart consumer genesis state: provider id is empty",
-			types.NewRestartConsumerGenesisState("", "ccvchannel", nil, valUpdates, heightToValsetUpdateID, types.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{}, params),
+			types.NewRestartConsumerGenesisState("", "ccvchannel", nil, valUpdates, heightToValsetUpdateID, ccv.ConsumerPacketDataList{}, nil, ccv.LastTransmissionBlockHeight{}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: maturing packet vscId is invalid",
-			types.NewRestartConsumerGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
+			types.NewRestartConsumerGenesisState("ccvclient", "ccvchannel", []ccv.MaturingVSCPacket{
 				{VscId: 0, MaturityTime: time.Now().UTC()},
-			}, valUpdates, nil, types.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{}, params),
+			}, valUpdates, nil, ccv.ConsumerPacketDataList{}, nil, ccv.LastTransmissionBlockHeight{}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: maturing packet time is invalid",
-			types.NewRestartConsumerGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
+			types.NewRestartConsumerGenesisState("ccvclient", "ccvchannel", []ccv.MaturingVSCPacket{
 				{VscId: 1, MaturityTime: time.Time{}},
-			}, valUpdates, nil, types.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{}, params),
+			}, valUpdates, nil, ccv.ConsumerPacketDataList{}, nil, ccv.LastTransmissionBlockHeight{}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis: client state defined",
-			&types.ConsumerGenesisState{
-				Params:                      params,
-				ProviderClientId:            "ccvclient",
-				ProviderChannelId:           "ccvchannel",
-				NewChain:                    false,
-				ProviderClientState:         cs,
-				ProviderConsensusState:      nil,
+			&types.PrivateConsumerGenesisState{
+				Params:            params,
+				ProviderClientId:  "ccvclient",
+				ProviderChannelId: "ccvchannel",
+				NewChain:          false,
+				Provider: ccv.ProviderInfo{
+					ClientState:    cs,
+					ConsensusState: nil,
+					InitialValSet:  valUpdates,
+				},
 				MaturingPackets:             nil,
-				InitialValSet:               valUpdates,
 				HeightToValsetUpdateId:      nil,
 				OutstandingDowntimeSlashing: nil,
-				PendingConsumerPackets:      types.ConsumerPacketDataList{},
-				LastTransmissionBlockHeight: types.LastTransmissionBlockHeight{},
+				PendingConsumerPackets:      ccv.ConsumerPacketDataList{},
+				LastTransmissionBlockHeight: ccv.LastTransmissionBlockHeight{},
 				PreCCV:                      false,
 			},
 			true,
 		},
 		{
 			"invalid restart consumer genesis: consensus state defined",
-			&types.ConsumerGenesisState{
-				Params:                      params,
-				ProviderClientId:            "ccvclient",
-				ProviderChannelId:           "ccvchannel",
-				NewChain:                    false,
-				ProviderClientState:         nil,
-				ProviderConsensusState:      consensusState,
+			&types.PrivateConsumerGenesisState{
+				Params:            params,
+				ProviderClientId:  "ccvclient",
+				ProviderChannelId: "ccvchannel",
+				NewChain:          false,
+				Provider: ccv.ProviderInfo{
+					ClientState:    nil,
+					ConsensusState: consensusState,
+					InitialValSet:  valUpdates,
+				},
 				MaturingPackets:             nil,
-				InitialValSet:               valUpdates,
 				HeightToValsetUpdateId:      nil,
 				OutstandingDowntimeSlashing: nil,
-				PendingConsumerPackets:      types.ConsumerPacketDataList{},
-				LastTransmissionBlockHeight: types.LastTransmissionBlockHeight{},
+				PendingConsumerPackets:      ccv.ConsumerPacketDataList{},
+				LastTransmissionBlockHeight: ccv.LastTransmissionBlockHeight{},
 				PreCCV:                      false,
 			},
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: nil initial validator set",
-			types.NewRestartConsumerGenesisState("ccvclient", "ccvchannel", nil, nil, nil, types.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{}, params),
+			types.NewRestartConsumerGenesisState("ccvclient", "ccvchannel", nil, nil, nil, ccv.ConsumerPacketDataList{}, nil, ccv.LastTransmissionBlockHeight{}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: nil height to validator set id mapping",
 			types.NewRestartConsumerGenesisState("ccvclient", "",
-				[]types.MaturingVSCPacket{{VscId: 1, MaturityTime: time.Time{}}}, valUpdates, nil, types.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{}, params),
+				[]ccv.MaturingVSCPacket{{VscId: 1, MaturityTime: time.Time{}}}, valUpdates, nil, ccv.ConsumerPacketDataList{}, nil, ccv.LastTransmissionBlockHeight{}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: maturing packet defined when handshake is still in progress",
 			types.NewRestartConsumerGenesisState("ccvclient", "",
-				[]types.MaturingVSCPacket{{VscId: 1, MaturityTime: time.Time{}}}, valUpdates, heightToValsetUpdateID, types.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{}, params),
+				[]ccv.MaturingVSCPacket{{VscId: 1, MaturityTime: time.Time{}}}, valUpdates, heightToValsetUpdateID, ccv.ConsumerPacketDataList{}, nil, ccv.LastTransmissionBlockHeight{}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: outstanding downtime defined when handshake is still in progress",
 			types.NewRestartConsumerGenesisState("ccvclient", "",
-				nil, valUpdates, heightToValsetUpdateID, types.ConsumerPacketDataList{}, []types.OutstandingDowntime{{ValidatorConsensusAddress: "cosmosvalconsxxx"}},
-				types.LastTransmissionBlockHeight{}, params),
+				nil, valUpdates, heightToValsetUpdateID, ccv.ConsumerPacketDataList{}, []ccv.OutstandingDowntime{{ValidatorConsensusAddress: "cosmosvalconsxxx"}},
+				ccv.LastTransmissionBlockHeight{}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: last transmission block height defined when handshake is still in progress",
 			types.NewRestartConsumerGenesisState("ccvclient", "",
-				nil, valUpdates, heightToValsetUpdateID, types.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{Height: int64(1)}, params),
+				nil, valUpdates, heightToValsetUpdateID, ccv.ConsumerPacketDataList{}, nil, ccv.LastTransmissionBlockHeight{Height: int64(1)}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: pending maturing packets defined when handshake is still in progress",
 			types.NewRestartConsumerGenesisState("ccvclient", "",
-				nil, valUpdates, heightToValsetUpdateID, types.ConsumerPacketDataList{
-					List: []types.ConsumerPacketData{
+				nil, valUpdates, heightToValsetUpdateID, ccv.ConsumerPacketDataList{
+					List: []ccv.ConsumerPacketData{
 						{
-							Type: types.VscMaturedPacket,
-							Data: &types.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: types.NewVSCMaturedPacketData(1)},
+							Type: ccv.VscMaturedPacket,
+							Data: &ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: ccv.NewVSCMaturedPacketData(1)},
 						},
 					},
-				}, nil, types.LastTransmissionBlockHeight{Height: int64(1)}, params),
+				}, nil, ccv.LastTransmissionBlockHeight{Height: int64(1)}, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: invalid params",
-			types.NewRestartConsumerGenesisState("ccvclient", "ccvchannel", nil, valUpdates, nil, types.ConsumerPacketDataList{}, nil, types.LastTransmissionBlockHeight{},
-				types.NewParams(
+			types.NewRestartConsumerGenesisState("ccvclient", "ccvchannel", nil, valUpdates, nil, ccv.ConsumerPacketDataList{}, nil, ccv.LastTransmissionBlockHeight{},
+				ccv.NewParams(
 					true,
-					types.DefaultBlocksPerDistributionTransmission,
+					ccv.DefaultBlocksPerDistributionTransmission,
 					"",
 					"",
 					0, // CCV timeout period cannot be 0
-					types.DefaultTransferTimeoutPeriod,
-					types.DefaultConsumerRedistributeFrac,
-					types.DefaultHistoricalEntries,
-					types.DefaultConsumerUnbondingPeriod,
-					types.DefaultSoftOptOutThreshold,
+					ccv.DefaultTransferTimeoutPeriod,
+					ccv.DefaultConsumerRedistributeFrac,
+					ccv.DefaultHistoricalEntries,
+					ccv.DefaultConsumerUnbondingPeriod,
+					ccv.DefaultSoftOptOutThreshold,
 					[]string{},
 					[]string{},
 				)),

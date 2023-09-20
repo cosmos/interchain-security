@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package interchain_security.ccv.consumer.v1;
+
+option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types";
+
+import "interchain_security/ccv/v1/shared_consumer.proto";
+import "tendermint/abci/types.proto";
+import "ibc/lightclients/tendermint/v1/tendermint.proto";
+import "ibc/core/channel/v1/channel.proto";
+import "google/protobuf/duration.proto";
+import "gogoproto/gogo.proto";
+import "interchain_security/ccv/v1/wire.proto";
+import "google/protobuf/timestamp.proto";
+
+// GenesisState defines the CCV consumer genesis state
+//
+// Note this type is only used on consumer side and references shared type with consumer
+// TODO: rename to GenesisState
+message PrivateConsumerGenesisState {
+    reserved  5,6,8;
+    interchain_security.ccv.v1.ConsumerParams params = 1 [ (gogoproto.nullable) = false ];
+    // Client ID of the provider. Empty for a new chain, filled in on restart.
+    string provider_client_id = 2;
+    // Channel ID of the provider. Empty for a new chain, filled in on restart.
+    string provider_channel_id = 3; 
+    // true for new chain, false for chain restart.
+    bool new_chain = 4;
+    // MaturingPackets nil on new chain, filled in on restart.
+    repeated interchain_security.ccv.v1.MaturingVSCPacket
+        maturing_packets = 7 [ (gogoproto.nullable) = false ];
+    // HeightToValsetUpdateId nil on new chain, filled in on restart.
+    repeated interchain_security.ccv.v1.HeightToValsetUpdateID height_to_valset_update_id = 9
+        [ (gogoproto.nullable) = false ];
+    // OutstandingDowntimes nil on new chain, filled  in on restart.
+    repeated interchain_security.ccv.v1.OutstandingDowntime outstanding_downtime_slashing = 10
+        [ (gogoproto.nullable) = false ];
+
+        // PendingConsumerPackets nil on new chain, filled in on restart.
+    interchain_security.ccv.v1.ConsumerPacketDataList pending_consumer_packets =
+        11 [ (gogoproto.nullable) = false ];
+    // LastTransmissionBlockHeight nil on new chain, filled in on restart.
+    interchain_security.ccv.v1.LastTransmissionBlockHeight
+        last_transmission_block_height = 12 [ (gogoproto.nullable) = false ];
+    // flag indicating whether the consumer CCV module starts in pre-CCV state
+    bool preCCV = 13; 
+    interchain_security.ccv.v1.ProviderInfo provider = 14 [(gogoproto.nullable) = false];
+}
+  

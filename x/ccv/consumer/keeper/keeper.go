@@ -309,8 +309,8 @@ func (k Keeper) DeletePreCCV(ctx sdk.Context) {
 
 func (k Keeper) SetInitialValSet(ctx sdk.Context, initialValSet []tmtypes.ValidatorUpdate) {
 	store := ctx.KVStore(k.storeKey)
-	initialValSetState := ccv.ConsumerGenesisState{
-		InitialValSet: initialValSet,
+	initialValSetState := types.PrivateConsumerGenesisState{
+		Provider: ccv.ProviderInfo{InitialValSet: initialValSet},
 	}
 	bz := k.cdc.MustMarshal(&initialValSetState)
 	store.Set(types.InitialValSetKey(), bz)
@@ -318,11 +318,11 @@ func (k Keeper) SetInitialValSet(ctx sdk.Context, initialValSet []tmtypes.Valida
 
 func (k Keeper) GetInitialValSet(ctx sdk.Context) []tmtypes.ValidatorUpdate {
 	store := ctx.KVStore(k.storeKey)
-	initialValSet := ccv.ConsumerGenesisState{}
+	initialValSet := types.PrivateConsumerGenesisState{}
 	bz := store.Get(types.InitialValSetKey())
 	if bz != nil {
 		k.cdc.MustUnmarshal(bz, &initialValSet)
-		return initialValSet.InitialValSet
+		return initialValSet.Provider.InitialValSet
 	}
 	return []tmtypes.ValidatorUpdate{}
 }
