@@ -19,7 +19,7 @@ type State map[ChainID]ChainState
 type ChainState struct {
 	ValBalances                    *map[ValidatorID]uint
 	Proposals                      *map[uint]Proposal
-	ProposedConsumerChains         []string
+	ProposedConsumerChains         *[]string
 	ValPowers                      *map[ValidatorID]uint
 	RepresentativePowers           *map[ValidatorID]uint
 	Params                         *[]Param
@@ -135,7 +135,7 @@ func (tr TestRun) getChainState(chain ChainID, modelState ChainState) ChainState
 
 	if modelState.ProposedConsumerChains != nil {
 		proposedConsumerChains := tr.getProposedConsumerChains(chain)
-		chainState.ProposedConsumerChains = proposedConsumerChains
+		chainState.ProposedConsumerChains = &proposedConsumerChains
 	}
 
 	if modelState.ValPowers != nil {
@@ -780,9 +780,9 @@ func (tr TestRun) curlJsonRPCRequest(method, params, address string) {
 }
 
 
-func (tr TestRun) getProposedConsumerChains(chain chainID) []string {
-	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
-
+func (tr TestRun) getProposedConsumerChains(chain ChainID) []string {
+	tr.waitBlocks(chain, 1, 10*time.Second)
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 		"query", "provider", "list-proposed-consumer-chains",
 		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
