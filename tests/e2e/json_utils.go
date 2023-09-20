@@ -266,7 +266,7 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 
 // custom marshal and unmarshal functions for the chainstate that convert proposals to/from the auxiliary type with type info
 
-// transform the ChainState into a ChainStateWithProposalTypes by adding type info to the proposals
+// MarshalJSON transforms the ChainState into a ChainStateWithProposalTypes by adding type info to the proposals
 func (c ChainState) MarshalJSON() ([]byte, error) {
 	type ProposalAndType struct {
 		RawProposal interface{}
@@ -311,7 +311,7 @@ func (c ChainState) MarshalJSON() ([]byte, error) {
 	return json.Marshal(chainStateWithProposalTypes)
 }
 
-// unmarshal the ChainStateWithProposalTypes into a ChainState by removing the type info from the proposals and getting back standard proposals
+// UnmarshalJSON unmarshals the ChainStateWithProposalTypes into a ChainState by removing the type info from the proposals and getting back standard proposals
 func (c *ChainState) UnmarshalJSON(data []byte) error {
 	type ProposalAndType struct {
 		RawProposal json.RawMessage
