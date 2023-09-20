@@ -2,13 +2,14 @@ package types
 
 // CCV events
 const (
-	EventTypeTimeout                     = "timeout"
-	EventTypePacket                      = "ccv_packet"
-	EventTypeChannelEstablished          = "channel_established"
-	EventTypeFeeTransferChannelOpened    = "fee_transfer_channel_opened"
-	EventTypeConsumerClientCreated       = "consumer_client_created"
-	EventTypeAssignConsumerKey           = "assign_consumer_key"
-	EventTypeRegisterConsumerRewardDenom = "register_consumer_reward_denom"
+	EventTypeTimeout                   = "timeout"
+	EventTypePacket                    = "ccv_packet"
+	EventTypeChannelEstablished        = "channel_established"
+	EventTypeFeeTransferChannelOpened  = "fee_transfer_channel_opened"
+	EventTypeConsumerClientCreated     = "consumer_client_created"
+	EventTypeAssignConsumerKey         = "assign_consumer_key"
+	EventTypeAddConsumerRewardDenom    = "add_consumer_reward_denom"
+	EventTypeRemoveConsumerRewardDenom = "remove_consumer_reward_denom"
 
 	EventTypeExecuteConsumerChainSlash = "execute_consumer_chain_slash"
 	EventTypeFeeDistribution           = "fee_distribution"
@@ -41,6 +42,5 @@ const (
 	AttributeDistributionTotal      = "total"
 	AttributeDistributionToProvider = "provider_amount"
 
-	AttributeConsumerRewardDenom     = "consumer_reward_denom"
-	AttributeConsumerRewardDepositor = "consumer_reward_depositor"
+	AttributeConsumerRewardDenom = "consumer_reward_denom"
 )

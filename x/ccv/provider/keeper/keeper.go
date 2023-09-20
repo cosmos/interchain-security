@@ -251,7 +251,7 @@ func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.Channel
 	return channels
 }
 
-func (k Keeper) SetConsumerGenesis(ctx sdk.Context, chainID string, gen ccv.GenesisState) error {
+func (k Keeper) SetConsumerGenesis(ctx sdk.Context, chainID string, gen ccv.ConsumerGenesisState) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := gen.Marshal()
 	if err != nil {
@@ -262,14 +262,14 @@ func (k Keeper) SetConsumerGenesis(ctx sdk.Context, chainID string, gen ccv.Gene
 	return nil
 }
 
-func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (ccv.GenesisState, bool) {
+func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (ccv.ConsumerGenesisState, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerGenesisKey(chainID))
 	if bz == nil {
-		return ccv.GenesisState{}, false
+		return ccv.ConsumerGenesisState{}, false
 	}
 
-	var data ccv.GenesisState
+	var data ccv.ConsumerGenesisState
 	if err := data.Unmarshal(bz); err != nil {
 		// An error here would indicate something is very wrong,
 		// the ConsumerGenesis is assumed to be correctly serialized in SetConsumerGenesis.

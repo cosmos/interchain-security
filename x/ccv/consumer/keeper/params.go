@@ -11,7 +11,7 @@ import (
 
 // GetParams returns the params for the consumer ccv module
 // NOTE: it is different from the GetParams method which is required to implement StakingKeeper interface
-func (k Keeper) GetConsumerParams(ctx sdk.Context) ccvtypes.Params {
+func (k Keeper) GetConsumerParams(ctx sdk.Context) ccvtypes.ConsumerParams {
 	return ccvtypes.NewParams(
 		k.GetEnabled(ctx),
 		k.GetBlocksPerDistributionTransmission(ctx),
@@ -30,7 +30,7 @@ func (k Keeper) GetConsumerParams(ctx sdk.Context) ccvtypes.Params {
 }
 
 // SetParams sets the paramset for the consumer module
-func (k Keeper) SetParams(ctx sdk.Context, params ccvtypes.Params) {
+func (k Keeper) SetParams(ctx sdk.Context, params ccvtypes.ConsumerParams) {
 	k.paramStore.SetParamSet(ctx, &params)
 }
 

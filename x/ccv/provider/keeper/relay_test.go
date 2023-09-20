@@ -7,6 +7,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -18,7 +19,6 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	ibcsimapp "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
 	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
@@ -28,7 +28,7 @@ import (
 
 // TestQueueVSCPackets tests queueing validator set updates.
 func TestQueueVSCPackets(t *testing.T) {
-	key := ibcsimapp.CreateTestPubKeys(1)[0]
+	_, _, key := ibctesting.GenerateKeys(t, 1)
 	tmPubKey, _ := cryptocodec.ToTmProtoPublicKey(key)
 
 	testCases := []struct {

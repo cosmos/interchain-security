@@ -5,12 +5,12 @@ import (
 
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-
-	ibctestingcore "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/core"
-	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 )
 
 // BeginBlock updates the current header and calls the app.BeginBlock method.
@@ -56,14 +56,37 @@ func EndBlock(c *ibctesting.TestChain, preCommitCallback func()) (*ibctmtypes.He
 
 	c.LastHeader = c.CurrentTMClientHeader()
 
-	packets := []channeltypes.Packet{}
+	sdkEvts := ABCIToSDKEvents(ebRes.Events)
+	packets := ParsePacketsFromEvents(sdkEvts)
 
-	for _, e := range ebRes.Events {
-		if e.Type == channeltypes.EventTypeSendPacket {
-			packet, _ := ibctestingcore.ReconstructPacketFromEvent(e)
+	return c.LastHeader, packets
+}
+
+// ParsePacketsFromEvents returns all packets found in events.
+func ParsePacketsFromEvents(events []sdk.Event) (packets []channeltypes.Packet) {
+	for i, ev := range events {
+		if ev.Type == channeltypes.EventTypeSendPacket {
+			packet, err := ibctesting.ParsePacketFromEvents(events[i:])
+			if err != nil {
+				panic(err)
+			}
 			packets = append(packets, packet)
 		}
 	}
+	return
+}
 
-	return c.LastHeader, packets
+// ABCIToSDKEvents converts a list of ABCI events to Cosmos SDK events.
+func ABCIToSDKEvents(abciEvents []abci.Event) sdk.Events {
+	var events sdk.Events
+	for _, evt := range abciEvents {
+		var attributes []sdk.Attribute
+		for _, attr := range evt.GetAttributes() {
+			attributes = append(attributes, sdk.NewAttribute(attr.Key, attr.Value))
+		}
+
+		events = events.AppendEvent(sdk.NewEvent(evt.GetType(), attributes...))
+	}
+
+	return events
 }
