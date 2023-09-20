@@ -7,6 +7,7 @@ import (
 
 // TraceWriter is an interface for writers that write steps to files.
 type TraceWriter interface {
+	// WriteTraceToFile writes a given trace to a file, overwriting the file if it already exists.
 	WriteTraceToFile(filepath string, trace []Step) error
 }
 
