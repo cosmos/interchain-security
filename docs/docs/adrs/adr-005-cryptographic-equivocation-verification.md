@@ -7,7 +7,7 @@ title: Cryptographic verification of equivocation evidence
 ## Changelog
 * 5/1/2023: First draft
 * 7/23/2023: Add light client attacks handling
-* 6/9/2023: Add double signing attacks handling
+* 9/6/2023: Add double signing attacks handling
 
 ## Status
 
