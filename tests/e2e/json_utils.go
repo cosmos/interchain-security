@@ -205,7 +205,7 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 			return a, nil
 		}
 	case "main.slashThrottleDequeue":
-		var a slashThrottleDequeue
+		var a slashThrottleDequeueAction
 		err := json.Unmarshal(rawAction, &a)
 		if err == nil {
 			return a, nil

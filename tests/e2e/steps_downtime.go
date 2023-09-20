@@ -381,7 +381,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 			},
 		},
 		{
-			Action: slashThrottleDequeue{
+			Action: slashThrottleDequeueAction{
 				Chain:            ChainID(consumerName),
 				CurrentQueueSize: 1,
 				NextQueueSize:    0,
