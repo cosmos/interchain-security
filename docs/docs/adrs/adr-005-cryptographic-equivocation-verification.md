@@ -93,7 +93,7 @@ Note that this is achieved using the public key of the misbehaving validator, al
 
 Once a double signing evidence is committed to a block, the consensus layer will report the equivocation to the evidence module of the Cosmos SDK application layer. 
 The application will, in turn, punish the malicious validator through jailing, tombstoning and slashing 
-(see [handleEquivocationEvidence](https://github.com/cosmos/cosmos-sdk/blob/19389505643500b25a5efeb02715c3deef9b6ede/x/evidence/keeper/infraction.go#L27C17-L27C43)).
+(see [handleEquivocationEvidence](https://github.com/cosmos/cosmos-sdk/blob/v0.45.16-ics-lsm/x/evidence/keeper/infraction.go#L263)).
 
 ## Decision
 
