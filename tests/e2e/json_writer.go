@@ -18,9 +18,6 @@ type JSONWriter struct{}
 var GlobalJSONWriter = JSONWriter{}
 
 func (writer JSONWriter) WriteTraceToFile(filepath string, trace []Step) error {
-	// collect missing action types, if any. this way, we can provide a more helpful error message.
-
-	// workaround: we would keep a set, but go doesn't have sets.
 	jsonobj, err := json.Marshal(trace)
 	if err != nil {
 		panic(err)
