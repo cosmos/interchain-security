@@ -146,19 +146,6 @@ module extraSpells {
             assert(m.mapRemoveAll(Set(5, 7)) == Map(3 -> 4)),
             assert(m.mapRemoveAll(Set(5, 99999)) == Map(3 -> 4, 7 -> 8)),
         }
-        
-    pure def listSorted(__list: List[a], __lt: (a, a) => bool): List[a] = {
-    pure def __countSmaller(__j: int): int = {
-      pure val __jth = __list[__j]
-      __list.indices().filter(__i =>
-        __lt(__list[__i], __jth) or (__list[__i] == __jth and __i < __j)
-      )
-      .size()
-    }
-
-    pure val __permutation = __list.indices().mapBy(__i => __countSmaller(__i))
-        __list.foldl([], (__l, __i) => __l.append(__list[__permutation.get(__i)]))
-    }
 
     //// Returns a list of all elements of a set.
     ////

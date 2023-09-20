@@ -9,7 +9,6 @@ module ccv_logic {
     // Things that explicitly are modelled:
     // * Validator set changes are propagated from provider to consumers
     // * VSC packets mature
-    // * Consumers can be forcefully dropped due to timeouts, or stop on their own volition
     
     // ===================
     // TYPE DEFINITIONS
@@ -23,11 +22,10 @@ module ccv_logic {
     // a list of validator sets per blocks, ordered by recency
     type VotingPowerHistory = List[ValidatorSet]
 
-    // --PACKETS
     type VSCPacket =
         {   
             // the identifier for this packet
-            id: int,
+            VscId: int,
             // the new validator set. in the implementation, this would be a list of validator updates
             validatorSet: ValidatorSet,
             // the time, that when passed on the receiver chain, will mean the packet is considered timed out
@@ -41,12 +39,6 @@ module ccv_logic {
             // the time, that when passed on the receiver chain, will mean the packet is considered timed out
             timeout: Timestamp
         }
-    
-    // possible consumer statuses
-    pure val STOPPED = "stopped" // the chain was once a consumer chain, but has been dropped by the provider.
-    pure val RUNNING = "running" // the chain is currently a consumer chain. Running chains are those that get sent VSCPackets.
-    pure val UNUSED = "unused" // the chain has never been a consumer chain, and is available to become one.
-    // When a chain is dropped, it cannot become a consumer again - we assume that would be done by another consumer becoming running.
 
 
     // state that each chain needs to store, whether consumer or provider.
@@ -164,6 +156,23 @@ module ccv_logic {
         }
     }
 
+    // possible consumer statuses
+    pure val STOPPED = "stopped" // the chain was once a consumer chain, but has been dropped by the provider.
+    pure val RUNNING = "running" // the chain is currently a consumer chain. Running chains are those that get sent VSCPackets.
+    pure val UNUSED = "unused" // the chain has never been a consumer chain, and is available to become one.
+    // When a chain is dropped, it cannot become a consumer again - we assume that would be done by another consumer becoming running.
+
+    // the provider chain.
+    // given as a pure val so that we can switch cases based on
+    // whether a chain is the provider or not
+    pure val PROVIDER_CHAIN = "provider"
+
+    // ===================
+    // PROTOCOL PARAMETERS
+    // ===================
+
+    const UnbondingPeriodPerChain: Chain -> int
+
     // ===================
     // PROTOCOL LOGIC
     // ===================
@@ -207,11 +216,99 @@ module ccv_logic {
         }
     }
 
+    pure def endAndBeginBlockForProvider(
+        currentState: ProtocolState,
+        chain: Chain,
+        timeAdvancement: Timestamp,
+        newConsumerStatusses: Chain -> ConsumerState): Result = {
+        // commit the current running validator set on chain
+        val currentProviderState = currentState.providerState
+        val newChainState = currentState.providerState.chainState.with(
+            "votingPowerHistory", currentState.providerState.chainState.votingPowerHistory.prepend(
+                currentState.providerState.chainState.currentValidatorSet
+            )
+        ).with(
+            "lastTimestamp", currentState.providerState.chainState.lastTimestamp + 1
+        )
+        Err("not implemented")
+    //     votingPowerHistories' = votingPowerHistories.set(ProviderChain, getUpdatedHistory(ProviderChain)),
+    //     // the running validator set is now for sure the current validator set,
+    //     // so start with it in the next block
+    //     runningValidatorSet' = runningValidatorSet,
+    //     // send VSCPackets to consumers
+    //     val newOutstandingPackets = 
+    //         // if running validator set is considered to have changed
+    //         if (providerValidatorSetChangedInThisBlock)
+    //             // then send a packet to each running consumer
+    //             outstandingPacketsToConsumer.keys().mapBy(
+    //                 (consumer) => 
+    //                 val packetQueue = outstandingPacketsToConsumer.get(consumer)
+    //                 if (consumerStatus.get(consumer) == RUNNING) {
+    //                     packetQueue.append(
+    //                         {
+    //                             id: packetQueue.length(),
+    //                             validatorSet: runningValidatorSet.get(ProviderChain),
+    //                             timeout: curChainTimes.get(ProviderChain) + PacketTimeout
+    //                         }
+    //                     )
+    //                 } else {
+    //                     packetQueue
+    //                 }
+    //             )
+    //         else
+    //             // otherwise, don't send any packets
+    //             outstandingPacketsToConsumer
+    //     RegisterNewOutstandingPackets(newOutstandingPackets),
+    //     CONSUMER_NOOP,
+    //     // no packets are sent to the provider
+    //     outstandingPacketsToProvider' = outstandingPacketsToProvider,
+    //     // do not receive any maturations
+    //     receivedMaturations' = receivedMaturations,
+    //     // consumer statusses do not change
+    //     consumerStatus' = consumerStatus,
+    //     // chain times do not change
+    //     curChainTimes' = curChainTimes,
+    //     // the validator set was definitely not changed in the new block yet, so set to false
+    //     providerValidatorSetChangedInThisBlock' = false
+    }
+
     // ===================
     // UTILITY FUNCTIONS
     // ===================
 
+    // receives a given packet (sent by the provider) on the consumer. The arguments are the consumer chain that is receiving the packet, and the packet itself.
+    // To receive a packet, modify the running validator set (not the one entered into the block yet,
+    // but the candidate that would be put into the block if it ended now)
+    // and store the maturation time for the packet.
+    pure def recvPacketOnConsumer(currentState: ProtocolState, receiver: Chain, packet: VSCPacket): Result = {
+        if(not(isCurrentlyConsumer(receiver, currentState))) {
+            Err("Receiver is not currently a consumer - must have 'running' status!")
+        } else {
+            // update the running validator set, but not the history yet,
+            // as that only happens when the next block is started
+            val currentConsumerState = currentState.consumerStates.get(receiver)
+            val newConsumerState = currentConsumerState.with(
+                "chainState",
+                currentConsumerState.chainState.with(
+                    "currentValidatorSet", packet.validatorSet
+                )
+            ).with(
+                "maturationTimes",
+                currentConsumerState.maturationTimes.put(
+                    packet, 
+                    currentConsumerState.chainState.lastTimestamp + UnbondingPeriodPerChain.get(receiver)
+                )
+            )
+            val newConsumerStates = currentState.consumerStates.set(receiver, newConsumerState)
+            val newState = currentState.with(
+                "consumerStates", newConsumerStates
+            )
+            Ok(newState)
+        }
+    }
+
     // receives a given packet on the provider. The arguments are the consumer chain that sent the packet, and the packet itself.
+    // To receive a packet, add it to the list of received maturations.
     pure def recvPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VSCMaturedPacket): Result = {
         if (not(isCurrentlyConsumer(sender, currentState))) {
             Err("Sender is not currently a consumer - must have 'running' status!")
@@ -233,7 +330,7 @@ module ccv_logic {
     pure def removeOutstandingPacketFromConsumer(currentState: ProtocolState, sender: Chain): Result = {
         val currentOutstandingPackets = currentState.consumerStates.get(sender).outstandingPacketsToProvider
         val newOutstandingPackets = currentOutstandingPackets.tail()
-        val newConsumerState = currentState.consumerState.get(sender).with(
+        val newConsumerState = currentState.consumerStates.get(sender).with(
             "outstandingPacketsToProvider", newOutstandingPackets
         )
         val newConsumerStates = currentState.consumerStates.set(sender, newConsumerState)
@@ -241,15 +338,18 @@ module ccv_logic {
             "consumerStates", newConsumerStates
         )
         Ok(newState)
-        // Err("Not implemented")
     }
 
+    // Updates the given oldValidatorSet by setting the validator to newVotingPower.
+    // If newVotingPower is zero, the validator is removed.
     pure def getUpdatedValidatorSet(oldValidatorSet: ValidatorSet, validator: Node, newVotingPower: int): ValidatorSet =
         if (newVotingPower > 0) 
         oldValidatorSet.put(validator, newVotingPower)
         else
         oldValidatorSet.mapRemove(validator)
 
+    // Returns a ProtocolState where the current validator set on the provider is set to 
+    // newValidatorSet.
     pure def setProviderValidatorSet(currentState: ProtocolState, newValidatorSet: ValidatorSet): ProtocolState = {
         pure val newChainState = currentState.providerState.chainState.with(
             "currentValidatorSet", newValidatorSet
@@ -262,6 +362,7 @@ module ccv_logic {
         )
     }
 
+    // Returns true if the given chain is currently a running consumer, false otherwise.
     pure def isCurrentlyConsumer(chain: Chain, currentState: ProtocolState): bool = {
         val status = currentState.providerState.consumerStatus.get(chain)
         status == RUNNING
