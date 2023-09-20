@@ -10,7 +10,7 @@ type TraceWriter interface {
 	WriteTraceToFile(filepath string, trace []Step) error
 }
 
-// JSONWriter is a simple writer that simply marshals the array of Step objects.
+// JSONWriter is a simple writer that marshals the array of Step objects.
 // To identify which type of action is being used, we add a field to the Step struct.
 type JSONWriter struct{}
 
