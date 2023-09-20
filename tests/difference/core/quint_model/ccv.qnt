@@ -106,11 +106,6 @@ module ccv_logic {
         // ordered by recency, so the head is the oldest packet.
         // In the implementation, essentially unacknowledged IBC packets.
         outstandingPacketsToProvider: List[VSCMaturedPacket],
-
-        // Stores the list of voting powers that corresponded to voting powers 
-        // at blocks over the chains entire existence.
-        // Voting powers should be ordered by recency in descending order.
-        votingPowerHistory: VotingPowerHistory,
     }
 
     // the state of the protocol consists of the composition of the state of one provider chain with potentially many consumer chains.
@@ -153,7 +148,7 @@ module ccv_logic {
                     chainState: {
                         votingPowerHistory: List(),
                         currentValidatorSet: Map(),
-                        lastTimestamp: 0
+                        lastTimestamp: 0,
                     },
                     outstandingPacketsToConsumer: Map(),
                     receivedMaturations: Set(),
