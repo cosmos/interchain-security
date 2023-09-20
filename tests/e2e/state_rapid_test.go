@@ -7,6 +7,13 @@ import (
 	"pgregory.net/rapid"
 )
 
+// This file contains tests for serialization/deserialization of state.
+// The tests are written using the rapid testing library, which allows us to
+// generate arbitrary state structs and test that they can be serialized and
+// deserialized without error.
+// The generators for the various parts of the state are defined in this file, and
+// essentially tell rapid how to build the state.
+
 func TestChainStateMarshalling(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		chainState := GetChainStateGen().Draw(t, "ChainState")
