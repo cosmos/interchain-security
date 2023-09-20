@@ -218,7 +218,6 @@ func GetSubmitTextProposalActionGen() *rapid.Generator[submitTextProposalAction]
 			Chain:       GetChainIDGen().Draw(t, "Chain"),
 			From:        GetValidatorIDGen().Draw(t, "From"),
 			Deposit:     rapid.Uint().Draw(t, "Deposit"),
-			PropType:    rapid.String().Draw(t, "PropType"),
 			Title:       rapid.String().Draw(t, "Title"),
 			Description: rapid.String().Draw(t, "Description"),
 		}
