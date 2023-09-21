@@ -12,21 +12,16 @@ type ProposalAndType struct {
 	Type        string
 }
 
-// duplicated from the ChainState with a minor change to the Proposals field
-type ChainStateWithProposalTypes struct {
-	ValBalances                    *map[ValidatorID]uint
-	ValPowers                      *map[ValidatorID]uint
-	RepresentativePowers           *map[ValidatorID]uint
-	Params                         *[]Param
-	Rewards                        *Rewards
-	ConsumerChains                 *map[ChainID]bool
-	AssignedKeys                   *map[ValidatorID]string
-	ProviderKeys                   *map[ValidatorID]string
-	ConsumerChainQueueSizes        *map[ChainID]uint
-	GlobalSlashQueueSize           *uint
-	RegisteredConsumerRewardDenoms *[]string
-	Proposals                      *map[uint]ProposalAndType // the only thing changed from the real ChainState
-}
+type (
+	// to have a ChainState object that does not have the overriden Marshal/Unmarshal method
+	ChainStateCopy ChainState
+
+	// duplicated from the ChainState with a minor change to the Proposals field
+	ChainStateWithProposalTypes struct {
+		ChainStateCopy
+		Proposals *map[uint]ProposalAndType // the only thing changed from the real ChainState
+	}
+)
 
 // MarshalJSON marshals a step into JSON while including the type of the action.
 func (step Step) MarshalJSON() ([]byte, error) {
@@ -52,6 +47,7 @@ func (step *Step) UnmarshalJSON(data []byte) error {
 		Action     json.RawMessage
 		State      State
 	}
+	print(string(data))
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
@@ -290,19 +286,8 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 
 // MarshalJSON transforms the ChainState into a ChainStateWithProposalTypes by adding type info to the proposals
 func (c ChainState) MarshalJSON() ([]byte, error) {
-	chainStateWithProposalTypes := ChainStateWithProposalTypes{
-		ValBalances:                    c.ValBalances,
-		ValPowers:                      c.ValPowers,
-		RepresentativePowers:           c.RepresentativePowers,
-		Params:                         c.Params,
-		Rewards:                        c.Rewards,
-		ConsumerChains:                 c.ConsumerChains,
-		AssignedKeys:                   c.AssignedKeys,
-		ProviderKeys:                   c.ProviderKeys,
-		ConsumerChainQueueSizes:        c.ConsumerChainQueueSizes,
-		GlobalSlashQueueSize:           c.GlobalSlashQueueSize,
-		RegisteredConsumerRewardDenoms: c.RegisteredConsumerRewardDenoms,
-	}
+	chainStateCopy := ChainStateCopy(c)
+	chainStateWithProposalTypes := ChainStateWithProposalTypes{chainStateCopy, nil}
 	if c.Proposals != nil {
 		proposalsWithTypes := make(map[uint]ProposalAndType)
 		for k, v := range *c.Proposals {
@@ -324,17 +309,9 @@ func (c *ChainState) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	c.ValBalances = chainStateWithProposalTypes.ValBalances
-	c.ValPowers = chainStateWithProposalTypes.ValPowers
-	c.RepresentativePowers = chainStateWithProposalTypes.RepresentativePowers
-	c.Params = chainStateWithProposalTypes.Params
-	c.Rewards = chainStateWithProposalTypes.Rewards
-	c.ConsumerChains = chainStateWithProposalTypes.ConsumerChains
-	c.AssignedKeys = chainStateWithProposalTypes.AssignedKeys
-	c.ProviderKeys = chainStateWithProposalTypes.ProviderKeys
-	c.ConsumerChainQueueSizes = chainStateWithProposalTypes.ConsumerChainQueueSizes
-	c.GlobalSlashQueueSize = chainStateWithProposalTypes.GlobalSlashQueueSize
-	c.RegisteredConsumerRewardDenoms = chainStateWithProposalTypes.RegisteredConsumerRewardDenoms
+
+	chainState := ChainState(chainStateWithProposalTypes.ChainStateCopy)
+	*c = chainState
 
 	if chainStateWithProposalTypes.Proposals != nil {
 		proposals := make(map[uint]Proposal)
