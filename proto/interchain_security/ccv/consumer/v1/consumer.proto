@@ -1,14 +1,13 @@
 syntax = "proto3";
 package interchain_security.ccv.consumer.v1;
 
-import "interchain_security/ccv/v1/wire.proto";
+
 
 option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types";
 
 import "google/protobuf/any.proto";
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
-import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
 //

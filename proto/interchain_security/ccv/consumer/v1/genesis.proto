@@ -5,10 +5,6 @@ package interchain_security.ccv.consumer.v1;
 option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types";
 
 import "interchain_security/ccv/v1/shared_consumer.proto";
-import "tendermint/abci/types.proto";
-import "ibc/lightclients/tendermint/v1/tendermint.proto";
-import "ibc/core/channel/v1/channel.proto";
-import "google/protobuf/duration.proto";
 import "gogoproto/gogo.proto";
 import "interchain_security/ccv/v1/wire.proto";
 import "google/protobuf/timestamp.proto";
