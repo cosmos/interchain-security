@@ -164,6 +164,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 						ValidatorID("bob"):   9500000000,
 						ValidatorID("carol"): 9500000000,
 					},
+					ProposedConsumerChains: &[]string{},
 				},
 				ChainID(consumerName): ChainState{
 					ValBalances: &map[ValidatorID]uint{
