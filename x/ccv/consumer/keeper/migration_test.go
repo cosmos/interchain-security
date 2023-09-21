@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	testutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -14,7 +15,7 @@ func TestMigrateConsumerPacketData(t *testing.T) {
 	defer ctrl.Finish()
 
 	// Set some pending data packets in the old format
-	packets := ccvtypes.ConsumerPacketDataList{
+	packets := types.ConsumerPacketDataList{
 		List: []ccvtypes.ConsumerPacketData{
 			{
 				Type: ccvtypes.SlashPacket,

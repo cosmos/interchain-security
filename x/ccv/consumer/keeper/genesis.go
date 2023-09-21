@@ -126,7 +126,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *types.PrivateConsumerGe
 
 	// export pending packets using the depreciated ConsumerPacketDataList type
 	pendingPackets := k.GetPendingPackets(ctx)
-	pendingPacketsDepreciated := ccv.ConsumerPacketDataList{}
+	pendingPacketsDepreciated := types.ConsumerPacketDataList{}
 	pendingPacketsDepreciated.List = append(pendingPacketsDepreciated.List, pendingPackets...)
 
 	// export all the states created after a provider channel got established
@@ -165,7 +165,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *types.PrivateConsumerGe
 			k.GetAllHeightToValsetUpdateIDs(ctx),
 			pendingPacketsDepreciated,
 			nil,
-			ccv.LastTransmissionBlockHeight{},
+			types.LastTransmissionBlockHeight{},
 			params,
 		)
 	}

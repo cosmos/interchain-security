@@ -10,12 +10,12 @@ import (
 // NewRestartConsumerGenesisState returns a ConsumerGenesisState that has already been established.
 func NewRestartConsumerGenesisState(
 	clientID, channelID string,
-	maturingPackets []ccv.MaturingVSCPacket,
+	maturingPackets []MaturingVSCPacket,
 	initValSet []abci.ValidatorUpdate,
-	heightToValsetUpdateIDs []ccv.HeightToValsetUpdateID,
-	pendingConsumerPackets ccv.ConsumerPacketDataList,
-	outstandingDowntimes []ccv.OutstandingDowntime,
-	lastTransBlockHeight ccv.LastTransmissionBlockHeight,
+	heightToValsetUpdateIDs []HeightToValsetUpdateID,
+	pendingConsumerPackets ConsumerPacketDataList,
+	outstandingDowntimes []OutstandingDowntime,
+	lastTransBlockHeight LastTransmissionBlockHeight,
 	params ccv.ConsumerParams,
 ) *PrivateConsumerGenesisState {
 	return &PrivateConsumerGenesisState{
@@ -155,6 +155,16 @@ func (gs PrivateConsumerGenesisState) Validate() error {
 				return errorsmod.Wrap(err, "invalid unbonding sequences")
 			}
 		}
+	}
+	return nil
+}
+
+func (mat MaturingVSCPacket) Validate() error {
+	if mat.MaturityTime.IsZero() {
+		return errorsmod.Wrap(ccv.ErrInvalidVSCMaturedTime, "cannot have 0 maturity time")
+	}
+	if mat.VscId == 0 {
+		return errorsmod.Wrap(ccv.ErrInvalidVSCMaturedId, "cannot have 0 maturity time")
 	}
 	return nil
 }

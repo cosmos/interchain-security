@@ -61,13 +61,13 @@ func TestInitGenesis(t *testing.T) {
 		[]string{"upgrade", "upgradedIBCState"},
 	)
 
-	matPackets := []ccv.MaturingVSCPacket{
+	matPackets := []consumertypes.MaturingVSCPacket{
 		{
 			VscId:        1,
 			MaturityTime: time.Now().UTC(),
 		},
 	}
-	pendingDataPackets := ccv.ConsumerPacketDataList{
+	pendingDataPackets := consumertypes.ConsumerPacketDataList{
 		List: []ccv.ConsumerPacketData{
 			{
 				Type: ccv.SlashPacket,
@@ -84,11 +84,11 @@ func TestInitGenesis(t *testing.T) {
 		},
 	}
 	// mock height to valset update ID values
-	defaultHeightValsetUpdateIDs := []ccv.HeightToValsetUpdateID{
+	defaultHeightValsetUpdateIDs := []consumertypes.HeightToValsetUpdateID{
 		{ValsetUpdateId: vscID, Height: blockHeight},
 	}
 	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs,
-		ccv.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
+		consumertypes.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
 	)
 
 	// create default parameters for a new chain
@@ -142,7 +142,7 @@ func TestInitGenesis(t *testing.T) {
 				defaultHeightValsetUpdateIDs,
 				pendingDataPackets,
 				nil,
-				ccv.LastTransmissionBlockHeight{},
+				consumertypes.LastTransmissionBlockHeight{},
 				params,
 			),
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.PrivateConsumerGenesisState) {
@@ -177,10 +177,10 @@ func TestInitGenesis(t *testing.T) {
 				valset,
 				updatedHeightValsetUpdateIDs,
 				pendingDataPackets,
-				[]ccv.OutstandingDowntime{
+				[]consumertypes.OutstandingDowntime{
 					{ValidatorConsensusAddress: sdk.ConsAddress(validator.Bytes()).String()},
 				},
-				ccv.LastTransmissionBlockHeight{Height: int64(100)},
+				consumertypes.LastTransmissionBlockHeight{Height: int64(100)},
 				params,
 			),
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.PrivateConsumerGenesisState) {
@@ -239,7 +239,7 @@ func TestExportGenesis(t *testing.T) {
 	vscID := uint64(0)
 	blockHeight := uint64(0)
 
-	matPackets := []ccv.MaturingVSCPacket{
+	matPackets := []consumertypes.MaturingVSCPacket{
 		{
 			VscId:        1,
 			MaturityTime: time.Now().UTC(),
@@ -255,7 +255,7 @@ func TestExportGenesis(t *testing.T) {
 	valset := []abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}
 
 	// create pending consumer packets
-	consPackets := ccv.ConsumerPacketDataList{
+	consPackets := consumertypes.ConsumerPacketDataList{
 		List: []ccv.ConsumerPacketData{
 			{
 				Type: ccv.SlashPacket,
@@ -272,13 +272,13 @@ func TestExportGenesis(t *testing.T) {
 		},
 	}
 	// mock height to valset update ID values
-	defaultHeightValsetUpdateIDs := []ccv.HeightToValsetUpdateID{
+	defaultHeightValsetUpdateIDs := []consumertypes.HeightToValsetUpdateID{
 		{ValsetUpdateId: vscID, Height: blockHeight},
 	}
 	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs,
-		ccv.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
+		consumertypes.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
 	)
-	ltbh := ccv.LastTransmissionBlockHeight{Height: int64(1000)}
+	ltbh := consumertypes.LastTransmissionBlockHeight{Height: int64(1000)}
 	// create default parameters for a new chain
 	params := ccv.DefaultParams()
 	params.Enabled = true
@@ -315,7 +315,7 @@ func TestExportGenesis(t *testing.T) {
 				defaultHeightValsetUpdateIDs,
 				consPackets,
 				nil,
-				ccv.LastTransmissionBlockHeight{},
+				consumertypes.LastTransmissionBlockHeight{},
 				params,
 			),
 		},
@@ -350,7 +350,7 @@ func TestExportGenesis(t *testing.T) {
 				valset,
 				updatedHeightValsetUpdateIDs,
 				consPackets,
-				[]ccv.OutstandingDowntime{
+				[]consumertypes.OutstandingDowntime{
 					{ValidatorConsensusAddress: sdk.ConsAddress(validator.Address.Bytes()).String()},
 				},
 				ltbh,
@@ -394,7 +394,7 @@ func assertProviderClientID(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Ke
 }
 
 // assert that the given input match the height to valset update ID mappings in the store
-func assertHeightValsetUpdateIDs(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, heighValsetUpdateIDs []ccv.HeightToValsetUpdateID) {
+func assertHeightValsetUpdateIDs(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, heighValsetUpdateIDs []consumertypes.HeightToValsetUpdateID) {
 	t.Helper()
 	ctr := 0
 

@@ -27,23 +27,59 @@ message PrivateConsumerGenesisState {
     // true for new chain, false for chain restart.
     bool new_chain = 4;
     // MaturingPackets nil on new chain, filled in on restart.
-    repeated interchain_security.ccv.v1.MaturingVSCPacket
+    repeated MaturingVSCPacket
         maturing_packets = 7 [ (gogoproto.nullable) = false ];
     // HeightToValsetUpdateId nil on new chain, filled in on restart.
-    repeated interchain_security.ccv.v1.HeightToValsetUpdateID height_to_valset_update_id = 9
+    repeated HeightToValsetUpdateID height_to_valset_update_id = 9
         [ (gogoproto.nullable) = false ];
     // OutstandingDowntimes nil on new chain, filled  in on restart.
-    repeated interchain_security.ccv.v1.OutstandingDowntime outstanding_downtime_slashing = 10
+    repeated OutstandingDowntime outstanding_downtime_slashing = 10
         [ (gogoproto.nullable) = false ];
 
         // PendingConsumerPackets nil on new chain, filled in on restart.
-    interchain_security.ccv.v1.ConsumerPacketDataList pending_consumer_packets =
+    ConsumerPacketDataList pending_consumer_packets =
         11 [ (gogoproto.nullable) = false ];
     // LastTransmissionBlockHeight nil on new chain, filled in on restart.
-    interchain_security.ccv.v1.LastTransmissionBlockHeight
+    LastTransmissionBlockHeight
         last_transmission_block_height = 12 [ (gogoproto.nullable) = false ];
     // flag indicating whether the consumer CCV module starts in pre-CCV state
     bool preCCV = 13; 
     interchain_security.ccv.v1.ProviderInfo provider = 14 [(gogoproto.nullable) = false];
 }
   
+// HeightValsetUpdateID represents a mapping internal to the consumer CCV module
+// AND used in shared consumer genesis state, which links a block height to each recv valset update id.
+message HeightToValsetUpdateID {
+    uint64 height = 1;
+    uint64 valset_update_id = 2;
+}
+
+// OutstandingDowntime defines the type used internally to the consumer CCV module,
+// AND used in shared consumer genesis state, in order to not send multiple slashing 
+// requests for the same downtime infraction.
+message OutstandingDowntime { string validator_consensus_address = 1; }
+
+// LastTransmissionBlockHeight is the last time validator holding
+// pools were transmitted to the provider chain. This type is used internally 
+// to the consumer CCV module AND used in shared consumer genesis state.
+message LastTransmissionBlockHeight { int64 height = 1; }
+
+// MaturingVSCPacket represents a vsc packet that is maturing internal to the
+// consumer CCV module, where the consumer has not yet relayed a VSCMatured packet
+// back to the provider.  This type is used internally to the consumer CCV module
+// AND used in shared consumer genesis state.
+message MaturingVSCPacket {
+    uint64 vscId = 1;
+    google.protobuf.Timestamp maturity_time = 2
+        [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+}
+
+// ConsumerPacketDataList is a list of consumer packet data packets.
+//
+// Note this type is is used internally to the consumer CCV module 
+// for exporting / importing state in InitGenesis and ExportGenesis,
+// AND included in the consumer genesis type (reffed by provider and consumer modules), 
+// hence this is a shared type.
+message ConsumerPacketDataList {
+    repeated interchain_security.ccv.v1.ConsumerPacketData list = 1 [ (gogoproto.nullable) = false ];
+}

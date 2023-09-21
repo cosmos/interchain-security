@@ -62,13 +62,3 @@ func (gs ConsumerGenesisState) Validate() error {
 	}
 	return nil
 }
-
-func (mat MaturingVSCPacket) Validate() error {
-	if mat.MaturityTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidVSCMaturedTime, "cannot have 0 maturity time")
-	}
-	if mat.VscId == 0 {
-		return errorsmod.Wrap(ErrInvalidVSCMaturedId, "cannot have 0 maturity time")
-	}
-	return nil
-}

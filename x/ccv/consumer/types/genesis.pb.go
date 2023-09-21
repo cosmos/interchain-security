@@ -8,6 +8,7 @@ import (
 	_ "github.com/cometbft/cometbft/abci/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
+	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	_ "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	_ "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	types "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -16,12 +17,14 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+var _ = time.Kitchen
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -42,15 +45,15 @@ type PrivateConsumerGenesisState struct {
 	// true for new chain, false for chain restart.
 	NewChain bool `protobuf:"varint,4,opt,name=new_chain,json=newChain,proto3" json:"new_chain,omitempty"`
 	// MaturingPackets nil on new chain, filled in on restart.
-	MaturingPackets []types.MaturingVSCPacket `protobuf:"bytes,7,rep,name=maturing_packets,json=maturingPackets,proto3" json:"maturing_packets"`
+	MaturingPackets []MaturingVSCPacket `protobuf:"bytes,7,rep,name=maturing_packets,json=maturingPackets,proto3" json:"maturing_packets"`
 	// HeightToValsetUpdateId nil on new chain, filled in on restart.
-	HeightToValsetUpdateId []types.HeightToValsetUpdateID `protobuf:"bytes,9,rep,name=height_to_valset_update_id,json=heightToValsetUpdateId,proto3" json:"height_to_valset_update_id"`
+	HeightToValsetUpdateId []HeightToValsetUpdateID `protobuf:"bytes,9,rep,name=height_to_valset_update_id,json=heightToValsetUpdateId,proto3" json:"height_to_valset_update_id"`
 	// OutstandingDowntimes nil on new chain, filled  in on restart.
-	OutstandingDowntimeSlashing []types.OutstandingDowntime `protobuf:"bytes,10,rep,name=outstanding_downtime_slashing,json=outstandingDowntimeSlashing,proto3" json:"outstanding_downtime_slashing"`
+	OutstandingDowntimeSlashing []OutstandingDowntime `protobuf:"bytes,10,rep,name=outstanding_downtime_slashing,json=outstandingDowntimeSlashing,proto3" json:"outstanding_downtime_slashing"`
 	// PendingConsumerPackets nil on new chain, filled in on restart.
-	PendingConsumerPackets types.ConsumerPacketDataList `protobuf:"bytes,11,opt,name=pending_consumer_packets,json=pendingConsumerPackets,proto3" json:"pending_consumer_packets"`
+	PendingConsumerPackets ConsumerPacketDataList `protobuf:"bytes,11,opt,name=pending_consumer_packets,json=pendingConsumerPackets,proto3" json:"pending_consumer_packets"`
 	// LastTransmissionBlockHeight nil on new chain, filled in on restart.
-	LastTransmissionBlockHeight types.LastTransmissionBlockHeight `protobuf:"bytes,12,opt,name=last_transmission_block_height,json=lastTransmissionBlockHeight,proto3" json:"last_transmission_block_height"`
+	LastTransmissionBlockHeight LastTransmissionBlockHeight `protobuf:"bytes,12,opt,name=last_transmission_block_height,json=lastTransmissionBlockHeight,proto3" json:"last_transmission_block_height"`
 	// flag indicating whether the consumer CCV module starts in pre-CCV state
 	PreCCV   bool               `protobuf:"varint,13,opt,name=preCCV,proto3" json:"preCCV,omitempty"`
 	Provider types.ProviderInfo `protobuf:"bytes,14,opt,name=provider,proto3" json:"provider"`
@@ -117,39 +120,39 @@ func (m *PrivateConsumerGenesisState) GetNewChain() bool {
 	return false
 }
 
-func (m *PrivateConsumerGenesisState) GetMaturingPackets() []types.MaturingVSCPacket {
+func (m *PrivateConsumerGenesisState) GetMaturingPackets() []MaturingVSCPacket {
 	if m != nil {
 		return m.MaturingPackets
 	}
 	return nil
 }
 
-func (m *PrivateConsumerGenesisState) GetHeightToValsetUpdateId() []types.HeightToValsetUpdateID {
+func (m *PrivateConsumerGenesisState) GetHeightToValsetUpdateId() []HeightToValsetUpdateID {
 	if m != nil {
 		return m.HeightToValsetUpdateId
 	}
 	return nil
 }
 
-func (m *PrivateConsumerGenesisState) GetOutstandingDowntimeSlashing() []types.OutstandingDowntime {
+func (m *PrivateConsumerGenesisState) GetOutstandingDowntimeSlashing() []OutstandingDowntime {
 	if m != nil {
 		return m.OutstandingDowntimeSlashing
 	}
 	return nil
 }
 
-func (m *PrivateConsumerGenesisState) GetPendingConsumerPackets() types.ConsumerPacketDataList {
+func (m *PrivateConsumerGenesisState) GetPendingConsumerPackets() ConsumerPacketDataList {
 	if m != nil {
 		return m.PendingConsumerPackets
 	}
-	return types.ConsumerPacketDataList{}
+	return ConsumerPacketDataList{}
 }
 
-func (m *PrivateConsumerGenesisState) GetLastTransmissionBlockHeight() types.LastTransmissionBlockHeight {
+func (m *PrivateConsumerGenesisState) GetLastTransmissionBlockHeight() LastTransmissionBlockHeight {
 	if m != nil {
 		return m.LastTransmissionBlockHeight
 	}
-	return types.LastTransmissionBlockHeight{}
+	return LastTransmissionBlockHeight{}
 }
 
 func (m *PrivateConsumerGenesisState) GetPreCCV() bool {
@@ -166,8 +169,267 @@ func (m *PrivateConsumerGenesisState) GetProvider() types.ProviderInfo {
 	return types.ProviderInfo{}
 }
 
+// HeightValsetUpdateID represents a mapping internal to the consumer CCV module
+// AND used in shared consumer genesis state, which links a block height to each recv valset update id.
+type HeightToValsetUpdateID struct {
+	Height         uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
+	ValsetUpdateId uint64 `protobuf:"varint,2,opt,name=valset_update_id,json=valsetUpdateId,proto3" json:"valset_update_id,omitempty"`
+}
+
+func (m *HeightToValsetUpdateID) Reset()         { *m = HeightToValsetUpdateID{} }
+func (m *HeightToValsetUpdateID) String() string { return proto.CompactTextString(m) }
+func (*HeightToValsetUpdateID) ProtoMessage()    {}
+func (*HeightToValsetUpdateID) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2db73a6057a27482, []int{1}
+}
+func (m *HeightToValsetUpdateID) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *HeightToValsetUpdateID) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_HeightToValsetUpdateID.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *HeightToValsetUpdateID) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HeightToValsetUpdateID.Merge(m, src)
+}
+func (m *HeightToValsetUpdateID) XXX_Size() int {
+	return m.Size()
+}
+func (m *HeightToValsetUpdateID) XXX_DiscardUnknown() {
+	xxx_messageInfo_HeightToValsetUpdateID.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_HeightToValsetUpdateID proto.InternalMessageInfo
+
+func (m *HeightToValsetUpdateID) GetHeight() uint64 {
+	if m != nil {
+		return m.Height
+	}
+	return 0
+}
+
+func (m *HeightToValsetUpdateID) GetValsetUpdateId() uint64 {
+	if m != nil {
+		return m.ValsetUpdateId
+	}
+	return 0
+}
+
+// OutstandingDowntime defines the type used internally to the consumer CCV module,
+// AND used in shared consumer genesis state, in order to not send multiple slashing
+// requests for the same downtime infraction.
+type OutstandingDowntime struct {
+	ValidatorConsensusAddress string `protobuf:"bytes,1,opt,name=validator_consensus_address,json=validatorConsensusAddress,proto3" json:"validator_consensus_address,omitempty"`
+}
+
+func (m *OutstandingDowntime) Reset()         { *m = OutstandingDowntime{} }
+func (m *OutstandingDowntime) String() string { return proto.CompactTextString(m) }
+func (*OutstandingDowntime) ProtoMessage()    {}
+func (*OutstandingDowntime) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2db73a6057a27482, []int{2}
+}
+func (m *OutstandingDowntime) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *OutstandingDowntime) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_OutstandingDowntime.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *OutstandingDowntime) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OutstandingDowntime.Merge(m, src)
+}
+func (m *OutstandingDowntime) XXX_Size() int {
+	return m.Size()
+}
+func (m *OutstandingDowntime) XXX_DiscardUnknown() {
+	xxx_messageInfo_OutstandingDowntime.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OutstandingDowntime proto.InternalMessageInfo
+
+func (m *OutstandingDowntime) GetValidatorConsensusAddress() string {
+	if m != nil {
+		return m.ValidatorConsensusAddress
+	}
+	return ""
+}
+
+// LastTransmissionBlockHeight is the last time validator holding
+// pools were transmitted to the provider chain. This type is used internally
+// to the consumer CCV module AND used in shared consumer genesis state.
+type LastTransmissionBlockHeight struct {
+	Height int64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
+}
+
+func (m *LastTransmissionBlockHeight) Reset()         { *m = LastTransmissionBlockHeight{} }
+func (m *LastTransmissionBlockHeight) String() string { return proto.CompactTextString(m) }
+func (*LastTransmissionBlockHeight) ProtoMessage()    {}
+func (*LastTransmissionBlockHeight) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2db73a6057a27482, []int{3}
+}
+func (m *LastTransmissionBlockHeight) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *LastTransmissionBlockHeight) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_LastTransmissionBlockHeight.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *LastTransmissionBlockHeight) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LastTransmissionBlockHeight.Merge(m, src)
+}
+func (m *LastTransmissionBlockHeight) XXX_Size() int {
+	return m.Size()
+}
+func (m *LastTransmissionBlockHeight) XXX_DiscardUnknown() {
+	xxx_messageInfo_LastTransmissionBlockHeight.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LastTransmissionBlockHeight proto.InternalMessageInfo
+
+func (m *LastTransmissionBlockHeight) GetHeight() int64 {
+	if m != nil {
+		return m.Height
+	}
+	return 0
+}
+
+// MaturingVSCPacket represents a vsc packet that is maturing internal to the
+// consumer CCV module, where the consumer has not yet relayed a VSCMatured packet
+// back to the provider.  This type is used internally to the consumer CCV module
+// AND used in shared consumer genesis state.
+type MaturingVSCPacket struct {
+	VscId        uint64    `protobuf:"varint,1,opt,name=vscId,proto3" json:"vscId,omitempty"`
+	MaturityTime time.Time `protobuf:"bytes,2,opt,name=maturity_time,json=maturityTime,proto3,stdtime" json:"maturity_time"`
+}
+
+func (m *MaturingVSCPacket) Reset()         { *m = MaturingVSCPacket{} }
+func (m *MaturingVSCPacket) String() string { return proto.CompactTextString(m) }
+func (*MaturingVSCPacket) ProtoMessage()    {}
+func (*MaturingVSCPacket) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2db73a6057a27482, []int{4}
+}
+func (m *MaturingVSCPacket) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MaturingVSCPacket) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MaturingVSCPacket.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MaturingVSCPacket) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MaturingVSCPacket.Merge(m, src)
+}
+func (m *MaturingVSCPacket) XXX_Size() int {
+	return m.Size()
+}
+func (m *MaturingVSCPacket) XXX_DiscardUnknown() {
+	xxx_messageInfo_MaturingVSCPacket.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MaturingVSCPacket proto.InternalMessageInfo
+
+func (m *MaturingVSCPacket) GetVscId() uint64 {
+	if m != nil {
+		return m.VscId
+	}
+	return 0
+}
+
+func (m *MaturingVSCPacket) GetMaturityTime() time.Time {
+	if m != nil {
+		return m.MaturityTime
+	}
+	return time.Time{}
+}
+
+// ConsumerPacketDataList is a list of consumer packet data packets.
+//
+// Note this type is is used internally to the consumer CCV module
+// for exporting / importing state in InitGenesis and ExportGenesis,
+// AND included in the consumer genesis type (reffed by provider and consumer modules),
+// hence this is a shared type.
+type ConsumerPacketDataList struct {
+	List []types.ConsumerPacketData `protobuf:"bytes,1,rep,name=list,proto3" json:"list"`
+}
+
+func (m *ConsumerPacketDataList) Reset()         { *m = ConsumerPacketDataList{} }
+func (m *ConsumerPacketDataList) String() string { return proto.CompactTextString(m) }
+func (*ConsumerPacketDataList) ProtoMessage()    {}
+func (*ConsumerPacketDataList) Descriptor() ([]byte, []int) {
+	return fileDescriptor_2db73a6057a27482, []int{5}
+}
+func (m *ConsumerPacketDataList) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ConsumerPacketDataList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ConsumerPacketDataList.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ConsumerPacketDataList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ConsumerPacketDataList.Merge(m, src)
+}
+func (m *ConsumerPacketDataList) XXX_Size() int {
+	return m.Size()
+}
+func (m *ConsumerPacketDataList) XXX_DiscardUnknown() {
+	xxx_messageInfo_ConsumerPacketDataList.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ConsumerPacketDataList proto.InternalMessageInfo
+
+func (m *ConsumerPacketDataList) GetList() []types.ConsumerPacketData {
+	if m != nil {
+		return m.List
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*PrivateConsumerGenesisState)(nil), "interchain_security.ccv.consumer.v1.PrivateConsumerGenesisState")
+	proto.RegisterType((*HeightToValsetUpdateID)(nil), "interchain_security.ccv.consumer.v1.HeightToValsetUpdateID")
+	proto.RegisterType((*OutstandingDowntime)(nil), "interchain_security.ccv.consumer.v1.OutstandingDowntime")
+	proto.RegisterType((*LastTransmissionBlockHeight)(nil), "interchain_security.ccv.consumer.v1.LastTransmissionBlockHeight")
+	proto.RegisterType((*MaturingVSCPacket)(nil), "interchain_security.ccv.consumer.v1.MaturingVSCPacket")
+	proto.RegisterType((*ConsumerPacketDataList)(nil), "interchain_security.ccv.consumer.v1.ConsumerPacketDataList")
 }
 
 func init() {
@@ -175,50 +437,61 @@ func init() {
 }
 
 var fileDescriptor_2db73a6057a27482 = []byte{
-	// 683 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x54, 0x4f, 0x6f, 0xd3, 0x3c,
-	0x18, 0x6f, 0xde, 0xf5, 0xed, 0x5a, 0xef, 0xfd, 0x53, 0x02, 0x9a, 0xa2, 0x56, 0x64, 0x05, 0x84,
-	0x54, 0x21, 0x16, 0xd3, 0xee, 0xc0, 0x89, 0xcb, 0x3a, 0x89, 0xb5, 0x1a, 0xa2, 0xda, 0xc6, 0x90,
-	0x38, 0x10, 0xb9, 0x8e, 0x97, 0x58, 0x4b, 0xec, 0xc8, 0x76, 0x52, 0x76, 0xe5, 0x13, 0xf0, 0x19,
-	0xf8, 0x34, 0x3b, 0xee, 0xc8, 0x09, 0xa1, 0xed, 0x8b, 0xa0, 0x38, 0x4e, 0xb7, 0xc1, 0x56, 0x71,
-	0xb3, 0xf3, 0xfc, 0xfe, 0xf8, 0xf9, 0xf5, 0xe9, 0x03, 0x06, 0x94, 0x29, 0x22, 0x70, 0x84, 0x28,
-	0xf3, 0x25, 0xc1, 0x99, 0xa0, 0xea, 0x14, 0x62, 0x9c, 0x43, 0xcc, 0x99, 0xcc, 0x12, 0x22, 0x60,
-	0x3e, 0x80, 0x21, 0x61, 0x44, 0x52, 0xe9, 0xa5, 0x82, 0x2b, 0x6e, 0x3f, 0xb9, 0x85, 0xe2, 0x61,
-	0x9c, 0x7b, 0x15, 0xc5, 0xcb, 0x07, 0x9d, 0x17, 0x77, 0xe9, 0xe6, 0x03, 0x28, 0x23, 0x24, 0x48,
-	0xe0, 0x2f, 0xe0, 0x5a, 0xb6, 0xd3, 0x55, 0x84, 0x05, 0x44, 0x24, 0x94, 0x29, 0x88, 0x66, 0x98,
-	0x42, 0x75, 0x9a, 0x12, 0xe3, 0xd9, 0x81, 0x74, 0x86, 0x61, 0x4c, 0xc3, 0x48, 0xe1, 0x98, 0x12,
-	0xa6, 0x24, 0xbc, 0x86, 0xce, 0x07, 0xd7, 0x6e, 0x86, 0xf0, 0xa8, 0x20, 0x60, 0x2e, 0x08, 0xc4,
-	0x11, 0x62, 0x8c, 0xc4, 0x05, 0xca, 0x1c, 0x0d, 0xc4, 0x0d, 0x39, 0x0f, 0x63, 0x02, 0xf5, 0x6d,
-	0x96, 0x1d, 0xc3, 0x20, 0x13, 0x48, 0x51, 0xce, 0x4c, 0xfd, 0x41, 0xc8, 0x43, 0xae, 0x8f, 0xb0,
-	0x38, 0x99, 0xaf, 0x4f, 0x97, 0x34, 0x36, 0xa7, 0x82, 0x18, 0xd8, 0xc6, 0xaf, 0xe2, 0x8a, 0x26,
-	0x44, 0x2a, 0x94, 0xa4, 0x25, 0xe0, 0xf1, 0xd7, 0x55, 0xd0, 0x9d, 0x0a, 0x9a, 0x23, 0x45, 0x46,
-	0x26, 0x88, 0xd7, 0x65, 0xcc, 0x07, 0x0a, 0x29, 0x62, 0xef, 0x82, 0x46, 0x8a, 0x04, 0x4a, 0xa4,
-	0x63, 0xf5, 0xac, 0xfe, 0xda, 0xf0, 0x99, 0x77, 0x57, 0xec, 0xf9, 0xc0, 0xab, 0x14, 0xa6, 0x9a,
-	0xb1, 0x5d, 0x3f, 0xfb, 0xbe, 0x51, 0xdb, 0x37, 0x7c, 0xfb, 0x39, 0xb0, 0x53, 0xc1, 0x73, 0x1a,
-	0x10, 0xe1, 0x97, 0xe9, 0xf9, 0x34, 0x70, 0xfe, 0xea, 0x59, 0xfd, 0xd6, 0x7e, 0xbb, 0xaa, 0x8c,
-	0x74, 0x61, 0x1c, 0xd8, 0x1e, 0xb8, 0x7f, 0x85, 0x2e, 0xf3, 0x2a, 0xe0, 0x2b, 0x1a, 0x7e, 0x6f,
-	0x01, 0x2f, 0x2b, 0xe3, 0xc0, 0xee, 0x82, 0x16, 0x23, 0x73, 0x5f, 0xbf, 0xcb, 0xa9, 0xf7, 0xac,
-	0x7e, 0x73, 0xbf, 0xc9, 0xc8, 0x7c, 0x54, 0xdc, 0xed, 0x8f, 0xa0, 0x9d, 0x20, 0x95, 0x09, 0xca,
-	0x42, 0x3f, 0x45, 0xf8, 0x84, 0x28, 0xe9, 0xac, 0xf6, 0x56, 0xfa, 0x6b, 0xc3, 0xcd, 0x65, 0xed,
-	0xbc, 0x31, 0x9c, 0xa3, 0x83, 0xd1, 0x54, 0xb3, 0x4c, 0x47, 0xff, 0x57, 0x62, 0xe5, 0x57, 0x69,
-	0x2b, 0xd0, 0x89, 0x48, 0x31, 0x15, 0xbe, 0xe2, 0x7e, 0x8e, 0x62, 0x49, 0x94, 0x9f, 0xa5, 0x01,
-	0x52, 0xa4, 0x78, 0x73, 0x4b, 0x3b, 0x0d, 0x97, 0x39, 0xed, 0x6a, 0xf6, 0x21, 0x3f, 0xd2, 0xdc,
-	0x77, 0x9a, 0x3a, 0xde, 0x31, 0x76, 0xeb, 0xd1, 0x6d, 0xd5, 0xc0, 0x3e, 0x05, 0x0f, 0x79, 0xa6,
-	0xa4, 0x42, 0x2c, 0x28, 0x1a, 0x0b, 0xf8, 0x9c, 0x15, 0xbf, 0xae, 0x2f, 0x63, 0x24, 0x23, 0xca,
-	0x42, 0x07, 0x68, 0x63, 0xb8, 0xcc, 0xf8, 0xed, 0x95, 0xc0, 0x8e, 0xe1, 0x1b, 0xd7, 0x2e, 0xff,
-	0xbd, 0x74, 0x60, 0x94, 0x6d, 0x01, 0x9c, 0x94, 0x94, 0xb6, 0xd5, 0xdf, 0x67, 0x11, 0xec, 0x9a,
-	0x9e, 0x93, 0xe1, 0x9f, 0xcd, 0x49, 0x41, 0xd9, 0x41, 0x0a, 0xed, 0x51, 0x59, 0xa5, 0xbb, 0x6e,
-	0x94, 0x6f, 0x82, 0xa4, 0xfd, 0xd9, 0x02, 0x6e, 0x8c, 0xa4, 0xf2, 0x95, 0x40, 0x4c, 0x26, 0x54,
-	0x4a, 0xca, 0x99, 0x3f, 0x8b, 0x39, 0x3e, 0xf1, 0xcb, 0x84, 0x9c, 0x7f, 0xb4, 0xf5, 0xcb, 0x65,
-	0xd6, 0x7b, 0x48, 0xaa, 0xc3, 0x6b, 0x02, 0xdb, 0x05, 0xbf, 0x8c, 0xbf, 0x6a, 0x3c, 0xbe, 0x1b,
-	0x62, 0xaf, 0x83, 0x46, 0x2a, 0xc8, 0x68, 0x74, 0xe4, 0xfc, 0xab, 0x67, 0xcc, 0xdc, 0xec, 0x09,
-	0x68, 0x56, 0x33, 0xe9, 0xfc, 0xa7, 0x5f, 0xd1, 0x5f, 0xf6, 0x8a, 0xa9, 0xc1, 0x8e, 0xd9, 0x31,
-	0x37, 0xb6, 0x0b, 0xfe, 0xa4, 0xde, 0xfc, 0xbb, 0xdd, 0x98, 0xd4, 0x9b, 0x8d, 0xf6, 0xea, 0xa4,
-	0xde, 0x6c, 0xb6, 0x5b, 0xdb, 0xef, 0xcf, 0x2e, 0x5c, 0xeb, 0xfc, 0xc2, 0xb5, 0x7e, 0x5c, 0xb8,
-	0xd6, 0x97, 0x4b, 0xb7, 0x76, 0x7e, 0xe9, 0xd6, 0xbe, 0x5d, 0xba, 0xb5, 0x0f, 0xaf, 0x42, 0xaa,
-	0xa2, 0x6c, 0xe6, 0x61, 0x9e, 0x40, 0xcc, 0x65, 0xc2, 0x25, 0xbc, 0xb2, 0xdd, 0x5c, 0x2c, 0x86,
-	0x7c, 0x0b, 0x7e, 0xba, 0xb9, 0x4e, 0xf5, 0x56, 0x9b, 0x35, 0xf4, 0x12, 0xd8, 0xfa, 0x19, 0x00,
-	0x00, 0xff, 0xff, 0xc9, 0xce, 0x8e, 0xa3, 0x7f, 0x05, 0x00, 0x00,
+	// 858 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x55, 0x41, 0x6f, 0x23, 0x35,
+	0x14, 0xee, 0x6c, 0xb3, 0x69, 0xe2, 0xee, 0x2e, 0x59, 0xef, 0x2a, 0x1a, 0x12, 0x91, 0x96, 0x20,
+	0xa4, 0x08, 0xc1, 0x98, 0x74, 0x05, 0x42, 0x42, 0x20, 0x68, 0x2a, 0xd1, 0x54, 0x45, 0x54, 0x69,
+	0xb7, 0x48, 0x7b, 0x19, 0x39, 0x1e, 0xef, 0xc4, 0xda, 0x19, 0x7b, 0x64, 0x7b, 0xa6, 0x54, 0x88,
+	0x0b, 0x57, 0x2e, 0xfb, 0xb3, 0xf6, 0xd8, 0x23, 0x27, 0x40, 0xed, 0x1f, 0x41, 0xf6, 0x78, 0xd2,
+	0x74, 0x9b, 0x56, 0xb9, 0x8d, 0xe7, 0x7d, 0xef, 0x7b, 0xdf, 0xfb, 0xfc, 0x6c, 0x83, 0x21, 0xe3,
+	0x9a, 0x4a, 0x32, 0xc3, 0x8c, 0x87, 0x8a, 0x92, 0x5c, 0x32, 0x7d, 0x8e, 0x08, 0x29, 0x10, 0x11,
+	0x5c, 0xe5, 0x29, 0x95, 0xa8, 0x18, 0xa2, 0x98, 0x72, 0xaa, 0x98, 0x0a, 0x32, 0x29, 0xb4, 0x80,
+	0x9f, 0x2c, 0x49, 0x09, 0x08, 0x29, 0x82, 0x2a, 0x25, 0x28, 0x86, 0x9d, 0x2f, 0xef, 0xe2, 0x2d,
+	0x86, 0x48, 0xcd, 0xb0, 0xa4, 0x51, 0x38, 0x87, 0x5b, 0xda, 0x4e, 0x57, 0x53, 0x1e, 0x51, 0x99,
+	0x32, 0xae, 0x11, 0x9e, 0x12, 0x86, 0xf4, 0x79, 0x46, 0x5d, 0xcd, 0x0e, 0x62, 0x53, 0x82, 0x12,
+	0x16, 0xcf, 0x34, 0x49, 0x18, 0xe5, 0x5a, 0xa1, 0x05, 0x74, 0x31, 0x5c, 0x58, 0xb9, 0x84, 0x8f,
+	0x4d, 0x02, 0x11, 0x92, 0x22, 0x32, 0xc3, 0x9c, 0xd3, 0xc4, 0xa0, 0xdc, 0xa7, 0x83, 0xf4, 0x62,
+	0x21, 0xe2, 0x84, 0x22, 0xbb, 0x9a, 0xe6, 0xaf, 0x51, 0x94, 0x4b, 0xac, 0x99, 0xe0, 0x2e, 0xfe,
+	0x3c, 0x16, 0xb1, 0xb0, 0x9f, 0xc8, 0x7c, 0xb9, 0xbf, 0x9f, 0xde, 0xd3, 0xd8, 0x19, 0x93, 0xd4,
+	0xc1, 0xb6, 0xde, 0x27, 0xd7, 0x2c, 0xa5, 0x4a, 0xe3, 0x34, 0x2b, 0x01, 0xfd, 0x8b, 0x0d, 0xd0,
+	0x3d, 0x92, 0xac, 0xc0, 0x9a, 0x8e, 0x9c, 0x11, 0x3f, 0x95, 0x36, 0x1f, 0x6b, 0xac, 0x29, 0xdc,
+	0x07, 0xf5, 0x0c, 0x4b, 0x9c, 0x2a, 0xdf, 0xdb, 0xf6, 0x06, 0x9b, 0x3b, 0x9f, 0x05, 0x77, 0xd9,
+	0x5e, 0x0c, 0x83, 0x8a, 0xe1, 0xc8, 0x66, 0xec, 0xd6, 0xde, 0xfd, 0xb3, 0xb5, 0x36, 0x71, 0xf9,
+	0xf0, 0x73, 0x00, 0x33, 0x29, 0x0a, 0x16, 0x51, 0x19, 0x96, 0xee, 0x85, 0x2c, 0xf2, 0x1f, 0x6c,
+	0x7b, 0x83, 0xe6, 0xa4, 0x55, 0x45, 0x46, 0x36, 0x30, 0x8e, 0x60, 0x00, 0x9e, 0x5d, 0xa3, 0x4b,
+	0xbf, 0x0c, 0x7c, 0xdd, 0xc2, 0x9f, 0xce, 0xe1, 0x65, 0x64, 0x1c, 0xc1, 0x2e, 0x68, 0x72, 0x7a,
+	0x16, 0x5a, 0x5d, 0x7e, 0x6d, 0xdb, 0x1b, 0x34, 0x26, 0x0d, 0x4e, 0xcf, 0x46, 0x66, 0x0d, 0x63,
+	0xd0, 0x4a, 0xb1, 0xce, 0x25, 0xe3, 0x71, 0x98, 0x61, 0xf2, 0x86, 0x6a, 0xe5, 0x6f, 0x6c, 0xaf,
+	0x0f, 0x36, 0x77, 0xbe, 0x0e, 0x56, 0x98, 0xa2, 0xe0, 0x67, 0x97, 0x7c, 0x7a, 0x3c, 0x3a, 0xb2,
+	0xe9, 0xae, 0xb5, 0x0f, 0x2a, 0xd6, 0xf2, 0xaf, 0x82, 0x7f, 0x80, 0xce, 0x8c, 0x9a, 0xf1, 0x08,
+	0xb5, 0x08, 0x0b, 0x9c, 0x28, 0xaa, 0xc3, 0x3c, 0x8b, 0xb0, 0xa6, 0x46, 0x7c, 0xd3, 0x96, 0xfc,
+	0x76, 0xa5, 0x92, 0xfb, 0x96, 0xe6, 0x44, 0x9c, 0x5a, 0x92, 0x97, 0x96, 0x63, 0xbc, 0xe7, 0xea,
+	0xb6, 0x67, 0xcb, 0xa2, 0x11, 0xfc, 0xd3, 0x03, 0x1f, 0x89, 0x5c, 0x2b, 0x8d, 0x79, 0x64, 0x7a,
+	0x8d, 0xc4, 0x19, 0x37, 0x1b, 0x1e, 0xaa, 0x04, 0xab, 0x19, 0xe3, 0xb1, 0x0f, 0xac, 0x84, 0x6f,
+	0x56, 0x92, 0xf0, 0xcb, 0x35, 0xd3, 0x9e, 0x23, 0x72, 0xf5, 0xbb, 0xe2, 0x76, 0xe8, 0xd8, 0x95,
+	0x80, 0xbf, 0x03, 0x3f, 0xa3, 0x65, 0xfd, 0x8a, 0x6d, 0x6e, 0xfa, 0xa6, 0x9d, 0xa1, 0xd5, 0x1c,
+	0xb8, 0x1e, 0x26, 0x93, 0xbb, 0x87, 0x35, 0x3e, 0x64, 0xaa, 0x72, 0xbe, 0xed, 0x4a, 0xdc, 0x04,
+	0x29, 0xf8, 0x97, 0x07, 0x7a, 0x09, 0x56, 0x3a, 0xd4, 0x12, 0x73, 0x95, 0x32, 0xa5, 0x98, 0xe0,
+	0xe1, 0x34, 0x11, 0xe4, 0x4d, 0x58, 0x9a, 0xe6, 0x3f, 0xb2, 0x1a, 0x7e, 0x58, 0x49, 0xc3, 0x21,
+	0x56, 0xfa, 0x64, 0x81, 0x69, 0xd7, 0x10, 0x95, 0x5b, 0x53, 0x59, 0x91, 0xdc, 0x0d, 0x81, 0x6d,
+	0x50, 0xcf, 0x24, 0x1d, 0x8d, 0x4e, 0xfd, 0xc7, 0x76, 0x22, 0xdd, 0x0a, 0x1e, 0x80, 0x46, 0x35,
+	0xc1, 0xfe, 0x13, 0x2b, 0x67, 0x70, 0xdf, 0xb1, 0x3a, 0x72, 0xd8, 0x31, 0x7f, 0x2d, 0x5c, 0xd9,
+	0x79, 0xfe, 0x41, 0xad, 0xf1, 0xb0, 0x55, 0x3f, 0xa8, 0x35, 0xea, 0xad, 0x8d, 0x83, 0x5a, 0xa3,
+	0xd1, 0x6a, 0xf6, 0x5f, 0x81, 0xf6, 0xf2, 0xe9, 0x31, 0x7a, 0x9c, 0x09, 0xe6, 0x30, 0xd7, 0x26,
+	0x6e, 0x05, 0x07, 0xa0, 0x75, 0x6b, 0x58, 0x1f, 0x58, 0xc4, 0x93, 0xe2, 0xc6, 0x84, 0xf5, 0x5f,
+	0x82, 0x67, 0x4b, 0xc6, 0x02, 0x7e, 0x0f, 0xba, 0x05, 0x4e, 0x58, 0x84, 0xb5, 0x90, 0x76, 0xd7,
+	0x29, 0x57, 0xb9, 0x0a, 0x71, 0x14, 0x49, 0xaa, 0xca, 0xab, 0xa3, 0x39, 0xf9, 0x70, 0x0e, 0x19,
+	0x55, 0x88, 0x1f, 0x4b, 0x40, 0xff, 0x2b, 0xd0, 0x3d, 0xbc, 0xdf, 0xc7, 0x05, 0xdd, 0xeb, 0x95,
+	0xee, 0xbe, 0x06, 0x4f, 0x6f, 0x1d, 0x4d, 0xf8, 0x1c, 0x3c, 0x2c, 0x14, 0x19, 0x47, 0xae, 0xc7,
+	0x72, 0x01, 0xc7, 0xe0, 0x71, 0x79, 0x58, 0xf5, 0x79, 0x68, 0x24, 0xdb, 0xfe, 0x36, 0x77, 0x3a,
+	0x41, 0x79, 0x41, 0x06, 0xd5, 0x05, 0x19, 0x9c, 0x54, 0x17, 0xe4, 0x6e, 0xc3, 0x38, 0xfd, 0xf6,
+	0xdf, 0x2d, 0x6f, 0xf2, 0xa8, 0x4a, 0x35, 0xc1, 0xfe, 0x14, 0xb4, 0x97, 0xcf, 0x26, 0xdc, 0x07,
+	0xb5, 0x84, 0x29, 0xa3, 0xd2, 0x9c, 0xb2, 0x60, 0xb5, 0xab, 0xb2, 0x62, 0x70, 0x3b, 0x6b, 0x19,
+	0x76, 0x7f, 0x7d, 0x77, 0xd9, 0xf3, 0x2e, 0x2e, 0x7b, 0xde, 0x7f, 0x97, 0x3d, 0xef, 0xed, 0x55,
+	0x6f, 0xed, 0xe2, 0xaa, 0xb7, 0xf6, 0xf7, 0x55, 0x6f, 0xed, 0xd5, 0x77, 0x31, 0xd3, 0xb3, 0x7c,
+	0x1a, 0x10, 0x91, 0x22, 0x22, 0x54, 0x2a, 0x14, 0xba, 0x2e, 0xf3, 0xc5, 0xfc, 0x29, 0x28, 0x5e,
+	0xa0, 0xdf, 0x6e, 0x3e, 0xa0, 0xf6, 0x1d, 0x9b, 0xd6, 0x6d, 0xa3, 0x2f, 0xfe, 0x0f, 0x00, 0x00,
+	0xff, 0xff, 0x1f, 0x87, 0x8b, 0xcb, 0x71, 0x07, 0x00, 0x00,
 }
 
 func (m *PrivateConsumerGenesisState) Marshal() (dAtA []byte, err error) {
@@ -360,6 +633,170 @@ func (m *PrivateConsumerGenesisState) MarshalToSizedBuffer(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 
+func (m *HeightToValsetUpdateID) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *HeightToValsetUpdateID) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HeightToValsetUpdateID) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ValsetUpdateId != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.ValsetUpdateId))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Height != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.Height))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *OutstandingDowntime) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *OutstandingDowntime) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OutstandingDowntime) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ValidatorConsensusAddress) > 0 {
+		i -= len(m.ValidatorConsensusAddress)
+		copy(dAtA[i:], m.ValidatorConsensusAddress)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.ValidatorConsensusAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *LastTransmissionBlockHeight) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *LastTransmissionBlockHeight) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LastTransmissionBlockHeight) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Height != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.Height))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MaturingVSCPacket) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MaturingVSCPacket) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MaturingVSCPacket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	n5, err5 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.MaturityTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.MaturityTime):])
+	if err5 != nil {
+		return 0, err5
+	}
+	i -= n5
+	i = encodeVarintGenesis(dAtA, i, uint64(n5))
+	i--
+	dAtA[i] = 0x12
+	if m.VscId != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.VscId))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ConsumerPacketDataList) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ConsumerPacketDataList) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ConsumerPacketDataList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.List) > 0 {
+		for iNdEx := len(m.List) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.List[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintGenesis(dAtA []byte, offset int, v uint64) int {
 	offset -= sovGenesis(v)
 	base := offset
@@ -417,6 +854,75 @@ func (m *PrivateConsumerGenesisState) Size() (n int) {
 	}
 	l = m.Provider.Size()
 	n += 1 + l + sovGenesis(uint64(l))
+	return n
+}
+
+func (m *HeightToValsetUpdateID) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Height != 0 {
+		n += 1 + sovGenesis(uint64(m.Height))
+	}
+	if m.ValsetUpdateId != 0 {
+		n += 1 + sovGenesis(uint64(m.ValsetUpdateId))
+	}
+	return n
+}
+
+func (m *OutstandingDowntime) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ValidatorConsensusAddress)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	return n
+}
+
+func (m *LastTransmissionBlockHeight) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Height != 0 {
+		n += 1 + sovGenesis(uint64(m.Height))
+	}
+	return n
+}
+
+func (m *MaturingVSCPacket) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.VscId != 0 {
+		n += 1 + sovGenesis(uint64(m.VscId))
+	}
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.MaturityTime)
+	n += 1 + l + sovGenesis(uint64(l))
+	return n
+}
+
+func (m *ConsumerPacketDataList) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.List) > 0 {
+		for _, e := range m.List {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -601,7 +1107,7 @@ func (m *PrivateConsumerGenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.MaturingPackets = append(m.MaturingPackets, types.MaturingVSCPacket{})
+			m.MaturingPackets = append(m.MaturingPackets, MaturingVSCPacket{})
 			if err := m.MaturingPackets[len(m.MaturingPackets)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -635,7 +1141,7 @@ func (m *PrivateConsumerGenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.HeightToValsetUpdateId = append(m.HeightToValsetUpdateId, types.HeightToValsetUpdateID{})
+			m.HeightToValsetUpdateId = append(m.HeightToValsetUpdateId, HeightToValsetUpdateID{})
 			if err := m.HeightToValsetUpdateId[len(m.HeightToValsetUpdateId)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -669,7 +1175,7 @@ func (m *PrivateConsumerGenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.OutstandingDowntimeSlashing = append(m.OutstandingDowntimeSlashing, types.OutstandingDowntime{})
+			m.OutstandingDowntimeSlashing = append(m.OutstandingDowntimeSlashing, OutstandingDowntime{})
 			if err := m.OutstandingDowntimeSlashing[len(m.OutstandingDowntimeSlashing)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -790,6 +1296,431 @@ func (m *PrivateConsumerGenesisState) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.Provider.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *HeightToValsetUpdateID) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: HeightToValsetUpdateID: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: HeightToValsetUpdateID: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
+			}
+			m.Height = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Height |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValsetUpdateId", wireType)
+			}
+			m.ValsetUpdateId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ValsetUpdateId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *OutstandingDowntime) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OutstandingDowntime: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OutstandingDowntime: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorConsensusAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorConsensusAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LastTransmissionBlockHeight) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LastTransmissionBlockHeight: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LastTransmissionBlockHeight: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
+			}
+			m.Height = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Height |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MaturingVSCPacket) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MaturingVSCPacket: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MaturingVSCPacket: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VscId", wireType)
+			}
+			m.VscId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.VscId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaturityTime", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.MaturityTime, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ConsumerPacketDataList) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ConsumerPacketDataList: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ConsumerPacketDataList: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field List", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.List = append(m.List, types.ConsumerPacketData{})
+			if err := m.List[len(m.List)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
