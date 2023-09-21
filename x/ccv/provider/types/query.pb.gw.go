@@ -802,7 +802,7 @@ var (
 
 	pattern_Query_QueryRegisteredConsumerRewardDenoms_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "registered_consumer_reward_denoms"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_QueryProposedConsumerChainIDs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "proposed_consumer_chainids"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_QueryProposedConsumerChainIDs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"interchain_security", "ccv", "provider", "proposed_consumer_chains"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (
