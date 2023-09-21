@@ -29,10 +29,10 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// CrossChainValidator defines the type used to store validator information internal
-// to the consumer CCV module.  Note one cross chain validator entry is persisted for
-// each consumer validator, where incoming VSC packets update this data, which is eventually
-// forwarded to comet for consumer chain consensus.
+// CrossChainValidator defines the type used to store validator information
+// internal to the consumer CCV module.  Note one cross chain validator entry is
+// persisted for each consumer validator, where incoming VSC packets update this
+// data, which is eventually forwarded to comet for consumer chain consensus.
 //
 // Note this type is only used internally to the consumer CCV module.
 type CrossChainValidator struct {

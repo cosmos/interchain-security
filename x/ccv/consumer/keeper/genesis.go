@@ -16,7 +16,7 @@ import (
 //  1. A client to the provider was never created, i.e. a new consumer chain is started for the first time.
 //  2. A consumer chain restarts after a client to the provider was created, but the CCV channel handshake is still in progress
 //  3. A consumer chain restarts after the CCV channel handshake was completed.
-func (k Keeper) InitGenesis(ctx sdk.Context, state *types.PrivateConsumerGenesisState) []abci.ValidatorUpdate {
+func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.ValidatorUpdate {
 	// PreCCV is true during the process of a standalone to consumer changeover.
 	// At the PreCCV point in the process, the standalone chain has just been upgraded to include
 	// the consumer ccv module, but the standalone staking keeper is still managing the validator set.
@@ -115,10 +115,10 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.PrivateConsumerGenesis
 }
 
 // ExportGenesis returns the CCV consumer module's exported genesis
-func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *types.PrivateConsumerGenesisState) {
+func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *types.GenesisState) {
 	params := k.GetConsumerParams(ctx)
 	if !params.Enabled {
-		return types.DefaultPrivateConsumerGenesisState()
+		return types.DefaultGenesisState()
 	}
 
 	// export the current validator set
@@ -137,7 +137,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *types.PrivateConsumerGe
 			panic("provider client does not exist although provider channel does exist")
 		}
 
-		genesis = types.NewRestartConsumerGenesisState(
+		genesis = types.NewRestartGenesisState(
 			clientID,
 			channelID,
 			k.GetAllPacketMaturityTimes(ctx),
@@ -153,11 +153,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *types.PrivateConsumerGe
 		// if provider clientID and channelID don't exist on the consumer chain,
 		// then CCV protocol is disabled for this chain return a default genesis state
 		if !ok {
-			return types.DefaultPrivateConsumerGenesisState()
+			return types.DefaultGenesisState()
 		}
 
 		// export client states and pending slashing requests into a new chain genesis
-		genesis = types.NewRestartConsumerGenesisState(
+		genesis = types.NewRestartGenesisState(
 			clientID,
 			"",
 			nil,

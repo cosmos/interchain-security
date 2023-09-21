@@ -207,7 +207,7 @@ func (b *Builder) getAppBytesAndSenders(
 
 	bondDenom := sdk.DefaultBondDenom
 	genesisStaking := stakingtypes.GenesisState{}
-	genesisConsumer := consumertypes.PrivateConsumerGenesisState{}
+	genesisConsumer := consumertypes.GenesisState{}
 
 	if genesis[stakingtypes.ModuleName] != nil {
 		// If staking module genesis already exists
@@ -522,7 +522,7 @@ func (b *Builder) createConsumersLocalClientGenesis() *ibctmtypes.ClientState {
 	)
 }
 
-func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consumertypes.PrivateConsumerGenesisState {
+func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consumertypes.GenesisState {
 	providerConsState := b.provider().LastHeader.ConsensusState()
 
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.provider().Vals)
@@ -540,7 +540,7 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 		[]string{},
 		[]string{},
 	)
-	return consumertypes.NewPrivateInitialConsumerGenesisState(client, providerConsState, valUpdates, params)
+	return consumertypes.NewInitialGenesisState(client, providerConsState, valUpdates, params)
 }
 
 // The state of the data returned is equivalent to the state of two chains

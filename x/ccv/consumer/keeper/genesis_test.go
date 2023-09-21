@@ -100,8 +100,8 @@ func TestInitGenesis(t *testing.T) {
 	testCases := []struct {
 		name         string
 		malleate     func(sdk.Context, testkeeper.MockedKeepers)
-		genesis      *consumertypes.PrivateConsumerGenesisState
-		assertStates func(sdk.Context, consumerkeeper.Keeper, *consumertypes.PrivateConsumerGenesisState)
+		genesis      *consumertypes.GenesisState
+		assertStates func(sdk.Context, consumerkeeper.Keeper, *consumertypes.GenesisState)
 	}{
 		{
 			"start a new chain",
@@ -112,13 +112,13 @@ func TestInitGenesis(t *testing.T) {
 					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 1),
 				)
 			},
-			consumertypes.NewPrivateInitialConsumerGenesisState(
+			consumertypes.NewInitialGenesisState(
 				provClientState,
 				provConsState,
 				valset,
 				params,
 			),
-			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.PrivateConsumerGenesisState) {
+			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
 				assertConsumerPortIsBound(t, ctx, &ck)
 
 				assertProviderClientID(t, ctx, &ck, provClientID)
@@ -134,7 +134,7 @@ func TestInitGenesis(t *testing.T) {
 					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 2),
 				)
 			},
-			consumertypes.NewRestartConsumerGenesisState(
+			consumertypes.NewRestartGenesisState(
 				provClientID,
 				"",
 				matPackets,
@@ -145,7 +145,7 @@ func TestInitGenesis(t *testing.T) {
 				consumertypes.LastTransmissionBlockHeight{},
 				params,
 			),
-			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.PrivateConsumerGenesisState) {
+			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
 				assertConsumerPortIsBound(t, ctx, &ck)
 
 				obtainedPendingPackets := ck.GetPendingPackets(ctx)
@@ -170,7 +170,7 @@ func TestInitGenesis(t *testing.T) {
 				)
 			},
 			// create a genesis for a restarted chain
-			consumertypes.NewRestartConsumerGenesisState(
+			consumertypes.NewRestartGenesisState(
 				provClientID,
 				provChannelID,
 				matPackets,
@@ -183,7 +183,7 @@ func TestInitGenesis(t *testing.T) {
 				consumertypes.LastTransmissionBlockHeight{Height: int64(100)},
 				params,
 			),
-			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.PrivateConsumerGenesisState) {
+			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
 				assertConsumerPortIsBound(t, ctx, &ck)
 
 				gotChannelID, ok := ck.GetProviderChannel(ctx)
@@ -289,7 +289,7 @@ func TestExportGenesis(t *testing.T) {
 	testCases := []struct {
 		name       string
 		malleate   func(sdk.Context, consumerkeeper.Keeper, testkeeper.MockedKeepers)
-		expGenesis *consumertypes.PrivateConsumerGenesisState
+		expGenesis *consumertypes.GenesisState
 	}{
 		{
 			"export a chain without an established CCV channel",
@@ -307,7 +307,7 @@ func TestExportGenesis(t *testing.T) {
 
 				ck.SetHeightValsetUpdateID(ctx, defaultHeightValsetUpdateIDs[0].Height, defaultHeightValsetUpdateIDs[0].ValsetUpdateId)
 			},
-			consumertypes.NewRestartConsumerGenesisState(
+			consumertypes.NewRestartGenesisState(
 				provClientID,
 				"",
 				nil,
@@ -343,7 +343,7 @@ func TestExportGenesis(t *testing.T) {
 				ck.SetOutstandingDowntime(ctx, sdk.ConsAddress(validator.Address.Bytes()))
 				ck.SetLastTransmissionBlockHeight(ctx, ltbh)
 			},
-			consumertypes.NewRestartConsumerGenesisState(
+			consumertypes.NewRestartGenesisState(
 				provClientID,
 				provChannelID,
 				matPackets,

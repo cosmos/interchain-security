@@ -148,12 +148,12 @@ func (suite *CCVTestSuite) SetupTest() {
 			chainID,
 		)
 		suite.Require().True(found, "consumer genesis not found")
-		privateConsumerGenesisState := consumertypes.PrivateConsumerGenesisState{
+		genesisState := consumertypes.GenesisState{
 			Params:   consumerGenesisState.Params,
 			Provider: consumerGenesisState.Provider,
 			NewChain: consumerGenesisState.NewChain,
 		}
-		initConsumerChain(suite, chainID, &privateConsumerGenesisState)
+		initConsumerChain(suite, chainID, &genesisState)
 	}
 
 	// try updating all clients
@@ -187,7 +187,7 @@ func (s *CCVTestSuite) getSentPacket(chain *ibctesting.TestChain, sequence uint6
 func initConsumerChain(
 	s *CCVTestSuite,
 	chainID string,
-	genesisState *consumertypes.PrivateConsumerGenesisState,
+	genesisState *consumertypes.GenesisState,
 ) {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	bundle := s.consumerBundles[chainID]

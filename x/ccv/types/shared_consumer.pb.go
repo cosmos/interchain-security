@@ -32,7 +32,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // ConsumerParams defines the parameters for CCV consumer module.
 //
 // Note this type is referenced in both the consumer and provider CCV modules,
-// and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis.
+// and persisted on the provider, see MakeConsumerGenesis and
+// SetConsumerGenesis.
 type ConsumerParams struct {
 	// TODO: Remove enabled flag and find a better way to setup integration tests
 	// See: https://github.com/cosmos/interchain-security/issues/339
@@ -194,7 +195,8 @@ func (m *ConsumerParams) GetProviderRewardDenoms() []string {
 	return nil
 }
 
-// ConsumerGenesisState defines shared genesis information between provider and consumer
+// ConsumerGenesisState defines shared genesis information between provider and
+// consumer
 type ConsumerGenesisState struct {
 	Params   ConsumerParams `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
 	Provider ProviderInfo   `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider"`

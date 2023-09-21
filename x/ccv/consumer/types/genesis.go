@@ -7,8 +7,8 @@ import (
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
-// NewRestartConsumerGenesisState returns a ConsumerGenesisState that has already been established.
-func NewRestartConsumerGenesisState(
+// NewRestartGenesisState returns a consumer GenesisState that has already been established.
+func NewRestartGenesisState(
 	clientID, channelID string,
 	maturingPackets []MaturingVSCPacket,
 	initValSet []abci.ValidatorUpdate,
@@ -17,8 +17,8 @@ func NewRestartConsumerGenesisState(
 	outstandingDowntimes []OutstandingDowntime,
 	lastTransBlockHeight LastTransmissionBlockHeight,
 	params ccv.ConsumerParams,
-) *PrivateConsumerGenesisState {
-	return &PrivateConsumerGenesisState{
+) *GenesisState {
+	return &GenesisState{
 		NewChain: false,
 		Params:   params,
 		Provider: ccv.ProviderInfo{
@@ -34,19 +34,19 @@ func NewRestartConsumerGenesisState(
 	}
 }
 
-// DefaultConsumerGenesisState returns a default disabled consumer chain genesis state. This allows the module to be hooked up to app without getting use
+// DefaultGenesisState returns a default disabled consumer chain genesis state. This allows the module to be hooked up to app without getting use
 // unless explicitly specified in genesis.
-func DefaultPrivateConsumerGenesisState() *PrivateConsumerGenesisState {
-	return &PrivateConsumerGenesisState{
+func DefaultGenesisState() *GenesisState {
+	return &GenesisState{
 		Params: ccv.DefaultParams(),
 	}
 }
 
-// NewPrivateInitialConsumerGenesisState returns a PrivateConsumerGenesisState for a completely new consumer chain.
-func NewPrivateInitialConsumerGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
+// NewInitialGenesisState returns a GenesisState for a completely new consumer chain.
+func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
 	initValSet []abci.ValidatorUpdate, params ccv.ConsumerParams,
-) *PrivateConsumerGenesisState {
-	return &PrivateConsumerGenesisState{
+) *GenesisState {
+	return &GenesisState{
 		NewChain: true,
 		Params:   params,
 		Provider: ccv.ProviderInfo{
@@ -74,7 +74,7 @@ func NewPrivateInitialConsumerGenesisState(cs *ibctmtypes.ClientState, consState
 //   - MaturingVSCPackets, OutstandingDowntime, PendingConsumerPacket, LastTransmissionBlockHeight // optional
 //
 
-func (gs PrivateConsumerGenesisState) Validate() error {
+func (gs GenesisState) Validate() error {
 	if !gs.Params.Enabled {
 		return nil
 	}

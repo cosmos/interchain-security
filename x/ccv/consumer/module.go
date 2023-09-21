@@ -57,7 +57,7 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 
 // ValidateGenesis performs genesis state validation for the ibc consumer module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
-	var data consumertypes.PrivateConsumerGenesisState
+	var data consumertypes.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", consumertypes.ModuleName, err)
 	}
@@ -117,7 +117,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 // InitGenesis performs genesis initialization for the consumer module. It returns
 // no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState consumertypes.PrivateConsumerGenesisState
+	var genesisState consumertypes.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	return am.keeper.InitGenesis(ctx, &genesisState)
 }
