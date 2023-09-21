@@ -6,6 +6,28 @@ import (
 	"reflect"
 )
 
+// stores a proposal as a raw json, together with its type
+type ProposalAndType struct {
+	RawProposal json.RawMessage
+	Type        string
+}
+
+// duplicated from the ChainState with a minor change to the Proposals field
+type ChainStateWithProposalTypes struct {
+	ValBalances                    *map[ValidatorID]uint
+	ValPowers                      *map[ValidatorID]uint
+	RepresentativePowers           *map[ValidatorID]uint
+	Params                         *[]Param
+	Rewards                        *Rewards
+	ConsumerChains                 *map[ChainID]bool
+	AssignedKeys                   *map[ValidatorID]string
+	ProviderKeys                   *map[ValidatorID]string
+	ConsumerChainQueueSizes        *map[ChainID]uint
+	GlobalSlashQueueSize           *uint
+	RegisteredConsumerRewardDenoms *[]string
+	Proposals                      *map[uint]ProposalAndType // the only thing changed from the real ChainState
+}
+
 // MarshalJSON marshals a step into JSON while including the type of the action.
 func (step Step) MarshalJSON() ([]byte, error) {
 	actionType := reflect.TypeOf(step.Action)
@@ -268,26 +290,6 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 
 // MarshalJSON transforms the ChainState into a ChainStateWithProposalTypes by adding type info to the proposals
 func (c ChainState) MarshalJSON() ([]byte, error) {
-	type ProposalAndType struct {
-		RawProposal interface{}
-		Type        string
-	}
-
-	type ChainStateWithProposalTypes struct {
-		ValBalances                    *map[ValidatorID]uint
-		ValPowers                      *map[ValidatorID]uint
-		RepresentativePowers           *map[ValidatorID]uint
-		Params                         *[]Param
-		Rewards                        *Rewards
-		ConsumerChains                 *map[ChainID]bool
-		AssignedKeys                   *map[ValidatorID]string
-		ProviderKeys                   *map[ValidatorID]string
-		ConsumerChainQueueSizes        *map[ChainID]uint
-		GlobalSlashQueueSize           *uint
-		RegisteredConsumerRewardDenoms *[]string
-		Proposals                      *map[uint]ProposalAndType // the only thing changed from the real ChainState
-	}
-
 	chainStateWithProposalTypes := ChainStateWithProposalTypes{
 		ValBalances:                    c.ValBalances,
 		ValPowers:                      c.ValPowers,
@@ -304,7 +306,11 @@ func (c ChainState) MarshalJSON() ([]byte, error) {
 	if c.Proposals != nil {
 		proposalsWithTypes := make(map[uint]ProposalAndType)
 		for k, v := range *c.Proposals {
-			proposalsWithTypes[k] = ProposalAndType{v, reflect.TypeOf(v).String()}
+			rawMessage, err := json.Marshal(v)
+			if err != nil {
+				return nil, err
+			}
+			proposalsWithTypes[k] = ProposalAndType{rawMessage, reflect.TypeOf(v).String()}
 		}
 		chainStateWithProposalTypes.Proposals = &proposalsWithTypes
 	}
@@ -313,26 +319,6 @@ func (c ChainState) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshals the ChainStateWithProposalTypes into a ChainState by removing the type info from the proposals and getting back standard proposals
 func (c *ChainState) UnmarshalJSON(data []byte) error {
-	type ProposalAndType struct {
-		RawProposal json.RawMessage
-		Type        string
-	}
-
-	type ChainStateWithProposalTypes struct {
-		ValBalances                    *map[ValidatorID]uint
-		ValPowers                      *map[ValidatorID]uint
-		RepresentativePowers           *map[ValidatorID]uint
-		Params                         *[]Param
-		Rewards                        *Rewards
-		ConsumerChains                 *map[ChainID]bool
-		AssignedKeys                   *map[ValidatorID]string
-		ProviderKeys                   *map[ValidatorID]string
-		ConsumerChainQueueSizes        *map[ChainID]uint
-		GlobalSlashQueueSize           *uint
-		RegisteredConsumerRewardDenoms *[]string
-		Proposals                      *map[uint]ProposalAndType // the only thing changed from the real ChainState
-	}
-
 	chainStateWithProposalTypes := ChainStateWithProposalTypes{}
 	err := json.Unmarshal(data, &chainStateWithProposalTypes)
 	if err != nil {
