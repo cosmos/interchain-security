@@ -486,28 +486,24 @@ func VSCMaturedHandledThisBlockKey() []byte {
 	return []byte{VSCMaturedHandledThisBlockBytePrefix}
 }
 
-// ProposedConsumerChainKey returns the key of proposed consumer chainId in consumerAddition gov proposal before voting finishes, the stored key format is prefix|len(chainID)|chainID|proposalID
-func ProposedConsumerChainKey(chainID string, proposalID uint64) []byte {
-	chainIdL := len(chainID)
+// ProposedConsumerChainKey returns the key of proposed consumer chainId in consumerAddition gov proposal before voting finishes, the stored key format is prefix|proposalID, value is chainID
+func ProposedConsumerChainKey(proposalID uint64) []byte {
 	return ccvtypes.AppendMany(
 		[]byte{ProposedConsumerChainByteKey},
-		sdk.Uint64ToBigEndian(uint64(chainIdL)),
-		[]byte(chainID),
 		sdk.Uint64ToBigEndian(proposalID),
 	)
 }
 
-func ParseProposedConsumerChainKey(prefix byte, bz []byte) (string, uint64, error) {
+// ParseProposedConsumerChainKey get the proposalID in the key
+func ParseProposedConsumerChainKey(prefix byte, bz []byte) (uint64, error) {
 	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
 	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
-		return "", 0, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
+		return 0, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
 	}
-	chainIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
-	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
-	proposalID := sdk.BigEndianToUint64(bz[prefixL+8+int(chainIdL):])
+	proposalID := sdk.BigEndianToUint64(bz[prefixL:])
 
-	return chainID, proposalID, nil
+	return proposalID, nil
 }
 
 //

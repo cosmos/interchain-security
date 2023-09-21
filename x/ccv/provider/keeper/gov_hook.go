@@ -56,7 +56,7 @@ func (gh GovHooks) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) {
 		}
 
 		if consAdditionProp.ProposalType() == types.ProposalTypeConsumerAddition {
-			gh.k.SetChainsInProposal(ctx, consAdditionProp.ChainId, proposalID)
+			gh.k.SetProposedConsumerChain(ctx, consAdditionProp.ChainId, proposalID)
 		}
 	}
 }

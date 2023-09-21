@@ -549,7 +549,7 @@ func TestSetProposedConsumerChains(t *testing.T) {
 
 	for _, test := range tests {
 		providerKeeper.SetProposedConsumerChain(ctx, test.chainID, test.proposalID)
-		cID := providerKeeper.GetProposedConsumerChains(ctx, test.chainID, test.proposalID)
+		cID := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
 		require.Equal(t, cID, test.chainID)
 	}
 }
