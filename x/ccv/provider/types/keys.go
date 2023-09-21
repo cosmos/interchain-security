@@ -486,8 +486,8 @@ func VSCMaturedHandledThisBlockKey() []byte {
 	return []byte{VSCMaturedHandledThisBlockBytePrefix}
 }
 
-// ChainInProposalKey returns the key of proposed consumer chainId in consumerAddition gov proposal before voting finishes, the stored key format is prefix|len(chainID)|chainID|proposalID
-func ChainInProposalKey(chainID string, proposalID uint64) []byte {
+// ProposedConsumerChainKey returns the key of proposed consumer chainId in consumerAddition gov proposal before voting finishes, the stored key format is prefix|len(chainID)|chainID|proposalID
+func ProposedConsumerChainKey(chainID string, proposalID uint64) []byte {
 	chainIdL := len(chainID)
 	return ccvtypes.AppendMany(
 		[]byte{ProposedConsumerChainByteKey},

@@ -310,3 +310,24 @@ func TestKeysWithUint64Payload(t *testing.T) {
 		}
 	}
 }
+
+func TestParseProposedConsumerChainKey(t *testing.T) {
+	tests := []struct {
+		prefix  byte
+		chainID string
+		proposalID uint64
+	}{
+		{chainID: "1", proposalID: 1},
+		{chainID: "some other ID", proposalID: 12},
+		{chainID: "some other other chain ID", proposalID: 123},
+	}
+
+	for _, test := range tests {
+		key := providertypes.ProposedConsumerChainKey(test.chainID, test.proposalID)
+		cID, pID, err := providertypes.ParseProposedConsumerChainKey(
+			providertypes.ProposedConsumerChainByteKey, key)
+		require.NoError(t, err)
+		require.Equal(t, cID, test.chainID)
+		require.Equal(t, pID, test.proposalID)
+	}
+}

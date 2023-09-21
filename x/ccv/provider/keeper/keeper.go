@@ -183,14 +183,14 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 // does not end.
 func (k Keeper) SetChainsInProposal(ctx sdk.Context, chainID string, proposalID uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ChainInProposalKey(chainID, proposalID), []byte(chainID))
+	store.Set(types.ProposedConsumerChainKey(chainID, proposalID), []byte(chainID))
 }
 
 // DeleteChainsInProposal deletes the consumer chainID from store
 // which is in gov consumerAddition proposal
 func (k Keeper) DeleteChainsInProposal(ctx sdk.Context, chainID string, proposalID uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ChainInProposalKey(chainID, proposalID))
+	store.Delete(types.ProposedConsumerChainKey(chainID, proposalID))
 }
 
 // GetAllProposedConsumerChainIDs get consumer chainId in gov consumerAddition proposal before voting period ends.
