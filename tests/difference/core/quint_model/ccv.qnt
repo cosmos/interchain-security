@@ -351,7 +351,7 @@ module ccv_logic {
     // receives a given packet on the provider. The arguments are the consumer chain that sent the packet, and the packet itself.
     // To receive a packet, add it to the list of received maturations.
     pure def recvPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VSCMaturedPacket): Result = {
-        if (not(isCurrentlyConsumer(sender, currentState))) {
+        if (not(isCurrentlyConsumer(sender, currentState.providerState))) {
             Err("Sender is not currently a consumer - must have 'running' status!")
         } else {
             val currentReceivedMaturations = currentState.providerState.receivedMaturations
