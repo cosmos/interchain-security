@@ -13,7 +13,7 @@ type ProposalAndType struct {
 }
 
 type (
-	// to have a ChainState object that does not have the overriden Marshal/Unmarshal method
+	// to have a ChainState object that does not have the overridden Marshal/Unmarshal method
 	ChainStateCopy ChainState
 
 	// duplicated from the ChainState with a minor change to the Proposals field
