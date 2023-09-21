@@ -196,7 +196,8 @@ module ccv_logic {
     const CcvTimeoutTimestamp: int
 
     // ===================
-    // PROTOCOL LOGIC
+    // PROTOCOL LOGIC contains the meat of the protocol
+    // functions here roughly correspond to API calls that can be triggered from external sources
     // ===================
     
     // the power of a validator on the provider chain is changed to the given amount. We do not care how this happens,
@@ -236,6 +237,159 @@ module ccv_logic {
                 }
             }
         }
+    }
+
+    // Ends a block on the provider. This means that the current validator set is committed on chain,
+    // packets are queued, and the next block is started.
+    pure def endAndBeginBlockForProvider(
+        currentState: ProtocolState,
+        // by how much the timestamp should be advanced,
+        // i.e. the timestamp for the next block is oldTimestamp + timeAdvancement
+        timeAdvancement: Timestamp,
+        // a set of consumers that were unused before, but should be set to running now.
+        consumersToStart: Set[Chain],
+        // a set of consumers that were running before, but should be set to stopped now.
+        consumersToStop: Set[Chain]): Result = {
+        // commit the current running validator set on chain
+        val currentProviderState = currentState.providerState
+        val newChainState = currentProviderState.chainState.endAndBeginBlockShared(timeAdvancement)
+        // modify the states of the consumers that should be started/stopped
+        val res = currentProviderState.consumerStatus.getNewConsumerStatusMap(consumersToStart, consumersToStop)
+        val newConsumerStatus = res._1
+        val err = res._2
+        if (err != "") {
+            Err(err)
+        } else {
+            val newProviderState = currentProviderState.with(
+                "chainState", newChainState
+            ).with(
+                "consumerStatus", newConsumerStatus
+            )
+            val providerStateAfterSending =
+            if (currentProviderState.providerValidatorSetChangedInThisBlock and getRunningConsumers(currentState.providerState).size() > 0) {
+                    newProviderState.sendVscPackets()
+                } else {
+                    newProviderState
+                }
+            Err("not implemented")
+        }
+    }
+
+    pure def endAndBeginBlockForConsumer(
+        currentState: ProtocolState,
+        chain: Chain,
+        // by how much the timestamp of the chain should be advanced for the next block
+        timeAdvancement: Timestamp): Result = {
+            if (currentState.consumerStates.keys().contains(chain)) {
+                Err("chain is not a consumer")
+            } else {
+                // if the chain is not a consumer, return an error
+                val currentConsumerState = currentState.consumerStates.get(chain)
+                val newChainState = currentConsumerState.chainState.endAndBeginBlockShared(timeAdvancement)
+                val newConsumerState = currentConsumerState.with(
+                    "chainState", newChainState
+                )
+                val maturedPackets = newConsumerState.maturationTimes.keys().filter(
+                    packet => 
+                    val maturationTime = newConsumerState.maturationTimes.get(packet)
+                    maturationTime <= newChainState.lastTimestamp
+                )
+                val newMaturationTimes = newConsumerState.maturationTimes.mapRemoveAll(maturedPackets)
+                val newOutstandingPackets = newConsumerState.outstandingPacketsToProvider.concat(
+                    maturedPackets.map(
+                        packet => {
+                            id: packet.id, 
+                            sendingTime: newConsumerState.chainState.lastTimestamp
+                        }
+                    ).toList()
+                )
+                val newConsumerState2 = newConsumerState.with(
+                    "maturationTimes", newMaturationTimes
+                ).with(
+                    "outstandingPacketsToProvider", newOutstandingPackets
+                )
+                val newConsumerStates = currentState.consumerStates.set(chain, newConsumerState2)
+                val newState = currentState.with(
+                    "consumerStates", newConsumerStates
+                )
+                Ok(newState)
+            }
+    }
+
+    // ===================
+    // UTILITY FUNCTIONS
+    // which do not hold the core logic of the protocol, but are still part of it
+    // ===================
+
+    pure def getRunningConsumersFromMap(consumerStatus: Chain -> str): Set[Chain] = {
+        consumerStatus.keys().filter(
+            chain => consumerStatus.get(chain) == RUNNING
+        )
+    }
+
+    pure def getStoppedConsumersFromMap(consumerStatus: Chain -> str): Set[Chain] = {
+        consumerStatus.keys().filter(
+            chain => consumerStatus.get(chain) == STOPPED
+        )
+    }
+
+    // Returns the new ConsumerStatusMap according to the consumers to start/stop.
+    // The second return is an error string: If it is not equal to "",
+    // it contains an error message, and the first return should be ignored.
+    pure def getNewConsumerStatusMap(
+        currentConsumerStatusMap: Chain -> str,
+        consumersToStart: Set[Chain],
+        consumersToStop: Set[Chain]): (Chain -> str, str) = {
+            val runningConsumers = getRunningConsumersFromMap(currentConsumerStatusMap)
+            val stoppedConsumers = getStoppedConsumersFromMap(currentConsumerStatusMap)
+            // if a consumer is both started and stopped, this is an error
+            if (consumersToStart.intersect(consumersToStop).size() > 0) {
+                (currentConsumerStatusMap, "Cannot start and stop a consumer at the same time")
+            } else {
+                // if a consumer is started, it must be unused
+                if (consumersToStart.intersect(runningConsumers).size() > 0) {
+                    (currentConsumerStatusMap, "Cannot start a consumer that is already running")
+                } else {
+                    // if a consumer is stopped, it must be running
+                    if (consumersToStop.intersect(stoppedConsumers).size() > 0) {
+                        (currentConsumerStatusMap, "Cannot stop a consumer that is not running")
+                    } else {
+                        // if a consumer is started, it must be unused
+                        val newConsumerStatusMap = currentConsumerStatusMap.keys().mapBy(
+                            (chain) => 
+                            if (consumersToStart.contains(chain)) {
+                                RUNNING
+                            } else if (consumersToStop.contains(chain)) {
+                                STOPPED
+                            } else {
+                                currentConsumerStatusMap.get(chain)
+                            }
+                        )
+                        (newConsumerStatusMap, "")
+                    }
+                }
+            }
+        }
+
+    // Takes the currentValidatorSet and puts it as the newest set of the voting history
+    pure def enterCurValSetIntoBlock(chainState: ChainState): ChainState = {
+        chainState.with(
+            "votingPowerHistory", chainState.votingPowerHistory.prepend(
+                chainState.currentValidatorSet
+            )
+        )
+    }
+
+    // Advances the timestamp in the chainState by timeAdvancement
+    pure def advanceTime(chainState: ChainState, timeAdvancement: Timestamp): ChainState = {
+        chainState.with(
+            "lastTimestamp", chainState.lastTimestamp + timeAdvancement
+        )
+    }
+
+    // common logic to update the chain state, used by both provider and consumers.
+    pure def endAndBeginBlockShared(chainState: ChainState, timeAdvancement: Timestamp): ChainState = {
+        chainState.enterCurValSetIntoBlock().advanceTime(timeAdvancement)
     }
 
     // returns the providerState with the following modifications:
@@ -282,40 +436,6 @@ module ccv_logic {
                 "runningVscId", providerState.runningVscId + 1
             ) 
     }
-
-    // Ends a block on the provider. This means that the current validator set is committed on chain,
-    // packets are queued, and the next block is started.
-    pure def endAndBeginBlockForProvider(
-        currentState: ProtocolState,
-        chain: Chain,
-        // by how much the timestamp should be advanced,
-        // i.e. the timestamp for the next block is oldTimestamp + timeAdvancement
-        timeAdvancement: Timestamp): Result = {
-        // commit the current running validator set on chain
-        val currentProviderState = currentState.providerState
-        val newChainState = currentProviderState.chainState.with(
-            "votingPowerHistory", currentProviderState.chainState.votingPowerHistory.prepend(
-                currentProviderState.chainState.currentValidatorSet
-            )
-        ).with(
-            // advance the time
-            "lastTimestamp", currentProviderState.chainState.lastTimestamp + timeAdvancement
-        )
-        val newProviderState = currentProviderState.with(
-            "chainState", newChainState
-        )
-        val providerStateAfterSending =
-         if (currentProviderState.providerValidatorSetChangedInThisBlock and getRunningConsumers(currentState.providerState).size() > 0) {
-                newProviderState.sendVscPackets()
-            } else {
-                newProviderState
-            }
-        Err("not implemented")
-    }
-
-    // ===================
-    // UTILITY FUNCTIONS
-    // ===================
 
     // receives a given packet (sent by the provider) on the consumer. The arguments are the consumer chain that is receiving the packet, and the packet itself.
     // To receive a packet, modify the running validator set (not the one entered into the block yet,
