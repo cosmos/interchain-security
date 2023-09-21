@@ -68,6 +68,19 @@ Interchain Security v3 uses SDK 0.47 and IBC 7.
 * `[x/ccv/provider]` (fix) [#977](https://github.com/cosmos/interchain-security/pull/977) Avoids panicking the provider when an unbonding delegation was removed through a `CancelUnbondingDelegation` message.
 * `[x/ccv/democracy]` (feat) [#1019](https://github.com/cosmos/interchain-security/pull/1019) Whitelisting non-legacy params in the "democracy module" require the entire module to be whitelisted. 
 
+## v2.1.0-provider-lsm
+
+Date: September 15th, 2023
+
+* (feature!) [#1280](https://github.com/cosmos/interchain-security/pull/1280) provider proposal for changing reward denoms
+
+## v2.0.0-lsm
+
+Date: August 18th, 2023
+
+* (deps!) [#1120](https://github.com/cosmos/interchain-security/pull/1120) Bump [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) to [v0.45.16-ics-lsm](https://github.com/cosmos/cosmos-sdk/tree/v0.45.16-ics-lsm). This requires adapting ICS to support this SDK release. Changes are state breaking.
+* (fix) [#720](https://github.com/cosmos/interchain-security/issues/720) Fix the attribute `AttributeDistributionTotal` value in `FeeDistribution` event emit.
+
 ## v2.0.0
 
 Date: June 1st, 2023
