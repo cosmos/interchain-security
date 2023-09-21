@@ -533,3 +533,23 @@ func TestSetSlashLog(t *testing.T) {
 	require.True(t, providerKeeper.GetSlashLog(ctx, addrWithDoubleSigns))
 	require.False(t, providerKeeper.GetSlashLog(ctx, addrWithoutDoubleSigns))
 }
+
+func TestSetProposedConsumerChains(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	tests := []struct {
+		chainID string
+		proposalID uint64
+	}{
+		{chainID: "1", proposalID: 1},
+		{chainID: "some other ID", proposalID: 12},
+		{chainID: "some other other chain ID", proposalID: 123},
+	}
+
+	for _, test := range tests {
+		providerKeeper.SetProposedConsumerChain(ctx, test.chainID, test.proposalID)
+		cID := providerKeeper.GetProposedConsumerChains(ctx, test.chainID, test.proposalID)
+		require.Equal(t, cID, test.chainID)
+	}
+}
