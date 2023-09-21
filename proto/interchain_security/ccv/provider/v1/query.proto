@@ -88,7 +88,7 @@ service Query {
       QueryProposedChainIDsRequest)
       returns (QueryProposedChainIDsResponse) {
   option (google.api.http).get =
-      "/interchain_security/ccv/provider/proposed_consumer_chainids";
+      "/interchain_security/ccv/provider/proposed_consumer_chains";
       }
 }
 
