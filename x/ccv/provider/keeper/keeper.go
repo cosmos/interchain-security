@@ -207,7 +207,7 @@ func (k Keeper) GetAllProposedConsumerChainIDs(ctx sdk.Context) []types.Proposed
 		}
 
 		proposedChains = append(proposedChains, types.ProposedChain{
-			ChainID: chainID,
+			ChainID:    chainID,
 			ProposalID: proposalID,
 		})
 

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -496,7 +497,6 @@ func ChainInProposalKey(chainID string, proposalID uint64) []byte {
 	)
 }
 
-
 func ParseProposedConsumerChainKey(prefix byte, bz []byte) (string, uint64, error) {
 	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
@@ -505,7 +505,7 @@ func ParseProposedConsumerChainKey(prefix byte, bz []byte) (string, uint64, erro
 	}
 	chainIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
 	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
-	proposalID :=  sdk.BigEndianToUint64(bz[prefixL+8+int(chainIdL):])
+	proposalID := sdk.BigEndianToUint64(bz[prefixL+8+int(chainIdL):])
 
 	return chainID, proposalID, nil
 }

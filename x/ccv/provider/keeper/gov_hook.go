@@ -2,12 +2,14 @@ package keeper
 
 import (
 	"fmt"
+
+	"github.com/cosmos/gogoproto/proto"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	sdkgov "github.com/cosmos/cosmos-sdk/x/gov/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 
-	"github.com/cosmos/gogoproto/proto"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
@@ -86,6 +88,7 @@ func (gh GovHooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID ui
 	}
 }
 
-func (gh GovHooks) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress) {}
+func (gh GovHooks) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress) {
+}
 func (gh GovHooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress) {}
-func (gh GovHooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64) {}
+func (gh GovHooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64)               {}
