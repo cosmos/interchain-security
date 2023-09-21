@@ -460,7 +460,7 @@ func New(
 	govHook := app.ProviderKeeper.GovHooks(govKeeper)
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(govHook),
-		)
+	)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,

@@ -313,7 +313,7 @@ func TestKeysWithUint64Payload(t *testing.T) {
 
 func TestParseProposedConsumerChainKey(t *testing.T) {
 	tests := []struct {
-		chainID string
+		chainID    string
 		proposalID uint64
 	}{
 		{chainID: "1", proposalID: 1},

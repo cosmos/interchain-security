@@ -779,7 +779,6 @@ func (tr TestRun) curlJsonRPCRequest(method, params, address string) {
 	executeCommandWithVerbosity(cmd, "curlJsonRPCRequest", verbosity)
 }
 
-
 func (tr TestRun) getProposedConsumerChains(chain ChainID) []string {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,

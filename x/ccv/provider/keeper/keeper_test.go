@@ -539,7 +539,7 @@ func TestSetProposedConsumerChains(t *testing.T) {
 	defer ctrl.Finish()
 
 	tests := []struct {
-		chainID string
+		chainID    string
 		proposalID uint64
 	}{
 		{chainID: "1", proposalID: 1},
