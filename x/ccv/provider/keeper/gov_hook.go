@@ -49,7 +49,7 @@ func (gh GovHooks) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) {
 		if msgLegacyContent.Content.TypeUrl != "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal" {
 			continue
 		}
-		// if the proposal is not ConsumerAdditionProposal, continue
+		// if the consumer addition proposal cannot be unmarshaled, continue
 		var consAdditionProp types.ConsumerAdditionProposal
 		if err := proto.Unmarshal(msgLegacyContent.Content.Value, &consAdditionProp); err != nil {
 			continue
