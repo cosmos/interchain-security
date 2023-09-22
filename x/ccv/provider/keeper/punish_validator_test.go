@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"fmt"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -317,8 +318,25 @@ func TestSlashValidator(t *testing.T) {
 	testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
+	pkAny, _ := codectypes.NewAnyWithValue(pubKey)
 
-	validator, _ := stakingtypes.NewValidator(pubKey.Address().Bytes(), pubKey, stakingtypes.Description{})
+	// manually build a validator instead of using `stakingtypes.NewValidator` to guarantee that the validator is bonded
+	validator := stakingtypes.Validator{
+		OperatorAddress:         sdk.ValAddress(pubKey.Address().Bytes()).String(),
+		ConsensusPubkey:         pkAny,
+		Jailed:                  false,
+		Status:                  stakingtypes.Bonded,
+		Tokens:                  sdk.ZeroInt(),
+		DelegatorShares:         sdk.ZeroDec(),
+		Description:             stakingtypes.Description{},
+		UnbondingHeight:         int64(0),
+		UnbondingTime:           time.Unix(0, 0).UTC(),
+		Commission:              stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
+		UnbondingOnHoldRefCount: 0,
+		ValidatorBondShares:     sdk.ZeroDec(),
+		LiquidShares:            sdk.ZeroDec(),
+	}
+
 	consAddr, _ := validator.GetConsAddr()
 	providerAddr := types.NewProviderConsAddress(consAddr)
 
@@ -367,6 +385,33 @@ func TestSlashValidator(t *testing.T) {
 		mocks.MockStakingKeeper.EXPECT().
 			Slash(ctx, consAddr, expectedInfractionHeight, expectedSlashPower, slashFraction, stakingtypes.DoubleSign).
 			Times(1),
+	}
+
+	gomock.InOrder(expectedCalls...)
+	keeper.SlashValidator(ctx, providerAddr)
+}
+
+// TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded asserts that `SlashValidator` does not call
+// the staking module's `Slash` method if the validator to be slashed is unbonded
+func TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded(t *testing.T) {
+	keeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
+
+	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
+
+	// validator is initially unbonded
+	validator, _ := stakingtypes.NewValidator(pubKey.Address().Bytes(), pubKey, stakingtypes.Description{})
+
+	consAddr, _ := validator.GetConsAddr()
+	providerAddr := types.NewProviderConsAddress(consAddr)
+
+	expectedCalls := []*gomock.Call{
+		mocks.MockStakingKeeper.EXPECT().
+			GetValidatorByConsAddr(ctx, gomock.Any()).
+			Return(validator, true),
 	}
 
 	gomock.InOrder(expectedCalls...)

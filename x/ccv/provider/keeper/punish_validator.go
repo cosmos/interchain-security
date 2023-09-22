@@ -84,9 +84,14 @@ func (k Keeper) ComputePowerToSlash(now time.Time, undelegations []stakingtypes.
 func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) {
 	logger := k.Logger(ctx)
 
-	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 	if !found {
 		logger.Error("validator not found", "provider consensus address", providerAddr.String())
+		return
+	}
+
+	if validator.IsUnbonded() {
+		logger.Info("validator is unbonded", "provider consensus address", providerAddr.String())
 		return
 	}
 
@@ -95,9 +100,9 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 		return
 	}
 
-	undelegations := k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, val.GetOperator())
-	redelegations := k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, val.GetOperator())
-	lastPower := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
+	undelegations := k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, validator.GetOperator())
+	redelegations := k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, validator.GetOperator())
+	lastPower := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
 	powerReduction := k.stakingKeeper.PowerReduction(ctx)
 	totalPower := k.ComputePowerToSlash(ctx.BlockHeader().Time, undelegations, redelegations, lastPower, powerReduction)
 	slashFraction := k.slashingKeeper.SlashFractionDoubleSign(ctx)
