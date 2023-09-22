@@ -11,7 +11,7 @@ import (
 )
 
 // HandleConsumerMisbehaviour checks if the given IBC misbehaviour corresponds to an equivocation light client attack,
-// and in this case, jails and tombstones the Byzantine validators
+// and in this case, jails the Byzantine validators
 func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
 	logger := k.Logger(ctx)
 
@@ -34,7 +34,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 
 	provAddrs := make([]types.ProviderConsAddress, len(byzantineValidators))
 
-	// jail and tombstone the Byzantine validators
+	// jail the Byzantine validators
 	for _, v := range byzantineValidators {
 		providerAddr := k.GetProviderAddrFromConsumerAddr(
 			ctx,
