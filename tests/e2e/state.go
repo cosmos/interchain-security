@@ -780,8 +780,8 @@ func (tr TestRun) curlJsonRPCRequest(method, params, address string) {
 }
 
 func (tr TestRun) getProposedConsumerChains(chain ChainID) []string {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	tr.waitBlocks(chain, 1, 10*time.Second)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 		"query", "provider", "list-proposed-consumer-chains",
 		`--node`, tr.getQueryNode(chain),
