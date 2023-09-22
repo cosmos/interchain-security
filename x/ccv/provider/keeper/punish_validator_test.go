@@ -2,6 +2,9 @@ package keeper_test
 
 import (
 	"fmt"
+	"testing"
+	"time"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
@@ -15,8 +18,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	tmtypes "github.com/tendermint/tendermint/types"
-	"testing"
-	"time"
 )
 
 // TestJailAndTombstoneValidator tests that the jailing of a validator is only executed
@@ -196,7 +197,8 @@ func TestComputePowerToSlash(t *testing.T) {
 			// 1000 total undelegation tokens
 			[]stakingtypes.UnbondingDelegation{
 				createUndelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
-				createUndelegation([]int64{500}, []time.Time{nowPlus1Hour, nowPlus1Hour})},
+				createUndelegation([]int64{500}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
+			},
 			// 1000 total redelegation tokens
 			[]stakingtypes.Redelegation{
 				createRedelegation([]int64{500}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
@@ -214,7 +216,8 @@ func TestComputePowerToSlash(t *testing.T) {
 				createUndelegation([]int64{}, []time.Time{}),
 				createUndelegation([]int64{100, 100}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
 				createUndelegation([]int64{800}, []time.Time{nowPlus1Hour}),
-				createUndelegation([]int64{500}, []time.Time{nowPlus1Hour})},
+				createUndelegation([]int64{500}, []time.Time{nowPlus1Hour}),
+			},
 			// 3500 total redelegation tokens
 			[]stakingtypes.Redelegation{
 				createRedelegation([]int64{}, []time.Time{}),
@@ -260,7 +263,8 @@ func TestComputePowerToSlash(t *testing.T) {
 				createUndelegation([]int64{}, []time.Time{}),
 				createUndelegation([]int64{100, 100}, []time.Time{nowPlus1Hour, nowPlus1Hour}),
 				createUndelegation([]int64{800}, []time.Time{nowPlus1Hour}),
-				createUndelegation([]int64{500}, []time.Time{nowPlus1Hour})},
+				createUndelegation([]int64{500}, []time.Time{nowPlus1Hour}),
+			},
 			[]stakingtypes.Redelegation{},
 			int64(1),
 			sdk.NewInt(3),
@@ -275,7 +279,8 @@ func TestComputePowerToSlash(t *testing.T) {
 				createUndelegation([]int64{}, []time.Time{}),
 				createUndelegation([]int64{100, 100}, []time.Time{now, nowPlus1Hour}),
 				createUndelegation([]int64{800}, []time.Time{nowPlus1Hour}),
-				createUndelegation([]int64{500}, []time.Time{now})},
+				createUndelegation([]int64{500}, []time.Time{now}),
+			},
 			// 3500 total redelegation tokens, 350 + 200 + 400 = 950 of those are from mature redelegations
 			// so 3500 - 950 = 2550
 			[]stakingtypes.Redelegation{
@@ -344,10 +349,12 @@ func TestSlashValidator(t *testing.T) {
 	// we also create 1000 tokens worth of redelegations, 750 of them are non-matured
 	undelegations := []stakingtypes.UnbondingDelegation{
 		createUndelegation([]int64{250, 250}, []time.Time{nowPlus1Hour, now}),
-		createUndelegation([]int64{500}, []time.Time{nowPlus1Hour})}
+		createUndelegation([]int64{500}, []time.Time{nowPlus1Hour}),
+	}
 	redelegations := []stakingtypes.Redelegation{
 		createRedelegation([]int64{250, 250}, []time.Time{now, nowPlus1Hour}),
-		createRedelegation([]int64{500}, []time.Time{nowPlus1Hour})}
+		createRedelegation([]int64{500}, []time.Time{nowPlus1Hour}),
+	}
 
 	// validator's current power
 	currentPower := int64(3000)

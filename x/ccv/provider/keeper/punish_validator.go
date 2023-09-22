@@ -1,12 +1,13 @@
 package keeper
 
 import (
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	"time"
 )
 
 // JailAndTombstoneValidator jails and tombstones the validator with the given provider consensus address
@@ -46,8 +47,8 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 // ComputePowerToSlash computes the power to be slashed based on the tokens in non-matured (based on the
 // provider `now` time) `undelegations` and `redelegations`, as well as the current `power` of the validator
 func (k Keeper) ComputePowerToSlash(now time.Time, undelegations []stakingtypes.UnbondingDelegation,
-	redelegations []stakingtypes.Redelegation, power int64, powerReduction sdk.Int) int64 {
-
+	redelegations []stakingtypes.Redelegation, power int64, powerReduction sdk.Int,
+) int64 {
 	// compute the total numbers of tokens currently being undelegated
 	undelegationsInTokens := sdk.NewInt(0)
 	for _, u := range undelegations {

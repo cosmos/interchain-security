@@ -3,8 +3,8 @@ package keeper
 import (
 	"bytes"
 	"fmt"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
