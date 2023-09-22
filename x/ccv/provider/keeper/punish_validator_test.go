@@ -234,7 +234,7 @@ func TestComputePowerToSlash(t *testing.T) {
 			[]stakingtypes.Redelegation{},
 			int64(3000),
 			sdk.NewInt(5),
-			int64(0/5 + 3000),
+			int64(3000), // expectedPower is 0/5 + 3000
 		},
 		{
 			"no undelegations",
