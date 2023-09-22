@@ -90,7 +90,8 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				ProviderClientId:  "ccvclient",
 				ProviderChannelId: "",
 				NewChain:          true,
-				Provider: ccv.ProviderInfo{ClientState: cs,
+				Provider: ccv.ProviderInfo{
+					ClientState:    cs,
 					ConsensusState: consensusState,
 					InitialValSet:  valUpdates,
 				},
@@ -110,7 +111,8 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				ProviderClientId:  "",
 				ProviderChannelId: "ccvchannel",
 				NewChain:          true,
-				Provider: ccv.ProviderInfo{ClientState: cs,
+				Provider: ccv.ProviderInfo{
+					ClientState:    cs,
 					ConsensusState: consensusState,
 					InitialValSet:  valUpdates,
 				},
@@ -130,7 +132,8 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				ProviderClientId:  "",
 				ProviderChannelId: "",
 				NewChain:          true,
-				Provider: ccv.ProviderInfo{ClientState: cs,
+				Provider: ccv.ProviderInfo{
+					ClientState:    cs,
 					ConsensusState: consensusState,
 					InitialValSet:  valUpdates,
 				},
@@ -150,7 +153,8 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				ProviderClientId:  "",
 				ProviderChannelId: "",
 				NewChain:          true,
-				Provider: ccv.ProviderInfo{ClientState: cs,
+				Provider: ccv.ProviderInfo{
+					ClientState:    cs,
 					ConsensusState: consensusState,
 					InitialValSet:  valUpdates,
 				},
@@ -170,7 +174,8 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				ProviderClientId:  "",
 				ProviderChannelId: "",
 				NewChain:          true,
-				Provider: ccv.ProviderInfo{ClientState: cs,
+				Provider: ccv.ProviderInfo{
+					ClientState:    cs,
 					ConsensusState: consensusState,
 					InitialValSet:  valUpdates,
 				},

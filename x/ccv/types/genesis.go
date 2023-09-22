@@ -55,10 +55,8 @@ func (gs ConsumerGenesisState) Validate() error {
 		if err := gs.Provider.ConsensusState.ValidateBasic(); err != nil {
 			return errorsmod.Wrapf(ErrInvalidGenesis, "provider consensus state invalid for new chain %s", err.Error())
 		}
-	} else {
-		if gs.Provider.ClientState != nil || gs.Provider.ConsensusState != nil {
-			return errorsmod.Wrap(ErrInvalidGenesis, "provider client state and consensus state must be nil for a restarting genesis state")
-		}
+	} else if gs.Provider.ClientState != nil || gs.Provider.ConsensusState != nil {
+		return errorsmod.Wrap(ErrInvalidGenesis, "provider client state and consensus state must be nil for a restarting genesis state")
 	}
 	return nil
 }
