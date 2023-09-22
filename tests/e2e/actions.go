@@ -2083,7 +2083,6 @@ func (tr TestRun) waitForSlashMeterReplenishment(
 }
 
 type waitTimeAction struct {
-	Consumer ChainID
 	WaitTime time.Duration
 }
 
