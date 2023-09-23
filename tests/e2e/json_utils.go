@@ -47,7 +47,6 @@ func (step *Step) UnmarshalJSON(data []byte) error {
 		Action     json.RawMessage
 		State      State
 	}
-	print(string(data))
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
