@@ -30,6 +30,8 @@ type StakingKeeper interface {
 	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
 	Jail(sdk.Context, sdk.ConsAddress) // jail a validator
 	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec, stakingtypes.InfractionType)
+	SlashUnbondingDelegation(sdk.Context, stakingtypes.UnbondingDelegation, int64, sdk.Dec) sdk.Int
+	SlashRedelegation(sdk.Context, stakingtypes.Validator, stakingtypes.Redelegation, int64, sdk.Dec) sdk.Int
 	Unjail(ctx sdk.Context, addr sdk.ConsAddress)
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))

@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"time"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 
@@ -44,33 +42,25 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 	k.slashingKeeper.Tombstone(ctx, providerAddr.ToSdkConsAddr())
 }
 
-// ComputePowerToSlash computes the power to be slashed based on the tokens in non-matured (based on the
-// provider `now` time) `undelegations` and `redelegations`, as well as the current `power` of the validator
-func (k Keeper) ComputePowerToSlash(now time.Time, undelegations []stakingtypes.UnbondingDelegation,
+// ComputePowerToSlash computes the power to be slashed based on the tokens in non-matured `undelegations` and
+// `redelegations`, as well as the current `power` of the validator
+func (k Keeper) ComputePowerToSlash(ctx sdk.Context, validator stakingtypes.Validator, undelegations []stakingtypes.UnbondingDelegation,
 	redelegations []stakingtypes.Redelegation, power int64, powerReduction sdk.Int,
 ) int64 {
 	// compute the total numbers of tokens currently being undelegated
 	undelegationsInTokens := sdk.NewInt(0)
+
+	cachedCtx, _ := ctx.CacheContext()
 	for _, u := range undelegations {
-		for _, entry := range u.Entries {
-			if entry.IsMature(now) && !entry.OnHold() {
-				//  undelegation no longer eligible for slashing, skip it
-				continue
-			}
-			undelegationsInTokens = undelegationsInTokens.Add(entry.InitialBalance)
-		}
+		amountSlashed := k.stakingKeeper.SlashUnbondingDelegation(cachedCtx, u, 0, sdk.NewDec(1))
+		undelegationsInTokens = undelegationsInTokens.Add(amountSlashed)
 	}
 
 	// compute the total numbers of tokens currently being redelegated
 	redelegationsInTokens := sdk.NewInt(0)
 	for _, r := range redelegations {
-		for _, entry := range r.Entries {
-			if entry.IsMature(now) && !entry.OnHold() {
-				//  redelegation no longer eligible for slashing, skip it
-				continue
-			}
-			redelegationsInTokens = redelegationsInTokens.Add(entry.InitialBalance)
-		}
+		amountSlashed := k.stakingKeeper.SlashRedelegation(cachedCtx, validator, r, 0, sdk.NewDec(1))
+		redelegationsInTokens = redelegationsInTokens.Add(amountSlashed)
 	}
 
 	// The power we pass to staking's keeper `Slash` method is the current power of the validator together with the total
@@ -105,7 +95,7 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 	redelegations := k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, validator.GetOperator())
 	lastPower := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
 	powerReduction := k.stakingKeeper.PowerReduction(ctx)
-	totalPower := k.ComputePowerToSlash(ctx.BlockHeader().Time, undelegations, redelegations, lastPower, powerReduction)
+	totalPower := k.ComputePowerToSlash(ctx, validator, undelegations, redelegations, lastPower, powerReduction)
 	slashFraction := k.slashingKeeper.SlashFractionDoubleSign(ctx)
 
 	k.stakingKeeper.Slash(ctx, providerAddr.ToSdkConsAddr(), 0, totalPower, slashFraction, stakingtypes.DoubleSign)

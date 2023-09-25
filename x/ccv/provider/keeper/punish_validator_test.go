@@ -176,7 +176,7 @@ func createRedelegation(initialBalances []int64, completionTimes []time.Time) st
 // TestComputePowerToSlash tests that `ComputePowerToSlash` computes the correct power to be slashed based on
 // the tokens in non-mature undelegation and redelegation entries, as well as the current power of the validator
 func TestComputePowerToSlash(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// undelegation or redelegation entries with completion time `now` have matured
@@ -297,8 +297,39 @@ func TestComputePowerToSlash(t *testing.T) {
 		},
 	}
 
+	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
+	validator, _ := stakingtypes.NewValidator(pubKey.Address().Bytes(), pubKey, stakingtypes.Description{})
+
 	for _, tc := range testCases {
-		actualPower := providerKeeper.ComputePowerToSlash(now,
+		gomock.InOrder(mocks.MockStakingKeeper.EXPECT().
+			SlashUnbondingDelegation(gomock.Any(), gomock.Any(), int64(0), sdk.NewDec(1)).
+			DoAndReturn(
+				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ sdk.Dec) sdk.Int {
+					sum := sdk.NewInt(0)
+					for _, r := range undelegation.Entries {
+						if r.IsMature(ctx.BlockTime()) {
+							continue
+						}
+						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+					}
+					return sum
+				}).AnyTimes(),
+			mocks.MockStakingKeeper.EXPECT().
+				SlashRedelegation(gomock.Any(), gomock.Any(), gomock.Any(), int64(0), sdk.NewDec(1)).
+				DoAndReturn(
+					func(ctx sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ sdk.Dec) sdk.Int {
+						sum := sdk.NewInt(0)
+						for _, r := range redelegation.Entries {
+							if r.IsMature(ctx.BlockTime()) {
+								continue
+							}
+							sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+						}
+						return sum
+					}).AnyTimes(),
+		)
+
+		actualPower := providerKeeper.ComputePowerToSlash(ctx, validator,
 			tc.undelegations, tc.redelegations, tc.power, tc.powerReduction)
 
 		if tc.expectedPower != actualPower {
@@ -386,6 +417,32 @@ func TestSlashValidator(t *testing.T) {
 		mocks.MockStakingKeeper.EXPECT().
 			PowerReduction(ctx).
 			Return(powerReduction),
+		mocks.MockStakingKeeper.EXPECT().
+			SlashUnbondingDelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			DoAndReturn(
+				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ sdk.Dec) sdk.Int {
+					sum := sdk.NewInt(0)
+					for _, r := range undelegation.Entries {
+						if r.IsMature(ctx.BlockTime()) {
+							continue
+						}
+						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+					}
+					return sum
+				}).AnyTimes(),
+		mocks.MockStakingKeeper.EXPECT().
+			SlashRedelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			DoAndReturn(
+				func(_ sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ sdk.Dec) sdk.Int {
+					sum := sdk.NewInt(0)
+					for _, r := range redelegation.Entries {
+						if r.IsMature(ctx.BlockTime()) {
+							continue
+						}
+						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+					}
+					return sum
+				}).AnyTimes(),
 		mocks.MockSlashingKeeper.EXPECT().
 			SlashFractionDoubleSign(ctx).
 			Return(slashFraction),

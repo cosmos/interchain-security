@@ -307,6 +307,34 @@ func (mr *MockStakingKeeperMockRecorder) Slash(arg0, arg1, arg2, arg3, arg4, arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Slash", reflect.TypeOf((*MockStakingKeeper)(nil).Slash), arg0, arg1, arg2, arg3, arg4, arg5)
 }
 
+// SlashRedelegation mocks base method.
+func (m *MockStakingKeeper) SlashRedelegation(arg0 types.Context, arg1 types4.Validator, arg2 types4.Redelegation, arg3 int64, arg4 types.Dec) types.Int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SlashRedelegation", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].(types.Int)
+	return ret0
+}
+
+// SlashRedelegation indicates an expected call of SlashRedelegation.
+func (mr *MockStakingKeeperMockRecorder) SlashRedelegation(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SlashRedelegation", reflect.TypeOf((*MockStakingKeeper)(nil).SlashRedelegation), arg0, arg1, arg2, arg3, arg4)
+}
+
+// SlashUnbondingDelegation mocks base method.
+func (m *MockStakingKeeper) SlashUnbondingDelegation(arg0 types.Context, arg1 types4.UnbondingDelegation, arg2 int64, arg3 types.Dec) types.Int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SlashUnbondingDelegation", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(types.Int)
+	return ret0
+}
+
+// SlashUnbondingDelegation indicates an expected call of SlashUnbondingDelegation.
+func (mr *MockStakingKeeperMockRecorder) SlashUnbondingDelegation(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SlashUnbondingDelegation", reflect.TypeOf((*MockStakingKeeper)(nil).SlashUnbondingDelegation), arg0, arg1, arg2, arg3)
+}
+
 // UnbondingCanComplete mocks base method.
 func (m *MockStakingKeeper) UnbondingCanComplete(ctx types.Context, id uint64) error {
 	m.ctrl.T.Helper()
