@@ -161,7 +161,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	nhooyr.io/websocket v1.8.6 // indirect
-	pgregory.net/rapid v0.5.5
+	pgregory.net/rapid v1.1.0
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
