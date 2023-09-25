@@ -84,13 +84,23 @@ func GetActionGen() *rapid.Generator[any] {
 		GetRegisterRepresentativeActionGen().AsAny(),
 		GetDoublesignSlashActionGen().AsAny(),
 		GetAssignConsumerPubKeyActionGen().AsAny(),
-		GetSlashThrottleDequeueGen().AsAny(),
+		GetSlashThrottleDequeueActionGen().AsAny(),
 		GetCreateIbcClientsActionGen().AsAny(),
 		CreateCancelUnbondTokensActionGen().AsAny(),
 		CreateLightClientEquivocationAttackActionGen().AsAny(),
 		CreateLightClientAmnesiaAttackActionGen().AsAny(),
 		CreateLightClientLunaticAttackActionGen().AsAny(),
 	)
+}
+
+func CreateSubmitChangeRewardDenomsProposalActionGen() *rapid.Generator[submitChangeRewardDenomsProposalAction] {
+	return rapid.Custom(func(t *rapid.T) submitChangeRewardDenomsProposalAction {
+		return submitChangeRewardDenomsProposalAction{
+			From:    GetValidatorIDGen().Draw(t, "From"),
+			Deposit: rapid.Uint().Draw(t, "Deposit"),
+			Denom:   rapid.String().Draw(t, "Denom"),
+		}
+	})
 }
 
 func CreateLightClientEquivocationAttackActionGen() *rapid.Generator[lightClientEquivocationAttackAction] {
@@ -479,9 +489,9 @@ func GetAssignConsumerPubKeyActionGen() *rapid.Generator[assignConsumerPubKeyAct
 	})
 }
 
-func GetSlashThrottleDequeueGen() *rapid.Generator[slashThrottleDequeue] {
-	return rapid.Custom(func(t *rapid.T) slashThrottleDequeue {
-		return slashThrottleDequeue{
+func GetSlashThrottleDequeueActionGen() *rapid.Generator[slashThrottleDequeueAction] {
+	return rapid.Custom(func(t *rapid.T) slashThrottleDequeueAction {
+		return slashThrottleDequeueAction{
 			Chain:            GetChainIDGen().Draw(t, "Chain"),
 			CurrentQueueSize: rapid.Int().Draw(t, "CurrentQueueSize"),
 			NextQueueSize:    rapid.Int().Draw(t, "NextQueueSize"),

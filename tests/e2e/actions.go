@@ -2045,8 +2045,8 @@ func (tr TestConfig) assignConsumerPubKey(action assignConsumerPubKeyAction, ver
 	tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
 }
 
-// slashThrottleDequeue polls slash queue sizes until nextQueueSize is achieved
-type slashThrottleDequeue struct {
+// slashThrottleDequeueAction polls slash queue sizes until nextQueueSize is achieved
+type slashThrottleDequeueAction struct {
 	Chain            ChainID
 	CurrentQueueSize int
 	NextQueueSize    int
@@ -2055,7 +2055,7 @@ type slashThrottleDequeue struct {
 }
 
 func (tr TestConfig) waitForSlashThrottleDequeue(
-	action slashThrottleDequeue,
+	action slashThrottleDequeueAction,
 	verbose bool,
 ) {
 	timeout := time.Now().Add(action.Timeout)
@@ -2077,7 +2077,7 @@ func (tr TestConfig) waitForSlashThrottleDequeue(
 		}
 
 		if time.Now().After(timeout) {
-			panic(fmt.Sprintf("\n\n\nwaitForSlashThrottleDequeuemethod has timed out after: %s\n\n", action.Timeout))
+			panic(fmt.Sprintf("\n\n\nwaitForSlashThrottleDequeue method has timed out after: %s\n\n", action.Timeout))
 		}
 
 		time.Sleep(500 * time.Millisecond)

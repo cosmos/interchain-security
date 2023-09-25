@@ -62,31 +62,12 @@ func TestWriterThenParser(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			filename := filepath.Join(dir, "trace.json")
-			err := WriteReadCompareTrace(tc.trace, filename, name)
+			err := WriteAndReadTrace(GlobalJSONParser, GlobalJSONWriter, tc.trace, filename)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalf("got error for testcase %v: %s", name, err)
 			}
 		})
 	}
-}
-
-// Write a trace to a file, then reads it back and compares to the original.
-func WriteReadCompareTrace(trace []Step, filename, name string) error {
-	err := WriteAndReadTrace(GlobalJSONParser, GlobalJSONWriter, trace, filename)
-	if err != nil {
-		return fmt.Errorf("in testcase %v, got error writing trace to file: %v", name, err)
-	}
-
-	got, err := GlobalJSONParser.ReadTraceFromFile(filename)
-	if err != nil {
-		return fmt.Errorf("in testcase %v, got error reading trace from file: %v", name, err)
-	}
-	diff := cmp.Diff(trace, got, cmp.AllowUnexported(Step{}))
-	if diff != "" {
-		return fmt.Errorf("Got a difference for testcase %s (-want +got):\n%s", name, diff)
-	}
-
-	return nil
 }
 
 // Checks that writing a trace does not result in an error.
@@ -94,7 +75,6 @@ func TestWriteExamples(t *testing.T) {
 	tests := map[string]struct {
 		trace []Step
 	}{
-		"start_provider_chain":  {stepStartProviderChain()},
 		"happyPath":             {happyPathSteps},
 		"democracy":             {democracySteps},
 		"slashThrottle":         {slashThrottleSteps},
@@ -237,15 +217,13 @@ func WriteAndReadTrace(parser TraceParser, writer TraceWriter, trace []Step, tmp
 		return fmt.Errorf("error writing trace to file: %v", err)
 	}
 
-	got, err := parser.ReadTraceFromFile(tmp_filepath)
+	got, err := GlobalJSONParser.ReadTraceFromFile(tmp_filepath)
 	if err != nil {
-		return fmt.Errorf("error reading trace from file: %v", err)
+		return fmt.Errorf("got error reading trace from file: %v", err)
 	}
-
 	diff := cmp.Diff(trace, got, cmp.AllowUnexported(Step{}))
 	if diff != "" {
-		return fmt.Errorf(diff)
+		return fmt.Errorf("Got a difference (-want +got):\n%s", diff)
 	}
-
 	return nil
 }
