@@ -115,9 +115,7 @@ The latter will provide the malicious validator's public key and the chain ID re
 Note that double signing evidence will be verified by using the same conditions than in the CometBFT 
 [`verify(evidence types.Evidence)`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/evidence/verify.go#L19) 
 method, with the exception that its age won't be checked. 
-This is primarily because, for the first stage of this feature, 
-the goal is to jail validators for double signing only. Since the jail time doesn't depend on the evidence's age, 
-it can be ignored. More technical details can be found in the ["Current limitations"](#current-limitations) section below. 
+More details can be found in the ["Current limitations"](#current-limitations) section below. 
   
   
 Upon a successful equivocation verification, the misbehaving validator will be jailed for the maximum time 
