@@ -58,23 +58,6 @@ a chain will first verify whether these headers would have convinced its light c
 the header states against the light client consensus states (see [IBC misbehaviour handler](https://github.com/cosmos/ibc-go/blob/2b7c969066fbcb18f90c7f5bd256439ca12535c7/modules/light-clients/07-tendermint/types/misbehaviour_handle.go#L101)). If the misbehaviour is successfully verified, the chain will then "freeze" the
 light client, halting any further trust in or updating of its states.
 
-
-## Decision
-
-In the first part of the feature, we will introduce a new endpoint: `HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour)`.
-The main idea is to leverage the current IBC misbehaviour handling and update it to solely jail and slash the validators that
-performed a light client attack. This update will be made under the assumption that the chain connected via this light client
-share the same validator set, as it is the case with Replicated Security. 
-
-This endpoint will reuse the IBC client libraries to verify that the misbehaviour headers would have fooled the light client.
-Additionally, it’s crucial that the endpoint logic result in the slashing and jailing of validators under the same conditions
-as a light client agent detector. Therefore, the endpoint will ensure that the two conditions are met:
-the headers in the misbehaviour message have the same block height, and
-the light client isn’t expired.
-
-After having successfully verified a misbehaviour, the endpoint will execute the jailing and slashing of the malicious validators similarly as in the evidence module. 
-
-
 ### Double Signing Attack
 
 A double signing attack, also known as equivocation, 
@@ -95,7 +78,25 @@ Once a double signing evidence is committed to a block, the consensus layer will
 The application will, in turn, punish the malicious validator through jailing, tombstoning and slashing 
 (see [handleEquivocationEvidence](https://github.com/cosmos/cosmos-sdk/blob/v0.45.16-ics-lsm/x/evidence/keeper/infraction.go#L263)).
 
+
 ## Decision
+
+### Light Client Attack
+
+In the first part of the feature, we will introduce a new endpoint: `HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour)`.
+The main idea is to leverage the current IBC misbehaviour handling and update it to solely jail and slash the validators that
+performed a light client attack. This update will be made under the assumption that the chain connected via this light client
+share the same validator set, as it is the case with Replicated Security. 
+
+This endpoint will reuse the IBC client libraries to verify that the misbehaviour headers would have fooled the light client.
+Additionally, it’s crucial that the endpoint logic result in the slashing and jailing of validators under the same conditions
+as a light client agent detector. Therefore, the endpoint will ensure that the two conditions are met:
+the headers in the misbehaviour message have the same block height, and
+the light client isn’t expired.
+
+After having successfully verified a misbehaviour, the endpoint will execute the jailing and slashing of the malicious validators similarly as in the evidence module. 
+
+### Double Signing Attack
 
 In the second part of the feature, we will introduce a new endpoint `HandleConsumerDoubleVoting(
 ctx sdk.Context, evidence *tmtypes.DuplicateVoteEvidence, chainID string, pubkey cryptotypes.PubKey)`. 
@@ -116,7 +117,6 @@ Note that double signing evidence will be verified by using the same conditions 
 [`verify(evidence types.Evidence)`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/evidence/verify.go#L19) 
 method, with the exception that its age won't be checked. 
 More details can be found in the ["Current limitations"](#current-limitations) section below. 
-  
   
 Upon a successful equivocation verification, the misbehaving validator will be jailed for the maximum time 
 (see [DoubleSignJailEndTime](https://github.com/cosmos/cosmos-sdk/blob/cd272d525ae2cf244c53433b6eb1e835783d7531/x/evidence/types/params.go) 
