@@ -113,9 +113,8 @@ and a light client header for the infraction block height,
 referred to as [`infraction_block_header`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/tx.proto#L77). 
 The latter provides the malicious validator's public key and the chain ID required to verify the signature of the votes contained in the evidence.
  
-Note that double signing evidence is not verified using the same conditions than in the implementation CometBFT
-[`verify(evidence types.Evidence)`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/evidence/verify.go#L19)  
-method. Specifically, we do not check that the evidence hasn't expired. 
+Note that double signing evidence is not verified using the same conditions as in the implementation CometBFT (see
+[`verify(evidence types.Evidence)`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/evidence/verify.go#L19) method). Specifically, we do not check that the evidence hasn't expired. 
 More details can be found in the ["Current limitations"](#current-limitations) section below. 
   
 Upon a successful equivocation verification, the misbehaving validator is jailed for the maximum time 
