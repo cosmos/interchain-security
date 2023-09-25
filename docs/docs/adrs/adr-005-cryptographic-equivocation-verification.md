@@ -83,42 +83,42 @@ The application will, in turn, punish the malicious validator through jailing, t
 
 ### Light Client Attack
 
-In the first part of the feature, we will introduce a new endpoint: `HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour)`.
+In the first part of the feature, we introduce a new endpoint: `HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour)`.
 The main idea is to leverage the current IBC misbehaviour handling and update it to solely jail and slash the validators that
-performed a light client attack. This update will be made under the assumption that the chain connected via this light client
+performed a light client attack. Note that in this context, we assume that the chains connected via a light client
 share the same validator set, as it is the case with Replicated Security. 
 
-This endpoint will reuse the IBC client libraries to verify that the misbehaviour headers would have fooled the light client.
-Additionally, it’s crucial that the endpoint logic result in the slashing and jailing of validators under the same conditions
-as a light client agent detector. Therefore, the endpoint will ensure that the two conditions are met:
+This endpoint reuses the IBC client libraries to verify that the misbehaviour headers would have fooled the light client.
+Additionally, it’s crucial that the endpoint logic results in the slashing and jailing of validators under the same conditions
+as a light client agent detector. Therefore, the endpoint ensures that the two conditions are met:
 the headers in the misbehaviour message have the same block height, and
 the light client isn’t expired.
 
-After having successfully verified a misbehaviour, the endpoint will execute the jailing and slashing of the malicious validators similarly as in the evidence module. 
+After having successfully verified a misbehaviour, the endpoint executes the jailing and slashing of the malicious validators similarly as in the evidence module. 
 
 ### Double Signing Attack
 
-In the second part of the feature, we will introduce a new endpoint `HandleConsumerDoubleVoting(
+In the second part of the feature, we introduce a new endpoint `HandleConsumerDoubleVoting(
 ctx sdk.Context, evidence *tmtypes.DuplicateVoteEvidence, chainID string, pubkey cryptotypes.PubKey)`. 
-Simply put, the handling logic will verify a double signing evidence against a provided 
-public key and chain ID and, if successful, execute the jailing of the malicious validator who double voted.
+Simply put, the handling logic verifies a double signing evidence against a provided 
+public key and chain ID and, if successful, executes the jailing of the malicious validator who double voted.
   
-We will define a new 
+We define a new 
 [`MsgSubmitConsumerDoubleVoting`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/tx.proto#L69C9-L69C38) 
 message to report a double voting evidence observed 
-on a consumer chain to the endpoint of the provider chain. This message will contain two fields: 
+on a consumer chain to the endpoint of the provider chain. This message contains two fields: 
 a double signing evidence 
 [`duplicate_vote_evidence`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/tx.proto#L75) 
 and a light client header for the infraction block height, 
 referred to as [`infraction_block_header`](https://github.com/cosmos/interchain-security/blob/20b0e35a6d45111bd7bfeb6845417ba752c67c60/proto/interchain_security/ccv/provider/v1/tx.proto#L77). 
-The latter will provide the malicious validator's public key and the chain ID required to verify the signature of the votes contained in the evidence.
+The latter provides the malicious validator's public key and the chain ID required to verify the signature of the votes contained in the evidence.
  
-Note that double signing evidence will be verified by using the same conditions than in the CometBFT 
-[`verify(evidence types.Evidence)`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/evidence/verify.go#L19) 
-method, with the exception that its age won't be checked. 
+Note that double signing evidence is not verified using the same conditions than in the implementation CometBFT
+[`verify(evidence types.Evidence)`](https://github.com/cometbft/cometbft/blob/2af25aea6cfe6ac4ddac40ceddfb8c8eee17d0e6/evidence/verify.go#L19)  
+method. Specifically, we do not check that the evidence hasn't expired. 
 More details can be found in the ["Current limitations"](#current-limitations) section below. 
   
-Upon a successful equivocation verification, the misbehaving validator will be jailed for the maximum time 
+Upon a successful equivocation verification, the misbehaving validator is jailed for the maximum time 
 (see [DoubleSignJailEndTime](https://github.com/cosmos/cosmos-sdk/blob/cd272d525ae2cf244c53433b6eb1e835783d7531/x/evidence/types/params.go) 
 in the SDK evidence module).
 
@@ -134,7 +134,8 @@ To explain the technical reasons behind this limitation, let's recap the initial
  could be corrupted and therefore cannot be used for slashing purposes.
 
 - For the same reasons explained above, the age of a consumer double signing evidence can't be verified, 
-either using its infraction height or its unsigned timestamp.
+either using its infraction height or its unsigned timestamp. This means that the jailing behavior has changed; 
+a validator may be jailed due to some "old" evidence on a consumer, while it wouldn't get jailed if the consumer had been a standalone chain.
 
 - In the first stage of this feature, validators are jailed indefinitely without being tombstoned.
 The underlying reason is that a malicious validator could take advantage of getting tombstoned 
@@ -147,8 +148,8 @@ to avoid being slashed on the provider ([see comment](https://github.com/cosmos/
 
 ### Positive
 
-- After this ADR is applied, it will be possible for the provider chain to jail validators who committed 
-light client or double signing attacks.
+- It is now possible for the provider chain to jail validators who committed 
+light client or double signing attacks on a consumer chain.
 
 ### Negative
 
