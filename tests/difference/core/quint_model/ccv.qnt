@@ -754,8 +754,10 @@ module CCV {
 // i.e. regardless of how many chains there are, what the unbonding periods are, etc.
 module CCVStatemachinLogic {
     import Time.* from "./Time"
-    import CCV as CCV
+    import CCV.*
     import CCVTypes.*
+
+    import extraSpells.* from "./extraSpells"
 
     var currentState: ProtocolState
 
@@ -763,16 +765,16 @@ module CCVStatemachinLogic {
 
     action init: bool = all {
         val providerState = GetEmptyProviderState
-        val consumerStates = CCV::ConsumerChains.mapBy(chain => GetEmptyConsumerState)
+        val consumerStates = ConsumerChains.mapBy(chain => GetEmptyConsumerState)
         val providerStateWithConsumers = providerState.with(
             "consumerStatus", 
-            CCV::ConsumerChains.mapBy(chain => UNUSED)
+            ConsumerChains.mapBy(chain => UNUSED)
         ).with(
             "outstandingPacketsToConsumer", 
-            CCV::ConsumerChains.mapBy(chain => List())
+            ConsumerChains.mapBy(chain => List())
         ).with(
             "sentVSCPackets", 
-            CCV::ConsumerChains.mapBy(chain => List())
+            ConsumerChains.mapBy(chain => List())
         ).with(
             // set the validator set to be the initial validator set in the history
             "chainState", providerState.chainState.with(
@@ -791,7 +793,7 @@ module CCVStatemachinLogic {
     }
 
     action VotingPowerChange(validator: Node, newVotingPower: int): bool = 
-        val result = CCV::votingPowerChange(currentState, validator, newVotingPower)
+        val result = votingPowerChange(currentState, validator, newVotingPower)
         all {
             result.hasError == false,
             currentState' = result.newState,
@@ -800,7 +802,7 @@ module CCVStatemachinLogic {
     // The receiver receives the next outstanding VSCPacket from the provider.
     // This will time out the consumer if the packet timeout has passed on the receiver.
     action DeliverVSCPacket(receiver: Chain): bool = 
-        val result = CCV::deliverPacketToConsumer(currentState, receiver)
+        val result = deliverPacketToConsumer(currentState, receiver)
         all {
             result.hasError == false,
             currentState' = result.newState,
@@ -809,7 +811,7 @@ module CCVStatemachinLogic {
     // The provider receives the next outstanding VSCMaturedPacket from the sender.
     // This will time out the consumer if the packet timeout has passed on the provider.
     action DeliverVSCMaturedPacket(sender: Chain): bool =
-        val result = CCV::deliverPacketToProvider(currentState, sender)
+        val result = deliverPacketToProvider(currentState, sender)
         all {
             result.hasError == false,
             currentState' = result.newState,
@@ -819,7 +821,7 @@ module CCVStatemachinLogic {
         timeAdvancement: Time,
         consumersToStart: Set[Chain],
         consumersToStop: Set[Chain]): bool = 
-        val result = CCV::endAndBeginBlockForProvider(currentState, timeAdvancement, consumersToStart, consumersToStop)
+        val result = endAndBeginBlockForProvider(currentState, timeAdvancement, consumersToStart, consumersToStop)
         all {
             result.hasError == false,
             currentState' = result.newState,
@@ -828,7 +830,7 @@ module CCVStatemachinLogic {
     action EndAndBeginBlockForConsumer(
         chain: Chain,
         timeAdvancement: Time): bool = 
-        val result = CCV::endAndBeginBlockForConsumer(currentState, chain, timeAdvancement)
+        val result = endAndBeginBlockForConsumer(currentState, chain, timeAdvancement)
         all {
             result.hasError == false,
             currentState' = result.newState,
@@ -849,13 +851,11 @@ module CCVDefaultStateMachine {
     pure val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10")
     pure val initialValidatorSet = nodes.mapBy(node => 100)
 
-    import CCV(VscTimeout = 5 * Week, CcvTimeout = unbondingPeriods, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = chains).*
-    import CCVStatemachinLogic(InitialValidatorSet = initialValidatorSet).*
+    import CCVStatemachinLogic(InitialValidatorSet = initialValidatorSet, VscTimeout = 5 * Week, CcvTimeout = unbondingPeriods, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = chains).*
 
     run InitTest: bool = { 
         init.then(
             all {
-                assert(ConsumerChains == chains),
                 assert(currentState.providerState.consumerStatus == Map(
                     "consumer1" -> UNUSED,
                     "consumer2" -> UNUSED,
