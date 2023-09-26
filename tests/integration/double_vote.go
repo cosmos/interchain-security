@@ -127,7 +127,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			// we create two votes that only differ by their Block IDs and
 			// signed them using the same validator private key and chain ID
 			// of the consumer chain
-			"valid double voting evidence - should pass",
+			"valid double voting evidence 1 - should pass",
 			&tmtypes.DuplicateVoteEvidence{
 				VoteA:            consuVote,
 				VoteB:            consuBadVote,
@@ -141,7 +141,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		},
 		{
 			// create a double voting evidence using the provider validator key
-			"valid double voting evidence - should not pass because validator tombstoned in the previous test case",
+			"valid double voting evidence 2 - should pass",
 			&tmtypes.DuplicateVoteEvidence{
 				VoteA:            provVote,
 				VoteB:            provBadVote,
@@ -151,7 +151,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			},
 			s.consumerChain.ChainID,
 			provVal.PubKey,
-			false,
+			true,
 		},
 	}
 
@@ -190,10 +190,10 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				s.Require().True(s.providerApp.GetTestStakingKeeper().IsValidatorJailed(provCtx, provAddr.ToSdkConsAddr()))
 				s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(provCtx, provAddr.ToSdkConsAddr()))
 
-				// verifies that the validator gets slashed and has fewer tokens after the slashing
-				validator, _ := s.providerApp.GetTestStakingKeeper().GetValidator(provCtx, provAddr.ToSdkConsAddr().Bytes())
+				// verifies that the val gets slashed and has fewer tokens after the slashing
+				val, _ := s.providerApp.GetTestStakingKeeper().GetValidator(provCtx, provAddr.ToSdkConsAddr().Bytes())
 				slashFraction := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(provCtx)
-				actualTokens := validator.GetTokens().ToDec()
+				actualTokens := val.GetTokens().ToDec()
 				s.Require().True(initialTokens.Sub(initialTokens.Mul(slashFraction)).Equal(actualTokens))
 			} else {
 				s.Require().Error(err)
