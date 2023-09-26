@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
