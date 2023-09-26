@@ -45,8 +45,7 @@ func GetChainStateGen() *rapid.Generator[ChainState] {
 			consumerChains := GetConsumerChainsGen().Draw(t, "ConsumerChains")
 			assignedKeys := GetAssignedKeysGen().Draw(t, "AssignedKeys")
 			providerKeys := GetProviderKeysGen().Draw(t, "ProviderKeys")
-			consumerChainQueueSizes := GetConsumerChainQueueSizesGen().Draw(t, "ConsumerChainQueueSizes")
-			globalSlashQueueSize := rapid.Uint().Draw(t, "GlobalSlashQueueSize")
+			consumerPacketQueueSize := GetConsumerChainQueueSizesGen().Draw(t, "ConsumerChainQueueSizes")
 			registeredConsumerRewardDenoms := GetRegisteredConsumerRewardDenomsGen().Draw(t, "RegisteredConsumerRewardDenoms")
 
 			return ChainState{
@@ -59,8 +58,7 @@ func GetChainStateGen() *rapid.Generator[ChainState] {
 				ConsumerChains:                 &consumerChains,
 				AssignedKeys:                   &assignedKeys,
 				ProviderKeys:                   &providerKeys,
-				ConsumerChainQueueSizes:        &consumerChainQueueSizes,
-				GlobalSlashQueueSize:           &globalSlashQueueSize,
+				ConsumerPendingPacketQueueSize: &consumerPacketQueueSize,
 				RegisteredConsumerRewardDenoms: &registeredConsumerRewardDenoms,
 			}
 		})
@@ -72,9 +70,9 @@ func GetRegisteredConsumerRewardDenomsGen() *rapid.Generator[[]string] {
 	})
 }
 
-func GetConsumerChainQueueSizesGen() *rapid.Generator[map[ChainID]uint] {
-	return rapid.Custom(func(t *rapid.T) map[ChainID]uint {
-		return rapid.MapOf(GetChainIDGen(), rapid.Uint()).Draw(t, "ConsumerChainQueueSizes")
+func GetConsumerChainQueueSizesGen() *rapid.Generator[uint] {
+	return rapid.Custom(func(t *rapid.T) uint {
+		return rapid.Uint().Draw(t, "ConsumerChainQueueSizes")
 	})
 }
 

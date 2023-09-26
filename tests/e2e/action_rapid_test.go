@@ -84,8 +84,9 @@ func GetActionGen() *rapid.Generator[any] {
 		GetRegisterRepresentativeActionGen().AsAny(),
 		GetDoublesignSlashActionGen().AsAny(),
 		GetAssignConsumerPubKeyActionGen().AsAny(),
-		GetSlashThrottleDequeueActionGen().AsAny(),
 		GetCreateIbcClientsActionGen().AsAny(),
+		GetSlashMeterReplenishmentAction().AsAny(),
+		GetWaitTimeAction().AsAny(),
 		CreateCancelUnbondTokensActionGen().AsAny(),
 		CreateLightClientEquivocationAttackActionGen().AsAny(),
 		CreateLightClientAmnesiaAttackActionGen().AsAny(),
@@ -489,13 +490,19 @@ func GetAssignConsumerPubKeyActionGen() *rapid.Generator[assignConsumerPubKeyAct
 	})
 }
 
-func GetSlashThrottleDequeueActionGen() *rapid.Generator[slashThrottleDequeueAction] {
-	return rapid.Custom(func(t *rapid.T) slashThrottleDequeueAction {
-		return slashThrottleDequeueAction{
-			Chain:            GetChainIDGen().Draw(t, "Chain"),
-			CurrentQueueSize: rapid.Int().Draw(t, "CurrentQueueSize"),
-			NextQueueSize:    rapid.Int().Draw(t, "NextQueueSize"),
-			Timeout:          time.Duration(rapid.Int().Draw(t, "Timeout")) * time.Millisecond,
+func GetSlashMeterReplenishmentAction() *rapid.Generator[slashMeterReplenishmentAction] {
+	return rapid.Custom(func(t *rapid.T) slashMeterReplenishmentAction {
+		return slashMeterReplenishmentAction{
+			TargetValue: rapid.Int64().Draw(t, "TargetValue"),
+			Timeout:     time.Duration(rapid.Int().Draw(t, "Timeout")) * time.Millisecond,
+		}
+	})
+}
+
+func GetWaitTimeAction() *rapid.Generator[waitTimeAction] {
+	return rapid.Custom(func(t *rapid.T) waitTimeAction {
+		return waitTimeAction{
+			WaitTime: time.Duration(rapid.Int().Draw(t, "Timeout")) * time.Millisecond,
 		}
 	})
 }
