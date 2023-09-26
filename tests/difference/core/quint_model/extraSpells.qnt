@@ -176,4 +176,22 @@ module extraSpells {
         __set.union(Set(elem))
     }
 
+    pure def Values(__map: a -> b): Set[b] = {
+        __map.keys().fold(Set(), (__s, __k) => __s.add(__map.get(__k)))
+    }
+    run ValuesTest =
+    all {
+        assert(Values(Map(1 -> 2, 3 -> 4)) == Set(2, 4)),
+        assert(Values(Map()) == Set())
+    }
+
+    pure def Max(__set: Set[int]): int = {
+        __set.fold(0, (__m, __e) => max(__m, __e))
+    }
+
+    run MaxTest =
+    all {
+        assert(Max(Set(1, 2, 3)) == 3),
+        assert(Max(Set()) == 0)
+    }
 }
