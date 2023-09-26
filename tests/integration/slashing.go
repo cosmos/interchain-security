@@ -90,8 +90,11 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 
 	// receive the slash packet on the provider chain. RecvPacket() calls the provider endblocker twice
 	packet := s.newPacketFromConsumer(slashPacket.GetData(), sequence, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
+	heightBefore := s.providerCtx().BlockHeight()
 	err = s.path.EndpointB.RecvPacket(packet)
+	heightAfter := s.providerCtx().BlockHeight()
 	s.Require().NoError(err)
+	s.Require().Equal(heightBefore+2, heightAfter)
 
 	// We've now advanced two blocks.
 
