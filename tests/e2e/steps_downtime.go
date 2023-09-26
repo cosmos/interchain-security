@@ -409,7 +409,6 @@ func stepsThrottledDowntime(consumerName string) []Step {
 		// wait this amount of time to elapse the period.
 		{
 			Action: waitTimeAction{
-				Consumer: ChainID(consumerName),
 				WaitTime: 30 * time.Second,
 			},
 			State: State{
