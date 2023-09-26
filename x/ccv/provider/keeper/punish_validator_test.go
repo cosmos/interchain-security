@@ -329,8 +329,16 @@ func TestComputePowerToSlash(t *testing.T) {
 					}).AnyTimes(),
 		)
 
+		tokensBeforeCall := validator.GetTokens()
+		delegatorSharesBeforeCall := validator.GetDelegatorShares()
+
 		actualPower := providerKeeper.ComputePowerToSlash(ctx, validator,
 			tc.undelegations, tc.redelegations, tc.power, tc.powerReduction)
+
+		// safeguard check that validator remains unmodified after a call to `ComputePowerToSlash`
+		// `ComputePowerToSlash` only computes the power and does not modify the state of the system in any way
+		require.Equal(t, tokensBeforeCall, validator.GetTokens())
+		require.Equal(t, delegatorSharesBeforeCall, validator.GetDelegatorShares())
 
 		if tc.expectedPower != actualPower {
 			require.Fail(t, fmt.Sprintf("\"%s\" failed", tc.name),

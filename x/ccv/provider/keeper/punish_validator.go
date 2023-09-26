@@ -47,13 +47,15 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 }
 
 // ComputePowerToSlash computes the power to be slashed based on the tokens in non-matured `undelegations` and
-// `redelegations`, as well as the current `power` of the validator
+// `redelegations`, as well as the current `power` of the validator.
+// Note that this method does not perform any slashing.
 func (k Keeper) ComputePowerToSlash(ctx sdk.Context, validator stakingtypes.Validator, undelegations []stakingtypes.UnbondingDelegation,
 	redelegations []stakingtypes.Redelegation, power int64, powerReduction sdk.Int,
 ) int64 {
 	// compute the total numbers of tokens currently being undelegated
 	undelegationsInTokens := sdk.NewInt(0)
 
+	// Note that we use a **cached** context to avoid any actual slashing of undelegations or redelegations.
 	cachedCtx, _ := ctx.CacheContext()
 	for _, u := range undelegations {
 		amountSlashed := k.stakingKeeper.SlashUnbondingDelegation(cachedCtx, u, 0, sdk.NewDec(1))

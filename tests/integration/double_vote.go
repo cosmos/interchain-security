@@ -127,7 +127,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			// we create two votes that only differ by their Block IDs and
 			// signed them using the same validator private key and chain ID
 			// of the consumer chain
-			"valid double voting evidence 1 - should pass",
+			"valid double voting evidence - should pass",
 			&tmtypes.DuplicateVoteEvidence{
 				VoteA:            consuVote,
 				VoteB:            consuBadVote,
@@ -141,7 +141,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		},
 		{
 			// create a double voting evidence using the provider validator key
-			"valid double voting evidence 2 - should pass",
+			"valid double voting evidence - should not pass because validator tombstoned in the previous test case",
 			&tmtypes.DuplicateVoteEvidence{
 				VoteA:            provVote,
 				VoteB:            provBadVote,
@@ -151,7 +151,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			},
 			s.consumerChain.ChainID,
 			provVal.PubKey,
-			true,
+			false,
 		},
 	}
 
