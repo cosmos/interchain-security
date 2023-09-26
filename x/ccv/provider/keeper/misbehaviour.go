@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -34,6 +35,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 
 	provAddrs := make([]types.ProviderConsAddress, len(byzantineValidators))
 
+	var errors []error
 	// slash, jail, and tombstone the Byzantine validators
 	for _, v := range byzantineValidators {
 		providerAddr := k.GetProviderAddrFromConsumerAddr(
@@ -41,8 +43,14 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 			misbehaviour.Header1.Header.ChainID,
 			types.NewConsumerConsAddress(sdk.ConsAddress(v.Address.Bytes())),
 		)
-		k.SlashValidator(ctx, providerAddr)
-		k.JailAndTombstoneValidator(ctx, providerAddr)
+		err := k.SlashValidator(ctx, providerAddr)
+		if err != nil {
+			errors = append(errors, err)
+		}
+		err = k.JailAndTombstoneValidator(ctx, providerAddr)
+		if err != nil {
+			errors = append(errors, err)
+		}
 		provAddrs = append(provAddrs, providerAddr)
 	}
 
@@ -51,6 +59,9 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 		"byzantine validators", provAddrs,
 	)
 
+	if len(errors) > 0 {
+		return fmt.Errorf("failed to slash, jail, or tombstone validators: %v", errors)
+	}
 	return nil
 }
 

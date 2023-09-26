@@ -1,32 +1,32 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
+	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 )
 
 // JailAndTombstoneValidator jails and tombstones the validator with the given provider consensus address
-func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) {
-	logger := k.Logger(ctx)
-
-	// get validator
-	val, ok := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
-	if !ok || val.IsUnbonded() {
-		logger.Error("validator not found or is unbonded", "provider consensus address", providerAddr.String())
-		return
+func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) error {
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
+	if !found {
+		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
 	}
 
-	// check that the validator isn't tombstoned
+	if validator.IsUnbonded() {
+		return fmt.Errorf("validator is unbonded. provider consensus address: %s", providerAddr.String())
+	}
+
 	if k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
-		logger.Info("validator is already tombstoned", "provider consensus address", providerAddr.String())
-		return
+		return fmt.Errorf("validator is tombstoned. provider consensus address: %s", providerAddr.String())
 	}
 
 	// jail validator if not already
-	if !val.IsJailed() {
+	if !validator.IsJailed() {
 		k.stakingKeeper.Jail(ctx, providerAddr.ToSdkConsAddr())
 	}
 
@@ -40,6 +40,8 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 	// because then a validator could i) perform an equivocation, ii) get jailed (e.g., through downtime)
 	// and in such a case the validator would not get slashed when we call `SlashValidator`.
 	k.slashingKeeper.Tombstone(ctx, providerAddr.ToSdkConsAddr())
+
+	return nil
 }
 
 // ComputePowerToSlash computes the power to be slashed based on the tokens in non-matured `undelegations` and
@@ -72,23 +74,18 @@ func (k Keeper) ComputePowerToSlash(ctx sdk.Context, validator stakingtypes.Vali
 }
 
 // SlashValidator slashes validator with `providerAddr`
-func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) {
-	logger := k.Logger(ctx)
-
+func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) error {
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 	if !found {
-		logger.Error("validator not found", "provider consensus address", providerAddr.String())
-		return
+		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
 	}
 
 	if validator.IsUnbonded() {
-		logger.Info("validator is unbonded", "provider consensus address", providerAddr.String())
-		return
+		return fmt.Errorf("validator is unbonded. provider consensus address: %s", providerAddr.String())
 	}
 
 	if k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
-		logger.Info("validator is already tombstoned", "provider consensus address", providerAddr.String())
-		return
+		return fmt.Errorf("validator is tombstoned. provider consensus address: %s", providerAddr.String())
 	}
 
 	undelegations := k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, validator.GetOperator())
@@ -99,4 +96,5 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 	slashFraction := k.slashingKeeper.SlashFractionDoubleSign(ctx)
 
 	k.stakingKeeper.Slash(ctx, providerAddr.ToSdkConsAddr(), 0, totalPower, slashFraction, stakingtypes.DoubleSign)
+	return nil
 }

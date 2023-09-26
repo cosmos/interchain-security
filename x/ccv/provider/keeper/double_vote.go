@@ -32,8 +32,12 @@ func (k Keeper) HandleConsumerDoubleVoting(
 		types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress.Bytes())),
 	)
 
-	k.SlashValidator(ctx, providerAddr)
-	k.JailAndTombstoneValidator(ctx, providerAddr)
+	if err := k.SlashValidator(ctx, providerAddr); err != nil {
+		return err
+	}
+	if err := k.JailAndTombstoneValidator(ctx, providerAddr); err != nil {
+		return err
+	}
 
 	k.Logger(ctx).Info(
 		"confirmed equivocation",
