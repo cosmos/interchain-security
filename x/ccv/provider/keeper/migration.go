@@ -30,7 +30,7 @@ func (k Keeper) MigrateQueuedPackets(ctx sdktypes.Context) error {
 	for _, consumer := range k.GetAllConsumerChains(ctx) {
 		slashData, vscmData := k.GetAllThrottledPacketData(ctx, consumer.ChainId)
 		if len(slashData) > 0 {
-			ctx.Logger().Error(fmt.Sprintf("slash data being dropped: %v", slashData))
+			k.Logger(ctx).Error(fmt.Sprintf("slash data being dropped: %v", slashData))
 		}
 		for _, data := range vscmData {
 			k.HandleVSCMaturedPacket(ctx, consumer.ChainId, data)
