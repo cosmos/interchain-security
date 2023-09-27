@@ -54,7 +54,7 @@ func (s *CCVTestSuite) consumerCtx() sdk.Context {
 	return s.consumerChain.GetContext()
 }
 
-func (s *CCVTestSuite) providerBondDenom() string {
+func (s *CCVTestSuite) providerBondDenom() (string, error) {
 	return s.providerApp.GetTestStakingKeeper().BondDenom(s.providerCtx())
 }
 
@@ -90,7 +90,9 @@ func (s *CCVTestSuite) setDefaultValSigningInfo(tmVal tmtypes.Validator) {
 }
 
 func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) math.Int {
-	return s.providerApp.GetTestBankKeeper().GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
+	denom, err := s.providerBondDenom()
+	s.Require().NoError(err)
+	return s.providerApp.GetTestBankKeeper().GetBalance(providerCtx, delAddr, denom).Amount
 }
 
 // delegateAndUndelegate delegates bondAmt from delAddr to the first validator

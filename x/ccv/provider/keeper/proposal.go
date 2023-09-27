@@ -241,7 +241,10 @@ func (k Keeper) MakeConsumerGenesis(
 	prop *types.ConsumerAdditionProposal,
 ) (gen ccv.GenesisState, nextValidatorsHash []byte, err error) {
 	chainID := prop.ChainId
-	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
+	providerUnbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
+	if err != nil {
+		return gen, nil, errorsmod.Wrapf(types.ErrNoUnbondingTime, "ubonding time not found: %s", err)
+	}
 	height := clienttypes.GetSelfHeight(ctx)
 
 	clientState := k.GetTemplateClient(ctx)
@@ -276,12 +279,14 @@ func (k Keeper) MakeConsumerGenesis(
 			return gen, nil, err
 		}
 
-		val, found := k.stakingKeeper.GetValidator(ctx, addr)
-		if !found {
-			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers: %s", err)
+		val, err := k.stakingKeeper.GetValidator(ctx, addr)
+		if err != nil && stakingtypes.ErrNoValidatorFound.Is(err) {
+			return gen, nil, errorsmod.Wrapf(stakingtypes.ErrNoValidatorFound, "error getting validator from LastValidatorPowers")
+		} else if err != nil {
+			return gen, nil, errorsmod.Wrapf(err, "error getting validator from LastValidatorPowers")
 		}
 
-		tmProtoPk, err := val.TmConsPublicKey()
+		tmProtoPk, err := val.CmtConsPublicKey()
 		if err != nil {
 			return gen, nil, err
 		}

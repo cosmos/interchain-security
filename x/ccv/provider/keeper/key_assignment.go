@@ -390,7 +390,8 @@ func (k Keeper) AssignConsumerKey(
 	}
 	providerAddr := types.NewProviderConsAddress(consAddrTmp)
 
-	if existingVal, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consumerAddr.ToSdkConsAddr()); found {
+	// NOTE: @MSalopek this changed to return errs from store
+	if existingVal, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, consumerAddr.ToSdkConsAddr()); err == nil {
 		// If there is a validator using the consumer key to validate on the provider
 		// we prevent assigning the consumer key, unless the validator is assigning validator.
 		// This ensures that a validator joining the active set who has not explicitly assigned
@@ -452,11 +453,15 @@ func (k Keeper) AssignConsumerKey(
 			return err
 		}
 
+		// NOTE: @MSalopek this changed to return errs from store
 		// check whether the validator is valid, i.e., its power is positive
-		power := k.stakingKeeper.GetLastValidatorPower(ctx.Context(), valAddrBech32)
+		power, err := k.stakingKeeper.GetLastValidatorPower(ctx.Context(), valAddrBech32)
+		if err != nil {
+			return err
+		}
+
 		if 0 < power {
 			// to enable multiple calls of AssignConsumerKey in the same block by the same validator
-
 			// the key assignment replacement should not be overwritten
 			if _, _, found := k.GetKeyAssignmentReplacement(ctx, chainID, providerAddr); !found {
 				// store old key and current power for modifying the valset update in EndBlock;

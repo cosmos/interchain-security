@@ -87,6 +87,8 @@ type DemocConsumerApp interface {
 // since integration tests require extra functionality from external keepers.
 //
 
+// NOTE: @MSalopek this is a bit confusing to me
+// See if this needs a bigger refactor
 type TestStakingKeeper interface {
 	ccvtypes.StakingKeeper
 	Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc types.BondStatus,
@@ -99,10 +101,10 @@ type TestStakingKeeper interface {
 	) (ubd types.UnbondingDelegation, found bool)
 	GetRedelegations(ctx sdk.Context, delegator sdk.AccAddress,
 		maxRetrieve uint16) (redelegations []types.Redelegation)
+	// NOTE: @MSalopek this is a bit confusing to me
 	// BondDenom(ctx sdk.Context) (res string)
 	// IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool
 	IsValidatorJailed(ctx context.Context, addr sdk.ConsAddress) bool
-	BondDenom(ctx context.Context) (res string)
 	GetUnbondingDelegation(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 	) (ubd types.UnbondingDelegation, found bool)
 	GetAllValidators(ctx sdk.Context) (validators []types.Validator)

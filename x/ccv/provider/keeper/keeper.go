@@ -1114,6 +1114,6 @@ func (k Keeper) GetSlashLog(
 	return bz != nil
 }
 
-func (k Keeper) BondDenom(ctx sdk.Context) string {
+func (k Keeper) BondDenom(ctx sdk.Context) (string, error) {
 	return k.stakingKeeper.BondDenom(ctx)
 }

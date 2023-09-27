@@ -348,7 +348,7 @@ func (k Keeper) GetInitialValSet(ctx sdk.Context) []tmtypes.ValidatorUpdate {
 	return []tmtypes.ValidatorUpdate{}
 }
 
-func (k Keeper) GetLastStandaloneValidators(ctx sdk.Context) []stakingtypes.Validator {
+func (k Keeper) GetLastStandaloneValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
 	if !k.IsPreCCV(ctx) || k.standaloneStakingKeeper == nil {
 		panic("cannot get last standalone validators if not in pre-ccv state, or if standalone staking keeper is nil")
 	}

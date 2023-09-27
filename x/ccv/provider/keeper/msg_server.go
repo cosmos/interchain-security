@@ -43,9 +43,11 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	}
 
 	// validator must already be registered
-	validator, found := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
-	if !found {
+	validator, err := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
+	if err != nil && err == stakingtypes.ErrNoValidatorFound {
 		return nil, stakingtypes.ErrNoValidatorFound
+	} else if err != nil {
+		return nil, err
 	}
 
 	// parse consumer key as long as it's in the right format

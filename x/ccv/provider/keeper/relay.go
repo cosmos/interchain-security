@@ -119,8 +119,8 @@ func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
 		if err != nil {
 			if stakingtypes.ErrUnbondingNotFound.Is(err) {
 				// The unbonding was not found.
-				unbondingType, found := k.stakingKeeper.GetUnbondingType(ctx, id)
-				if found && unbondingType == stakingtypes.UnbondingType_UnbondingDelegation {
+				unbondingType, err := k.stakingKeeper.GetUnbondingType(ctx, id)
+				if err == nil && unbondingType == stakingtypes.UnbondingType_UnbondingDelegation {
 					// If this is an unbonding delegation, it may have been removed
 					// after through a CancelUnbondingDelegation message
 					k.Logger(ctx).Debug("unbonding delegation was already removed:", "unbondingID", id)
@@ -244,7 +244,12 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	// Get the validator updates from the staking module.
 	// Note: GetValidatorUpdates panics if the updates provided by the x/staking module
 	// of cosmos-sdk is invalid.
-	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
+	valUpdates, err := k.stakingKeeper.GetValidatorUpdates(ctx)
+
+	// NOTE: @MSalopek -> attempted to maintan the panic behaviour from v47
+	if err != nil {
+		panic(fmt.Errorf("could not get validator updates from staking module: %w", err))
+	}
 
 	for _, chain := range k.GetAllConsumerChains(ctx) {
 		// Apply the key assignment to the validator updates.
@@ -418,11 +423,14 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	)
 
 	// Obtain validator from staking keeper
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr.ToSdkConsAddr())
-
+	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr.ToSdkConsAddr())
+	if err != nil && stakingtypes.ErrNoValidatorFound.Is(err) {
+		k.Logger(ctx).Error("validator not found or is unbonded", "validator", providerConsAddr.String())
+		return
+	}
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
-	if !found || validator.IsUnbonded() {
+	if !validator.IsUnbonded() {
 		// if validator is not found or is unbonded, drop slash packet and log error.
 		// Note that it is impossible for the validator to be not found or unbonded if both the provider
 		// and the consumer are following the protocol. Thus if this branch is taken then one or both
@@ -459,7 +467,13 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	if !validator.IsJailed() {
 		k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
 		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.String())
-		jailTime := ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
+		jailDuration, err := k.slashingKeeper.DowntimeJailDuration(ctx)
+		// NOTE: @MSalopek -> seems a bit odd to just log maybe panic if downtime duration is not set?
+		if err != nil {
+			k.Logger(ctx).Error("failed to get jail duration", "err", err.Error())
+			return
+		}
+		jailTime := ctx.BlockTime().Add(jailDuration)
 		k.slashingKeeper.JailUntil(ctx, providerConsAddr.ToSdkConsAddr(), jailTime)
 	}
 

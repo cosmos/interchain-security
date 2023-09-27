@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -91,10 +92,14 @@ func (h Hooks) AfterUnbondingInitiated(ctx context.Context, id uint64) error {
 // and thus, the validator is not created. See AfterValidatorCreated hook.
 func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddress) bool {
 	// Get the validator being added in the staking module.
-	val, found := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if !found {
+	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if err == stakingtypes.ErrNoValidatorFound {
 		// Abort TX, do NOT allow validator to be created
 		panic("did not find newly created validator in staking module")
+	}
+
+	if err != nil && err != stakingtypes.ErrNoValidatorFound {
+		panic(fmt.Sprintf("unexpected error when getting validator from staking module: %s", err))
 	}
 
 	// Get the consensus address of the validator being added

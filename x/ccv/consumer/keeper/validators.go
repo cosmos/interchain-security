@@ -25,7 +25,7 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 	ret := []abci.ValidatorUpdate{}
 	for _, change := range changes {
 		// convert TM pubkey to SDK pubkey
-		pubkey, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
+		pubkey, err := cryptocodec.FromCmtProtoPublicKey(change.GetPubKey())
 		if err != nil {
 			// An error here would indicate that the validator updates
 			// received from the provider are invalid.
@@ -83,14 +83,14 @@ func (k Keeper) Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.Val
 }
 
 // IsJailed returns the outstanding slashing flag for the given validator adddress
-func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
+func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) (bool, error) {
 	// if the changeover is not complete for prev standalone chain,
 	// return the standalone staking keeper's jailed status
 	if k.IsPrevStandaloneChain(ctx) && !k.ChangeoverIsComplete(ctx) {
 		return k.standaloneStakingKeeper.IsValidatorJailed(ctx, addr)
 	}
 	// Otherwise, return the ccv consumer keeper's notion of a validator being jailed
-	return k.OutstandingDowntime(ctx, addr)
+	return k.OutstandingDowntime(ctx, addr), nil
 }
 
 // ValidatorByConsAddr returns an empty validator
@@ -111,16 +111,16 @@ func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.V
 // Calls SlashWithInfractionReason with Infraction_INFRACTION_UNSPECIFIED.
 // ConsumerKeeper must implement StakingKeeper interface.
 // This function should not be called anywhere
-func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor math.LegacyDec) math.Int {
+func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor math.LegacyDec) (math.Int, error) {
 	return k.SlashWithInfractionReason(ctx, addr, infractionHeight, power, slashFactor, stakingtypes.Infraction_INFRACTION_UNSPECIFIED)
 }
 
 // Slash queues a slashing request for the the provider chain
 // All queued slashing requests will be cleared in EndBlock
 // Called by Slashing keeper in SlashWithInfractionReason
-func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor math.LegacyDec, infraction stakingtypes.Infraction) math.Int {
+func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFactor math.LegacyDec, infraction stakingtypes.Infraction) (math.Int, error) {
 	if infraction == stakingtypes.Infraction_INFRACTION_UNSPECIFIED {
-		return math.NewInt(0)
+		return math.NewInt(0), nil
 	}
 
 	// If this is a previously standalone chain and infraction happened before the changeover was completed,
@@ -141,7 +141,7 @@ func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress,
 				"validator", addr,
 				"power", power,
 			)
-			return math.NewInt(0)
+			return math.NewInt(0), nil
 		}
 	}
 	// get VSC ID for infraction height
@@ -166,7 +166,7 @@ func (k Keeper) SlashWithInfractionReason(ctx sdk.Context, addr sdk.ConsAddress,
 	)
 
 	// Only return to comply with the interface restriction
-	return math.ZeroInt()
+	return math.ZeroInt(), nil
 }
 
 // Jail - unimplemented on CCV keeper

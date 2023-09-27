@@ -21,4 +21,5 @@ var (
 	ErrInvalidProviderAddress           = errorsmod.Register(ModuleName, 13, "invalid provider address")
 	ErrInvalidConsumerRewardDenom       = errorsmod.Register(ModuleName, 14, "invalid consumer reward denom")
 	ErrInvalidDepositorAddress          = errorsmod.Register(ModuleName, 15, "invalid depositor address")
+	ErrNoUnbondingTime                  = errorsmod.Register(ModuleName, 16, "provider unbonding time not found")
 )
