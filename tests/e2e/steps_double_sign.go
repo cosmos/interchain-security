@@ -144,6 +144,11 @@ func stepsCauseDoubleSignOnConsumer(consumerName, providerName string) []Step {
 						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
+					RepresentativePowers: &map[validatorID]uint{
+						validatorID("alice"): 500000000,
+						validatorID("bob"):   500000000,
+						validatorID("carol"): 500000000,
+					},
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
@@ -155,7 +160,7 @@ func stepsCauseDoubleSignOnConsumer(consumerName, providerName string) []Step {
 			},
 		},
 		// detect the double voting infraction
-		// and jail bob on the provider
+		// and jail and slashing of bob on the provider
 		{
 			action: startConsumerEvidenceDetectorAction{
 				chain: chainID(consumerName),
@@ -166,6 +171,13 @@ func stepsCauseDoubleSignOnConsumer(consumerName, providerName string) []Step {
 						validatorID("alice"): 500,
 						validatorID("bob"):   0,
 						validatorID("carol"): 500,
+					},
+					// "bob" gets slashed on the provider chain, hence representative
+					// power is 500000000 - 0.05 * 500000000 = 475000000
+					RepresentativePowers: &map[validatorID]uint{
+						validatorID("alice"): 500000000,
+						validatorID("bob"):   475000000,
+						validatorID("carol"): 500000000,
 					},
 				},
 				chainID(consumerName): ChainState{
@@ -191,6 +203,11 @@ func stepsCauseDoubleSignOnConsumer(consumerName, providerName string) []Step {
 						validatorID("alice"): 500,
 						validatorID("bob"):   0,
 						validatorID("carol"): 500,
+					},
+					RepresentativePowers: &map[validatorID]uint{
+						validatorID("alice"): 500000000,
+						validatorID("bob"):   475000000,
+						validatorID("carol"): 500000000,
 					},
 				},
 				chainID(consumerName): ChainState{

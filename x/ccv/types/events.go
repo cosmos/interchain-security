@@ -43,10 +43,11 @@ const (
 	AttributeConsumerDoubleVoting     = "consumer_double_voting"
 
 	AttributeDistributionCurrentHeight = "current_distribution_height"
-	AttributeDistributionNextHeight    = "next_distribution_height"
-	AttributeDistributionFraction      = "distribution_fraction"
-	AttributeDistributionTotal         = "total"
-	AttributeDistributionToProvider    = "provider_amount"
+	//#nosec G101 -- (false positive) this is not a hardcoded credential
+	AttributeDistributionNextHeight = "next_distribution_height"
+	AttributeDistributionFraction   = "distribution_fraction"
+	AttributeDistributionTotal      = "total"
+	AttributeDistributionToProvider = "provider_amount"
 
 	AttributeConsumerRewardDenom = "consumer_reward_denom"
 )

@@ -116,6 +116,34 @@ func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidators", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidators), ctx)
 }
 
+// GetRedelegationsFromSrcValidator mocks base method.
+func (m *MockStakingKeeper) GetRedelegationsFromSrcValidator(ctx types.Context, valAddr types.ValAddress) []types4.Redelegation {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRedelegationsFromSrcValidator", ctx, valAddr)
+	ret0, _ := ret[0].([]types4.Redelegation)
+	return ret0
+}
+
+// GetRedelegationsFromSrcValidator indicates an expected call of GetRedelegationsFromSrcValidator.
+func (mr *MockStakingKeeperMockRecorder) GetRedelegationsFromSrcValidator(ctx, valAddr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRedelegationsFromSrcValidator", reflect.TypeOf((*MockStakingKeeper)(nil).GetRedelegationsFromSrcValidator), ctx, valAddr)
+}
+
+// GetUnbondingDelegationsFromValidator mocks base method.
+func (m *MockStakingKeeper) GetUnbondingDelegationsFromValidator(ctx types.Context, valAddr types.ValAddress) []types4.UnbondingDelegation {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUnbondingDelegationsFromValidator", ctx, valAddr)
+	ret0, _ := ret[0].([]types4.UnbondingDelegation)
+	return ret0
+}
+
+// GetUnbondingDelegationsFromValidator indicates an expected call of GetUnbondingDelegationsFromValidator.
+func (mr *MockStakingKeeperMockRecorder) GetUnbondingDelegationsFromValidator(ctx, valAddr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUnbondingDelegationsFromValidator", reflect.TypeOf((*MockStakingKeeper)(nil).GetUnbondingDelegationsFromValidator), ctx, valAddr)
+}
+
 // GetUnbondingType mocks base method.
 func (m *MockStakingKeeper) GetUnbondingType(ctx types.Context, id uint64) (types4.UnbondingType, bool) {
 	m.ctrl.T.Helper()
@@ -277,6 +305,34 @@ func (m *MockStakingKeeper) Slash(arg0 types.Context, arg1 types.ConsAddress, ar
 func (mr *MockStakingKeeperMockRecorder) Slash(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Slash", reflect.TypeOf((*MockStakingKeeper)(nil).Slash), arg0, arg1, arg2, arg3, arg4, arg5)
+}
+
+// SlashRedelegation mocks base method.
+func (m *MockStakingKeeper) SlashRedelegation(arg0 types.Context, arg1 types4.Validator, arg2 types4.Redelegation, arg3 int64, arg4 types.Dec) types.Int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SlashRedelegation", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].(types.Int)
+	return ret0
+}
+
+// SlashRedelegation indicates an expected call of SlashRedelegation.
+func (mr *MockStakingKeeperMockRecorder) SlashRedelegation(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SlashRedelegation", reflect.TypeOf((*MockStakingKeeper)(nil).SlashRedelegation), arg0, arg1, arg2, arg3, arg4)
+}
+
+// SlashUnbondingDelegation mocks base method.
+func (m *MockStakingKeeper) SlashUnbondingDelegation(arg0 types.Context, arg1 types4.UnbondingDelegation, arg2 int64, arg3 types.Dec) types.Int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SlashUnbondingDelegation", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(types.Int)
+	return ret0
+}
+
+// SlashUnbondingDelegation indicates an expected call of SlashUnbondingDelegation.
+func (mr *MockStakingKeeperMockRecorder) SlashUnbondingDelegation(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SlashUnbondingDelegation", reflect.TypeOf((*MockStakingKeeper)(nil).SlashUnbondingDelegation), arg0, arg1, arg2, arg3)
 }
 
 // UnbondingCanComplete mocks base method.
@@ -796,6 +852,18 @@ func (mr *MockClientKeeperMockRecorder) GetSelfConsensusState(ctx, height interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelfConsensusState", reflect.TypeOf((*MockClientKeeper)(nil).GetSelfConsensusState), ctx, height)
 }
 
+// SetClientState mocks base method.
+func (m *MockClientKeeper) SetClientState(ctx types.Context, clientID string, clientState exported.ClientState) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetClientState", ctx, clientID, clientState)
+}
+
+// SetClientState indicates an expected call of SetClientState.
+func (mr *MockClientKeeperMockRecorder) SetClientState(ctx, clientID, clientState interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetClientState", reflect.TypeOf((*MockClientKeeper)(nil).SetClientState), ctx, clientID, clientState)
+}
+
 // MockDistributionKeeper is a mock of DistributionKeeper interface.
 type MockDistributionKeeper struct {
 	ctrl     *gomock.Controller
@@ -831,18 +899,6 @@ func (m *MockDistributionKeeper) FundCommunityPool(ctx types.Context, amount typ
 func (mr *MockDistributionKeeperMockRecorder) FundCommunityPool(ctx, amount, sender interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FundCommunityPool", reflect.TypeOf((*MockDistributionKeeper)(nil).FundCommunityPool), ctx, amount, sender)
-}
-
-// SetClientState mocks base method.
-func (m *MockClientKeeper) SetClientState(ctx types.Context, clientID string, clientState exported.ClientState) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetClientState", ctx, clientID, clientState)
-}
-
-// SetClientState indicates an expected call of SetClientState.
-func (mr *MockClientKeeperMockRecorder) SetClientState(ctx, clientID, clientState interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetClientState", reflect.TypeOf((*MockClientKeeper)(nil).SetClientState), ctx, clientID, clientState)
 }
 
 // MockConsumerHooks is a mock of ConsumerHooks interface.
