@@ -770,7 +770,6 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		VscTimeoutPeriod:            providertypes.DefaultVscTimeoutPeriod,
 		SlashMeterReplenishPeriod:   providertypes.DefaultSlashMeterReplenishPeriod,
 		SlashMeterReplenishFraction: providertypes.DefaultSlashMeterReplenishFraction,
-		MaxThrottledPackets:         providertypes.DefaultMaxThrottledPackets,
 		ConsumerRewardDenomRegistrationFee: sdk.Coin{
 			Denom:  "stake",
 			Amount: sdk.NewInt(1000000),
