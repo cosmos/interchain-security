@@ -77,6 +77,10 @@ test-gaia-e2e-parallel-tagged:
 test-no-cache:
 	go test ./... -count=1 && go run ./tests/e2e/...
 
+# test reading a trace from a file
+test-trace:
+	go run ./tests/e2e/... --test-file tests/e2e/tracehandler_testdata/happyPath.json::default
+
 ###############################################################################
 ###                                Linting                                  ###
 ###############################################################################
