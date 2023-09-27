@@ -2,6 +2,7 @@ package integration
 
 import (
 	"bytes"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	testutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
