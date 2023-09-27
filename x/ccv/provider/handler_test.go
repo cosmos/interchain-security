@@ -18,6 +18,7 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
 	keeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
@@ -54,11 +55,11 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
-						// Return a valid validator, found!
-					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
+						// Return a valid validator; without any errors
+					).Return(providerCryptoId.SDKStakingValidator(), nil).Times(1),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerConsAddr.ToSdkConsAddr(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, types.ErrConsumerKeyInUse),
 				)
 			},
 			expError: false,
@@ -72,8 +73,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
-						// return false: not found!
-					).Return(stakingtypes.Validator{}, false).Times(1),
+					).Return(stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound).Times(1),
 				)
 			},
 			expError: true,
@@ -90,11 +90,11 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
-						// Return a valid validator, found!
-					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
+					// Return a valid validator; without any errors
+					).Return(providerCryptoId.SDKStakingValidator(), nil).Times(1),
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
 						consumerConsAddr.ToSdkConsAddr(),
-					).Return(stakingtypes.Validator{}, false),
+					).Return(stakingtypes.Validator{}, types.ErrConsumerKeyInUse),
 				)
 			},
 			expError: true,
