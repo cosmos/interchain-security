@@ -7,6 +7,7 @@ import (
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
 	tmtypes "github.com/cometbft/cometbft/types"
@@ -83,12 +84,13 @@ func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
 		// staking keeper's LastValidatorPower values are not updated till the staking keeper's endblocker.
 		return math.ZeroInt()
 	} else {
+		// NOTE: @MSalopek -> Is this is an error?
 		// Otherwise, return the staking keeper's LastValidatorPower value.
-		valBz, err := k.ValidatorAddressCodec().StringToBytes(val.GetOperator())
+		valAddrBech32, err := sdk.ValAddressFromHex(val.GetOperator())
 		if err != nil {
-			panic(fmt.Sprintf("could not decode address: %s", err))
+			return math.ZeroInt()
 		}
-		return math.NewInt(k.stakingKeeper.GetLastValidatorPower(ctx, valBz))
+		return math.NewInt(k.stakingKeeper.GetLastValidatorPower(ctx, valAddrBech32))
 	}
 }
 
