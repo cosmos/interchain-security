@@ -4,6 +4,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	provider "github.com/cosmos/interchain-security/v3/x/ccv/provider"
@@ -83,8 +84,12 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	// Default slash meter replenish fraction is 0.05, so packet should be handled on provider.
 	vals = s.providerApp.GetTestStakingKeeper().GetAllValidators(s.providerCtx())
 	s.Require().True(vals[1].IsJailed())
+
+	val1Operator, err := sdk.ValAddressFromHex(vals[1].GetOperator())
+	s.Require().NoError(err)
+
 	s.Require().Equal(int64(0),
-		s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), vals[1].GetOperator()))
+		s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), val1Operator))
 	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(s.providerCtx(),
 		s.getFirstBundle().Chain.ChainID))
 
@@ -93,7 +98,7 @@ func (s *CCVTestSuite) TestSlashRetries() {
 
 	// Apply ack back on consumer
 	ackForConsumer := expectedv1Ack
-	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet1, ackForConsumer)
+	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet1, ackForConsumer)
 	s.Require().NoError(err)
 
 	// Slash record should have been deleted, head of pending packets should have been popped
@@ -136,8 +141,11 @@ func (s *CCVTestSuite) TestSlashRetries() {
 
 	// Val shouldn't be jailed on provider. Slash packet was queued
 	s.Require().False(vals[2].IsJailed())
+	val2Operator, err := sdk.ValAddressFromHex(vals[2].GetOperator())
+	s.Require().NoError(err)
+
 	s.Require().Equal(int64(1000),
-		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[2].GetOperator()))
+		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val2Operator))
 	s.Require().Equal(uint64(1), providerKeeper.GetThrottledPacketDataSize(s.providerCtx(),
 		s.getFirstBundle().Chain.ChainID))
 

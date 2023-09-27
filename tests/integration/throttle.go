@@ -75,7 +75,10 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
 		slashedVal := vals[0]
 		s.Require().True(slashedVal.IsJailed())
-		lastValPower := providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), slashedVal.GetOperator())
+
+		slashedValOperator, err := sdk.ValAddressFromHex(slashedVal.GetOperator())
+		s.Require().NoError(err)
+		lastValPower := providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), slashedValOperator)
 		s.Require().Equal(int64(0), lastValPower)
 
 		// Assert expected slash meter and allowance value
@@ -149,7 +152,10 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		// Assert validator 2 has no power, this should be apparent next block,
 		// since the staking endblocker runs before the ccv endblocker.
 		s.providerChain.NextBlock()
-		lastValPower = providerStakingKeeper.GetLastValidatorPower(cacheCtx, slashedVal.GetOperator())
+
+		slashedValOperator, err = sdk.ValAddressFromHex(slashedVal.GetOperator())
+		s.Require().NoError(err)
+		lastValPower = providerStakingKeeper.GetLastValidatorPower(cacheCtx, slashedValOperator)
 		s.Require().Equal(int64(0), lastValPower)
 	}
 }
@@ -638,18 +644,30 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 
 	// Default slash meter replenish fraction is 0.05, so all sent packets should be handled immediately.
 	vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
+
+	val0Operator, err := sdk.ValAddressFromHex(vals[0].GetOperator())
+	s.Require().NoError(err)
 	s.Require().False(vals[0].IsJailed())
 	s.Require().Equal(int64(1000),
-		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[0].GetOperator()))
+		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val0Operator))
+
+	val1Operator, err := sdk.ValAddressFromHex(vals[1].GetOperator())
+	s.Require().NoError(err)
 	s.Require().True(vals[1].IsJailed())
 	s.Require().Equal(int64(0),
-		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[1].GetOperator()))
+		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val1Operator))
+
+	val2Operator, err := sdk.ValAddressFromHex(vals[2].GetOperator())
+	s.Require().NoError(err)
 	s.Require().True(vals[2].IsJailed())
 	s.Require().Equal(int64(0),
-		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[2].GetOperator()))
+		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val2Operator))
+
+	val3Operator, err := sdk.ValAddressFromHex(vals[3].GetOperator())
+	s.Require().NoError(err)
 	s.Require().True(vals[3].IsJailed())
 	s.Require().Equal(int64(0),
-		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[3].GetOperator()))
+		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val3Operator))
 }
 
 // TestSlashMeterAllowanceChanges tests scenarios where the slash meter allowance is expected to change.
@@ -969,8 +987,10 @@ func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPowe
 	s.Require().True(sdkVal.IsJailed())
 
 	if checkPower {
+		valOperator, err := sdk.ValAddressFromHex(sdkVal.GetOperator())
+		s.Require().NoError(err)
 		valPower := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(
-			s.providerCtx(), sdkVal.GetOperator())
+			s.providerCtx(), valOperator)
 		s.Require().Equal(int64(0), valPower)
 	}
 }
@@ -979,8 +999,11 @@ func (s *CCVTestSuite) confirmValidatorNotJailed(tmVal tmtypes.Validator, expect
 	sdkVal, found := s.providerApp.GetTestStakingKeeper().GetValidator(
 		s.providerCtx(), sdk.ValAddress(tmVal.Address))
 	s.Require().True(found)
+
+	valOperator, err := sdk.ValAddressFromHex(sdkVal.GetOperator())
+	s.Require().NoError(err)
 	valPower := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(
-		s.providerCtx(), sdkVal.GetOperator())
+		s.providerCtx(), valOperator)
 	s.Require().Equal(expectedPower, valPower)
 	s.Require().False(sdkVal.IsJailed())
 }

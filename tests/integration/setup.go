@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	store "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -21,7 +22,6 @@ import (
 
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
-	"github.com/cosmos/interchain-security/v3/testutil/simibc"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -389,7 +389,8 @@ func newPacketSniffer() *packetSniffer {
 }
 
 func (ps *packetSniffer) ListenFinalizeBlock(ctx context.Context, req abci.RequestFinalizeBlock, res abci.ResponseFinalizeBlock) error {
-	packets := simibc.ParsePacketsFromEvents(simibc.ABCIToSDKEvents(res.GetEvents()))
+	// TODO: @MSalopek this was deprecated, figure out how to use it
+	packets := ParsePacketsFromEvents(res.GetEvents())
 	for _, packet := range packets {
 		ps.packets[getSentPacketKey(packet.Sequence, packet.SourceChannel)] = packet
 	}
@@ -402,10 +403,42 @@ func getSentPacketKey(sequence uint64, channelID string) string {
 	return fmt.Sprintf("%s-%d", channelID, sequence)
 }
 
-func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit) error {
+func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit, cs []*store.StoreKVPair) error {
 	return nil
 }
 
 func (*packetSniffer) Close() error                                       { return nil }
 func (*packetSniffer) Listeners() map[store.StoreKey][]store.ABCIListener { return nil }
 func (*packetSniffer) Stream(wg *sync.WaitGroup) error                    { return nil }
+
+// [legacy simibc method]
+// ABCIToSDKEvents converts a list of ABCI events to Cosmos SDK events.
+func ABCIToSDKEvents(abciEvents []abci.Event) sdk.Events {
+	var events sdk.Events
+	for _, evt := range abciEvents {
+		var attributes []sdk.Attribute
+		for _, attr := range evt.GetAttributes() {
+			attributes = append(attributes, sdk.NewAttribute(attr.Key, attr.Value))
+		}
+
+		events = events.AppendEvent(sdk.NewEvent(evt.GetType(), attributes...))
+	}
+
+	return events
+}
+
+// [legacy simibc method]
+// ParsePacketsFromEvents returns all packets found in events.
+// func ParsePacketsFromEvents(events []sdk.Event) (packets []channeltypes.Packet) {
+func ParsePacketsFromEvents(events []abci.Event) (packets []channeltypes.Packet) {
+	for i, ev := range events {
+		if ev.Type == channeltypes.EventTypeSendPacket {
+			packet, err := ibctesting.ParsePacketFromEvents(events[i:])
+			if err != nil {
+				panic(err)
+			}
+			packets = append(packets, packet)
+		}
+	}
+	return
+}
