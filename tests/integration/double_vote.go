@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"bytes"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	testutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
@@ -28,7 +29,36 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 
 	provValSet, err := tmtypes.ValidatorSetFromProto(s.providerChain.LastHeader.ValidatorSet)
 	s.Require().NoError(err)
-	provVal := provValSet.Validators[0]
+
+	// In what follows, we have the "valid double voting evidence 1 - should pass," and
+	// "valid double voting evidence 2 - should pass" test cases. The first test case has valid double
+	// voting evidence for the consumer chain (using a consumer key), while the second test case has valid double
+	// voting evidence (using a provider key). When the first "valid double voting evidence 1 - should pass" test runs
+	// it would slash the validator that corresponds to the consumer validator. If the second test
+	// "valid double voting evidence 2 - should pass" attempts to slash the same validator, the test would fail
+	// because the validator was already slashed in the first test case.
+	// Depending on what `consuSigner` and the `provSigner` are, that are arbitrarily chosen, when we run the test, we
+	// might have a successful or a failed test. To prevent a flaky test like this, in what follows we check that we find the
+	// validator that corresponds to `consuVal` and then find a `provVal` validator that is not the corresponding
+	// validator of `consuVal` on the provider chain. This way we guarantee that the test is not flaky.
+	allValidators := s.providerApp.GetProviderKeeper().GetAllValidatorsByConsumerAddr(s.providerCtx(), &s.consumerChain.ChainID)
+	consuValIndex := 0
+	for i := 0; i < len(allValidators); i++ {
+		if bytes.Equal(allValidators[i].ConsumerAddr, consuVal.Address.Bytes()) {
+			consuValIndex = i
+			break
+		}
+	}
+
+	provValIndex := 0
+	for i := 0; i < len(provValSet.Validators); i++ {
+		if !bytes.Equal(allValidators[consuValIndex].ProviderAddr, provValSet.Validators[i].Address.Bytes()) {
+			provValIndex = i
+			break
+		}
+	}
+
+	provVal := provValSet.Validators[provValIndex]
 	provSigner := s.providerChain.Signers[provVal.Address.String()]
 
 	blockID1 := testutil.MakeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
