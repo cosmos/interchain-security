@@ -719,30 +719,28 @@ module CCV {
     // ASSUMPTIONS ON MODEL PARAMETERS
     // ===================
 
-    // the unbonding period is positive
     run UnbondingPeriodPositiveTest =
         UnbondingPeriodPerChain.keys().forall(chain => UnbondingPeriodPerChain.get(chain) > 0)
 
-    // the VSC timeout is positive
     run VscTimeoutPositiveTest =
         VscTimeout > 0
 
-    // the CCV timeout is positive
     run CcvTimeoutPositiveTest =
         CcvTimeout.keys().forall(chain => CcvTimeout.get(chain) > 0)
 
-    // ccv timeout on the provider **must** be larger than unbonding period on each chain
     run CcvTimeoutLargerThanUnbondingPeriodTest =
         CcvTimeout.get(PROVIDER_CHAIN) > UnbondingPeriodPerChain.Values().Max()
 
-    // the provider chain is not a consumer chain
-    run ProviderNotConsumerTest =
+    run ProviderIsNotAConsumerTest =
         not(ConsumerChains.contains(PROVIDER_CHAIN))
 
-    // ccv timeout contains only consumers and provider, no other chains
-    run CcvTimeoutSubsetTest =
-        CcvTimeout.keys().forall(chain => ConsumerChains.contains(chain) or chain == PROVIDER_CHAIN)
-    
+    // ccv timeout contains exactly consumers and provider, no other chains
+    run CcvTimeoutKeysTest =
+        CcvTimeout.keys() == ConsumerChains.union(Set(PROVIDER_CHAIN))
+
+    // unbonding period contains exactly consumers and provider, no other chains
+    run UnbondingPeriodKeysTest =
+        UnbondingPeriodPerChain.keys() == ConsumerChains.union(Set(PROVIDER_CHAIN))
 }
 
 // A basic state machine that utilizes the CCV protocol.
@@ -775,15 +773,12 @@ module CCVStatemachinLogic {
             // set the validator set to be the initial validator set in the history
             "chainState", providerState.chainState.with(
                 "votingPowerHistory", List(InitialValidatorSet)
-            )
-        ).with(
-            // set the current validator set
-            "chainState", providerState.chainState.with(
+            ).with(
                 "currentValidatorSet", InitialValidatorSet
             )
         )
         currentState' = {
-            providerState: providerState,
+            providerState: providerStateWithConsumers,
             consumerStates: consumerStates
         }
     }
@@ -847,7 +842,7 @@ module CCVDefaultStateMachine {
     pure val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10")
     pure val initialValidatorSet = nodes.mapBy(node => 100)
 
-    import CCVStatemachinLogic(InitialValidatorSet = initialValidatorSet, VscTimeout = 5 * Week, CcvTimeout = unbondingPeriods, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = chains).*
+    import CCVStatemachinLogic(InitialValidatorSet = initialValidatorSet, VscTimeout = 5 * Week, CcvTimeout = unbondingPeriods, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains).*
 
     run InitTest: bool = { 
         init.then(
@@ -867,7 +862,7 @@ module CCVDefaultStateMachine {
                     "consumer2" -> List(),
                     "consumer3" -> List()
                 )),
-                assert(currentState.consumerStates.keys() == chains),
+                assert(currentState.consumerStates.keys() == consumerChains),
                 assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet)),
                 assert(currentState.providerState.chainState.currentValidatorSet == InitialValidatorSet),
                 assert(currentState.providerState.chainState.lastTimestamp == 0),
