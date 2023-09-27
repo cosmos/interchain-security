@@ -658,7 +658,7 @@ func (tr TestConfig) getProviderAddressFromConsumer(consumerChain ChainID, valid
 	return addr
 }
 
-func (tr TestRun) getSlashMeter() int64 {
+func (tr TestConfig) getSlashMeter() int64 {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
 		tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
@@ -698,7 +698,7 @@ func (tr TestConfig) getRegisteredConsumerRewardDenoms(chain ChainID) []string {
 	return rewardDenoms
 }
 
-func (tr TestRun) getPendingPacketQueueSize(chain ChainID) uint {
+func (tr TestConfig) getPendingPacketQueueSize(chain ChainID) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 
@@ -719,7 +719,7 @@ func (tr TestRun) getPendingPacketQueueSize(chain ChainID) uint {
 	return uint(len(packetData))
 }
 
-func (tr TestRun) getValidatorNode(chain ChainID, validator ValidatorID) string {
+func (tr TestConfig) getValidatorNode(chain ChainID, validator ValidatorID) string {
 	// for CometMock, validatorNodes are all the same address as the query node (which is CometMocks address)
 	if tr.useCometmock {
 		return tr.getQueryNode(chain)

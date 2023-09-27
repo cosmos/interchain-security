@@ -2052,7 +2052,7 @@ type slashMeterReplenishmentAction struct {
 	Timeout time.Duration
 }
 
-func (tr TestRun) waitForSlashMeterReplenishment(
+func (tr TestConfig) waitForSlashMeterReplenishment(
 	action slashMeterReplenishmentAction,
 	verbose bool,
 ) {
@@ -2086,7 +2086,7 @@ type waitTimeAction struct {
 	WaitTime time.Duration
 }
 
-func (tr TestRun) waitForTime(
+func (tr TestConfig) waitForTime(
 	action waitTimeAction,
 	verbose bool,
 ) {
