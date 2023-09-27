@@ -64,7 +64,7 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().GetValidator(ctx,
 				newValidator.SDKValOpAddress(),
-			).Return(newValidator.SDKStakingValidator(), true),
+			).Return(newValidator.SDKStakingValidator(), nil),
 		)
 
 		tt.setup(ctx, k)

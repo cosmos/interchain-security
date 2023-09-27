@@ -102,9 +102,8 @@ type TestStakingKeeper interface {
 	GetRedelegations(ctx sdk.Context, delegator sdk.AccAddress,
 		maxRetrieve uint16) (redelegations []types.Redelegation)
 	// NOTE: @MSalopek this is a bit confusing to me
-	// BondDenom(ctx sdk.Context) (res string)
-	// IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool
-	IsValidatorJailed(ctx context.Context, addr sdk.ConsAddress) bool
+	BondDenom(ctx context.Context) (string, error)
+	IsValidatorJailed(ctx context.Context, addr sdk.ConsAddress) (bool, error)
 	GetUnbondingDelegation(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 	) (ubd types.UnbondingDelegation, found bool)
 	GetAllValidators(ctx sdk.Context) (validators []types.Validator)

@@ -430,7 +430,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	}
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
-	if !validator.IsUnbonded() {
+	if validator.IsUnbonded() {
 		// if validator is not found or is unbonded, drop slash packet and log error.
 		// Note that it is impossible for the validator to be not found or unbonded if both the provider
 		// and the consumer are following the protocol. Thus if this branch is taken then one or both

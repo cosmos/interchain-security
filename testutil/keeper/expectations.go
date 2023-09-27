@@ -51,7 +51,7 @@ func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
 	unbondingTimeToInject time.Duration,
 ) []*gomock.Call {
 	return []*gomock.Call{
-		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject).Times(1),
+		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject, nil).Times(1),
 
 		mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(),
 			clienttypes.GetSelfHeight(ctx)).Return(&ibctmtypes.ConsensusState{}, nil).Times(1),
@@ -102,7 +102,7 @@ func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 	calls := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 			ctx, expectedProviderValConsAddr.ToSdkConsAddr()).Return(
-			valToReturn, true,
+			valToReturn, nil,
 		).Times(1),
 
 		mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
@@ -113,12 +113,12 @@ func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 		calls = append(calls, mocks.MockStakingKeeper.EXPECT().Jail(
 			gomock.Eq(ctx),
 			gomock.Eq(expectedProviderValConsAddr.ToSdkConsAddr()),
-		).Return())
+		).Return(nil))
 
 		// JailUntil is set in this code path.
-		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour).Times(1))
+		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour, nil).Times(1))
 		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().JailUntil(ctx,
-			expectedProviderValConsAddr.ToSdkConsAddr(), gomock.Any()).Times(1))
+			expectedProviderValConsAddr.ToSdkConsAddr(), gomock.Any()).Return(nil).Times(1))
 	}
 
 	return calls

@@ -28,7 +28,7 @@ import (
 // TestQueueVSCPackets tests queueing validator set updates.
 func TestQueueVSCPackets(t *testing.T) {
 	_, _, key := ibctesting.GenerateKeys(t, 1)
-	tmPubKey, _ := cryptocodec.ToTmProtoPublicKey(key)
+	tmPubKey, _ := cryptocodec.ToCmtProtoPublicKey(key)
 
 	testCases := []struct {
 		name                     string
@@ -74,7 +74,7 @@ func TestQueueVSCPackets(t *testing.T) {
 		}
 
 		gomock.InOrder(
-			mockStakingKeeper.EXPECT().GetValidatorUpdates(gomock.Eq(ctx)).Return(mockUpdates),
+			mockStakingKeeper.EXPECT().GetValidatorUpdates(gomock.Eq(ctx)).Return(mockUpdates, nil),
 		)
 
 		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
@@ -446,7 +446,7 @@ func TestHandleSlashPacket(t *testing.T) {
 					// Method will return once validator is not found.
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{}, false, // false = Not found.
+						stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound, // false = Not found.
 					).Times(1),
 				}
 			},
@@ -465,7 +465,7 @@ func TestHandleSlashPacket(t *testing.T) {
 				return []*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{}, true, // true = Found.
+						stakingtypes.Validator{}, nil, // true = Found.
 					).Times(1),
 					// Execution will stop after this call as validator is tombstoned.
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
@@ -488,9 +488,8 @@ func TestHandleSlashPacket(t *testing.T) {
 				return []*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{}, true,
+						stakingtypes.Validator{}, nil, // nil means no error, missing validator returns error.
 					).Times(1),
-
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
 						providerConsAddr.ToSdkConsAddr()).Return(false).Times(1),
 				}
