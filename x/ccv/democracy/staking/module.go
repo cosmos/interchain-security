@@ -78,7 +78,6 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 // The ccv consumer Endblocker is ordered to run before the staking Endblocker,
 // so if PreCCV is true during one block, the ccv consumer Enblocker will return the proper validator updates,
 // the PreCCV flag will be toggled to false, and no validator updates should be returned by this method.
-func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	_ = am.keeper.BlockValidatorUpdates(ctx)
-	return []abci.ValidatorUpdate{}
+func (am AppModule) EndBlocker(ctx sdk.Context) ([]abci.ValidatorUpdate, error) {
+	return am.keeper.EndBlocker(ctx)
 }
