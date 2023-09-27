@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -33,14 +35,22 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 
 	provAddrs := make([]types.ProviderConsAddress, len(byzantineValidators))
 
-	// jail the Byzantine validators
+	var errors []error
+	// slash, jail, and tombstone the Byzantine validators
 	for _, v := range byzantineValidators {
 		providerAddr := k.GetProviderAddrFromConsumerAddr(
 			ctx,
 			misbehaviour.Header1.Header.ChainID,
 			types.NewConsumerConsAddress(sdk.ConsAddress(v.Address.Bytes())),
 		)
-		k.JailValidator(ctx, providerAddr)
+		err := k.SlashValidator(ctx, providerAddr)
+		if err != nil {
+			errors = append(errors, err)
+		}
+		err = k.JailAndTombstoneValidator(ctx, providerAddr)
+		if err != nil {
+			errors = append(errors, err)
+		}
 		provAddrs = append(provAddrs, providerAddr)
 	}
 
@@ -48,6 +58,16 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 		"confirmed equivocation light client attack",
 		"byzantine validators", provAddrs,
 	)
+
+	// If we fail to slash all validators we return an error. However, if we only fail to slash some validators
+	// we just log an error to avoid having the whole `MsgSubmitMisbehaviour` failing and reverting the partial slashing.
+	if len(errors) == len(byzantineValidators) {
+		return fmt.Errorf("failed to slash, jail, or tombstone all validators: %v", errors)
+	}
+
+	if len(errors) > 0 {
+		logger.Error("failed to slash, jail, or tombstone validators: %v", errors)
+	}
 
 	return nil
 }

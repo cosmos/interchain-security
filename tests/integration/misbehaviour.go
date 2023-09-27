@@ -53,16 +53,26 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 		),
 	}
 
+	// we assume that all validators have the same number of initial tokens
+	validator, _ := s.getValByIdx(0)
+	initialTokens := sdk.NewDecFromInt(validator.GetTokens())
+
 	err := s.providerApp.GetProviderKeeper().HandleConsumerMisbehaviour(s.providerCtx(), *misb)
 	s.NoError(err)
 
-	// verify that validators are jailed and tombstoned
+	// verify that validators are jailed, tombstoned, and slashed
 	for _, v := range clientTMValset.Validators {
 		consuAddr := sdk.ConsAddress(v.Address.Bytes())
 		provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, types.NewConsumerConsAddress(consuAddr))
 		val, ok := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), provAddr.Address)
 		s.Require().True(ok)
 		s.Require().True(val.Jailed)
+		s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.ToSdkConsAddr()))
+
+		validator, _ := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr.ToSdkConsAddr().Bytes())
+		slashFraction := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(s.providerCtx())
+		actualTokens := sdk.NewDecFromInt(validator.GetTokens())
+		s.Require().True(initialTokens.Sub(initialTokens.Mul(slashFraction)).Equal(actualTokens))
 	}
 }
 

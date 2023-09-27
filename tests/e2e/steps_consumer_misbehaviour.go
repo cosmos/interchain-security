@@ -230,6 +230,10 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 						ValidatorID("alice"): 511,
 						ValidatorID("bob"):   20,
 					},
+					RepresentativePowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511000000,
+						ValidatorID("bob"):   20000000,
+					},
 				},
 				ChainID(consumerName): ChainState{
 					ValPowers: &map[ValidatorID]uint{
@@ -254,6 +258,12 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 0,
 						ValidatorID("bob"):   20,
+					},
+					// "alice" should be slashed on the provider, hence representative
+					// power is 511000000 - 0.05 * 511000000 = 485450000
+					RepresentativePowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 485450000,
+						ValidatorID("bob"):   20000000,
 					},
 					// The consumer light client should be frozen on the provider
 					ClientsFrozenHeights: &map[string]clienttypes.Height{

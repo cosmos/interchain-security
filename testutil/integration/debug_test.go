@@ -274,7 +274,7 @@ func TestCheckMisbehaviour(t *testing.T) {
 }
 
 //
-// Equivocation test
+// Consumer Equivocation test
 //
 
 func TestHandleConsumerDoubleVoting(t *testing.T) {
