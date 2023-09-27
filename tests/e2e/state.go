@@ -20,7 +20,7 @@ type ChainState struct {
 	ValBalances                    *map[ValidatorID]uint
 	Proposals                      *map[uint]Proposal
 	ValPowers                      *map[ValidatorID]uint
-	RepresentativePowers           *map[ValidatorID]uint
+	StakedTokens                   *map[ValidatorID]uint
 	Params                         *[]Param
 	Rewards                        *Rewards
 	ConsumerChains                 *map[ChainID]bool
@@ -138,9 +138,9 @@ func (tr TestConfig) getChainState(chain ChainID, modelState ChainState) ChainSt
 		chainState.ValPowers = &powers
 	}
 
-	if modelState.RepresentativePowers != nil {
-		representPowers := tr.getRepresentativePowers(chain, *modelState.RepresentativePowers)
-		chainState.RepresentativePowers = &representPowers
+	if modelState.StakedTokens != nil {
+		representPowers := tr.getStakedTokens(chain, *modelState.StakedTokens)
+		chainState.StakedTokens = &representPowers
 	}
 
 	if modelState.Params != nil {
@@ -282,10 +282,10 @@ func (tr TestConfig) getValPowers(chain ChainID, modelState map[ValidatorID]uint
 	return actualState
 }
 
-func (tr TestConfig) getRepresentativePowers(chain ChainID, modelState map[ValidatorID]uint) map[ValidatorID]uint {
+func (tr TestConfig) getStakedTokens(chain ChainID, modelState map[ValidatorID]uint) map[ValidatorID]uint {
 	actualState := map[ValidatorID]uint{}
 	for k := range modelState {
-		actualState[k] = tr.getRepresentativePower(chain, k)
+		actualState[k] = tr.getValStakedTokens(chain, k)
 	}
 
 	return actualState
@@ -547,7 +547,7 @@ func (tr TestConfig) getValPower(chain ChainID, validator ValidatorID) uint {
 	return 0
 }
 
-func (tr TestConfig) getRepresentativePower(chain ChainID, validator ValidatorID) uint {
+func (tr TestConfig) getValStakedTokens(chain ChainID, validator ValidatorID) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 

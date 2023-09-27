@@ -31,7 +31,7 @@
           "carol": 9500000000
         },
         "ValPowers": null,
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -65,7 +65,7 @@
           "bob": 9500000000
         },
         "ValPowers": null,
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -105,7 +105,7 @@
       "consu": {
         "ValBalances": null,
         "ValPowers": null,
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -148,7 +148,7 @@
       "consu": {
         "ValBalances": null,
         "ValPowers": null,
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -189,7 +189,7 @@
           "bob": 9500000000
         },
         "ValPowers": null,
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -247,7 +247,7 @@
           "carol": 10000000000
         },
         "ValPowers": null,
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -265,7 +265,7 @@
           "carol": 9500000000
         },
         "ValPowers": null,
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -322,7 +322,7 @@
           "bob": 9500000000
         },
         "ValPowers": null,
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -362,7 +362,7 @@
       "densu": {
         "ValBalances": null,
         "ValPowers": null,
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -405,7 +405,7 @@
       "densu": {
         "ValBalances": null,
         "ValPowers": null,
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -446,7 +446,7 @@
           "bob": 9500000000
         },
         "ValPowers": null,
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -504,7 +504,7 @@
           "carol": 10000000000
         },
         "ValPowers": null,
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -522,7 +522,7 @@
           "carol": 9500000000
         },
         "ValPowers": null,
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -574,7 +574,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -592,7 +592,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -610,7 +610,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -639,7 +639,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -657,7 +657,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -675,7 +675,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -704,7 +704,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -722,7 +722,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -740,7 +740,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -769,7 +769,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -787,7 +787,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -805,7 +805,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -834,7 +834,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -852,7 +852,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -870,7 +870,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -899,7 +899,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -917,7 +917,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -935,7 +935,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -965,7 +965,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -983,7 +983,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1001,7 +1001,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1030,7 +1030,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1048,7 +1048,7 @@
           "bob": 500,
           "carol": 500
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1066,7 +1066,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1095,7 +1095,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1113,7 +1113,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1131,7 +1131,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1158,7 +1158,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1176,7 +1176,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1194,7 +1194,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1223,7 +1223,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1241,7 +1241,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1259,7 +1259,7 @@
           "bob": 0,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1288,7 +1288,7 @@
           "bob": 0,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1306,7 +1306,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1335,7 +1335,7 @@
           "bob": 0,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1353,7 +1353,7 @@
           "bob": 0,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1380,7 +1380,7 @@
           "bob": 0,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1398,7 +1398,7 @@
           "bob": 0,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1416,7 +1416,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1445,7 +1445,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1463,7 +1463,7 @@
           "bob": 0,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1481,7 +1481,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1510,7 +1510,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1528,7 +1528,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1546,7 +1546,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1573,7 +1573,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1591,7 +1591,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1609,7 +1609,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1638,7 +1638,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1656,7 +1656,7 @@
           "bob": 500,
           "carol": 501
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1674,7 +1674,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1703,7 +1703,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1721,7 +1721,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1739,7 +1739,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1766,7 +1766,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1784,7 +1784,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1802,7 +1802,7 @@
           "bob": 500,
           "carol": 495
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1831,7 +1831,7 @@
           "bob": 500,
           "carol": 495
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1849,7 +1849,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1867,7 +1867,7 @@
           "bob": 500,
           "carol": 495
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1896,7 +1896,7 @@
           "bob": 500,
           "carol": 495
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1914,7 +1914,7 @@
           "bob": 500,
           "carol": 495
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1932,7 +1932,7 @@
           "bob": 500,
           "carol": 495
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1959,7 +1959,7 @@
           "bob": 500,
           "carol": 495
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1977,7 +1977,7 @@
           "bob": 500,
           "carol": 495
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -1995,7 +1995,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2024,7 +2024,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2042,7 +2042,7 @@
           "bob": 500,
           "carol": 495
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2060,7 +2060,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2089,7 +2089,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2107,7 +2107,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2125,7 +2125,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2152,7 +2152,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2170,7 +2170,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2188,7 +2188,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2217,7 +2217,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2235,7 +2235,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2253,7 +2253,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2282,7 +2282,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2300,7 +2300,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2318,7 +2318,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2347,7 +2347,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -2365,7 +2365,7 @@
           "bob": 500,
           "carol": 0
         },
-        "RepresentativePowers": null,
+        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
