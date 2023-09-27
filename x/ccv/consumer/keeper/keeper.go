@@ -31,6 +31,10 @@ import (
 
 // Keeper defines the Cross-Chain Validation Consumer Keeper
 type Keeper struct {
+	// the address capable of executing a MsgUpdateParams message. Typically, this
+	// should be the x/gov module account.
+	authority string
+
 	storeKey         storetypes.StoreKey // TODO: maybe needs to be removed?
 	storeService     store.KVStoreService
 	cdc              codec.BinaryCodec
@@ -66,7 +70,8 @@ func NewKeeper(
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	slashingKeeper ccv.SlashingKeeper, bankKeeper ccv.BankKeeper, accountKeeper ccv.AccountKeeper,
 	ibcTransferKeeper ccv.IBCTransferKeeper, ibcCoreKeeper ccv.IBCCoreKeeper,
-	feeCollectorName string,
+	feeCollectorName, authority string, validatorAddressCodec,
+	consensusAddressCodec addresscodec.Codec,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -74,6 +79,7 @@ func NewKeeper(
 	}
 
 	k := Keeper{
+		authority:               authority,
 		storeKey:                key,
 		cdc:                     cdc,
 		paramStore:              paramSpace,
@@ -89,6 +95,8 @@ func NewKeeper(
 		ibcCoreKeeper:           ibcCoreKeeper,
 		feeCollectorName:        feeCollectorName,
 		standaloneStakingKeeper: nil,
+		validatorAddressCodec:   validatorAddressCodec,
+		consensusAddressCodec:   consensusAddressCodec,
 	}
 
 	k.mustValidateFields()
@@ -121,28 +129,35 @@ func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 16 {
-		panic("number of fields in consumer keeper is not 16")
+	// TODO: @MSalopek hangle this better
+	if reflect.ValueOf(k).NumField() != 20 {
+		panic(fmt.Sprintf("number of fields in consumer keeper is not 19 - have %d", reflect.ValueOf(k).NumField())) // incorrect number
 	}
 
-	// Note 14 / 16 fields will be validated,
+	if k.validatorAddressCodec == nil || k.consensusAddressCodec == nil {
+		panic("validator and/or consensus address codec are nil")
+	}
+
+	// Note 17 / 20 fields will be validated,
 	// hooks are explicitly set after the constructor,
 	// stakingKeeper is optionally set after the constructor,
-
-	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                   // 1
-	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                             // 2
-	ccv.PanicIfZeroOrNil(k.paramStore, "paramStore")               // 3
-	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")           // 4
-	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")         // 5
-	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")               // 6
-	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")   // 7
-	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")           // 8
-	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")       // 9
-	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")               // 10
-	ccv.PanicIfZeroOrNil(k.authKeeper, "authKeeper")               // 11
-	ccv.PanicIfZeroOrNil(k.ibcTransferKeeper, "ibcTransferKeeper") // 12
-	ccv.PanicIfZeroOrNil(k.ibcCoreKeeper, "ibcCoreKeeper")         // 13
-	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")   // 14
+	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                           // 1
+	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                                     // 2
+	ccv.PanicIfZeroOrNil(k.paramStore, "paramStore")                       // 3
+	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")                   // 4
+	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")                 // 5
+	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")                       // 6
+	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")           // 7
+	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")                   // 8
+	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")               // 9
+	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                       // 10
+	ccv.PanicIfZeroOrNil(k.authKeeper, "authKeeper")                       // 11
+	ccv.PanicIfZeroOrNil(k.ibcTransferKeeper, "ibcTransferKeeper")         // 12
+	ccv.PanicIfZeroOrNil(k.ibcCoreKeeper, "ibcCoreKeeper")                 // 13
+	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")           // 14
+	ccv.PanicIfZeroOrNil(k.authority, "authority")                         // 15
+	ccv.PanicIfZeroOrNil(k.validatorAddressCodec, "validatorAddressCodec") // 16
+	ccv.PanicIfZeroOrNil(k.consensusAddressCodec, "consensusAddressCodec") // 17
 }
 
 // Logger returns a module-specific logger.

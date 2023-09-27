@@ -155,6 +155,9 @@ func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consu
 		mocks.MockIBCTransferKeeper,
 		mocks.MockIBCCoreKeeper,
 		authtypes.FeeCollectorName,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		address.NewBech32Codec("cosmosvaloper"),
+		address.NewBech32Codec("cosmosvalcons"),
 	)
 }
 
