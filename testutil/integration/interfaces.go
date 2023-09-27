@@ -8,6 +8,8 @@ import (
 
 	"cosmossdk.io/math"
 
+	"cosmossdk.io/core/comet"
+
 	evidencetypes "cosmossdk.io/x/evidence/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -17,7 +19,7 @@ import (
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
@@ -91,47 +93,44 @@ type DemocConsumerApp interface {
 // See if this needs a bigger refactor
 type TestStakingKeeper interface {
 	ccvtypes.StakingKeeper
-	Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc types.BondStatus,
-		validator types.Validator, subtractAccount bool) (newShares math.LegacyDec, err error)
-	Undelegate(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount math.LegacyDec,
-	) (time.Time, error)
-	BeginRedelegation(ctx sdk.Context, delAddr sdk.AccAddress, valSrcAddr, valDstAddr sdk.ValAddress,
-		sharesAmount math.LegacyDec) (completionTime time.Time, err error)
-	GetUnbondingDelegationByUnbondingID(ctx sdk.Context, id uint64,
-	) (ubd types.UnbondingDelegation, found bool)
-	GetRedelegations(ctx sdk.Context, delegator sdk.AccAddress,
-		maxRetrieve uint16) (redelegations []types.Redelegation)
-	// NOTE: @MSalopek this is a bit confusing to me
-	BondDenom(ctx context.Context) (string, error)
-	IsValidatorJailed(ctx context.Context, addr sdk.ConsAddress) (bool, error)
-	GetUnbondingDelegation(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
-	) (ubd types.UnbondingDelegation, found bool)
-	GetAllValidators(ctx sdk.Context) (validators []types.Validator)
-	GetValidatorSet() types.ValidatorSet
+	Delegate(
+		ctx context.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc stakingtypes.BondStatus,
+		validator stakingtypes.Validator, subtractAccount bool,
+	) (newShares math.LegacyDec, err error)
+	Undelegate(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount math.LegacyDec,
+	) (time.Time, math.Int, error)
+	BeginRedelegation(
+		ctx context.Context, delAddr sdk.AccAddress, valSrcAddr, valDstAddr sdk.ValAddress, sharesAmount math.LegacyDec,
+	) (completionTime time.Time, err error)
+	GetUnbondingDelegationByUnbondingID(ctx context.Context, id uint64) (ubd stakingtypes.UnbondingDelegation, err error)
+	GetRedelegations(ctx context.Context, delegator sdk.AccAddress, maxRetrieve uint16) (redelegations []stakingtypes.Redelegation, err error)
+	GetUnbondingDelegation(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (ubd stakingtypes.UnbondingDelegation, err error)
+	GetAllValidators(ctx context.Context) (validators []stakingtypes.Validator, err error)
+	GetValidatorSet() stakingtypes.ValidatorSet
 }
 
 type TestBankKeeper interface {
 	ccvtypes.BankKeeper
-	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress,
+	SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress,
 		recipientModule string, amt sdk.Coins) error
-	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string,
+	SendCoinsFromModuleToAccount(ctx context.Context, senderModule string,
 		recipientAddr sdk.AccAddress, amt sdk.Coins) error
 }
 
 type TestAccountKeeper interface {
 	ccvtypes.AccountKeeper
-	GetParams(sdk.Context) authtypes.Params
+	GetParams(context.Context) authtypes.Params
 }
 
 type TestSlashingKeeper interface {
 	ccvtypes.SlashingKeeper
-	SetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress,
-		info slashingtypes.ValidatorSigningInfo)
-	SignedBlocksWindow(ctx sdk.Context) (res int64)
-	HandleValidatorSignature(ctx sdk.Context, addr cryptotypes.Address, power int64, signed bool)
-	MinSignedPerWindow(ctx sdk.Context) int64
-	IterateValidatorMissedBlockBitArray(ctx sdk.Context,
-		address sdk.ConsAddress, handler func(index int64, missed bool) (stop bool))
+	SetValidatorSigningInfo(ctx context.Context, address sdk.ConsAddress, info slashingtypes.ValidatorSigningInfo) error
+	SignedBlocksWindow(ctx context.Context) (int64, error)
+	HandleValidatorSignature(ctx context.Context, addr cryptotypes.Address, power int64, signed comet.BlockIDFlag) error
+	MinSignedPerWindow(ctx context.Context) (int64, error)
+	// NOTE: @MSalopek deprecated in v50
+	// IterateValidatorMissedBlockBitArray(ctx sdk.Context,
+	// address sdk.ConsAddress, handler func(index int64, missed bool) (stop bool))
 }
 
 type TestEvidenceKeeper interface {
@@ -139,11 +138,11 @@ type TestEvidenceKeeper interface {
 }
 
 type TestDistributionKeeper interface {
-	GetFeePoolCommunityCoins(ctx sdk.Context) sdk.DecCoins
-	GetDistributionAccount(ctx sdk.Context) authtypes.ModuleAccountI
-	GetValidatorOutstandingRewards(ctx sdk.Context,
-		val sdk.ValAddress) (rewards distributiontypes.ValidatorOutstandingRewards)
-	GetCommunityTax(ctx sdk.Context) (percent math.LegacyDec)
+	// NOTE: @MSalopek deprecated in v50
+	// GetFeePoolCommunityCoins(ctx sdk.Context) sdk.DecCoins
+	GetDistributionAccount(ctx context.Context) sdk.ModuleAccountI
+	GetValidatorOutstandingRewards(ctx context.Context, val sdk.ValAddress) (rewards distributiontypes.ValidatorOutstandingRewards, err error)
+	GetCommunityTax(ctx context.Context) (math.LegacyDec, error)
 }
 
 type TestMintKeeper interface {
