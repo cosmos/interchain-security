@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"time"
 
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
@@ -100,8 +101,10 @@ type TestStakingKeeper interface {
 	) (ubd types.UnbondingDelegation, found bool)
 	GetRedelegations(ctx sdk.Context, delegator sdk.AccAddress,
 		maxRetrieve uint16) (redelegations []types.Redelegation)
-	BondDenom(ctx sdk.Context) (res string)
-	IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool
+	// BondDenom(ctx sdk.Context) (res string)
+	// IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool
+	IsValidatorJailed(ctx context.Context, addr sdk.ConsAddress) bool
+	BondDenom(ctx context.Context) (res string)
 	GetUnbondingDelegation(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 	) (ubd types.UnbondingDelegation, found bool)
 	GetAllValidators(ctx sdk.Context) (validators []types.Validator)

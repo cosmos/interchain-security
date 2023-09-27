@@ -542,11 +542,11 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	suite.Require().Equal(exported.Tendermint, endpoint.ClientConfig.GetClientType(), "only Tendermint client supported")
 
 	tmConfig, ok := endpoint.ClientConfig.(*ibctesting.TendermintConfig)
-	require.True(endpoint.Chain.T, ok)
+	require.True(endpoint.Chain.TB, ok)
 	tmConfig.UnbondingPeriod = unbondingPeriod
 
 	trustPeriod, err := ccv.CalculateTrustPeriod(unbondingPeriod, providertypes.DefaultTrustingPeriodFraction)
-	require.NoError(endpoint.Chain.T, err)
+	require.NoError(endpoint.Chain.TB, err)
 	tmConfig.TrustingPeriod = trustPeriod
 
 	height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
@@ -560,13 +560,13 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	msg, err := clienttypes.NewMsgCreateClient(
 		clientState, consensusState, endpoint.Chain.SenderAccount.GetAddress().String(),
 	)
-	require.NoError(endpoint.Chain.T, err)
+	require.NoError(endpoint.Chain.TB, err)
 
 	res, err := endpoint.Chain.SendMsgs(msg)
-	require.NoError(endpoint.Chain.T, err)
+	require.NoError(endpoint.Chain.TB, err)
 
 	endpoint.ClientID, err = ibctesting.ParseClientIDFromEvents(res.GetEvents())
-	require.NoError(endpoint.Chain.T, err)
+	require.NoError(endpoint.Chain.TB, err)
 }
 
 // GetConsumerEndpointClientAndConsState returns the client and consensus state

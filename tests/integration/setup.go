@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	store "cosmossdk.io/store/types"
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -44,7 +43,7 @@ type SetupConsumerCallback func(s *suite.Suite, coord *ibctesting.Coordinator, i
 // the integration functionality of ccv enabled chains.
 // Any method implemented for this struct will be ran when suite.Run() is called.
 type CCVTestSuite struct {
-	suite.Suite
+	suite.Suite           // NOTE: @MSalopek, should this be a *suite.Suite?
 	coordinator           *ibctesting.Coordinator
 	setupProviderCallback SetupProviderCallback
 	setupConsumerCallback SetupConsumerCallback
@@ -168,7 +167,7 @@ func (s *CCVTestSuite) registerPacketSniffer(chain *ibctesting.TestChain) {
 		s.packetSniffers = make(map[*ibctesting.TestChain]*packetSniffer)
 	}
 	p := newPacketSniffer()
-	chain.App.GetBaseApp().SetStreamingService(p)
+	chain.App.GetBaseApp().SetStreamingManager(p)
 	s.packetSniffers[chain] = p
 }
 
@@ -380,7 +379,8 @@ type packetSniffer struct {
 	packets map[string]channeltypes.Packet
 }
 
-var _ baseapp.StreamingService = &packetSniffer{}
+// TODO: @MSalopek this was deprecated, figure out how to use it or ask @tbruyelle
+// var _ baseapp.StreamingService = &packetSniffer{}
 
 func newPacketSniffer() *packetSniffer {
 	return &packetSniffer{
@@ -388,7 +388,7 @@ func newPacketSniffer() *packetSniffer {
 	}
 }
 
-func (ps *packetSniffer) ListenEndBlock(ctx context.Context, req abci.RequestEndBlock, res abci.ResponseEndBlock) error {
+func (ps *packetSniffer) ListenFinalizeBlock(ctx context.Context, req abci.RequestFinalizeBlock, res abci.ResponseFinalizeBlock) error {
 	packets := simibc.ParsePacketsFromEvents(simibc.ABCIToSDKEvents(res.GetEvents()))
 	for _, packet := range packets {
 		ps.packets[getSentPacketKey(packet.Sequence, packet.SourceChannel)] = packet
@@ -402,17 +402,10 @@ func getSentPacketKey(sequence uint64, channelID string) string {
 	return fmt.Sprintf("%s-%d", channelID, sequence)
 }
 
-func (*packetSniffer) ListenBeginBlock(ctx context.Context, req abci.RequestBeginBlock, res abci.ResponseBeginBlock) error {
-	return nil
-}
-
 func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit) error {
 	return nil
 }
 
-func (*packetSniffer) ListenDeliverTx(ctx context.Context, req abci.RequestDeliverTx, res abci.ResponseDeliverTx) error {
-	return nil
-}
-func (*packetSniffer) Close() error                                        { return nil }
-func (*packetSniffer) Listeners() map[store.StoreKey][]store.WriteListener { return nil }
-func (*packetSniffer) Stream(wg *sync.WaitGroup) error                     { return nil }
+func (*packetSniffer) Close() error                                       { return nil }
+func (*packetSniffer) Listeners() map[store.StoreKey][]store.ABCIListener { return nil }
+func (*packetSniffer) Stream(wg *sync.WaitGroup) error                    { return nil }

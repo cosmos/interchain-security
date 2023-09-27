@@ -137,7 +137,8 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 		providerDifference.Add(distrModuleDifference)).MustFloat64(),
 		math.LegacyNewDec(1).Sub(consumerRedistributionFraction).MustFloat64(), float64(0.0001))
 
-	totalRepresentativePower := stakingKeeper.GetValidatorSet().TotalBondedTokens(s.consumerCtx())
+	totalRepresentativePower, err := stakingKeeper.GetValidatorSet().TotalBondedTokens(s.consumerCtx())
+	s.Require().NoError(err)
 
 	// check that each representative has gotten the correct amount of rewards
 	for key, representativeTokens := range representativesTokens {
