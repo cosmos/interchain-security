@@ -12,9 +12,8 @@ import (
 
 	"cosmossdk.io/math"
 
-	evidencetypes "cosmossdk.io/x/evidence/types"
+	"github.com/cosmos/cosmos-sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
@@ -26,45 +25,45 @@ import (
 // of the provider validator set. This version of the interchain-security protocol will mirror the provider chain's changes
 // so we do not need a registry module between the staking module and CCV.
 type StakingKeeper interface {
-	GetValidatorUpdates(ctx context.Context) []abci.ValidatorUpdate
+	GetValidatorUpdates(ctx context.Context) ([]abci.ValidatorUpdate, error)
 	UnbondingCanComplete(ctx context.Context, id uint64) error
-	UnbondingTime(ctx context.Context) time.Duration
-	GetValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) (validator stakingtypes.Validator, found bool)
-	GetLastValidatorPower(ctx context.Context, operator sdk.ValAddress) (power int64)
+	UnbondingTime(ctx context.Context) (time.Duration, error)
+	GetValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) (stakingtypes.Validator, error)
+	GetLastValidatorPower(ctx context.Context, operator sdk.ValAddress) (int64, error)
 	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
-	Jail(sdk.Context, sdk.ConsAddress) // jail a validator
-	Slash(sdk.Context, sdk.ConsAddress, int64, int64, math.LegacyDec) math.Int
-	SlashWithInfractionReason(sdk.Context, sdk.ConsAddress, int64, int64, math.LegacyDec, stakingtypes.Infraction) math.Int
-	Unjail(ctx context.Context, addr sdk.ConsAddress)
-	GetValidator(ctx context.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
-	IterateLastValidatorPowers(ctx context.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
+	Jail(context.Context, sdk.ConsAddress) error // jail a validator
+	Slash(ctx context.Context, consAddr sdk.ConsAddress, infractionHeight, power int64, slashFactor math.LegacyDec) (math.Int, error)
+	SlashWithInfractionReason(ctx context.Context, consAddr sdk.ConsAddress, infractionHeight, power int64, slashFactor math.LegacyDec, infraction stakingtypes.Infraction) (math.Int, error)
+	Unjail(ctx context.Context, addr sdk.ConsAddress) error
+	GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error)
+	IterateLastValidatorPowers(ctx context.Context, cb func(addr sdk.ValAddress, power int64) (stop bool)) error
+	IterateValidators(ctx context.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool)) error
 	PowerReduction(ctx context.Context) math.Int
 	PutUnbondingOnHold(ctx context.Context, id uint64) error
-	IterateValidators(ctx context.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool))
-	Validator(ctx context.Context, addr sdk.ValAddress) stakingtypes.ValidatorI
-	IsValidatorJailed(ctx context.Context, addr sdk.ConsAddress) bool
-	ValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) stakingtypes.ValidatorI
-	Delegation(ctx context.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) stakingtypes.DelegationI
-	MaxValidators(ctx context.Context) uint32
-	GetLastTotalPower(ctx context.Context) math.Int
-	GetLastValidators(ctx context.Context) (validators []stakingtypes.Validator)
-	GetUnbondingType(ctx context.Context, id uint64) (unbondingType stakingtypes.UnbondingType, found bool)
-	BondDenom(ctx context.Context) (res string)
+	Validator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.ValidatorI, error)
+	IsValidatorJailed(ctx context.Context, addr sdk.ConsAddress) (bool, error)
+	ValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) (stakingtypes.ValidatorI, error)
+	Delegation(ctx context.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.DelegationI, error)
+	MaxValidators(ctx context.Context) (uint32, error)
+	GetLastTotalPower(ctx context.Context) (math.Int, error)
+	GetLastValidators(ctx context.Context) ([]stakingtypes.Validator, error)
+	GetUnbondingType(ctx context.Context, id uint64) (stakingtypes.UnbondingType, error)
+	BondDenom(ctx context.Context) (string, error)
 }
-
 type EvidenceKeeper interface {
-	HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
+	// NOTE: REFACTOR OR REMOVE @MSalopek this is deprecated, or otherwise not aviailable in v50
+	// HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
 }
 
 // SlashingKeeper defines the contract expected to perform ccv slashing
 type SlashingKeeper interface {
-	JailUntil(sdk.Context, sdk.ConsAddress, time.Time) // called from provider keeper only
-	GetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress) (info slashingtypes.ValidatorSigningInfo, found bool)
-	DowntimeJailDuration(sdk.Context) time.Duration
-	SlashFractionDowntime(sdk.Context) math.LegacyDec
-	SlashFractionDoubleSign(ctx sdk.Context) (res math.LegacyDec)
-	Tombstone(sdk.Context, sdk.ConsAddress)
-	IsTombstoned(sdk.Context, sdk.ConsAddress) bool
+	JailUntil(context.Context, sdk.ConsAddress, time.Time) error // called from provider keeper only
+	GetValidatorSigningInfo(context.Context, sdk.ConsAddress) (slashingtypes.ValidatorSigningInfo, error)
+	DowntimeJailDuration(context.Context) (time.Duration, error)
+	SlashFractionDowntime(context.Context) (math.LegacyDec, error)
+	SlashFractionDoubleSign(context.Context) (math.LegacyDec, error)
+	Tombstone(context.Context, sdk.ConsAddress) error
+	IsTombstoned(context.Context, sdk.ConsAddress) bool
 }
 
 // ChannelKeeper defines the expected IBC channel keeper
@@ -105,7 +104,7 @@ type ClientKeeper interface {
 
 // DistributionKeeper defines the expected interface of the distribution keeper
 type DistributionKeeper interface {
-	FundCommunityPool(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
+	FundCommunityPool(ctx context.Context, amount sdk.Coins, sender sdk.AccAddress) error
 }
 
 // ConsumerHooks event hooks for newly bonded cross-chain validators
@@ -115,14 +114,14 @@ type ConsumerHooks interface {
 
 // BankKeeper defines the expected interface needed to retrieve account balances.
 type BankKeeper interface {
-	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
-	GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
-	SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, recipientModule string, amt sdk.Coins) error
+	GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin
+	GetAllBalances(ctx context.Context, addr sdk.AccAddress) sdk.Coins
+	SendCoinsFromModuleToModule(ctx context.Context, senderModule, recipientModule string, amt sdk.Coins) error
 }
 
 // AccountKeeper defines the expected account keeper used for simulations
 type AccountKeeper interface {
-	GetModuleAccount(ctx sdk.Context, name string) auth.ModuleAccountI
+	GetModuleAccount(ctx context.Context, name string) types.ModuleAccountI
 }
 
 // IBCTransferKeeper defines the expected interface needed for distribution transfer
