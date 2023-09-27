@@ -39,7 +39,7 @@ func GetChainStateGen() *rapid.Generator[ChainState] {
 			valBalances := GetValBalancesGen().Draw(t, "ValBalances")
 			proposals := GetProposalsGen().Draw(t, "Proposals")
 			valPowers := GetValPowersGen().Draw(t, "ValPowers")
-			representativePowers := GetRepresentativePowersGen().Draw(t, "RepresentativePowers")
+			stakedTokens := GetStakedTokensGen().Draw(t, "StakedTokens")
 			params := GetParamsGen().Draw(t, "Params")
 			rewards := GetRewardsGen().Draw(t, "Rewards")
 			consumerChains := GetConsumerChainsGen().Draw(t, "ConsumerChains")
@@ -52,7 +52,7 @@ func GetChainStateGen() *rapid.Generator[ChainState] {
 				ValBalances:                    &valBalances,
 				Proposals:                      &proposals,
 				ValPowers:                      &valPowers,
-				RepresentativePowers:           &representativePowers,
+				StakedTokens:                   &stakedTokens,
 				Params:                         &params,
 				Rewards:                        &rewards,
 				ConsumerChains:                 &consumerChains,
@@ -125,12 +125,12 @@ func GetParamGen() *rapid.Generator[Param] {
 	})
 }
 
-func GetRepresentativePowersGen() *rapid.Generator[map[ValidatorID]uint] {
+func GetStakedTokensGen() *rapid.Generator[map[ValidatorID]uint] {
 	return rapid.Custom(func(t *rapid.T) map[ValidatorID]uint {
 		return rapid.MapOf(
 			GetValidatorIDGen(),
 			rapid.Uint(),
-		).Draw(t, "RepresentativePowers")
+		).Draw(t, "StakedTokens")
 	})
 }
 

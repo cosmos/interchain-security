@@ -10,7 +10,7 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 			},
 			State: State{
 				ChainID(consumerName): ChainState{
-					RepresentativePowers: &map[ValidatorID]uint{
+					StakedTokens: &map[ValidatorID]uint{
 						ValidatorID("alice"): 100000000,
 						ValidatorID("bob"):   40000000,
 					},
@@ -36,7 +36,7 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 			State: State{
 				ChainID(consumerName): ChainState{
 					// Check that delegators on gov-consumer chain can change representative powers
-					RepresentativePowers: &map[ValidatorID]uint{
+					StakedTokens: &map[ValidatorID]uint{
 						ValidatorID("alice"): 100500000,
 						ValidatorID("bob"):   40000000,
 					},
@@ -284,7 +284,7 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 						ValidatorID("carol"): 500,
 					},
 					// Check that slashing on the gov-consumer chain does not result in slashing for the representatives or their delegators
-					RepresentativePowers: &map[ValidatorID]uint{
+					StakedTokens: &map[ValidatorID]uint{
 						ValidatorID("alice"): 100500000,
 						ValidatorID("bob"):   40000000,
 					},
