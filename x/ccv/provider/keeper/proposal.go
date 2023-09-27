@@ -614,7 +614,8 @@ func (k Keeper) HandleEquivocationProposal(ctx sdk.Context, p *types.Equivocatio
 		if !k.GetSlashLog(ctx, types.NewProviderConsAddress(ev.GetConsensusAddress(k.ConsensusAddressCodec()))) {
 			return fmt.Errorf("no equivocation record found for validator %s", ev.GetConsensusAddress(k.ConsensusAddressCodec()).String())
 		}
-		k.evidenceKeeper.HandleEquivocationEvidence(ctx, ev)
+		// NOTE: REFACTOR OR REMOVE @MSalopek this is deprecated, or otherwise not aviailable in v50
+		// k.evidenceKeeper.HandleEquivocationEvidence(ctx, ev)
 	}
 	return nil
 }
