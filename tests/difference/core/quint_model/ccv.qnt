@@ -613,7 +613,7 @@ module CCV {
             Err("Received maturation is not for the oldest sentVSCPacket")
         } else {
             val currentReceivedMaturations = currentState.providerState.receivedMaturations
-            val newReceivedMaturations = currentReceivedMaturations.add(packet)
+            val newReceivedMaturations = currentReceivedMaturations.union(Set(packet))
             val newProviderState = currentState.providerState.with(
                 "receivedMaturations", newReceivedMaturations
             )
@@ -742,10 +742,6 @@ module CCV {
     // ccv timeout contains only consumers and provider, no other chains
     run CcvTimeoutSubsetTest =
         CcvTimeout.keys().forall(chain => ConsumerChains.contains(chain) or chain == PROVIDER_CHAIN)
-
-    // unbonding period contains consumers and provider, no other chains
-    def UnbondingPeriodInv = UnbondingPeriodPerChain.keys() == ConsumerChains.add(PROVIDER_CHAIN)
-
     
 }
 
@@ -844,7 +840,7 @@ module CCVDefaultStateMachine {
     import extraSpells.* from "./extraSpells"
 
     pure val consumerChains = Set("consumer1", "consumer2", "consumer3")
-    pure val chains = consumerChains.add(PROVIDER_CHAIN)
+    pure val chains = consumerChains.union(Set(PROVIDER_CHAIN))
     pure val unbondingPeriods = chains.mapBy(chain => 2 * Week)
     pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
 
