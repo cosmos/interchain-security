@@ -60,9 +60,16 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 		"byzantine validators", provAddrs,
 	)
 
-	if len(errors) > 0 {
-		return fmt.Errorf("failed to slash, jail, or tombstone validators: %v", errors)
+	// If we fail to slash all validators we return an error. However, if we only fail to slash some validators
+	// we just log an error to avoid having the whole `MsgSubmitMisbehaviour` failing and reverting the partial slashing.
+	if len(errors) == len(byzantineValidators) {
+		return fmt.Errorf("failed to slash, jail, or tombstone all validators: %v", errors)
 	}
+
+	if len(errors) > 0 {
+		logger.Error("failed to slash, jail, or tombstone validators: %v", errors)
+	}
+
 	return nil
 }
 
