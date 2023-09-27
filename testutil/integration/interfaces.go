@@ -19,8 +19,6 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -54,7 +52,7 @@ type ProviderApp interface {
 type ConsumerApp interface {
 	ibctesting.TestingApp
 
-	BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock
+	// BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock
 	GetConsumerKeeper() consumerkeeper.Keeper
 	GetSubspace(moduleName string) paramstypes.Subspace
 
