@@ -153,7 +153,7 @@ message GlobalSlashEntry {
 // Params defines the parameters for CCV Provider module
 message Params {
 
-  // Reserve 8th slot for deprecited max throttled packet param
+  // Reserve 8th slot for removed max throttled packet param
   reserved 8;
 
   ibc.lightclients.tendermint.v1.ClientState template_client = 1;
