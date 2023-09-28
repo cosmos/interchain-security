@@ -172,8 +172,9 @@ func (tr *TestRun) startChain(
 	}
 
 	tr.addChainToRelayer(addChainToRelayerAction{
-		Chain:     action.Chain,
-		Validator: action.Validators[0].Id,
+		Chain:      action.Chain,
+		Validator:  action.Validators[0].Id,
+		IsConsumer: action.IsConsumer,
 	}, verbose)
 
 	// store the fact that we started the chain
