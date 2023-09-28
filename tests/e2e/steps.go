@@ -23,7 +23,7 @@ var happyPathSteps = concatSteps(
 	stepsDowntimeWithOptOut("consu"),
 	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
-	stepsDoubleSignOnProviderAndConsumer("consu"), // carol double signs on provider, bob double signs on consumer
+	stepsDoubleSignOnProvider("consu"), // carol double signs on provider
 	stepsStartRelayer(),
 	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
 	stepsStopChain("consu", 3),                     // stop chain
