@@ -105,9 +105,9 @@ func (k Keeper) mustValidateFields() {
 	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")             // 9
 	ccv.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")           // 10
 	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")         // 11
-	ccv.PanicIfZeroOrNil(k.distributionKeeper, "distributionKeeper") // 13
-	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                 // 14
-	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")     // 15
+	ccv.PanicIfZeroOrNil(k.distributionKeeper, "distributionKeeper") // 12
+	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                 // 13
+	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")     // 14
 }
 
 // Logger returns a module-specific logger.
