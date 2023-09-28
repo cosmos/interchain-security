@@ -130,6 +130,13 @@ module CCVTypes {
         consumerStates: Chain -> ConsumerState
     }
 
+    // gets a protocol state that is initialized minimally.
+    pure def GetEmptyProtocolState(): ProtocolState = 
+        {
+            providerState: GetEmptyProviderState,
+            consumerStates: Map(),
+        }
+
     type Error = {
         message: str
     }
@@ -298,7 +305,31 @@ module CCV {
                 }
             }
         }
-    }
+    }   
+
+    // Defines a test state to test the deliverPacketToProvider function against.
+    pure val _DeliverPacketToProvider_TestState =
+        val currentState = GetEmptyProtocolState
+        val sender = "sender"
+        val providerState = currentState.providerState
+        val consumerState = GetEmptyConsumerState
+        // add the consumer to the consumerStates
+        val consumerStates = currentState.consumerStates.set(sender, consumerState)
+        val providerState2 = providerState.with(
+            "consumerStatus", providerState.consumerStatus.set(sender, RUNNING)
+        )
+        val providerState3 = providerState2.with(
+            "outstandingPacketsToConsumer", providerState2.outstandingPacketsToConsumer.set(sender, List({
+                id: 0,
+                validatorSet: Map(),
+                sendingTime: 0
+            }))
+        )
+        currentState.with(
+            "providerState", providerState3
+        ).with(
+            "consumerStates", consumerStates
+        )
 
     // Delivers the next queued VSCPacket from the provider chain to a consumer chain.
     // Only argument is the consumer chain, to which the packet will be delivered.
@@ -503,6 +534,7 @@ module CCV {
                 }
             }
         }
+
 
     // Takes the currentValidatorSet and puts it as the newest set of the voting history
     pure def enterCurValSetIntoBlock(chainState: ChainState): ChainState = {
@@ -714,48 +746,27 @@ module CCV {
                 (false, "")
             }
         }
-
-    // ===================
-    // ASSUMPTIONS ON MODEL PARAMETERS
-    // ===================
-
-    run UnbondingPeriodPositiveTest =
-        UnbondingPeriodPerChain.keys().forall(chain => UnbondingPeriodPerChain.get(chain) > 0)
-
-    run VscTimeoutPositiveTest =
-        VscTimeout > 0
-
-    run CcvTimeoutPositiveTest =
-        CcvTimeout.keys().forall(chain => CcvTimeout.get(chain) > 0)
-
-    run CcvTimeoutLargerThanUnbondingPeriodTest =
-        CcvTimeout.get(PROVIDER_CHAIN) > UnbondingPeriodPerChain.Values().Max()
-
-    run ProviderIsNotAConsumerTest =
-        not(ConsumerChains.contains(PROVIDER_CHAIN))
-
-    // ccv timeout contains exactly consumers and provider, no other chains
-    run CcvTimeoutKeysTest =
-        CcvTimeout.keys() == ConsumerChains.union(Set(PROVIDER_CHAIN))
-
-    // unbonding period contains exactly consumers and provider, no other chains
-    run UnbondingPeriodKeysTest =
-        UnbondingPeriodPerChain.keys() == ConsumerChains.union(Set(PROVIDER_CHAIN))
 }
 
-// A basic state machine that utilizes the CCV protocol.
-// Still leaves constants unassigned, just defines the state machine logic in general,
-// i.e. regardless of how many chains there are, what the unbonding periods are, etc.
-module CCVStatemachinLogic {
-    import Time.* from "./Time"
-    import CCV.*
-    import CCVTypes.*
 
+module CCVDefaultStateMachine {
+    // A basic state machine that utilizes the CCV protocol.
+    import Time.* from "./Time"
+    import CCVTypes.*
     import extraSpells.* from "./extraSpells"
 
-    var currentState: ProtocolState
+    pure val consumerChains = Set("consumer1", "consumer2", "consumer3")
+    pure val chains = consumerChains.union(Set(PROVIDER_CHAIN))
+    pure val unbondingPeriods = chains.mapBy(chain => 2 * Week)
+    pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
 
-    const InitialValidatorSet: ValidatorSet
+    pure val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10")
+    pure val InitialValidatorSet = nodes.mapBy(node => 100)
+
+    import CCV(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains).*
+
+
+    var currentState: ProtocolState
 
     action init: bool = all {
         val providerState = GetEmptyProviderState
@@ -826,23 +837,141 @@ module CCVStatemachinLogic {
             result.hasError == false,
             currentState' = result.newState,
         }
-}
 
-module CCVDefaultStateMachine {
-    // A basic state machine that utilizes the CCV protocol.
-    import Time.* from "./Time"
-    import CCVTypes.*
-    import extraSpells.* from "./extraSpells"
+    // negative voting powers give an error
+    run VotingPowerNegativeTest =
+        votingPowerChange(
+            GetEmptyProtocolState,
+            "validator",
+            -1
+        ).hasError
 
-    pure val consumerChains = Set("consumer1", "consumer2", "consumer3")
-    pure val chains = consumerChains.union(Set(PROVIDER_CHAIN))
-    pure val unbondingPeriods = chains.mapBy(chain => 2 * Week)
-    pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
+    run VotingPowerOkTest =
+        val result = votingPowerChange(
+            GetEmptyProtocolState,
+            "validator",
+            0
+        )
+        not(result.hasError) and
+        result.newState.providerState.chainState.currentValidatorSet.keys().contains("validator") and
+        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 0
 
-    pure val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10")
-    pure val initialValidatorSet = nodes.mapBy(node => 100)
+    // make sure that VotingPowerChange ONLY changes the current validator set, not the history
+    run VotingPowerChangeDoesNotChangeHistoryTest =
+        val result = votingPowerChange(
+            GetEmptyProtocolState,
+            "validator",
+            0
+        )
+        not(result.hasError) and
+        result.newState.providerState.chainState.votingPowerHistory == List()
 
-    import CCVStatemachinLogic(InitialValidatorSet = initialValidatorSet, VscTimeout = 5 * Week, CcvTimeout = unbondingPeriods, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains).*
+    run DeliverPacketToProviderHappyPathTest =
+        val result = deliverPacketToProvider(_DeliverPacketToProvider_TestState, "sender")
+        val newProviderState = result.newState.providerState
+        val newConsumerState = result.newState.consumerStates.get("sender")
+        not(result.hasError) and
+        newProviderState.receivedMaturations.size() == 1 and
+        newConsumerState.outstandingPacketsToProvider.length() == 0
+
+    run DeliverPacketToProviderTimeoutTest =
+        // set the timestamp to be after the timeout
+        val testState = _DeliverPacketToProvider_TestState.with(
+            "providerState", _DeliverPacketToProvider_TestState.providerState.with(
+                "chainState", _DeliverPacketToProvider_TestState.providerState.chainState.with(
+                    "lastTimestamp", CcvTimeout.get("sender") + 1
+                )
+            )
+        )
+        val result = deliverPacketToProvider(testState, "sender")
+        val newProviderState = result.newState.providerState
+        val newConsumerState = result.newState.consumerStates.get("sender")
+        not(result.hasError) and
+        newProviderState.receivedMaturations.size() == 0 and
+        newConsumerState.outstandingPacketsToProvider.length() == 0 and
+        newProviderState.consumerStatus.get("sender") == STOPPED
+
+    run ConsumerStatusMapHappyPathTest = 
+        val currentConsumerStatusMap = Map(
+            "chain1" -> UNUSED,
+            "chain2" -> RUNNING,
+            "chain3" -> STOPPED
+        )
+        val res = getNewConsumerStatusMap(
+            currentConsumerStatusMap,
+            Set("chain1"),
+            Set("chain3")
+        )
+        res._2 == "" and
+        res._1.get("chain1") == RUNNING and
+        res._1.get("chain2") == RUNNING and
+        res._1.get("chain3") == UNUSED
+
+    run ConsumerStatusMapAlreadyRunningTest =
+        val currentConsumerStatusMap = Map(
+            "chain1" -> UNUSED,
+            "chain2" -> RUNNING,
+            "chain3" -> STOPPED
+        )
+        val res = getNewConsumerStatusMap(
+            currentConsumerStatusMap,
+            Set("chain2"),
+            Set("chain3")
+        )
+        res._2 == "Cannot start a consumer that is already running"
+
+    run ConsumerStatusMapAlreadyStoppedTest =
+        val currentConsumerStatusMap = Map(
+            "chain1" -> UNUSED,
+            "chain2" -> RUNNING,
+            "chain3" -> STOPPED
+        )
+        val res = getNewConsumerStatusMap(
+            currentConsumerStatusMap,
+            Set("chain1"),
+            Set("chain3")
+        )
+        res._2 == "Cannot stop a consumer that is not running"
+
+    run ChainBothInStartAndStopTest =
+        val currentConsumerStatusMap = Map(
+            "chain1" -> UNUSED,
+            "chain2" -> RUNNING,
+            "chain3" -> STOPPED
+        )
+        val res = getNewConsumerStatusMap(
+            currentConsumerStatusMap,
+            Set("chain1"),
+            Set("chain1")
+        )
+        res._2 == "Cannot start and stop a consumer at the same time"
+
+    // ===================
+    // ASSUMPTIONS ON MODEL PARAMETERS
+    // ===================
+
+    run UnbondingPeriodPositiveTest =
+        UnbondingPeriodPerChain.keys().forall(chain => UnbondingPeriodPerChain.get(chain) > 0)
+
+    run VscTimeoutPositiveTest =
+        VscTimeout > 0
+
+    run CcvTimeoutPositiveTest =
+        CcvTimeout.keys().forall(chain => CcvTimeout.get(chain) > 0)
+
+    run CcvTimeoutLargerThanUnbondingPeriodTest =
+        CcvTimeout.get(PROVIDER_CHAIN) > UnbondingPeriodPerChain.Values().Max()
+
+    run ProviderIsNotAConsumerTest =
+        not(ConsumerChains.contains(PROVIDER_CHAIN))
+
+    // ccv timeout contains exactly consumers and provider, no other chains
+    run CcvTimeoutKeysTest =
+        CcvTimeout.keys() == ConsumerChains.union(Set(PROVIDER_CHAIN))
+
+    // unbonding period contains exactly consumers and provider, no other chains
+    run UnbondingPeriodKeysTest =
+        UnbondingPeriodPerChain.keys() == ConsumerChains.union(Set(PROVIDER_CHAIN))
 
     run InitTest: bool = { 
         init.then(
@@ -866,7 +995,19 @@ module CCVDefaultStateMachine {
                 assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet)),
                 assert(currentState.providerState.chainState.currentValidatorSet == InitialValidatorSet),
                 assert(currentState.providerState.chainState.lastTimestamp == 0),
-                VotingPowerChange("node1", 50)
-            })
-    }
+                val firstState = currentState // snapshot the first state
+                VotingPowerChange("node1", 50).then(all {
+                            // ensure that the only change is that the voting power of node1 is changed
+                            assert(currentState == firstState.with(
+                                "providerState", firstState.providerState.with(
+                                    "chainState", firstState.providerState.chainState.with(
+                                        "currentValidatorSet", firstState.providerState.chainState.currentValidatorSet.put("node1", 50)
+                                    )
+                                )
+                            )),
+                            currentState' = currentState
+                        })
+                    }
+            )
+        }
 }
