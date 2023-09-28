@@ -257,16 +257,19 @@ module CCV {
     // Only argument is the consumer chain, from which the packet will be delivered.
     // If this packet will time out on the provider on delivery,
     // the consumer will be dropped.
-    pure def deliverPacketToProvider(currentState: ProtocolState, sender: Chain): Result = {
+    // The first return is the result of the operation, the second result is a boolean
+    // that indicates whether the consumer timed out or not.
+    // If the result has an error, the second return should be ignored.
+    pure def deliverPacketToProvider(currentState: ProtocolState, sender: Chain): (Result, bool) = {
         if (not(isCurrentlyConsumer(sender, currentState.providerState))) {
-            Err("Sender is not currently a consumer - must have 'running' status!")
+            (Err("Sender is not currently a consumer - must have 'running' status!"), false)
         } else if (length(currentState.consumerStates.get(sender).outstandingPacketsToProvider) == 0) {
-            Err("No outstanding packets to deliver")
+            (Err("No outstanding packets to deliver"), false)
         } else {
             val packet = currentState.consumerStates.get(sender).outstandingPacketsToProvider.head()
             // if the packet has timed out, drop the consumer. its state doesn't matter anymore
             val timeout = CcvTimeout.get(sender)
-            if(packet.sendingTime + CcvTimeout.get(sender) > currentState.providerState.chainState.lastTimestamp) {
+            if(packet.sendingTime + CcvTimeout.get(sender) < currentState.providerState.chainState.lastTimestamp) {
                 // drop consumer
                 val result = getNewConsumerStatusMap(
                     currentState.providerState.consumerStatus,
@@ -277,7 +280,7 @@ module CCV {
                 val newConsumerStatus = result._1
                 val err = result._2
                 if (err != "") {
-                    Err(err)
+                    (Err(err), false)
                 } else {
                     val newProviderState = currentState.providerState.with(
                         "consumerStatus", newConsumerStatus
@@ -285,22 +288,22 @@ module CCV {
                     val newState = currentState.with(
                         "providerState", newProviderState
                     )
-                    Ok(newState)
+                    (Ok(newState), true) // true because the packet timed out
                 }
             } else {
                 // the packet has not timed out, so receive it on the provider
                 val result = recvPacketOnProvider(currentState, sender, packet)
                 val tmpState = result.newState
                 if (result.hasError) {
-                    Err(result.error.message)
+                    (Err(result.error.message), false)
                 } else {
                     val result2 = removeOutstandingPacketFromConsumer(tmpState, sender)
                     val tmpState2 = result2.newState
                     val err2 = result2.error
                     if (result2.hasError) {
-                        Err(err2.message)
+                        (Err(err2.message), false)
                     } else {
-                        Ok(tmpState2)
+                        (Ok(tmpState2), false) // false because the packet did not time out
                     }
                 }
             }
@@ -335,15 +338,18 @@ module CCV {
     // Only argument is the consumer chain, to which the packet will be delivered.
     // If this packet will time out on the consumer on delivery,
     // the consumer will be dropped.
-    pure def deliverPacketToConsumer(currentState: ProtocolState, receiver: Chain): Result = {
+    // The first return is the result of the operation, the second result is a boolean
+    // that indicates whether the consumer timed out or not.
+    // If the result has an error, the second return should be ignored.
+    pure def deliverPacketToConsumer(currentState: ProtocolState, receiver: Chain): (Result, bool) = {
         if (not(isCurrentlyConsumer(receiver, currentState.providerState))) {
-            Err("Receiver is not currently a consumer - must have 'running' status!")
+            (Err("Receiver is not currently a consumer - must have 'running' status!"), false)
         } else if (length(currentState.providerState.outstandingPacketsToConsumer.get(receiver)) == 0) {
-            Err("No outstanding packets to deliver")
+            (Err("No outstanding packets to deliver"), false)
         } else {
             val packet = currentState.providerState.outstandingPacketsToConsumer.get(receiver).head()
             // check if the consumer timed out
-            if (packet.sendingTime + CcvTimeout.get(PROVIDER_CHAIN) > currentState.consumerStates.get(receiver).chainState.lastTimestamp) {
+            if (packet.sendingTime + CcvTimeout.get(PROVIDER_CHAIN) < currentState.consumerStates.get(receiver).chainState.lastTimestamp) {
                 // drop consumer
                 val result = getNewConsumerStatusMap(
                     currentState.providerState.consumerStatus,
@@ -354,7 +360,7 @@ module CCV {
                 val newConsumerStatus = result._1
                 val err = result._2
                 if (err != "") {
-                    Err(err)
+                    (Err(err), false)
                 } else {
                     val newProviderState = currentState.providerState.with(
                         "consumerStatus", newConsumerStatus
@@ -362,23 +368,22 @@ module CCV {
                     val newState = currentState.with(
                         "providerState", newProviderState
                     )
-                    // Ok(newState)
-                    Err("not implemented")
+                    (Ok(newState), true) // true because the packet timed out
                 }
             } else {
                 // the packet has not timed out, so receive it on the consumer
                 val result = recvPacketOnConsumer(currentState, receiver, packet)
                 val tmpState = result.newState
                 if (result.hasError) {
-                    Err(result.error.message)
+                    (Err(result.error.message), false)
                 } else {
                     val result2 = removeOutstandingPacketFromProvider(tmpState, receiver)
                     val tmpState2 = result2.newState
                     val err2 = result2.error
                     if (result2.hasError) {
-                        Err(err2.message)
+                        (Err(err2.message), false)
                     } else {
-                        Ok(tmpState2)
+                        (Ok(tmpState2), false) // false because the packet did not time out
                     }
                 }
             }
@@ -831,7 +836,8 @@ module CCVDefaultStateMachine {
     // The receiver receives the next outstanding VSCPacket from the provider.
     // This will time out the consumer if the packet timeout has passed on the receiver.
     action DeliverVSCPacket(receiver: Chain): bool = 
-        val result = deliverPacketToConsumer(currentState, receiver)
+        val resultAndTimeout = deliverPacketToConsumer(currentState, receiver)
+        val result = resultAndTimeout._1
         all {
             result.hasError == false,
             currentState' = result.newState,
@@ -840,7 +846,8 @@ module CCVDefaultStateMachine {
     // The provider receives the next outstanding VSCMaturedPacket from the sender.
     // This will time out the consumer if the packet timeout has passed on the provider.
     action DeliverVSCMaturedPacket(sender: Chain): bool =
-        val result = deliverPacketToProvider(currentState, sender)
+        val resultAndTimeout = deliverPacketToProvider(currentState, sender)
+        val result = resultAndTimeout._1
         all {
             result.hasError == false,
             currentState' = result.newState,
@@ -970,21 +977,44 @@ module CCVLogicTest {
         result.newState.providerState.chainState.votingPowerHistory == List()
     }
 
-    run DeliverPacketToProviderHappyPathTest =
-    {
-        // add a packet on the consumer
-        val testState = _DeliverPacketToProvider_TestState.with(
-            "consumerStates", _DeliverPacketToProvider_TestState.consumerStates.put(
-                "sender", _DeliverPacketToProvider_TestState.consumerStates.get("sender").with(
-                    "outstandingPacketsToProvider", List({
-                        id: 0,
-                        sendingTime: 0
-                    })
-                )
+    // add a packet on the consumer
+    pure val DeliverPacketToProviderHappyPathTest_testState = _DeliverPacketToProvider_TestState.with(
+        "consumerStates", _DeliverPacketToProvider_TestState.consumerStates.put(
+            "sender", _DeliverPacketToProvider_TestState.consumerStates.get("sender").with(
+                "outstandingPacketsToProvider", List({
+                    id: 0,
+                    sendingTime: 0
+                })
             )
         )
+    ).with(
+        // put an entry into sentVSCPacket on the provider that corresponds to the packet we put on the consumer
+        "providerState", _DeliverPacketToProvider_TestState.providerState.with(
+            "sentVSCPackets", _DeliverPacketToProvider_TestState.providerState.sentVSCPackets.put(
+                "sender", List({
+                    id: 0,
+                    validatorSet: _DeliverPacketToProvider_TestState.providerState.chainState.currentValidatorSet,
+                    sendingTime: 0
+                })
+            )
+        )
+    )
 
-        val result = deliverPacketToProvider(testState, "sender")
+    pure val DeliverPacketToProviderHappyPathTest_resultAndTimeout = deliverPacketToProvider(DeliverPacketToProviderHappyPathTest_testState, "sender")
+
+    // test is split to be easier to pinpoint which assertion failed
+    run DidNotTimeOut_DeliverPacketToProviderHappyPathTest =
+    {
+        val result = DeliverPacketToProviderHappyPathTest_resultAndTimeout._1
+        val timeout = DeliverPacketToProviderHappyPathTest_resultAndTimeout._2
+        not(result.hasError) and
+        not(timeout)
+    }
+
+    run StateModificationOK_DeliverPacketToProviderHappyPathTest =
+    {
+        val result = DeliverPacketToProviderHappyPathTest_resultAndTimeout._1
+        val timedOut = DeliverPacketToProviderHappyPathTest_resultAndTimeout._2
         val newProviderState = result.newState.providerState
         val newConsumerState = result.newState.consumerStates.get("sender")
         not(result.hasError) and
@@ -992,17 +1022,32 @@ module CCVLogicTest {
         newConsumerState.outstandingPacketsToProvider.length() == 0
     }
 
-    run DeliverPacketToProviderTimeoutTest =
-    {
-        // set the timestamp to be after the timeout
-        val testState = _DeliverPacketToProvider_TestState.with(
-            "providerState", _DeliverPacketToProvider_TestState.providerState.with(
-                "chainState", _DeliverPacketToProvider_TestState.providerState.chainState.with(
+    // add a packet on the consumer
+    pure val DeliverPacketToProviderTimeoutTest_testState = DeliverPacketToProviderHappyPathTest_testState.with(
+            "providerState", DeliverPacketToProviderHappyPathTest_testState.providerState.with(
+                "chainState", DeliverPacketToProviderHappyPathTest_testState.providerState.chainState.with(
+                    // set the timestamp to be after the timeout
                     "lastTimestamp", CcvTimeout.get("sender") + 1
                 )
             )
         )
-        val result = deliverPacketToProvider(testState, "sender")
+
+    pure val DeliverPacketToProviderTimeoutTest_resultAndTimeout = deliverPacketToProvider(DeliverPacketToProviderTimeoutTest_testState, "sender")
+
+    run DidTimeOut_DeliverPacketToProviderTimeoutTest =
+    {
+        val result = DeliverPacketToProviderTimeoutTest_resultAndTimeout._1
+        val timedOut = DeliverPacketToProviderTimeoutTest_resultAndTimeout._2
+        val newProviderState = result.newState.providerState
+        val newConsumerState = result.newState.consumerStates.get("sender")
+        not(result.hasError) and
+        timedOut
+    }
+
+    run StateModificationOK_DeliverPacketToProviderTimeoutTest =
+    {
+        val result = DeliverPacketToProviderTimeoutTest_resultAndTimeout._1
+        val timedOut = DeliverPacketToProviderTimeoutTest_resultAndTimeout._2
         val newProviderState = result.newState.providerState
         val newConsumerState = result.newState.consumerStates.get("sender")
         not(result.hasError) and
