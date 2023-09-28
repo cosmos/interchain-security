@@ -455,7 +455,8 @@ func (tr TestRun) voteGovProposal(
 	}
 
 	wg.Wait()
-	time.Sleep(time.Duration(tr.chainConfigs[action.chain].votingWaitTime)*time.Second + 10*time.Second)
+	time.Sleep(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
+	tr.waitBlocks(action.chain, 1, 5*time.Second)
 }
 
 type startConsumerChainAction struct {
