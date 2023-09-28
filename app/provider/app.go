@@ -2,12 +2,13 @@ package app
 
 import (
 	"fmt"
-	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
 	"io"
 	stdlog "log"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
 
 	appparams "github.com/cosmos/interchain-security/v2/app/params"
 

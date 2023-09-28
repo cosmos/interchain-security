@@ -36,7 +36,7 @@ FROM informalofftermatt/cometmock:latest as cometmock-builder
 # Get GoRelayer
 FROM informalofftermatt/gorelayer:nogas AS gorelayer-builder
 
-FROM --platform=linux/amd64 fedora:36
+FROM --platform=linux/arm64 fedora:36
 RUN dnf update -y
 RUN dnf install -y which iproute iputils procps-ng vim-minimal tmux net-tools htop jq
 USER root
