@@ -116,10 +116,10 @@ func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gom
 }
 
 // GetRedelegationsFromSrcValidator mocks base method.
-func (m *MockStakingKeeper) GetRedelegationsFromSrcValidator(ctx types.Context, valAddr types.ValAddress) []types4.Redelegation {
+func (m *MockStakingKeeper) GetRedelegationsFromSrcValidator(ctx types.Context, valAddr types.ValAddress) []types3.Redelegation {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRedelegationsFromSrcValidator", ctx, valAddr)
-	ret0, _ := ret[0].([]types4.Redelegation)
+	ret0, _ := ret[0].([]types3.Redelegation)
 	return ret0
 }
 
@@ -130,10 +130,10 @@ func (mr *MockStakingKeeperMockRecorder) GetRedelegationsFromSrcValidator(ctx, v
 }
 
 // GetUnbondingDelegationsFromValidator mocks base method.
-func (m *MockStakingKeeper) GetUnbondingDelegationsFromValidator(ctx types.Context, valAddr types.ValAddress) []types4.UnbondingDelegation {
+func (m *MockStakingKeeper) GetUnbondingDelegationsFromValidator(ctx types.Context, valAddr types.ValAddress) []types3.UnbondingDelegation {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUnbondingDelegationsFromValidator", ctx, valAddr)
-	ret0, _ := ret[0].([]types4.UnbondingDelegation)
+	ret0, _ := ret[0].([]types3.UnbondingDelegation)
 	return ret0
 }
 
@@ -307,7 +307,7 @@ func (mr *MockStakingKeeperMockRecorder) Slash(arg0, arg1, arg2, arg3, arg4, arg
 }
 
 // SlashRedelegation mocks base method.
-func (m *MockStakingKeeper) SlashRedelegation(arg0 types.Context, arg1 types4.Validator, arg2 types4.Redelegation, arg3 int64, arg4 types.Dec) types.Int {
+func (m *MockStakingKeeper) SlashRedelegation(arg0 types.Context, arg1 types3.Validator, arg2 types3.Redelegation, arg3 int64, arg4 types.Dec) types.Int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SlashRedelegation", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(types.Int)
@@ -321,7 +321,7 @@ func (mr *MockStakingKeeperMockRecorder) SlashRedelegation(arg0, arg1, arg2, arg
 }
 
 // SlashUnbondingDelegation mocks base method.
-func (m *MockStakingKeeper) SlashUnbondingDelegation(arg0 types.Context, arg1 types4.UnbondingDelegation, arg2 int64, arg3 types.Dec) types.Int {
+func (m *MockStakingKeeper) SlashUnbondingDelegation(arg0 types.Context, arg1 types3.UnbondingDelegation, arg2 int64, arg3 types.Dec) types.Int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SlashUnbondingDelegation", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(types.Int)
