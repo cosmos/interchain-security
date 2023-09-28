@@ -3,7 +3,7 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // JailValidator jails the validator with the given provider consensus address

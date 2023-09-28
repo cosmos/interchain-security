@@ -1,12 +1,12 @@
 package integration
 
 import (
+	tmcrypto "github.com/cometbft/cometbft/crypto"
+	tmtypes "github.com/cometbft/cometbft/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	testutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	"github.com/tendermint/tendermint/crypto"
-	tmtypes "github.com/tendermint/tendermint/types"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // TestHandleConsumerDoubleVoting verifies that handling a double voting evidence
@@ -80,7 +80,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		name    string
 		ev      *tmtypes.DuplicateVoteEvidence
 		chainID string
-		pubkey  crypto.PubKey
+		pubkey  tmcrypto.PubKey
 		expPass bool
 	}{
 		{

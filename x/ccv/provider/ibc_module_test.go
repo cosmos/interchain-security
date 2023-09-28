@@ -3,20 +3,23 @@ package provider_test
 import (
 	"testing"
 
+	"github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider"
-	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
+
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
+	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // TestOnChanOpenInit tests the provider's OnChanOpenInit method against spec.
@@ -165,7 +168,7 @@ func TestOnChanOpenTry(t *testing.T) {
 
 		if tc.expPass {
 			require.NoError(t, err)
-			md := &providertypes.HandshakeMetadata{}
+			md := &ccv.HandshakeMetadata{}
 			err = md.Unmarshal([]byte(metadata))
 			require.NoError(t, err)
 			require.Equal(t, moduleAcct.BaseAccount.Address, md.ProviderFeePoolAddr,
@@ -333,5 +336,64 @@ func TestOnChanOpenConfirm(t *testing.T) {
 			require.Error(t, err)
 		}
 		ctrl.Finish()
+	}
+}
+
+func TestUnmarshalConsumerPacket(t *testing.T) {
+	testCases := []struct {
+		name               string
+		packet             channeltypes.Packet
+		expectedPacketData ccv.ConsumerPacketData
+	}{
+		{
+			name: "vsc matured",
+			packet: channeltypes.NewPacket(
+				ccv.ConsumerPacketData{
+					Type: ccv.VscMaturedPacket,
+					Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
+						VscMaturedPacketData: &ccv.VSCMaturedPacketData{
+							ValsetUpdateId: 420,
+						},
+					},
+				}.GetBytes(),
+				342, "sourcePort", "sourceChannel", "destinationPort", "destinationChannel", types.Height{}, 0,
+			),
+			expectedPacketData: ccv.ConsumerPacketData{
+				Type: ccv.VscMaturedPacket,
+				Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
+					VscMaturedPacketData: &ccv.VSCMaturedPacketData{
+						ValsetUpdateId: 420,
+					},
+				},
+			},
+		},
+		{
+			name: "slash packet",
+			packet: channeltypes.NewPacket(
+				ccv.ConsumerPacketData{
+					Type: ccv.SlashPacket,
+					Data: &ccv.ConsumerPacketData_SlashPacketData{
+						SlashPacketData: &ccv.SlashPacketData{
+							ValsetUpdateId: 789,
+						},
+					},
+				}.GetBytes(), // Note packet data is converted to v1 bytes here
+				342, "sourcePort", "sourceChannel", "destinationPort", "destinationChannel", types.Height{}, 0,
+			),
+			expectedPacketData: ccv.ConsumerPacketData{
+				Type: ccv.SlashPacket,
+				Data: &ccv.ConsumerPacketData_SlashPacketData{
+					SlashPacketData: &ccv.SlashPacketData{
+						ValsetUpdateId: 789,
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		actualConsumerPacketData, err := provider.UnmarshalConsumerPacket(tc.packet)
+		require.NoError(t, err)
+		require.Equal(t, tc.expectedPacketData, actualConsumerPacketData)
 	}
 }

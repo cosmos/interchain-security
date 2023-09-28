@@ -2,8 +2,11 @@ package integration
 
 import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // Tests the tracking of historical info in the context of new blocks being committed
@@ -71,7 +74,7 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 			expLen: 0,
 		},
 		{
-			height: initHeight + consumertypes.DefaultHistoricalEntries + 2,
+			height: initHeight + ccvtypes.DefaultHistoricalEntries + 2,
 			found:  true,
 			expLen: initValsetLen + 2,
 		},

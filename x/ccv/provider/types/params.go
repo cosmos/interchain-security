@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 const (
@@ -97,8 +98,6 @@ func DefaultParams() Params {
 			clienttypes.Height{}, // latest(initial) height
 			commitmenttypes.GetSDKSpecs(),
 			[]string{"upgrade", "upgradedIBCState"},
-			true,
-			true,
 		),
 		DefaultTrustingPeriodFraction,
 		ccvtypes.DefaultCCVTimeoutPeriod,
@@ -178,13 +177,13 @@ func ValidateTemplateClient(i interface{}) error {
 	// populate zeroed fields with valid fields
 	copiedClient.ChainId = "chainid"
 
-	trustPeriod, err := ccvtypes.CalculateTrustPeriod(consumertypes.DefaultConsumerUnbondingPeriod, DefaultTrustingPeriodFraction)
+	trustPeriod, err := ccvtypes.CalculateTrustPeriod(ccvtypes.DefaultConsumerUnbondingPeriod, DefaultTrustingPeriodFraction)
 	if err != nil {
 		return fmt.Errorf("invalid TrustPeriodFraction: %T", err)
 	}
 	copiedClient.TrustingPeriod = trustPeriod
 
-	copiedClient.UnbondingPeriod = consumertypes.DefaultConsumerUnbondingPeriod
+	copiedClient.UnbondingPeriod = ccvtypes.DefaultConsumerUnbondingPeriod
 	copiedClient.LatestHeight = clienttypes.NewHeight(0, 1)
 
 	if err := copiedClient.Validate(); err != nil {

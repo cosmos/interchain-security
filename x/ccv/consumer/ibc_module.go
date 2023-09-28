@@ -4,19 +4,21 @@ import (
 	"fmt"
 	"strings"
 
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+
 	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
-	"github.com/cosmos/interchain-security/v2/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/types"
+
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // OnChanOpenInit implements the IBCModule interface
@@ -124,7 +126,7 @@ func (am AppModule) OnChanOpenAck(
 			"provider channel: %s already established", providerChannel)
 	}
 
-	var md providertypes.HandshakeMetadata
+	var md types.HandshakeMetadata
 	if err := (&md).Unmarshal([]byte(counterpartyMetadata)); err != nil {
 		return errorsmod.Wrapf(types.ErrInvalidHandshakeMetadata,
 			"error unmarshalling ibc-ack metadata: \n%v; \nmetadata: %v", err, counterpartyMetadata)

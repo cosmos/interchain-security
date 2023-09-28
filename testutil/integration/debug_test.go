@@ -6,11 +6,11 @@ import (
 	"reflect"
 	"testing"
 
-	appConsumer "github.com/cosmos/interchain-security/v2/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/v2/app/consumer-democracy"
-	appProvider "github.com/cosmos/interchain-security/v2/app/provider"
-	integr "github.com/cosmos/interchain-security/v2/tests/integration"
-	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
+	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/v3/app/consumer-democracy"
+	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
+	integr "github.com/cosmos/interchain-security/v3/tests/integration"
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 )
 
 // runCCVTestByName runs a single CCV integration test by name, using a CCVTestSuite
@@ -85,6 +85,10 @@ func TestEndBlockRD(t *testing.T) {
 	runCCVTestByName(t, "TestEndBlockRD")
 }
 
+func TestSendRewardsToProvider(t *testing.T) {
+	runCCVTestByName(t, "TestSendRewardsToProvider")
+}
+
 //
 // Expired client tests
 //
@@ -155,10 +159,6 @@ func TestStopConsumerChain(t *testing.T) {
 
 func TestStopConsumerOnChannelClosed(t *testing.T) {
 	runCCVTestByName(t, "TestStopConsumerOnChannelClosed")
-}
-
-func TestProviderChannelClosed(t *testing.T) {
-	runCCVTestByName(t, "TestProviderChannelClosed")
 }
 
 //
@@ -279,4 +279,11 @@ func TestCheckMisbehaviour(t *testing.T) {
 
 func TestHandleConsumerDoubleVoting(t *testing.T) {
 	runCCVTestByName(t, "TestHandleConsumerDoubleVoting")
+}
+
+// Throttle retry tests
+//
+
+func TestSlashRetries(t *testing.T) {
+	runCCVTestByName(t, "TestSlashRetries")
 }

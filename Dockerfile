@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.19-alpine AS is-builder
+
+FROM golang:1.20-alpine AS is-builder
 
 ENV PACKAGES curl make git libc-dev bash gcc linux-headers
 RUN apk add --no-cache $PACKAGES
@@ -35,6 +36,12 @@ FROM informalofftermatt/cometmock:latest as cometmock-builder
 
 # Get GoRelayer
 FROM informalofftermatt/gorelayer:nogas AS gorelayer-builder
+
+# Get CometMock
+FROM ghcr.io/informalsystems/cometmock:v0.37.x as cometmock-builder
+
+# Get GoRelayer
+FROM ghcr.io/informalsystems/relayer-no-gas-sim:v2.3.0-rc4-no-gas-sim AS gorelayer-builder
 
 FROM --platform=linux/amd64 fedora:36
 RUN dnf update -y

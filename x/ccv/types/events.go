@@ -8,14 +8,15 @@ const (
 	EventTypeFeeTransferChannelOpened   = "fee_transfer_channel_opened"
 	EventTypeConsumerClientCreated      = "consumer_client_created"
 	EventTypeAssignConsumerKey          = "assign_consumer_key"
-	EventTypeSubmitConsumerMisbehaviour = "submit_consumer_misbehaviour"
-	EventTypeSubmitConsumerDoubleVoting = "submit_consumer_double_voting"
-	EventTypeExecuteConsumerChainSlash  = "execute_consumer_chain_slash"
-	EventTypeFeeDistribution            = "fee_distribution"
-	EventTypeConsumerSlashRequest       = "consumer_slash_request"
-	EventTypeVSCMatured                 = "vsc_matured"
 	EventTypeAddConsumerRewardDenom     = "add_consumer_reward_denom"
 	EventTypeRemoveConsumerRewardDenom  = "remove_consumer_reward_denom"
+	EventTypeSubmitConsumerMisbehaviour = "submit_consumer_misbehaviour"
+	EventTypeSubmitConsumerDoubleVoting = "submit_consumer_double_voting"
+
+	EventTypeExecuteConsumerChainSlash = "execute_consumer_chain_slash"
+	EventTypeFeeDistribution           = "fee_distribution"
+	EventTypeConsumerSlashRequest      = "consumer_slash_request"
+	EventTypeVSCMatured                = "vsc_matured"
 
 	AttributeKeyAckSuccess = "success"
 	AttributeKeyAck        = "acknowledgement"
@@ -43,10 +44,11 @@ const (
 	AttributeConsumerDoubleVoting     = "consumer_double_voting"
 
 	AttributeDistributionCurrentHeight = "current_distribution_height"
-	AttributeDistributionNextHeight    = "next_distribution_height"
-	AttributeDistributionFraction      = "distribution_fraction"
-	AttributeDistributionTotal         = "total"
-	AttributeDistributionToProvider    = "provider_amount"
+	//#nosec G101 -- (false positive) this is not a hardcoded credential
+	AttributeDistributionNextHeight = "next_distribution_height"
+	AttributeDistributionFraction   = "distribution_fraction"
+	AttributeDistributionTotal      = "total"
+	AttributeDistributionToProvider = "provider_amount"
 
 	AttributeConsumerRewardDenom = "consumer_reward_denom"
 )

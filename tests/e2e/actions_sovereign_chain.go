@@ -10,10 +10,10 @@ import (
 )
 
 type StartSovereignChainAction struct {
-	chain      chainID
-	validators []StartChainValidator
+	Chain      ChainID
+	Validators []StartChainValidator
 	// Genesis changes specific to this action, appended to genesis changes defined in chain config
-	genesisChanges string
+	GenesisChanges string
 }
 
 // calls a simplified startup script (start-sovereign.sh) and runs a validator node
@@ -38,20 +38,20 @@ func (tr TestRun) startSovereignChain(
 	}
 
 	var validators []jsonValAttrs
-	for _, val := range action.validators {
+	for _, val := range action.Validators {
 		validators = append(validators, jsonValAttrs{
-			Mnemonic:         tr.validatorConfigs[val.id].mnemonic,
-			NodeKey:          tr.validatorConfigs[val.id].nodeKey,
-			ValId:            fmt.Sprint(val.id),
-			PrivValidatorKey: tr.validatorConfigs[val.id].privValidatorKey,
-			Allocation:       fmt.Sprint(val.allocation) + "stake",
-			Stake:            fmt.Sprint(val.stake) + "stake",
-			IpSuffix:         tr.validatorConfigs[val.id].ipSuffix,
+			Mnemonic:         tr.validatorConfigs[val.Id].Mnemonic,
+			NodeKey:          tr.validatorConfigs[val.Id].NodeKey,
+			ValId:            fmt.Sprint(val.Id),
+			PrivValidatorKey: tr.validatorConfigs[val.Id].PrivValidatorKey,
+			Allocation:       fmt.Sprint(val.Allocation) + "stake",
+			Stake:            fmt.Sprint(val.Stake) + "stake",
+			IpSuffix:         tr.validatorConfigs[val.Id].IpSuffix,
 
-			ConsumerMnemonic:         tr.validatorConfigs[val.id].consumerMnemonic,
-			ConsumerPrivValidatorKey: tr.validatorConfigs[val.id].consumerPrivValidatorKey,
+			ConsumerMnemonic:         tr.validatorConfigs[val.Id].ConsumerMnemonic,
+			ConsumerPrivValidatorKey: tr.validatorConfigs[val.Id].ConsumerPrivValidatorKey,
 			// if true node will be started with consumer key for each consumer chain
-			StartWithConsumerKey: tr.validatorConfigs[val.id].useConsumerKey,
+			StartWithConsumerKey: tr.validatorConfigs[val.Id].UseConsumerKey,
 		})
 	}
 
@@ -62,16 +62,16 @@ func (tr TestRun) startSovereignChain(
 
 	// Concat genesis changes defined in chain config, with any custom genesis changes for this chain instantiation
 	var genesisChanges string
-	if action.genesisChanges != "" {
-		genesisChanges = chainConfig.genesisChanges + " | " + action.genesisChanges
+	if action.GenesisChanges != "" {
+		genesisChanges = chainConfig.GenesisChanges + " | " + action.GenesisChanges
 	} else {
-		genesisChanges = chainConfig.genesisChanges
+		genesisChanges = chainConfig.GenesisChanges
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
-		"/testnet-scripts/start-sovereign.sh", chainConfig.binaryName, string(vals),
-		string(chainConfig.chainId), chainConfig.ipPrefix, genesisChanges,
+	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "/bin/bash",
+		"/testnet-scripts/start-sovereign.sh", chainConfig.BinaryName, string(vals),
+		string(chainConfig.ChainId), chainConfig.IpPrefix, genesisChanges,
 		tr.tendermintConfigOverride,
 	)
 
@@ -100,21 +100,21 @@ func (tr TestRun) startSovereignChain(
 		log.Fatal(err)
 	}
 	tr.addChainToRelayer(addChainToRelayerAction{
-		chain:     action.chain,
-		validator: action.validators[0].id,
+		Chain:     action.Chain,
+		Validator: action.Validators[0].Id,
 	}, verbose)
 }
 
-type UpgradeProposalAction struct {
-	chainID       chainID
-	upgradeTitle  string
-	proposer      validatorID
-	upgradeHeight uint64
+type LegacyUpgradeProposalAction struct {
+	ChainID       ChainID
+	UpgradeTitle  string
+	Proposer      ValidatorID
+	UpgradeHeight uint64
 }
 
-func (tr *TestRun) submitUpgradeProposal(action UpgradeProposalAction, verbose bool) {
+func (tr *TestRun) submitLegacyUpgradeProposal(action LegacyUpgradeProposalAction, verbose bool) {
 	submit := fmt.Sprintf(
-		`%s tx gov submit-proposal software-upgrade %s \
+		`%s tx gov submit-legacy-proposal software-upgrade %s \
 		--title  %s \
 		--deposit 10000000stake \
 		--upgrade-height %s \
@@ -126,20 +126,20 @@ func (tr *TestRun) submitUpgradeProposal(action UpgradeProposalAction, verbose b
 		--chain-id %s \
 		--home %s \
 		--node %s \
-		-b block \
+		--no-validate \
 		-y`,
-		tr.chainConfigs[chainID("sover")].binaryName,
-		action.upgradeTitle,
-		action.upgradeTitle,
-		fmt.Sprint(action.upgradeHeight),
-		action.proposer,
-		tr.chainConfigs[chainID("sover")].chainId,
-		tr.getValidatorHome(chainID("sover"), action.proposer),
-		tr.getValidatorNode(chainID("sover"), action.proposer),
+		tr.chainConfigs[ChainID("sover")].BinaryName,
+		action.UpgradeTitle,
+		action.UpgradeTitle,
+		fmt.Sprint(action.UpgradeHeight),
+		action.Proposer,
+		tr.chainConfigs[ChainID("sover")].ChainId,
+		tr.getValidatorHome(ChainID("sover"), action.Proposer),
+		tr.getValidatorNode(ChainID("sover"), action.Proposer),
 	)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
-		tr.containerConfig.instanceName,
+		tr.containerConfig.InstanceName,
 		"/bin/bash", "-c",
 		submit,
 	)
@@ -152,15 +152,17 @@ func (tr *TestRun) submitUpgradeProposal(action UpgradeProposalAction, verbose b
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	tr.waitBlocks(action.ChainID, 1, 15*time.Second)
 }
 
 type waitUntilBlockAction struct {
-	block uint
-	chain chainID
+	Block uint
+	Chain ChainID
 }
 
 func (tr *TestRun) waitUntilBlockOnChain(action waitUntilBlockAction) {
-	fmt.Println("waitUntilBlockOnChain is waiting for block:", action.block)
-	tr.waitUntilBlock(action.chain, action.block, 120*time.Second)
-	fmt.Println("waitUntilBlockOnChain done waiting for block:", action.block)
+	fmt.Println("waitUntilBlockOnChain is waiting for block:", action.Block)
+	tr.waitUntilBlock(action.Chain, action.Block, 120*time.Second)
+	fmt.Println("waitUntilBlockOnChain done waiting for block:", action.Block)
 }

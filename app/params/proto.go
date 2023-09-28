@@ -15,7 +15,7 @@ func MakeTestEncodingConfig() EncodingConfig {
 
 	return EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
-		Marshaler:         chainCodec,
+		Codec:             chainCodec,
 		TxConfig:          txCfg,
 		Amino:             amino,
 	}

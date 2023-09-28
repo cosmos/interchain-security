@@ -5,18 +5,18 @@ import (
 	"testing"
 	"time"
 
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck // see: https://github.com/cosmos/interchain-security/issues/236
 	"github.com/stretchr/testify/require"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
@@ -24,7 +24,7 @@ func TestConsumerAdditionProposalValidateBasic(t *testing.T) {
 
 	testCases := []struct {
 		name     string
-		proposal govtypes.Content
+		proposal govv1beta1.Content
 		expPass  bool
 	}{
 		{
@@ -245,7 +245,7 @@ func TestMarshalConsumerAdditionProposal(t *testing.T) {
 	// create codec
 	ir := codectypes.NewInterfaceRegistry()
 	types.RegisterInterfaces(ir)
-	govtypes.RegisterInterfaces(ir)
+	govv1.RegisterInterfaces(ir)
 	clienttypes.RegisterInterfaces(ir)
 	ibctmtypes.RegisterInterfaces(ir)
 	cdc := codec.NewProtoCodec(ir)
@@ -310,7 +310,7 @@ func TestConsumerAdditionProposalString(t *testing.T) {
 func TestEquivocationProposalValidateBasic(t *testing.T) {
 	tests := []struct {
 		name          string
-		proposal      govtypes.Content
+		proposal      govv1beta1.Content
 		expectedError string
 	}{
 		{
@@ -366,7 +366,7 @@ func TestEquivocationProposalValidateBasic(t *testing.T) {
 func TestChangeRewardDenomsProposalValidateBasic(t *testing.T) {
 	tcs := []struct {
 		name        string
-		proposal    govtypes.Content
+		proposal    govv1beta1.Content
 		expectError bool
 		expectPanic bool
 	}{

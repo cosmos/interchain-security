@@ -5,14 +5,15 @@ package types
 
 import (
 	fmt "fmt"
-	types3 "github.com/cosmos/cosmos-sdk/types"
+	crypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	types2 "github.com/cosmos/cosmos-sdk/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	types "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	types2 "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	_ "github.com/gogo/protobuf/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
-	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
-	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	_ "github.com/cosmos/gogoproto/gogoproto"
+	proto "github.com/cosmos/gogoproto/proto"
+	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
+	types "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	_07_tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	types3 "github.com/cosmos/interchain-security/v3/x/ccv/types"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
@@ -33,28 +34,34 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
-// If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time
-// or get slashed. It is recommended that spawn time occurs after the proposal end time.
+// ConsumerAdditionProposal is a governance proposal on the provider chain to
+// spawn a new consumer chain. If it passes, then all validators on the provider
+// chain are expected to validate the consumer chain at spawn time or get
+// slashed. It is recommended that spawn time occurs after the proposal end
+// time.
 type ConsumerAdditionProposal struct {
 	// the title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	// the description of the proposal
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	// the proposed chain-id of the new consumer chain, must be different from all other consumer chain ids of the executing
-	// provider chain.
+	// the proposed chain-id of the new consumer chain, must be different from all
+	// other consumer chain ids of the executing provider chain.
 	ChainId string `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	// the proposed initial height of new consumer chain.
-	// For a completely new chain, this will be {0,1}. However, it may be different if this is a chain that is converting to a consumer chain.
+	// For a completely new chain, this will be {0,1}. However, it may be
+	// different if this is a chain that is converting to a consumer chain.
 	InitialHeight types.Height `protobuf:"bytes,4,opt,name=initial_height,json=initialHeight,proto3" json:"initial_height"`
-	// The hash of the consumer chain genesis state without the consumer CCV module genesis params.
-	// It is used for off-chain confirmation of genesis.json validity by validators and other parties.
+	// The hash of the consumer chain genesis state without the consumer CCV
+	// module genesis params. It is used for off-chain confirmation of
+	// genesis.json validity by validators and other parties.
 	GenesisHash []byte `protobuf:"bytes,5,opt,name=genesis_hash,json=genesisHash,proto3" json:"genesis_hash,omitempty"`
-	// The hash of the consumer chain binary that should be run by validators on chain initialization.
-	// It is used for off-chain confirmation of binary validity by validators and other parties.
+	// The hash of the consumer chain binary that should be run by validators on
+	// chain initialization. It is used for off-chain confirmation of binary
+	// validity by validators and other parties.
 	BinaryHash []byte `protobuf:"bytes,6,opt,name=binary_hash,json=binaryHash,proto3" json:"binary_hash,omitempty"`
-	// spawn time is the time on the provider chain at which the consumer chain genesis is finalized and all validators
-	// will be responsible for starting their consumer chain validator node.
+	// spawn time is the time on the provider chain at which the consumer chain
+	// genesis is finalized and all validators will be responsible for starting
+	// their consumer chain validator node.
 	SpawnTime time.Time `protobuf:"bytes,7,opt,name=spawn_time,json=spawnTime,proto3,stdtime" json:"spawn_time"`
 	// Unbonding period for the consumer,
 	// which should be smaller than that of the provider in general.
@@ -67,8 +74,10 @@ type ConsumerAdditionProposal struct {
 	// during distribution events. The fraction is a string representing a
 	// decimal number. For example "0.75" would represent 75%.
 	ConsumerRedistributionFraction string `protobuf:"bytes,11,opt,name=consumer_redistribution_fraction,json=consumerRedistributionFraction,proto3" json:"consumer_redistribution_fraction,omitempty"`
-	// BlocksPerDistributionTransmission is the number of blocks between ibc-token-transfers from the consumer chain to the provider chain.
-	// On sending transmission event, `consumer_redistribution_fraction` of the accumulated tokens are sent to the consumer redistribution address.
+	// BlocksPerDistributionTransmission is the number of blocks between
+	// ibc-token-transfers from the consumer chain to the provider chain. On
+	// sending transmission event, `consumer_redistribution_fraction` of the
+	// accumulated tokens are sent to the consumer redistribution address.
 	BlocksPerDistributionTransmission int64 `protobuf:"varint,12,opt,name=blocks_per_distribution_transmission,json=blocksPerDistributionTransmission,proto3" json:"blocks_per_distribution_transmission,omitempty"`
 	// The number of historical info entries to persist in store.
 	// This param is a part of the cosmos sdk staking module. In the case of
@@ -77,9 +86,9 @@ type ConsumerAdditionProposal struct {
 	// The ID of a token transfer channel used for the Reward Distribution
 	// sub-protocol. If DistributionTransmissionChannel == "", a new transfer
 	// channel is created on top of the same connection as the CCV channel.
-	// Note that transfer_channel_id is the ID of the channel end on the consumer chain.
-	// it is most relevant for chains performing a sovereign to consumer changeover
-	// in order to maintan the existing ibc transfer channel
+	// Note that transfer_channel_id is the ID of the channel end on the consumer
+	// chain. it is most relevant for chains performing a sovereign to consumer
+	// changeover in order to maintan the existing ibc transfer channel
 	DistributionTransmissionChannel string `protobuf:"bytes,14,opt,name=distribution_transmission_channel,json=distributionTransmissionChannel,proto3" json:"distribution_transmission_channel,omitempty"`
 }
 
@@ -115,9 +124,10 @@ func (m *ConsumerAdditionProposal) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ConsumerAdditionProposal proto.InternalMessageInfo
 
-// ConsumerRemovalProposal is a governance proposal on the provider chain to remove (and stop) a consumer chain.
-// If it passes, all the consumer chain's state is removed from the provider chain. The outstanding unbonding
-// operation funds are released.
+// ConsumerRemovalProposal is a governance proposal on the provider chain to
+// remove (and stop) a consumer chain. If it passes, all the consumer chain's
+// state is removed from the provider chain. The outstanding unbonding operation
+// funds are released.
 type ConsumerRemovalProposal struct {
 	// the title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
@@ -125,7 +135,8 @@ type ConsumerRemovalProposal struct {
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	// the chain-id of the consumer chain to be stopped
 	ChainId string `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	// the time on the provider chain at which all validators are responsible to stop their consumer chain validator node
+	// the time on the provider chain at which all validators are responsible to
+	// stop their consumer chain validator node
 	StopTime time.Time `protobuf:"bytes,4,opt,name=stop_time,json=stopTime,proto3,stdtime" json:"stop_time"`
 }
 
@@ -190,6 +201,10 @@ func (m *ConsumerRemovalProposal) GetStopTime() time.Time {
 	return time.Time{}
 }
 
+// EquivocationProposal is a governance proposal on the provider chain to
+// punish a validator for equivocation on a consumer chain.
+//
+// This type is only used internally to the consumer CCV module.
 type EquivocationProposal struct {
 	// the title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
@@ -327,8 +342,9 @@ func (m *ChangeRewardDenomsProposal) GetDenomsToRemove() []string {
 	return nil
 }
 
-// A persisted queue entry indicating that a slash packet data instance needs to be handled.
-// This type belongs in the "global" queue, to coordinate slash packet handling times between consumers.
+// A persisted queue entry indicating that a slash packet data instance needs to
+// be handled. This type belongs in the "global" queue, to coordinate slash
+// packet handling times between consumers.
 type GlobalSlashEntry struct {
 	// Block time that slash packet was received by provider chain.
 	// This field is used for store key iteration ordering.
@@ -341,7 +357,8 @@ type GlobalSlashEntry struct {
 	// The provider's consensus address of the validator being slashed.
 	// This field is used to obtain validator power in HandleThrottleQueues.
 	//
-	// This field is not used in the store key, but is persisted in value bytes, see QueueGlobalSlashEntry.
+	// This field is not used in the store key, but is persisted in value bytes,
+	// see QueueGlobalSlashEntry.
 	ProviderValConsAddr []byte `protobuf:"bytes,4,opt,name=provider_val_cons_addr,json=providerValConsAddr,proto3" json:"provider_val_cons_addr,omitempty"`
 }
 
@@ -408,12 +425,14 @@ func (m *GlobalSlashEntry) GetProviderValConsAddr() []byte {
 
 // Params defines the parameters for CCV Provider module
 type Params struct {
-	TemplateClient *types2.ClientState `protobuf:"bytes,1,opt,name=template_client,json=templateClient,proto3" json:"template_client,omitempty"`
-	// TrustingPeriodFraction is used to compute the consumer and provider IBC client's TrustingPeriod from the chain defined UnbondingPeriod
+	TemplateClient *_07_tendermint.ClientState `protobuf:"bytes,1,opt,name=template_client,json=templateClient,proto3" json:"template_client,omitempty"`
+	// TrustingPeriodFraction is used to compute the consumer and provider IBC
+	// client's TrustingPeriod from the chain defined UnbondingPeriod
 	TrustingPeriodFraction string `protobuf:"bytes,2,opt,name=trusting_period_fraction,json=trustingPeriodFraction,proto3" json:"trusting_period_fraction,omitempty"`
 	// Sent IBC packets will timeout after this duration
 	CcvTimeoutPeriod time.Duration `protobuf:"bytes,3,opt,name=ccv_timeout_period,json=ccvTimeoutPeriod,proto3,stdduration" json:"ccv_timeout_period"`
-	// The channel initialization (IBC channel opening handshake) will timeout after this duration
+	// The channel initialization (IBC channel opening handshake) will timeout
+	// after this duration
 	InitTimeoutPeriod time.Duration `protobuf:"bytes,4,opt,name=init_timeout_period,json=initTimeoutPeriod,proto3,stdduration" json:"init_timeout_period"`
 	// The VSC packets sent by the provider will timeout after this duration.
 	// Note that unlike ccv_timeout_period which is an IBC param,
@@ -422,14 +441,15 @@ type Params struct {
 	VscTimeoutPeriod time.Duration `protobuf:"bytes,5,opt,name=vsc_timeout_period,json=vscTimeoutPeriod,proto3,stdduration" json:"vsc_timeout_period"`
 	// The period for which the slash meter is replenished
 	SlashMeterReplenishPeriod time.Duration `protobuf:"bytes,6,opt,name=slash_meter_replenish_period,json=slashMeterReplenishPeriod,proto3,stdduration" json:"slash_meter_replenish_period"`
-	// The fraction of total voting power that is replenished to the slash meter every replenish period.
-	// This param also serves as a maximum fraction of total voting power that the slash meter can hold.
+	// The fraction of total voting power that is replenished to the slash meter
+	// every replenish period. This param also serves as a maximum fraction of
+	// total voting power that the slash meter can hold.
 	SlashMeterReplenishFraction string `protobuf:"bytes,7,opt,name=slash_meter_replenish_fraction,json=slashMeterReplenishFraction,proto3" json:"slash_meter_replenish_fraction,omitempty"`
 	// The maximum amount of throttled slash or vsc matured packets
 	// that can be queued for a single consumer before the provider chain halts.
 	MaxThrottledPackets int64 `protobuf:"varint,8,opt,name=max_throttled_packets,json=maxThrottledPackets,proto3" json:"max_throttled_packets,omitempty"`
 	// The fee required to be paid to add a reward denom
-	ConsumerRewardDenomRegistrationFee types3.Coin `protobuf:"bytes,9,opt,name=consumer_reward_denom_registration_fee,json=consumerRewardDenomRegistrationFee,proto3" json:"consumer_reward_denom_registration_fee"`
+	ConsumerRewardDenomRegistrationFee types2.Coin `protobuf:"bytes,9,opt,name=consumer_reward_denom_registration_fee,json=consumerRewardDenomRegistrationFee,proto3" json:"consumer_reward_denom_registration_fee"`
 }
 
 func (m *Params) Reset()         { *m = Params{} }
@@ -465,7 +485,7 @@ func (m *Params) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Params proto.InternalMessageInfo
 
-func (m *Params) GetTemplateClient() *types2.ClientState {
+func (m *Params) GetTemplateClient() *_07_tendermint.ClientState {
 	if m != nil {
 		return m.TemplateClient
 	}
@@ -521,67 +541,15 @@ func (m *Params) GetMaxThrottledPackets() int64 {
 	return 0
 }
 
-func (m *Params) GetConsumerRewardDenomRegistrationFee() types3.Coin {
+func (m *Params) GetConsumerRewardDenomRegistrationFee() types2.Coin {
 	if m != nil {
 		return m.ConsumerRewardDenomRegistrationFee
 	}
-	return types3.Coin{}
-}
-
-type HandshakeMetadata struct {
-	ProviderFeePoolAddr string `protobuf:"bytes,1,opt,name=provider_fee_pool_addr,json=providerFeePoolAddr,proto3" json:"provider_fee_pool_addr,omitempty"`
-	Version             string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-}
-
-func (m *HandshakeMetadata) Reset()         { *m = HandshakeMetadata{} }
-func (m *HandshakeMetadata) String() string { return proto.CompactTextString(m) }
-func (*HandshakeMetadata) ProtoMessage()    {}
-func (*HandshakeMetadata) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{6}
-}
-func (m *HandshakeMetadata) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *HandshakeMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_HandshakeMetadata.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *HandshakeMetadata) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HandshakeMetadata.Merge(m, src)
-}
-func (m *HandshakeMetadata) XXX_Size() int {
-	return m.Size()
-}
-func (m *HandshakeMetadata) XXX_DiscardUnknown() {
-	xxx_messageInfo_HandshakeMetadata.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_HandshakeMetadata proto.InternalMessageInfo
-
-func (m *HandshakeMetadata) GetProviderFeePoolAddr() string {
-	if m != nil {
-		return m.ProviderFeePoolAddr
-	}
-	return ""
-}
-
-func (m *HandshakeMetadata) GetVersion() string {
-	if m != nil {
-		return m.Version
-	}
-	return ""
+	return types2.Coin{}
 }
 
 // SlashAcks contains cons addresses of consumer chain validators
-// successfully slashed on the provider chain
+// successfully slashed on the provider chain.
 type SlashAcks struct {
 	Addresses []string `protobuf:"bytes,1,rep,name=addresses,proto3" json:"addresses,omitempty"`
 }
@@ -590,7 +558,7 @@ func (m *SlashAcks) Reset()         { *m = SlashAcks{} }
 func (m *SlashAcks) String() string { return proto.CompactTextString(m) }
 func (*SlashAcks) ProtoMessage()    {}
 func (*SlashAcks) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{7}
+	return fileDescriptor_f22ec409a72b7b72, []int{6}
 }
 func (m *SlashAcks) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -626,7 +594,8 @@ func (m *SlashAcks) GetAddresses() []string {
 	return nil
 }
 
-// ConsumerAdditionProposals holds pending governance proposals on the provider chain to spawn a new chain.
+// ConsumerAdditionProposals holds pending governance proposals on the provider
+// chain to spawn a new chain.
 type ConsumerAdditionProposals struct {
 	// proposals waiting for spawn_time to pass
 	Pending []*ConsumerAdditionProposal `protobuf:"bytes,1,rep,name=pending,proto3" json:"pending,omitempty"`
@@ -636,7 +605,7 @@ func (m *ConsumerAdditionProposals) Reset()         { *m = ConsumerAdditionPropo
 func (m *ConsumerAdditionProposals) String() string { return proto.CompactTextString(m) }
 func (*ConsumerAdditionProposals) ProtoMessage()    {}
 func (*ConsumerAdditionProposals) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{8}
+	return fileDescriptor_f22ec409a72b7b72, []int{7}
 }
 func (m *ConsumerAdditionProposals) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -672,7 +641,8 @@ func (m *ConsumerAdditionProposals) GetPending() []*ConsumerAdditionProposal {
 	return nil
 }
 
-// ConsumerRemovalProposals holds pending governance proposals on the provider chain to remove (and stop) a consumer chain.
+// ConsumerRemovalProposals holds pending governance proposals on the provider
+// chain to remove (and stop) a consumer chain.
 type ConsumerRemovalProposals struct {
 	// proposals waiting for stop_time to pass
 	Pending []*ConsumerRemovalProposal `protobuf:"bytes,1,rep,name=pending,proto3" json:"pending,omitempty"`
@@ -682,7 +652,7 @@ func (m *ConsumerRemovalProposals) Reset()         { *m = ConsumerRemovalProposa
 func (m *ConsumerRemovalProposals) String() string { return proto.CompactTextString(m) }
 func (*ConsumerRemovalProposals) ProtoMessage()    {}
 func (*ConsumerRemovalProposals) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{9}
+	return fileDescriptor_f22ec409a72b7b72, []int{8}
 }
 func (m *ConsumerRemovalProposals) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -727,7 +697,7 @@ func (m *AddressList) Reset()         { *m = AddressList{} }
 func (m *AddressList) String() string { return proto.CompactTextString(m) }
 func (*AddressList) ProtoMessage()    {}
 func (*AddressList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{10}
+	return fileDescriptor_f22ec409a72b7b72, []int{9}
 }
 func (m *AddressList) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -772,7 +742,7 @@ func (m *ChannelToChain) Reset()         { *m = ChannelToChain{} }
 func (m *ChannelToChain) String() string { return proto.CompactTextString(m) }
 func (*ChannelToChain) ProtoMessage()    {}
 func (*ChannelToChain) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{11}
+	return fileDescriptor_f22ec409a72b7b72, []int{10}
 }
 func (m *ChannelToChain) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -826,7 +796,7 @@ func (m *VscUnbondingOps) Reset()         { *m = VscUnbondingOps{} }
 func (m *VscUnbondingOps) String() string { return proto.CompactTextString(m) }
 func (*VscUnbondingOps) ProtoMessage()    {}
 func (*VscUnbondingOps) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{12}
+	return fileDescriptor_f22ec409a72b7b72, []int{11}
 }
 func (m *VscUnbondingOps) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -881,7 +851,7 @@ func (m *UnbondingOp) Reset()         { *m = UnbondingOp{} }
 func (m *UnbondingOp) String() string { return proto.CompactTextString(m) }
 func (*UnbondingOp) ProtoMessage()    {}
 func (*UnbondingOp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{13}
+	return fileDescriptor_f22ec409a72b7b72, []int{12}
 }
 func (m *UnbondingOp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -933,7 +903,7 @@ func (m *InitTimeoutTimestamp) Reset()         { *m = InitTimeoutTimestamp{} }
 func (m *InitTimeoutTimestamp) String() string { return proto.CompactTextString(m) }
 func (*InitTimeoutTimestamp) ProtoMessage()    {}
 func (*InitTimeoutTimestamp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{14}
+	return fileDescriptor_f22ec409a72b7b72, []int{13}
 }
 func (m *InitTimeoutTimestamp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -985,7 +955,7 @@ func (m *VscSendTimestamp) Reset()         { *m = VscSendTimestamp{} }
 func (m *VscSendTimestamp) String() string { return proto.CompactTextString(m) }
 func (*VscSendTimestamp) ProtoMessage()    {}
 func (*VscSendTimestamp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{15}
+	return fileDescriptor_f22ec409a72b7b72, []int{14}
 }
 func (m *VscSendTimestamp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1028,6 +998,150 @@ func (m *VscSendTimestamp) GetTimestamp() time.Time {
 	return time.Time{}
 }
 
+// ValidatorSetChangePackets is a pb list of ccv.ValidatorSetChangePacketData.
+type ValidatorSetChangePackets struct {
+	List []types3.ValidatorSetChangePacketData `protobuf:"bytes,1,rep,name=list,proto3" json:"list"`
+}
+
+func (m *ValidatorSetChangePackets) Reset()         { *m = ValidatorSetChangePackets{} }
+func (m *ValidatorSetChangePackets) String() string { return proto.CompactTextString(m) }
+func (*ValidatorSetChangePackets) ProtoMessage()    {}
+func (*ValidatorSetChangePackets) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f22ec409a72b7b72, []int{15}
+}
+func (m *ValidatorSetChangePackets) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ValidatorSetChangePackets) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ValidatorSetChangePackets.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ValidatorSetChangePackets) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ValidatorSetChangePackets.Merge(m, src)
+}
+func (m *ValidatorSetChangePackets) XXX_Size() int {
+	return m.Size()
+}
+func (m *ValidatorSetChangePackets) XXX_DiscardUnknown() {
+	xxx_messageInfo_ValidatorSetChangePackets.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ValidatorSetChangePackets proto.InternalMessageInfo
+
+func (m *ValidatorSetChangePackets) GetList() []types3.ValidatorSetChangePacketData {
+	if m != nil {
+		return m.List
+	}
+	return nil
+}
+
+// MaturedUnbondingOps defines a list of ids corresponding to ids of matured
+// unbonding operations.
+type MaturedUnbondingOps struct {
+	Ids []uint64 `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`
+}
+
+func (m *MaturedUnbondingOps) Reset()         { *m = MaturedUnbondingOps{} }
+func (m *MaturedUnbondingOps) String() string { return proto.CompactTextString(m) }
+func (*MaturedUnbondingOps) ProtoMessage()    {}
+func (*MaturedUnbondingOps) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f22ec409a72b7b72, []int{16}
+}
+func (m *MaturedUnbondingOps) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MaturedUnbondingOps) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MaturedUnbondingOps.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MaturedUnbondingOps) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MaturedUnbondingOps.Merge(m, src)
+}
+func (m *MaturedUnbondingOps) XXX_Size() int {
+	return m.Size()
+}
+func (m *MaturedUnbondingOps) XXX_DiscardUnknown() {
+	xxx_messageInfo_MaturedUnbondingOps.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MaturedUnbondingOps proto.InternalMessageInfo
+
+func (m *MaturedUnbondingOps) GetIds() []uint64 {
+	if m != nil {
+		return m.Ids
+	}
+	return nil
+}
+
+// ExportedVscSendTimestamps is VscSendTimestamp with chainID info for exporting to genesis
+type ExportedVscSendTimestamp struct {
+	ChainId           string             `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	VscSendTimestamps []VscSendTimestamp `protobuf:"bytes,2,rep,name=vsc_send_timestamps,json=vscSendTimestamps,proto3" json:"vsc_send_timestamps"`
+}
+
+func (m *ExportedVscSendTimestamp) Reset()         { *m = ExportedVscSendTimestamp{} }
+func (m *ExportedVscSendTimestamp) String() string { return proto.CompactTextString(m) }
+func (*ExportedVscSendTimestamp) ProtoMessage()    {}
+func (*ExportedVscSendTimestamp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f22ec409a72b7b72, []int{17}
+}
+func (m *ExportedVscSendTimestamp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ExportedVscSendTimestamp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ExportedVscSendTimestamp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ExportedVscSendTimestamp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExportedVscSendTimestamp.Merge(m, src)
+}
+func (m *ExportedVscSendTimestamp) XXX_Size() int {
+	return m.Size()
+}
+func (m *ExportedVscSendTimestamp) XXX_DiscardUnknown() {
+	xxx_messageInfo_ExportedVscSendTimestamp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ExportedVscSendTimestamp proto.InternalMessageInfo
+
+func (m *ExportedVscSendTimestamp) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
+func (m *ExportedVscSendTimestamp) GetVscSendTimestamps() []VscSendTimestamp {
+	if m != nil {
+		return m.VscSendTimestamps
+	}
+	return nil
+}
+
 type KeyAssignmentReplacement struct {
 	ProviderAddr []byte            `protobuf:"bytes,1,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty"`
 	PrevCKey     *crypto.PublicKey `protobuf:"bytes,2,opt,name=prev_c_key,json=prevCKey,proto3" json:"prev_c_key,omitempty"`
@@ -1038,7 +1152,7 @@ func (m *KeyAssignmentReplacement) Reset()         { *m = KeyAssignmentReplaceme
 func (m *KeyAssignmentReplacement) String() string { return proto.CompactTextString(m) }
 func (*KeyAssignmentReplacement) ProtoMessage()    {}
 func (*KeyAssignmentReplacement) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{16}
+	return fileDescriptor_f22ec409a72b7b72, []int{18}
 }
 func (m *KeyAssignmentReplacement) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1089,7 +1203,8 @@ func (m *KeyAssignmentReplacement) GetPower() int64 {
 }
 
 // Used to serialize the ValidatorConsumerPubKey index from key assignment
-// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey tmprotocrypto.PublicKey
+// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey
+// tmprotocrypto.PublicKey
 type ValidatorConsumerPubKey struct {
 	ChainId      string            `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	ProviderAddr []byte            `protobuf:"bytes,2,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty"`
@@ -1100,7 +1215,7 @@ func (m *ValidatorConsumerPubKey) Reset()         { *m = ValidatorConsumerPubKey
 func (m *ValidatorConsumerPubKey) String() string { return proto.CompactTextString(m) }
 func (*ValidatorConsumerPubKey) ProtoMessage()    {}
 func (*ValidatorConsumerPubKey) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{17}
+	return fileDescriptor_f22ec409a72b7b72, []int{19}
 }
 func (m *ValidatorConsumerPubKey) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1151,7 +1266,8 @@ func (m *ValidatorConsumerPubKey) GetConsumerKey() *crypto.PublicKey {
 }
 
 // Used to serialize the ValidatorConsumerAddr index from key assignment
-// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr consAddr
+// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr
+// consAddr
 type ValidatorByConsumerAddr struct {
 	ChainId      string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	ConsumerAddr []byte `protobuf:"bytes,2,opt,name=consumer_addr,json=consumerAddr,proto3" json:"consumer_addr,omitempty"`
@@ -1162,7 +1278,7 @@ func (m *ValidatorByConsumerAddr) Reset()         { *m = ValidatorByConsumerAddr
 func (m *ValidatorByConsumerAddr) String() string { return proto.CompactTextString(m) }
 func (*ValidatorByConsumerAddr) ProtoMessage()    {}
 func (*ValidatorByConsumerAddr) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{18}
+	return fileDescriptor_f22ec409a72b7b72, []int{20}
 }
 func (m *ValidatorByConsumerAddr) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1224,7 +1340,7 @@ func (m *ConsumerAddrsToPrune) Reset()         { *m = ConsumerAddrsToPrune{} }
 func (m *ConsumerAddrsToPrune) String() string { return proto.CompactTextString(m) }
 func (*ConsumerAddrsToPrune) ProtoMessage()    {}
 func (*ConsumerAddrsToPrune) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f22ec409a72b7b72, []int{19}
+	return fileDescriptor_f22ec409a72b7b72, []int{21}
 }
 func (m *ConsumerAddrsToPrune) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1281,7 +1397,6 @@ func init() {
 	proto.RegisterType((*ChangeRewardDenomsProposal)(nil), "interchain_security.ccv.provider.v1.ChangeRewardDenomsProposal")
 	proto.RegisterType((*GlobalSlashEntry)(nil), "interchain_security.ccv.provider.v1.GlobalSlashEntry")
 	proto.RegisterType((*Params)(nil), "interchain_security.ccv.provider.v1.Params")
-	proto.RegisterType((*HandshakeMetadata)(nil), "interchain_security.ccv.provider.v1.HandshakeMetadata")
 	proto.RegisterType((*SlashAcks)(nil), "interchain_security.ccv.provider.v1.SlashAcks")
 	proto.RegisterType((*ConsumerAdditionProposals)(nil), "interchain_security.ccv.provider.v1.ConsumerAdditionProposals")
 	proto.RegisterType((*ConsumerRemovalProposals)(nil), "interchain_security.ccv.provider.v1.ConsumerRemovalProposals")
@@ -1291,6 +1406,9 @@ func init() {
 	proto.RegisterType((*UnbondingOp)(nil), "interchain_security.ccv.provider.v1.UnbondingOp")
 	proto.RegisterType((*InitTimeoutTimestamp)(nil), "interchain_security.ccv.provider.v1.InitTimeoutTimestamp")
 	proto.RegisterType((*VscSendTimestamp)(nil), "interchain_security.ccv.provider.v1.VscSendTimestamp")
+	proto.RegisterType((*ValidatorSetChangePackets)(nil), "interchain_security.ccv.provider.v1.ValidatorSetChangePackets")
+	proto.RegisterType((*MaturedUnbondingOps)(nil), "interchain_security.ccv.provider.v1.MaturedUnbondingOps")
+	proto.RegisterType((*ExportedVscSendTimestamp)(nil), "interchain_security.ccv.provider.v1.ExportedVscSendTimestamp")
 	proto.RegisterType((*KeyAssignmentReplacement)(nil), "interchain_security.ccv.provider.v1.KeyAssignmentReplacement")
 	proto.RegisterType((*ValidatorConsumerPubKey)(nil), "interchain_security.ccv.provider.v1.ValidatorConsumerPubKey")
 	proto.RegisterType((*ValidatorByConsumerAddr)(nil), "interchain_security.ccv.provider.v1.ValidatorByConsumerAddr")
@@ -1302,111 +1420,115 @@ func init() {
 }
 
 var fileDescriptor_f22ec409a72b7b72 = []byte{
-	// 1649 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x58, 0x4f, 0x73, 0xdc, 0xb6,
-	0x15, 0x17, 0xb5, 0xfa, 0xb7, 0x58, 0xfd, 0x33, 0x2d, 0xc7, 0x2b, 0x57, 0x5d, 0xc9, 0x4c, 0x9b,
-	0x51, 0x27, 0x13, 0x6e, 0xa5, 0x5c, 0x3a, 0x9e, 0x66, 0x32, 0xd2, 0x3a, 0x8e, 0x15, 0x35, 0xf1,
-	0x86, 0x52, 0xe5, 0x69, 0x7b, 0xe0, 0x80, 0xe0, 0xf3, 0x2e, 0x46, 0x24, 0x41, 0x03, 0x20, 0xed,
-	0xbd, 0xf4, 0xdc, 0x63, 0x7a, 0xcb, 0xb4, 0x97, 0xb4, 0x5f, 0xa0, 0x5f, 0x23, 0xc7, 0x1c, 0x7b,
-	0x4a, 0x3a, 0xf6, 0xa1, 0x87, 0x7e, 0x89, 0x0e, 0xc0, 0xff, 0x2b, 0x29, 0x5d, 0x4f, 0x9a, 0x1b,
-	0x01, 0xfc, 0xde, 0xef, 0x3d, 0xe0, 0x3d, 0xfc, 0x1e, 0x76, 0xd1, 0x21, 0x8d, 0x24, 0x70, 0x32,
-	0xc6, 0x34, 0x72, 0x05, 0x90, 0x84, 0x53, 0x39, 0xe9, 0x13, 0x92, 0xf6, 0x63, 0xce, 0x52, 0xea,
-	0x03, 0xef, 0xa7, 0x07, 0xe5, 0xb7, 0x1d, 0x73, 0x26, 0x99, 0xf9, 0xf6, 0x35, 0x36, 0x36, 0x21,
-	0xa9, 0x5d, 0xe2, 0xd2, 0x83, 0x7b, 0x5b, 0x23, 0x36, 0x62, 0x1a, 0xdf, 0x57, 0x5f, 0x99, 0xe9,
-	0xbd, 0xdd, 0x11, 0x63, 0xa3, 0x00, 0xfa, 0x7a, 0xe4, 0x25, 0xcf, 0xfa, 0x92, 0x86, 0x20, 0x24,
-	0x0e, 0xe3, 0x1c, 0xd0, 0x9b, 0x06, 0xf8, 0x09, 0xc7, 0x92, 0xb2, 0xa8, 0x20, 0xa0, 0x1e, 0xe9,
-	0x13, 0xc6, 0xa1, 0x4f, 0x02, 0x0a, 0x91, 0x54, 0xe1, 0x65, 0x5f, 0x39, 0xa0, 0xaf, 0x00, 0x01,
-	0x1d, 0x8d, 0x65, 0x36, 0x2d, 0xfa, 0x12, 0x22, 0x1f, 0x78, 0x48, 0x33, 0x70, 0x35, 0xca, 0x0d,
-	0x76, 0x6a, 0xeb, 0x84, 0x4f, 0x62, 0xc9, 0xfa, 0x97, 0x30, 0x11, 0xf9, 0xea, 0x3b, 0x84, 0x89,
-	0x90, 0x89, 0x3e, 0xa8, 0x8d, 0x45, 0x04, 0xfa, 0xe9, 0x81, 0x07, 0x12, 0x1f, 0x94, 0x13, 0x45,
-	0xdc, 0x39, 0xce, 0xc3, 0xa2, 0xc2, 0x10, 0x46, 0xf3, 0xb8, 0xad, 0xef, 0x96, 0x50, 0x77, 0xc0,
-	0x22, 0x91, 0x84, 0xc0, 0x8f, 0x7c, 0x9f, 0xaa, 0x2d, 0x0d, 0x39, 0x8b, 0x99, 0xc0, 0x81, 0xb9,
-	0x85, 0x16, 0x25, 0x95, 0x01, 0x74, 0x8d, 0x3d, 0x63, 0xbf, 0xed, 0x64, 0x03, 0x73, 0x0f, 0x75,
-	0x7c, 0x10, 0x84, 0xd3, 0x58, 0x81, 0xbb, 0xf3, 0x7a, 0xad, 0x3e, 0x65, 0x6e, 0xa3, 0x95, 0x2c,
-	0x0b, 0xd4, 0xef, 0xb6, 0xf4, 0xf2, 0xb2, 0x1e, 0x9f, 0xf8, 0xe6, 0xc7, 0x68, 0x9d, 0x46, 0x54,
-	0x52, 0x1c, 0xb8, 0x63, 0x50, 0xa7, 0xd1, 0x5d, 0xd8, 0x33, 0xf6, 0x3b, 0x87, 0xf7, 0x6c, 0xea,
-	0x11, 0x5b, 0x1d, 0xa0, 0x9d, 0x1f, 0x5b, 0x7a, 0x60, 0x3f, 0xd6, 0x88, 0xe3, 0x85, 0xaf, 0xbf,
-	0xdd, 0x9d, 0x73, 0xd6, 0x72, 0xbb, 0x6c, 0xd2, 0xbc, 0x8f, 0x56, 0x47, 0x10, 0x81, 0xa0, 0xc2,
-	0x1d, 0x63, 0x31, 0xee, 0x2e, 0xee, 0x19, 0xfb, 0xab, 0x4e, 0x27, 0x9f, 0x7b, 0x8c, 0xc5, 0xd8,
-	0xdc, 0x45, 0x1d, 0x8f, 0x46, 0x98, 0x4f, 0x32, 0xc4, 0x92, 0x46, 0xa0, 0x6c, 0x4a, 0x03, 0x06,
-	0x08, 0x89, 0x18, 0xbf, 0x88, 0x5c, 0x95, 0xed, 0xee, 0x72, 0x1e, 0x48, 0x96, 0x69, 0xbb, 0xc8,
-	0xb4, 0x7d, 0x5e, 0x94, 0xc2, 0xf1, 0x8a, 0x0a, 0xe4, 0x8b, 0xef, 0x76, 0x0d, 0xa7, 0xad, 0xed,
-	0xd4, 0x8a, 0xf9, 0x19, 0xda, 0x4c, 0x22, 0x8f, 0x45, 0x3e, 0x8d, 0x46, 0x6e, 0x0c, 0x9c, 0x32,
-	0xbf, 0xbb, 0xa2, 0xa9, 0xb6, 0xaf, 0x50, 0x3d, 0xcc, 0x8b, 0x26, 0x63, 0xfa, 0x52, 0x31, 0x6d,
-	0x94, 0xc6, 0x43, 0x6d, 0x6b, 0x7e, 0x8e, 0x4c, 0x42, 0x52, 0x1d, 0x12, 0x4b, 0x64, 0xc1, 0xd8,
-	0x9e, 0x9d, 0x71, 0x93, 0x90, 0xf4, 0x3c, 0xb3, 0xce, 0x29, 0xff, 0x80, 0xee, 0x4a, 0x8e, 0x23,
-	0xf1, 0x0c, 0xf8, 0x34, 0x2f, 0x9a, 0x9d, 0xf7, 0x4e, 0xc1, 0xd1, 0x24, 0x7f, 0x8c, 0xf6, 0x48,
-	0x5e, 0x40, 0x2e, 0x07, 0x9f, 0x0a, 0xc9, 0xa9, 0x97, 0x28, 0x5b, 0xf7, 0x19, 0xc7, 0x44, 0xd7,
-	0x48, 0x47, 0x17, 0x41, 0xaf, 0xc0, 0x39, 0x0d, 0xd8, 0xa3, 0x1c, 0x65, 0x3e, 0x41, 0x3f, 0xf3,
-	0x02, 0x46, 0x2e, 0x85, 0x0a, 0xce, 0x6d, 0x30, 0x69, 0xd7, 0x21, 0x15, 0x42, 0xb1, 0xad, 0xee,
-	0x19, 0xfb, 0x2d, 0xe7, 0x7e, 0x86, 0x1d, 0x02, 0x7f, 0x58, 0x43, 0x9e, 0xd7, 0x80, 0xe6, 0x7b,
-	0xc8, 0x1c, 0x53, 0x21, 0x19, 0xa7, 0x04, 0x07, 0x2e, 0x44, 0x92, 0x53, 0x10, 0xdd, 0x35, 0x6d,
-	0x7e, 0xab, 0x5a, 0xf9, 0x28, 0x5b, 0x30, 0x3f, 0x41, 0xf7, 0x6f, 0x74, 0xea, 0x92, 0x31, 0x8e,
-	0x22, 0x08, 0xba, 0xeb, 0x7a, 0x2b, 0xbb, 0xfe, 0x0d, 0x3e, 0x07, 0x19, 0xec, 0xc1, 0xca, 0x9f,
-	0xbe, 0xda, 0x9d, 0xfb, 0xf2, 0xab, 0xdd, 0x39, 0xeb, 0x1f, 0x06, 0xba, 0x3b, 0x28, 0x37, 0x1e,
-	0xb2, 0x14, 0x07, 0x3f, 0xe6, 0x05, 0x3b, 0x42, 0x6d, 0x21, 0x59, 0x9c, 0x95, 0xf4, 0xc2, 0x1b,
-	0x94, 0xf4, 0x8a, 0x32, 0x53, 0x0b, 0xd6, 0x5f, 0x0d, 0xb4, 0xf5, 0xd1, 0xf3, 0x84, 0xa6, 0x8c,
-	0xe0, 0xff, 0x8b, 0x1e, 0x9c, 0xa2, 0x35, 0xa8, 0xf1, 0x89, 0x6e, 0x6b, 0xaf, 0xb5, 0xdf, 0x39,
-	0xfc, 0xb9, 0x9d, 0x89, 0x93, 0x5d, 0x6a, 0x56, 0x2e, 0x50, 0x76, 0xdd, 0xbb, 0xd3, 0xb4, 0xb5,
-	0xfe, 0x6e, 0xa0, 0x7b, 0xea, 0x94, 0x47, 0xe0, 0xc0, 0x0b, 0xcc, 0xfd, 0x87, 0x10, 0xb1, 0x50,
-	0xfc, 0xe0, 0x18, 0x2d, 0xb4, 0xe6, 0x6b, 0x26, 0x57, 0x32, 0x17, 0xfb, 0xbe, 0x8e, 0x51, 0x63,
-	0xd4, 0xe4, 0x39, 0x3b, 0xf2, 0x7d, 0x73, 0x1f, 0x6d, 0x56, 0x18, 0xae, 0x72, 0xa9, 0x8e, 0x58,
-	0xc1, 0xd6, 0x0b, 0x98, 0xce, 0x30, 0x58, 0xff, 0x31, 0xd0, 0xe6, 0xc7, 0x01, 0xf3, 0x70, 0x70,
-	0x16, 0x60, 0x31, 0x56, 0x15, 0x36, 0x51, 0xa9, 0xe1, 0x90, 0x5f, 0x6d, 0x1d, 0xde, 0xcc, 0xa9,
-	0x51, 0x66, 0x5a, 0x6c, 0x3e, 0x44, 0xb7, 0xca, 0xcb, 0x56, 0x56, 0x80, 0xde, 0xcd, 0xf1, 0xed,
-	0x57, 0xdf, 0xee, 0x6e, 0x14, 0x85, 0x36, 0xd0, 0xd5, 0xf0, 0xd0, 0xd9, 0x20, 0x8d, 0x09, 0xdf,
-	0xec, 0xa1, 0x0e, 0xf5, 0x88, 0x2b, 0xe0, 0xb9, 0x1b, 0x25, 0xa1, 0x2e, 0x9e, 0x05, 0xa7, 0x4d,
-	0x3d, 0x72, 0x06, 0xcf, 0x3f, 0x4b, 0x42, 0xf3, 0x7d, 0xf4, 0x56, 0xd1, 0x2d, 0xdd, 0x14, 0x07,
-	0xae, 0xb2, 0x57, 0xc7, 0xc1, 0x75, 0x2d, 0xad, 0x3a, 0xb7, 0x8b, 0xd5, 0x0b, 0x1c, 0x28, 0x67,
-	0x47, 0xbe, 0xcf, 0xad, 0x7f, 0x2f, 0xa2, 0xa5, 0x21, 0xe6, 0x38, 0x14, 0xe6, 0x39, 0xda, 0x90,
-	0x10, 0xc6, 0x01, 0x96, 0xe0, 0x66, 0x42, 0x9e, 0xef, 0xf4, 0x5d, 0x2d, 0xf0, 0xf5, 0x06, 0x68,
-	0xd7, 0x5a, 0x5e, 0x7a, 0x60, 0x0f, 0xf4, 0xec, 0x99, 0xc4, 0x12, 0x9c, 0xf5, 0x82, 0x23, 0x9b,
-	0x34, 0x7f, 0x85, 0xba, 0x92, 0x27, 0x42, 0x56, 0x12, 0x5b, 0x69, 0x4b, 0x96, 0xcb, 0xb7, 0x8a,
-	0xf5, 0x4c, 0x95, 0x4a, 0x4d, 0xb9, 0x5e, 0x4d, 0x5b, 0x3f, 0x44, 0x4d, 0xcf, 0xd0, 0x6d, 0xd5,
-	0x8a, 0xa6, 0x39, 0x17, 0x66, 0xe7, 0xbc, 0xa5, 0xec, 0x9b, 0xa4, 0x9f, 0x23, 0x33, 0x15, 0x64,
-	0x9a, 0x73, 0xf1, 0x0d, 0xe2, 0x4c, 0x05, 0x69, 0x52, 0xfa, 0x68, 0x47, 0xa8, 0xe2, 0x73, 0x43,
-	0x90, 0x5a, 0x9b, 0xe3, 0x00, 0x22, 0x2a, 0xc6, 0x05, 0xf9, 0xd2, 0xec, 0xe4, 0xdb, 0x9a, 0xe8,
-	0x53, 0xc5, 0xe3, 0x14, 0x34, 0xb9, 0x97, 0x01, 0xea, 0x5d, 0xef, 0xa5, 0x4c, 0xd0, 0xb2, 0x4e,
-	0xd0, 0x4f, 0xae, 0xa1, 0x28, 0xb3, 0x74, 0x88, 0xee, 0x84, 0xf8, 0xa5, 0x2b, 0xc7, 0x9c, 0x49,
-	0x19, 0x80, 0xef, 0xc6, 0x98, 0x5c, 0x82, 0x14, 0xba, 0x91, 0xb6, 0x9c, 0xdb, 0x21, 0x7e, 0x79,
-	0x5e, 0xac, 0x0d, 0xb3, 0x25, 0x53, 0xa0, 0x77, 0x6a, 0x7d, 0x47, 0x29, 0x81, 0xab, 0x2f, 0xa1,
-	0xcb, 0x61, 0xa4, 0xc4, 0x19, 0x67, 0x2d, 0x08, 0xa0, 0xec, 0x9d, 0xb9, 0xda, 0xa8, 0xa7, 0x50,
-	0xa9, 0x34, 0x03, 0x46, 0xa3, 0xfc, 0x81, 0x61, 0x55, 0xed, 0xa9, 0xd4, 0x15, 0xa7, 0xc6, 0xf5,
-	0x08, 0xc0, 0xf2, 0xd0, 0xad, 0xc7, 0x38, 0xf2, 0xc5, 0x18, 0x5f, 0xc2, 0xa7, 0x20, 0xb1, 0x8f,
-	0x25, 0x6e, 0xdc, 0x99, 0x67, 0x00, 0x6e, 0xcc, 0x58, 0x90, 0xdd, 0x99, 0x4c, 0x83, 0xca, 0x3b,
-	0xf3, 0x08, 0x60, 0xc8, 0x58, 0xa0, 0xee, 0x8c, 0xd9, 0x45, 0xcb, 0x29, 0x70, 0x51, 0x55, 0x70,
-	0x31, 0xb4, 0x7e, 0x81, 0xda, 0x5a, 0x34, 0x8e, 0xc8, 0xa5, 0x30, 0x77, 0x50, 0x5b, 0x31, 0x81,
-	0x10, 0x20, 0xba, 0x86, 0xd6, 0x9a, 0x6a, 0xc2, 0x92, 0x68, 0xfb, 0xa6, 0xc7, 0x9b, 0x30, 0x9f,
-	0xa2, 0xe5, 0x18, 0xf4, 0xcb, 0x42, 0x1b, 0x76, 0x0e, 0x3f, 0xb0, 0x67, 0x78, 0x20, 0xdb, 0x37,
-	0x11, 0x3a, 0x05, 0x9b, 0xc5, 0xab, 0x27, 0xe3, 0x54, 0x43, 0x13, 0xe6, 0xc5, 0xb4, 0xd3, 0x5f,
-	0xbf, 0x91, 0xd3, 0x29, 0xbe, 0xca, 0xe7, 0xbb, 0xa8, 0x73, 0x94, 0x6d, 0xfb, 0x37, 0x54, 0xc8,
-	0xab, 0xc7, 0xb2, 0x5a, 0x3f, 0x96, 0x4f, 0xd0, 0x7a, 0xde, 0x87, 0xcf, 0x99, 0x16, 0x3e, 0xf3,
-	0xa7, 0x08, 0xe5, 0x0d, 0x5c, 0x09, 0x66, 0x96, 0x96, 0x76, 0x3e, 0x73, 0xe2, 0x37, 0xfa, 0xe9,
-	0x7c, 0xa3, 0x9f, 0x5a, 0x0e, 0xda, 0xb8, 0x10, 0xe4, 0xb7, 0xc5, 0x23, 0xed, 0x49, 0x2c, 0xcc,
-	0x3b, 0x68, 0x49, 0xdd, 0xd5, 0x9c, 0x68, 0xc1, 0x59, 0x4c, 0x05, 0x39, 0xd1, 0xdd, 0xa1, 0x7a,
-	0x08, 0xb2, 0xd8, 0xa5, 0xbe, 0xe8, 0xce, 0xef, 0xb5, 0xf6, 0x17, 0x9c, 0xf5, 0xa4, 0x32, 0x3f,
-	0xf1, 0x85, 0xf5, 0x3b, 0xd4, 0xa9, 0x11, 0x9a, 0xeb, 0x68, 0xbe, 0xe4, 0x9a, 0xa7, 0xbe, 0xf9,
-	0x00, 0x6d, 0x57, 0x44, 0x4d, 0xb9, 0xcf, 0x18, 0xdb, 0xce, 0xdd, 0x12, 0xd0, 0x50, 0x7c, 0x61,
-	0x3d, 0x41, 0x5b, 0x27, 0x95, 0xb8, 0x94, 0xcd, 0xa4, 0xb1, 0x43, 0xa3, 0xf9, 0x62, 0xd8, 0x41,
-	0xed, 0xf2, 0xd7, 0x8e, 0xde, 0xfd, 0x82, 0x53, 0x4d, 0x58, 0x21, 0xda, 0xbc, 0x10, 0xe4, 0x0c,
-	0x22, 0xbf, 0x22, 0xbb, 0xe1, 0x00, 0x8e, 0xa7, 0x89, 0x66, 0x7e, 0x4d, 0x57, 0xee, 0xfe, 0x6c,
-	0xa0, 0xee, 0x29, 0x4c, 0x8e, 0x84, 0xa0, 0xa3, 0x28, 0x84, 0x48, 0x2a, 0xb1, 0xc0, 0x04, 0xd4,
-	0xa7, 0xf9, 0x36, 0x5a, 0x2b, 0x2f, 0x5a, 0x79, 0xbf, 0x56, 0x9d, 0xd5, 0x62, 0x52, 0x5f, 0xac,
-	0x07, 0x08, 0xc5, 0x1c, 0x52, 0x97, 0xb8, 0x97, 0x30, 0xc9, 0xc3, 0xd8, 0xa9, 0xf7, 0x9a, 0xec,
-	0xc7, 0x94, 0x3d, 0x4c, 0xbc, 0x80, 0x92, 0x53, 0x98, 0x38, 0x2b, 0x0a, 0x3f, 0x38, 0x85, 0x89,
-	0x7a, 0x3c, 0xc4, 0xec, 0x05, 0x70, 0xdd, 0x20, 0x5a, 0x4e, 0x36, 0xb0, 0xfe, 0x62, 0xa0, 0xbb,
-	0x17, 0x38, 0xa0, 0x3e, 0x96, 0x8c, 0x17, 0xe7, 0x3d, 0x4c, 0x3c, 0x65, 0xf1, 0x3d, 0xe7, 0x7a,
-	0x25, 0xda, 0xf9, 0x6b, 0xa2, 0xfd, 0x10, 0xad, 0x96, 0x19, 0x56, 0xf1, 0xb6, 0x66, 0x88, 0xb7,
-	0x53, 0x58, 0x9c, 0xc2, 0xc4, 0xfa, 0x63, 0x2d, 0xb6, 0xe3, 0x49, 0xed, 0xf2, 0xf2, 0xff, 0x11,
-	0x5b, 0xe9, 0xb6, 0x1e, 0x1b, 0xa9, 0xdb, 0x5f, 0xd9, 0x40, 0xeb, 0xea, 0x06, 0xac, 0xbf, 0x19,
-	0x68, 0xab, 0xee, 0x55, 0x9c, 0xb3, 0x21, 0x4f, 0x22, 0xf8, 0x3e, 0xef, 0x55, 0xfd, 0xcc, 0xd7,
-	0xeb, 0xe7, 0x29, 0x5a, 0x6f, 0x04, 0x25, 0xf2, 0xd3, 0xf8, 0xe5, 0x4c, 0x12, 0x52, 0x93, 0x07,
-	0x67, 0xad, 0xbe, 0x0f, 0x71, 0xfc, 0xf4, 0xeb, 0x57, 0x3d, 0xe3, 0x9b, 0x57, 0x3d, 0xe3, 0x5f,
-	0xaf, 0x7a, 0xc6, 0x17, 0xaf, 0x7b, 0x73, 0xdf, 0xbc, 0xee, 0xcd, 0xfd, 0xf3, 0x75, 0x6f, 0xee,
-	0xf7, 0x1f, 0x8c, 0xa8, 0x1c, 0x27, 0x9e, 0x4d, 0x58, 0xd8, 0xcf, 0x7f, 0x29, 0x57, 0xbe, 0xde,
-	0x2b, 0xff, 0x78, 0x48, 0x0f, 0xfb, 0x2f, 0x9b, 0xff, 0x3e, 0xc8, 0x49, 0x0c, 0xc2, 0x5b, 0xd2,
-	0x65, 0xfd, 0xfe, 0x7f, 0x03, 0x00, 0x00, 0xff, 0xff, 0x09, 0x3c, 0x54, 0xc1, 0xae, 0x10, 0x00,
-	0x00,
+	// 1723 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x58, 0x4b, 0x73, 0x1b, 0xc7,
+	0x11, 0xe6, 0x12, 0x20, 0x45, 0x34, 0xf8, 0xd2, 0x92, 0xb2, 0x40, 0x85, 0x01, 0xa9, 0x75, 0xec,
+	0x30, 0xe5, 0xf2, 0xc2, 0xa4, 0x2a, 0x55, 0x2e, 0x55, 0x5c, 0x2e, 0x12, 0x94, 0x2d, 0x9a, 0xb1,
+	0x45, 0x2f, 0x19, 0xaa, 0x92, 0x1c, 0xb6, 0x06, 0x33, 0x23, 0x60, 0x8a, 0xbb, 0x3b, 0xab, 0x99,
+	0xc1, 0x4a, 0xb8, 0xe4, 0x9c, 0xa3, 0x73, 0x73, 0x25, 0x17, 0x27, 0x7f, 0x20, 0x7f, 0xc3, 0x47,
+	0x1f, 0x73, 0xb2, 0x53, 0xd2, 0x21, 0x87, 0xfc, 0x89, 0xd4, 0xcc, 0x3e, 0x01, 0x3e, 0x02, 0x95,
+	0x93, 0xdb, 0xa2, 0xa7, 0xfb, 0xeb, 0x9e, 0x7e, 0x7c, 0x3d, 0x24, 0xec, 0xb1, 0x48, 0x51, 0x81,
+	0x07, 0x88, 0x45, 0xbe, 0xa4, 0x78, 0x28, 0x98, 0x1a, 0x75, 0x30, 0x4e, 0x3a, 0xb1, 0xe0, 0x09,
+	0x23, 0x54, 0x74, 0x92, 0xdd, 0xe2, 0xdb, 0x8d, 0x05, 0x57, 0xdc, 0x7e, 0xfb, 0x0a, 0x1b, 0x17,
+	0xe3, 0xc4, 0x2d, 0xf4, 0x92, 0xdd, 0x7b, 0x1f, 0x5c, 0x07, 0x9c, 0xec, 0x76, 0xe4, 0x00, 0x09,
+	0x4a, 0x7c, 0xcc, 0x23, 0x39, 0x0c, 0x73, 0xd8, 0x7b, 0xef, 0xdc, 0x60, 0xf1, 0x82, 0x09, 0x9a,
+	0xa9, 0xad, 0xf7, 0x79, 0x9f, 0x9b, 0xcf, 0x8e, 0xfe, 0xca, 0xa4, 0x5b, 0x7d, 0xce, 0xfb, 0x01,
+	0xed, 0x98, 0x5f, 0xbd, 0xe1, 0xb3, 0x8e, 0x62, 0x21, 0x95, 0x0a, 0x85, 0x71, 0xa6, 0xd0, 0x9e,
+	0x54, 0x20, 0x43, 0x81, 0x14, 0xe3, 0x51, 0x0e, 0xc0, 0x7a, 0xb8, 0x83, 0xb9, 0xa0, 0x1d, 0x1c,
+	0x30, 0x1a, 0x29, 0xed, 0x35, 0xfd, 0xca, 0x14, 0x3a, 0x5a, 0x21, 0x60, 0xfd, 0x81, 0x4a, 0xc5,
+	0xb2, 0xa3, 0x68, 0x44, 0xa8, 0x08, 0x59, 0xaa, 0x5c, 0xfe, 0xca, 0x0c, 0x36, 0x2b, 0xe7, 0x58,
+	0x8c, 0x62, 0xc5, 0x3b, 0x17, 0x74, 0x24, 0xb3, 0xd3, 0x77, 0x31, 0x97, 0x21, 0x97, 0x1d, 0xaa,
+	0x33, 0x16, 0x61, 0xda, 0x49, 0x76, 0x7b, 0x54, 0xa1, 0xdd, 0x42, 0x90, 0xc7, 0x9d, 0xe9, 0xf5,
+	0x90, 0x2c, 0x75, 0x30, 0x67, 0x59, 0xdc, 0xce, 0x0f, 0xf3, 0xd0, 0xea, 0x66, 0x89, 0xdc, 0x27,
+	0x84, 0xe9, 0x2b, 0x9d, 0x08, 0x1e, 0x73, 0x89, 0x02, 0x7b, 0x1d, 0xe6, 0x14, 0x53, 0x01, 0x6d,
+	0x59, 0xdb, 0xd6, 0x4e, 0xc3, 0x4b, 0x7f, 0xd8, 0xdb, 0xd0, 0x24, 0x54, 0x62, 0xc1, 0x62, 0xad,
+	0xdc, 0x9a, 0x35, 0x67, 0x55, 0x91, 0xbd, 0x01, 0x0b, 0x69, 0x1d, 0x18, 0x69, 0xd5, 0xcc, 0xf1,
+	0x2d, 0xf3, 0xfb, 0x88, 0xd8, 0x9f, 0xc2, 0x32, 0x8b, 0x98, 0x62, 0x28, 0xf0, 0x07, 0x54, 0x67,
+	0xa3, 0x55, 0xdf, 0xb6, 0x76, 0x9a, 0x7b, 0xf7, 0x5c, 0xd6, 0xc3, 0xae, 0x4e, 0xa0, 0x9b, 0xa5,
+	0x2d, 0xd9, 0x75, 0x1f, 0x1b, 0x8d, 0x83, 0xfa, 0xb7, 0xdf, 0x6f, 0xcd, 0x78, 0x4b, 0x99, 0x5d,
+	0x2a, 0xb4, 0xef, 0xc3, 0x62, 0x9f, 0x46, 0x54, 0x32, 0xe9, 0x0f, 0x90, 0x1c, 0xb4, 0xe6, 0xb6,
+	0xad, 0x9d, 0x45, 0xaf, 0x99, 0xc9, 0x1e, 0x23, 0x39, 0xb0, 0xb7, 0xa0, 0xd9, 0x63, 0x11, 0x12,
+	0xa3, 0x54, 0x63, 0xde, 0x68, 0x40, 0x2a, 0x32, 0x0a, 0x5d, 0x00, 0x19, 0xa3, 0x17, 0x91, 0xaf,
+	0xab, 0xdd, 0xba, 0x95, 0x05, 0x92, 0x56, 0xda, 0xcd, 0x2b, 0xed, 0x9e, 0xe5, 0xad, 0x70, 0xb0,
+	0xa0, 0x03, 0xf9, 0xea, 0x87, 0x2d, 0xcb, 0x6b, 0x18, 0x3b, 0x7d, 0x62, 0x7f, 0x01, 0xab, 0xc3,
+	0xa8, 0xc7, 0x23, 0xc2, 0xa2, 0xbe, 0x1f, 0x53, 0xc1, 0x38, 0x69, 0x2d, 0x18, 0xa8, 0x8d, 0x4b,
+	0x50, 0x87, 0x59, 0xd3, 0xa4, 0x48, 0x5f, 0x6b, 0xa4, 0x95, 0xc2, 0xf8, 0xc4, 0xd8, 0xda, 0x5f,
+	0x82, 0x8d, 0x71, 0x62, 0x42, 0xe2, 0x43, 0x95, 0x23, 0x36, 0xa6, 0x47, 0x5c, 0xc5, 0x38, 0x39,
+	0x4b, 0xad, 0x33, 0xc8, 0xdf, 0xc3, 0x5d, 0x25, 0x50, 0x24, 0x9f, 0x51, 0x31, 0x89, 0x0b, 0xd3,
+	0xe3, 0xde, 0xc9, 0x31, 0xc6, 0xc1, 0x1f, 0xc3, 0x76, 0x3e, 0x89, 0xbe, 0xa0, 0x84, 0x49, 0x25,
+	0x58, 0x6f, 0xa8, 0x6d, 0xfd, 0x67, 0x02, 0x61, 0xd3, 0x23, 0x4d, 0xd3, 0x04, 0xed, 0x5c, 0xcf,
+	0x1b, 0x53, 0xfb, 0x24, 0xd3, 0xb2, 0x9f, 0xc0, 0xcf, 0x7a, 0x01, 0xc7, 0x17, 0x52, 0x07, 0xe7,
+	0x8f, 0x21, 0x19, 0xd7, 0x21, 0x93, 0x52, 0xa3, 0x2d, 0x6e, 0x5b, 0x3b, 0x35, 0xef, 0x7e, 0xaa,
+	0x7b, 0x42, 0xc5, 0x61, 0x45, 0xf3, 0xac, 0xa2, 0x68, 0xbf, 0x0f, 0xf6, 0x80, 0x49, 0xc5, 0x05,
+	0xc3, 0x28, 0xf0, 0x69, 0xa4, 0x04, 0xa3, 0xb2, 0xb5, 0x64, 0xcc, 0x6f, 0x97, 0x27, 0x8f, 0xd2,
+	0x03, 0xfb, 0x33, 0xb8, 0x7f, 0xad, 0x53, 0x1f, 0x0f, 0x50, 0x14, 0xd1, 0xa0, 0xb5, 0x6c, 0xae,
+	0xb2, 0x45, 0xae, 0xf1, 0xd9, 0x4d, 0xd5, 0x1e, 0x2e, 0xfc, 0xf1, 0x9b, 0xad, 0x99, 0xaf, 0xbf,
+	0xd9, 0x9a, 0x71, 0xfe, 0x6e, 0xc1, 0xdd, 0x6e, 0x71, 0xf1, 0x90, 0x27, 0x28, 0xf8, 0x7f, 0x0e,
+	0xd8, 0x3e, 0x34, 0xa4, 0xe2, 0x71, 0xda, 0xd2, 0xf5, 0x37, 0x68, 0xe9, 0x05, 0x6d, 0xa6, 0x0f,
+	0x9c, 0xbf, 0x58, 0xb0, 0xfe, 0xe8, 0xf9, 0x90, 0x25, 0x1c, 0xa3, 0xff, 0x09, 0x1f, 0x1c, 0xc3,
+	0x12, 0xad, 0xe0, 0xc9, 0x56, 0x6d, 0xbb, 0xb6, 0xd3, 0xdc, 0x7b, 0xc7, 0x4d, 0xc9, 0xc9, 0x2d,
+	0x38, 0x2b, 0x23, 0x28, 0xb7, 0xea, 0xdd, 0x1b, 0xb7, 0x75, 0xfe, 0x66, 0xc1, 0x3d, 0x9d, 0xe5,
+	0x3e, 0xf5, 0xe8, 0x0b, 0x24, 0xc8, 0x21, 0x8d, 0x78, 0x28, 0x7f, 0x74, 0x8c, 0x0e, 0x2c, 0x11,
+	0x83, 0xe4, 0x2b, 0xee, 0x23, 0x42, 0x4c, 0x8c, 0x46, 0x47, 0x0b, 0xcf, 0xf8, 0x3e, 0x21, 0xf6,
+	0x0e, 0xac, 0x96, 0x3a, 0x42, 0xd7, 0x52, 0xa7, 0x58, 0xab, 0x2d, 0xe7, 0x6a, 0xa6, 0xc2, 0xd4,
+	0xf9, 0xb7, 0x05, 0xab, 0x9f, 0x06, 0xbc, 0x87, 0x82, 0xd3, 0x00, 0xc9, 0x81, 0xee, 0xb0, 0x91,
+	0x2e, 0x8d, 0xa0, 0xd9, 0x68, 0x9b, 0xf0, 0xa6, 0x2e, 0x8d, 0x36, 0x33, 0x64, 0xf3, 0x31, 0xdc,
+	0x2e, 0x86, 0xad, 0xe8, 0x00, 0x73, 0x9b, 0x83, 0xb5, 0x57, 0xdf, 0x6f, 0xad, 0xe4, 0x8d, 0xd6,
+	0x35, 0xdd, 0x70, 0xe8, 0xad, 0xe0, 0x31, 0x01, 0xb1, 0xdb, 0xd0, 0x64, 0x3d, 0xec, 0x4b, 0xfa,
+	0xdc, 0x8f, 0x86, 0xa1, 0x69, 0x9e, 0xba, 0xd7, 0x60, 0x3d, 0x7c, 0x4a, 0x9f, 0x7f, 0x31, 0x0c,
+	0xed, 0x07, 0xf0, 0x56, 0xbe, 0x86, 0xfd, 0x04, 0x05, 0x66, 0xc9, 0xea, 0x74, 0x08, 0xd3, 0x4b,
+	0x8b, 0xde, 0x5a, 0x7e, 0x7a, 0x8e, 0x02, 0xed, 0x6c, 0x9f, 0x10, 0xe1, 0xfc, 0x6b, 0x0e, 0xe6,
+	0x4f, 0x90, 0x40, 0xa1, 0xb4, 0xcf, 0x60, 0x45, 0xd1, 0x30, 0x0e, 0x90, 0xa2, 0x7e, 0x4a, 0xe4,
+	0xd9, 0x4d, 0xdf, 0x33, 0x04, 0x5f, 0x5d, 0x80, 0x6e, 0x65, 0xe5, 0x25, 0xbb, 0x6e, 0xd7, 0x48,
+	0x4f, 0x15, 0x52, 0xd4, 0x5b, 0xce, 0x31, 0x52, 0xa1, 0xfd, 0x21, 0xb4, 0x94, 0x18, 0x4a, 0x55,
+	0x52, 0x6c, 0xc9, 0x2d, 0x69, 0x2d, 0xdf, 0xca, 0xcf, 0x53, 0x56, 0x2a, 0x38, 0xe5, 0x6a, 0x36,
+	0xad, 0xfd, 0x18, 0x36, 0x3d, 0x85, 0x35, 0xbd, 0x8a, 0x26, 0x31, 0xeb, 0xd3, 0x63, 0xde, 0xd6,
+	0xf6, 0xe3, 0xa0, 0x5f, 0x82, 0x9d, 0x48, 0x3c, 0x89, 0x39, 0xf7, 0x06, 0x71, 0x26, 0x12, 0x8f,
+	0x43, 0x12, 0xd8, 0x94, 0xba, 0xf9, 0xfc, 0x90, 0x2a, 0xc3, 0xcd, 0x71, 0x40, 0x23, 0x26, 0x07,
+	0x39, 0xf8, 0xfc, 0xf4, 0xe0, 0x1b, 0x06, 0xe8, 0x73, 0x8d, 0xe3, 0xe5, 0x30, 0x99, 0x97, 0x2e,
+	0xb4, 0xaf, 0xf6, 0x52, 0x14, 0xe8, 0x96, 0x29, 0xd0, 0x4f, 0xae, 0x80, 0x28, 0xaa, 0xb4, 0x07,
+	0x77, 0x42, 0xf4, 0xd2, 0x57, 0x03, 0xc1, 0x95, 0x0a, 0x28, 0xf1, 0x63, 0x84, 0x2f, 0xa8, 0x92,
+	0x66, 0x91, 0xd6, 0xbc, 0xb5, 0x10, 0xbd, 0x3c, 0xcb, 0xcf, 0x4e, 0xd2, 0x23, 0x5b, 0xc2, 0xbb,
+	0x95, 0xbd, 0xa3, 0x99, 0xc0, 0x37, 0x43, 0xe8, 0x0b, 0xda, 0xd7, 0xe4, 0x8c, 0xd2, 0x15, 0x44,
+	0x69, 0xb1, 0x3b, 0x33, 0xb6, 0xd1, 0x4f, 0xa1, 0x82, 0x69, 0xba, 0x9c, 0x45, 0xd9, 0x03, 0xc3,
+	0x29, 0xd7, 0x53, 0xc1, 0x2b, 0x5e, 0x05, 0xeb, 0x13, 0x4a, 0x9d, 0x5f, 0x40, 0xc3, 0x0c, 0xf4,
+	0x3e, 0xbe, 0x90, 0xf6, 0x26, 0x34, 0xf4, 0x64, 0x50, 0x29, 0xa9, 0x6c, 0x59, 0x86, 0x07, 0x4a,
+	0x81, 0xa3, 0x60, 0xe3, 0xba, 0x87, 0x95, 0xb4, 0x9f, 0xc2, 0xad, 0x98, 0x9a, 0xad, 0x6f, 0x0c,
+	0x9b, 0x7b, 0x1f, 0xb9, 0x53, 0xbc, 0x8a, 0xdd, 0xeb, 0x00, 0xbd, 0x1c, 0xcd, 0x11, 0xe5, 0x73,
+	0x6e, 0x62, 0xd9, 0x48, 0xfb, 0x7c, 0xd2, 0xe9, 0xaf, 0xde, 0xc8, 0xe9, 0x04, 0x5e, 0xe9, 0xf3,
+	0x3d, 0x68, 0xee, 0xa7, 0xd7, 0xfe, 0x35, 0x93, 0xea, 0x72, 0x5a, 0x16, 0xab, 0x69, 0xf9, 0x0c,
+	0x96, 0xb3, 0x1d, 0x79, 0xc6, 0x0d, 0x29, 0xd9, 0x3f, 0x05, 0xc8, 0x96, 0xab, 0x26, 0xb3, 0x94,
+	0xb6, 0x1b, 0x99, 0xe4, 0x88, 0x8c, 0xed, 0xba, 0xd9, 0xb1, 0x5d, 0xe7, 0x78, 0xb0, 0x72, 0x2e,
+	0xf1, 0x6f, 0xf2, 0x07, 0xd4, 0x93, 0x58, 0xda, 0x77, 0x60, 0x5e, 0xcf, 0x51, 0x06, 0x54, 0xf7,
+	0xe6, 0x12, 0x89, 0x8f, 0x0c, 0x73, 0x97, 0x8f, 0x34, 0x1e, 0xfb, 0x8c, 0xc8, 0xd6, 0xec, 0x76,
+	0x6d, 0xa7, 0xee, 0x2d, 0x0f, 0x4b, 0xf3, 0x23, 0x22, 0x9d, 0xdf, 0x42, 0xb3, 0x02, 0x68, 0x2f,
+	0xc3, 0x6c, 0x81, 0x35, 0xcb, 0x88, 0xfd, 0x10, 0x36, 0x4a, 0xa0, 0x71, 0x2a, 0x4e, 0x11, 0x1b,
+	0xde, 0xdd, 0x42, 0x61, 0x8c, 0x8d, 0xa5, 0xf3, 0x04, 0xd6, 0x8f, 0xca, 0xc1, 0x2f, 0x88, 0x7e,
+	0xec, 0x86, 0xd6, 0xf8, 0x36, 0xdf, 0x84, 0x46, 0xf1, 0x97, 0x88, 0xb9, 0x7d, 0xdd, 0x2b, 0x05,
+	0x4e, 0x08, 0xab, 0xe7, 0x12, 0x9f, 0xd2, 0x88, 0x94, 0x60, 0xd7, 0x24, 0xe0, 0x60, 0x12, 0x68,
+	0xea, 0x97, 0x6e, 0xe9, 0x8e, 0xc3, 0xc6, 0x39, 0x0a, 0x18, 0x41, 0x8a, 0x8b, 0x53, 0xaa, 0xd2,
+	0x25, 0x9c, 0x8f, 0xa3, 0x07, 0xf5, 0x80, 0x49, 0x95, 0x75, 0xd6, 0x87, 0xd7, 0x76, 0x56, 0xb2,
+	0xeb, 0x5e, 0x07, 0x72, 0x88, 0x14, 0xca, 0x66, 0xd1, 0x60, 0x39, 0x3f, 0x87, 0xb5, 0xcf, 0x91,
+	0x1a, 0x0a, 0x4a, 0xc6, 0x6a, 0xbc, 0x0a, 0x35, 0x5d, 0x3f, 0xcb, 0xd4, 0x4f, 0x7f, 0xea, 0x37,
+	0x41, 0xeb, 0xd1, 0xcb, 0x98, 0x0b, 0x45, 0xc9, 0xa5, 0x8c, 0xdc, 0x90, 0xde, 0x0b, 0x58, 0xd3,
+	0xc9, 0x92, 0x34, 0x22, 0x7e, 0x71, 0xcf, 0xb4, 0x8e, 0xcd, 0xbd, 0x5f, 0x4e, 0x35, 0x1d, 0x93,
+	0xee, 0xb2, 0x0b, 0xdc, 0x4e, 0x26, 0xe4, 0xd2, 0xf9, 0x93, 0x05, 0xad, 0x63, 0x3a, 0xda, 0x97,
+	0x92, 0xf5, 0xa3, 0x90, 0x46, 0x4a, 0xf3, 0x20, 0xc2, 0x54, 0x7f, 0xda, 0x6f, 0xc3, 0x52, 0xb1,
+	0x77, 0xcd, 0xba, 0xb5, 0xcc, 0xba, 0x5d, 0xcc, 0x85, 0x7a, 0xc0, 0xec, 0x87, 0x00, 0xb1, 0xa0,
+	0x89, 0x8f, 0xfd, 0x0b, 0x3a, 0xca, 0xaa, 0xb8, 0x59, 0x5d, 0xa3, 0xe9, 0xdf, 0x89, 0xee, 0xc9,
+	0xb0, 0x17, 0x30, 0x7c, 0x4c, 0x47, 0xde, 0x82, 0xd6, 0xef, 0x1e, 0xd3, 0x91, 0x7e, 0x17, 0xc5,
+	0xfc, 0x05, 0x15, 0x66, 0xf7, 0xd5, 0xbc, 0xf4, 0x87, 0xf3, 0x67, 0x0b, 0xee, 0x16, 0xe5, 0xc8,
+	0xdb, 0xf5, 0x64, 0xd8, 0xd3, 0x16, 0x37, 0xe4, 0xed, 0x52, 0xb4, 0xb3, 0x57, 0x44, 0xfb, 0x31,
+	0x2c, 0x16, 0x03, 0xa2, 0xe3, 0xad, 0x4d, 0x11, 0x6f, 0x33, 0xb7, 0x38, 0xa6, 0x23, 0xe7, 0x0f,
+	0x95, 0xd8, 0x0e, 0x46, 0x15, 0xee, 0x13, 0xff, 0x25, 0xb6, 0xc2, 0x6d, 0x35, 0x36, 0x5c, 0xb5,
+	0xbf, 0x74, 0x81, 0xda, 0xe5, 0x0b, 0x38, 0x7f, 0xb5, 0x60, 0xbd, 0xea, 0x55, 0x9e, 0xf1, 0x13,
+	0x31, 0x8c, 0xe8, 0x4d, 0xde, 0xcb, 0xf1, 0x9b, 0xad, 0x8e, 0xdf, 0x53, 0x58, 0x1e, 0x0b, 0x4a,
+	0x66, 0xd9, 0xf8, 0x60, 0xaa, 0x1e, 0xab, 0xb0, 0xab, 0xb7, 0x54, 0xbd, 0x87, 0x3c, 0x78, 0xfa,
+	0xed, 0xab, 0xb6, 0xf5, 0xdd, 0xab, 0xb6, 0xf5, 0xcf, 0x57, 0x6d, 0xeb, 0xab, 0xd7, 0xed, 0x99,
+	0xef, 0x5e, 0xb7, 0x67, 0xfe, 0xf1, 0xba, 0x3d, 0xf3, 0xbb, 0x8f, 0xfa, 0x4c, 0x0d, 0x86, 0x3d,
+	0x17, 0xf3, 0xb0, 0x93, 0xfd, 0x13, 0xa0, 0xf4, 0xf5, 0x7e, 0xf1, 0x1f, 0x92, 0xe4, 0x41, 0xe7,
+	0xe5, 0xf8, 0x7f, 0x6c, 0xd4, 0x28, 0xa6, 0xb2, 0x37, 0x6f, 0x58, 0xe1, 0xc1, 0x7f, 0x02, 0x00,
+	0x00, 0xff, 0xff, 0x47, 0xa2, 0xef, 0x46, 0xe2, 0x11, 0x00, 0x00,
 }
 
 func (m *ConsumerAdditionProposal) Marshal() (dAtA []byte, err error) {
@@ -1453,7 +1575,7 @@ func (m *ConsumerAdditionProposal) MarshalToSizedBuffer(dAtA []byte) (int, error
 		i--
 		dAtA[i] = 0x5a
 	}
-	n1, err1 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.TransferTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.TransferTimeoutPeriod):])
+	n1, err1 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.TransferTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.TransferTimeoutPeriod):])
 	if err1 != nil {
 		return 0, err1
 	}
@@ -1461,7 +1583,7 @@ func (m *ConsumerAdditionProposal) MarshalToSizedBuffer(dAtA []byte) (int, error
 	i = encodeVarintProvider(dAtA, i, uint64(n1))
 	i--
 	dAtA[i] = 0x52
-	n2, err2 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
+	n2, err2 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
 	if err2 != nil {
 		return 0, err2
 	}
@@ -1469,7 +1591,7 @@ func (m *ConsumerAdditionProposal) MarshalToSizedBuffer(dAtA []byte) (int, error
 	i = encodeVarintProvider(dAtA, i, uint64(n2))
 	i--
 	dAtA[i] = 0x4a
-	n3, err3 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.UnbondingPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.UnbondingPeriod):])
+	n3, err3 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.UnbondingPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.UnbondingPeriod):])
 	if err3 != nil {
 		return 0, err3
 	}
@@ -1477,7 +1599,7 @@ func (m *ConsumerAdditionProposal) MarshalToSizedBuffer(dAtA []byte) (int, error
 	i = encodeVarintProvider(dAtA, i, uint64(n3))
 	i--
 	dAtA[i] = 0x42
-	n4, err4 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.SpawnTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.SpawnTime):])
+	n4, err4 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.SpawnTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.SpawnTime):])
 	if err4 != nil {
 		return 0, err4
 	}
@@ -1553,7 +1675,7 @@ func (m *ConsumerRemovalProposal) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	_ = i
 	var l int
 	_ = l
-	n6, err6 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.StopTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.StopTime):])
+	n6, err6 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.StopTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.StopTime):])
 	if err6 != nil {
 		return 0, err6
 	}
@@ -1730,7 +1852,7 @@ func (m *GlobalSlashEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	n7, err7 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.RecvTime, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.RecvTime):])
+	n7, err7 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.RecvTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.RecvTime):])
 	if err7 != nil {
 		return 0, err7
 	}
@@ -1783,7 +1905,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x3a
 	}
-	n9, err9 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.SlashMeterReplenishPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.SlashMeterReplenishPeriod):])
+	n9, err9 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.SlashMeterReplenishPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.SlashMeterReplenishPeriod):])
 	if err9 != nil {
 		return 0, err9
 	}
@@ -1791,7 +1913,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i = encodeVarintProvider(dAtA, i, uint64(n9))
 	i--
 	dAtA[i] = 0x32
-	n10, err10 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.VscTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.VscTimeoutPeriod):])
+	n10, err10 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.VscTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.VscTimeoutPeriod):])
 	if err10 != nil {
 		return 0, err10
 	}
@@ -1799,7 +1921,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i = encodeVarintProvider(dAtA, i, uint64(n10))
 	i--
 	dAtA[i] = 0x2a
-	n11, err11 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.InitTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.InitTimeoutPeriod):])
+	n11, err11 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.InitTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.InitTimeoutPeriod):])
 	if err11 != nil {
 		return 0, err11
 	}
@@ -1807,7 +1929,7 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i = encodeVarintProvider(dAtA, i, uint64(n11))
 	i--
 	dAtA[i] = 0x22
-	n12, err12 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
+	n12, err12 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.CcvTimeoutPeriod, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.CcvTimeoutPeriod):])
 	if err12 != nil {
 		return 0, err12
 	}
@@ -1831,43 +1953,6 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i -= size
 			i = encodeVarintProvider(dAtA, i, uint64(size))
 		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *HandshakeMetadata) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *HandshakeMetadata) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *HandshakeMetadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Version) > 0 {
-		i -= len(m.Version)
-		copy(dAtA[i:], m.Version)
-		i = encodeVarintProvider(dAtA, i, uint64(len(m.Version)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.ProviderFeePoolAddr) > 0 {
-		i -= len(m.ProviderFeePoolAddr)
-		copy(dAtA[i:], m.ProviderFeePoolAddr)
-		i = encodeVarintProvider(dAtA, i, uint64(len(m.ProviderFeePoolAddr)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -2187,7 +2272,7 @@ func (m *VscSendTimestamp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	n16, err16 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.Timestamp, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.Timestamp):])
+	n16, err16 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.Timestamp, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Timestamp):])
 	if err16 != nil {
 		return 0, err16
 	}
@@ -2199,6 +2284,128 @@ func (m *VscSendTimestamp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintProvider(dAtA, i, uint64(m.VscId))
 		i--
 		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ValidatorSetChangePackets) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ValidatorSetChangePackets) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ValidatorSetChangePackets) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.List) > 0 {
+		for iNdEx := len(m.List) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.List[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintProvider(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MaturedUnbondingOps) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MaturedUnbondingOps) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MaturedUnbondingOps) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Ids) > 0 {
+		dAtA18 := make([]byte, len(m.Ids)*10)
+		var j17 int
+		for _, num := range m.Ids {
+			for num >= 1<<7 {
+				dAtA18[j17] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j17++
+			}
+			dAtA18[j17] = uint8(num)
+			j17++
+		}
+		i -= j17
+		copy(dAtA[i:], dAtA18[:j17])
+		i = encodeVarintProvider(dAtA, i, uint64(j17))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ExportedVscSendTimestamp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ExportedVscSendTimestamp) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ExportedVscSendTimestamp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.VscSendTimestamps) > 0 {
+		for iNdEx := len(m.VscSendTimestamps) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.VscSendTimestamps[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintProvider(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintProvider(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -2429,13 +2636,13 @@ func (m *ConsumerAdditionProposal) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.SpawnTime)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.SpawnTime)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.UnbondingPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.UnbondingPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.CcvTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.TransferTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.TransferTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
 	l = len(m.ConsumerRedistributionFraction)
 	if l > 0 {
@@ -2472,7 +2679,7 @@ func (m *ConsumerRemovalProposal) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.StopTime)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.StopTime)
 	n += 1 + l + sovProvider(uint64(l))
 	return n
 }
@@ -2535,7 +2742,7 @@ func (m *GlobalSlashEntry) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.RecvTime)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.RecvTime)
 	n += 1 + l + sovProvider(uint64(l))
 	l = len(m.ConsumerChainID)
 	if l > 0 {
@@ -2565,13 +2772,13 @@ func (m *Params) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovProvider(uint64(l))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.CcvTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.CcvTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.InitTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.InitTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.VscTimeoutPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.VscTimeoutPeriod)
 	n += 1 + l + sovProvider(uint64(l))
-	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.SlashMeterReplenishPeriod)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.SlashMeterReplenishPeriod)
 	n += 1 + l + sovProvider(uint64(l))
 	l = len(m.SlashMeterReplenishFraction)
 	if l > 0 {
@@ -2582,23 +2789,6 @@ func (m *Params) Size() (n int) {
 	}
 	l = m.ConsumerRewardDenomRegistrationFee.Size()
 	n += 1 + l + sovProvider(uint64(l))
-	return n
-}
-
-func (m *HandshakeMetadata) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ProviderFeePoolAddr)
-	if l > 0 {
-		n += 1 + l + sovProvider(uint64(l))
-	}
-	l = len(m.Version)
-	if l > 0 {
-		n += 1 + l + sovProvider(uint64(l))
-	}
 	return n
 }
 
@@ -2741,8 +2931,58 @@ func (m *VscSendTimestamp) Size() (n int) {
 	if m.VscId != 0 {
 		n += 1 + sovProvider(uint64(m.VscId))
 	}
-	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.Timestamp)
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Timestamp)
 	n += 1 + l + sovProvider(uint64(l))
+	return n
+}
+
+func (m *ValidatorSetChangePackets) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.List) > 0 {
+		for _, e := range m.List {
+			l = e.Size()
+			n += 1 + l + sovProvider(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *MaturedUnbondingOps) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Ids) > 0 {
+		l = 0
+		for _, e := range m.Ids {
+			l += sovProvider(uint64(e))
+		}
+		n += 1 + sovProvider(uint64(l)) + l
+	}
+	return n
+}
+
+func (m *ExportedVscSendTimestamp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovProvider(uint64(l))
+	}
+	if len(m.VscSendTimestamps) > 0 {
+		for _, e := range m.VscSendTimestamps {
+			l = e.Size()
+			n += 1 + l + sovProvider(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -3089,7 +3329,7 @@ func (m *ConsumerAdditionProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.SpawnTime, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.SpawnTime, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3122,7 +3362,7 @@ func (m *ConsumerAdditionProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.UnbondingPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.UnbondingPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3155,7 +3395,7 @@ func (m *ConsumerAdditionProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.CcvTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.CcvTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3188,7 +3428,7 @@ func (m *ConsumerAdditionProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.TransferTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.TransferTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3469,7 +3709,7 @@ func (m *ConsumerRemovalProposal) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.StopTime, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.StopTime, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -3878,7 +4118,7 @@ func (m *GlobalSlashEntry) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.RecvTime, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.RecvTime, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4047,7 +4287,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.TemplateClient == nil {
-				m.TemplateClient = &types2.ClientState{}
+				m.TemplateClient = &_07_tendermint.ClientState{}
 			}
 			if err := m.TemplateClient.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -4114,7 +4354,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.CcvTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.CcvTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4147,7 +4387,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.InitTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.InitTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4180,7 +4420,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.VscTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.VscTimeoutPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4213,7 +4453,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.SlashMeterReplenishPeriod, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.SlashMeterReplenishPeriod, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4300,120 +4540,6 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if err := m.ConsumerRewardDenomRegistrationFee.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipProvider(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthProvider
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *HandshakeMetadata) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowProvider
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: HandshakeMetadata: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: HandshakeMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProviderFeePoolAddr", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowProvider
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthProvider
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthProvider
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ProviderFeePoolAddr = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowProvider
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthProvider
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthProvider
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Version = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -5306,7 +5432,333 @@ func (m *VscSendTimestamp) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.Timestamp, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.Timestamp, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipProvider(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthProvider
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ValidatorSetChangePackets) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowProvider
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ValidatorSetChangePackets: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ValidatorSetChangePackets: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field List", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProvider
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthProvider
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthProvider
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.List = append(m.List, types3.ValidatorSetChangePacketData{})
+			if err := m.List[len(m.List)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipProvider(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthProvider
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MaturedUnbondingOps) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowProvider
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MaturedUnbondingOps: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MaturedUnbondingOps: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType == 0 {
+				var v uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowProvider
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.Ids = append(m.Ids, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowProvider
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthProvider
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthProvider
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				var count int
+				for _, integer := range dAtA[iNdEx:postIndex] {
+					if integer < 128 {
+						count++
+					}
+				}
+				elementCount = count
+				if elementCount != 0 && len(m.Ids) == 0 {
+					m.Ids = make([]uint64, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowProvider
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.Ids = append(m.Ids, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ids", wireType)
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipProvider(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthProvider
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ExportedVscSendTimestamp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowProvider
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExportedVscSendTimestamp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExportedVscSendTimestamp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProvider
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthProvider
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthProvider
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VscSendTimestamps", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProvider
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthProvider
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthProvider
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VscSendTimestamps = append(m.VscSendTimestamps, VscSendTimestamp{})
+			if err := m.VscSendTimestamps[len(m.VscSendTimestamps)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

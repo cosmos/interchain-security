@@ -3,7 +3,8 @@ sidebar_position: 2
 title: Joining Replicated Security testnet
 ---
 
-# Introduction
+## Introduction
+
 This short guide will teach you how to join the [Replicated Security testnet](https://github.com/cosmos/testnets/tree/master/replicated-security).
 
 The experience gained in the testnet will prepare you for validating interchain secured chains.
@@ -14,13 +15,13 @@ Provider and consumer chain represent distinct networks and infrastructures oper
 For general information about running cosmos-sdk based chains check out the [validator basics](https://hub.cosmos.network/main/validators/validator-setup.html) and [Running a Node section](https://docs.cosmos.network/main/run-node/run-node) of Cosmos SDK docs
 :::
 
-# Joining the provider chain
+## Joining the provider chain
+
 :::info
 At present, all validators of the provider chain must also validate all governance approved consumer chains. The consumer chains cannot have a validator set different than the provider, which means they cannot introduce validators that are not also validating the provider chain.
 :::
 
 A comprehensive guide is available [here](https://github.com/cosmos/testnets/tree/master/replicated-security/provider).
-
 
 ## Initialization
 
@@ -37,14 +38,16 @@ gaiad init $NODE_MONIKER --chain-id $CHAIN_ID --home $NODE_HOME
 Add your key to the keyring - more details available [here](https://docs.cosmos.network/main/run-node/keyring).
 
 In this example we will use the `test` keyring-backend. This option is not safe to use in production.
+
 ```bash
 gaiad keys add <key_moniker> --keyring-backend test
 
 # save the address as variable for later use
 MY_VALIDATOR_ADDRESS=$(gaiad keys show my_validator -a --keyring-backend test)
-``` 
+```
 
 Before issuing any transactions, use the `provider` testnet faucet to add funds to your address.
+
 ```bash
 curl https://faucet.rs-testnet.polypore.xyz/request?address=$MY_VALIDATOR_ADDRESS&chain=provider
 
@@ -82,6 +85,7 @@ Check this [guide](https://hub.cosmos.network/main/validators/validator-setup.ht
 After this step, your validator is created and you can start your node and catch up to the rest of the network. It is recommended that you use `statesync` to catch up to the rest of the network.
 
 You can use this script to modify your `config.toml` with the required statesync parameters.
+
 ```bash
 # create the statesync script
 $: cd $NODE_HOME
@@ -107,11 +111,13 @@ s|^(trust_hash[[:space:]]+=[[:space:]]+).*$|\1\"$TRUST_HASH\"|" $NODE_HOME/confi
 ```
 
 Then, you can execute the script:
+
 ```bash
 $: ./statesync.sh # setup config.toml for statesync
 ```
 
 Finally, copy the provider genesis and start your node:
+
 ```bash
 $: GENESIS_URL=https://github.com/cosmos/testnets/raw/master/replicated-security/provider/provider-genesis.json
 $: wget $GENESIS_URL -O genesis.json
@@ -122,7 +128,8 @@ $: gaiad start --x-crisis-skip-assert-invariants --home $NODE_HOME --p2p.seeds="
 
 Additional scripts to setup your nodes are available [here](https://github.com/cosmos/testnets/blob/master/replicated-security/provider/join-rs-provider.sh) and [here](https://github.com/cosmos/testnets/blob/master/replicated-security/provider/join-rs-provider-cv.sh). The scripts will configure your node and create the required services - the scripts only work in linux environments.
 
-# Joining consumer chains
+## Joining consumer chains
+
 :::tip
 Once you reach the active set on the provider chain, you will be required to validate all available consumer chains.
 
@@ -136,6 +143,7 @@ To join consumer chains, simply replicate the steps above for each consumer usin
 When running the provider chain and consumers on the same machine please update the `PORT` numbers for each of them and make sure they do not overlap (otherwise the binaries will not start).
 
 Important ports to re-configure:
+
 - `--rpc.laddr`
 - `--p2p.laddr`
 - `--api.address`
@@ -144,11 +152,13 @@ Important ports to re-configure:
 :::
 
 ## Re-using consensus key
+
 To reuse the key on the provider and consumer chains, simply initialize your consumer chain and place the `priv_validator_key.json` into the home directory of your consumer chain (`<consumer_home>/config/priv_validator_key.json`).
 
 When you start the chain, the consensus key will be the same on the provider and the consumer chain.
 
 ## Assigning consensus keys
+
 Whenever you initialize a new node, it will be configured with a consensus key you can use.
 
 ```bash
@@ -161,15 +171,10 @@ consumerd tendermint show-validator
 ```
 
 Then, let the provider know which key you will be using for the consumer chain:
+
 ```bash
 # machine running the provider chain
-gaiad tx provider assign-consensus-key consumer-1 '<consumer_pubkey>' --from <key_moniker> --home $NODE_HOME --gas 900000 -b block -y -o json
+gaiad tx provider assign-consensus-key consumer-1 '<consumer_pubkey>' --from <key_moniker> --home $NODE_HOME --gas 900000 -b sync -y -o json
 ```
 
 After this step, you are ready to copy the consumer genesis into your nodes's `/config` folder, start your consumer chain node and catch up to the network.
-
-## Baryon
-You can find the onboarding repo instructions for the Baryon chain [here](https://github.com/cosmos/testnets/blob/master/replicated-security/stopped/baryon-1/README.md)
-
-## Noble
-You can find the onboarding repo instructions for the Noble chain [here](https://github.com/cosmos/testnets/blob/master/replicated-security/stopped/noble-1/README.md)

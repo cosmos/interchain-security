@@ -1,30 +1,33 @@
 package keeper_test
 
 import (
+	"strings"
 	"testing"
 	"time"
+
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	exported "github.com/cosmos/ibc-go/v4/modules/core/exported"
-	ibcsimapp "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/simapp"
-	cryptotestutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
-	"github.com/golang/mock/gomock"
-	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/stretchr/testify/require"
+	abci "github.com/cometbft/cometbft/abci/types"
+
+	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // TestQueueVSCPackets tests queueing validator set updates.
 func TestQueueVSCPackets(t *testing.T) {
-	key := ibcsimapp.CreateTestPubKeys(1)[0]
+	_, _, key := ibctesting.GenerateKeys(t, 1)
 	tmPubKey, _ := cryptocodec.ToTmProtoPublicKey(key)
 
 	testCases := []struct {
@@ -239,7 +242,7 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 
 	// Generate a new slash packet data instance with double sign infraction type
 	packetData := testkeeper.GetNewSlashPacketData()
-	packetData.Infraction = stakingtypes.DoubleSign
+	packetData.Infraction = stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 
 	// Set a block height for the valset update id in the generated packet data
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
@@ -273,7 +276,7 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 
 	// Generate a new slash packet data instance with downtime infraction type
 	packetData := testkeeper.GetNewSlashPacketData()
-	packetData.Infraction = stakingtypes.Downtime
+	packetData.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
 
 	// Set a block height for the valset update id in the generated packet data
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
@@ -291,7 +294,7 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 
 	// Generate a new downtime packet data instance with downtime infraction type
 	packetData = testkeeper.GetNewSlashPacketData()
-	packetData.Infraction = stakingtypes.Downtime
+	packetData.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
 
 	// Set a block height for the valset update id in the generated packet data
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
@@ -367,22 +370,22 @@ func TestValidateSlashPacket(t *testing.T) {
 		},
 		{
 			"valid double sign packet with non-zero vscID",
-			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.DoubleSign},
+			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN},
 			false,
 		},
 		{
 			"valid downtime packet with non-zero vscID",
-			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.Downtime},
+			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.Infraction_INFRACTION_DOWNTIME},
 			false,
 		},
 		{
 			"valid double sign packet with zero vscID",
-			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.DoubleSign},
+			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN},
 			false,
 		},
 		{
 			"valid downtime packet with zero vscID",
-			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.Downtime},
+			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.Infraction_INFRACTION_DOWNTIME},
 			false,
 		},
 	}
@@ -433,7 +436,7 @@ func TestHandleSlashPacket(t *testing.T) {
 			ccv.SlashPacketData{
 				Validator:      abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				ValsetUpdateId: validVscID,
-				Infraction:     stakingtypes.Downtime,
+				Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
 			},
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
@@ -454,7 +457,7 @@ func TestHandleSlashPacket(t *testing.T) {
 			ccv.SlashPacketData{
 				Validator:      abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				ValsetUpdateId: validVscID,
-				Infraction:     stakingtypes.Downtime,
+				Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
 			},
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
@@ -476,7 +479,7 @@ func TestHandleSlashPacket(t *testing.T) {
 			ccv.SlashPacketData{
 				Validator:      abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				ValsetUpdateId: 78, // Keeper doesn't have a height mapped to this vscID.
-				Infraction:     stakingtypes.Downtime,
+				Infraction:     stakingtypes.Infraction_INFRACTION_DOWNTIME,
 			},
 
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
@@ -499,7 +502,7 @@ func TestHandleSlashPacket(t *testing.T) {
 			*ccv.NewSlashPacketData(
 				abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				0, // ValsetUpdateId = 0 uses init chain height.
-				stakingtypes.Downtime),
+				stakingtypes.Infraction_INFRACTION_DOWNTIME),
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
@@ -516,7 +519,7 @@ func TestHandleSlashPacket(t *testing.T) {
 			*ccv.NewSlashPacketData(
 				abci.Validator{Address: consumerConsAddr.ToSdkConsAddr()},
 				validVscID,
-				stakingtypes.Downtime),
+				stakingtypes.Infraction_INFRACTION_DOWNTIME),
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
@@ -697,7 +700,7 @@ func TestSendVSCPacketsToChainFailure(t *testing.T) {
 	)
 
 	// Append mocks for expected call to StopConsumerChain
-	mockCalls = append(mockCalls, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...)
+	mockCalls = append(mockCalls, testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 
 	// Assert mock calls hit
 	gomock.InOrder(mockCalls...)
@@ -712,4 +715,73 @@ func TestSendVSCPacketsToChainFailure(t *testing.T) {
 
 	// Pending VSC packets should be deleted in StopConsumerChain
 	require.Empty(t, providerKeeper.GetPendingVSCPackets(ctx, "consumerChainID"))
+}
+
+// TestOnTimeoutPacketWithNoChainFound tests the `OnTimeoutPacket` method fails when no chain is found
+func TestOnTimeoutPacketWithNoChainFound(t *testing.T) {
+	// Keeper setup
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// We do not `SetChannelToChain` for "channelID" and therefore `OnTimeoutPacket` fails
+	packet := channeltypes.Packet{
+		SourceChannel: "channelID",
+	}
+	err := providerKeeper.OnTimeoutPacket(ctx, packet)
+	require.Error(t, err)
+	require.True(t, strings.Contains(err.Error(), channeltypes.ErrInvalidChannel.Error()))
+}
+
+// TestOnTimeoutPacketStopsChain tests that the chain is stopped in case of a timeout
+func TestOnTimeoutPacketStopsChain(t *testing.T) {
+	// Keeper setup
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+
+	testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+
+	packet := channeltypes.Packet{
+		SourceChannel: "channelID",
+	}
+	err := providerKeeper.OnTimeoutPacket(ctx, packet)
+
+	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "chainID", "channelID")
+	require.NoError(t, err)
+}
+
+// TestOnAcknowledgementPacketWithNoAckError tests `OnAcknowledgementPacket` when the underlying ack contains no error
+func TestOnAcknowledgementPacketWithNoAckError(t *testing.T) {
+	// Keeper setup
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	ack := channeltypes.Acknowledgement{Response: &channeltypes.Acknowledgement_Result{Result: []byte{}}}
+	err := providerKeeper.OnAcknowledgementPacket(ctx, channeltypes.Packet{}, ack)
+	require.NoError(t, err)
+}
+
+// TestOnAcknowledgementPacketWithAckError tests `OnAcknowledgementPacket` when the underlying ack contains an error
+func TestOnAcknowledgementPacketWithAckError(t *testing.T) {
+	// Keeper setup
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+
+	// test that `OnAcknowledgementPacket` returns an error if the ack contains an error and the channel is unknown
+	ackError := channeltypes.Acknowledgement{Response: &channeltypes.Acknowledgement_Error{Error: "some error"}}
+	err := providerKeeper.OnAcknowledgementPacket(ctx, channeltypes.Packet{}, ackError)
+	require.Error(t, err)
+	require.True(t, strings.Contains(err.Error(), providertypes.ErrUnknownConsumerChannelId.Error()))
+
+	// test that we stop the consumer chain when `OnAcknowledgementPacket` returns an error and the chain is found
+	testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+	packet := channeltypes.Packet{
+		SourceChannel: "channelID",
+	}
+
+	err = providerKeeper.OnAcknowledgementPacket(ctx, packet, ackError)
+
+	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "chainID", "channelID")
+	require.NoError(t, err)
 }

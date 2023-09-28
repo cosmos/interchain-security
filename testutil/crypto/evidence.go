@@ -3,8 +3,8 @@ package crypto
 import (
 	"time"
 
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmtypes "github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	tmtypes "github.com/cometbft/cometbft/types"
 )
 
 // utility function duplicated from CometBFT

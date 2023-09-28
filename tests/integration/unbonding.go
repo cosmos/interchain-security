@@ -3,10 +3,12 @@ package integration
 import (
 	"time"
 
+	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // TestUndelegationNormalOperation tests that undelegations complete after
@@ -25,10 +27,10 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 	testCases := []struct {
 		name     string
 		shareDiv int64
-		unbond   func(expBalance, balance sdk.Int)
+		unbond   func(expBalance, balance math.Int)
 	}{
 		{
-			"provider unbonding period elapses first", 2, func(expBalance, balance sdk.Int) {
+			"provider unbonding period elapses first", 2, func(expBalance, balance math.Int) {
 				// increment time so that the unbonding period ends on the provider
 				incrementTimeByUnbondingPeriod(s, Provider)
 
@@ -43,7 +45,7 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 			},
 		},
 		{
-			"consumer unbonding period elapses first", 2, func(expBalance, balance sdk.Int) {
+			"consumer unbonding period elapses first", 2, func(expBalance, balance math.Int) {
 				// undelegation complete on consumer
 				unbondConsumer(1)
 
@@ -58,7 +60,7 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 			},
 		},
 		{
-			"no valset changes", 1, func(expBalance, balance sdk.Int) {
+			"no valset changes", 1, func(expBalance, balance math.Int) {
 				// undelegation complete on consumer
 				unbondConsumer(1)
 
@@ -367,6 +369,10 @@ func (s *CCVTestSuite) TestRedelegationNoConsumer() {
 		redelegations[0].Entries[0],
 		s.providerCtx().BlockTime().Add(stakingKeeper.UnbondingTime(s.providerCtx())),
 	)
+
+	// required before call to incrementTimeByUnbondingPeriod or else a panic
+	// occurs in ibc-go because trusted validators don't match last trusted.
+	s.providerChain.NextBlock()
 
 	// Increment time so that the unbonding period passes on the provider
 	incrementTimeByUnbondingPeriod(s, Provider)

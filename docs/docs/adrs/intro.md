@@ -34,4 +34,13 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 | ------ | ----------- | ------ |
 | [001](./adr-001-key-assignment.md) | Consumer chain key assignment | Accepted, Implemented |
 | [002](./adr-002-throttle.md) | Jail Throttling | Accepted, Implemented |
-| [003](./adr-003-equivocation-gov-proposal.md) | Equivocation governance proposal | Accepted, Implemented 
+| [003](./adr-003-equivocation-gov-proposal.md) | Equivocation governance proposal | Accepted, Implemented |
+| [004](./adr-004-denom-dos-fixes) | Denom DOS fixes | Accepted, Implemented |
+| [005](./adr-005-cryptographic-equivocation-verification.md) | Cryptographic verification of equivocation evidence | Accepted, In-progress |
+| [007](./adr-007-pause-unbonding-on-eqv-prop.md) | Pause validator unbonding during equivocation proposal | Proposed |
+| [008](./adr-008-throttle-retries.md) | Throttle with retries | Accepted, In-progress |
+| [009](./adr-009-soft-opt-out.md) | Soft Opt-out | Accepted, Implemented |
+| [010](./adr-010-standalone-changeover.md) | Standalone to Consumer Changeover | Accepted, Implemented |
+| [011](./adr-011-improving-test-confidence.md) | Improving testing and increasing confidence | Proposed |
+| [012](./adr-012-separate-releasing.md) | Separate Releasing | Proposed |
+| [013](./adr-013-equivocation-slashing.md) | Slashing on the provider for consumer equivocation | Proposed |

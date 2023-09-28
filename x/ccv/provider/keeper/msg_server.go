@@ -7,12 +7,15 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
 	errorsmod "cosmossdk.io/errors"
+
+	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
-	tmtypes "github.com/tendermint/tendermint/types"
+
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 type msgServer struct {

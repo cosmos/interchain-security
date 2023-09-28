@@ -12,23 +12,23 @@ import (
 // forkConsumerChainAction forks the consumer chain by cloning of a validator node
 // Note that the chain fork is running in an different network
 type forkConsumerChainAction struct {
-	consumerChain chainID
-	providerChain chainID
-	validator     validatorID
-	relayerConfig string
+	ConsumerChain ChainID
+	ProviderChain ChainID
+	Validator     ValidatorID
+	RelayerConfig string
 }
 
 func (tr TestRun) forkConsumerChain(action forkConsumerChainAction, verbose bool) {
-	valCfg := tr.validatorConfigs[action.validator]
+	valCfg := tr.validatorConfigs[action.Validator]
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	configureNodeCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
-		"/testnet-scripts/fork-consumer.sh", tr.chainConfigs[action.consumerChain].binaryName,
-		string(action.validator), string(action.consumerChain),
-		tr.chainConfigs[action.consumerChain].ipPrefix,
-		tr.chainConfigs[action.providerChain].ipPrefix,
-		valCfg.mnemonic,
-		action.relayerConfig,
+	configureNodeCmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "/bin/bash",
+		"/testnet-scripts/fork-consumer.sh", tr.chainConfigs[action.ConsumerChain].BinaryName,
+		string(action.Validator), string(action.ConsumerChain),
+		tr.chainConfigs[action.ConsumerChain].IpPrefix,
+		tr.chainConfigs[action.ProviderChain].IpPrefix,
+		valCfg.Mnemonic,
+		action.RelayerConfig,
 	)
 
 	if verbose {
@@ -64,10 +64,10 @@ func (tr TestRun) forkConsumerChain(action forkConsumerChainAction, verbose bool
 }
 
 type updateLightClientAction struct {
-	chain         chainID
-	hostChain     chainID
-	relayerConfig string
-	clientID      string
+	Chain         ChainID
+	HostChain     ChainID
+	RelayerConfig string
+	ClientID      string
 }
 
 func (tr TestRun) updateLightClient(
@@ -75,15 +75,15 @@ func (tr TestRun) updateLightClient(
 	verbose bool,
 ) {
 	// retrieve a trusted height of the consumer light client
-	trustedHeight := tr.getTrustedHeight(action.hostChain, action.clientID, 2)
+	trustedHeight := tr.getTrustedHeight(action.HostChain, action.ClientID, 2)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
-		"--config", action.relayerConfig,
+	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "hermes",
+		"--config", action.RelayerConfig,
 		"update",
 		"client",
-		"--client", action.clientID,
-		"--host-chain", string(action.hostChain),
+		"--client", action.ClientID,
+		"--host-chain", string(action.HostChain),
 		"--trusted-height", strconv.Itoa(int(trustedHeight.RevisionHeight)),
 	)
 	if verbose {
@@ -95,11 +95,11 @@ func (tr TestRun) updateLightClient(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	tr.waitBlocks(action.hostChain, 5, 30*time.Second)
+	tr.waitBlocks(action.HostChain, 5, 30*time.Second)
 }
 
 type assertChainIsHaltedAction struct {
-	chain chainID
+	chain ChainID
 }
 
 // assertChainIsHalted verifies that the chain isn't producing blocks

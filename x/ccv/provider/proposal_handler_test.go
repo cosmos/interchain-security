@@ -4,18 +4,18 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // TestProviderProposalHandler tests the highest level handler for proposals
@@ -28,7 +28,7 @@ func TestProviderProposalHandler(t *testing.T) {
 
 	testCases := []struct {
 		name                      string
-		content                   govtypes.Content
+		content                   govv1beta1.Content
 		blockTime                 time.Time
 		expValidConsumerAddition  bool
 		expValidConsumerRemoval   bool
@@ -87,9 +87,14 @@ func TestProviderProposalHandler(t *testing.T) {
 		},
 		{
 			name: "unsupported proposal type",
-			content: distributiontypes.NewCommunityPoolSpendProposal(
-				"title", "desc", []byte{},
-				sdk.NewCoins(sdk.NewCoin("communityfunds", sdk.NewInt(10)))),
+			// lint rule disabled because this is a test case for an unsupported proposal type
+			// nolint:staticcheck
+			content: &distributiontypes.CommunityPoolSpendProposal{
+				Title:       "title",
+				Description: "desc",
+				Recipient:   "",
+				Amount:      sdk.NewCoins(sdk.NewCoin("communityfunds", sdk.NewInt(10))),
+			},
 		},
 	}
 
@@ -110,6 +115,9 @@ func TestProviderProposalHandler(t *testing.T) {
 
 		case tc.expValidConsumerRemoval:
 			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+
+			// assert mocks for expected calls to `StopConsumerChain` when closing the underlying channel
+			gomock.InOrder(testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
 
 		case tc.expValidEquivocation:
 			providerKeeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(equivocation.GetConsensusAddress()))
