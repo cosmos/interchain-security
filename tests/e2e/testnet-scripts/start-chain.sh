@@ -367,11 +367,7 @@ NODE_HOMES=${NODE_HOMES%?}
 # CometMock takes the role of the query node
 if [[ "$USE_COMETMOCK" == "true" ]]; then
     sleep 2
-<<<<<<< HEAD
-    ip netns exec $QUERY_NET_NAMESPACE_NAME cometmock $NODE_LISTEN_ADDR_STR /$CHAIN_ID/genesis.json tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658 $NODE_HOMES &> cometmock_${CHAIN_ID}_out.log &
-=======
     ip netns exec $QUERY_NET_NAMESPACE_NAME cometmock $NODE_LISTEN_ADDR_STR /$CHAIN_ID/genesis.json tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658 $NODE_HOMES grpc &> cometmock_${CHAIN_ID}_out.log &
->>>>>>> main
     sleep 3
 fi
 
