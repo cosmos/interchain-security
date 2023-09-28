@@ -314,12 +314,12 @@ module CCV {
         val providerState = currentState.providerState
         val consumerState = GetEmptyConsumerState
         // add the consumer to the consumerStates
-        val consumerStates = currentState.consumerStates.set(sender, consumerState)
+        val consumerStates = currentState.consumerStates.put(sender, consumerState)
         val providerState2 = providerState.with(
-            "consumerStatus", providerState.consumerStatus.set(sender, RUNNING)
+            "consumerStatus", providerState.consumerStatus.put(sender, RUNNING)
         )
         val providerState3 = providerState2.with(
-            "outstandingPacketsToConsumer", providerState2.outstandingPacketsToConsumer.set(sender, List({
+            "outstandingPacketsToConsumer", providerState2.outstandingPacketsToConsumer.put(sender, List({
                 id: 0,
                 validatorSet: Map(),
                 sendingTime: 0
@@ -746,6 +746,33 @@ module CCV {
                 (false, "")
             }
         }
+
+    // ===================
+    // ASSUMPTIONS ON MODEL PARAMETERS
+    // ===================
+
+    run UnbondingPeriodPositiveTest =
+        UnbondingPeriodPerChain.keys().forall(chain => UnbondingPeriodPerChain.get(chain) > 0)
+
+    run VscTimeoutPositiveTest =
+        VscTimeout > 0
+
+    run CcvTimeoutPositiveTest =
+        CcvTimeout.keys().forall(chain => CcvTimeout.get(chain) > 0)
+
+    run CcvTimeoutLargerThanUnbondingPeriodTest =
+        CcvTimeout.get(PROVIDER_CHAIN) > UnbondingPeriodPerChain.Values().Max()
+
+    run ProviderIsNotAConsumerTest =
+        not(ConsumerChains.contains(PROVIDER_CHAIN))
+
+    // ccv timeout contains exactly consumers and provider, no other chains
+    run CcvTimeoutKeysTest =
+        CcvTimeout.keys() == ConsumerChains.union(Set(PROVIDER_CHAIN))
+
+    // unbonding period contains exactly consumers and provider, no other chains
+    run UnbondingPeriodKeysTest =
+        UnbondingPeriodPerChain.keys() == ConsumerChains.union(Set(PROVIDER_CHAIN))
 }
 
 
@@ -838,141 +865,6 @@ module CCVDefaultStateMachine {
             currentState' = result.newState,
         }
 
-    // negative voting powers give an error
-    run VotingPowerNegativeTest =
-        votingPowerChange(
-            GetEmptyProtocolState,
-            "validator",
-            -1
-        ).hasError
-
-    run VotingPowerOkTest =
-        val result = votingPowerChange(
-            GetEmptyProtocolState,
-            "validator",
-            0
-        )
-        not(result.hasError) and
-        result.newState.providerState.chainState.currentValidatorSet.keys().contains("validator") and
-        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 0
-
-    // make sure that VotingPowerChange ONLY changes the current validator set, not the history
-    run VotingPowerChangeDoesNotChangeHistoryTest =
-        val result = votingPowerChange(
-            GetEmptyProtocolState,
-            "validator",
-            0
-        )
-        not(result.hasError) and
-        result.newState.providerState.chainState.votingPowerHistory == List()
-
-    run DeliverPacketToProviderHappyPathTest =
-        val result = deliverPacketToProvider(_DeliverPacketToProvider_TestState, "sender")
-        val newProviderState = result.newState.providerState
-        val newConsumerState = result.newState.consumerStates.get("sender")
-        not(result.hasError) and
-        newProviderState.receivedMaturations.size() == 1 and
-        newConsumerState.outstandingPacketsToProvider.length() == 0
-
-    run DeliverPacketToProviderTimeoutTest =
-        // set the timestamp to be after the timeout
-        val testState = _DeliverPacketToProvider_TestState.with(
-            "providerState", _DeliverPacketToProvider_TestState.providerState.with(
-                "chainState", _DeliverPacketToProvider_TestState.providerState.chainState.with(
-                    "lastTimestamp", CcvTimeout.get("sender") + 1
-                )
-            )
-        )
-        val result = deliverPacketToProvider(testState, "sender")
-        val newProviderState = result.newState.providerState
-        val newConsumerState = result.newState.consumerStates.get("sender")
-        not(result.hasError) and
-        newProviderState.receivedMaturations.size() == 0 and
-        newConsumerState.outstandingPacketsToProvider.length() == 0 and
-        newProviderState.consumerStatus.get("sender") == STOPPED
-
-    run ConsumerStatusMapHappyPathTest = 
-        val currentConsumerStatusMap = Map(
-            "chain1" -> UNUSED,
-            "chain2" -> RUNNING,
-            "chain3" -> STOPPED
-        )
-        val res = getNewConsumerStatusMap(
-            currentConsumerStatusMap,
-            Set("chain1"),
-            Set("chain3")
-        )
-        res._2 == "" and
-        res._1.get("chain1") == RUNNING and
-        res._1.get("chain2") == RUNNING and
-        res._1.get("chain3") == UNUSED
-
-    run ConsumerStatusMapAlreadyRunningTest =
-        val currentConsumerStatusMap = Map(
-            "chain1" -> UNUSED,
-            "chain2" -> RUNNING,
-            "chain3" -> STOPPED
-        )
-        val res = getNewConsumerStatusMap(
-            currentConsumerStatusMap,
-            Set("chain2"),
-            Set("chain3")
-        )
-        res._2 == "Cannot start a consumer that is already running"
-
-    run ConsumerStatusMapAlreadyStoppedTest =
-        val currentConsumerStatusMap = Map(
-            "chain1" -> UNUSED,
-            "chain2" -> RUNNING,
-            "chain3" -> STOPPED
-        )
-        val res = getNewConsumerStatusMap(
-            currentConsumerStatusMap,
-            Set("chain1"),
-            Set("chain3")
-        )
-        res._2 == "Cannot stop a consumer that is not running"
-
-    run ChainBothInStartAndStopTest =
-        val currentConsumerStatusMap = Map(
-            "chain1" -> UNUSED,
-            "chain2" -> RUNNING,
-            "chain3" -> STOPPED
-        )
-        val res = getNewConsumerStatusMap(
-            currentConsumerStatusMap,
-            Set("chain1"),
-            Set("chain1")
-        )
-        res._2 == "Cannot start and stop a consumer at the same time"
-
-    // ===================
-    // ASSUMPTIONS ON MODEL PARAMETERS
-    // ===================
-
-    run UnbondingPeriodPositiveTest =
-        UnbondingPeriodPerChain.keys().forall(chain => UnbondingPeriodPerChain.get(chain) > 0)
-
-    run VscTimeoutPositiveTest =
-        VscTimeout > 0
-
-    run CcvTimeoutPositiveTest =
-        CcvTimeout.keys().forall(chain => CcvTimeout.get(chain) > 0)
-
-    run CcvTimeoutLargerThanUnbondingPeriodTest =
-        CcvTimeout.get(PROVIDER_CHAIN) > UnbondingPeriodPerChain.Values().Max()
-
-    run ProviderIsNotAConsumerTest =
-        not(ConsumerChains.contains(PROVIDER_CHAIN))
-
-    // ccv timeout contains exactly consumers and provider, no other chains
-    run CcvTimeoutKeysTest =
-        CcvTimeout.keys() == ConsumerChains.union(Set(PROVIDER_CHAIN))
-
-    // unbonding period contains exactly consumers and provider, no other chains
-    run UnbondingPeriodKeysTest =
-        UnbondingPeriodPerChain.keys() == ConsumerChains.union(Set(PROVIDER_CHAIN))
-
     run InitTest: bool = { 
         init.then(
             all {
@@ -1010,4 +902,175 @@ module CCVDefaultStateMachine {
                     }
             )
         }
+
+}
+
+// contains test logic for the stateless functions in the CCV module
+module CCVLogicTest {
+    import CCVTypes.*
+    import Time.* from "./Time"
+    import extraSpells.* from "./extraSpells"
+
+    pure val consumerChains = Set("sender", "receiver")
+    pure val chains = consumerChains.union(Set(PROVIDER_CHAIN))
+    pure val unbondingPeriods = chains.mapBy(chain => 2 * Week)
+    pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
+
+    import CCV(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains).*
+
+    // negative voting powers give an error
+    run VotingPowerNegativeTest =
+    {
+        votingPowerChange(
+            GetEmptyProtocolState,
+            "validator",
+            -1
+        ).hasError
+    }
+
+    run VotingPowerOkTest =
+    {
+        val result = votingPowerChange(
+            GetEmptyProtocolState,
+            "validator",
+            5
+        )
+        not(result.hasError) and
+        result.newState.providerState.chainState.currentValidatorSet.keys().contains("validator") and
+        result.newState.providerState.chainState.currentValidatorSet.get("validator") == 5
+    }
+
+    // validators that get zero voting power are removed
+    run VotingPowerZeroTest =
+    {
+        val tmpResult = votingPowerChange(
+            GetEmptyProtocolState,
+            "validator",
+            5
+        )
+        val finalResult = votingPowerChange(
+            tmpResult.newState,
+            "validator",
+            0
+        )
+        not(finalResult.hasError) and
+        not(finalResult.newState.providerState.chainState.currentValidatorSet.keys().contains("validator"))
+    }
+
+
+    // make sure that VotingPowerChange ONLY changes the current validator set, not the history
+    run VotingPowerChangeDoesNotChangeHistoryTest =
+    {
+        val result = votingPowerChange(
+            GetEmptyProtocolState,
+            "validator",
+            0
+        )
+        not(result.hasError) and
+        result.newState.providerState.chainState.votingPowerHistory == List()
+    }
+
+    run DeliverPacketToProviderHappyPathTest =
+    {
+        // add a packet on the consumer
+        val testState = _DeliverPacketToProvider_TestState.with(
+            "consumerStates", _DeliverPacketToProvider_TestState.consumerStates.put(
+                "sender", _DeliverPacketToProvider_TestState.consumerStates.get("sender").with(
+                    "outstandingPacketsToProvider", List({
+                        id: 0,
+                        sendingTime: 0
+                    })
+                )
+            )
+        )
+
+        val result = deliverPacketToProvider(testState, "sender")
+        val newProviderState = result.newState.providerState
+        val newConsumerState = result.newState.consumerStates.get("sender")
+        not(result.hasError) and
+        newProviderState.receivedMaturations.size() == 1 and
+        newConsumerState.outstandingPacketsToProvider.length() == 0
+    }
+
+    run DeliverPacketToProviderTimeoutTest =
+    {
+        // set the timestamp to be after the timeout
+        val testState = _DeliverPacketToProvider_TestState.with(
+            "providerState", _DeliverPacketToProvider_TestState.providerState.with(
+                "chainState", _DeliverPacketToProvider_TestState.providerState.chainState.with(
+                    "lastTimestamp", CcvTimeout.get("sender") + 1
+                )
+            )
+        )
+        val result = deliverPacketToProvider(testState, "sender")
+        val newProviderState = result.newState.providerState
+        val newConsumerState = result.newState.consumerStates.get("sender")
+        not(result.hasError) and
+        newProviderState.receivedMaturations.size() == 0 and
+        newConsumerState.outstandingPacketsToProvider.length() == 0 and
+        newProviderState.consumerStatus.get("sender") == STOPPED
+    }
+
+    run ConsumerStatusMapHappyPathTest = 
+    {
+        val currentConsumerStatusMap = Map(
+            "chain1" -> UNUSED,
+            "chain2" -> RUNNING,
+            "chain3" -> STOPPED
+        )
+        val res = getNewConsumerStatusMap(
+            currentConsumerStatusMap,
+            Set("chain1"),
+            Set("chain2")
+        )
+        res._2 == "" and
+        res._1.get("chain1") == RUNNING and
+        res._1.get("chain2") == STOPPED and
+        res._1.get("chain3") == STOPPED
+    }
+
+    run ConsumerStatusMapAlreadyRunningTest =
+    {
+        val currentConsumerStatusMap = Map(
+            "chain1" -> UNUSED,
+            "chain2" -> RUNNING,
+            "chain3" -> STOPPED
+        )
+        val res = getNewConsumerStatusMap(
+            currentConsumerStatusMap,
+            Set("chain2"),
+            Set("chain3")
+        )
+        res._2 == "Cannot start a consumer that is already running"
+    }
+
+    run ConsumerStatusMapAlreadyStoppedTest =
+    {
+        val currentConsumerStatusMap = Map(
+            "chain1" -> UNUSED,
+            "chain2" -> RUNNING,
+            "chain3" -> STOPPED
+        )
+        val res = getNewConsumerStatusMap(
+            currentConsumerStatusMap,
+            Set("chain1"),
+            Set("chain3")
+        )
+        res._2 == "Cannot stop a consumer that is not running"
+    }
+
+    run ChainBothInStartAndStopTest =
+    {
+        val currentConsumerStatusMap = Map(
+            "chain1" -> UNUSED,
+            "chain2" -> RUNNING,
+            "chain3" -> STOPPED
+        )
+        val res = getNewConsumerStatusMap(
+            currentConsumerStatusMap,
+            Set("chain1"),
+            Set("chain1")
+        )
+        res._2 == "Cannot start and stop a consumer at the same time"
+    }
 }
