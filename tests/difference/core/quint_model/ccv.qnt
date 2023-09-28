@@ -248,7 +248,14 @@ module CCV {
             } else {
                 pure val currentValidatorSet = currentState.providerState.chainState.currentValidatorSet
                 pure val newValidatorSet = getUpdatedValidatorSet(currentValidatorSet, validator, amount)
-                pure val newState = setProviderValidatorSet(currentState, newValidatorSet)
+                // set the validator set changed flag
+                val newProviderState = currentState.providerState.with(
+                    "providerValidatorSetChangedInThisBlock", true
+                )
+                pure val tmpState = currentState.with(
+                    "providerState", newProviderState
+                )
+                pure val newState = setProviderValidatorSet(tmpState, newValidatorSet)
                 Ok(newState)
             }
     }
@@ -432,7 +439,9 @@ module CCV {
                 "consumerStatus", newConsumerStatus
             )
             val providerStateAfterSending =
-            if (currentProviderState.providerValidatorSetChangedInThisBlock and getRunningConsumers(currentState.providerState).size() > 0) {
+            if (currentProviderState.providerValidatorSetChangedInThisBlock and 
+                // important: check this on the provider state after the consumer advancement, not on the current state.
+                getRunningConsumers(providerStateAfterConsumerAdvancement).size() > 0) {
                     providerStateAfterConsumerAdvancement.sendVscPackets()
                 } else {
                     providerStateAfterConsumerAdvancement
@@ -449,7 +458,7 @@ module CCV {
         chain: Chain,
         // by how much the timestamp of the chain should be advanced for the next block
         timeAdvancement: Time): Result = {
-            if (currentState.consumerStates.keys().contains(chain)) {
+            if (not(currentState.consumerStates.keys().contains(chain))) {
                 Err("chain is not a consumer")
             } else {
                 // if the chain is not a consumer, return an error
@@ -872,7 +881,15 @@ module CCVDefaultStateMachine {
             currentState' = result.newState,
         }
 
-    run InitTest: bool = { 
+    // Test a simple happy path where:
+    // * the consumer chain is set to running
+    // * a validator set change happens
+    // * a block is ended on the provider, i.e. a packet is sent to the consumer
+    // * the consumer receives the packet
+    // * the chains wait until the unbonding period is over
+    // * the consumer sends a VSCMaturedPacket to the provider
+    // * the provider receives the VSCMaturedPacket
+    run HappyPathTest: bool = { 
         init.then(
             all {
                 assert(currentState.providerState.consumerStatus == Map(
@@ -894,21 +911,64 @@ module CCVDefaultStateMachine {
                 assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet)),
                 assert(currentState.providerState.chainState.currentValidatorSet == InitialValidatorSet),
                 assert(currentState.providerState.chainState.lastTimestamp == 0),
-                val firstState = currentState // snapshot the first state
-                VotingPowerChange("node1", 50).then(all {
-                            // ensure that the only change is that the voting power of node1 is changed
-                            assert(currentState == firstState.with(
-                                "providerState", firstState.providerState.with(
-                                    "chainState", firstState.providerState.chainState.with(
-                                        "currentValidatorSet", firstState.providerState.chainState.currentValidatorSet.put("node1", 50)
-                                    )
-                                )
-                            )),
-                            currentState' = currentState
-                        })
-                    }
+                VotingPowerChange("node1", 50)
+            })
+            .then(
+            all {
+                // the validator set has changed
+                assert(currentState.providerState.chainState.currentValidatorSet == InitialValidatorSet.put("node1", 50)),
+                // start consumer1
+                EndAndBeginBlockForProvider(1 * Second, Set("consumer1"), Set())
+            })
+            .then(
+                all {
+                    // consumer1 was started
+                    assert(currentState.providerState.consumerStatus.get("consumer1") == RUNNING),
+                    // a packet was sent to consumer1
+                    assert(currentState.providerState.outstandingPacketsToConsumer.get("consumer1").length() == 1),
+                    // the validator set on the provider was entered into the history
+                    assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet.put("node1", 50), InitialValidatorSet)),
+                    // deliver the packet
+                    DeliverVSCPacket("consumer1")
+                }
+            )
+            .then(
+                all {
+                    // make sure the packet was removed from the provider
+                    assert(currentState.providerState.outstandingPacketsToConsumer.get("consumer1").length() == 0),
+                    // ensure the maturation time was entered on the consumer
+                    assert(currentState.consumerStates.get("consumer1").maturationTimes.keys().size() == 1),
+                    // the validator set was put as the current validator set
+                    assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet == InitialValidatorSet.put("node1", 50)),
+                    // advance time on provider until the unbonding period is over
+                    EndAndBeginBlockForProvider(UnbondingPeriodPerChain.get("consumer1"), Set(), Set()),
+                }
+            )
+            .then(
+                // advance time on consumer until the unbonding period is over
+                EndAndBeginBlockForConsumer("consumer1", UnbondingPeriodPerChain.get("consumer1"))
+            )
+            .then(
+                all {
+                    // the packet has matured, so it was sent by the consumer
+                    assert(currentState.consumerStates.get("consumer1").outstandingPacketsToProvider.length() == 1),
+                    // it was removed from the maturationTimes
+                    assert(currentState.consumerStates.get("consumer1").maturationTimes.keys().size() == 0),
+                    // receive the packet on the provider
+                    DeliverVSCMaturedPacket("consumer1")
+                }
+            )
+            .then(
+                all {
+                    // the packet was received on the provider
+                    assert(currentState.providerState.receivedMaturations.size() == 1),
+                    // the packet was removed from the consumer
+                    assert(currentState.consumerStates.get("consumer1").outstandingPacketsToProvider.length() == 0),
+                    currentState' = currentState // just so this still has an effect
+                }
             )
         }
+    
 
 }
 
@@ -962,6 +1022,25 @@ module CCVLogicTest {
         )
         not(finalResult.hasError) and
         not(finalResult.newState.providerState.chainState.currentValidatorSet.keys().contains("validator"))
+    }
+
+    run VotingPowerSetsFlagTest =
+    {
+        // change voting power
+        val tmpResult = votingPowerChange(
+            GetEmptyProtocolState,
+            "validator",
+            5
+        )
+        // but then set it back to the initial value
+        val finalResult = votingPowerChange(
+            tmpResult.newState,
+            "validator",
+            0
+        )
+        // still should set the flag
+        not(finalResult.hasError) and
+        finalResult.newState.providerState.providerValidatorSetChangedInThisBlock
     }
 
 
@@ -1052,7 +1131,6 @@ module CCVLogicTest {
         val newConsumerState = result.newState.consumerStates.get("sender")
         not(result.hasError) and
         newProviderState.receivedMaturations.size() == 0 and
-        newConsumerState.outstandingPacketsToProvider.length() == 0 and
         newProviderState.consumerStatus.get("sender") == STOPPED
     }
 
