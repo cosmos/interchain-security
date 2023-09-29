@@ -29,10 +29,6 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	)
 	registry.RegisterImplementations(
 		(*govtypes.Content)(nil),
-		&EquivocationProposal{},
-	)
-	registry.RegisterImplementations(
-		(*govtypes.Content)(nil),
 		&ChangeRewardDenomsProposal{},
 	)
 

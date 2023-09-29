@@ -164,7 +164,6 @@ SDK_QUERY 			= third_party/proto/cosmos/base/query/v1beta1
 SDK_BASE 			= third_party/proto/cosmos/base/v1beta1
 SDK_UPGRADE			= third_party/proto/cosmos/upgrade/v1beta1
 SDK_STAKING			= third_party/proto/cosmos/staking/v1beta1
-SDK_EVIDENCE		= third_party/proto/cosmos/evidence/v1beta1
 
 GOGO_PROTO_TYPES    = third_party/proto/gogoproto
 CONFIO_TYPES        = third_party/proto/confio
@@ -185,9 +184,6 @@ proto-update-deps:
 
 	@mkdir -p $(SDK_STAKING)
 	@curl -sSL $(SDK_PROTO_URL)/staking/v1beta1/staking.proto > $(SDK_STAKING)/staking.proto
-
-	@mkdir -p $(SDK_EVIDENCE)
-	@curl -sSL $(SDK_PROTO_URL)/evidence/v1beta1/evidence.proto > $(SDK_EVIDENCE)/evidence.proto
 
 ## Importing of tendermint protobuf definitions currently requires the
 ## use of `sed` in order to build properly with cosmos-sdk's proto file layout
