@@ -126,6 +126,10 @@ var (
 	ModuleBasics = module.NewBasicManager(
 		auth.AppModuleBasic{},
 		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
+		bank.AppModuleBasic{},
+		capability.AppModuleBasic{},
+		sdkstaking.AppModuleBasic{},
+		mint.AppModuleBasic{},
 		sdkdistr.AppModuleBasic{},
 		sdkgov.NewAppModuleBasic(
 			[]govclient.ProposalHandler{
@@ -136,6 +140,7 @@ var (
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
+		slashing.AppModuleBasic{},
 		feegrantmodule.AppModuleBasic{},
 		authzmodule.AppModuleBasic{},
 		ibc.AppModuleBasic{},
