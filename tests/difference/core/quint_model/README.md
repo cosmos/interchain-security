@@ -23,7 +23,8 @@ The parameters of the protocol are defined as consts in ccv.qnt.
 The invariants I am checking are in ccv_statemachine.qnt.
 Check a single invariant by running
 `quint run --invariant INVARIANT_NAME ccv_statemachine.qnt --main CCVDefaultStateMachine`,
-or all invariants by running this command:
+or all invariants one after another with the help of the script `run_invariants.sh`.
+Each invariant takes about a minute to run.
 
 Invariants are as follows:
 - ValidatorUpdatesArePropagated: When a validator power update is comitted on chain, a packet containing that change in voting power is sent to all running consumers.
