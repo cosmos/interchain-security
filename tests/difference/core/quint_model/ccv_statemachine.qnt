@@ -192,29 +192,25 @@ module CCVDefaultStateMachine {
                     if (commonPackets.size() == 0) {
                         true // they don't share any packets, so nothing to check
                     } else {
-                        // get oldest common packet
-                        val oldestCommonPacket = commonPackets.MinBy(packet => packet.sendingTime, packets1.head())
-                        false
+                        val oldestCommonPacket = packets1.head()
+                        val newestCommonPacket = packets1[packets1.length() - 1]
+                        // get all packets sent between the oldest and newest common packet
+                        val packetsBetween1 = packets1.select(
+                            packet => packet.sendingTime >= oldestCommonPacket.sendingTime and packet.sendingTime <= newestCommonPacket.sendingTime
+                        )
+                        val packetsBetween2 = packets2.select(
+                            packet => packet.sendingTime >= oldestCommonPacket.sendingTime and packet.sendingTime <= newestCommonPacket.sendingTime
+                        )
+                        // these should be the same on both chains
+                        packetsBetween1 == packetsBetween2
                     }
                 }
             )
         )
 
-        
-
+    // val MaturedBeforeTimeoutInv =
 
 //     \* Invariants from https://github.com/cosmos/interchain-security/blob/main/docs/quality_assurance.md
-
-// (*
-// 6.03 - Every consumer chain receives the same sequence of 
-// ValidatorSetChangePackets in the same order.
-
-// Note: consider only prefixes on received packets (ccvChannelsResolved)
-// *)
-// Inv603 == 
-//   \A c1,c2 \in LiveConsumers:
-//     \A i \in (DOMAIN ccvChannelsResolved[c1] \intersect DOMAIN ccvChannelsResolved[c2]):
-//       ccvChannelsResolved[c1][i] = ccvChannelsResolved[c2][i]
 
 // (*
 // 7.01 - For every ValidatorSetChangePacket received by a consumer chain at 
