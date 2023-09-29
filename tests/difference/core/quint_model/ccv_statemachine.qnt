@@ -1,8 +1,8 @@
 module CCVDefaultStateMachine {
     // A basic state machine that utilizes the CCV protocol.
-    import Time.* from "./libraries/time"
-    import extraSpells.* from "./libraries/extraSpells"
     import CCVTypes.* from "./ccv"
+    import Time.* from "./libraries/Time"
+    import extraSpells.* from "./libraries/extraSpells"
 
     pure val consumerChains = Set("consumer1", "consumer2", "consumer3")
     pure val chains = consumerChains.union(Set(PROVIDER_CHAIN))
@@ -89,12 +89,19 @@ module CCVDefaultStateMachine {
             currentState' = result.newState,
         }
 
+    // a few different values for time advancements.
+    // to keep the number of possible steps small, we only have a few different values.
+    // Roughly, 1s for very small advances (like between blocks),
+    // and then longer values for increasingly severe downtime scenarios.
+    // Note that these can still be combined, so in effect we can get all time advancements by any amount of seconds.
+    pure val timeAdvancements = Set(1 * Second, 1 * Day, 1 * Week, 4 * Week)
+
     action step = any {
         nondet node = oneOf(nodes)
         // very restricted set of voting powers. exact values are not important,
         // and this keeps the state space smaller.
         // 0 for getting a validator out of the validator set, and two non-zero values
-        nondet newVotingPower = oneOf(0, 50, 100)
+        nondet newVotingPower = oneOf(Set(0, 50, 100))
         VotingPowerChange(node, newVotingPower),
 
         nondet chain = oneOf(consumerChains)
@@ -103,14 +110,15 @@ module CCVDefaultStateMachine {
         // Roughly, 1s for very small advances (like between blocks),
         // and then longer values for increasingly severe downtime scenarios.
         // Note that these can still be combined, so in effect we can get all time advancements by any amount of seconds.
-        nondet timeAdvancement = oneOf(1 * Second, 1 * Day, 1 * Week, 1 * Month)
+        nondet timeAdvancement = oneOf(timeAdvancements)
         EndAndBeginBlockForConsumer(chain, timeAdvancement),
 
-        val runningConsumers = currentState.providerState.consumerStatus.filter((chain, status) => status == RUNNING).keys()
-        val unusedConsumers = currentState.providerState.consumerStatus.filter((chain, status) => status == UNUSED).keys()
+        val consumerStatus = currentState.providerState.consumerStatus
+        val runningConsumers = consumerStatus.keys().filter(chain => consumerStatus.get(chain) == RUNNING)
+        val unusedConsumers = consumerStatus.keys().filter(chain => consumerStatus.get(chain) == UNUSED)
         nondet consumersToStart = oneOf(runningConsumers.powerset())
         nondet consumersToStop = oneOf(unusedConsumers.powerset())
-        nondet timeAdvancement = oneOf(1 * Second, 1 * Day, 1 * Week, 1 * Month)
+        nondet timeAdvancement = oneOf(timeAdvancements)
         EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
 
         // 
