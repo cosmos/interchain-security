@@ -106,6 +106,10 @@ module CCVTypes {
         // Stores the maturation times for VSCPackets received by this consumer
         maturationTimes: VSCPacket -> Time,
 
+        // stores the received vscpackets in descending order of recency,
+        // i.e. newest first.
+        receivedVSCPackets: List[VSCPacket],
+
         // Stores the list of packets that have been sent to the provider chain by this consumer
         // and have not been received yet.
         // ordered by recency, so the head is the oldest packet.
@@ -119,6 +123,7 @@ module CCVTypes {
             chainState: GetEmptyChainState,
             maturationTimes: Map(),
             outstandingPacketsToProvider: List(),
+            receivedVSCPackets: List(),
         }
 
     // the state of the protocol consists of the composition of the state of one provider chain with potentially many consumer chains.
@@ -681,6 +686,9 @@ module CCV {
                     packet, 
                     currentConsumerState.chainState.lastTimestamp + UnbondingPeriodPerChain.get(receiver)
                 )
+            ).with(
+                "receivedVSCPackets",
+                currentConsumerState.receivedVSCPackets.prepend(packet)
             )
             val newConsumerStates = currentState.consumerStates.set(receiver, newConsumerState)
             val newState = currentState.with(

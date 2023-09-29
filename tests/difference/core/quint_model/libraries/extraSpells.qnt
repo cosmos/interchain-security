@@ -194,4 +194,53 @@ module extraSpells {
         assert(Max(Set(1, 2, 3)) == 3),
         assert(Max(Set()) == 0)
     }
+
+    pure def HasSubsequence(__this: List[a], __other: List[a]): bool = {
+      if(__other.length() > __this.length()) {
+        false
+      } else {
+        0.to(__this.length() - __other.length()) // go through all possible starting points of __other in __this
+        .exists(
+          __start => __this.slice(__start, __start + __other.length()) == __other
+        )
+      }
+    }
+
+    run HasSubsequenceTest =
+    all {
+      assert(List(1, 2, 3, 4).HasSubsequence(List(1, 2))),
+      assert(List(1, 2, 3, 4).HasSubsequence(List(2, 3))),
+      assert(List(1, 2, 3, 4).HasSubsequence(List(3, 4))),
+      assert(List(1, 2, 3, 4).HasSubsequence(List(1, 2, 3))),
+      assert(not(List(1, 2, 3, 4).HasSubsequence(List(1, 3)))),
+      assert(not(List().HasSubsequence(List(1)))),
+      assert(List().HasSubsequence(List())),
+      assert(List(1).HasSubsequence(List())),
+      assert(List(1).HasSubsequence(List(1))),
+    }
+
+    // Returns the maximum element of a set, according to a given function.
+    // __i should be part of the set if it is nonempty. If the set is empty, __i will be returned.
+    // If two elements are equally large, an arbitrary one will be returned.
+    pure def MaxBy(__set: Set[a], __f: a => int, __i: a): a = {
+      __set.fold(
+        __i,
+        (__m, __e) => if(__f(__m) > __f(__e)) {__m } else {__e}
+      )
+    }
+
+    run MaxByTest =
+    all {
+      assert(MaxBy(Set(1, 2, 3), __x => __x, 0) == 3),
+      assert(MaxBy(Set(1, 2, 3), __x => -__x, 0) == 1),
+      assert(MaxBy(Set(), __x => __x, 0) == 0),
+    }
+
+    // Like MaxBy, but returns the minimum element.
+    pure def MinBy(__set: Set[a], __f: a => int, __i: a): a = {
+      __set.fold(
+        __i,
+        (__m, __e) => if(__f(__m) < __f(__e)) {__m } else {__e}
+      )
+    }
 }

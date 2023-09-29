@@ -153,7 +153,7 @@ module CCVDefaultStateMachine {
     // Every validator set on any consumer chain MUST either be or have been 
     // a validator set on the provider chain.
     val ValidatorSetHasExistedInv =
-        ConsumerChains.forall(chain =>
+        runningConsumers.forall(chain =>
             currentState.consumerStates.get(chain).chainState.votingPowerHistory.toSet().forall(
                 validatorSet => providerValidatorHistory.toSet().contains(validatorSet)
             )
@@ -176,24 +176,34 @@ module CCVDefaultStateMachine {
             true
         }
 
+    // Every consumer chain receives the same sequence of 
+    // ValidatorSetChangePackets in the same order.
+    // NOTE: since not all consumer chains are running all the time,
+    // we need a slightly weaker invariant:
+    // For consumer chains c1, c2, if both c1 and c2 received a packet p1 sent at t1 and a packet p2 sent at t2,
+    // then both have received ALL packets that were sent between t1 and t2.
+    val SameVSCPacketsInv =
+        runningConsumers.forall(
+            consumer1 => runningConsumers.forall(
+                consumer2 => {
+                    val packets1 = currentState.consumerStates.get(consumer1).receivedVSCPackets
+                    val packets2 = currentState.consumerStates.get(consumer2).receivedVSCPackets
+                    val commonPackets = packets1.toSet().intersect(packets2.toSet())
+                    if (commonPackets.size() == 0) {
+                        true // they don't share any packets, so nothing to check
+                    } else {
+                        // get oldest common packet
+                        val oldestCommonPacket = commonPackets.MinBy(packet => packet.sendingTime, packets1.head())
+                        false
+                    }
+                }
+            )
+        )
+
+        
+
 
 //     \* Invariants from https://github.com/cosmos/interchain-security/blob/main/docs/quality_assurance.md
-
-// (*
-// 6.02 - Any update in the power of a validator val on the provider, as a result of
-// - (increase) Delegate() / Redelegate() to val
-// - (increase) val joining the provider validator set
-// - (decrease) Undelegate() / Redelegate() from val
-// - (decrease) Slash(val)
-// - (decrease) val leaving the provider validator set
-// MUST be present in a ValidatorSetChangePacket that is sent to all registered consumer chains
-// *)
-// Inv602 ==
-//   \A packet \in DOMAIN votingPowerHist:
-//     \A c \in LiveConsumers:
-//       LET packetsToC == PacketOrder(c) IN
-//       \E i \in DOMAIN packetsToC:
-//         packetsToC[i] = packet
 
 // (*
 // 6.03 - Every consumer chain receives the same sequence of 
