@@ -244,30 +244,6 @@ module CCVDefaultStateMachine {
             }
         )
 
-//     \* Invariants from https://github.com/cosmos/interchain-security/blob/main/docs/quality_assurance.md
-
-// (*
-// 7.01 - For every ValidatorSetChangePacket received by a consumer chain at 
-// time t, a MaturedVSCPacket is sent back to the provider in the first block 
-// with a timestamp >= t + UnbondingPeriod
-
-// Modification: not necessarily _first_ block with that timestamp, 
-// since we don't model height _and_ time. Also, only true for ACTIVE chains.
-// *)
-// Inv701 ==
-//   boundedDrift => MaturedBeforeTimeout
-
-// (*
-// 7.02 - If an unbonding operation resulted in a ValidatorSetChangePacket sent
-// to all registered consumer chains, then it cannot complete before receiving
-// matching MaturedVSCPackets from these consumer chains 
-// (unless some of these consumer chains are removed)
-
-// We can define change completion, but we don't model it. Best approximation:
-// *)
-// Inv702 ==
-//   boundedDrift => EventuallyMatureOnProvider
-
     // ==================
     // MANUAL TEST CASES
     // ==================

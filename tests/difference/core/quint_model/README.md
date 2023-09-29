@@ -35,3 +35,5 @@ then both have received ALL packets that were sent between t1 and t2 in the same
 - MatureOnTimeInv: For every ValidatorSetChangePacket received by a consumer chain at 
 time t, a MaturedVSCPacket is sent back to the provider in the first block 
 with a timestamp >= t + UnbondingPeriod on that consumer.
+- EventuallyMatureOnProviderInv: If we send a VSCPacket, this is eventually responded to by all consumers
+that were running at the time the packet was sent (and are still running).
