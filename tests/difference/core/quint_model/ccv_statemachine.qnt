@@ -16,6 +16,14 @@ module CCVDefaultStateMachine {
 
 
     var currentState: ProtocolState
+    
+    // bookkeeping
+    var lastAction: str
+
+    // some utility stateful vals to make invariants easier to define
+    val providerValidatorHistory = currentState.providerState.chainState.votingPowerHistory
+    val runningConsumers = getRunningConsumers(currentState.providerState)
+    val unusedConsumers = getUnusedConsumers(currentState.providerState)
 
     action init: bool = all {
         val providerState = GetEmptyProviderState
@@ -40,7 +48,8 @@ module CCVDefaultStateMachine {
         currentState' = {
             providerState: providerStateWithConsumers,
             consumerStates: consumerStates
-        }
+        },
+        lastAction' = "init"
     }
 
     action VotingPowerChange(validator: Node, newVotingPower: int): bool = 
@@ -48,6 +57,7 @@ module CCVDefaultStateMachine {
         all {
             result.hasError == false,
             currentState' = result.newState,
+            lastAction' = "VotingPowerChange"
         }
 
     // The receiver receives the next outstanding VSCPacket from the provider.
@@ -58,6 +68,7 @@ module CCVDefaultStateMachine {
         all {
             result.hasError == false,
             currentState' = result.newState,
+            lastAction' = "DeliverVSCPacket"
         }
 
     // The provider receives the next outstanding VSCMaturedPacket from the sender.
@@ -68,6 +79,7 @@ module CCVDefaultStateMachine {
         all {
             result.hasError == false,
             currentState' = result.newState,
+            lastAction' = "DeliverVSCMaturedPacket"
         }
 
     action EndAndBeginBlockForProvider(
@@ -78,6 +90,7 @@ module CCVDefaultStateMachine {
         all {
             result.hasError == false,
             currentState' = result.newState,
+            lastAction' = "EndAndBeginBlockForProvider"
         }
 
     action EndAndBeginBlockForConsumer(
@@ -87,6 +100,7 @@ module CCVDefaultStateMachine {
         all {
             result.hasError == false,
             currentState' = result.newState,
+            lastAction' = "EndAndBeginBlockForConsumer"
         }
 
     // a few different values for time advancements.
@@ -114,8 +128,6 @@ module CCVDefaultStateMachine {
         EndAndBeginBlockForConsumer(chain, timeAdvancement),
 
         val consumerStatus = currentState.providerState.consumerStatus
-        val runningConsumers = consumerStatus.keys().filter(chain => consumerStatus.get(chain) == RUNNING)
-        val unusedConsumers = consumerStatus.keys().filter(chain => consumerStatus.get(chain) == UNUSED)
         nondet consumersToStart = oneOf(runningConsumers.powerset())
         nondet consumersToStop = oneOf(unusedConsumers.powerset())
         nondet timeAdvancement = oneOf(timeAdvancements)
@@ -132,6 +144,89 @@ module CCVDefaultStateMachine {
         nondet recciver = oneOf(consumerChains)
         DeliverVSCPacket(recciver),
     }
+
+    // ==================
+    // INVARIANT CHECKS
+    // ==================
+
+
+    // Every validator set on any consumer chain MUST either be or have been 
+    // a validator set on the provider chain.
+    val ValidatorSetHasExistedInv =
+        ConsumerChains.forall(chain =>
+            currentState.consumerStates.get(chain).chainState.votingPowerHistory.toSet().forall(
+                validatorSet => providerValidatorHistory.toSet().contains(validatorSet)
+            )
+        )
+
+    // Any update in the power of a validator on the provider
+    // MUST be present in a ValidatorSetChangePacket that is sent to all registered consumer chains
+    val ValidatorUpdatesArePropagated =
+        // when the provider has just entered a validator set into a block...
+        if (lastAction == "EndAndBeginBlockForProvider") {
+            val providerValSetInCurBlock = providerValidatorHistory.head()
+            // ... for each consumer that is running then ...
+            runningConsumers.forall(
+                // ...the validator set is in a sent packet
+                consumer => currentState.providerState.sentVSCPackets.get(consumer).toSet().exists(
+                    packet => packet.validatorSet == providerValSetInCurBlock
+                )
+            )
+        } else {
+            true
+        }
+
+
+//     \* Invariants from https://github.com/cosmos/interchain-security/blob/main/docs/quality_assurance.md
+
+// (*
+// 6.02 - Any update in the power of a validator val on the provider, as a result of
+// - (increase) Delegate() / Redelegate() to val
+// - (increase) val joining the provider validator set
+// - (decrease) Undelegate() / Redelegate() from val
+// - (decrease) Slash(val)
+// - (decrease) val leaving the provider validator set
+// MUST be present in a ValidatorSetChangePacket that is sent to all registered consumer chains
+// *)
+// Inv602 ==
+//   \A packet \in DOMAIN votingPowerHist:
+//     \A c \in LiveConsumers:
+//       LET packetsToC == PacketOrder(c) IN
+//       \E i \in DOMAIN packetsToC:
+//         packetsToC[i] = packet
+
+// (*
+// 6.03 - Every consumer chain receives the same sequence of 
+// ValidatorSetChangePackets in the same order.
+
+// Note: consider only prefixes on received packets (ccvChannelsResolved)
+// *)
+// Inv603 == 
+//   \A c1,c2 \in LiveConsumers:
+//     \A i \in (DOMAIN ccvChannelsResolved[c1] \intersect DOMAIN ccvChannelsResolved[c2]):
+//       ccvChannelsResolved[c1][i] = ccvChannelsResolved[c2][i]
+
+// (*
+// 7.01 - For every ValidatorSetChangePacket received by a consumer chain at 
+// time t, a MaturedVSCPacket is sent back to the provider in the first block 
+// with a timestamp >= t + UnbondingPeriod
+
+// Modification: not necessarily _first_ block with that timestamp, 
+// since we don't model height _and_ time. Also, only true for ACTIVE chains.
+// *)
+// Inv701 ==
+//   boundedDrift => MaturedBeforeTimeout
+
+// (*
+// 7.02 - If an unbonding operation resulted in a ValidatorSetChangePacket sent
+// to all registered consumer chains, then it cannot complete before receiving
+// matching MaturedVSCPackets from these consumer chains 
+// (unless some of these consumer chains are removed)
+
+// We can define change completion, but we don't model it. Best approximation:
+// *)
+// Inv702 ==
+//   boundedDrift => EventuallyMatureOnProvider
 
     // ==================
     // MANUAL TEST CASES
@@ -221,7 +316,8 @@ module CCVDefaultStateMachine {
                     assert(currentState.providerState.receivedMaturations.size() == 1),
                     // the packet was removed from the consumer
                     assert(currentState.consumerStates.get("consumer1").outstandingPacketsToProvider.length() == 0),
-                    currentState' = currentState // just so this still has an effect
+                    currentState' = currentState, // just so this still has an effect
+                    lastAction' = "HappyPathTest"
                 }
             )
         }

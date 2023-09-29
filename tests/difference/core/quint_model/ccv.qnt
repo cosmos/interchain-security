@@ -738,6 +738,13 @@ module CCV {
         )
     }
 
+    // Returns the set of all consumer chains that currently have the status UNUSED.
+    pure def getUnusedConsumers(providerState: ProviderState): Set[Chain] = {
+        providerState.consumerStatus.keys().filter(
+            chain => providerState.consumerStatus.get(chain) == UNUSED
+        )
+    }
+
     // Returns whether the consumer has timed out due to the VSCTimeout, and an error message.
     // If the second return is not equal to "", the first return should be ignored.
     // If it is equal to "", the first return will be true if the consumer has timed out and should be dropped,
