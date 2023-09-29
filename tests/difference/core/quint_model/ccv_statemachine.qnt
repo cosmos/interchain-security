@@ -208,7 +208,41 @@ module CCVDefaultStateMachine {
             )
         )
 
-    // val MaturedBeforeTimeoutInv =
+    // For every ValidatorSetChangePacket received by a consumer chain at 
+    // time t, a MaturedVSCPacket is sent back to the provider in the first block 
+    // with a timestamp >= t + UnbondingPeriod
+    // NOTE: because we remove the maturationTimes entry when we send the packets,
+    // it suffices to check that there is never an entry in maturationTimes
+    // that is older than the current time minus the unbonding period.
+    val MatureOnTimeInv =
+        runningConsumers.forall(
+            consumer => {
+                val maturationTimes = currentState.consumerStates.get(consumer).maturationTimes
+                maturationTimes.keys().forall(
+                    packet => packet.sendingTime + UnbondingPeriodPerChain.get(consumer) <= currentState.providerState.chainState.lastTimestamp
+                )
+            }
+        )
+
+    // If we send a VSCPacket, this is eventually responded to by all consumers
+    // that were running at the time the packet was sent (and are still running).
+    // Since we remove sentVSCPackets when we receive responses for them,
+    // we just check that if a sentVSCPacket has been sent more than
+    // VSCTimeout ago, the consumer must have been dropped.
+    // In practice, when this is true, a pending unbonding can mature.
+    val EventuallyMatureOnProviderInv =
+        runningConsumers.forall(
+            consumer => {
+                val sentPackets = currentState.providerState.sentVSCPackets.get(consumer).toSet()
+                sentPackets.forall(
+                    packet =>
+                        // consumer still has time to respond
+                        currentState.providerState.chainState.lastTimestamp <= packet.sendingTime + VscTimeout or
+                        // consumer was dropped due to inactivity
+                        currentState.providerState.consumerStatus.get(consumer) == STOPPED
+                )
+            }
+        )
 
 //     \* Invariants from https://github.com/cosmos/interchain-security/blob/main/docs/quality_assurance.md
 
