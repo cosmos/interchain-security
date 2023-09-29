@@ -278,9 +278,8 @@ module CCV {
             val timeout = CcvTimeout.get(sender)
             if(packet.sendingTime + CcvTimeout.get(sender) < currentState.providerState.chainState.lastTimestamp) {
                 // drop consumer
-                val result = getNewConsumerStatusMap(
+                val result = stopConsumers(
                     currentState.providerState.consumerStatus,
-                    Set(),
                     Set(sender)
                 )
 
@@ -358,9 +357,8 @@ module CCV {
             // check if the consumer timed out
             if (packet.sendingTime + CcvTimeout.get(PROVIDER_CHAIN) < currentState.consumerStates.get(receiver).chainState.lastTimestamp) {
                 // drop consumer
-                val result = getNewConsumerStatusMap(
+                val result = stopConsumers(
                     currentState.providerState.consumerStatus,
-                    Set(),
                     Set(receiver)
                 )
 
@@ -428,16 +426,19 @@ module CCV {
             res._1
         )
 
-        // modify the states of the consumers that should be started/stopped
-        val res = providerStateAfterTimeAdvancement.consumerStatus.getNewConsumerStatusMap(consumersToStart, consumersToStop.union(timedOutConsumers))
+        // start/stop chains
+        val res = providerStateAfterTimeAdvancement.consumerStatus.StartStopConsumers(
+            consumersToStart,
+            consumersToStop
+        )
         val newConsumerStatus = res._1
         val err = res._2
+        val providerStateAfterConsumerAdvancement = providerStateAfterTimeAdvancement.with(
+            "consumerStatus", newConsumerStatus
+        )
         if (err != "") {
             Err(err)
         } else {
-            val providerStateAfterConsumerAdvancement = providerStateAfterTimeAdvancement.with(
-                "consumerStatus", newConsumerStatus
-            )
             val providerStateAfterSending =
             if (currentProviderState.providerValidatorSetChangedInThisBlock and 
                 // important: check this on the provider state after the consumer advancement, not on the current state.
@@ -511,43 +512,83 @@ module CCV {
         )
     }
 
-    // Returns the new ConsumerStatusMap according to the consumers to start/stop.
+    // Returns the new ConsumerStatusMap according to the consumers to stop.
     // The second return is an error string: If it is not equal to "",
     // it contains an error message, and the first return should be ignored.
-    pure def getNewConsumerStatusMap(
+    pure def stopConsumers(
         currentConsumerStatusMap: Chain -> str,
-        consumersToStart: Set[Chain],
         consumersToStop: Set[Chain]): (Chain -> str, str) = {
-            val runningConsumers = getRunningConsumersFromMap(currentConsumerStatusMap)
-            val stoppedConsumers = getStoppedConsumersFromMap(currentConsumerStatusMap)
+            val runningConsumers = currentConsumerStatusMap.keys().filter(
+                chain => currentConsumerStatusMap.get(chain) == RUNNING
+            )
             // if a consumer is both started and stopped, this is an error
-            if (consumersToStart.intersect(consumersToStop).size() > 0) {
-                (currentConsumerStatusMap, "Cannot start and stop a consumer at the same time")
-            } else {
-                // if a consumer is started, it must be unused
-                if (consumersToStart.intersect(runningConsumers).size() > 0) {
-                    (currentConsumerStatusMap, "Cannot start a consumer that is already running")
+                // if a consumer is stopped, it must be running
+                if (consumersToStop.exclude(runningConsumers).size() > 0) {
+                    (currentConsumerStatusMap, "Cannot stop a consumer that is not running")
                 } else {
-                    // if a consumer is stopped, it must be running
-                    if (consumersToStop.intersect(stoppedConsumers).size() > 0) {
-                        (currentConsumerStatusMap, "Cannot stop a consumer that is not running")
-                    } else {
-                        // if a consumer is started, it must be unused
-                        val newConsumerStatusMap = currentConsumerStatusMap.keys().mapBy(
-                            (chain) => 
-                            if (consumersToStart.contains(chain)) {
-                                RUNNING
-                            } else if (consumersToStop.contains(chain)) {
-                                STOPPED
-                            } else {
-                                currentConsumerStatusMap.get(chain)
-                            }
-                        )
-                        (newConsumerStatusMap, "")
-                    }
+                    // if a consumer is started, it must be unused
+                    val newConsumerStatusMap = currentConsumerStatusMap.keys().mapBy(
+                        (chain) => 
+                        if (consumersToStop.contains(chain)) {
+                            STOPPED
+                        } else {
+                            currentConsumerStatusMap.get(chain)
+                        }
+                    )
+                    (newConsumerStatusMap, "")
                 }
             }
+        
+    // Returns the new ConsumerStatusMap according to the consumers to start.
+    // The second return is an error string: If it is not equal to "",
+    // it contains an error message, and the first return should be ignored.
+    pure def startConsumers(
+        currentConsumerStatusMap: Chain -> str,
+        consumersToStart: Set[Chain]): (Chain -> str, str) = {
+            val unusedConsumers = currentConsumerStatusMap.keys().filter(
+                chain => currentConsumerStatusMap.get(chain) == UNUSED
+            )
+            // if a consumer is both started and stopped, this is an error
+                // if a consumer is stopped, it must be running
+                if (consumersToStart.exclude(unusedConsumers).size() > 0) {
+                    (currentConsumerStatusMap, "cannot start a consumer that is not unused")
+                } else {
+                    // if a consumer is started, it must be unused
+                    val newConsumerStatusMap = currentConsumerStatusMap.keys().mapBy(
+                        (chain) => 
+                        if (consumersToStart.contains(chain)) {
+                            RUNNING
+                        } else {
+                            currentConsumerStatusMap.get(chain)
+                        }
+                    )
+                    (newConsumerStatusMap, "")
+                }
+            }
+
+    pure def StartStopConsumers(
+        currentConsumerStatusMap: Chain -> str,
+        consumersToStart: Set[Chain],
+        consumersToStop: Set[Chain]
+    ): (Chain -> str, str) = {
+        // check if any consumer is both started and stopped
+        if (consumersToStart.intersect(consumersToStop).size() > 0) {
+            (currentConsumerStatusMap, "Cannot start and stop a consumer at the same time")
+        } else {
+            val res1 = currentConsumerStatusMap.startConsumers(consumersToStart)
+            val newConsumerStatus = res1._1
+            val err1 = res1._2
+            val res2 = newConsumerStatus.stopConsumers(consumersToStop)
+            val err2 = res2._2
+            if (err1 != "") {
+                (currentConsumerStatusMap, err1)
+            } else if (err2 != "") {
+                (currentConsumerStatusMap, err2)
+            } else {
+                (res2._1, "")
+            }
         }
+    }
 
 
     // Takes the currentValidatorSet and puts it as the newest set of the voting history

@@ -167,7 +167,7 @@ module CCVTest {
             "chain2" -> RUNNING,
             "chain3" -> STOPPED
         )
-        val res = getNewConsumerStatusMap(
+        val res = StartStopConsumers(
             currentConsumerStatusMap,
             Set("chain1"),
             Set("chain2")
@@ -185,12 +185,12 @@ module CCVTest {
             "chain2" -> RUNNING,
             "chain3" -> STOPPED
         )
-        val res = getNewConsumerStatusMap(
+        val res = StartStopConsumers(
             currentConsumerStatusMap,
             Set("chain2"),
             Set("chain3")
         )
-        res._2 == "Cannot start a consumer that is already running"
+        res._2 == "cannot start a consumer that is not unused"
     }
 
     run ConsumerStatusMapAlreadyStoppedTest =
@@ -200,7 +200,7 @@ module CCVTest {
             "chain2" -> RUNNING,
             "chain3" -> STOPPED
         )
-        val res = getNewConsumerStatusMap(
+        val res = StartStopConsumers(
             currentConsumerStatusMap,
             Set("chain1"),
             Set("chain3")
@@ -215,7 +215,7 @@ module CCVTest {
             "chain2" -> RUNNING,
             "chain3" -> STOPPED
         )
-        val res = getNewConsumerStatusMap(
+        val res = StartStopConsumers(
             currentConsumerStatusMap,
             Set("chain1"),
             Set("chain1")

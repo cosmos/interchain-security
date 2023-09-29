@@ -18,3 +18,7 @@ Other functions are for utility.
 
 The parameters of the protocol are defined as consts in ccv.qnt.
 
+### Invariants
+
+The invariants I am checking are in ccv_statemachine.qnt, and are as follows:
+- ValidatorUpdatesArePropagated: When a validator power update is comitted on chain, a packet containing that change in voting power is sent to all running consumers. Check via `quint run --invariant ValidatorUpdatesArePropagated ccv_statemachine.qnt --main CCVDefaultStateMachine`
