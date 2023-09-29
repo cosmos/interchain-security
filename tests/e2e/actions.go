@@ -1747,6 +1747,7 @@ func (tr TestRun) registerRepresentative(
 				`--commission-rate`, "0.1",
 				`--commission-max-rate`, "0.2",
 				`--commission-max-change-rate`, "0.01",
+				`--min-self-delegation`, "1",
 				`--from`, `validator`+fmt.Sprint(val),
 				`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 				`--home`, tr.getValidatorHome(action.Chain, val),
