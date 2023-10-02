@@ -54,6 +54,7 @@ func getAllKeyPrefixes() []byte {
 		providertypes.ConsumerAddrsToPruneBytePrefix,
 		providertypes.SlashLogBytePrefix,
 		providertypes.VSCMaturedHandledThisBlockBytePrefix,
+		providertypes.ProposedConsumerChainByteKey,
 	}
 }
 
@@ -307,5 +308,24 @@ func TestKeysWithUint64Payload(t *testing.T) {
 			require.Equal(t, expectedBytePrefixes[funcIdx], key[0])
 			require.Equal(t, sdk.Uint64ToBigEndian(test.integer), key[1:])
 		}
+	}
+}
+
+func TestParseProposedConsumerChainKey(t *testing.T) {
+	tests := []struct {
+		chainID    string
+		proposalID uint64
+	}{
+		{chainID: "1", proposalID: 1},
+		{chainID: "some other ID", proposalID: 12},
+		{chainID: "some other other chain ID", proposalID: 123},
+	}
+
+	for _, test := range tests {
+		key := providertypes.ProposedConsumerChainKey(test.proposalID)
+		pID, err := providertypes.ParseProposedConsumerChainKey(
+			providertypes.ProposedConsumerChainByteKey, key)
+		require.NoError(t, err)
+		require.Equal(t, pID, test.proposalID)
 	}
 }

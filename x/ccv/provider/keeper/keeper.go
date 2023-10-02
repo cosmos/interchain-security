@@ -178,6 +178,50 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 	store.Delete(types.ChainToChannelKey(chainID))
 }
 
+// SetProposedConsumerChain stores a consumer chainId corresponding to a submitted consumer addition proposal
+// This consumer chainId is deleted once the voting period for the proposal ends
+// does not end.
+func (k Keeper) SetProposedConsumerChain(ctx sdk.Context, chainID string, proposalID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ProposedConsumerChainKey(proposalID), []byte(chainID))
+}
+
+// GetProposedConsumerChain get the proposed chainID  in consumerAddition proposal.
+func (k Keeper) GetProposedConsumerChain(ctx sdk.Context, proposalID uint64) string {
+	store := ctx.KVStore(k.storeKey)
+	return string(store.Get(types.ProposedConsumerChainKey(proposalID)))
+}
+
+// DeleteProposedConsumerChainInStore deletes the consumer chainID from store
+// which is in gov consumerAddition proposal
+func (k Keeper) DeleteProposedConsumerChainInStore(ctx sdk.Context, proposalID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ProposedConsumerChainKey(proposalID))
+}
+
+// GetAllProposedConsumerChainIDs get consumer chainId in gov consumerAddition proposal before voting period ends.
+func (k Keeper) GetAllProposedConsumerChainIDs(ctx sdk.Context) []types.ProposedChain {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ProposedConsumerChainByteKey})
+	defer iterator.Close()
+
+	proposedChains := []types.ProposedChain{}
+	for ; iterator.Valid(); iterator.Next() {
+		proposalID, err := types.ParseProposedConsumerChainKey(types.ProposedConsumerChainByteKey, iterator.Key())
+		if err != nil {
+			panic(fmt.Errorf("proposed chains cannot be parsed: %w", err))
+		}
+
+		proposedChains = append(proposedChains, types.ProposedChain{
+			ChainID:    string(iterator.Value()),
+			ProposalID: proposalID,
+		})
+
+	}
+
+	return proposedChains
+}
+
 // GetAllConsumerChains gets all of the consumer chains, for which the provider module
 // created IBC clients. Consumer chains with created clients are also referred to as registered.
 //
