@@ -1,3 +1,5 @@
+// -- mode: Bluespec; --
+
 // A simple module for time that makes timings more readable,
 // e.g. 5 * Minute.
 // The base unit are seconds, i.e. to get the number of seconds in a time value, just treat it as an int.

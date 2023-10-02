@@ -1,3 +1,5 @@
+// -- mode: Bluespec; --
+
 // This module is just a library with utility functions (sometimes called spells in Quint).
 module extraSpells {
 

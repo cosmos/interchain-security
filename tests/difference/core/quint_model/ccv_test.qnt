@@ -1,3 +1,5 @@
+// -- mode: Bluespec; --
+
 // contains test logic for the stateless functions in the CCV module
 module CCVTest {
     import CCVTypes.* from "./ccv"

@@ -1,3 +1,4 @@
+// -- mode: Bluespec; --
 module CCVTypes {
     import Time.* from "./libraries/Time"
 
