@@ -11,7 +11,7 @@ Add an entry to the unreleased provider section whenever merging a PR to main th
 * (deps) [#1258](https://github.com/cosmos/interchain-security/pull/1258) Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to [v0.47.4](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.4).
 * (deps!) [#1196](https://github.com/cosmos/interchain-security/pull/1196) Bump [ibc-go](https://github.com/cosmos/ibc-go) to [v7.2.0](https://github.com/cosmos/ibc-go/releases/tag/v7.2.0).
 * `[x/ccv/provider]` (fix) [#1076](https://github.com/cosmos/interchain-security/pull/1076) Add `InitTimeoutTimestamps` and `ExportedVscSendTimestamps` to exported genesis.
-* (feature) [#1282](https://github.com/cosmos/interchain-security/issues/1282)  In the `ConsumerAdditionProposal`, consumer chainIDs proposed before the voting period finishes are now stored in the state.  The gRPC query `/interchain_security/ccv/provider/proposed_consumer_chainids` and CLI command `query provider proposed-consumer-chains` can be used to retrieve this information.
+* (feature!) [#1282](https://github.com/cosmos/interchain-security/issues/1282)  In the `ConsumerAdditionProposal`, consumer chainIDs proposed before the voting period finishes are now stored in the state.  The gRPC query `/interchain_security/ccv/provider/proposed_consumer_chainids` and CLI command `query provider proposed-consumer-chains` can be used to retrieve this information.
 
 ## [Unreleased for Consumer]
 
