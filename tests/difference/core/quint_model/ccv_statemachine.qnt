@@ -1,4 +1,4 @@
-// -- mode: Bluespec; --
+// -*- mode: Bluespec; -*-
 module CCVDefaultStateMachine {
     // A basic state machine that utilizes the CCV protocol.
     import CCVTypes.* from "./ccv"
