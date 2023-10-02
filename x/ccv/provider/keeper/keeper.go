@@ -192,9 +192,9 @@ func (k Keeper) GetProposedConsumerChain(ctx sdk.Context, proposalID uint64) str
 	return string(store.Get(types.ProposedConsumerChainKey(proposalID)))
 }
 
-// DeleteChainsInProposal deletes the consumer chainID from store
+// DeleteProposedConsumerChainInStore deletes the consumer chainID from store
 // which is in gov consumerAddition proposal
-func (k Keeper) DeleteChainsInProposal(ctx sdk.Context, chainID string, proposalID uint64) {
+func (k Keeper) DeleteProposedConsumerChainInStore(ctx sdk.Context, proposalID uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ProposedConsumerChainKey(proposalID))
 }

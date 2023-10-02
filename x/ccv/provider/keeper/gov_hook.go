@@ -82,9 +82,8 @@ func (gh GovHooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID ui
 		}
 
 		if consAdditionProp.ProposalType() == types.ProposalTypeConsumerAddition {
-			gh.k.DeleteChainsInProposal(ctx, consAdditionProp.ChainId, proposalID)
+			gh.k.DeleteProposedConsumerChainInStore(ctx, proposalID)
 		}
-
 	}
 }
 

@@ -545,11 +545,86 @@ func TestSetProposedConsumerChains(t *testing.T) {
 		{chainID: "1", proposalID: 1},
 		{chainID: "some other ID", proposalID: 12},
 		{chainID: "some other other chain ID", proposalID: 123},
+		{chainID: "", proposalID: 1234},
 	}
 
 	for _, test := range tests {
 		providerKeeper.SetProposedConsumerChain(ctx, test.chainID, test.proposalID)
 		cID := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
 		require.Equal(t, cID, test.chainID)
+	}
+}
+
+func TestDeleteProposedConsumerChainInStore(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	tests := []struct {
+		chainID          string
+		proposalID       uint64
+		deleteProposalID uint64
+		ok               bool
+	}{
+		{chainID: "1", proposalID: 1, deleteProposalID: 1, ok: true},
+		{chainID: "", proposalID: 12, deleteProposalID: 12, ok: true},
+		{chainID: "1", proposalID: 0, deleteProposalID: 1, ok: false},
+	}
+	for _, test := range tests {
+		providerKeeper.SetProposedConsumerChain(ctx, test.chainID, test.proposalID)
+		providerKeeper.DeleteProposedConsumerChainInStore(ctx, test.deleteProposalID)
+		cID := providerKeeper.GetProposedConsumerChain(ctx, test.proposalID)
+		if test.ok {
+			require.Equal(t, cID, "")
+		} else {
+			require.Equal(t, cID, test.chainID)
+		}
+	}
+}
+
+func TestGetAllProposedConsumerChainIDs(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	tests := [][]types.ProposedChain{
+		[]types.ProposedChain{},
+		[]types.ProposedChain{
+			{
+				ChainID: "1",
+				ProposalID: 1,
+			},
+		},
+		[]types.ProposedChain{
+			{
+				ChainID: "1",
+				ProposalID: 1,
+			},
+			{
+				ChainID: "2",
+				ProposalID: 2,
+			},
+			{
+				ChainID: "",
+				ProposalID: 3,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		for _, tc := range test {
+			providerKeeper.SetProposedConsumerChain(ctx, tc.ChainID, tc.ProposalID)
+		}
+
+		chains := providerKeeper.GetAllProposedConsumerChainIDs(ctx)
+
+		sort.Slice(chains, func(i, j int) bool {
+			return chains[i].ProposalID < chains[j].ProposalID
+		})
+		sort.Slice(test, func(i, j int) bool {
+			return test[i].ProposalID < test[j].ProposalID
+		})
+		require.Equal(t, chains, test)
+
+		for _, tc := range test {
+			providerKeeper.DeleteProposedConsumerChainInStore(ctx, tc.ProposalID)
+		}
 	}
 }
