@@ -445,6 +445,29 @@ module CCV {
         val providerStateAfterConsumerAdvancement = providerStateAfterTimeAdvancement.with(
             "consumerStatus", newConsumerStatus
         )
+
+        // for each consumer we just set to running, set its initial validator set to be the current one on the provider.
+        val newConsumerStateMap =
+            currentState.consumerStates.keys().mapBy(
+                (consumer) => 
+                if (consumersToStart.contains(consumer)) {
+                    val currentConsumerState = currentState.consumerStates.get(consumer)
+                    val newConsumerState = currentConsumerState.with(
+                        "chainState", currentConsumerState.chainState.with(
+                            "currentValidatorSet", providerStateAfterConsumerAdvancement.chainState.currentValidatorSet
+                        )
+                    )
+                    (consumer, newConsumerState)
+                } else {
+                    (consumer, currentState.consumerStates.get(consumer))
+                }
+            )
+        val newState = currentState.with(
+            "providerState", providerStateAfterConsumerAdvancement
+        ).with(
+            "consumerStates", newConsumerStateMap
+        )
+
         if (err != "") {
             Err(err)
         } else {
@@ -456,10 +479,10 @@ module CCV {
                 } else {
                     providerStateAfterConsumerAdvancement
                 }
-            val newState = currentState.with(
+            val finalState = newState.with(
                 "providerState", providerStateAfterSending
             )
-            Ok(newState)
+            Ok(finalState)
         }
     }
 

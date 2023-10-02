@@ -115,9 +115,12 @@ module CCVDefaultStateMachine {
     // and each endblock has a good chance to stop consumers, ...
     // step is thus suited to test also unhappy paths.
     action step = any {
-        nondet chain = oneOf(runningConsumers)
-        nondet timeAdvancement = oneOf(timeAdvancements)
-        EndAndBeginBlockForConsumer(chain, timeAdvancement),
+        all {
+            runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
+            nondet chain = oneOf(runningConsumers)
+            nondet timeAdvancement = oneOf(timeAdvancements)
+            EndAndBeginBlockForConsumer(chain, timeAdvancement),
+        },
 
         val consumerStatus = currentState.providerState.consumerStatus
         nondet consumersToStart = oneOf(unusedConsumers.powerset())
@@ -134,13 +137,19 @@ module CCVDefaultStateMachine {
 
         // try to send a packet. we could filter by chains that can actually send,
         // but it's probably not much faster than just trying and failing.
-        nondet sender = oneOf(runningConsumers)
-        DeliverVSCMaturedPacket(sender),
+        all {
+            runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
+            nondet sender = oneOf(runningConsumers)
+            DeliverVSCMaturedPacket(sender),
+        },
 
         // again, we could filter by chains that can actually receive,
         // but it's probably not much faster than just trying and failing.
-        nondet recciver = oneOf(runningConsumers)
-        DeliverVSCPacket(recciver),
+        all {
+            runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
+            nondet recciver = oneOf(runningConsumers)
+            DeliverVSCPacket(recciver),
+        },
     }
 
     // ==================

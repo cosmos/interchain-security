@@ -1,0 +1,1 @@
+quint run --invariant "all{CanRunConsumer,CanStopConsumer,CanTimeoutConsumer,CanSendVSCPackets,CanSendVSCMaturedPackets}" ccv_statemachine.qnt --main CCVDefaultStateMachine --max-steps 2000 --max-samples 200

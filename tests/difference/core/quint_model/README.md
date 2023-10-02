@@ -58,3 +58,4 @@ The available sanity checks are:
 - CanSendVSCPackets
 - CanSendVSCMaturedPackets
         
+Run all sanity checks by running `run_sanity_checks.sh`.
