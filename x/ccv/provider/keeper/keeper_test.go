@@ -588,21 +588,21 @@ func TestGetAllProposedConsumerChainIDs(t *testing.T) {
 		[]types.ProposedChain{},
 		[]types.ProposedChain{
 			{
-				ChainID: "1",
+				ChainID:    "1",
 				ProposalID: 1,
 			},
 		},
 		[]types.ProposedChain{
 			{
-				ChainID: "1",
+				ChainID:    "1",
 				ProposalID: 1,
 			},
 			{
-				ChainID: "2",
+				ChainID:    "2",
 				ProposalID: 2,
 			},
 			{
-				ChainID: "",
+				ChainID:    "",
 				ProposalID: 3,
 			},
 		},
