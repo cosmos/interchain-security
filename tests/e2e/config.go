@@ -59,8 +59,8 @@ type ContainerConfig struct {
 	Now           time.Time
 }
 
-// TODO: Split out TestRun and system wide config like localsdkpath
-type TestRun struct {
+// TODO: Split out TestConfig and system wide config like localsdkpath
+type TestConfig struct {
 	// These are the non altered values during a typical test run, where multiple test runs can exist
 	// to validate different action sequences and corresponding state checks.
 	containerConfig  ContainerConfig
@@ -84,8 +84,8 @@ type TestRun struct {
 	name string
 }
 
-// Initialize initializes the TestRun instance by setting the runningChains field to an empty map.
-func (tr *TestRun) Initialize() {
+// Initialize initializes the TestConfig instance by setting the runningChains field to an empty map.
+func (tr *TestConfig) Initialize() {
 	tr.runningChains = make(map[ChainID]bool)
 }
 
@@ -151,8 +151,8 @@ func getDefaultValidators() map[ValidatorID]ValidatorConfig {
 	}
 }
 
-func SlashThrottleTestRun() TestRun {
-	tr := TestRun{
+func SlashThrottleTestConfig() TestConfig {
+	tr := TestConfig{
 		name: "slash-throttling",
 		containerConfig: ContainerConfig{
 			ContainerName: "interchain-security-slash-container",
@@ -196,8 +196,8 @@ func SlashThrottleTestRun() TestRun {
 	return tr
 }
 
-func DefaultTestRun() TestRun {
-	tr := TestRun{
+func DefaultTestConfig() TestConfig {
+	tr := TestConfig{
 		name: "default",
 		containerConfig: ContainerConfig{
 			ContainerName: "interchain-security-container",
@@ -241,7 +241,7 @@ func DefaultTestRun() TestRun {
 	return tr
 }
 
-func DemocracyTestRun(allowReward bool) TestRun {
+func DemocracyTestConfig(allowReward bool) TestConfig {
 	consumerGenChanges := ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"20\" | " +
 		".app_state.gov.voting_params.voting_period = \"10s\" | " +
 		".app_state.slashing.params.signed_blocks_window = \"10\" | " +
@@ -254,7 +254,7 @@ func DemocracyTestRun(allowReward bool) TestRun {
 		consumerGenChanges += " | .app_state.ccvconsumer.params.reward_denoms = [\"stake\"]"
 	}
 
-	tr := TestRun{
+	tr := TestConfig{
 		name: "democracy",
 		containerConfig: ContainerConfig{
 			ContainerName: "interchain-security-democ-container",
@@ -293,8 +293,8 @@ func DemocracyTestRun(allowReward bool) TestRun {
 	return tr
 }
 
-func MultiConsumerTestRun() TestRun {
-	tr := TestRun{
+func MultiConsumerTestConfig() TestConfig {
+	tr := TestConfig{
 		name: "multi-consumer",
 		containerConfig: ContainerConfig{
 			ContainerName: "interchain-security-multic-container",
@@ -348,8 +348,8 @@ func MultiConsumerTestRun() TestRun {
 	return tr
 }
 
-func ChangeoverTestRun() TestRun {
-	tr := TestRun{
+func ChangeoverTestConfig() TestConfig {
+	tr := TestConfig{
 		name: "changeover",
 		containerConfig: ContainerConfig{
 			ContainerName: "interchain-security-changeover-container",
@@ -425,7 +425,6 @@ func (tr *TestRun) SetRelayerConfig(useRly bool) {
 // used as a validatorID or chainID needs to be 5 char or less.
 func (tr *TestRun) validateStringLiterals() {
 	for valID, valConfig := range tr.validatorConfigs {
-
 		if len(valID) > 5 {
 			panic("validator id string literal must be 5 char or less")
 		}

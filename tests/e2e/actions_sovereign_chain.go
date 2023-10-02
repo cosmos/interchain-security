@@ -18,7 +18,7 @@ type StartSovereignChainAction struct {
 
 // calls a simplified startup script (start-sovereign.sh) and runs a validator node
 // upgrades are simpler with a single validator node since only one node needs to be upgraded
-func (tr TestRun) startSovereignChain(
+func (tr TestConfig) startSovereignChain(
 	action StartSovereignChainAction,
 	verbose bool,
 ) {
@@ -112,7 +112,7 @@ type LegacyUpgradeProposalAction struct {
 	UpgradeHeight uint64
 }
 
-func (tr *TestRun) submitLegacyUpgradeProposal(action LegacyUpgradeProposalAction, verbose bool) {
+func (tr *TestConfig) submitLegacyUpgradeProposal(action LegacyUpgradeProposalAction, verbose bool) {
 	submit := fmt.Sprintf(
 		`%s tx gov submit-legacy-proposal software-upgrade %s \
 		--title  %s \
@@ -161,7 +161,7 @@ type waitUntilBlockAction struct {
 	Chain ChainID
 }
 
-func (tr *TestRun) waitUntilBlockOnChain(action waitUntilBlockAction) {
+func (tr *TestConfig) waitUntilBlockOnChain(action waitUntilBlockAction) {
 	fmt.Println("waitUntilBlockOnChain is waiting for block:", action.Block)
 	tr.waitUntilBlock(action.Chain, action.Block, 120*time.Second)
 	fmt.Println("waitUntilBlockOnChain done waiting for block:", action.Block)
