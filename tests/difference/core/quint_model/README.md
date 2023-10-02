@@ -57,5 +57,3 @@ The available sanity checks are:
 - CanTimeoutConsumer
 - CanSendVSCPackets
 - CanSendVSCMaturedPackets
-        
-Run all sanity checks by running `run_sanity_checks.sh`.

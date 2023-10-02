@@ -457,9 +457,9 @@ module CCV {
                             "currentValidatorSet", providerStateAfterConsumerAdvancement.chainState.currentValidatorSet
                         )
                     )
-                    (consumer, newConsumerState)
+                    newConsumerState
                 } else {
-                    (consumer, currentState.consumerStates.get(consumer))
+                    currentState.consumerStates.get(consumer)
                 }
             )
         val newState = currentState.with(
