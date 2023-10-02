@@ -45,10 +45,6 @@ func (gh GovHooks) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) {
 			panic(fmt.Errorf("failed to unmarshal proposal content in gov hook: %w", err))
 		}
 
-		// if the proposal is not ConsumerAdditionProposal, continue
-		if msgLegacyContent.Content.TypeUrl != "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal" {
-			continue
-		}
 		// if the consumer addition proposal cannot be unmarshaled, continue
 		var consAdditionProp types.ConsumerAdditionProposal
 		if err := proto.Unmarshal(msgLegacyContent.Content.Value, &consAdditionProp); err != nil {
@@ -79,9 +75,6 @@ func (gh GovHooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID ui
 			panic(fmt.Errorf("failed to unmarshal proposal content in gov hook: %w", err))
 		}
 
-		if msgLegacyContent.Content.TypeUrl != "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal" {
-			continue
-		}
 		var consAdditionProp types.ConsumerAdditionProposal
 		// if the proposal is not ConsumerAdditionProposal, return
 		if err := proto.Unmarshal(msgLegacyContent.Content.Value, &consAdditionProp); err != nil {
