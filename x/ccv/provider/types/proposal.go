@@ -1,7 +1,6 @@
 package types
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	time "time"
@@ -11,7 +10,6 @@ import (
 	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -20,21 +18,18 @@ import (
 const (
 	ProposalTypeConsumerAddition   = "ConsumerAddition"
 	ProposalTypeConsumerRemoval    = "ConsumerRemoval"
-	ProposalTypeEquivocation       = "Equivocation"
 	ProposalTypeChangeRewardDenoms = "ChangeRewardDenoms"
 )
 
 var (
 	_ govv1beta1.Content = &ConsumerAdditionProposal{}
 	_ govv1beta1.Content = &ConsumerRemovalProposal{}
-	_ govv1beta1.Content = &EquivocationProposal{}
 	_ govv1beta1.Content = &ChangeRewardDenomsProposal{}
 )
 
 func init() {
 	govv1beta1.RegisterProposalType(ProposalTypeConsumerAddition)
 	govv1beta1.RegisterProposalType(ProposalTypeConsumerRemoval)
-	govv1beta1.RegisterProposalType(ProposalTypeEquivocation)
 	govv1beta1.RegisterProposalType(ProposalTypeChangeRewardDenoms)
 }
 
@@ -199,39 +194,6 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 
 	if sccp.StopTime.IsZero() {
 		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
-	}
-	return nil
-}
-
-// NewEquivocationProposal creates a new equivocation proposal.
-func NewEquivocationProposal(title, description string, equivocations []*evidencetypes.Equivocation) govv1beta1.Content {
-	return &EquivocationProposal{
-		Title:         title,
-		Description:   description,
-		Equivocations: equivocations,
-	}
-}
-
-// ProposalRoute returns the routing key of an equivocation  proposal.
-func (sp *EquivocationProposal) ProposalRoute() string { return RouterKey }
-
-// ProposalType returns the type of a equivocation proposal.
-func (sp *EquivocationProposal) ProposalType() string {
-	return ProposalTypeEquivocation
-}
-
-// ValidateBasic runs basic stateless validity checks
-func (sp *EquivocationProposal) ValidateBasic() error {
-	if err := govv1beta1.ValidateAbstract(sp); err != nil {
-		return err
-	}
-	if len(sp.Equivocations) == 0 {
-		return errors.New("invalid equivocation proposal: empty equivocations")
-	}
-	for i := 0; i < len(sp.Equivocations); i++ {
-		if err := sp.Equivocations[i].ValidateBasic(); err != nil {
-			return err
-		}
 	}
 	return nil
 }

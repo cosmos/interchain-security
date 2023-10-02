@@ -15,8 +15,6 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/tidwall/gjson"
 
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/client"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -430,78 +428,6 @@ func (tr TestRun) submitParamChangeProposal(
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(action.Chain, 2, 60*time.Second)
-}
-
-type submitEquivocationProposalAction struct {
-	Chain     ChainID
-	Height    int64
-	Time      time.Time
-	Power     int64
-	Validator ValidatorID
-	Deposit   uint
-	From      ValidatorID
-}
-
-func (tr TestRun) submitEquivocationProposal(action submitEquivocationProposalAction, verbose bool) {
-	val := tr.validatorConfigs[action.Validator]
-	providerChain := tr.chainConfigs[ChainID("provi")]
-
-	prop := client.EquivocationProposalJSON{
-		Summary: "Validator equivocation!",
-		EquivocationProposal: types.EquivocationProposal{
-			Title:       "Validator equivocation!",
-			Description: fmt.Sprintf("Validator: %s has committed an equivocation infraction on ChainID: %s", action.Validator, action.Chain),
-			Equivocations: []*evidencetypes.Equivocation{
-				{
-					Height:           action.Height,
-					Time:             action.Time,
-					Power:            action.Power,
-					ConsensusAddress: val.ValconsAddress,
-				},
-			},
-		},
-		Deposit: fmt.Sprint(action.Deposit) + `stake`,
-	}
-
-	bz, err := json.Marshal(prop)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	jsonStr := string(bz)
-	if strings.Contains(jsonStr, "'") {
-		log.Fatal("prop json contains single quote")
-	}
-
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.InstanceName,
-		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/equivocation-proposal.json")).CombinedOutput()
-
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	// EQUIVOCATION PROPOSAL
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.InstanceName, providerChain.BinaryName,
-
-		"tx", "gov", "submit-legacy-proposal", "equivocation", "/equivocation-proposal.json",
-
-		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(providerChain.ChainId),
-		`--home`, tr.getValidatorHome(providerChain.ChainId, action.From),
-		`--node`, tr.getValidatorNode(providerChain.ChainId, action.From),
-		`--gas`, "9000000",
-		`--keyring-backend`, `test`,
-		`-y`,
-	).CombinedOutput()
-
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
 }
 
 type voteGovProposalAction struct {

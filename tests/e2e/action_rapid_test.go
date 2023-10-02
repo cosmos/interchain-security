@@ -66,7 +66,6 @@ func GetActionGen() *rapid.Generator[any] {
 		GetSubmitConsumerAdditionProposalActionGen().AsAny(),
 		GetSubmitConsumerRemovalProposalActionGen().AsAny(),
 		GetSubmitParamChangeProposalActionGen().AsAny(),
-		GetSubmitEquivocationProposalActionGen().AsAny(),
 		GetVoteGovProposalActionGen().AsAny(),
 		GetStartConsumerChainActionGen().AsAny(),
 		GetAddChainToRelayerActionGen().AsAny(),
@@ -275,19 +274,6 @@ func GetSubmitParamChangeProposalActionGen() *rapid.Generator[submitParamChangeL
 			Subspace: rapid.String().Draw(t, "Subspace"),
 			Key:      rapid.String().Draw(t, "Key"),
 			Value:    rapid.String().Draw(t, "Value"), // could make this more generic in the future, since Value takes interfaces
-		}
-	})
-}
-
-func GetSubmitEquivocationProposalActionGen() *rapid.Generator[submitEquivocationProposalAction] {
-	return rapid.Custom(func(t *rapid.T) submitEquivocationProposalAction {
-		return submitEquivocationProposalAction{
-			Chain:   GetChainIDGen().Draw(t, "Chain"),
-			From:    GetValidatorIDGen().Draw(t, "From"),
-			Deposit: rapid.Uint().Draw(t, "Deposit"),
-			Height:  rapid.Int64().Draw(t, "Height"),
-			Time:    GetTimeGen().Draw(t, "Time"),
-			Power:   rapid.Int64().Draw(t, "Power"),
 		}
 	})
 }

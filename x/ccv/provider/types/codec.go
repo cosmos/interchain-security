@@ -28,11 +28,6 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&MsgAssignConsumerKey{},
 	)
 	registry.RegisterImplementations(
-		(*govv1beta1.Content)(nil),
-		&EquivocationProposal{},
-	)
-
-	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
 		&MsgSubmitConsumerMisbehaviour{},
 	)

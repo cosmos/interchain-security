@@ -159,25 +159,6 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 				10: TextProposal{},
 			},
 		}},
-		"equivocation-proposal": {ChainState{
-			ValPowers: &map[ValidatorID]uint{
-				ValidatorID("alice"): 509,
-				ValidatorID("bob"):   500,
-				ValidatorID("carol"): 0,
-			},
-			ValBalances: &map[ValidatorID]uint{
-				ValidatorID("bob"): 9489999999,
-			},
-			Proposals: &map[uint]Proposal{
-				5: EquivocationProposal{
-					Deposit:          10000001,
-					Status:           "PROPOSAL_STATUS_VOTING_PERIOD",
-					ConsensusAddress: "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
-					Power:            500,
-					Height:           10,
-				},
-			},
-		}},
 	}
 
 	for name, tc := range tests {

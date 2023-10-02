@@ -14,13 +14,12 @@ import (
 	types0 "github.com/cosmos/cosmos-sdk/types"
 	types1 "github.com/cosmos/cosmos-sdk/x/auth/types"
 	types2 "github.com/cosmos/cosmos-sdk/x/capability/types"
-	types3 "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	types4 "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	types5 "github.com/cosmos/cosmos-sdk/x/staking/types"
-	types6 "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	types7 "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	types8 "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
-	types9 "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	types3 "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	types4 "github.com/cosmos/cosmos-sdk/x/staking/types"
+	types5 "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	types6 "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	types7 "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	types8 "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -63,10 +62,10 @@ func (mr *MockStakingKeeperMockRecorder) BondDenom(ctx interface{}) *gomock.Call
 }
 
 // Delegation mocks base method.
-func (m *MockStakingKeeper) Delegation(ctx types0.Context, addr types0.AccAddress, valAddr types0.ValAddress) types5.DelegationI {
+func (m *MockStakingKeeper) Delegation(ctx types0.Context, addr types0.AccAddress, valAddr types0.ValAddress) types4.DelegationI {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delegation", ctx, addr, valAddr)
-	ret0, _ := ret[0].(types5.DelegationI)
+	ret0, _ := ret[0].(types4.DelegationI)
 	return ret0
 }
 
@@ -105,10 +104,10 @@ func (mr *MockStakingKeeperMockRecorder) GetLastValidatorPower(ctx, operator int
 }
 
 // GetLastValidators mocks base method.
-func (m *MockStakingKeeper) GetLastValidators(ctx types0.Context) []types5.Validator {
+func (m *MockStakingKeeper) GetLastValidators(ctx types0.Context) []types4.Validator {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLastValidators", ctx)
-	ret0, _ := ret[0].([]types5.Validator)
+	ret0, _ := ret[0].([]types4.Validator)
 	return ret0
 }
 
@@ -119,10 +118,10 @@ func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gom
 }
 
 // GetUnbondingType mocks base method.
-func (m *MockStakingKeeper) GetUnbondingType(ctx types0.Context, id uint64) (types5.UnbondingType, bool) {
+func (m *MockStakingKeeper) GetUnbondingType(ctx types0.Context, id uint64) (types4.UnbondingType, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUnbondingType", ctx, id)
-	ret0, _ := ret[0].(types5.UnbondingType)
+	ret0, _ := ret[0].(types4.UnbondingType)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -134,10 +133,10 @@ func (mr *MockStakingKeeperMockRecorder) GetUnbondingType(ctx, id interface{}) *
 }
 
 // GetValidator mocks base method.
-func (m *MockStakingKeeper) GetValidator(ctx types0.Context, addr types0.ValAddress) (types5.Validator, bool) {
+func (m *MockStakingKeeper) GetValidator(ctx types0.Context, addr types0.ValAddress) (types4.Validator, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidator", ctx, addr)
-	ret0, _ := ret[0].(types5.Validator)
+	ret0, _ := ret[0].(types4.Validator)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -149,10 +148,10 @@ func (mr *MockStakingKeeperMockRecorder) GetValidator(ctx, addr interface{}) *go
 }
 
 // GetValidatorByConsAddr mocks base method.
-func (m *MockStakingKeeper) GetValidatorByConsAddr(ctx types0.Context, consAddr types0.ConsAddress) (types5.Validator, bool) {
+func (m *MockStakingKeeper) GetValidatorByConsAddr(ctx types0.Context, consAddr types0.ConsAddress) (types4.Validator, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorByConsAddr", ctx, consAddr)
-	ret0, _ := ret[0].(types5.Validator)
+	ret0, _ := ret[0].(types4.Validator)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -204,7 +203,7 @@ func (mr *MockStakingKeeperMockRecorder) IterateLastValidatorPowers(ctx, cb inte
 }
 
 // IterateValidators mocks base method.
-func (m *MockStakingKeeper) IterateValidators(ctx types0.Context, f func(int64, types5.ValidatorI) bool) {
+func (m *MockStakingKeeper) IterateValidators(ctx types0.Context, f func(int64, types4.ValidatorI) bool) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "IterateValidators", ctx, f)
 }
@@ -284,7 +283,7 @@ func (mr *MockStakingKeeperMockRecorder) Slash(arg0, arg1, arg2, arg3, arg4 inte
 }
 
 // SlashWithInfractionReason mocks base method.
-func (m *MockStakingKeeper) SlashWithInfractionReason(arg0 types0.Context, arg1 types0.ConsAddress, arg2, arg3 int64, arg4 types0.Dec, arg5 types5.Infraction) math.Int {
+func (m *MockStakingKeeper) SlashWithInfractionReason(arg0 types0.Context, arg1 types0.ConsAddress, arg2, arg3 int64, arg4 types0.Dec, arg5 types4.Infraction) math.Int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SlashWithInfractionReason", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(math.Int)
@@ -338,10 +337,10 @@ func (mr *MockStakingKeeperMockRecorder) Unjail(ctx, addr interface{}) *gomock.C
 }
 
 // Validator mocks base method.
-func (m *MockStakingKeeper) Validator(ctx types0.Context, addr types0.ValAddress) types5.ValidatorI {
+func (m *MockStakingKeeper) Validator(ctx types0.Context, addr types0.ValAddress) types4.ValidatorI {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Validator", ctx, addr)
-	ret0, _ := ret[0].(types5.ValidatorI)
+	ret0, _ := ret[0].(types4.ValidatorI)
 	return ret0
 }
 
@@ -352,10 +351,10 @@ func (mr *MockStakingKeeperMockRecorder) Validator(ctx, addr interface{}) *gomoc
 }
 
 // ValidatorByConsAddr mocks base method.
-func (m *MockStakingKeeper) ValidatorByConsAddr(ctx types0.Context, consAddr types0.ConsAddress) types5.ValidatorI {
+func (m *MockStakingKeeper) ValidatorByConsAddr(ctx types0.Context, consAddr types0.ConsAddress) types4.ValidatorI {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ValidatorByConsAddr", ctx, consAddr)
-	ret0, _ := ret[0].(types5.ValidatorI)
+	ret0, _ := ret[0].(types4.ValidatorI)
 	return ret0
 }
 
@@ -363,41 +362,6 @@ func (m *MockStakingKeeper) ValidatorByConsAddr(ctx types0.Context, consAddr typ
 func (mr *MockStakingKeeperMockRecorder) ValidatorByConsAddr(ctx, consAddr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidatorByConsAddr", reflect.TypeOf((*MockStakingKeeper)(nil).ValidatorByConsAddr), ctx, consAddr)
-}
-
-// MockEvidenceKeeper is a mock of EvidenceKeeper interface.
-type MockEvidenceKeeper struct {
-	ctrl     *gomock.Controller
-	recorder *MockEvidenceKeeperMockRecorder
-}
-
-// MockEvidenceKeeperMockRecorder is the mock recorder for MockEvidenceKeeper.
-type MockEvidenceKeeperMockRecorder struct {
-	mock *MockEvidenceKeeper
-}
-
-// NewMockEvidenceKeeper creates a new mock instance.
-func NewMockEvidenceKeeper(ctrl *gomock.Controller) *MockEvidenceKeeper {
-	mock := &MockEvidenceKeeper{ctrl: ctrl}
-	mock.recorder = &MockEvidenceKeeperMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockEvidenceKeeper) EXPECT() *MockEvidenceKeeperMockRecorder {
-	return m.recorder
-}
-
-// HandleEquivocationEvidence mocks base method.
-func (m *MockEvidenceKeeper) HandleEquivocationEvidence(ctx types0.Context, evidence *types3.Equivocation) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "HandleEquivocationEvidence", ctx, evidence)
-}
-
-// HandleEquivocationEvidence indicates an expected call of HandleEquivocationEvidence.
-func (mr *MockEvidenceKeeperMockRecorder) HandleEquivocationEvidence(ctx, evidence interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleEquivocationEvidence", reflect.TypeOf((*MockEvidenceKeeper)(nil).HandleEquivocationEvidence), ctx, evidence)
 }
 
 // MockSlashingKeeper is a mock of SlashingKeeper interface.
@@ -438,10 +402,10 @@ func (mr *MockSlashingKeeperMockRecorder) DowntimeJailDuration(arg0 interface{})
 }
 
 // GetValidatorSigningInfo mocks base method.
-func (m *MockSlashingKeeper) GetValidatorSigningInfo(ctx types0.Context, address types0.ConsAddress) (types4.ValidatorSigningInfo, bool) {
+func (m *MockSlashingKeeper) GetValidatorSigningInfo(ctx types0.Context, address types0.ConsAddress) (types3.ValidatorSigningInfo, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSigningInfo", ctx, address)
-	ret0, _ := ret[0].(types4.ValidatorSigningInfo)
+	ret0, _ := ret[0].(types3.ValidatorSigningInfo)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -556,10 +520,10 @@ func (mr *MockChannelKeeperMockRecorder) ChanCloseInit(ctx, portID, channelID, c
 }
 
 // GetChannel mocks base method.
-func (m *MockChannelKeeper) GetChannel(ctx types0.Context, srcPort, srcChan string) (types9.Channel, bool) {
+func (m *MockChannelKeeper) GetChannel(ctx types0.Context, srcPort, srcChan string) (types8.Channel, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetChannel", ctx, srcPort, srcChan)
-	ret0, _ := ret[0].(types9.Channel)
+	ret0, _ := ret[0].(types8.Channel)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -602,7 +566,7 @@ func (mr *MockChannelKeeperMockRecorder) GetNextSequenceSend(ctx, portID, channe
 }
 
 // SendPacket mocks base method.
-func (m *MockChannelKeeper) SendPacket(ctx types0.Context, chanCap *types2.Capability, sourcePort, sourceChannel string, timeoutHeight types7.Height, timeoutTimestamp uint64, data []byte) (uint64, error) {
+func (m *MockChannelKeeper) SendPacket(ctx types0.Context, chanCap *types2.Capability, sourcePort, sourceChannel string, timeoutHeight types6.Height, timeoutTimestamp uint64, data []byte) (uint64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendPacket", ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 	ret0, _ := ret[0].(uint64)
@@ -691,10 +655,10 @@ func (m *MockConnectionKeeper) EXPECT() *MockConnectionKeeperMockRecorder {
 }
 
 // GetConnection mocks base method.
-func (m *MockConnectionKeeper) GetConnection(ctx types0.Context, connectionID string) (types8.ConnectionEnd, bool) {
+func (m *MockConnectionKeeper) GetConnection(ctx types0.Context, connectionID string) (types7.ConnectionEnd, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConnection", ctx, connectionID)
-	ret0, _ := ret[0].(types8.ConnectionEnd)
+	ret0, _ := ret[0].(types7.ConnectionEnd)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -1029,10 +993,10 @@ func (m *MockIBCTransferKeeper) EXPECT() *MockIBCTransferKeeperMockRecorder {
 }
 
 // Transfer mocks base method.
-func (m *MockIBCTransferKeeper) Transfer(arg0 context.Context, arg1 *types6.MsgTransfer) (*types6.MsgTransferResponse, error) {
+func (m *MockIBCTransferKeeper) Transfer(arg0 context.Context, arg1 *types5.MsgTransfer) (*types5.MsgTransferResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Transfer", arg0, arg1)
-	ret0, _ := ret[0].(*types6.MsgTransferResponse)
+	ret0, _ := ret[0].(*types5.MsgTransferResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1067,10 +1031,10 @@ func (m *MockIBCCoreKeeper) EXPECT() *MockIBCCoreKeeperMockRecorder {
 }
 
 // ChannelOpenInit mocks base method.
-func (m *MockIBCCoreKeeper) ChannelOpenInit(goCtx context.Context, msg *types9.MsgChannelOpenInit) (*types9.MsgChannelOpenInitResponse, error) {
+func (m *MockIBCCoreKeeper) ChannelOpenInit(goCtx context.Context, msg *types8.MsgChannelOpenInit) (*types8.MsgChannelOpenInitResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ChannelOpenInit", goCtx, msg)
-	ret0, _ := ret[0].(*types9.MsgChannelOpenInitResponse)
+	ret0, _ := ret[0].(*types8.MsgChannelOpenInitResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
