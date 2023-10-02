@@ -18,7 +18,7 @@ module CCVDefaultStateMachine {
     var currentState: ProtocolState
     
     // bookkeeping
-    var lastAction: str
+    var trace: List[str]
 
     // some utility stateful vals to make invariants easier to define
     val providerValidatorHistory = currentState.providerState.chainState.votingPowerHistory
@@ -49,7 +49,7 @@ module CCVDefaultStateMachine {
             providerState: providerStateWithConsumers,
             consumerStates: consumerStates
         },
-        lastAction' = "init"
+        trace' = List("init")
     }
 
     action VotingPowerChange(validator: Node, newVotingPower: int): bool = 
@@ -57,7 +57,7 @@ module CCVDefaultStateMachine {
         all {
             result.hasError == false,
             currentState' = result.newState,
-            lastAction' = "VotingPowerChange"
+            trace' = trace.append("VotingPowerChange")
         }
 
     // The receiver receives the next outstanding VSCPacket from the provider.
@@ -68,7 +68,7 @@ module CCVDefaultStateMachine {
         all {
             result.hasError == false,
             currentState' = result.newState,
-            lastAction' = "DeliverVSCPacket"
+            trace' = trace.append("DeliverVSCPacket")
         }
 
     // The provider receives the next outstanding VSCMaturedPacket from the sender.
@@ -79,7 +79,7 @@ module CCVDefaultStateMachine {
         all {
             result.hasError == false,
             currentState' = result.newState,
-            lastAction' = "DeliverVSCMaturedPacket"
+            trace' = trace.append("DeliverVSCMaturedPacket")
         }
 
     action EndAndBeginBlockForProvider(
@@ -90,7 +90,7 @@ module CCVDefaultStateMachine {
         all {
             result.hasError == false,
             currentState' = result.newState,
-            lastAction' = "EndAndBeginBlockForProvider"
+            trace' = trace.append("EndAndBeginBlockForProvider")
         }
 
     action EndAndBeginBlockForConsumer(
@@ -100,7 +100,7 @@ module CCVDefaultStateMachine {
         all {
             result.hasError == false,
             currentState' = result.newState,
-            lastAction' = "EndAndBeginBlockForConsumer"
+            trace' = trace.append("EndAndBeginBlockForConsumer")
         }
 
     // a few different values for time advancements.
@@ -110,7 +110,21 @@ module CCVDefaultStateMachine {
     // Note that these can still be combined, so in effect we can get all time advancements by any amount of seconds.
     pure val timeAdvancements = Set(1 * Second, 1 * Day, 1 * Week, 4 * Week)
 
+    // step allows the most generic nondeterminism, in particular it becomes relatively likely
+    // that over a long enough runtime, all consumers would time out by mismatching their time advancements,
+    // and each endblock has a good chance to stop consumers, ...
+    // step is thus suited to test also unhappy paths.
     action step = any {
+        nondet chain = oneOf(runningConsumers)
+        nondet timeAdvancement = oneOf(timeAdvancements)
+        EndAndBeginBlockForConsumer(chain, timeAdvancement),
+
+        val consumerStatus = currentState.providerState.consumerStatus
+        nondet consumersToStart = oneOf(unusedConsumers.powerset())
+        nondet consumersToStop = oneOf(runningConsumers.powerset())
+        nondet timeAdvancement = oneOf(timeAdvancements)
+        EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
+
         nondet node = oneOf(nodes)
         // very restricted set of voting powers. exact values are not important,
         // and this keeps the state space smaller.
@@ -118,30 +132,14 @@ module CCVDefaultStateMachine {
         nondet newVotingPower = oneOf(Set(0, 50, 100))
         VotingPowerChange(node, newVotingPower),
 
-        nondet chain = oneOf(consumerChains)
-        // a few different values for time advancements.
-        // to keep the number of possible steps small, we only have a few different values.
-        // Roughly, 1s for very small advances (like between blocks),
-        // and then longer values for increasingly severe downtime scenarios.
-        // Note that these can still be combined, so in effect we can get all time advancements by any amount of seconds.
-        nondet timeAdvancement = oneOf(timeAdvancements)
-        EndAndBeginBlockForConsumer(chain, timeAdvancement),
-
-        val consumerStatus = currentState.providerState.consumerStatus
-        nondet consumersToStart = oneOf(runningConsumers.powerset())
-        nondet consumersToStop = oneOf(unusedConsumers.powerset())
-        nondet timeAdvancement = oneOf(timeAdvancements)
-        EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
-
-        // 
         // try to send a packet. we could filter by chains that can actually send,
         // but it's probably not much faster than just trying and failing.
-        nondet sender = oneOf(consumerChains)
+        nondet sender = oneOf(runningConsumers)
         DeliverVSCMaturedPacket(sender),
 
         // again, we could filter by chains that can actually receive,
         // but it's probably not much faster than just trying and failing.
-        nondet recciver = oneOf(consumerChains)
+        nondet recciver = oneOf(runningConsumers)
         DeliverVSCPacket(recciver),
     }
 
@@ -163,7 +161,7 @@ module CCVDefaultStateMachine {
     // MUST be present in a ValidatorSetChangePacket that is sent to all registered consumer chains
     val ValidatorUpdatesArePropagated =
         // when the provider has just entered a validator set into a block...
-        if (lastAction == "EndAndBeginBlockForProvider") {
+        if (trace == trace.append("EndAndBeginBlockForProvider")) {
             val providerValSetInCurBlock = providerValidatorHistory.head()
             // ... for each consumer that is running then ...
             runningConsumers.forall(
@@ -238,11 +236,52 @@ module CCVDefaultStateMachine {
                     packet =>
                         // consumer still has time to respond
                         currentState.providerState.chainState.lastTimestamp <= packet.sendingTime + VscTimeout or
-                        // consumer was dropped due to inactivity
-                        currentState.providerState.consumerStatus.get(consumer) == STOPPED
+                        // consumer was dropped
+                        currentState.providerState.consumerStatus.get(consumer) == STOPPED or
+                        currentState.providerState.consumerStatus.get(consumer) == TIMEDOUT
                 )
             }
         )
+
+    // =================
+    // SANITY CHECKS
+    // =================
+    // some invariants that should fail,
+    // to check that certain behaviours can be exhibited.
+    // The name of the invariants is the name of the behaviour
+    // we want to see, and its definition will *negate* that behaviour, so
+    // we expect these to fail when checked as invariants.
+
+     // We can run consumers.
+     val CanRunConsumer =
+        not(ConsumerChains.exists(
+            consumer => 
+                currentState.providerState.consumerStatus.get(consumer) == RUNNING
+        ))
+
+    val CanStopConsumer =
+        not(ConsumerChains.exists(
+            consumer => 
+                currentState.providerState.consumerStatus.get(consumer) == STOPPED
+        ))
+
+    val CanTimeoutConsumer =
+        not(ConsumerChains.exists(
+            consumer => 
+                currentState.providerState.consumerStatus.get(consumer) == TIMEDOUT
+        ))
+
+    val CanSendVSCPackets =
+        not(ConsumerChains.exists(
+            consumer => 
+                currentState.providerState.outstandingPacketsToConsumer.get(consumer).length() > 0
+        ))
+
+    val CanSendVSCMaturedPackets =
+        not(ConsumerChains.exists(
+            consumer => 
+                currentState.consumerStates.get(consumer).outstandingPacketsToProvider.length() > 0
+        ))
 
     // ==================
     // MANUAL TEST CASES
@@ -333,7 +372,7 @@ module CCVDefaultStateMachine {
                     // the packet was removed from the consumer
                     assert(currentState.consumerStates.get("consumer1").outstandingPacketsToProvider.length() == 0),
                     currentState' = currentState, // just so this still has an effect
-                    lastAction' = "HappyPathTest"
+                    trace' = trace.append("HappyPathTest")
                 }
             )
         }

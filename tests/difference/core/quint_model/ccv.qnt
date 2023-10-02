@@ -191,7 +191,8 @@ module CCVTypes {
     }
 
     // possible consumer statuses
-    pure val STOPPED = "stopped" // the chain was once a consumer chain, but has been dropped by the provider.
+    pure val STOPPED = "stopped" // the chain was once a consumer chain, but has been voluntarily dropped by the provider.
+    pure val TIMEDOUT = "timedout" // the chain has timed out and was dropped by the provider. This is only used for involuntary drops.
     pure val RUNNING = "running" // the chain is currently a consumer chain. Running chains are those that get sent VSCPackets.
     pure val UNUSED = "unused" // the chain has never been a consumer chain, and is available to become one.
     // When a chain is dropped, it cannot become a consumer again - we assume that would be done by another consumer becoming running.
@@ -285,6 +286,7 @@ module CCV {
                 // drop consumer
                 val result = stopConsumers(
                     currentState.providerState.consumerStatus,
+                    Set(),
                     Set(sender)
                 )
 
@@ -364,6 +366,7 @@ module CCV {
                 // drop consumer
                 val result = stopConsumers(
                     currentState.providerState.consumerStatus,
+                    Set(),
                     Set(receiver)
                 )
 
@@ -434,7 +437,8 @@ module CCV {
         // start/stop chains
         val res = providerStateAfterTimeAdvancement.consumerStatus.StartStopConsumers(
             consumersToStart,
-            consumersToStop
+            consumersToStop,
+            timedOutConsumers
         )
         val newConsumerStatus = res._1
         val err = res._2
@@ -505,6 +509,17 @@ module CCV {
     // which do not hold the core logic of the protocol, but are still part of it
     // ===================
 
+    // Get the running consumer that is furthest away from the provider in terms of timestamp.
+    pure def getFurthestConsumer(currentState: ProtocolState): Chain = {
+        val furthestConsumer = getRunningConsumers(currentState.providerState).MaxBy(
+            consumer => abs(
+                currentState.providerState.chainState.lastTimestamp -
+                currentState.consumerStates.get(consumer).chainState.lastTimestamp
+            )
+        )
+        furthestConsumer
+    }
+
     pure def getRunningConsumersFromMap(consumerStatus: Chain -> str): Set[Chain] = {
         consumerStatus.keys().filter(
             chain => consumerStatus.get(chain) == RUNNING
@@ -517,12 +532,15 @@ module CCV {
         )
     }
 
-    // Returns the new ConsumerStatusMap according to the consumers to stop.
+    // Returns the new ConsumerStatusMap according to the consumers to stop
+    // and the consumers to time out.
+    // If a consumer is both stopped and timed out, it will be timed out.
     // The second return is an error string: If it is not equal to "",
     // it contains an error message, and the first return should be ignored.
     pure def stopConsumers(
         currentConsumerStatusMap: Chain -> str,
-        consumersToStop: Set[Chain]): (Chain -> str, str) = {
+        consumersToStop: Set[Chain],
+        consumersToTimeout: Set[Chain]): (Chain -> str, str) = {
             val runningConsumers = currentConsumerStatusMap.keys().filter(
                 chain => currentConsumerStatusMap.get(chain) == RUNNING
             )
@@ -534,7 +552,9 @@ module CCV {
                     // if a consumer is started, it must be unused
                     val newConsumerStatusMap = currentConsumerStatusMap.keys().mapBy(
                         (chain) => 
-                        if (consumersToStop.contains(chain)) {
+                        if (consumersToTimeout.contains(chain)) {
+                            TIMEDOUT
+                        } else if (consumersToStop.contains(chain)) {
                             STOPPED
                         } else {
                             currentConsumerStatusMap.get(chain)
@@ -574,7 +594,8 @@ module CCV {
     pure def StartStopConsumers(
         currentConsumerStatusMap: Chain -> str,
         consumersToStart: Set[Chain],
-        consumersToStop: Set[Chain]
+        consumersToStop: Set[Chain],
+        consumersToTimeout: Set[Chain]
     ): (Chain -> str, str) = {
         // check if any consumer is both started and stopped
         if (consumersToStart.intersect(consumersToStop).size() > 0) {
@@ -583,7 +604,7 @@ module CCV {
             val res1 = currentConsumerStatusMap.startConsumers(consumersToStart)
             val newConsumerStatus = res1._1
             val err1 = res1._2
-            val res2 = newConsumerStatus.stopConsumers(consumersToStop)
+            val res2 = newConsumerStatus.stopConsumers(consumersToStop, consumersToTimeout)
             val err2 = res2._2
             if (err1 != "") {
                 (currentConsumerStatusMap, err1)
@@ -808,11 +829,16 @@ module CCV {
 
             // has a packet been sent on the provider more than VSCTimeout ago, but we have not received an answer since then?
             val sentVSCPackets = providerState.sentVSCPackets.get(consumer)
-            val oldestSentVSCPacket = sentVSCPackets.head() // if length is 0, this is undefined, but we check for this before we use it
-            if(sentVSCPackets.length() > 0 and oldestSentVSCPacket.sendingTime + VscTimeout < providerState.chainState.lastTimestamp) {
-                (true, "")
+            if(sentVSCPackets.length() > 0) {
+                val oldestSentVSCPacket = sentVSCPackets.head() // if length is 0, this is undefined, but we check for this before we use it
+                if(oldestSentVSCPacket.sendingTime + VscTimeout < providerState.chainState.lastTimestamp) {
+                    (true, "")
+                } else {
+                    // no timeout yet, it has not been VscTimeout since that packet was sent
+                    (false, "")
+                }
             } else {
-                // no timeout yet, it has not been VscTimeout since that packet was sent
+                // no packet has been sent yet, so no timeout
                 (false, "")
             }
         }

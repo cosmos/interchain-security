@@ -185,14 +185,26 @@ module extraSpells {
         assert(Values(Map()) == Set())
     }
 
+    // Returns the maximal element of the set.
+    // If the set is empty, the function call will fail at runtime.
     pure def Max(__set: Set[int]): int = {
-        __set.fold(0, (__m, __e) => max(__m, __e))
+        __set.fold(oneOf(__set), (__m, __e) => max(__m, __e))
     }
 
     run MaxTest =
     all {
         assert(Max(Set(1, 2, 3)) == 3),
-        assert(Max(Set()) == 0)
+    }
+
+    // Returns the minimal element of the set.
+    // If the set is empty, the function call will fail at runtime.
+    pure def Min(__set: Set[int]): int = {
+        __set.fold(oneOf(__set), (__m, __e) => if(__m < __e) __m else __e)
+    }
+
+    run MinTest =
+    all {
+        assert(Min(Set(1, 2, 3)) == 1),
     }
 
     pure def HasSubsequence(__this: List[a], __other: List[a]): bool = {
@@ -220,20 +232,19 @@ module extraSpells {
     }
 
     // Returns the maximum element of a set, according to a given function.
-    // __i should be part of the set if it is nonempty. If the set is empty, __i will be returned.
     // If two elements are equally large, an arbitrary one will be returned.
-    pure def MaxBy(__set: Set[a], __f: a => int, __i: a): a = {
+    // If the set is empty, the function call will fail at runtime.
+    pure def MaxBy(__set: Set[a], __f: a => int): a = {
       __set.fold(
-        __i,
+        oneOf(__set),
         (__m, __e) => if(__f(__m) > __f(__e)) {__m } else {__e}
       )
     }
 
     run MaxByTest =
     all {
-      assert(MaxBy(Set(1, 2, 3), __x => __x, 0) == 3),
-      assert(MaxBy(Set(1, 2, 3), __x => -__x, 0) == 1),
-      assert(MaxBy(Set(), __x => __x, 0) == 0),
+      assert(MaxBy(Set(1, 2, 3), __x => __x) == 3),
+      assert(MaxBy(Set(1, 2, 3), __x => -__x) == 1),
     }
 
     // Like MaxBy, but returns the minimum element.

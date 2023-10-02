@@ -157,7 +157,7 @@ module CCVTest {
         val newConsumerState = result.newState.consumerStates.get("sender")
         not(result.hasError) and
         newProviderState.receivedMaturations.size() == 0 and
-        newProviderState.consumerStatus.get("sender") == STOPPED
+        newProviderState.consumerStatus.get("sender") == TIMEDOUT
     }
 
     run ConsumerStatusMapHappyPathTest = 
@@ -170,7 +170,8 @@ module CCVTest {
         val res = StartStopConsumers(
             currentConsumerStatusMap,
             Set("chain1"),
-            Set("chain2")
+            Set("chain2"),
+            Set()
         )
         res._2 == "" and
         res._1.get("chain1") == RUNNING and
@@ -188,7 +189,8 @@ module CCVTest {
         val res = StartStopConsumers(
             currentConsumerStatusMap,
             Set("chain2"),
-            Set("chain3")
+            Set("chain3"),
+            Set()
         )
         res._2 == "cannot start a consumer that is not unused"
     }
@@ -203,7 +205,8 @@ module CCVTest {
         val res = StartStopConsumers(
             currentConsumerStatusMap,
             Set("chain1"),
-            Set("chain3")
+            Set("chain3"),
+            Set()
         )
         res._2 == "Cannot stop a consumer that is not running"
     }
@@ -218,7 +221,8 @@ module CCVTest {
         val res = StartStopConsumers(
             currentConsumerStatusMap,
             Set("chain1"),
-            Set("chain1")
+            Set("chain1"),
+            Set()
         )
         res._2 == "Cannot start and stop a consumer at the same time"
     }
