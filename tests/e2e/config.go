@@ -417,7 +417,7 @@ func (s *TestConfig) SetRelayerConfig(useRly bool) {
 }
 
 // validateStringLiterals enforces that configs follow the constraints
-// necessary to to execute the tests
+// necessary to execute the tests
 //
 // Note: Network interfaces (name of virtual ethernet interfaces for ip link)
 // within the container will be named as "$CHAIN_ID-$VAL_ID-out" etc.

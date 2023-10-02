@@ -38,6 +38,7 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 					newValidator.ConsumerConsAddress(),
 					anotherValidator0.ProviderConsAddress(),
 				)
+				k.SetConsumerClientId(ctx, "chainid", "clientID")
 			},
 			expect: true,
 		},
@@ -50,10 +51,13 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 					newValidator.ConsumerConsAddress(),
 					anotherValidator0.ProviderConsAddress(),
 				)
+				k.SetConsumerClientId(ctx, "chainid0", "clientID0")
+
 				k.SetValidatorByConsumerAddr(ctx, "chainid1",
 					anotherValidator1.ConsumerConsAddress(),
 					anotherValidator1.ProviderConsAddress(),
 				)
+				k.SetConsumerClientId(ctx, "chainid1", "clientID1")
 			},
 			expect: true,
 		},
