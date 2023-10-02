@@ -346,6 +346,7 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 
 	good := true
 	for _, valByConsAddr := range k.GetAllValidatorsByConsumerAddr(ctx, nil) {
+		valByConsAddr := valByConsAddr // Fix linter error G601
 		if _, ok := willBePruned[string(valByConsAddr.ConsumerAddr)]; ok {
 			// Address will be pruned, everything is fine.
 			continue

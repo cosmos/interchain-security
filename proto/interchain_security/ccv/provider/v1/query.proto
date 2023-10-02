@@ -81,12 +81,21 @@ service Query {
     option (google.api.http).get =
         "/interchain_security/ccv/provider/registered_consumer_reward_denoms";
   }
+
+  // QueryProposedConsumerChainIDs query chainIDs in consumerAdditionProposals
+  // before voting period finishes, after voting period finishes, this chainID will be removed from the result
+  rpc QueryProposedConsumerChainIDs(
+      QueryProposedChainIDsRequest)
+      returns (QueryProposedChainIDsResponse) {
+  option (google.api.http).get =
+      "/interchain_security/ccv/provider/proposed_consumer_chains";
+      }
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
 
 message QueryConsumerGenesisResponse {
-  interchain_security.ccv.v1.GenesisState genesis_state = 1
+  interchain_security.ccv.v1.ConsumerGenesisState genesis_state = 1
       [ (gogoproto.nullable) = false ];
 }
 
@@ -186,4 +195,16 @@ message QueryRegisteredConsumerRewardDenomsRequest {}
 
 message QueryRegisteredConsumerRewardDenomsResponse {
   repeated string denoms = 1;
+}
+
+message QueryProposedChainIDsRequest {}
+
+message QueryProposedChainIDsResponse {
+  repeated ProposedChain proposedChains = 1
+  [ (gogoproto.nullable) = false ];
+}
+
+message ProposedChain {
+  string chainID = 1;
+  uint64 proposalID = 2;
 }
