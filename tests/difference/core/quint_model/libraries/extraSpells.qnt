@@ -248,9 +248,9 @@ module extraSpells {
     }
 
     // Like MaxBy, but returns the minimum element.
-    pure def MinBy(__set: Set[a], __f: a => int, __i: a): a = {
+    pure def MinBy(__set: Set[a], __f: a => int): a = {
       __set.fold(
-        __i,
+        oneOf(__set),
         (__m, __e) => if(__f(__m) < __f(__e)) {__m } else {__e}
       )
     }

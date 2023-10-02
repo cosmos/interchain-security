@@ -20,27 +20,34 @@ The parameters of the protocol are defined as consts in ccv.qnt.
 
 ### Tests
 
-To run unit tests, run `quint test ccv_test.qnt`.
+To run unit tests, run 
+```
+quint test ccv_test.qnt --main CCVTest
+```
+and 
+```
+quint test ccv_statemachine.qnt --main CCVDefaultStateMachine
+```
 
 ### Invariants
 
-The invariants I am checking are in ccv_statemachine.qnt.
+The invariants to check are in ccv_statemachine.qnt.
 Check a single invariant by running
 `quint run --invariant INVARIANT_NAME ccv_statemachine.qnt --main CCVDefaultStateMachine`,
 or all invariants one after another with the help of the script `run_invariants.sh`.
 Each invariant takes about a minute to run.
 
 Invariants are as follows:
-- [ ] ValidatorUpdatesArePropagated: When a validator power update is comitted on chain, a packet containing that change in voting power is sent to all running consumers.
-- [ ] ValidatorSetHasExistedInv: Every validator set on consumer chains is/was a validator set on the provider.
-- [ ] SameVSCPacketsInv: Ensure that consumer chains receive the same VSCPackets in the same order.
+- [X] ValidatorUpdatesArePropagated: When a validator power update is comitted on chain, a packet containing that change in voting power is sent to all running consumers.
+- [X] ValidatorSetHasExistedInv: Every validator set on consumer chains is/was a validator set on the provider.
+- [X] SameVSCPacketsInv: Ensure that consumer chains receive the same VSCPackets in the same order.
 Because of nuances with starting/stopping consumers, this invariant is not as simple as it sounds. In detail:
 For consumer chains c1, c2, if both c1 and c2 received a packet p1 sent at t1 and a packet p2 sent at t2,
 then both have received ALL packets that were sent between t1 and t2 in the same order.
-- [ ] MatureOnTimeInv: For every ValidatorSetChangePacket received by a consumer chain at 
+- [X] MatureOnTimeInv: For every ValidatorSetChangePacket received by a consumer chain at 
 time t, a MaturedVSCPacket is sent back to the provider in the first block 
 with a timestamp >= t + UnbondingPeriod on that consumer.
-- [ ] EventuallyMatureOnProviderInv: If we send a VSCPacket, this is eventually responded to by all consumers
+- [X] EventuallyMatureOnProviderInv: If we send a VSCPacket, this is eventually responded to by all consumers
 that were running at the time the packet was sent (and are still running).
 
 ### Sanity Checks

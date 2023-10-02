@@ -405,9 +405,9 @@ module CCV {
 
 
 
-    // Ends a block on the provider. This means that the current validator set is committed on chain,
-    // packets are queued, and the next block is started. Also, consumers that have passed
-    // the VSCTimeout without responding to a pending vscpacket are dropped.
+    /// Ends a block on the provider. This means that the current validator set is committed on chain,
+    /// packets are queued, and the next block is started. Also, consumers that have passed
+    /// the VSCTimeout without responding to a pending vscpacket are dropped.
     pure def endAndBeginBlockForProvider(
         currentState: ProtocolState,
         // by how much the timestamp should be advanced,
@@ -427,12 +427,17 @@ module CCV {
             "chainState", newChainState
         )
 
+        val tmpState = currentState.with(
+            "providerState", providerStateAfterTimeAdvancement
+        )
+        
         // check for VSC timeouts
         val timedOutConsumers = getRunningConsumers(providerStateAfterTimeAdvancement).filter(
             consumer => 
-            val res = TimeoutDueToVSCTimeout(currentState, consumer)
+            val res = TimeoutDueToVSCTimeout(tmpState, consumer)
             res._1
         )
+
 
         // start/stop chains
         val res = providerStateAfterTimeAdvancement.consumerStatus.StartStopConsumers(
@@ -448,10 +453,10 @@ module CCV {
 
         // for each consumer we just set to running, set its initial validator set to be the current one on the provider.
         val newConsumerStateMap =
-            currentState.consumerStates.keys().mapBy(
+            tmpState.consumerStates.keys().mapBy(
                 (consumer) => 
                 if (consumersToStart.contains(consumer)) {
-                    val currentConsumerState = currentState.consumerStates.get(consumer)
+                    val currentConsumerState = tmpState.consumerStates.get(consumer)
                     val newConsumerState = currentConsumerState.with(
                         "chainState", currentConsumerState.chainState.with(
                             "currentValidatorSet", providerStateAfterConsumerAdvancement.chainState.currentValidatorSet
@@ -462,7 +467,7 @@ module CCV {
                     currentState.consumerStates.get(consumer)
                 }
             )
-        val newState = currentState.with(
+        val newState = tmpState.with(
             "providerState", providerStateAfterConsumerAdvancement
         ).with(
             "consumerStates", newConsumerStateMap

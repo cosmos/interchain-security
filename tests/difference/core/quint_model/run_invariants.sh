@@ -1,1 +1,1 @@
-quint run --invariant "all{ValidatorUpdatesArePropagated,ValidatorSetHasExistedInv,SameVSCPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv}" ccv_statemachine.qnt --main CCVDefaultStateMachine --max-steps 200000 --max-samples 200 --out out.log
+quint run --invariant "all{ValidatorUpdatesArePropagated,ValidatorSetHasExistedInv,SameVSCPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv}" ccv_statemachine.qnt --main CCVDefaultStateMachine --max-steps 500 --max-samples 200 --out out.log

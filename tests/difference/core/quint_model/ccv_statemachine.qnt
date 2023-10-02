@@ -199,8 +199,8 @@ module CCVDefaultStateMachine {
                     if (commonPackets.size() == 0) {
                         true // they don't share any packets, so nothing to check
                     } else {
-                        val oldestCommonPacket = packets1.head()
-                        val newestCommonPacket = packets1[packets1.length() - 1]
+                        val newestCommonPacket = commonPackets.MaxBy(packet => packet.sendingTime)
+                        val oldestCommonPacket = commonPackets.MinBy(packet => packet.sendingTime)
                         // get all packets sent between the oldest and newest common packet
                         val packetsBetween1 = packets1.select(
                             packet => packet.sendingTime >= oldestCommonPacket.sendingTime and packet.sendingTime <= newestCommonPacket.sendingTime
@@ -220,13 +220,14 @@ module CCVDefaultStateMachine {
     // with a timestamp >= t + UnbondingPeriod
     // NOTE: because we remove the maturationTimes entry when we send the packets,
     // it suffices to check that there is never an entry in maturationTimes
-    // that is older than the current time minus the unbonding period.
+    // that has already matured, i.e. where the maturationTime is smaller-or-equal than the lastTimestamp
     val MatureOnTimeInv =
         runningConsumers.forall(
             consumer => {
                 val maturationTimes = currentState.consumerStates.get(consumer).maturationTimes
                 maturationTimes.keys().forall(
-                    packet => packet.sendingTime + UnbondingPeriodPerChain.get(consumer) <= currentState.providerState.chainState.lastTimestamp
+                    // check that the maturation time is in the future
+                    packet => maturationTimes.get(packet) >= currentState.consumerStates.get(consumer).chainState.lastTimestamp
                 )
             }
         )
@@ -244,7 +245,7 @@ module CCVDefaultStateMachine {
                 sentPackets.forall(
                     packet =>
                         // consumer still has time to respond
-                        currentState.providerState.chainState.lastTimestamp <= packet.sendingTime + VscTimeout or
+                        not(packet.sendingTime + VscTimeout < currentState.providerState.chainState.lastTimestamp) or
                         // consumer was dropped
                         currentState.providerState.consumerStatus.get(consumer) == STOPPED or
                         currentState.providerState.consumerStatus.get(consumer) == TIMEDOUT
@@ -291,20 +292,26 @@ module CCVDefaultStateMachine {
             consumer => 
                 currentState.consumerStates.get(consumer).outstandingPacketsToProvider.length() > 0
         ))
+    
+    val CanReceiveMaturations =
+        not(ConsumerChains.exists(
+            consumer => 
+                currentState.providerState.receivedMaturations.size() > 0
+        ))
 
     // ==================
     // MANUAL TEST CASES
     // ==================
     // Manually written test cases to get confidence in the base operation of the protocol.
 
-    // Test a simple happy path where:
-    // * the consumer chain is set to running
-    // * a validator set change happens
-    // * a block is ended on the provider, i.e. a packet is sent to the consumer
-    // * the consumer receives the packet
-    // * the chains wait until the unbonding period is over
-    // * the consumer sends a VSCMaturedPacket to the provider
-    // * the provider receives the VSCMaturedPacket
+    /// Test a simple happy path where:
+    /// * the consumer chain is set to running
+    /// * a validator set change happens
+    /// * a block is ended on the provider, i.e. a packet is sent to the consumer
+    /// * the consumer receives the packet
+    /// * the chains wait until the unbonding period is over
+    /// * the consumer sends a VSCMaturedPacket to the provider
+    /// * the provider receives the VSCMaturedPacket
     run HappyPathTest: bool = { 
         init.then(
             all {
@@ -385,4 +392,78 @@ module CCVDefaultStateMachine {
                 }
             )
         }
+
+    /// a manual test case for the SameVSCPacketsInv, since it needs very specific behaviour to even apply.
+    run SameVSCPacketsManualTest =
+        init.then(
+            // start all consumers except for consumer3
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer1", "consumer2"), Set())
+        ).then(
+            // change voting power
+            VotingPowerChange("node1", 50)
+        ).then(
+            // send packet to consumer1 and consumer2
+            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+        ).then(
+            // deliver the packets
+            DeliverVSCPacket("consumer1")
+        ).then(
+            // deliver to consumer2
+            DeliverVSCPacket("consumer2")
+        ).then(
+            // start consumer3
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer3"), Set())
+        ).then(
+            // do another voting power change
+            VotingPowerChange("node2", 50)
+        ).then(
+            // send packets
+            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+        ).then(
+            //deliver to consumer1
+            DeliverVSCPacket("consumer1")
+        ).then(
+            // deliver to consumer2
+            DeliverVSCPacket("consumer2")
+        ).then(
+            // deliver to consumer3
+            DeliverVSCPacket("consumer3")
+        )
+        .then(
+            // the SameVSCPacketInv should hold here
+            all {
+                assert(SameVSCPacketsInv),
+                // action does not matter, but needed to have uniform effect
+                step
+            }
+        )
+
+    // a manual test for the EventuallyMatureOnProvider invariant
+    run VSCTimeoutManualTest =
+        init
+        .then(
+            // start all consumer chains
+            EndAndBeginBlockForProvider(1 * Second, ConsumerChains, Set())
+        )
+        .then(
+            // change voting power
+            VotingPowerChange("node1", 50)
+        )
+        .then(
+            // send packets
+            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+        )
+        .then(
+            // advance time on provider by VSCTimeout + 1 Second
+            EndAndBeginBlockForProvider(VscTimeout + 5 * Second, Set(), Set())
+        )
+        // .then(
+        //     all {
+        //         // the consumer chains should have timed out
+        //         assert(ConsumerChains.forall(
+        //             chain => currentState.providerState.consumerStatus.get(chain) == TIMEDOUT
+        //         )),
+        //         VotingPowerChange("node2", 50)// action needs to be there but does not matter
+        //     }
+        // )
 }
