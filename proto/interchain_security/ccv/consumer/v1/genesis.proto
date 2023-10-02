@@ -76,7 +76,7 @@ message MaturingVSCPacket {
 
 // ConsumerPacketDataList is a list of consumer packet data packets.
 //
-// Note this type is is used internally to the consumer CCV module
+// Note this type is used internally to the consumer CCV module
 // for exporting / importing state in InitGenesis and ExportGenesis.
 message ConsumerPacketDataList {
   repeated interchain_security.ccv.v1.ConsumerPacketData list = 1

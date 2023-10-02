@@ -90,10 +90,10 @@ message ConsumerGenesisState {
 // Shared data type between provider and consumer
 message ProviderInfo {
   // ProviderClientState filled in on new chain, nil on restart.
-  ibc.lightclients.tendermint.v1.ClientState client_state = 5;
+  ibc.lightclients.tendermint.v1.ClientState client_state = 1;
   // ProviderConsensusState filled in on new chain, nil on restart.
-  ibc.lightclients.tendermint.v1.ConsensusState consensus_state = 6;
+  ibc.lightclients.tendermint.v1.ConsensusState consensus_state = 2;
   // InitialValset filled in on new chain and on restart.
-  repeated .tendermint.abci.ValidatorUpdate initial_val_set = 7
+  repeated .tendermint.abci.ValidatorUpdate initial_val_set = 3
       [ (gogoproto.nullable) = false ];
 }
