@@ -898,7 +898,6 @@ func TestMakeConsumerGenesis(t *testing.T) {
 				},
 				"next_validators_hash": "E30CE736441FB9101FADDAF7E578ABBE6DFDB67207112350A9A904D554E1F5BE"
 			},
-			"unbonding_sequences": null,
 			"initial_val_set": [
 				{
 					"pub_key": {
