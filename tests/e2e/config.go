@@ -395,7 +395,7 @@ func ChangeoverTestConfig() TestConfig {
 	return tr
 }
 
-func (tr *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string) {
+func (s *TestConfig) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string) {
 	if localSdkPath != "" {
 		fmt.Println("USING LOCAL SDK", localSdkPath)
 	}
@@ -403,17 +403,17 @@ func (tr *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag st
 		fmt.Println("USING GAIA INSTEAD OF ICS provider app", gaiaTag)
 	}
 
-	tr.useGaia = useGaia
-	tr.gaiaTag = gaiaTag
-	tr.localSdkPath = localSdkPath
+	s.useGaia = useGaia
+	s.gaiaTag = gaiaTag
+	s.localSdkPath = localSdkPath
 }
 
-func (tr *TestRun) SetCometMockConfig(useCometmock bool) {
-	tr.useCometmock = useCometmock
+func (s *TestConfig) SetCometMockConfig(useCometmock bool) {
+	s.useCometmock = useCometmock
 }
 
-func (tr *TestRun) SetRelayerConfig(useRly bool) {
-	tr.useGorelayer = useRly
+func (s *TestConfig) SetRelayerConfig(useRly bool) {
+	s.useGorelayer = useRly
 }
 
 // validateStringLiterals enforces that configs follow the constraints
@@ -423,8 +423,8 @@ func (tr *TestRun) SetRelayerConfig(useRly bool) {
 // within the container will be named as "$CHAIN_ID-$VAL_ID-out" etc.
 // where this name is constrained to 15 bytes or less. Therefore each string literal
 // used as a validatorID or chainID needs to be 5 char or less.
-func (tr *TestRun) validateStringLiterals() {
-	for valID, valConfig := range tr.validatorConfigs {
+func (s *TestConfig) validateStringLiterals() {
+	for valID, valConfig := range s.validatorConfigs {
 		if len(valID) > 5 {
 			panic("validator id string literal must be 5 char or less")
 		}
@@ -447,7 +447,7 @@ func (tr *TestRun) validateStringLiterals() {
 		}
 	}
 
-	for chainID, chainConfig := range tr.chainConfigs {
+	for chainID, chainConfig := range s.chainConfigs {
 		if len(chainID) > 5 {
 			panic("chain id string literal must be 5 char or less")
 		}
