@@ -222,6 +222,17 @@ func (k Keeper) GetAllProposedConsumerChainIDs(ctx sdk.Context) []types.Proposed
 	return proposedChains
 }
 
+// GetAllPendingConsumerChainIDs gets pending consumer chains have not reach spawn time
+func (k Keeper) GetAllPendingConsumerChainIDs(ctx sdk.Context) []string {
+	chainIDs := []string{}
+	props := k.GetAllPendingConsumerAdditionProps(ctx)
+	for _, prop := range props {
+		chainIDs = append(chainIDs, prop.ChainId)
+	}
+
+	return chainIDs
+}
+
 // GetAllConsumerChains gets all of the consumer chains, for which the provider module
 // created IBC clients. Consumer chains with created clients are also referred to as registered.
 //
