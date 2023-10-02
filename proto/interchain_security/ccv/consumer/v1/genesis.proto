@@ -5,9 +5,13 @@ package interchain_security.ccv.consumer.v1;
 option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types";
 
 import "interchain_security/ccv/v1/shared_consumer.proto";
+import "ibc/lightclients/tendermint/v1/tendermint.proto";
+
 import "gogoproto/gogo.proto";
 import "interchain_security/ccv/v1/wire.proto";
 import "google/protobuf/timestamp.proto";
+import "tendermint/abci/types.proto";
+
 
 
 
@@ -16,7 +20,6 @@ import "google/protobuf/timestamp.proto";
 // Note: this type is only used on consumer side and references shared types with
 // provider
 message GenesisState {
-  reserved 5, 6, 8;
   // ConsumerParams is a shared type with provider module
   interchain_security.ccv.v1.ConsumerParams params = 1
       [ (gogoproto.nullable) = false ];
@@ -26,16 +29,21 @@ message GenesisState {
   string provider_channel_id = 3;
   // true for new chain, false for chain restart.
   bool new_chain = 4;
+  // !!! DEPRECATED !!! ProviderClientState is deprecated. Use provider.client_state instead
+  ibc.lightclients.tendermint.v1.ClientState provider_client_state = 5 [ deprecated = true];
+  // !!! DEPRECATED !!! ProviderConsensusState is deprecated. Use provider.consensus_state instead
+  ibc.lightclients.tendermint.v1.ConsensusState consensus_state = 6 [ deprecated = true];
   // MaturingPackets nil on new chain, filled in on restart.
   repeated MaturingVSCPacket maturing_packets = 7
       [ (gogoproto.nullable) = false ];
+  // !!! DEPRECATED !!!! InitialValset is deprecated. Use provider.initial_val_set instead
+  repeated .tendermint.abci.ValidatorUpdate initial_val_set = 8 [ (gogoproto.nullable) = false, deprecated = true ];
   // HeightToValsetUpdateId nil on new chain, filled in on restart.
   repeated HeightToValsetUpdateID height_to_valset_update_id = 9
       [ (gogoproto.nullable) = false ];
   // OutstandingDowntimes nil on new chain, filled  in on restart.
   repeated OutstandingDowntime outstanding_downtime_slashing = 10
       [ (gogoproto.nullable) = false ];
-
   // PendingConsumerPackets nil on new chain, filled in on restart.
   ConsumerPacketDataList pending_consumer_packets = 11
       [ (gogoproto.nullable) = false ];
