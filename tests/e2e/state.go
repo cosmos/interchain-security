@@ -319,10 +319,19 @@ func (tr TestRun) getRewards(chain ChainID, modelState Rewards) Rewards {
 }
 
 func (tr TestRun) getReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
+
 	delAddresss := tr.validatorConfigs[validator].DelAddress
 	if chain != ChainID("provi") && tr.validatorConfigs[validator].UseConsumerKey {
 		delAddresss = tr.validatorConfigs[validator].ConsumerDelAddress
 	}
+
+	fmt.Println("getReward", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+		"query", "distribution", "rewards",
+		delAddresss,
+
+		`--height`, fmt.Sprint(blockHeight),
+		`--node`, tr.getQueryNode(chain),
+		`-o`, `json`)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 

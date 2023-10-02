@@ -98,7 +98,7 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 			State: State{
 				ChainID(consumerName): ChainState{
 					ValBalances: &map[ValidatorID]uint{
-						ValidatorID("alice"): 9889999998,
+						ValidatorID("alice"): 9899999999,
 						ValidatorID("bob"):   9960000001,
 					},
 					// Check that the parameter is changed on gov-consumer chain

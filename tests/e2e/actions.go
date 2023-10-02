@@ -1260,6 +1260,11 @@ func (tr TestRun) relayPacketsHermes(
 ) {
 	// hermes clear packets ibc0 transfer channel-13
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	fmt.Println("hermes", "clear", "packets",
+		"--chain", string(tr.chainConfigs[action.ChainA].ChainId),
+		"--port", action.Port,
+		"--channel", "channel-"+fmt.Sprint(action.Channel))
+
 	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "hermes", "clear", "packets",
 		"--chain", string(tr.chainConfigs[action.ChainA].ChainId),
 		"--port", action.Port,
@@ -1291,6 +1296,9 @@ func (tr TestRun) relayRewardPacketsToProvider(
 ) {
 	blockPerDistribution, _ := strconv.ParseUint(strings.Trim(tr.getParam(action.ConsumerChain, Param{Subspace: "ccvconsumer", Key: "BlocksPerDistributionTransmission"}), "\""), 10, 64)
 	currentBlock := uint64(tr.getBlockHeight(action.ConsumerChain))
+	fmt.Println("blockPerDistribution", blockPerDistribution)
+	fmt.Println("currentBlock", currentBlock)
+
 	if currentBlock <= blockPerDistribution {
 		tr.waitBlocks(action.ConsumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
 	}
