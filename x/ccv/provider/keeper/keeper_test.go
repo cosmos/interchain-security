@@ -585,14 +585,14 @@ func TestGetAllProposedConsumerChainIDs(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	tests := [][]types.ProposedChain{
-		[]types.ProposedChain{},
-		[]types.ProposedChain{
+		{},
+		{
 			{
 				ChainID:    "1",
 				ProposalID: 1,
 			},
 		},
-		[]types.ProposedChain{
+		{
 			{
 				ChainID:    "1",
 				ProposalID: 1,
