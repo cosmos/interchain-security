@@ -4,28 +4,29 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"github.com/spf13/cobra"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/rest"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
-	govrest "github.com/cosmos/cosmos-sdk/x/gov/client/rest"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	"github.com/spf13/cobra"
+
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 var (
-	ConsumerAdditionProposalHandler   = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd, ConsumerAdditionProposalRESTHandler)
-	ConsumerRemovalProposalHandler    = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd, ConsumerRemovalProposalRESTHandler)
-	ChangeRewardDenomsProposalHandler = govclient.NewProposalHandler(SubmitChangeRewardDenomsProposalTxCmd, ChangeRewardDenomsProposalRESTHandler)
+	ConsumerAdditionProposalHandler   = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd)
+	ConsumerRemovalProposalHandler    = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd)
+	ChangeRewardDenomsProposalHandler = govclient.NewProposalHandler(SubmitChangeRewardDenomsProposalTxCmd)
 )
 
 // SubmitConsumerAdditionPropTxCmd returns a CLI command handler for submitting
@@ -41,13 +42,13 @@ The proposal details must be supplied via a JSON file.
 Unbonding period, transfer timeout period and ccv timeout period should be provided as nanosecond time periods.
 
 Example:
-$ <appd> tx gov submit-proposal consumer-addition <path/to/proposal.json> --from=<key_or_address>
+$ <appd> tx gov submit-legacy-proposal consumer-addition <path/to/proposal.json> --from=<key_or_address>
 
 Where proposal.json contains:
 
 {
     "title": "Create the FooChain",
-    "description": "Gonna be a great chain",
+    "summary": "Gonna be a great chain",
     "chain_id": "foochain",
     "initial_height": {
         "revision_number": 2,
@@ -81,7 +82,7 @@ Where proposal.json contains:
 			CheckPropUnbondingPeriod(clientCtx, proposal.UnbondingPeriod)
 
 			content := types.NewConsumerAdditionProposal(
-				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
+				proposal.Title, proposal.Summary, proposal.ChainId, proposal.InitialHeight,
 				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime,
 				proposal.ConsumerRedistributionFraction, proposal.BlocksPerDistributionTransmission,
 				proposal.DistributionTransmissionChannel, proposal.HistoricalEntries,
@@ -94,7 +95,12 @@ Where proposal.json contains:
 				return err
 			}
 
-			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+			if err != nil {
+				return err
+			}
+
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary)
 			if err != nil {
 				return err
 			}
@@ -116,12 +122,12 @@ Submit a consumer chain removal proposal along with an initial deposit.
 The proposal details must be supplied via a JSON file.
 
 Example:
-$ <appd> tx gov submit-proposal consumer-removal <path/to/proposal.json> --from=<key_or_address>
+$ <appd> tx gov submit-legacy-proposal consumer-removal <path/to/proposal.json> --from=<key_or_address>
 
 Where proposal.json contains:
 {
 	 "title": "Stop the FooChain",
-	 "description": "It was a great chain",
+	 "summary": "It was a great chain",
 	 "chain_id": "foochain",
 	 "stop_time": "2022-01-27T15:59:50.121607-08:00",
 	 "deposit": "10000stake"
@@ -137,17 +143,20 @@ Where proposal.json contains:
 				return err
 			}
 
-			content := types.NewConsumerRemovalProposal(
-				proposal.Title, proposal.Description, proposal.ChainId, proposal.StopTime)
-
+			content := types.NewConsumerRemovalProposal(proposal.Title, proposal.Summary, proposal.ChainId, proposal.StopTime)
 			from := clientCtx.GetFromAddress()
+
+			msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+			if err != nil {
+				return err
+			}
 
 			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
 			if err != nil {
 				return err
 			}
 
-			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary)
 			if err != nil {
 				return err
 			}
@@ -168,7 +177,7 @@ func SubmitChangeRewardDenomsProposalTxCmd() *cobra.Command {
 		The proposal details must be supplied via a JSON file.
 
 		Example:
-		$ <appd> tx gov submit-proposal change-reward-denoms <path/to/proposal.json> --from=<key_or_address>
+		$ <appd> tx gov submit-legacy-proposal change-reward-denoms <path/to/proposal.json> --from=<key_or_address>
 
 		Where proposal.json contains:
 		{
@@ -194,12 +203,17 @@ func SubmitChangeRewardDenomsProposalTxCmd() *cobra.Command {
 
 			from := clientCtx.GetFromAddress()
 
+			msgContent, err := govv1.NewLegacyContent(content, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+			if err != nil {
+				return err
+			}
+
 			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
 			if err != nil {
 				return err
 			}
 
-			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			msg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgContent}, deposit, from.String(), "", content.GetTitle(), proposal.Summary)
 			if err != nil {
 				return err
 			}
@@ -211,7 +225,7 @@ func SubmitChangeRewardDenomsProposalTxCmd() *cobra.Command {
 
 type ConsumerAdditionProposalJSON struct {
 	Title         string             `json:"title"`
-	Description   string             `json:"description"`
+	Summary       string             `json:"summary"`
 	ChainId       string             `json:"chain_id"`
 	InitialHeight clienttypes.Height `json:"initial_height"`
 	GenesisHash   []byte             `json:"genesis_hash"`
@@ -230,7 +244,6 @@ type ConsumerAdditionProposalJSON struct {
 }
 
 type ConsumerAdditionProposalReq struct {
-	BaseReq  rest.BaseReq   `json:"base_req"`
 	Proposer sdk.AccAddress `json:"proposer"`
 
 	Title         string             `json:"title"`
@@ -268,15 +281,14 @@ func ParseConsumerAdditionProposalJSON(proposalFile string) (ConsumerAdditionPro
 }
 
 type ConsumerRemovalProposalJSON struct {
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	ChainId     string    `json:"chain_id"`
-	StopTime    time.Time `json:"stop_time"`
-	Deposit     string    `json:"deposit"`
+	Title    string    `json:"title"`
+	Summary  string    `json:"summary"`
+	ChainId  string    `json:"chain_id"`
+	StopTime time.Time `json:"stop_time"`
+	Deposit  string    `json:"deposit"`
 }
 
 type ConsumerRemovalProposalReq struct {
-	BaseReq  rest.BaseReq   `json:"base_req"`
 	Proposer sdk.AccAddress `json:"proposer"`
 
 	Title       string `json:"title"`
@@ -309,7 +321,6 @@ type ChangeRewardDenomsProposalJSON struct {
 }
 
 type ChangeRewardDenomsProposalReq struct {
-	BaseReq  rest.BaseReq   `json:"base_req"`
 	Proposer sdk.AccAddress `json:"proposer"`
 	types.ChangeRewardDenomsProposal
 	Deposit sdk.Coins `json:"deposit"`
@@ -328,12 +339,29 @@ func ParseChangeRewardDenomsProposalJSON(proposalFile string) (ChangeRewardDenom
 	return proposal, nil
 }
 
-func ChangeRewardDenomsProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
-	return govrest.ProposalRESTHandler{
-		SubRoute: "change_reward_denoms",
-		Handler:  postChangeRewardDenomsProposalHandlerFn(clientCtx),
+func CheckPropUnbondingPeriod(clientCtx client.Context, propUnbondingPeriod time.Duration) {
+	queryClient := stakingtypes.NewQueryClient(clientCtx)
+
+	res, err := queryClient.Params(context.Background(), &stakingtypes.QueryParamsRequest{})
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	providerUnbondingTime := res.Params.UnbondingTime
+
+	if providerUnbondingTime < propUnbondingPeriod {
+		fmt.Printf(
+			`consumer unbonding period is advised to be smaller than provider unbonding period, but is longer.
+This is not a security risk, but will effectively lengthen the unbonding period on the provider.
+consumer unbonding: %s
+provider unbonding: %s`,
+			propUnbondingPeriod,
+			providerUnbondingTime)
 	}
 }
+
+/* Proposal REST handlers: NOT NEEDED POST 47, BUT PLEASE CHECK THAT ALL FUNCTIONALITY EXISTS IN THE 47 VERSION.
 
 // ConsumerAdditionProposalRESTHandler returns a ProposalRESTHandler that exposes the consumer addition rest handler.
 func ConsumerAdditionProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
@@ -415,49 +443,5 @@ func postConsumerRemovalProposalHandlerFn(clientCtx client.Context) http.Handler
 func CheckPropUnbondingPeriod(clientCtx client.Context, propUnbondingPeriod time.Duration) {
 	queryClient := stakingtypes.NewQueryClient(clientCtx)
 
-	res, err := queryClient.Params(context.Background(), &stakingtypes.QueryParamsRequest{})
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
 
-	providerUnbondingTime := res.Params.UnbondingTime
-
-	if providerUnbondingTime < propUnbondingPeriod {
-		fmt.Printf(
-			`consumer unbonding period is advised to be smaller than provider unbonding period, but is longer.
-This is not a security risk, but will effectively lengthen the unbonding period on the provider.
-consumer unbonding: %s
-provider unbonding: %s`,
-			propUnbondingPeriod,
-			providerUnbondingTime)
-	}
-}
-
-func postChangeRewardDenomsProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var req ChangeRewardDenomsProposalReq
-		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
-			return
-		}
-
-		req.BaseReq = req.BaseReq.Sanitize()
-		if !req.BaseReq.ValidateBasic(w) {
-			return
-		}
-
-		content := types.NewChangeRewardDenomsProposal(
-			req.Title, req.Description, req.DenomsToAdd, req.DenomsToRemove)
-
-		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
-		if rest.CheckBadRequestError(w, err) {
-			return
-		}
-
-		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
-			return
-		}
-
-		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
-	}
-}
+*/

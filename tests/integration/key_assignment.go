@@ -1,13 +1,16 @@
 package integration
 
 import (
+	"github.com/cosmos/ibc-go/v7/testing/mock"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/ibc-go/v4/testing/mock"
-	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
-	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+
+	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
+	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+
+	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 func (s *CCVTestSuite) TestKeyAssignment() {

@@ -3,11 +3,13 @@ package keeper_test
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	cryptotestutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
 	"github.com/golang/mock/gomock"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 )
 
 func TestValidatorConsensusKeyInUse(t *testing.T) {

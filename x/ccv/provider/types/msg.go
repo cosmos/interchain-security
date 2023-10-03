@@ -5,10 +5,16 @@ import (
 	"fmt"
 	"strings"
 
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	tmtypes "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
+
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // provider message types
@@ -59,7 +65,7 @@ func (msg MsgAssignConsumerKey) GetSigners() []sdk.AccAddress {
 
 // GetSignBytes returns the message bytes to sign over.
 func (msg MsgAssignConsumerKey) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(&msg)
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
 	return sdk.MustSortJSON(bz)
 }
 
@@ -119,7 +125,7 @@ func (msg MsgSubmitConsumerMisbehaviour) Type() string {
 // Type implements the sdk.Msg interface.
 func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
 	if msg.Submitter == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
 	}
 
 	if err := msg.Misbehaviour.ValidateBasic(); err != nil {
@@ -130,7 +136,7 @@ func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
 
 // Type implements the sdk.Msg interface.
 func (msg MsgSubmitConsumerMisbehaviour) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(&msg)
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
 	return sdk.MustSortJSON(bz)
 }
 
@@ -159,7 +165,7 @@ func (msg MsgSubmitConsumerDoubleVoting) Type() string {
 // Type implements the sdk.Msg interface.
 func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 	if msg.Submitter == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
 	}
 	if msg.DuplicateVoteEvidence == nil {
 		return fmt.Errorf("double voting evidence cannot be nil")
@@ -186,7 +192,7 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 
 // Type implements the sdk.Msg interface.
 func (msg MsgSubmitConsumerDoubleVoting) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(&msg)
+	bz := ccvtypes.ModuleCdc.MustMarshalJSON(&msg)
 	return sdk.MustSortJSON(bz)
 }
 

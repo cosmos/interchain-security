@@ -2,8 +2,10 @@ syntax = "proto3";
 
 package interchain_security.ccv.provider.v1;
 
-option go_package = "github.com/cosmos/interchain-security/v2/x/ccv/provider/types";
+option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/provider/types";
 
+import "interchain_security/ccv/v1/shared_consumer.proto";
+import "interchain_security/ccv/v1/wire.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
@@ -12,78 +14,93 @@ import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "tendermint/crypto/keys.proto";
 import "cosmos/base/v1beta1/coin.proto";
 
-// ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
-// If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time
-// or get slashed. It is recommended that spawn time occurs after the proposal end time.
-message ConsumerAdditionProposal {
-    option (gogoproto.goproto_getters)  = false;
-    option (gogoproto.goproto_stringer) = false;
-  
-    // the title of the proposal
-    string title = 1;
-    // the description of the proposal
-    string description = 2;
-    // the proposed chain-id of the new consumer chain, must be different from all other consumer chain ids of the executing
-    // provider chain.
-    string chain_id = 3 ;
-    // the proposed initial height of new consumer chain.
-    // For a completely new chain, this will be {0,1}. However, it may be different if this is a chain that is converting to a consumer chain.
-    ibc.core.client.v1.Height initial_height = 4 [(gogoproto.nullable) = false];
-    // The hash of the consumer chain genesis state without the consumer CCV module genesis params. 
-    // It is used for off-chain confirmation of genesis.json validity by validators and other parties.
-    bytes genesis_hash = 5 ;
-    // The hash of the consumer chain binary that should be run by validators on chain initialization.
-    // It is used for off-chain confirmation of binary validity by validators and other parties.
-    bytes binary_hash = 6 ;
-    // spawn time is the time on the provider chain at which the consumer chain genesis is finalized and all validators
-    // will be responsible for starting their consumer chain validator node.
-    google.protobuf.Timestamp spawn_time = 7
-        [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+//
+// Note any type defined in this file is ONLY used internally to the provider CCV module.
+// These schemas can change with proper consideration of compatibility or migration. 
+// 
 
-    // Unbonding period for the consumer,
-    // which should be smaller than that of the provider in general.
-    google.protobuf.Duration unbonding_period = 8
-        [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
-    // Sent CCV related IBC packets will timeout after this duration
-    google.protobuf.Duration ccv_timeout_period = 9
-        [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
-    // Sent transfer related IBC packets will timeout after this duration
-    google.protobuf.Duration transfer_timeout_period = 10
-        [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
-    // The fraction of tokens allocated to the consumer redistribution address
-    // during distribution events. The fraction is a string representing a
-    // decimal number. For example "0.75" would represent 75%.
-    string consumer_redistribution_fraction = 11;
-    // BlocksPerDistributionTransmission is the number of blocks between ibc-token-transfers from the consumer chain to the provider chain.
-    // On sending transmission event, `consumer_redistribution_fraction` of the accumulated tokens are sent to the consumer redistribution address.
-    int64 blocks_per_distribution_transmission = 12;
-    // The number of historical info entries to persist in store.
-    // This param is a part of the cosmos sdk staking module. In the case of 
-    // a ccv enabled consumer chain, the ccv module acts as the staking module.
-    int64 historical_entries = 13;
-    // The ID of a token transfer channel used for the Reward Distribution
-    // sub-protocol. If DistributionTransmissionChannel == "", a new transfer
-    // channel is created on top of the same connection as the CCV channel.
-    // Note that transfer_channel_id is the ID of the channel end on the consumer chain.
-    // it is most relevant for chains performing a sovereign to consumer changeover
-    // in order to maintan the existing ibc transfer channel
-    string distribution_transmission_channel = 14;
+// ConsumerAdditionProposal is a governance proposal on the provider chain to
+// spawn a new consumer chain. If it passes, then all validators on the provider
+// chain are expected to validate the consumer chain at spawn time or get
+// slashed. It is recommended that spawn time occurs after the proposal end
+// time.
+message ConsumerAdditionProposal {
+  option (gogoproto.goproto_getters) = false;
+  option (gogoproto.goproto_stringer) = false;
+
+  // the title of the proposal
+  string title = 1;
+  // the description of the proposal
+  string description = 2;
+  // the proposed chain-id of the new consumer chain, must be different from all
+  // other consumer chain ids of the executing provider chain.
+  string chain_id = 3;
+  // the proposed initial height of new consumer chain.
+  // For a completely new chain, this will be {0,1}. However, it may be
+  // different if this is a chain that is converting to a consumer chain.
+  ibc.core.client.v1.Height initial_height = 4 [ (gogoproto.nullable) = false ];
+  // The hash of the consumer chain genesis state without the consumer CCV
+  // module genesis params. It is used for off-chain confirmation of
+  // genesis.json validity by validators and other parties.
+  bytes genesis_hash = 5;
+  // The hash of the consumer chain binary that should be run by validators on
+  // chain initialization. It is used for off-chain confirmation of binary
+  // validity by validators and other parties.
+  bytes binary_hash = 6;
+  // spawn time is the time on the provider chain at which the consumer chain
+  // genesis is finalized and all validators will be responsible for starting
+  // their consumer chain validator node.
+  google.protobuf.Timestamp spawn_time = 7
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+
+  // Unbonding period for the consumer,
+  // which should be smaller than that of the provider in general.
+  google.protobuf.Duration unbonding_period = 8
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+  // Sent CCV related IBC packets will timeout after this duration
+  google.protobuf.Duration ccv_timeout_period = 9
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+  // Sent transfer related IBC packets will timeout after this duration
+  google.protobuf.Duration transfer_timeout_period = 10
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+  // The fraction of tokens allocated to the consumer redistribution address
+  // during distribution events. The fraction is a string representing a
+  // decimal number. For example "0.75" would represent 75%.
+  string consumer_redistribution_fraction = 11;
+  // BlocksPerDistributionTransmission is the number of blocks between
+  // ibc-token-transfers from the consumer chain to the provider chain. On
+  // sending transmission event, `consumer_redistribution_fraction` of the
+  // accumulated tokens are sent to the consumer redistribution address.
+  int64 blocks_per_distribution_transmission = 12;
+  // The number of historical info entries to persist in store.
+  // This param is a part of the cosmos sdk staking module. In the case of
+  // a ccv enabled consumer chain, the ccv module acts as the staking module.
+  int64 historical_entries = 13;
+  // The ID of a token transfer channel used for the Reward Distribution
+  // sub-protocol. If DistributionTransmissionChannel == "", a new transfer
+  // channel is created on top of the same connection as the CCV channel.
+  // Note that transfer_channel_id is the ID of the channel end on the consumer
+  // chain. it is most relevant for chains performing a sovereign to consumer
+  // changeover in order to maintan the existing ibc transfer channel
+  string distribution_transmission_channel = 14;
 }
 
-// ConsumerRemovalProposal is a governance proposal on the provider chain to remove (and stop) a consumer chain.
-// If it passes, all the consumer chain's state is removed from the provider chain. The outstanding unbonding
-// operation funds are released.
+// ConsumerRemovalProposal is a governance proposal on the provider chain to
+// remove (and stop) a consumer chain. If it passes, all the consumer chain's
+// state is removed from the provider chain. The outstanding unbonding operation
+// funds are released.
 message ConsumerRemovalProposal {
-    // the title of the proposal
-    string title = 1;
-    // the description of the proposal
-    string description = 2;
-    // the chain-id of the consumer chain to be stopped
-    string chain_id = 3;
-    // the time on the provider chain at which all validators are responsible to stop their consumer chain validator node
-    google.protobuf.Timestamp stop_time = 4
-        [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
- } 
+  // the title of the proposal
+  string title = 1;
+  // the description of the proposal
+  string description = 2;
+  // the chain-id of the consumer chain to be stopped
+  string chain_id = 3;
+  // the time on the provider chain at which all validators are responsible to
+  // stop their consumer chain validator node
+  google.protobuf.Timestamp stop_time = 4
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+}
 
 // ChangeRewardDenomsProposal is a governance proposal on the provider chain to
 // mutate the set of denoms accepted by the provider as rewards.
@@ -98,88 +115,85 @@ message ChangeRewardDenomsProposal {
   repeated string denoms_to_remove = 4;
 }
 
-// A persisted queue entry indicating that a slash packet data instance needs to be handled.
-// This type belongs in the "global" queue, to coordinate slash packet handling times between consumers.
+// A persisted queue entry indicating that a slash packet data instance needs to
+// be handled. This type belongs in the "global" queue, to coordinate slash
+// packet handling times between consumers.
 message GlobalSlashEntry {
   // Block time that slash packet was received by provider chain.
   // This field is used for store key iteration ordering.
   google.protobuf.Timestamp recv_time = 1
-      [(gogoproto.stdtime) = true, (gogoproto.nullable) = false]; 
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
   // The consumer that sent a slash packet.
-  string consumer_chain_id = 2
-      [(gogoproto.customname) = "ConsumerChainID"];
-  // The IBC sequence number of the recv packet.  
+  string consumer_chain_id = 2 [ (gogoproto.customname) = "ConsumerChainID" ];
+  // The IBC sequence number of the recv packet.
   // This field is used in the store key to ensure uniqueness.
-  uint64 ibc_seq_num = 3; 
-  // The provider's consensus address of the validator being slashed. 
+  uint64 ibc_seq_num = 3;
+  // The provider's consensus address of the validator being slashed.
   // This field is used to obtain validator power in HandleThrottleQueues.
-  // 
-  // This field is not used in the store key, but is persisted in value bytes, see QueueGlobalSlashEntry.
+  //
+  // This field is not used in the store key, but is persisted in value bytes,
+  // see QueueGlobalSlashEntry.
   bytes provider_val_cons_addr = 4;
 }
- 
+
 // Params defines the parameters for CCV Provider module
 message Params {
   ibc.lightclients.tendermint.v1.ClientState template_client = 1;
-  // TrustingPeriodFraction is used to compute the consumer and provider IBC client's TrustingPeriod from the chain defined UnbondingPeriod
+  // TrustingPeriodFraction is used to compute the consumer and provider IBC
+  // client's TrustingPeriod from the chain defined UnbondingPeriod
   string trusting_period_fraction = 2;
   // Sent IBC packets will timeout after this duration
   google.protobuf.Duration ccv_timeout_period = 3
-      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
-  // The channel initialization (IBC channel opening handshake) will timeout after this duration
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+  // The channel initialization (IBC channel opening handshake) will timeout
+  // after this duration
   google.protobuf.Duration init_timeout_period = 4
-      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true]; 
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
   // The VSC packets sent by the provider will timeout after this duration.
-  // Note that unlike ccv_timeout_period which is an IBC param, 
-  // the vsc_timeout_period is a provider-side param that enables the provider 
-  // to timeout VSC packets even when a consumer chain is not live. 
+  // Note that unlike ccv_timeout_period which is an IBC param,
+  // the vsc_timeout_period is a provider-side param that enables the provider
+  // to timeout VSC packets even when a consumer chain is not live.
   google.protobuf.Duration vsc_timeout_period = 5
-      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
   // The period for which the slash meter is replenished
   google.protobuf.Duration slash_meter_replenish_period = 6
-  [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
-  // The fraction of total voting power that is replenished to the slash meter every replenish period.
-  // This param also serves as a maximum fraction of total voting power that the slash meter can hold.
+  // The fraction of total voting power that is replenished to the slash meter
+  // every replenish period. This param also serves as a maximum fraction of
+  // total voting power that the slash meter can hold.
   string slash_meter_replenish_fraction = 7;
 
-  // The maximum amount of throttled slash or vsc matured packets 
+  // The maximum amount of throttled slash or vsc matured packets
   // that can be queued for a single consumer before the provider chain halts.
   int64 max_throttled_packets = 8;
 
   // The fee required to be paid to add a reward denom
   cosmos.base.v1beta1.Coin consumer_reward_denom_registration_fee = 9
-      [(gogoproto.nullable) = false];
-}
-
-message HandshakeMetadata {
-  string provider_fee_pool_addr = 1;
-  string version = 2;
+      [ (gogoproto.nullable) = false ];
 }
 
 // SlashAcks contains cons addresses of consumer chain validators
-// successfully slashed on the provider chain
-message SlashAcks {
-  repeated string addresses = 1;
-}
+// successfully slashed on the provider chain. 
+message SlashAcks { repeated string addresses = 1; }
 
-// ConsumerAdditionProposals holds pending governance proposals on the provider chain to spawn a new chain.
+// ConsumerAdditionProposals holds pending governance proposals on the provider
+// chain to spawn a new chain.
 message ConsumerAdditionProposals {
   // proposals waiting for spawn_time to pass
   repeated ConsumerAdditionProposal pending = 1;
 }
 
-// ConsumerRemovalProposals holds pending governance proposals on the provider chain to remove (and stop) a consumer chain.
+// ConsumerRemovalProposals holds pending governance proposals on the provider
+// chain to remove (and stop) a consumer chain.
 message ConsumerRemovalProposals {
   // proposals waiting for stop_time to pass
   repeated ConsumerRemovalProposal pending = 1;
 }
 
 // AddressList contains a list of consensus addresses
-message AddressList {
-  repeated bytes addresses = 1;
-}
+message AddressList { repeated bytes addresses = 1; }
 
 message ChannelToChain {
   string channel_id = 1;
@@ -187,13 +201,13 @@ message ChannelToChain {
 }
 
 // VscUnbondingOps contains the IDs of unbonding operations that are waiting for
-// at least one VSCMaturedPacket with vscID from a consumer chain 
+// at least one VSCMaturedPacket with vscID from a consumer chain
 message VscUnbondingOps {
   uint64 vsc_id = 1;
   repeated uint64 unbonding_op_ids = 2;
 }
 
-// UnbondingOp contains the ids of consumer chains that need to unbond before 
+// UnbondingOp contains the ids of consumer chains that need to unbond before
 // the unbonding operation with the given ID can unbond
 message UnbondingOp {
   uint64 id = 1;
@@ -208,7 +222,25 @@ message InitTimeoutTimestamp {
 
 message VscSendTimestamp {
   uint64 vsc_id = 1;
-  google.protobuf.Timestamp timestamp = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp timestamp = 2
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+}
+
+// ValidatorSetChangePackets is a pb list of ccv.ValidatorSetChangePacketData.
+message ValidatorSetChangePackets {
+  repeated interchain_security.ccv.v1.ValidatorSetChangePacketData list = 1
+      [ (gogoproto.nullable) = false ];
+}
+
+// MaturedUnbondingOps defines a list of ids corresponding to ids of matured
+// unbonding operations.
+message MaturedUnbondingOps { repeated uint64 ids = 1; }
+
+// ExportedVscSendTimestamps is VscSendTimestamp with chainID info for exporting to genesis
+message ExportedVscSendTimestamp {
+  string chain_id = 1;
+  repeated VscSendTimestamp vsc_send_timestamps = 2
+    [ (gogoproto.nullable) = false ];
 }
 
 //
@@ -222,7 +254,8 @@ message KeyAssignmentReplacement {
 }
 
 // Used to serialize the ValidatorConsumerPubKey index from key assignment
-// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey tmprotocrypto.PublicKey
+// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey
+// tmprotocrypto.PublicKey
 message ValidatorConsumerPubKey {
   string chain_id = 1;
   bytes provider_addr = 2;
@@ -230,7 +263,8 @@ message ValidatorConsumerPubKey {
 }
 
 // Used to serialize the ValidatorConsumerAddr index from key assignment
-// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr consAddr
+// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr
+// consAddr
 message ValidatorByConsumerAddr {
   string chain_id = 1;
   bytes consumer_addr = 2;

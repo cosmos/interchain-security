@@ -3,11 +3,13 @@ package integration
 import (
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	tmtypes "github.com/tendermint/tendermint/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	tmtypes "github.com/cometbft/cometbft/types"
+
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // TestHandleConsumerMisbehaviour tests that handling a valid misbehaviour,
@@ -55,7 +57,7 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 
 	// we assume that all validators have the same number of initial tokens
 	validator, _ := s.getValByIdx(0)
-	initialTokens := validator.GetTokens().ToDec()
+	initialTokens := sdk.NewDecFromInt(validator.GetTokens())
 
 	err := s.providerApp.GetProviderKeeper().HandleConsumerMisbehaviour(s.providerCtx(), *misb)
 	s.NoError(err)
@@ -71,7 +73,7 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 
 		validator, _ := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr.ToSdkConsAddr().Bytes())
 		slashFraction := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(s.providerCtx())
-		actualTokens := validator.GetTokens().ToDec()
+		actualTokens := sdk.NewDecFromInt(validator.GetTokens())
 		s.Require().True(initialTokens.Sub(initialTokens.Mul(slashFraction)).Equal(actualTokens))
 	}
 }

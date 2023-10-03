@@ -3,13 +3,16 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
+	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	ibcclienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	tmtypes "github.com/tendermint/tendermint/types"
+
+	tmtypes "github.com/cometbft/cometbft/types"
+
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // HandleConsumerMisbehaviour checks if the given IBC misbehaviour corresponds to an equivocation light client attack,
@@ -136,27 +139,27 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 // CheckMisbehaviour checks that headers in the given misbehaviour forms
 // a valid light client attack and that the corresponding light client isn't expired
 func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
-	clientState, found := k.clientKeeper.GetClientState(ctx, misbehaviour.GetClientID())
+	clientState, found := k.clientKeeper.GetClientState(ctx, misbehaviour.ClientId)
 	if !found {
-		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot check misbehaviour for client with ID %s", misbehaviour.GetClientID())
+		return errorsmod.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot check misbehaviour for client with ID %s", misbehaviour.ClientId)
 	}
 
-	clientStore := k.clientKeeper.ClientStore(ctx, misbehaviour.GetClientID())
+	clientStore := k.clientKeeper.ClientStore(ctx, misbehaviour.ClientId)
 
 	// Check that the headers are at the same height to ensure that
 	// the misbehaviour is for a light client attack and not a time violation,
 	// see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 	if !misbehaviour.Header1.GetHeight().EQ(misbehaviour.Header2.GetHeight()) {
-		return sdkerrors.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
+		return errorsmod.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
 	}
 
 	// CheckMisbehaviourAndUpdateState verifies the misbehaviour against the trusted consensus states
 	// but does NOT update the light client state.
 	// Note that the IBC CheckMisbehaviourAndUpdateState method returns an error if the trusted consensus states are expired,
 	// see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
-	_, err := clientState.CheckMisbehaviourAndUpdateState(ctx, k.cdc, clientStore, &misbehaviour)
-	if err != nil {
-		return err
+	ok := clientState.CheckForMisbehaviour(ctx, k.cdc, clientStore, &misbehaviour)
+	if !ok {
+		return errorsmod.Wrapf(ibcclienttypes.ErrInvalidMisbehaviour, "invalid misbehaviour for client-id: %s", misbehaviour.ClientId)
 	}
 
 	return nil

@@ -136,7 +136,7 @@ do
     
     # give this validator some money
     ALLOCATION=$(echo "$VALIDATORS" | jq -r ".[$i].allocation")
-    $BIN add-genesis-account validator$VAL_ID $ALLOCATION \
+    $BIN genesis add-genesis-account validator$VAL_ID $ALLOCATION \
         --home /$CHAIN_ID/validator$VAL_ID \
         --keyring-backend test
 
@@ -180,7 +180,7 @@ do
     # Make a gentx (this command also sets up validator state on disk even if we are not going to use the gentx for anything)
     if [ "$SKIP_GENTX" = "false" ] ; then 
         STAKE_AMOUNT=$(echo "$VALIDATORS" | jq -r ".[$i].stake")
-        $BIN gentx validator$VAL_ID "$STAKE_AMOUNT" \
+        $BIN genesis gentx validator$VAL_ID "$STAKE_AMOUNT" \
             --home /$CHAIN_ID/validator$VAL_ID \
             --keyring-backend test \
             --moniker validator$VAL_ID \
@@ -208,7 +208,7 @@ done
 
 if [ "$SKIP_GENTX" = "false" ] ; then
     # make the final genesis.json
-    $BIN collect-gentxs --home /$CHAIN_ID/validator$FIRST_VAL_ID
+    $BIN genesis collect-gentxs --home /$CHAIN_ID/validator$FIRST_VAL_ID
 
     # and copy it to the root 
     cp /$CHAIN_ID/validator$FIRST_VAL_ID/config/genesis.json /$CHAIN_ID/genesis.json
@@ -367,7 +367,7 @@ NODE_HOMES=${NODE_HOMES%?}
 # CometMock takes the role of the query node
 if [[ "$USE_COMETMOCK" == "true" ]]; then
     sleep 2
-    ip netns exec $QUERY_NET_NAMESPACE_NAME cometmock $NODE_LISTEN_ADDR_STR /$CHAIN_ID/genesis.json tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658 $NODE_HOMES &> cometmock_${CHAIN_ID}_out.log &
+    ip netns exec $QUERY_NET_NAMESPACE_NAME cometmock $NODE_LISTEN_ADDR_STR /$CHAIN_ID/genesis.json tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658 $NODE_HOMES grpc &> cometmock_${CHAIN_ID}_out.log &
     sleep 3
 fi
 

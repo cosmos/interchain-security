@@ -6,39 +6,41 @@ import (
 	"reflect"
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
 	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	"github.com/cometbft/cometbft/libs/log"
 
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
-
-	"github.com/tendermint/tendermint/libs/log"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // Keeper defines the Cross-Chain Validation Provider Keeper
 type Keeper struct {
-	storeKey           sdk.StoreKey
+	storeKey           storetypes.StoreKey
 	cdc                codec.BinaryCodec
 	paramSpace         paramtypes.Subspace
 	scopedKeeper       ccv.ScopedKeeper
 	channelKeeper      ccv.ChannelKeeper
 	portKeeper         ccv.PortKeeper
 	connectionKeeper   ccv.ConnectionKeeper
+	accountKeeper      ccv.AccountKeeper
 	clientKeeper       ccv.ClientKeeper
 	stakingKeeper      ccv.StakingKeeper
 	slashingKeeper     ccv.SlashingKeeper
-	accountKeeper      ccv.AccountKeeper
 	distributionKeeper ccv.DistributionKeeper
 	bankKeeper         ccv.BankKeeper
 	feeCollectorName   string
@@ -46,7 +48,7 @@ type Keeper struct {
 
 // NewKeeper creates a new provider Keeper instance
 func NewKeeper(
-	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper ccv.ScopedKeeper,
+	cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper ccv.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
@@ -112,7 +114,7 @@ func (k Keeper) mustValidateFields() {
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", "x/"+host.ModuleName+"-"+types.ModuleName)
+	return ctx.Logger().With("module", "x/"+ibchost.ModuleName+"-"+types.ModuleName)
 }
 
 // IsBound checks if the CCV module is already bound to the desired port
@@ -246,7 +248,7 @@ func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.Channel
 	return channels
 }
 
-func (k Keeper) SetConsumerGenesis(ctx sdk.Context, chainID string, gen consumertypes.GenesisState) error {
+func (k Keeper) SetConsumerGenesis(ctx sdk.Context, chainID string, gen ccv.ConsumerGenesisState) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := gen.Marshal()
 	if err != nil {
@@ -257,14 +259,14 @@ func (k Keeper) SetConsumerGenesis(ctx sdk.Context, chainID string, gen consumer
 	return nil
 }
 
-func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (consumertypes.GenesisState, bool) {
+func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (ccv.ConsumerGenesisState, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerGenesisKey(chainID))
 	if bz == nil {
-		return consumertypes.GenesisState{}, false
+		return ccv.ConsumerGenesisState{}, false
 	}
 
-	var data consumertypes.GenesisState
+	var data ccv.ConsumerGenesisState
 	if err := data.Unmarshal(bz); err != nil {
 		// An error here would indicate something is very wrong,
 		// the ConsumerGenesis is assumed to be correctly serialized in SetConsumerGenesis.
@@ -570,7 +572,7 @@ func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64) {
 		return nil
 	}
 
-	var ops ccv.MaturedUnbondingOps
+	var ops types.MaturedUnbondingOps
 	if err := ops.Unmarshal(bz); err != nil {
 		// An error here would indicate something is very wrong,
 		// the MaturedUnbondingOps are assumed to be correctly serialized in AppendMaturedUnbondingOps.
@@ -585,7 +587,7 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) {
 		return
 	}
 	existingIds := k.GetMaturedUnbondingOps(ctx)
-	maturedOps := ccv.MaturedUnbondingOps{
+	maturedOps := types.MaturedUnbondingOps{
 		Ids: append(existingIds, ids...),
 	}
 
@@ -625,7 +627,7 @@ func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (
 	tmClient, ok = clientState.(*ibctmtypes.ClientState)
 	if !ok {
 		return "", nil, errorsmod.Wrapf(clienttypes.ErrInvalidClientType,
-			"invalid client type. expected %s, got %s", ibcexported.Tendermint, clientState.ClientType())
+			"invalid client type. expected %s, got %s", ibchost.Tendermint, clientState.ClientType())
 	}
 	return clientID, tmClient, nil
 }
@@ -809,7 +811,7 @@ func (k Keeper) DeleteInitChainHeight(ctx sdk.Context, chainID string) {
 
 // GetPendingVSCPackets returns the list of pending ValidatorSetChange packets stored under chain ID
 func (k Keeper) GetPendingVSCPackets(ctx sdk.Context, chainID string) []ccv.ValidatorSetChangePacketData {
-	var packets ccv.ValidatorSetChangePackets
+	var packets types.ValidatorSetChangePackets
 
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingVSCsKey(chainID))
@@ -830,7 +832,7 @@ func (k Keeper) AppendPendingVSCPackets(ctx sdk.Context, chainID string, newPack
 	pds := append(k.GetPendingVSCPackets(ctx, chainID), newPackets...)
 
 	store := ctx.KVStore(k.storeKey)
-	packets := ccv.ValidatorSetChangePackets{List: pds}
+	packets := types.ValidatorSetChangePackets{List: pds}
 	buf, err := packets.Marshal()
 	if err != nil {
 		// An error here would indicate something is very wrong,

@@ -5,12 +5,14 @@ import (
 	"strings"
 	time "time"
 
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+
 	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 const (
@@ -20,15 +22,15 @@ const (
 )
 
 var (
-	_ govtypes.Content = &ConsumerAdditionProposal{}
-	_ govtypes.Content = &ConsumerRemovalProposal{}
-	_ govtypes.Content = &ChangeRewardDenomsProposal{}
+	_ govv1beta1.Content = &ConsumerAdditionProposal{}
+	_ govv1beta1.Content = &ConsumerRemovalProposal{}
+	_ govv1beta1.Content = &ChangeRewardDenomsProposal{}
 )
 
 func init() {
-	govtypes.RegisterProposalType(ProposalTypeConsumerAddition)
-	govtypes.RegisterProposalType(ProposalTypeConsumerRemoval)
-	govtypes.RegisterProposalType(ProposalTypeChangeRewardDenoms)
+	govv1beta1.RegisterProposalType(ProposalTypeConsumerAddition)
+	govv1beta1.RegisterProposalType(ProposalTypeConsumerRemoval)
+	govv1beta1.RegisterProposalType(ProposalTypeChangeRewardDenoms)
 }
 
 // NewConsumerAdditionProposal creates a new consumer addition proposal.
@@ -42,7 +44,7 @@ func NewConsumerAdditionProposal(title, description, chainID string,
 	ccvTimeoutPeriod time.Duration,
 	transferTimeoutPeriod time.Duration,
 	unbondingPeriod time.Duration,
-) govtypes.Content {
+) govv1beta1.Content {
 	return &ConsumerAdditionProposal{
 		Title:                             title,
 		Description:                       description,
@@ -77,7 +79,7 @@ func (cccp *ConsumerAdditionProposal) ProposalType() string {
 
 // ValidateBasic runs basic stateless validity checks
 func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
-	if err := govtypes.ValidateAbstract(cccp); err != nil {
+	if err := govv1beta1.ValidateAbstract(cccp); err != nil {
 		return err
 	}
 
@@ -165,7 +167,7 @@ func (cccp *ConsumerAdditionProposal) String() string {
 }
 
 // NewConsumerRemovalProposal creates a new consumer removal proposal.
-func NewConsumerRemovalProposal(title, description, chainID string, stopTime time.Time) govtypes.Content {
+func NewConsumerRemovalProposal(title, description, chainID string, stopTime time.Time) govv1beta1.Content {
 	return &ConsumerRemovalProposal{
 		Title:       title,
 		Description: description,
@@ -182,7 +184,7 @@ func (sccp *ConsumerRemovalProposal) ProposalType() string { return ProposalType
 
 // ValidateBasic runs basic stateless validity checks
 func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
-	if err := govtypes.ValidateAbstract(sccp); err != nil {
+	if err := govv1beta1.ValidateAbstract(sccp); err != nil {
 		return err
 	}
 
@@ -198,7 +200,7 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 
 func NewChangeRewardDenomsProposal(title, description string,
 	denomsToAdd, denomsToRemove []string,
-) govtypes.Content {
+) govv1beta1.Content {
 	return &ChangeRewardDenomsProposal{
 		Title:          title,
 		Description:    description,

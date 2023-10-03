@@ -1,8 +1,8 @@
 package main
 
 type Step struct {
-	action interface{}
-	state  State
+	Action interface{}
+	State  State
 }
 
 func concatSteps(steps ...[]Step) []Step {
@@ -24,6 +24,7 @@ var happyPathSteps = concatSteps(
 	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
 	stepsDoubleSignOnProvider("consu"), // carol double signs on provider
+	// TODO: add double sign on consumer
 	stepsStartRelayer(),
 	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
 	stepsStopChain("consu", 3),                     // stop chain
@@ -34,9 +35,24 @@ var shortHappyPathSteps = concatSteps(
 	stepsDelegate("consu"),
 	stepsUnbond("consu"),
 	stepsRedelegateShort("consu"),
+	stepsDowntime("consu"),
+	stepsDoubleSignOnProvider("consu"), // carol double signs on provider
+	// TODO: add double sign on consumer
 	stepsStartRelayer(),
 	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
 	stepsStopChain("consu", 3),                     // stop chain
+)
+
+var lightClientAttackSteps = concatSteps(
+	stepsStartChains([]string{"consu"}, false),
+	stepsDelegate("consu"),
+	stepsUnbond("consu"),
+	stepsRedelegateShort("consu"),
+	stepsDowntime("consu"),
+	stepsLightClientAttackOnProviderAndConsumer("consu"), // carol double signs on provider, bob double signs on consumer
+	stepsStartRelayer(),
+	stepsConsumerRemovalPropNotPassing("consu", 3), // submit removal prop but vote no on it - chain should stay
+	stepsStopChain("consu", 4),                     // stop chain
 )
 
 var slashThrottleSteps = concatSteps(
@@ -46,7 +62,7 @@ var slashThrottleSteps = concatSteps(
 	stepsStopChain("consu", 2),
 )
 
-var democracySteps = concatSteps(
+var democracyRewardsSteps = concatSteps(
 	// democracySteps requires a transfer channel
 	stepsStartChains([]string{"democ"}, true),
 	// delegation needs to happen so the first VSC packet can be delivered
@@ -54,7 +70,7 @@ var democracySteps = concatSteps(
 	stepsDemocracy("democ"),
 )
 
-var rewardDenomConsumerSteps = concatSteps(
+var democracySteps = concatSteps(
 	// democracySteps requires a transfer channel
 	stepsStartChains([]string{"democ"}, true),
 	// delegation needs to happen so the first VSC packet can be delivered

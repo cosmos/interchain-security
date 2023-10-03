@@ -2,15 +2,16 @@ package core_test
 
 import (
 	"bytes"
+	cryptoEd25519 "crypto/ed25519"
 	"testing"
 
-	cryptoEd25519 "crypto/ed25519"
+	mock "github.com/cosmos/ibc-go/v7/testing/mock"
 
 	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	mock "github.com/cosmos/ibc-go/v4/testing/mock"
-	tmtypes "github.com/tendermint/tendermint/types"
+
+	tmtypes "github.com/cometbft/cometbft/types"
 )
 
 func GetPV(seed []byte) mock.PV {

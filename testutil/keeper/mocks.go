@@ -9,17 +9,19 @@ import (
 	reflect "reflect"
 	time "time"
 
-	types "github.com/cosmos/cosmos-sdk/types"
-	types0 "github.com/cosmos/cosmos-sdk/x/auth/types"
-	types1 "github.com/cosmos/cosmos-sdk/x/capability/types"
-	types2 "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	types3 "github.com/cosmos/cosmos-sdk/x/staking/types"
-	types4 "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	types5 "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	types6 "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	exported "github.com/cosmos/ibc-go/v4/modules/core/exported"
+	math "cosmossdk.io/math"
+	types "github.com/cometbft/cometbft/abci/types"
+	types0 "github.com/cosmos/cosmos-sdk/types"
+	types1 "github.com/cosmos/cosmos-sdk/x/auth/types"
+	types2 "github.com/cosmos/cosmos-sdk/x/capability/types"
+	types3 "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	types4 "github.com/cosmos/cosmos-sdk/x/staking/types"
+	types5 "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	types6 "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	types7 "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	types8 "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
-	types7 "github.com/tendermint/tendermint/abci/types"
 )
 
 // MockStakingKeeper is a mock of StakingKeeper interface.
@@ -46,7 +48,7 @@ func (m *MockStakingKeeper) EXPECT() *MockStakingKeeperMockRecorder {
 }
 
 // BondDenom mocks base method.
-func (m *MockStakingKeeper) BondDenom(ctx types.Context) string {
+func (m *MockStakingKeeper) BondDenom(ctx types0.Context) string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BondDenom", ctx)
 	ret0, _ := ret[0].(string)
@@ -60,10 +62,10 @@ func (mr *MockStakingKeeperMockRecorder) BondDenom(ctx interface{}) *gomock.Call
 }
 
 // Delegation mocks base method.
-func (m *MockStakingKeeper) Delegation(ctx types.Context, addr types.AccAddress, valAddr types.ValAddress) types3.DelegationI {
+func (m *MockStakingKeeper) Delegation(ctx types0.Context, addr types0.AccAddress, valAddr types0.ValAddress) types4.DelegationI {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delegation", ctx, addr, valAddr)
-	ret0, _ := ret[0].(types3.DelegationI)
+	ret0, _ := ret[0].(types4.DelegationI)
 	return ret0
 }
 
@@ -74,10 +76,10 @@ func (mr *MockStakingKeeperMockRecorder) Delegation(ctx, addr, valAddr interface
 }
 
 // GetLastTotalPower mocks base method.
-func (m *MockStakingKeeper) GetLastTotalPower(ctx types.Context) types.Int {
+func (m *MockStakingKeeper) GetLastTotalPower(ctx types0.Context) math.Int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLastTotalPower", ctx)
-	ret0, _ := ret[0].(types.Int)
+	ret0, _ := ret[0].(math.Int)
 	return ret0
 }
 
@@ -88,7 +90,7 @@ func (mr *MockStakingKeeperMockRecorder) GetLastTotalPower(ctx interface{}) *gom
 }
 
 // GetLastValidatorPower mocks base method.
-func (m *MockStakingKeeper) GetLastValidatorPower(ctx types.Context, operator types.ValAddress) int64 {
+func (m *MockStakingKeeper) GetLastValidatorPower(ctx types0.Context, operator types0.ValAddress) int64 {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLastValidatorPower", ctx, operator)
 	ret0, _ := ret[0].(int64)
@@ -102,10 +104,10 @@ func (mr *MockStakingKeeperMockRecorder) GetLastValidatorPower(ctx, operator int
 }
 
 // GetLastValidators mocks base method.
-func (m *MockStakingKeeper) GetLastValidators(ctx types.Context) []types3.Validator {
+func (m *MockStakingKeeper) GetLastValidators(ctx types0.Context) []types4.Validator {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLastValidators", ctx)
-	ret0, _ := ret[0].([]types3.Validator)
+	ret0, _ := ret[0].([]types4.Validator)
 	return ret0
 }
 
@@ -116,10 +118,10 @@ func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx interface{}) *gom
 }
 
 // GetRedelegationsFromSrcValidator mocks base method.
-func (m *MockStakingKeeper) GetRedelegationsFromSrcValidator(ctx types.Context, valAddr types.ValAddress) []types3.Redelegation {
+func (m *MockStakingKeeper) GetRedelegationsFromSrcValidator(ctx types0.Context, valAddr types0.ValAddress) []types4.Redelegation {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRedelegationsFromSrcValidator", ctx, valAddr)
-	ret0, _ := ret[0].([]types3.Redelegation)
+	ret0, _ := ret[0].([]types4.Redelegation)
 	return ret0
 }
 
@@ -130,10 +132,10 @@ func (mr *MockStakingKeeperMockRecorder) GetRedelegationsFromSrcValidator(ctx, v
 }
 
 // GetUnbondingDelegationsFromValidator mocks base method.
-func (m *MockStakingKeeper) GetUnbondingDelegationsFromValidator(ctx types.Context, valAddr types.ValAddress) []types3.UnbondingDelegation {
+func (m *MockStakingKeeper) GetUnbondingDelegationsFromValidator(ctx types0.Context, valAddr types0.ValAddress) []types4.UnbondingDelegation {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUnbondingDelegationsFromValidator", ctx, valAddr)
-	ret0, _ := ret[0].([]types3.UnbondingDelegation)
+	ret0, _ := ret[0].([]types4.UnbondingDelegation)
 	return ret0
 }
 
@@ -144,10 +146,10 @@ func (mr *MockStakingKeeperMockRecorder) GetUnbondingDelegationsFromValidator(ct
 }
 
 // GetUnbondingType mocks base method.
-func (m *MockStakingKeeper) GetUnbondingType(ctx types.Context, id uint64) (types3.UnbondingType, bool) {
+func (m *MockStakingKeeper) GetUnbondingType(ctx types0.Context, id uint64) (types4.UnbondingType, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUnbondingType", ctx, id)
-	ret0, _ := ret[0].(types3.UnbondingType)
+	ret0, _ := ret[0].(types4.UnbondingType)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -159,10 +161,10 @@ func (mr *MockStakingKeeperMockRecorder) GetUnbondingType(ctx, id interface{}) *
 }
 
 // GetValidator mocks base method.
-func (m *MockStakingKeeper) GetValidator(ctx types.Context, addr types.ValAddress) (types3.Validator, bool) {
+func (m *MockStakingKeeper) GetValidator(ctx types0.Context, addr types0.ValAddress) (types4.Validator, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidator", ctx, addr)
-	ret0, _ := ret[0].(types3.Validator)
+	ret0, _ := ret[0].(types4.Validator)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -174,10 +176,10 @@ func (mr *MockStakingKeeperMockRecorder) GetValidator(ctx, addr interface{}) *go
 }
 
 // GetValidatorByConsAddr mocks base method.
-func (m *MockStakingKeeper) GetValidatorByConsAddr(ctx types.Context, consAddr types.ConsAddress) (types3.Validator, bool) {
+func (m *MockStakingKeeper) GetValidatorByConsAddr(ctx types0.Context, consAddr types0.ConsAddress) (types4.Validator, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorByConsAddr", ctx, consAddr)
-	ret0, _ := ret[0].(types3.Validator)
+	ret0, _ := ret[0].(types4.Validator)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -189,10 +191,10 @@ func (mr *MockStakingKeeperMockRecorder) GetValidatorByConsAddr(ctx, consAddr in
 }
 
 // GetValidatorUpdates mocks base method.
-func (m *MockStakingKeeper) GetValidatorUpdates(ctx types.Context) []types7.ValidatorUpdate {
+func (m *MockStakingKeeper) GetValidatorUpdates(ctx types0.Context) []types.ValidatorUpdate {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorUpdates", ctx)
-	ret0, _ := ret[0].([]types7.ValidatorUpdate)
+	ret0, _ := ret[0].([]types.ValidatorUpdate)
 	return ret0
 }
 
@@ -203,7 +205,7 @@ func (mr *MockStakingKeeperMockRecorder) GetValidatorUpdates(ctx interface{}) *g
 }
 
 // IsValidatorJailed mocks base method.
-func (m *MockStakingKeeper) IsValidatorJailed(ctx types.Context, addr types.ConsAddress) bool {
+func (m *MockStakingKeeper) IsValidatorJailed(ctx types0.Context, addr types0.ConsAddress) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsValidatorJailed", ctx, addr)
 	ret0, _ := ret[0].(bool)
@@ -217,7 +219,7 @@ func (mr *MockStakingKeeperMockRecorder) IsValidatorJailed(ctx, addr interface{}
 }
 
 // IterateLastValidatorPowers mocks base method.
-func (m *MockStakingKeeper) IterateLastValidatorPowers(ctx types.Context, cb func(types.ValAddress, int64) bool) {
+func (m *MockStakingKeeper) IterateLastValidatorPowers(ctx types0.Context, cb func(types0.ValAddress, int64) bool) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "IterateLastValidatorPowers", ctx, cb)
 }
@@ -229,7 +231,7 @@ func (mr *MockStakingKeeperMockRecorder) IterateLastValidatorPowers(ctx, cb inte
 }
 
 // IterateValidators mocks base method.
-func (m *MockStakingKeeper) IterateValidators(ctx types.Context, f func(int64, types3.ValidatorI) bool) {
+func (m *MockStakingKeeper) IterateValidators(ctx types0.Context, f func(int64, types4.ValidatorI) bool) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "IterateValidators", ctx, f)
 }
@@ -241,7 +243,7 @@ func (mr *MockStakingKeeperMockRecorder) IterateValidators(ctx, f interface{}) *
 }
 
 // Jail mocks base method.
-func (m *MockStakingKeeper) Jail(arg0 types.Context, arg1 types.ConsAddress) {
+func (m *MockStakingKeeper) Jail(arg0 types0.Context, arg1 types0.ConsAddress) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Jail", arg0, arg1)
 }
@@ -253,7 +255,7 @@ func (mr *MockStakingKeeperMockRecorder) Jail(arg0, arg1 interface{}) *gomock.Ca
 }
 
 // MaxValidators mocks base method.
-func (m *MockStakingKeeper) MaxValidators(ctx types.Context) uint32 {
+func (m *MockStakingKeeper) MaxValidators(ctx types0.Context) uint32 {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MaxValidators", ctx)
 	ret0, _ := ret[0].(uint32)
@@ -267,10 +269,10 @@ func (mr *MockStakingKeeperMockRecorder) MaxValidators(ctx interface{}) *gomock.
 }
 
 // PowerReduction mocks base method.
-func (m *MockStakingKeeper) PowerReduction(ctx types.Context) types.Int {
+func (m *MockStakingKeeper) PowerReduction(ctx types0.Context) math.Int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PowerReduction", ctx)
-	ret0, _ := ret[0].(types.Int)
+	ret0, _ := ret[0].(math.Int)
 	return ret0
 }
 
@@ -281,7 +283,7 @@ func (mr *MockStakingKeeperMockRecorder) PowerReduction(ctx interface{}) *gomock
 }
 
 // PutUnbondingOnHold mocks base method.
-func (m *MockStakingKeeper) PutUnbondingOnHold(ctx types.Context, id uint64) error {
+func (m *MockStakingKeeper) PutUnbondingOnHold(ctx types0.Context, id uint64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutUnbondingOnHold", ctx, id)
 	ret0, _ := ret[0].(error)
@@ -295,22 +297,24 @@ func (mr *MockStakingKeeperMockRecorder) PutUnbondingOnHold(ctx, id interface{})
 }
 
 // Slash mocks base method.
-func (m *MockStakingKeeper) Slash(arg0 types.Context, arg1 types.ConsAddress, arg2, arg3 int64, arg4 types.Dec, arg5 types3.InfractionType) {
+func (m *MockStakingKeeper) Slash(arg0 types0.Context, arg1 types0.ConsAddress, arg2, arg3 int64, arg4 types0.Dec) math.Int {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Slash", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret := m.ctrl.Call(m, "Slash", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].(math.Int)
+	return ret0
 }
 
 // Slash indicates an expected call of Slash.
-func (mr *MockStakingKeeperMockRecorder) Slash(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+func (mr *MockStakingKeeperMockRecorder) Slash(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Slash", reflect.TypeOf((*MockStakingKeeper)(nil).Slash), arg0, arg1, arg2, arg3, arg4, arg5)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Slash", reflect.TypeOf((*MockStakingKeeper)(nil).Slash), arg0, arg1, arg2, arg3, arg4)
 }
 
 // SlashRedelegation mocks base method.
-func (m *MockStakingKeeper) SlashRedelegation(arg0 types.Context, arg1 types3.Validator, arg2 types3.Redelegation, arg3 int64, arg4 types.Dec) types.Int {
+func (m *MockStakingKeeper) SlashRedelegation(arg0 types0.Context, arg1 types4.Validator, arg2 types4.Redelegation, arg3 int64, arg4 types0.Dec) math.Int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SlashRedelegation", arg0, arg1, arg2, arg3, arg4)
-	ret0, _ := ret[0].(types.Int)
+	ret0, _ := ret[0].(math.Int)
 	return ret0
 }
 
@@ -321,10 +325,10 @@ func (mr *MockStakingKeeperMockRecorder) SlashRedelegation(arg0, arg1, arg2, arg
 }
 
 // SlashUnbondingDelegation mocks base method.
-func (m *MockStakingKeeper) SlashUnbondingDelegation(arg0 types.Context, arg1 types3.UnbondingDelegation, arg2 int64, arg3 types.Dec) types.Int {
+func (m *MockStakingKeeper) SlashUnbondingDelegation(arg0 types0.Context, arg1 types4.UnbondingDelegation, arg2 int64, arg3 types0.Dec) math.Int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SlashUnbondingDelegation", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(types.Int)
+	ret0, _ := ret[0].(math.Int)
 	return ret0
 }
 
@@ -334,8 +338,22 @@ func (mr *MockStakingKeeperMockRecorder) SlashUnbondingDelegation(arg0, arg1, ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SlashUnbondingDelegation", reflect.TypeOf((*MockStakingKeeper)(nil).SlashUnbondingDelegation), arg0, arg1, arg2, arg3)
 }
 
+// SlashWithInfractionReason mocks base method.
+func (m *MockStakingKeeper) SlashWithInfractionReason(arg0 types0.Context, arg1 types0.ConsAddress, arg2, arg3 int64, arg4 types0.Dec, arg5 types4.Infraction) math.Int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SlashWithInfractionReason", arg0, arg1, arg2, arg3, arg4, arg5)
+	ret0, _ := ret[0].(math.Int)
+	return ret0
+}
+
+// SlashWithInfractionReason indicates an expected call of SlashWithInfractionReason.
+func (mr *MockStakingKeeperMockRecorder) SlashWithInfractionReason(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SlashWithInfractionReason", reflect.TypeOf((*MockStakingKeeper)(nil).SlashWithInfractionReason), arg0, arg1, arg2, arg3, arg4, arg5)
+}
+
 // UnbondingCanComplete mocks base method.
-func (m *MockStakingKeeper) UnbondingCanComplete(ctx types.Context, id uint64) error {
+func (m *MockStakingKeeper) UnbondingCanComplete(ctx types0.Context, id uint64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UnbondingCanComplete", ctx, id)
 	ret0, _ := ret[0].(error)
@@ -349,7 +367,7 @@ func (mr *MockStakingKeeperMockRecorder) UnbondingCanComplete(ctx, id interface{
 }
 
 // UnbondingTime mocks base method.
-func (m *MockStakingKeeper) UnbondingTime(ctx types.Context) time.Duration {
+func (m *MockStakingKeeper) UnbondingTime(ctx types0.Context) time.Duration {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UnbondingTime", ctx)
 	ret0, _ := ret[0].(time.Duration)
@@ -363,7 +381,7 @@ func (mr *MockStakingKeeperMockRecorder) UnbondingTime(ctx interface{}) *gomock.
 }
 
 // Unjail mocks base method.
-func (m *MockStakingKeeper) Unjail(ctx types.Context, addr types.ConsAddress) {
+func (m *MockStakingKeeper) Unjail(ctx types0.Context, addr types0.ConsAddress) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Unjail", ctx, addr)
 }
@@ -375,10 +393,10 @@ func (mr *MockStakingKeeperMockRecorder) Unjail(ctx, addr interface{}) *gomock.C
 }
 
 // Validator mocks base method.
-func (m *MockStakingKeeper) Validator(ctx types.Context, addr types.ValAddress) types3.ValidatorI {
+func (m *MockStakingKeeper) Validator(ctx types0.Context, addr types0.ValAddress) types4.ValidatorI {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Validator", ctx, addr)
-	ret0, _ := ret[0].(types3.ValidatorI)
+	ret0, _ := ret[0].(types4.ValidatorI)
 	return ret0
 }
 
@@ -389,10 +407,10 @@ func (mr *MockStakingKeeperMockRecorder) Validator(ctx, addr interface{}) *gomoc
 }
 
 // ValidatorByConsAddr mocks base method.
-func (m *MockStakingKeeper) ValidatorByConsAddr(ctx types.Context, consAddr types.ConsAddress) types3.ValidatorI {
+func (m *MockStakingKeeper) ValidatorByConsAddr(ctx types0.Context, consAddr types0.ConsAddress) types4.ValidatorI {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ValidatorByConsAddr", ctx, consAddr)
-	ret0, _ := ret[0].(types3.ValidatorI)
+	ret0, _ := ret[0].(types4.ValidatorI)
 	return ret0
 }
 
@@ -426,7 +444,7 @@ func (m *MockSlashingKeeper) EXPECT() *MockSlashingKeeperMockRecorder {
 }
 
 // DowntimeJailDuration mocks base method.
-func (m *MockSlashingKeeper) DowntimeJailDuration(arg0 types.Context) time.Duration {
+func (m *MockSlashingKeeper) DowntimeJailDuration(arg0 types0.Context) time.Duration {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DowntimeJailDuration", arg0)
 	ret0, _ := ret[0].(time.Duration)
@@ -440,10 +458,10 @@ func (mr *MockSlashingKeeperMockRecorder) DowntimeJailDuration(arg0 interface{})
 }
 
 // GetValidatorSigningInfo mocks base method.
-func (m *MockSlashingKeeper) GetValidatorSigningInfo(ctx types.Context, address types.ConsAddress) (types2.ValidatorSigningInfo, bool) {
+func (m *MockSlashingKeeper) GetValidatorSigningInfo(ctx types0.Context, address types0.ConsAddress) (types3.ValidatorSigningInfo, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSigningInfo", ctx, address)
-	ret0, _ := ret[0].(types2.ValidatorSigningInfo)
+	ret0, _ := ret[0].(types3.ValidatorSigningInfo)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -455,7 +473,7 @@ func (mr *MockSlashingKeeperMockRecorder) GetValidatorSigningInfo(ctx, address i
 }
 
 // IsTombstoned mocks base method.
-func (m *MockSlashingKeeper) IsTombstoned(arg0 types.Context, arg1 types.ConsAddress) bool {
+func (m *MockSlashingKeeper) IsTombstoned(arg0 types0.Context, arg1 types0.ConsAddress) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsTombstoned", arg0, arg1)
 	ret0, _ := ret[0].(bool)
@@ -469,7 +487,7 @@ func (mr *MockSlashingKeeperMockRecorder) IsTombstoned(arg0, arg1 interface{}) *
 }
 
 // JailUntil mocks base method.
-func (m *MockSlashingKeeper) JailUntil(arg0 types.Context, arg1 types.ConsAddress, arg2 time.Time) {
+func (m *MockSlashingKeeper) JailUntil(arg0 types0.Context, arg1 types0.ConsAddress, arg2 time.Time) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "JailUntil", arg0, arg1, arg2)
 }
@@ -481,10 +499,10 @@ func (mr *MockSlashingKeeperMockRecorder) JailUntil(arg0, arg1, arg2 interface{}
 }
 
 // SlashFractionDoubleSign mocks base method.
-func (m *MockSlashingKeeper) SlashFractionDoubleSign(ctx types.Context) types.Dec {
+func (m *MockSlashingKeeper) SlashFractionDoubleSign(ctx types0.Context) types0.Dec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SlashFractionDoubleSign", ctx)
-	ret0, _ := ret[0].(types.Dec)
+	ret0, _ := ret[0].(types0.Dec)
 	return ret0
 }
 
@@ -495,10 +513,10 @@ func (mr *MockSlashingKeeperMockRecorder) SlashFractionDoubleSign(ctx interface{
 }
 
 // SlashFractionDowntime mocks base method.
-func (m *MockSlashingKeeper) SlashFractionDowntime(arg0 types.Context) types.Dec {
+func (m *MockSlashingKeeper) SlashFractionDowntime(arg0 types0.Context) types0.Dec {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SlashFractionDowntime", arg0)
-	ret0, _ := ret[0].(types.Dec)
+	ret0, _ := ret[0].(types0.Dec)
 	return ret0
 }
 
@@ -509,7 +527,7 @@ func (mr *MockSlashingKeeperMockRecorder) SlashFractionDowntime(arg0 interface{}
 }
 
 // Tombstone mocks base method.
-func (m *MockSlashingKeeper) Tombstone(arg0 types.Context, arg1 types.ConsAddress) {
+func (m *MockSlashingKeeper) Tombstone(arg0 types0.Context, arg1 types0.ConsAddress) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Tombstone", arg0, arg1)
 }
@@ -544,7 +562,7 @@ func (m *MockChannelKeeper) EXPECT() *MockChannelKeeperMockRecorder {
 }
 
 // ChanCloseInit mocks base method.
-func (m *MockChannelKeeper) ChanCloseInit(ctx types.Context, portID, channelID string, chanCap *types1.Capability) error {
+func (m *MockChannelKeeper) ChanCloseInit(ctx types0.Context, portID, channelID string, chanCap *types2.Capability) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ChanCloseInit", ctx, portID, channelID, chanCap)
 	ret0, _ := ret[0].(error)
@@ -558,10 +576,10 @@ func (mr *MockChannelKeeperMockRecorder) ChanCloseInit(ctx, portID, channelID, c
 }
 
 // GetChannel mocks base method.
-func (m *MockChannelKeeper) GetChannel(ctx types.Context, srcPort, srcChan string) (types6.Channel, bool) {
+func (m *MockChannelKeeper) GetChannel(ctx types0.Context, srcPort, srcChan string) (types8.Channel, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetChannel", ctx, srcPort, srcChan)
-	ret0, _ := ret[0].(types6.Channel)
+	ret0, _ := ret[0].(types8.Channel)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -572,8 +590,24 @@ func (mr *MockChannelKeeperMockRecorder) GetChannel(ctx, srcPort, srcChan interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChannel", reflect.TypeOf((*MockChannelKeeper)(nil).GetChannel), ctx, srcPort, srcChan)
 }
 
+// GetChannelConnection mocks base method.
+func (m *MockChannelKeeper) GetChannelConnection(ctx types0.Context, portID, channelID string) (string, exported.ConnectionI, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetChannelConnection", ctx, portID, channelID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(exported.ConnectionI)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetChannelConnection indicates an expected call of GetChannelConnection.
+func (mr *MockChannelKeeperMockRecorder) GetChannelConnection(ctx, portID, channelID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChannelConnection", reflect.TypeOf((*MockChannelKeeper)(nil).GetChannelConnection), ctx, portID, channelID)
+}
+
 // GetNextSequenceSend mocks base method.
-func (m *MockChannelKeeper) GetNextSequenceSend(ctx types.Context, portID, channelID string) (uint64, bool) {
+func (m *MockChannelKeeper) GetNextSequenceSend(ctx types0.Context, portID, channelID string) (uint64, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNextSequenceSend", ctx, portID, channelID)
 	ret0, _ := ret[0].(uint64)
@@ -588,21 +622,22 @@ func (mr *MockChannelKeeperMockRecorder) GetNextSequenceSend(ctx, portID, channe
 }
 
 // SendPacket mocks base method.
-func (m *MockChannelKeeper) SendPacket(ctx types.Context, channelCap *types1.Capability, packet exported.PacketI) error {
+func (m *MockChannelKeeper) SendPacket(ctx types0.Context, chanCap *types2.Capability, sourcePort, sourceChannel string, timeoutHeight types6.Height, timeoutTimestamp uint64, data []byte) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendPacket", ctx, channelCap, packet)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "SendPacket", ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // SendPacket indicates an expected call of SendPacket.
-func (mr *MockChannelKeeperMockRecorder) SendPacket(ctx, channelCap, packet interface{}) *gomock.Call {
+func (mr *MockChannelKeeperMockRecorder) SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendPacket", reflect.TypeOf((*MockChannelKeeper)(nil).SendPacket), ctx, channelCap, packet)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendPacket", reflect.TypeOf((*MockChannelKeeper)(nil).SendPacket), ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
 // WriteAcknowledgement mocks base method.
-func (m *MockChannelKeeper) WriteAcknowledgement(ctx types.Context, chanCap *types1.Capability, packet exported.PacketI, acknowledgement exported.Acknowledgement) error {
+func (m *MockChannelKeeper) WriteAcknowledgement(ctx types0.Context, chanCap *types2.Capability, packet exported.PacketI, acknowledgement exported.Acknowledgement) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteAcknowledgement", ctx, chanCap, packet, acknowledgement)
 	ret0, _ := ret[0].(error)
@@ -639,10 +674,10 @@ func (m *MockPortKeeper) EXPECT() *MockPortKeeperMockRecorder {
 }
 
 // BindPort mocks base method.
-func (m *MockPortKeeper) BindPort(ctx types.Context, portID string) *types1.Capability {
+func (m *MockPortKeeper) BindPort(ctx types0.Context, portID string) *types2.Capability {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BindPort", ctx, portID)
-	ret0, _ := ret[0].(*types1.Capability)
+	ret0, _ := ret[0].(*types2.Capability)
 	return ret0
 }
 
@@ -676,10 +711,10 @@ func (m *MockConnectionKeeper) EXPECT() *MockConnectionKeeperMockRecorder {
 }
 
 // GetConnection mocks base method.
-func (m *MockConnectionKeeper) GetConnection(ctx types.Context, connectionID string) (types5.ConnectionEnd, bool) {
+func (m *MockConnectionKeeper) GetConnection(ctx types0.Context, connectionID string) (types7.ConnectionEnd, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConnection", ctx, connectionID)
-	ret0, _ := ret[0].(types5.ConnectionEnd)
+	ret0, _ := ret[0].(types7.ConnectionEnd)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -713,25 +748,11 @@ func (m *MockClientKeeper) EXPECT() *MockClientKeeperMockRecorder {
 	return m.recorder
 }
 
-// CheckMisbehaviourAndUpdateState mocks base method.
-func (m *MockClientKeeper) CheckMisbehaviourAndUpdateState(ctx types.Context, misbehaviour exported.Misbehaviour) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckMisbehaviourAndUpdateState", ctx, misbehaviour)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CheckMisbehaviourAndUpdateState indicates an expected call of CheckMisbehaviourAndUpdateState.
-func (mr *MockClientKeeperMockRecorder) CheckMisbehaviourAndUpdateState(ctx, misbehaviour interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckMisbehaviourAndUpdateState", reflect.TypeOf((*MockClientKeeper)(nil).CheckMisbehaviourAndUpdateState), ctx, misbehaviour)
-}
-
 // ClientStore mocks base method.
-func (m *MockClientKeeper) ClientStore(ctx types.Context, clientID string) types.KVStore {
+func (m *MockClientKeeper) ClientStore(ctx types0.Context, clientID string) types0.KVStore {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ClientStore", ctx, clientID)
-	ret0, _ := ret[0].(types.KVStore)
+	ret0, _ := ret[0].(types0.KVStore)
 	return ret0
 }
 
@@ -742,7 +763,7 @@ func (mr *MockClientKeeperMockRecorder) ClientStore(ctx, clientID interface{}) *
 }
 
 // CreateClient mocks base method.
-func (m *MockClientKeeper) CreateClient(ctx types.Context, clientState exported.ClientState, consensusState exported.ConsensusState) (string, error) {
+func (m *MockClientKeeper) CreateClient(ctx types0.Context, clientState exported.ClientState, consensusState exported.ConsensusState) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateClient", ctx, clientState, consensusState)
 	ret0, _ := ret[0].(string)
@@ -757,7 +778,7 @@ func (mr *MockClientKeeperMockRecorder) CreateClient(ctx, clientState, consensus
 }
 
 // GetClientConsensusState mocks base method.
-func (m *MockClientKeeper) GetClientConsensusState(ctx types.Context, clientID string, height exported.Height) (exported.ConsensusState, bool) {
+func (m *MockClientKeeper) GetClientConsensusState(ctx types0.Context, clientID string, height exported.Height) (exported.ConsensusState, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClientConsensusState", ctx, clientID, height)
 	ret0, _ := ret[0].(exported.ConsensusState)
@@ -772,7 +793,7 @@ func (mr *MockClientKeeperMockRecorder) GetClientConsensusState(ctx, clientID, h
 }
 
 // GetClientState mocks base method.
-func (m *MockClientKeeper) GetClientState(ctx types.Context, clientID string) (exported.ClientState, bool) {
+func (m *MockClientKeeper) GetClientState(ctx types0.Context, clientID string) (exported.ClientState, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClientState", ctx, clientID)
 	ret0, _ := ret[0].(exported.ClientState)
@@ -787,7 +808,7 @@ func (mr *MockClientKeeperMockRecorder) GetClientState(ctx, clientID interface{}
 }
 
 // GetLatestClientConsensusState mocks base method.
-func (m *MockClientKeeper) GetLatestClientConsensusState(ctx types.Context, clientID string) (exported.ConsensusState, bool) {
+func (m *MockClientKeeper) GetLatestClientConsensusState(ctx types0.Context, clientID string) (exported.ConsensusState, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLatestClientConsensusState", ctx, clientID)
 	ret0, _ := ret[0].(exported.ConsensusState)
@@ -802,7 +823,7 @@ func (mr *MockClientKeeperMockRecorder) GetLatestClientConsensusState(ctx, clien
 }
 
 // GetSelfConsensusState mocks base method.
-func (m *MockClientKeeper) GetSelfConsensusState(ctx types.Context, height exported.Height) (exported.ConsensusState, error) {
+func (m *MockClientKeeper) GetSelfConsensusState(ctx types0.Context, height exported.Height) (exported.ConsensusState, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSelfConsensusState", ctx, height)
 	ret0, _ := ret[0].(exported.ConsensusState)
@@ -817,7 +838,7 @@ func (mr *MockClientKeeperMockRecorder) GetSelfConsensusState(ctx, height interf
 }
 
 // SetClientState mocks base method.
-func (m *MockClientKeeper) SetClientState(ctx types.Context, clientID string, clientState exported.ClientState) {
+func (m *MockClientKeeper) SetClientState(ctx types0.Context, clientID string, clientState exported.ClientState) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetClientState", ctx, clientID, clientState)
 }
@@ -852,7 +873,7 @@ func (m *MockDistributionKeeper) EXPECT() *MockDistributionKeeperMockRecorder {
 }
 
 // FundCommunityPool mocks base method.
-func (m *MockDistributionKeeper) FundCommunityPool(ctx types.Context, amount types.Coins, sender types.AccAddress) error {
+func (m *MockDistributionKeeper) FundCommunityPool(ctx types0.Context, amount types0.Coins, sender types0.AccAddress) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FundCommunityPool", ctx, amount, sender)
 	ret0, _ := ret[0].(error)
@@ -889,15 +910,17 @@ func (m *MockConsumerHooks) EXPECT() *MockConsumerHooksMockRecorder {
 }
 
 // AfterValidatorBonded mocks base method.
-func (m *MockConsumerHooks) AfterValidatorBonded(ctx types.Context, consAddr types.ConsAddress, arg2 types.ValAddress) {
+func (m *MockConsumerHooks) AfterValidatorBonded(ctx types0.Context, consAddr types0.ConsAddress, valAddresses types0.ValAddress) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AfterValidatorBonded", ctx, consAddr, arg2)
+	ret := m.ctrl.Call(m, "AfterValidatorBonded", ctx, consAddr, valAddresses)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // AfterValidatorBonded indicates an expected call of AfterValidatorBonded.
-func (mr *MockConsumerHooksMockRecorder) AfterValidatorBonded(ctx, consAddr, arg2 interface{}) *gomock.Call {
+func (mr *MockConsumerHooksMockRecorder) AfterValidatorBonded(ctx, consAddr, valAddresses interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AfterValidatorBonded", reflect.TypeOf((*MockConsumerHooks)(nil).AfterValidatorBonded), ctx, consAddr, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AfterValidatorBonded", reflect.TypeOf((*MockConsumerHooks)(nil).AfterValidatorBonded), ctx, consAddr, valAddresses)
 }
 
 // MockBankKeeper is a mock of BankKeeper interface.
@@ -924,10 +947,10 @@ func (m *MockBankKeeper) EXPECT() *MockBankKeeperMockRecorder {
 }
 
 // GetAllBalances mocks base method.
-func (m *MockBankKeeper) GetAllBalances(ctx types.Context, addr types.AccAddress) types.Coins {
+func (m *MockBankKeeper) GetAllBalances(ctx types0.Context, addr types0.AccAddress) types0.Coins {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllBalances", ctx, addr)
-	ret0, _ := ret[0].(types.Coins)
+	ret0, _ := ret[0].(types0.Coins)
 	return ret0
 }
 
@@ -938,10 +961,10 @@ func (mr *MockBankKeeperMockRecorder) GetAllBalances(ctx, addr interface{}) *gom
 }
 
 // GetBalance mocks base method.
-func (m *MockBankKeeper) GetBalance(ctx types.Context, addr types.AccAddress, denom string) types.Coin {
+func (m *MockBankKeeper) GetBalance(ctx types0.Context, addr types0.AccAddress, denom string) types0.Coin {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBalance", ctx, addr, denom)
-	ret0, _ := ret[0].(types.Coin)
+	ret0, _ := ret[0].(types0.Coin)
 	return ret0
 }
 
@@ -952,7 +975,7 @@ func (mr *MockBankKeeperMockRecorder) GetBalance(ctx, addr, denom interface{}) *
 }
 
 // SendCoinsFromModuleToModule mocks base method.
-func (m *MockBankKeeper) SendCoinsFromModuleToModule(ctx types.Context, senderModule, recipientModule string, amt types.Coins) error {
+func (m *MockBankKeeper) SendCoinsFromModuleToModule(ctx types0.Context, senderModule, recipientModule string, amt types0.Coins) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendCoinsFromModuleToModule", ctx, senderModule, recipientModule, amt)
 	ret0, _ := ret[0].(error)
@@ -989,10 +1012,10 @@ func (m *MockAccountKeeper) EXPECT() *MockAccountKeeperMockRecorder {
 }
 
 // GetModuleAccount mocks base method.
-func (m *MockAccountKeeper) GetModuleAccount(ctx types.Context, name string) types0.ModuleAccountI {
+func (m *MockAccountKeeper) GetModuleAccount(ctx types0.Context, name string) types1.ModuleAccountI {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetModuleAccount", ctx, name)
-	ret0, _ := ret[0].(types0.ModuleAccountI)
+	ret0, _ := ret[0].(types1.ModuleAccountI)
 	return ret0
 }
 
@@ -1025,18 +1048,19 @@ func (m *MockIBCTransferKeeper) EXPECT() *MockIBCTransferKeeperMockRecorder {
 	return m.recorder
 }
 
-// SendTransfer mocks base method.
-func (m *MockIBCTransferKeeper) SendTransfer(ctx types.Context, sourcePort, sourceChannel string, token types.Coin, sender types.AccAddress, receiver string, timeoutHeight types4.Height, timeoutTimestamp uint64) error {
+// Transfer mocks base method.
+func (m *MockIBCTransferKeeper) Transfer(arg0 context.Context, arg1 *types5.MsgTransfer) (*types5.MsgTransferResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendTransfer", ctx, sourcePort, sourceChannel, token, sender, receiver, timeoutHeight, timeoutTimestamp)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "Transfer", arg0, arg1)
+	ret0, _ := ret[0].(*types5.MsgTransferResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// SendTransfer indicates an expected call of SendTransfer.
-func (mr *MockIBCTransferKeeperMockRecorder) SendTransfer(ctx, sourcePort, sourceChannel, token, sender, receiver, timeoutHeight, timeoutTimestamp interface{}) *gomock.Call {
+// Transfer indicates an expected call of Transfer.
+func (mr *MockIBCTransferKeeperMockRecorder) Transfer(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendTransfer", reflect.TypeOf((*MockIBCTransferKeeper)(nil).SendTransfer), ctx, sourcePort, sourceChannel, token, sender, receiver, timeoutHeight, timeoutTimestamp)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Transfer", reflect.TypeOf((*MockIBCTransferKeeper)(nil).Transfer), arg0, arg1)
 }
 
 // MockIBCCoreKeeper is a mock of IBCCoreKeeper interface.
@@ -1063,10 +1087,10 @@ func (m *MockIBCCoreKeeper) EXPECT() *MockIBCCoreKeeperMockRecorder {
 }
 
 // ChannelOpenInit mocks base method.
-func (m *MockIBCCoreKeeper) ChannelOpenInit(goCtx context.Context, msg *types6.MsgChannelOpenInit) (*types6.MsgChannelOpenInitResponse, error) {
+func (m *MockIBCCoreKeeper) ChannelOpenInit(goCtx context.Context, msg *types8.MsgChannelOpenInit) (*types8.MsgChannelOpenInitResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ChannelOpenInit", goCtx, msg)
-	ret0, _ := ret[0].(*types6.MsgChannelOpenInitResponse)
+	ret0, _ := ret[0].(*types8.MsgChannelOpenInitResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1101,7 +1125,7 @@ func (m *MockScopedKeeper) EXPECT() *MockScopedKeeperMockRecorder {
 }
 
 // AuthenticateCapability mocks base method.
-func (m *MockScopedKeeper) AuthenticateCapability(ctx types.Context, cap *types1.Capability, name string) bool {
+func (m *MockScopedKeeper) AuthenticateCapability(ctx types0.Context, cap *types2.Capability, name string) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AuthenticateCapability", ctx, cap, name)
 	ret0, _ := ret[0].(bool)
@@ -1115,7 +1139,7 @@ func (mr *MockScopedKeeperMockRecorder) AuthenticateCapability(ctx, cap, name in
 }
 
 // ClaimCapability mocks base method.
-func (m *MockScopedKeeper) ClaimCapability(ctx types.Context, cap *types1.Capability, name string) error {
+func (m *MockScopedKeeper) ClaimCapability(ctx types0.Context, cap *types2.Capability, name string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ClaimCapability", ctx, cap, name)
 	ret0, _ := ret[0].(error)
@@ -1129,10 +1153,10 @@ func (mr *MockScopedKeeperMockRecorder) ClaimCapability(ctx, cap, name interface
 }
 
 // GetCapability mocks base method.
-func (m *MockScopedKeeper) GetCapability(ctx types.Context, name string) (*types1.Capability, bool) {
+func (m *MockScopedKeeper) GetCapability(ctx types0.Context, name string) (*types2.Capability, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCapability", ctx, name)
-	ret0, _ := ret[0].(*types1.Capability)
+	ret0, _ := ret[0].(*types2.Capability)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }

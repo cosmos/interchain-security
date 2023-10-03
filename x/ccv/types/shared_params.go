@@ -4,8 +4,9 @@ import (
 	fmt "fmt"
 	"time"
 
+	ibchost "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 )
 
 const (

@@ -3,10 +3,12 @@ package integration
 import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	testutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
-	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	"github.com/tendermint/tendermint/crypto"
-	tmtypes "github.com/tendermint/tendermint/types"
+
+	tmcrypto "github.com/cometbft/cometbft/crypto"
+	tmtypes "github.com/cometbft/cometbft/types"
+
+	testutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // TestHandleConsumerDoubleVoting verifies that handling a double voting evidence
@@ -80,7 +82,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		name    string
 		ev      *tmtypes.DuplicateVoteEvidence
 		chainID string
-		pubkey  crypto.PubKey
+		pubkey  tmcrypto.PubKey
 		expPass bool
 	}{
 		{
@@ -162,7 +164,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 			provAddr := s.providerApp.GetProviderKeeper().GetProviderAddrFromConsumerAddr(s.providerCtx(), s.consumerChain.ChainID, consuAddr)
 
 			validator, _ := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr.ToSdkConsAddr().Bytes())
-			initialTokens := validator.GetTokens().ToDec()
+			initialTokens := sdk.NewDecFromInt(validator.GetTokens())
 
 			// reset context for each run
 			provCtx, _ := s.providerCtx().CacheContext()
@@ -195,7 +197,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				// verifies that the val gets slashed and has fewer tokens after the slashing
 				val, _ := s.providerApp.GetTestStakingKeeper().GetValidator(provCtx, provAddr.ToSdkConsAddr().Bytes())
 				slashFraction := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(provCtx)
-				actualTokens := val.GetTokens().ToDec()
+				actualTokens := sdk.NewDecFromInt(val.GetTokens())
 				s.Require().True(initialTokens.Sub(initialTokens.Mul(slashFraction)).Equal(actualTokens))
 			} else {
 				s.Require().Error(err)
@@ -308,8 +310,8 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegations() {
 		ubds, _ := s.providerApp.GetTestStakingKeeper().GetUnbondingDelegation(s.providerCtx(), delAddr, validator.GetOperator())
 		s.Require().True(len(ubds.Entries) > 0)
 		for _, unb := range ubds.Entries {
-			initialBalance := unb.InitialBalance.ToDec()
-			currentBalance := unb.Balance.ToDec()
+			initialBalance := sdk.NewDecFromInt(unb.InitialBalance)
+			currentBalance := sdk.NewDecFromInt(unb.Balance)
 			s.Require().True(initialBalance.Sub(initialBalance.Mul(slashFraction)).Equal(currentBalance))
 		}
 	})

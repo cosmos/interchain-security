@@ -6,32 +6,32 @@ import (
 	"testing"
 	"time"
 
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	abci "github.com/tendermint/tendermint/abci/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	consumerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/v2/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/v2/x/ccv/types"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmdb "github.com/tendermint/tm-db"
-
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/cosmos/cosmos-sdk/store"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	tmdb "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // Parameters needed to instantiate an in-memory keeper
@@ -50,8 +50,8 @@ func NewInMemKeeperParams(tb testing.TB) InMemKeeperParams {
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
-	stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
+	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
 	require.NoError(tb, stateStore.LoadLatestVersion())
 
 	registry := codectypes.NewInterfaceRegistry()
@@ -192,7 +192,7 @@ func GetNewSlashPacketData() types.SlashPacketData {
 			Power:   int64(binary.BigEndian.Uint64(b1)),
 		},
 		ValsetUpdateId: binary.BigEndian.Uint64(b2),
-		Infraction:     stakingtypes.InfractionType(binary.BigEndian.Uint64(b2) % 3),
+		Infraction:     stakingtypes.Infraction(binary.BigEndian.Uint64(b2) % 3),
 	}
 }
 
@@ -204,7 +204,10 @@ func GetNewVSCMaturedPacketData() types.VSCMaturedPacketData {
 }
 
 // SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
-// which asserts that a consumer chain was properly stopped from StopConsumerChain().
+// which assert that a consumer chain was properly setup to be later stopped from `StopConsumerChain`.
+// Note: This function only setups and tests that we correctly setup a consumer chain that we could later stop when
+// calling `StopConsumerChain` -- this does NOT necessarily mean that the consumer chain is stopped.
+// Also see `TestProviderStateIsCleanedAfterConsumerChainIsStopped`.
 func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers,
 ) {
@@ -212,7 +215,6 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
 		"chainID", clienttypes.NewHeight(4, 5))
 	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
-	expectations = append(expectations, GetMocksForStopConsumerChain(ctx, &mocks)...)
 
 	gomock.InOrder(expectations...)
 
@@ -221,6 +223,43 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	require.NoError(t, err)
 	err = providerKeeper.SetConsumerChain(ctx, "channelID")
 	require.NoError(t, err)
+}
+
+// TestProviderStateIsCleanedAfterConsumerChainIsStopped executes test assertions for the provider's state being cleaned
+// after a stopped consumer chain.
+func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
+	expectedChainID, expectedChannelID string,
+) {
+	t.Helper()
+	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
+	require.False(t, found)
+	_, found = providerKeeper.GetChainToChannel(ctx, expectedChainID)
+	require.False(t, found)
+	_, found = providerKeeper.GetChannelToChain(ctx, expectedChannelID)
+	require.False(t, found)
+	_, found = providerKeeper.GetInitChainHeight(ctx, expectedChainID)
+	require.False(t, found)
+	acks := providerKeeper.GetSlashAcks(ctx, expectedChainID)
+	require.Empty(t, acks)
+	_, found = providerKeeper.GetInitTimeoutTimestamp(ctx, expectedChainID)
+	require.False(t, found)
+
+	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, expectedChainID))
+
+	// test key assignment state is cleaned
+	require.Empty(t, providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &expectedChainID))
+	require.Empty(t, providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &expectedChainID))
+	require.Empty(t, providerKeeper.GetAllKeyAssignmentReplacements(ctx, expectedChainID))
+	require.Empty(t, providerKeeper.GetAllConsumerAddrsToPrune(ctx, expectedChainID))
+
+	allGlobalEntries := providerKeeper.GetAllGlobalSlashEntries(ctx)
+	for _, entry := range allGlobalEntries {
+		require.NotEqual(t, expectedChainID, entry.ConsumerChainID)
+	}
+
+	slashPacketData, vscMaturedPacketData, _, _ := providerKeeper.GetAllThrottledPacketData(ctx, expectedChainID)
+	require.Empty(t, slashPacketData)
+	require.Empty(t, vscMaturedPacketData)
 }
 
 func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
@@ -232,13 +271,13 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 		[]byte("gen_hash"),
 		[]byte("bin_hash"),
 		time.Now(),
-		consumertypes.DefaultConsumerRedistributeFrac,
-		consumertypes.DefaultBlocksPerDistributionTransmission,
+		types.DefaultConsumerRedistributeFrac,
+		types.DefaultBlocksPerDistributionTransmission,
 		"",
-		consumertypes.DefaultHistoricalEntries,
+		types.DefaultHistoricalEntries,
 		types.DefaultCCVTimeoutPeriod,
-		consumertypes.DefaultTransferTimeoutPeriod,
-		consumertypes.DefaultConsumerUnbondingPeriod,
+		types.DefaultTransferTimeoutPeriod,
+		types.DefaultConsumerUnbondingPeriod,
 	).(*providertypes.ConsumerAdditionProposal)
 
 	return prop

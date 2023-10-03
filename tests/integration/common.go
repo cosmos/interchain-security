@@ -4,23 +4,28 @@ import (
 	"fmt"
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/interchain-security/v2/legacy_ibc_testing/testing"
-	icstestingutils "github.com/cosmos/interchain-security/v2/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/v2/testutil/integration"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
-	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmtypes "github.com/tendermint/tendermint/types"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmtypes "github.com/cometbft/cometbft/types"
+
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // ChainType defines the type of chain (either provider or consumer)
@@ -84,13 +89,13 @@ func (s *CCVTestSuite) setDefaultValSigningInfo(tmVal tmtypes.Validator) {
 	s.providerApp.GetTestSlashingKeeper().SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
 }
 
-func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
+func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) math.Int {
 	return s.providerApp.GetTestBankKeeper().GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }
 
 // delegateAndUndelegate delegates bondAmt from delAddr to the first validator
 // and then immediately undelegates 1/shareDiv of that delegation
-func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, shareDiv int64) (initBalance sdk.Int, valsetUpdateId uint64) {
+func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int, shareDiv int64) (initBalance math.Int, valsetUpdateId uint64) {
 	// delegate
 	initBalance, shares, valAddr := delegate(s, delAddr, bondAmt)
 
@@ -112,7 +117,7 @@ func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.
 // Note: This function advances blocks in-between operations, where validator powers are
 // not checked, since they are checked in integration tests.
 func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
-	srcValAddr, dstValAddr sdk.ValAddress, amount sdk.Int,
+	srcValAddr, dstValAddr sdk.ValAddress, amount math.Int,
 ) {
 	// Delegate to src validator
 	srcValTokensBefore := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
@@ -142,12 +147,12 @@ func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
 }
 
 // delegate delegates bondAmt to the first validator
-func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBalance sdk.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
+func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int) (initBalance math.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
 	return delegateByIdx(s, delAddr, bondAmt, 0)
 }
 
 // delegateByIdx delegates bondAmt to the validator at specified index in provider val set
-func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, idx int) (initBalance sdk.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
+func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math.Int, idx int) (initBalance math.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
 	initBalance = getBalance(s, s.providerCtx(), delAddr)
 	// choose a validator
 	validator, valAddr := s.getValByIdx(idx)
@@ -210,20 +215,42 @@ func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddre
 	}
 }
 
+func (s *CCVTestSuite) newPacketFromProvider(data []byte, sequence uint64, path *ibctesting.Path, timeoutHeight clienttypes.Height, timeoutTimestamp uint64) channeltypes.Packet {
+	return channeltypes.NewPacket(data, sequence,
+		path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID,
+		path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID,
+		timeoutHeight, timeoutTimestamp)
+}
+
+func (s *CCVTestSuite) newPacketFromConsumer(data []byte, sequence uint64, path *ibctesting.Path, timeoutHeight clienttypes.Height, timeoutTimestamp uint64) channeltypes.Packet {
+	return channeltypes.NewPacket(data, sequence,
+		path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID,
+		path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID,
+		timeoutHeight, timeoutTimestamp)
+}
+
 // sendOnProviderRecvOnConsumer sends a packet from the provider chain and receives it on the consumer chain
-func sendOnProviderRecvOnConsumer(s *CCVTestSuite, path *ibctesting.Path, packet channeltypes.Packet) {
-	err := path.EndpointB.SendPacket(packet)
+func sendOnProviderRecvOnConsumer(s *CCVTestSuite, path *ibctesting.Path, timeoutHeight clienttypes.Height, timeoutTimestamp uint64, data []byte) channeltypes.Packet {
+	sequence, err := path.EndpointB.SendPacket(timeoutHeight, timeoutTimestamp, data)
 	s.Require().NoError(err)
+
+	packet := s.newPacketFromProvider(data, sequence, path, timeoutHeight, timeoutTimestamp)
+
 	err = path.EndpointA.RecvPacket(packet)
 	s.Require().NoError(err)
+	return packet
 }
 
 // sendOnConsumerRecvOnProvider sends a packet from the consumer chain and receives it on the provider chain
-func sendOnConsumerRecvOnProvider(s *CCVTestSuite, path *ibctesting.Path, packet channeltypes.Packet) {
-	err := path.EndpointA.SendPacket(packet)
+func sendOnConsumerRecvOnProvider(s *CCVTestSuite, path *ibctesting.Path, timeoutHeight clienttypes.Height, timeoutTimestamp uint64, data []byte) channeltypes.Packet {
+	sequence, err := path.EndpointA.SendPacket(timeoutHeight, timeoutTimestamp, data)
 	s.Require().NoError(err)
+
+	packet := s.newPacketFromConsumer(data, sequence, path, timeoutHeight, timeoutTimestamp)
+
 	err = path.EndpointB.RecvPacket(packet)
 	s.Require().NoError(err)
+	return packet
 }
 
 // relayAllCommittedPackets relays all committed packets from `srcChain` on `path`
@@ -251,7 +278,7 @@ func relayAllCommittedPackets(
 	// relay all packets from srcChain to counterparty
 	for _, commitment := range commitments {
 		// - get packets
-		packet, found := srcChain.GetSentPacket(commitment.Sequence, srcChannelID)
+		packet, found := s.getSentPacket(srcChain, commitment.Sequence, srcChannelID)
 		s.Require().True(
 			found,
 			fmt.Sprintf("did not find sent packet; %s", msgAndArgs...),
@@ -273,7 +300,7 @@ func relayAllCommittedPackets(
 // to be one day larger than the consumer unbonding period.
 func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	// Get unboding periods
-	providerUnbondingPeriod := s.providerApp.GetStakingKeeper().UnbondingTime(s.providerCtx())
+	providerUnbondingPeriod := s.providerApp.GetTestStakingKeeper().UnbondingTime(s.providerCtx())
 	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerCtx())
 	var jumpPeriod time.Duration
 	if chainType == Provider {
@@ -369,14 +396,7 @@ func (suite *CCVTestSuite) SendEmptyVSCPacket() {
 		nil,
 	)
 
-	seq, ok := suite.providerApp.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
-		suite.providerChain.GetContext(), ccv.ProviderPortID, suite.path.EndpointB.ChannelID)
-	suite.Require().True(ok)
-
-	packet := channeltypes.NewPacket(pd.GetBytes(), seq, ccv.ProviderPortID, suite.path.EndpointB.ChannelID,
-		ccv.ConsumerPortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
-
-	sendOnProviderRecvOnConsumer(suite, suite.getFirstBundle().Path, packet)
+	sendOnProviderRecvOnConsumer(suite, suite.getFirstBundle().Path, clienttypes.Height{}, timeout, pd.GetBytes())
 }
 
 // commitSlashPacket returns a commit hash for the given slash packet data
@@ -398,8 +418,7 @@ func (suite *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.
 	oldBlockTime := ctx.BlockTime()
 	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID, suite.path.EndpointA.ChannelID,
-		ccv.ProviderPortID, suite.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
+	packet := suite.newPacketFromConsumer(packetData.GetBytes(), 1, suite.path, clienttypes.Height{}, timeout)
 
 	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)
 }
@@ -407,12 +426,12 @@ func (suite *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.
 // constructSlashPacketFromConsumer constructs an IBC packet embedding
 // slash packet data to be sent from consumer to provider
 func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
-	tmVal tmtypes.Validator, infractionType stakingtypes.InfractionType, ibcSeqNum uint64,
-) channeltypes.Packet {
+	tmVal tmtypes.Validator, infractionType stakingtypes.Infraction,
+) ccv.ConsumerPacketData {
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
 
-	data := ccv.ConsumerPacketData{
+	return ccv.ConsumerPacketData{
 		Type: ccv.SlashPacket,
 		Data: &ccv.ConsumerPacketData_SlashPacketData{
 			SlashPacketData: &ccv.SlashPacketData{
@@ -425,42 +444,20 @@ func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.C
 			},
 		},
 	}
-
-	return channeltypes.NewPacket(data.GetBytes(),
-		ibcSeqNum,
-		ccv.ConsumerPortID,              // Src port
-		bundle.Path.EndpointA.ChannelID, // Src channel
-		ccv.ProviderPortID,              // Dst port
-		bundle.Path.EndpointB.ChannelID, // Dst channel
-		clienttypes.Height{},
-		uint64(bundle.GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano()),
-	)
 }
 
 // constructVSCMaturedPacketFromConsumer constructs an IBC packet embedding
 // VSC Matured packet data to be sent from consumer to provider
-func (s *CCVTestSuite) constructVSCMaturedPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
-	ibcSeqNum uint64,
-) channeltypes.Packet {
+func (s *CCVTestSuite) constructVSCMaturedPacketFromConsumer(bundle icstestingutils.ConsumerBundle) ccv.ConsumerPacketData {
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
 
-	data := ccv.ConsumerPacketData{
+	return ccv.ConsumerPacketData{
 		Type: ccv.VscMaturedPacket,
 		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
 			VscMaturedPacketData: &ccv.VSCMaturedPacketData{ValsetUpdateId: valsetUpdateId},
 		},
 	}
-
-	return channeltypes.NewPacket(data.GetBytes(),
-		ibcSeqNum,
-		ccv.ConsumerPortID,              // Src port
-		bundle.Path.EndpointA.ChannelID, // Src channel
-		ccv.ProviderPortID,              // Dst port
-		bundle.Path.EndpointB.ChannelID, // Dst channel
-		clienttypes.Height{},
-		uint64(bundle.GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano()),
-	)
 }
 
 // incrementTime increments the overall time by jumpPeriod
@@ -556,7 +553,7 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
 	clientState := ibctm.NewClientState(
 		endpoint.Counterparty.Chain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
-		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
+		height, commitmenttypes.GetSDKSpecs(), UpgradePath,
 	)
 	consensusState := endpoint.Counterparty.Chain.LastHeader.ConsensusState()
 

@@ -1,8 +1,7 @@
 package types
 
 import (
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 func NewConsumerStates(
@@ -10,7 +9,7 @@ func NewConsumerStates(
 	clientID,
 	channelID string,
 	initialHeight uint64,
-	genesis consumertypes.GenesisState,
+	genesis ccv.ConsumerGenesisState,
 	unbondingOpsIndexes []VscUnbondingOps,
 	pendingValsetChanges []ccv.ValidatorSetChangePacketData,
 	slashDowntimeAck []string,

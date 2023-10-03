@@ -3,13 +3,16 @@ package integration
 import (
 	"strings"
 
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 
-	consumertypes "github.com/cosmos/interchain-security/v2/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v2/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/integration"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // This test is valid for minimal viable consumer chain
@@ -23,7 +26,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.providerChain.NextBlock()
 
 	// register a consumer reward denom
-	params := s.consumerApp.GetConsumerKeeper().GetParams(s.consumerCtx())
+	params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
 	params.RewardDenoms = []string{sdk.DefaultBondDenom}
 	s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
 
@@ -32,7 +35,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 
 	// reward for the provider chain will be sent after each 2 blocks
 	consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
-	consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(2))
+	consumerParams.Set(s.consumerCtx(), ccv.KeyBlocksPerDistributionTransmission, int64(2))
 	s.consumerChain.NextBlock()
 
 	consumerAccountKeeper := s.consumerApp.GetTestAccountKeeper()
@@ -53,7 +56,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	frac, err := sdk.NewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
 	s.Require().NoError(err)
 	consumerExpectedRewards, _ := sdk.NewDecCoinsFromCoins(feePoolTokens...).MulDec(frac).TruncateDecimal()
-	providerExpectedRewards := feePoolTokens.Sub(consumerExpectedRewards)
+	providerExpectedRewards := feePoolTokens.Sub(consumerExpectedRewards...)
 	s.consumerChain.NextBlock()
 
 	// amount from the fee pool is divided between consumer redistribute address and address reserved for provider chain
@@ -124,7 +127,7 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 	s.providerChain.NextBlock()
 
 	// Register denom on consumer chain
-	params := s.consumerApp.GetConsumerKeeper().GetParams(s.consumerCtx())
+	params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
 	params.RewardDenoms = []string{sdk.DefaultBondDenom}
 	s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
 
@@ -136,7 +139,7 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 
 	// reward for the provider chain will be sent after each 1000 blocks
 	consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
-	consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(1000))
+	consumerParams.Set(s.consumerCtx(), ccv.KeyBlocksPerDistributionTransmission, int64(1000))
 
 	// fill fee pool
 	fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
@@ -253,7 +256,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		s.providerChain.NextBlock()
 
 		if tc.denomRegistered {
-			params := s.consumerApp.GetConsumerKeeper().GetParams(s.consumerCtx())
+			params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
 			params.RewardDenoms = []string{sdk.DefaultBondDenom}
 			s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
 		}
@@ -266,7 +269,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 
 		// reward for the provider chain will be sent after each 1000 blocks
 		consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
-		consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(1000))
+		consumerParams.Set(s.consumerCtx(), ccv.KeyBlocksPerDistributionTransmission, int64(1000))
 
 		// fill fee pool
 		fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100)))
@@ -308,8 +311,151 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 	}
 }
 
+// TestSendRewardsToProvider is effectively a unit test for SendRewardsToProvider(),
+// but is written as an integration test to avoid excessive mocking.
+func (s *CCVTestSuite) TestSendRewardsToProvider() {
+	testCases := []struct {
+		name           string
+		setup          func(sdk.Context, *consumerkeeper.Keeper, icstestingutils.TestBankKeeper)
+		expError       bool
+		tokenTransfers int
+	}{
+		{
+			name: "successful token transfer",
+			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				s.SetupTransferChannel()
+
+				// register a consumer reward denom
+				params := keeper.GetConsumerParams(ctx)
+				params.RewardDenoms = []string{sdk.DefaultBondDenom}
+				keeper.SetParams(ctx, params)
+
+				// send coins to the pool which is used for collect reward distributions to be sent to the provider
+				err := bankKeeper.SendCoinsFromAccountToModule(
+					ctx,
+					s.consumerChain.SenderAccount.GetAddress(),
+					consumertypes.ConsumerToSendToProviderName,
+					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))),
+				)
+				s.Require().NoError(err)
+			},
+			expError:       false,
+			tokenTransfers: 1,
+		},
+		{
+			name: "no transfer channel",
+			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+			},
+			expError:       false,
+			tokenTransfers: 0,
+		},
+		{
+			name: "no reward denom",
+			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				s.SetupTransferChannel()
+			},
+			expError:       false,
+			tokenTransfers: 0,
+		},
+		{
+			name: "reward balance is zero",
+			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				s.SetupTransferChannel()
+
+				// register a consumer reward denom
+				params := keeper.GetConsumerParams(ctx)
+				params.RewardDenoms = []string{"uatom"}
+				keeper.SetParams(ctx, params)
+
+				denoms := keeper.AllowedRewardDenoms(ctx)
+				s.Require().Len(denoms, 1)
+			},
+			expError:       false,
+			tokenTransfers: 0,
+		},
+		{
+			name: "no distribution transmission channel",
+			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				s.SetupTransferChannel()
+
+				// register a consumer reward denom
+				params := keeper.GetConsumerParams(ctx)
+				params.RewardDenoms = []string{sdk.DefaultBondDenom}
+				params.DistributionTransmissionChannel = ""
+				keeper.SetParams(ctx, params)
+
+				// send coins to the pool which is used for collect reward distributions to be sent to the provider
+				err := bankKeeper.SendCoinsFromAccountToModule(
+					ctx,
+					s.consumerChain.SenderAccount.GetAddress(),
+					consumertypes.ConsumerToSendToProviderName,
+					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))),
+				)
+				s.Require().NoError(err)
+			},
+			expError:       false,
+			tokenTransfers: 0,
+		},
+		{
+			name: "no recipient address",
+			setup: func(ctx sdk.Context, keeper *consumerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {
+				s.SetupTransferChannel()
+
+				// register a consumer reward denom
+				params := keeper.GetConsumerParams(ctx)
+				params.RewardDenoms = []string{sdk.DefaultBondDenom}
+				params.ProviderFeePoolAddrStr = ""
+				keeper.SetParams(ctx, params)
+
+				// send coins to the pool which is used for collect reward distributions to be sent to the provider
+				err := bankKeeper.SendCoinsFromAccountToModule(
+					ctx,
+					s.consumerChain.SenderAccount.GetAddress(),
+					consumertypes.ConsumerToSendToProviderName,
+					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))),
+				)
+				s.Require().NoError(err)
+			},
+			expError:       true,
+			tokenTransfers: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.SetupTest()
+
+		// ccv channels setup
+		s.SetupCCVChannel(s.path)
+		bondAmt := sdk.NewInt(10000000)
+		delAddr := s.providerChain.SenderAccount.GetAddress()
+		delegate(s, delAddr, bondAmt)
+		s.providerChain.NextBlock()
+
+		// customized setup
+		consumerCtx := s.consumerCtx()
+		consumerKeeper := s.consumerApp.GetConsumerKeeper()
+		tc.setup(consumerCtx, &consumerKeeper, s.consumerApp.GetTestBankKeeper())
+
+		// call SendRewardsToProvider
+		err := s.consumerApp.GetConsumerKeeper().SendRewardsToProvider(consumerCtx)
+		if tc.expError {
+			s.Require().Error(err)
+		} else {
+			s.Require().NoError(err)
+		}
+
+		// check whether the amount of token transfers is as expected
+		commitments := s.consumerApp.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
+			consumerCtx,
+			transfertypes.PortID,
+			s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(consumerCtx),
+		)
+		s.Require().Len(commitments, tc.tokenTransfers, "unexpected amount of token transfers; test: %s", tc.name)
+	}
+}
+
 // getEscrowBalance gets the current balances in the escrow account holding the transferred tokens to the provider
-func (s CCVTestSuite) getEscrowBalance() sdk.Coins { //nolint:govet // we copy locks for this test
+func (s *CCVTestSuite) getEscrowBalance() sdk.Coins {
 	consumerBankKeeper := s.consumerApp.GetTestBankKeeper()
 	transChanID := s.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(s.consumerCtx())
 	escAddr := transfertypes.GetEscrowAddress(transfertypes.PortID, transChanID)
