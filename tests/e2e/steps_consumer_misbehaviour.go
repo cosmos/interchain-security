@@ -230,7 +230,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 						ValidatorID("alice"): 511,
 						ValidatorID("bob"):   20,
 					},
-					RepresentativePowers: &map[ValidatorID]uint{
+					StakedTokens: &map[ValidatorID]uint{
 						ValidatorID("alice"): 511000000,
 						ValidatorID("bob"):   20000000,
 					},
@@ -261,7 +261,7 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 					},
 					// "alice" should be slashed on the provider, hence representative
 					// power is 511000000 - 0.05 * 511000000 = 485450000
-					RepresentativePowers: &map[ValidatorID]uint{
+					StakedTokens: &map[ValidatorID]uint{
 						ValidatorID("alice"): 485450000,
 						ValidatorID("bob"):   20000000,
 					},

@@ -70,7 +70,7 @@ func stepsCauseDoubleSignOnConsumer(consumerName, providerName string) []Step {
 						ValidatorID("bob"):   500,
 						ValidatorID("carol"): 500,
 					},
-					RepresentativePowers: &map[ValidatorID]uint{
+					StakedTokens: &map[ValidatorID]uint{
 						ValidatorID("alice"): 500000000,
 						ValidatorID("bob"):   500000000,
 						ValidatorID("carol"): 500000000,
@@ -100,7 +100,7 @@ func stepsCauseDoubleSignOnConsumer(consumerName, providerName string) []Step {
 					},
 					// "bob" gets slashed on the provider chain, hence representative
 					// power is 500000000 - 0.05 * 500000000 = 475000000
-					RepresentativePowers: &map[ValidatorID]uint{
+					StakedTokens: &map[ValidatorID]uint{
 						ValidatorID("alice"): 500000000,
 						ValidatorID("bob"):   475000000,
 						ValidatorID("carol"): 500000000,
@@ -130,7 +130,7 @@ func stepsCauseDoubleSignOnConsumer(consumerName, providerName string) []Step {
 						ValidatorID("bob"):   0,
 						ValidatorID("carol"): 500,
 					},
-					RepresentativePowers: &map[ValidatorID]uint{
+					StakedTokens: &map[ValidatorID]uint{
 						ValidatorID("alice"): 500000000,
 						ValidatorID("bob"):   475000000,
 						ValidatorID("carol"): 500000000,

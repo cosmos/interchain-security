@@ -18,15 +18,15 @@ type forkConsumerChainAction struct {
 	RelayerConfig string
 }
 
-func (tr TestRun) forkConsumerChain(action forkConsumerChainAction, verbose bool) {
-	valCfg := tr.validatorConfigs[action.Validator]
+func (tc TestConfig) forkConsumerChain(action forkConsumerChainAction, verbose bool) {
+	valCfg := tc.validatorConfigs[action.Validator]
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	configureNodeCmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "/bin/bash",
-		"/testnet-scripts/fork-consumer.sh", tr.chainConfigs[action.ConsumerChain].BinaryName,
+	configureNodeCmd := exec.Command("docker", "exec", tc.containerConfig.InstanceName, "/bin/bash",
+		"/testnet-scripts/fork-consumer.sh", tc.chainConfigs[action.ConsumerChain].BinaryName,
 		string(action.Validator), string(action.ConsumerChain),
-		tr.chainConfigs[action.ConsumerChain].IpPrefix,
-		tr.chainConfigs[action.ProviderChain].IpPrefix,
+		tc.chainConfigs[action.ConsumerChain].IpPrefix,
+		tc.chainConfigs[action.ProviderChain].IpPrefix,
 		valCfg.Mnemonic,
 		action.RelayerConfig,
 	)
@@ -70,15 +70,15 @@ type updateLightClientAction struct {
 	ClientID      string
 }
 
-func (tr TestRun) updateLightClient(
+func (tc TestConfig) updateLightClient(
 	action updateLightClientAction,
 	verbose bool,
 ) {
 	// retrieve a trusted height of the consumer light client
-	trustedHeight := tr.getTrustedHeight(action.HostChain, action.ClientID, 2)
+	trustedHeight := tc.getTrustedHeight(action.HostChain, action.ClientID, 2)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "hermes",
+	cmd := exec.Command("docker", "exec", tc.containerConfig.InstanceName, "hermes",
 		"--config", action.RelayerConfig,
 		"update",
 		"client",
@@ -95,7 +95,7 @@ func (tr TestRun) updateLightClient(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	tr.waitBlocks(action.HostChain, 5, 30*time.Second)
+	tc.waitBlocks(action.HostChain, 5, 30*time.Second)
 }
 
 type assertChainIsHaltedAction struct {
@@ -104,13 +104,13 @@ type assertChainIsHaltedAction struct {
 
 // assertChainIsHalted verifies that the chain isn't producing blocks
 // by checking that the block height is still the same after 20 seconds
-func (tr TestRun) assertChainIsHalted(
+func (tc TestConfig) assertChainIsHalted(
 	action assertChainIsHaltedAction,
 	verbose bool,
 ) {
-	blockHeight := tr.getBlockHeight(action.chain)
+	blockHeight := tc.getBlockHeight(action.chain)
 	time.Sleep(20 * time.Second)
-	if blockHeight != tr.getBlockHeight(action.chain) {
+	if blockHeight != tc.getBlockHeight(action.chain) {
 		panic(fmt.Sprintf("chain %v isn't expected to produce blocks", action.chain))
 	}
 	if verbose {
