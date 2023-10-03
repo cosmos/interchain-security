@@ -16,7 +16,6 @@ import (
 	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -34,8 +33,8 @@ type StakingKeeper interface {
 	Jail(sdk.Context, sdk.ConsAddress) // jail a validator
 	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec) math.Int
 	SlashWithInfractionReason(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec, stakingtypes.Infraction) math.Int
-	SlashUnbondingDelegation(sdk.Context, types.UnbondingDelegation, int64, sdk.Dec) math.Int
-	SlashRedelegation(sdk.Context, types.Validator, types.Redelegation, int64, sdk.Dec) math.Int
+	SlashUnbondingDelegation(sdk.Context, stakingtypes.UnbondingDelegation, int64, sdk.Dec) math.Int
+	SlashRedelegation(sdk.Context, stakingtypes.Validator, stakingtypes.Redelegation, int64, sdk.Dec) math.Int
 	Unjail(ctx sdk.Context, addr sdk.ConsAddress)
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))

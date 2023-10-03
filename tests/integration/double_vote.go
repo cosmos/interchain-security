@@ -1,10 +1,12 @@
 package integration
 
 import (
-	tmcrypto "github.com/cometbft/cometbft/crypto"
-	tmtypes "github.com/cometbft/cometbft/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	tmcrypto "github.com/cometbft/cometbft/crypto"
+	tmtypes "github.com/cometbft/cometbft/types"
+
 	testutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )

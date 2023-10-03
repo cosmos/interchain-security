@@ -3,11 +3,13 @@ package integration
 import (
 	"time"
 
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 
 	tmtypes "github.com/cometbft/cometbft/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // TestHandleConsumerMisbehaviour tests that handling a valid misbehaviour,

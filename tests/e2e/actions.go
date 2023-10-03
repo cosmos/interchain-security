@@ -1260,11 +1260,6 @@ func (tr TestRun) relayPacketsHermes(
 ) {
 	// hermes clear packets ibc0 transfer channel-13
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	fmt.Println("hermes", "clear", "packets",
-		"--chain", string(tr.chainConfigs[action.ChainA].ChainId),
-		"--port", action.Port,
-		"--channel", "channel-"+fmt.Sprint(action.Channel))
-
 	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "hermes", "clear", "packets",
 		"--chain", string(tr.chainConfigs[action.ChainA].ChainId),
 		"--port", action.Port,

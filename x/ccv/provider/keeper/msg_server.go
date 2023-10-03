@@ -4,15 +4,14 @@ import (
 	"context"
 	"encoding/base64"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-
 	errorsmod "cosmossdk.io/errors"
 
-	tmtypes "github.com/cometbft/cometbft/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	tmtypes "github.com/cometbft/cometbft/types"
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"

@@ -4,11 +4,13 @@ import (
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
@@ -50,7 +52,7 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 // `redelegations`, as well as the current `power` of the validator.
 // Note that this method does not perform any slashing.
 func (k Keeper) ComputePowerToSlash(ctx sdk.Context, validator stakingtypes.Validator, undelegations []stakingtypes.UnbondingDelegation,
-	redelegations []stakingtypes.Redelegation, power int64, powerReduction sdk.Int,
+	redelegations []stakingtypes.Redelegation, power int64, powerReduction math.Int,
 ) int64 {
 	// compute the total numbers of tokens currently being undelegated
 	undelegationsInTokens := sdk.NewInt(0)

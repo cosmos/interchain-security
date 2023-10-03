@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"strings"
 
-	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
+
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -121,7 +125,7 @@ func (msg MsgSubmitConsumerMisbehaviour) Type() string {
 // Type implements the sdk.Msg interface.
 func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
 	if msg.Submitter == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
 	}
 
 	if err := msg.Misbehaviour.ValidateBasic(); err != nil {
@@ -161,7 +165,7 @@ func (msg MsgSubmitConsumerDoubleVoting) Type() string {
 // Type implements the sdk.Msg interface.
 func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 	if msg.Submitter == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, msg.Submitter)
 	}
 	if msg.DuplicateVoteEvidence == nil {
 		return fmt.Errorf("double voting evidence cannot be nil")

@@ -319,7 +319,6 @@ func (tr TestRun) getRewards(chain ChainID, modelState Rewards) Rewards {
 }
 
 func (tr TestRun) getReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
-
 	delAddresss := tr.validatorConfigs[validator].DelAddress
 	if chain != ChainID("provi") && tr.validatorConfigs[validator].UseConsumerKey {
 		delAddresss = tr.validatorConfigs[validator].ConsumerDelAddress

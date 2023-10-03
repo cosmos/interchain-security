@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
+
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	tmtypes "github.com/cometbft/cometbft/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
@@ -67,7 +69,7 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	if evidence.VoteA.Height != evidence.VoteB.Height ||
 		evidence.VoteA.Round != evidence.VoteB.Round ||
 		evidence.VoteA.Type != evidence.VoteB.Type {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"h/r/s does not match: %d/%d/%v vs %d/%d/%v",
 			evidence.VoteA.Height, evidence.VoteA.Round, evidence.VoteA.Type,
@@ -76,7 +78,7 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 
 	// Addresses must be the same
 	if !bytes.Equal(evidence.VoteA.ValidatorAddress, evidence.VoteB.ValidatorAddress) {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"validator addresses do not match: %X vs %X",
 			evidence.VoteA.ValidatorAddress,
@@ -86,7 +88,7 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 
 	// BlockIDs must be different
 	if evidence.VoteA.BlockID.Equals(evidence.VoteB.BlockID) {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"block IDs are the same (%v) - not a real duplicate vote",
 			evidence.VoteA.BlockID,

@@ -4,12 +4,15 @@ import (
 	"testing"
 	"time"
 
-	tmtypes "github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/require"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+
+	tmtypes "github.com/cometbft/cometbft/types"
+
 	testutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
-	"github.com/stretchr/testify/require"
 )
 
 func TestVerifyDoubleVotingEvidence(t *testing.T) {

@@ -3,11 +3,15 @@ package keeper
 import (
 	"fmt"
 
-	tmtypes "github.com/cometbft/cometbft/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+
+	errorsmod "cosmossdk.io/errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	tmtypes "github.com/cometbft/cometbft/types"
+
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
@@ -137,7 +141,7 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
 	clientState, found := k.clientKeeper.GetClientState(ctx, misbehaviour.ClientId)
 	if !found {
-		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot check misbehaviour for client with ID %s", misbehaviour.ClientId)
+		return errorsmod.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot check misbehaviour for client with ID %s", misbehaviour.ClientId)
 	}
 
 	clientStore := k.clientKeeper.ClientStore(ctx, misbehaviour.ClientId)
@@ -146,7 +150,7 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 	// the misbehaviour is for a light client attack and not a time violation,
 	// see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 	if !misbehaviour.Header1.GetHeight().EQ(misbehaviour.Header2.GetHeight()) {
-		return sdkerrors.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
+		return errorsmod.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
 	}
 
 	// CheckMisbehaviourAndUpdateState verifies the misbehaviour against the trusted consensus states
@@ -155,7 +159,7 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 	// see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
 	ok := clientState.CheckForMisbehaviour(ctx, k.cdc, clientStore, &misbehaviour)
 	if !ok {
-		return sdkerrors.Wrapf(ibcclienttypes.ErrInvalidMisbehaviour, "invalid misbehaviour for client-id: %s", misbehaviour.ClientId)
+		return errorsmod.Wrapf(ibcclienttypes.ErrInvalidMisbehaviour, "invalid misbehaviour for client-id: %s", misbehaviour.ClientId)
 	}
 
 	return nil
