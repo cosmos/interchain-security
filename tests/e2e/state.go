@@ -26,7 +26,7 @@ type ChainState struct {
 	Rewards                        *Rewards
 	ConsumerChains                 *map[ChainID]bool
 	AssignedKeys                   *map[ValidatorID]string
-	ProviderKeys                   *map[ValidatorID]string // ValidatorID: validator provider key
+	ProviderKeys                   *map[ValidatorID]string // validatorID: validator provider key
 	ConsumerChainQueueSizes        *map[ChainID]uint
 	GlobalSlashQueueSize           *uint
 	RegisteredConsumerRewardDenoms *[]string
@@ -324,13 +324,6 @@ func (tr TestConfig) getReward(chain ChainID, validator ValidatorID, blockHeight
 		delAddresss = tr.validatorConfigs[validator].ConsumerDelAddress
 	}
 
-	fmt.Println("getReward", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
-		"query", "distribution", "rewards",
-		delAddresss,
-
-		`--height`, fmt.Sprint(blockHeight),
-		`--node`, tr.getQueryNode(chain),
-		`-o`, `json`)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
 

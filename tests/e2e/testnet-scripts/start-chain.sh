@@ -198,7 +198,6 @@ do
         #'s/foo/bar/;s/abc/def/'
         sed -i "$TENDERMINT_CONFIG_TRANSFORM" $CHAIN_ID/validator$VAL_ID/config/config.toml
     fi
-
 done
 
 

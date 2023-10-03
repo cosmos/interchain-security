@@ -1291,9 +1291,6 @@ func (tr TestConfig) relayRewardPacketsToProvider(
 ) {
 	blockPerDistribution, _ := strconv.ParseUint(strings.Trim(tr.getParam(action.ConsumerChain, Param{Subspace: "ccvconsumer", Key: "BlocksPerDistributionTransmission"}), "\""), 10, 64)
 	currentBlock := uint64(tr.getBlockHeight(action.ConsumerChain))
-	fmt.Println("blockPerDistribution", blockPerDistribution)
-	fmt.Println("currentBlock", currentBlock)
-
 	if currentBlock <= blockPerDistribution {
 		tr.waitBlocks(action.ConsumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
 	}

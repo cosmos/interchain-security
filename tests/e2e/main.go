@@ -393,8 +393,6 @@ func (tr *TestConfig) runStep(step Step, verbose bool) {
 		tr.forkConsumerChain(action, verbose)
 	case updateLightClientAction:
 		tr.updateLightClient(action, verbose)
-	case assertChainIsHaltedAction:
-		tr.assertChainIsHalted(action, verbose)
 	case startConsumerEvidenceDetectorAction:
 		tr.startConsumerEvidenceDetector(action, verbose)
 	case submitChangeRewardDenomsProposalAction:

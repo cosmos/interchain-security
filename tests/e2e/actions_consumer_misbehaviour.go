@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os/exec"
 	"strconv"
@@ -96,24 +95,4 @@ func (tc TestConfig) updateLightClient(
 	}
 
 	tc.waitBlocks(action.HostChain, 5, 30*time.Second)
-}
-
-type assertChainIsHaltedAction struct {
-	chain ChainID
-}
-
-// assertChainIsHalted verifies that the chain isn't producing blocks
-// by checking that the block height is still the same after 20 seconds
-func (tc TestConfig) assertChainIsHalted(
-	action assertChainIsHaltedAction,
-	verbose bool,
-) {
-	blockHeight := tc.getBlockHeight(action.chain)
-	time.Sleep(20 * time.Second)
-	if blockHeight != tc.getBlockHeight(action.chain) {
-		panic(fmt.Sprintf("chain %v isn't expected to produce blocks", action.chain))
-	}
-	if verbose {
-		log.Printf("assertChainIsHalted - chain %v was successfully halted\n", action.chain)
-	}
 }
