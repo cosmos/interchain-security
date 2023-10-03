@@ -8,14 +8,17 @@ import (
 	"sort"
 	"strings"
 
-	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/spf13/cobra"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
+
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+
 	consumerTypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
-	"github.com/spf13/cobra"
 )
 
 // The genesis state of the blockchain is represented here as a map of raw json
@@ -79,7 +82,7 @@ var transformationMap = TransformationMap{
 
 // Transform a consumer genesis json file exported from a given ccv provider version
 // to a consumer genesis json format supported by current ccv consumer version.
-// Result will be writen to defined output.
+// Result will be written to defined output.
 func TransformConsumerGenesis(cmd *cobra.Command, args []string, transformationMap TransformationMap) error {
 	sourceVersion := args[0]
 	sourceFile := args[1]
@@ -117,7 +120,7 @@ func TransformConsumerGenesis(cmd *cobra.Command, args []string, transformationM
 // List of provider versions supported by consumer genesis transformations
 func getSupportedTransformationVersions() []string {
 	var keys []string
-	for k, _ := range transformationMap {
+	for k := range transformationMap {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
@@ -131,7 +134,7 @@ func NewDefaultGenesisState(cdc codec.JSONCodec) GenesisState {
 
 // GetConsumerGenesisTransformCmd transforms Consumer Genesis JSON content exported from a specific
 // provider version to a JSON format supported by this consumer version.
-// Note: Provider module version can be received by querying 'module_versions' on the upgrade module.
+// Note: Provider module version can be received by querying 'module_versions' on the 'upgrade' module.
 func GetConsumerGenesisTransformCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "transform [source-version] [genesis-file]",
@@ -143,7 +146,6 @@ Example:
 $ %s transform v2 /path/to/consumer_genesis.json `, strings.Join(getSupportedTransformationVersions(), ", "), version.AppName),
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			//return ModuleBasics.ValidateGenesis(cmd, args, migrationMap)
 			return TransformConsumerGenesis(cmd, args, transformationMap)
 		},
 	}
