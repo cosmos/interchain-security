@@ -95,23 +95,7 @@ Upgrading a provider from `v1.1.0-multiden` to `v2.0.0` will require state migra
 
 Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state migrations. See the consumer module's `ConsensusVersion` in [module](./x/ccv/consumer/module.go)
 
-
-## v2.0.0-lsm
-
-Date: August 18th, 2023
-
-* (deps!) [#1120](https://github.com/cosmos/interchain-security/pull/1120) Bump [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) to [v0.45.16-ics-lsm](https://github.com/cosmos/cosmos-sdk/tree/v0.45.16-ics-lsm). This requires adapting ICS to support this SDK release. Changes are state breaking.
-* (fix) [#720](https://github.com/cosmos/interchain-security/issues/720) Fix the attribute `AttributeDistributionTotal` value in `FeeDistribution` event emit.
-
-## v2.0.0
-
-Date: June 1st, 2023
-
-Unlike prior releases, the ICS `v2.0.0` release will be based on the main branch. `v2.0.0` will contain all the accumulated PRs from the various releases below, along with other PRs that were merged, but not released to production. After `v2.0.0`, we plan to revamp release practices, and how we modularize the repo for consumer/provider.
-
-Upgrading a provider from `v1.1.0-multiden` to `v2.0.0` will require state migrations. See [migration.go](./x/ccv/provider/keeper/migration.go). See the provider module's `ConsensusVersion` in [module](./x/ccv/provider/module.go)
-
-Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state migrations. See the consumer module's `ConsensusVersion` in [module](./x/ccv/consumer/module.go)
+Some PRs from v2.0.0 may reappear from other releases below. This is due to the fact that ICS v1.1.0 deviates from the commit ordering of the main branch, and other releases thereafter are based on v1.1.0.
 
 ### High level changes included in v2.0.0
 
@@ -154,7 +138,6 @@ Upgrading a consumer from `v1.2.0-multiden` to `v2.0.0` will NOT require state m
 * (fix) Update protos and fix deps [#752](https://github.com/cosmos/interchain-security/pull/752)
 * (api) Add consumer QueryParams [#746](https://github.com/cosmos/interchain-security/pull/746)
 * (feature) New validation for keeper fields [#740](https://github.com/cosmos/interchain-security/pull/740)
-
 
 ## v1.2.0-multiden
 
