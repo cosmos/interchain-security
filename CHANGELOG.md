@@ -4,8 +4,7 @@
 
 Add an entry to the unreleased provider section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a provider release.
 
-* (feature!) [#826](https://github.com/cosmos/interchain-security/pull/826) add new endpoint to provider to handle consumer light client attacks
-* (feature!) [#1227](https://github.com/cosmos/interchain-security/pull/1227) add new endpoint to provider to handle consumer double signing attacks
+* (refactor) [#1294](https://github.com/cosmos/interchain-security/pull/1294) Remove the equivocation proposal handler.
 * (feature!) [#1280](https://github.com/cosmos/interchain-security/pull/1280) provider proposal for changing reward denoms
 * (feature!) [#1244](https://github.com/cosmos/interchain-security/pull/1244) Update the default consumer unbonding period to 2 weeks.
 * (deps) [#1259](https://github.com/cosmos/interchain-security/pull/1259) Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to [v0.47.5](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.5).
