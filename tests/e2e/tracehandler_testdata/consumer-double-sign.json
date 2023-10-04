@@ -309,12 +309,10 @@
     "State": {}
   },
   {
-    "ActionType": "main.delegateTokensAction",
+    "ActionType": "main.doublesignSlashAction",
     "Action": {
-      "Chain": "provi",
-      "From": "alice",
-      "To": "alice",
-      "Amount": 11000000
+      "Validator": "bob",
+      "Chain": "consu"
     },
     "State": {
       "consu": {
@@ -339,11 +337,15 @@
       "provi": {
         "ValBalances": null,
         "ValPowers": {
-          "alice": 511,
+          "alice": 500,
           "bob": 500,
           "carol": 500
         },
-        "StakedTokens": null,
+        "StakedTokens": {
+          "alice": 500000000,
+          "bob": 500000000,
+          "carol": 500000000
+        },
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -358,21 +360,42 @@
     }
   },
   {
-    "ActionType": "main.SendTokensAction",
+    "ActionType": "main.startConsumerEvidenceDetectorAction",
     "Action": {
-      "Chain": "consu",
-      "From": "alice",
-      "To": "bob",
-      "Amount": 1
+      "Chain": "consu"
     },
     "State": {
       "consu": {
-        "ValBalances": {
-          "alice": 10000000000,
-          "bob": 10000000000
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 500,
+          "bob": 500,
+          "carol": 500
         },
-        "ValPowers": null,
         "StakedTokens": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerChainQueueSizes": null,
+        "GlobalSlashQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 500,
+          "bob": 0,
+          "carol": 500
+        },
+        "StakedTokens": {
+          "alice": 500000000,
+          "bob": 475000000,
+          "carol": 500000000
+        },
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -398,211 +421,7 @@
       "consu": {
         "ValBalances": null,
         "ValPowers": {
-          "alice": 511,
-          "bob": 500,
-          "carol": 500
-        },
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      }
-    }
-  },
-  {
-    "ActionType": "main.SendTokensAction",
-    "Action": {
-      "Chain": "consu",
-      "From": "alice",
-      "To": "bob",
-      "Amount": 1
-    },
-    "State": {
-      "consu": {
-        "ValBalances": {
-          "alice": 9999999999,
-          "bob": 10000000001
-        },
-        "ValPowers": null,
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      }
-    }
-  },
-  {
-    "ActionType": "main.downtimeSlashAction",
-    "Action": {
-      "Chain": "consu",
-      "Validator": "bob"
-    },
-    "State": {
-      "consu": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 500,
-          "carol": 500
-        },
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      },
-      "provi": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 500,
-          "carol": 500
-        },
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      }
-    }
-  },
-  {
-    "ActionType": "main.relayPacketsAction",
-    "Action": {
-      "ChainA": "provi",
-      "ChainB": "consu",
-      "Port": "provider",
-      "Channel": 0
-    },
-    "State": {
-      "consu": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 500,
-          "carol": 500
-        },
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      },
-      "provi": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 0,
-          "carol": 500
-        },
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerChainQueueSizes": {
-          "consu": 0
-        },
-        "GlobalSlashQueueSize": 0,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      }
-    }
-  },
-  {
-    "ActionType": "main.downtimeSlashAction",
-    "Action": {
-      "Chain": "consu",
-      "Validator": "carol"
-    },
-    "State": {
-      "consu": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 500,
-          "carol": 500
-        },
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      },
-      "provi": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 0,
-          "carol": 500
-        },
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      }
-    }
-  },
-  {
-    "ActionType": "main.relayPacketsAction",
-    "Action": {
-      "ChainA": "provi",
-      "ChainB": "consu",
-      "Port": "provider",
-      "Channel": 0
-    },
-    "State": {
-      "consu": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 511,
+          "alice": 500,
           "bob": 0,
           "carol": 500
         },
@@ -621,43 +440,15 @@
       "provi": {
         "ValBalances": null,
         "ValPowers": {
-          "alice": 511,
+          "alice": 500,
           "bob": 0,
           "carol": 500
         },
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerChainQueueSizes": {
-          "consu": 1
+        "StakedTokens": {
+          "alice": 500000000,
+          "bob": 475000000,
+          "carol": 500000000
         },
-        "GlobalSlashQueueSize": 1,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      }
-    }
-  },
-  {
-    "ActionType": "main.slashThrottleDequeueAction",
-    "Action": {
-      "Chain": "consu",
-      "CurrentQueueSize": 1,
-      "NextQueueSize": 0,
-      "Timeout": 80000000000
-    },
-    "State": {
-      "consu": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 0,
-          "carol": 500
-        },
-        "StakedTokens": null,
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -668,165 +459,6 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "Proposals": null
-      },
-      "provi": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 0,
-          "carol": 0
-        },
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerChainQueueSizes": {
-          "consu": 0
-        },
-        "GlobalSlashQueueSize": 0,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      }
-    }
-  },
-  {
-    "ActionType": "main.relayPacketsAction",
-    "Action": {
-      "ChainA": "provi",
-      "ChainB": "consu",
-      "Port": "provider",
-      "Channel": 0
-    },
-    "State": {
-      "consu": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 0,
-          "carol": 0
-        },
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      },
-      "provi": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 0,
-          "carol": 0
-        },
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerChainQueueSizes": {
-          "consu": 0
-        },
-        "GlobalSlashQueueSize": 0,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      }
-    }
-  },
-  {
-    "ActionType": "main.submitConsumerRemovalProposalAction",
-    "Action": {
-      "Chain": "provi",
-      "From": "bob",
-      "Deposit": 10000001,
-      "ConsumerChain": "consu",
-      "StopTimeOffset": 0
-    },
-    "State": {
-      "provi": {
-        "ValBalances": {
-          "bob": 9489999999
-        },
-        "ValPowers": null,
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": {
-          "consu": true
-        },
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": {
-          "2": {
-            "RawProposal": {
-              "Deposit": 10000001,
-              "Chain": "consu",
-              "StopTime": 0,
-              "Status": "PROPOSAL_STATUS_VOTING_PERIOD"
-            },
-            "Type": "main.ConsumerRemovalProposal"
-          }
-        }
-      }
-    }
-  },
-  {
-    "ActionType": "main.voteGovProposalAction",
-    "Action": {
-      "Chain": "provi",
-      "From": [
-        "alice",
-        "bob",
-        "carol"
-      ],
-      "Vote": [
-        "yes",
-        "yes",
-        "yes"
-      ],
-      "PropNumber": 2
-    },
-    "State": {
-      "provi": {
-        "ValBalances": {
-          "bob": 9500000000
-        },
-        "ValPowers": null,
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": {},
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": {
-          "2": {
-            "RawProposal": {
-              "Deposit": 10000001,
-              "Chain": "consu",
-              "StopTime": 0,
-              "Status": "PROPOSAL_STATUS_PASSED"
-            },
-            "Type": "main.ConsumerRemovalProposal"
-          }
-        }
       }
     }
   }

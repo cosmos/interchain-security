@@ -269,6 +269,24 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 		if err == nil {
 			return a, nil
 		}
+	case "main.forkConsumerChainAction":
+		var a forkConsumerChainAction
+		err := json.Unmarshal(rawAction, &a)
+		if err == nil {
+			return a, nil
+		}
+	case "main.startConsumerEvidenceDetectorAction":
+		var a startConsumerEvidenceDetectorAction
+		err := json.Unmarshal(rawAction, &a)
+		if err == nil {
+			return a, nil
+		}
+	case "main.updateLightClientAction":
+		var a updateLightClientAction
+		err := json.Unmarshal(rawAction, &a)
+		if err == nil {
+			return a, nil
+		}
 	default:
 		return nil, fmt.Errorf("unknown action type: %s", actionTypeString)
 	}

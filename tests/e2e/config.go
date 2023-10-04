@@ -397,7 +397,7 @@ func ChangeoverTestConfig() TestConfig {
 
 func ConsumerMisbehaviourTestConfig() TestConfig {
 	tc := TestConfig{
-		name: "misbehaviour",
+		name: "consumer-misbehaviour",
 		containerConfig: ContainerConfig{
 			ContainerName: "interchain-security-container",
 			InstanceName:  "interchain-security-instance",

@@ -226,7 +226,8 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet) (tests []t
 	if len(selectedPredefinedTests) == 0 && len(selectedTestFiles) == 0 {
 		selectedPredefinedTests = TestSet{
 			"changeover", "happy-path",
-			"democracy-reward", "democracy", "slash-throttle",
+			"democracy-reward", "democracy",
+			"slash-throttle", "consumer-double-sign", "consumer-misbehaviour",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")

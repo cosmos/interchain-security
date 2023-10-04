@@ -89,6 +89,9 @@ func GetActionGen() *rapid.Generator[any] {
 		CreateLightClientEquivocationAttackActionGen().AsAny(),
 		CreateLightClientAmnesiaAttackActionGen().AsAny(),
 		CreateLightClientLunaticAttackActionGen().AsAny(),
+		GetStartConsumerEvidenceDetectorActionGen().AsAny(),
+		GetForkConsumerChainActionGen().AsAny(),
+		GetUpdateLightClientActionGen().AsAny(),
 	)
 }
 
@@ -482,6 +485,36 @@ func GetSlashThrottleDequeueActionGen() *rapid.Generator[slashThrottleDequeueAct
 			CurrentQueueSize: rapid.Int().Draw(t, "CurrentQueueSize"),
 			NextQueueSize:    rapid.Int().Draw(t, "NextQueueSize"),
 			Timeout:          time.Duration(rapid.Int().Draw(t, "Timeout")) * time.Millisecond,
+		}
+	})
+}
+
+func GetForkConsumerChainActionGen() *rapid.Generator[forkConsumerChainAction] {
+	return rapid.Custom(func(t *rapid.T) forkConsumerChainAction {
+		return forkConsumerChainAction{
+			ConsumerChain: GetChainIDGen().Draw(t, "ConsumerChain"),
+			ProviderChain: GetChainIDGen().Draw(t, "ProviderChain"),
+			Validator:     GetValidatorIDGen().Draw(t, "Validator"),
+			RelayerConfig: rapid.String().Draw(t, "RelayerConfig"),
+		}
+	})
+}
+
+func GetStartConsumerEvidenceDetectorActionGen() *rapid.Generator[startConsumerEvidenceDetectorAction] {
+	return rapid.Custom(func(t *rapid.T) startConsumerEvidenceDetectorAction {
+		return startConsumerEvidenceDetectorAction{
+			Chain: GetChainIDGen().Draw(t, "Chain"),
+		}
+	})
+}
+
+func GetUpdateLightClientActionGen() *rapid.Generator[updateLightClientAction] {
+	return rapid.Custom(func(t *rapid.T) updateLightClientAction {
+		return updateLightClientAction{
+			Chain:         GetChainIDGen().Draw(t, "Chain"),
+			HostChain:     GetChainIDGen().Draw(t, "HostChain"),
+			RelayerConfig: rapid.String().Draw(t, "RelayerConfig"),
+			ClientID:      rapid.String().Draw(t, "ClientID"),
 		}
 	})
 }

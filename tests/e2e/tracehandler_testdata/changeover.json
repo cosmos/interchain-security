@@ -27,6 +27,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -56,6 +57,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -82,7 +84,7 @@
         }
       ],
       "GenesisChanges": "",
-      "SkipGentx": false
+      "IsConsumer": false
     },
     "State": {
       "provi": {
@@ -101,6 +103,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -147,6 +150,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -188,6 +192,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -242,6 +247,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -291,6 +297,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -349,6 +356,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "sover": {
@@ -367,6 +375,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -417,6 +426,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -446,6 +456,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "sover": {
@@ -464,6 +475,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -493,6 +505,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -520,6 +533,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -549,6 +563,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "sover": {
@@ -567,6 +582,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -596,6 +612,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }

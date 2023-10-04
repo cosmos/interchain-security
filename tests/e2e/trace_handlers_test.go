@@ -82,6 +82,8 @@ func TestWriteExamples(t *testing.T) {
 		"shorthappy":            {shortHappyPathSteps},
 		"democracyRewardsSteps": {democracyRewardsSteps},
 		"changeover":            {changeoverSteps},
+		"consumer-misbehaviour": {consumerMisbehaviourSteps},
+		"consumer-double-sign":  {consumerDoubleSignSteps},
 	}
 
 	dir := "tracehandler_testdata"
@@ -131,7 +133,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 				},
 			},
 		}},
-		"consuemr removal proposal": {ChainState{
+		"consumer removal proposal": {ChainState{
 			Proposals: &map[uint]Proposal{
 				5: ConsumerRemovalProposal{
 					Deposit:  10000001,
