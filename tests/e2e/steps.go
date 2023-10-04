@@ -24,7 +24,6 @@ var happyPathSteps = concatSteps(
 	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
 	stepsDoubleSignOnProvider("consu"), // carol double signs on provider
-	// TODO: add double sign on consumer
 	stepsStartRelayer(),
 	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
 	stepsStopChain("consu", 3),                     // stop chain
@@ -37,7 +36,6 @@ var shortHappyPathSteps = concatSteps(
 	stepsRedelegateShort("consu"),
 	stepsDowntime("consu"),
 	stepsDoubleSignOnProvider("consu"), // carol double signs on provider
-	// TODO: add double sign on consumer
 	stepsStartRelayer(),
 	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
 	stepsStopChain("consu", 3),                     // stop chain

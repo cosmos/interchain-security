@@ -177,17 +177,17 @@ func (b *Builder) getAppBytesAndSenders(
 		require.NoError(b.suite.T(), err)
 
 		validator := stakingtypes.Validator{
-			OperatorAddress: sdk.ValAddress(val.Address).String(),
-			ConsensusPubkey: pkAny,
-			Jailed:          false,
-			Status:          status,
-			Tokens:          tokens,
-			DelegatorShares: sumShares,
-			Description:     stakingtypes.Description{},
-			UnbondingHeight: int64(0),
-			UnbondingTime:   time.Unix(0, 0).UTC(),
-			Commission:      stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-			// MinSelfDelegation: sdk.ZeroInt(),
+			OperatorAddress:   sdk.ValAddress(val.Address).String(),
+			ConsensusPubkey:   pkAny,
+			Jailed:            false,
+			Status:            status,
+			Tokens:            tokens,
+			DelegatorShares:   sumShares,
+			Description:       stakingtypes.Description{},
+			UnbondingHeight:   int64(0),
+			UnbondingTime:     time.Unix(0, 0).UTC(),
+			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
+			MinSelfDelegation: sdk.ZeroInt(),
 		}
 
 		stakingValidators = append(stakingValidators, validator)
@@ -433,8 +433,7 @@ func (b *Builder) addValidatorToStakingModule(privVal mock.PV) {
 		coin,
 		stakingtypes.Description{},
 		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-		sdk.NewInt(0),
-	)
+		sdk.ZeroInt())
 	b.suite.Require().NoError(err)
 	providerStaking := b.providerStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(&providerStaking)
