@@ -187,8 +187,12 @@ func getTestFileUsageString() string {
 
 	// Test runner selection
 	builder.WriteString("Test runner selection:\nSelection of test runners to be executed:\n")
+	testConfigSet := map[string]struct{}{}
 	for _, testConfig := range testConfigs {
-		builder.WriteString(fmt.Sprintf("- %s\n", testConfig.name))
+		if _, ok := testConfigSet[testConfig.name]; !ok {
+			builder.WriteString(fmt.Sprintf("- %s\n", testConfig.name))
+			testConfigSet[testConfig.name] = struct{}{}
+		}
 	}
 	builder.WriteString("\n")
 

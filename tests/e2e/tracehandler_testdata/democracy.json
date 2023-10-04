@@ -560,7 +560,13 @@
         },
         "ValPowers": null,
         "StakedTokens": null,
-        "Params": null,
+        "Params": [
+          {
+            "Subspace": "transfer",
+            "Key": "SendEnabled",
+            "Value": "false"
+          }
+        ],
         "Rewards": null,
         "ConsumerChains": null,
         "AssignedKeys": null,
@@ -621,7 +627,18 @@
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
-        "Proposals": null
+        "Proposals": {
+          "1": {
+            "RawProposal": {
+              "Deposit": 10000001,
+              "Status": "PROPOSAL_STATUS_PASSED",
+              "Subspace": "transfer",
+              "Key": "SendEnabled",
+              "Value": "true"
+            },
+            "Type": "main.ParamsProposal"
+          }
+        }
       }
     }
   },
