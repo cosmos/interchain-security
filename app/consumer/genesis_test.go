@@ -3,18 +3,20 @@ package app_test
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	app "github.com/cosmos/interchain-security/v3/app/consumer"
-	consumerTypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
+
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/x/auth/types"
+
+	app "github.com/cosmos/interchain-security/v3/app/consumer"
+	consumerTypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 )
 
 // Testdata mapping consumer genesis exports to a provider module version as
@@ -171,11 +173,12 @@ func getGenesisTransformCmd(t *testing.T) *cobra.Command {
 // consumer genesis json format used by current consumer implementation.
 func TestConsumerGenesisTransformationV2(t *testing.T) {
 	version := "v2"
-	filePath := os.TempDir() + "testdata.json"
+	filePath := filepath.Join(t.TempDir(), "oldConsumerGenesis.json")
+
 	err := os.WriteFile(
 		filePath,
 		[]byte(consumerGenesisStates[version]),
-		fs.FileMode(0644))
+		fs.FileMode(0o644))
 	require.NoError(t, err)
 	defer os.Remove(filePath)
 
@@ -191,10 +194,7 @@ func TestConsumerGenesisTransformationV2(t *testing.T) {
 	consumerGenesis := consumerTypes.GenesisState{}
 
 	bz := output.Bytes()
-	fmt.Println(string(bz))
-	//	err = consumerGenesis.Unmarshal(output.Bytes())
 	ctx := client.GetClientContextFromCmd(cmd)
-
 	err = ctx.Codec.UnmarshalJSON(bz, &consumerGenesis)
 	require.NoError(t, err, "Error unmarshalling transformed genesis state :%s", err)
 
