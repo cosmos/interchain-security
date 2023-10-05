@@ -169,9 +169,10 @@ module CCVDefaultStateMachine {
 
     // Any update in the power of a validator on the provider
     // MUST be present in a ValidatorSetChangePacket that is sent to all registered consumer chains
-    val ValidatorUpdatesArePropagated =
+    val ValUpdatePrecondition = trace[trace.length()-1] == "EndAndBeginBlockForProvider"
+    val ValidatorUpdatesArePropagated = 
         // when the provider has just entered a validator set into a block...
-        if (trace == trace.append("EndAndBeginBlockForProvider")) {
+        if (ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisBlock) {
             val providerValSetInCurBlock = providerValidatorHistory.head()
             // ... for each consumer that is running then ...
             runningConsumers.forall(

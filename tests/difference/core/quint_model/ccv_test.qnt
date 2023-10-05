@@ -84,6 +84,30 @@ module CCVTest {
         result.newState.providerState.chainState.votingPowerHistory == List()
     }
 
+    // Defines a test state to test the deliverPacketToProvider function against.
+    pure val _DeliverPacketToProvider_TestState =
+        val currentState = GetEmptyProtocolState
+        val sender = "sender"
+        val providerState = currentState.providerState
+        val consumerState = GetEmptyConsumerState
+        // add the consumer to the consumerStates
+        val consumerStates = currentState.consumerStates.put(sender, consumerState)
+        val providerState2 = providerState.with(
+            "consumerStatus", providerState.consumerStatus.put(sender, RUNNING)
+        )
+        val providerState3 = providerState2.with(
+            "outstandingPacketsToConsumer", providerState2.outstandingPacketsToConsumer.put(sender, List({
+                id: 0,
+                validatorSet: Map(),
+                sendingTime: 0
+            }))
+        )
+        currentState.with(
+            "providerState", providerState3
+        ).with(
+            "consumerStates", consumerStates
+        )
+
     // add a packet on the consumer
     pure val DeliverPacketToProviderHappyPathTest_testState = _DeliverPacketToProvider_TestState.with(
         "consumerStates", _DeliverPacketToProvider_TestState.consumerStates.put(

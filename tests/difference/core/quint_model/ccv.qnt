@@ -324,30 +324,6 @@ module CCV {
         }
     }   
 
-    // Defines a test state to test the deliverPacketToProvider function against.
-    pure val _DeliverPacketToProvider_TestState =
-        val currentState = GetEmptyProtocolState
-        val sender = "sender"
-        val providerState = currentState.providerState
-        val consumerState = GetEmptyConsumerState
-        // add the consumer to the consumerStates
-        val consumerStates = currentState.consumerStates.put(sender, consumerState)
-        val providerState2 = providerState.with(
-            "consumerStatus", providerState.consumerStatus.put(sender, RUNNING)
-        )
-        val providerState3 = providerState2.with(
-            "outstandingPacketsToConsumer", providerState2.outstandingPacketsToConsumer.put(sender, List({
-                id: 0,
-                validatorSet: Map(),
-                sendingTime: 0
-            }))
-        )
-        currentState.with(
-            "providerState", providerState3
-        ).with(
-            "consumerStates", consumerStates
-        )
-
     // Delivers the next queued VSCPacket from the provider chain to a consumer chain.
     // Only argument is the consumer chain, to which the packet will be delivered.
     // If this packet will time out on the consumer on delivery,
