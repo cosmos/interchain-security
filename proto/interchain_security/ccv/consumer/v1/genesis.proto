@@ -32,7 +32,7 @@ message GenesisState {
   // !!! DEPRECATED !!! ProviderClientState is deprecated. Use provider.client_state instead
   ibc.lightclients.tendermint.v1.ClientState provider_client_state = 5 [ deprecated = true];
   // !!! DEPRECATED !!! ProviderConsensusState is deprecated. Use provider.consensus_state instead
-  ibc.lightclients.tendermint.v1.ConsensusState consensus_state = 6 [ deprecated = true];
+  ibc.lightclients.tendermint.v1.ConsensusState provider_consensus_state = 6 [ deprecated = true];
   // MaturingPackets nil on new chain, filled in on restart.
   repeated MaturingVSCPacket maturing_packets = 7
       [ (gogoproto.nullable) = false ];

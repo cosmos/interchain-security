@@ -15,8 +15,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 
-	cmtjson "github.com/cometbft/cometbft/libs/json"
-
 	consumerTypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
@@ -42,8 +40,10 @@ type (
 // Migration of consumer genesis content as it is exported from a provider version v2
 // to a version readable by current consumer (version v3).
 func migrateFromV2(jsonRaw []byte, ctx client.Context) (json.RawMessage, error) {
+
+	// v2 uses deprecated fields of GenesisState type
 	oldConsumerGenesis := consumerTypes.GenesisState{}
-	err := cmtjson.Unmarshal(jsonRaw, &oldConsumerGenesis)
+	err := ctx.Codec.UnmarshalJSON(jsonRaw, &oldConsumerGenesis)
 	if err != nil {
 		return nil, fmt.Errorf("reading consumer genesis data failed: %s", err)
 	}
@@ -61,17 +61,21 @@ func migrateFromV2(jsonRaw []byte, ctx client.Context) (json.RawMessage, error) 
 		return nil, fmt.Errorf("invalid source version. Unexpected element 'provider.consensus_state'")
 	}
 
-	// Note: version 2 of provider genesis data fills up deprecated fields
+	// Version 2 of provider genesis data fills up deprecated fields
+	// ProviderClientState, ConsensusState and InitialValSet
 	newGenesis := types.ConsumerGenesisState{
 		Params: oldConsumerGenesis.Params,
 		Provider: types.ProviderInfo{
 			ClientState:    oldConsumerGenesis.ProviderClientState,
-			ConsensusState: oldConsumerGenesis.ConsensusState,
+			ConsensusState: oldConsumerGenesis.ProviderConsensusState,
 			InitialValSet:  oldConsumerGenesis.InitialValSet,
 		},
 	}
 
-	newJson := ctx.Codec.MustMarshalJSON(&newGenesis)
+	newJson, err := ctx.Codec.MarshalJSON(&newGenesis)
+	if err != nil {
+		return nil, fmt.Errorf("failed marshalling data to new type: %s", err)
+	}
 	return newJson, nil
 }
 
@@ -103,14 +107,14 @@ func TransformConsumerGenesis(cmd *cobra.Command, args []string, transformationM
 		return err
 	}
 
-	bz, err := cmtjson.Marshal(newConsumerGenesis)
+	bz, err := newConsumerGenesis.MarshalJSON()
 	if err != nil {
 		return fmt.Errorf("failed exporting new consumer genesis to JSON: %s", err)
 	}
 
 	sortedBz, err := sdk.SortJSON(bz)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed sorting transformed consumer genesis JSON: %s", err)
 	}
 
 	cmd.Println(string(sortedBz))
