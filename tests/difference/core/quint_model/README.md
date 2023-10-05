@@ -7,7 +7,7 @@ The core of the protocol.
 - ccv_statemachine.qnt: Contains the state machine layer for CCV. Very roughly speaking, this could be seen as "e2e tests".
 Also contains invariants.
 - ccv_test.qnt: Contains unit tests for the functional layer of CCV.
-- libararies/*: Libraries that don't belong to CCV, but are used by it.
+- libraries/*: Libraries that don't belong to CCV, but are used by it.
 
 ### Model details
 
