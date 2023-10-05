@@ -243,11 +243,12 @@ func DefaultTestConfig() TestConfig {
 
 func DemocracyTestConfig(allowReward bool) TestConfig {
 	consumerGenChanges := ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"20\" | " +
-		".app_state.gov.voting_params.voting_period = \"10s\" | " +
+		".app_state.gov.params.voting_period = \"10s\" | " +
 		".app_state.slashing.params.signed_blocks_window = \"10\" | " +
 		".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 		".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
-		".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\""
+		".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+		".app_state.transfer.params.send_enabled = false"
 
 	if allowReward {
 		// This allows the consumer chain to send rewards in the stake denom
