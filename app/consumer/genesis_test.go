@@ -159,14 +159,13 @@ func getClientCtx() client.Context {
 }
 
 // Setup client context
-func getGenesisTransformCmd(t *testing.T) *cobra.Command {
+func getGenesisTransformCmd() (*cobra.Command, error) {
 	cmd := app.GetConsumerGenesisTransformCmd()
 	clientCtx := getClientCtx()
 	ctx := context.WithValue(context.Background(), client.ClientContextKey, &clientCtx)
 	cmd.SetContext(ctx)
 	err := client.SetCmdClientContext(cmd, clientCtx)
-	require.NoError(t, err, "Error setting up transformation command: %s", err)
-	return cmd
+	return cmd, err
 }
 
 // Check transformation of a version 2 ConsumerGenesis export to
@@ -182,7 +181,8 @@ func TestConsumerGenesisTransformationV2(t *testing.T) {
 	require.NoError(t, err)
 	defer os.Remove(filePath)
 
-	cmd := getGenesisTransformCmd(t)
+	cmd, err := getGenesisTransformCmd()
+	require.NoError(t, err, "Error setting up transformation command: %s", err)
 	cmd.SetArgs([]string{version, filePath})
 
 	output := new(bytes.Buffer)
@@ -205,7 +205,7 @@ func TestConsumerGenesisTransformationV2(t *testing.T) {
 
 	require.Nil(t, consumerGenesis.ProviderConsensusState)
 	require.NotNil(t, consumerGenesis.Provider.ConsensusState)
-	require.Equal(t, time.Time(time.Date(2023, time.May, 8, 11, 0, 1, 563901871, time.UTC)),
+	require.Equal(t, time.Date(2023, time.May, 8, 11, 0, 1, 563901871, time.UTC),
 		consumerGenesis.Provider.ConsensusState.Timestamp)
 
 	require.Empty(t, consumerGenesis.InitialValSet)
