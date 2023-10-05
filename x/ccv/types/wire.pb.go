@@ -4,9 +4,8 @@
 package types
 
 import (
+	bytes "bytes"
 	fmt "fmt"
-	types "github.com/cometbft/cometbft/abci/types"
-	types1 "github.com/cosmos/cosmos-sdk/x/staking/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	io "io"
@@ -91,14 +90,46 @@ func (InfractionType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_8fd0dc67df6b10ed, []int{1}
 }
 
+// Note this type originally resides from the cosmos-sdk at commit 2e9e5d6eea24d6c11eddc9c002c66e89ae036187 (v0.47.5),
+// However, external deps were removed from this file to resolve https://github.com/cosmos/interchain-security/issues/1215.
+//
+// See https://github.com/cosmos/cosmos-sdk/blob/2e9e5d6eea24d6c11eddc9c002c66e89ae036187/proto/cosmos/staking/v1beta1/staking.proto#L392
+type Infraction int32
+
+const (
+	Infraction_INFRACTION_UNSPECIFIED Infraction = 0
+	Infraction_INFRACTION_DOUBLE_SIGN Infraction = 1
+	Infraction_INFRACTION_DOWNTIME    Infraction = 2
+)
+
+var Infraction_name = map[int32]string{
+	0: "INFRACTION_UNSPECIFIED",
+	1: "INFRACTION_DOUBLE_SIGN",
+	2: "INFRACTION_DOWNTIME",
+}
+
+var Infraction_value = map[string]int32{
+	"INFRACTION_UNSPECIFIED": 0,
+	"INFRACTION_DOUBLE_SIGN": 1,
+	"INFRACTION_DOWNTIME":    2,
+}
+
+func (x Infraction) String() string {
+	return proto.EnumName(Infraction_name, int32(x))
+}
+
+func (Infraction) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_8fd0dc67df6b10ed, []int{2}
+}
+
 // This packet is sent from provider chain to consumer chain if the validator
 // set for consumer chain changes (due to new bonding/unbonding messages or
 // slashing events) A VSCMatured packet from consumer chain will be sent
 // asynchronously once unbonding period is over, and this will function as
 // `UnbondingOver` message for this packet.
 type ValidatorSetChangePacketData struct {
-	ValidatorUpdates []types.ValidatorUpdate `protobuf:"bytes,1,rep,name=validator_updates,json=validatorUpdates,proto3" json:"validator_updates" yaml:"validator_updates"`
-	ValsetUpdateId   uint64                  `protobuf:"varint,2,opt,name=valset_update_id,json=valsetUpdateId,proto3" json:"valset_update_id,omitempty"`
+	ValidatorUpdates []ValidatorUpdate `protobuf:"bytes,1,rep,name=validator_updates,json=validatorUpdates,proto3" json:"validator_updates" yaml:"validator_updates"`
+	ValsetUpdateId   uint64            `protobuf:"varint,2,opt,name=valset_update_id,json=valsetUpdateId,proto3" json:"valset_update_id,omitempty"`
 	// consensus address of consumer chain validators
 	// successfully slashed on the provider chain
 	SlashAcks []string `protobuf:"bytes,3,rep,name=slash_acks,json=slashAcks,proto3" json:"slash_acks,omitempty"`
@@ -137,7 +168,7 @@ func (m *ValidatorSetChangePacketData) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ValidatorSetChangePacketData proto.InternalMessageInfo
 
-func (m *ValidatorSetChangePacketData) GetValidatorUpdates() []types.ValidatorUpdate {
+func (m *ValidatorSetChangePacketData) GetValidatorUpdates() []ValidatorUpdate {
 	if m != nil {
 		return m.ValidatorUpdates
 	}
@@ -209,11 +240,11 @@ func (m *VSCMaturedPacketData) GetValsetUpdateId() uint64 {
 // to request the slashing of a validator as a result of an infraction
 // committed on the consumer chain.
 type SlashPacketData struct {
-	Validator types.Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator" yaml:"validator"`
+	Validator Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator" yaml:"validator"`
 	// map to the infraction block height on the provider
 	ValsetUpdateId uint64 `protobuf:"varint,2,opt,name=valset_update_id,json=valsetUpdateId,proto3" json:"valset_update_id,omitempty"`
 	// tell if the slashing is for a downtime or a double-signing infraction
-	Infraction types1.Infraction `protobuf:"varint,3,opt,name=infraction,proto3,enum=cosmos.staking.v1beta1.Infraction" json:"infraction,omitempty"`
+	Infraction Infraction `protobuf:"varint,3,opt,name=infraction,proto3,enum=interchain_security.ccv.v1.Infraction" json:"infraction,omitempty"`
 }
 
 func (m *SlashPacketData) Reset()         { *m = SlashPacketData{} }
@@ -249,11 +280,11 @@ func (m *SlashPacketData) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SlashPacketData proto.InternalMessageInfo
 
-func (m *SlashPacketData) GetValidator() types.Validator {
+func (m *SlashPacketData) GetValidator() Validator {
 	if m != nil {
 		return m.Validator
 	}
-	return types.Validator{}
+	return Validator{}
 }
 
 func (m *SlashPacketData) GetValsetUpdateId() uint64 {
@@ -263,17 +294,18 @@ func (m *SlashPacketData) GetValsetUpdateId() uint64 {
 	return 0
 }
 
-func (m *SlashPacketData) GetInfraction() types1.Infraction {
+func (m *SlashPacketData) GetInfraction() Infraction {
 	if m != nil {
 		return m.Infraction
 	}
-	return types1.Infraction_INFRACTION_UNSPECIFIED
+	return Infraction_INFRACTION_UNSPECIFIED
 }
 
 // ConsumerPacketData contains a consumer packet data and a type tag
 type ConsumerPacketData struct {
 	Type ConsumerPacketDataType `protobuf:"varint,1,opt,name=type,proto3,enum=interchain_security.ccv.v1.ConsumerPacketDataType" json:"type,omitempty"`
 	// Types that are valid to be assigned to Data:
+	//
 	//	*ConsumerPacketData_SlashPacketData
 	//	*ConsumerPacketData_VscMaturedPacketData
 	Data isConsumerPacketData_Data `protobuf_oneof:"data"`
@@ -422,6 +454,7 @@ func (m *HandshakeMetadata) GetVersion() string {
 type ConsumerPacketDataV1 struct {
 	Type ConsumerPacketDataType `protobuf:"varint,1,opt,name=type,proto3,enum=interchain_security.ccv.v1.ConsumerPacketDataType" json:"type,omitempty"`
 	// Types that are valid to be assigned to Data:
+	//
 	//	*ConsumerPacketDataV1_SlashPacketData
 	//	*ConsumerPacketDataV1_VscMaturedPacketData
 	Data isConsumerPacketDataV1_Data `protobuf_oneof:"data"`
@@ -515,7 +548,7 @@ func (*ConsumerPacketDataV1) XXX_OneofWrappers() []interface{} {
 // This packet is sent from the consumer chain to the provider chain
 // It is backward compatible with the ICS v1 and v2 version of the packet.
 type SlashPacketDataV1 struct {
-	Validator types.Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator" yaml:"validator"`
+	Validator Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator" yaml:"validator"`
 	// map to the infraction block height on the provider
 	ValsetUpdateId uint64 `protobuf:"varint,2,opt,name=valset_update_id,json=valsetUpdateId,proto3" json:"valset_update_id,omitempty"`
 	// tell if the slashing is for a downtime or a double-signing infraction
@@ -555,11 +588,11 @@ func (m *SlashPacketDataV1) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SlashPacketDataV1 proto.InternalMessageInfo
 
-func (m *SlashPacketDataV1) GetValidator() types.Validator {
+func (m *SlashPacketDataV1) GetValidator() Validator {
 	if m != nil {
 		return m.Validator
 	}
-	return types.Validator{}
+	return Validator{}
 }
 
 func (m *SlashPacketDataV1) GetValsetUpdateId() uint64 {
@@ -576,9 +609,214 @@ func (m *SlashPacketDataV1) GetInfraction() InfractionType {
 	return InfractionEmpty
 }
 
+// Note this type originally resides from cometbft at commit fe45483be36ebfea7e172a3ad949e8fe09a8fd95 (version 0.37.2),
+// However, external deps were removed from this file to resolve https://github.com/cosmos/interchain-security/issues/1215.
+//
+// See https://github.com/cometbft/cometbft/blob/fe45483be36ebfea7e172a3ad949e8fe09a8fd95/proto/tendermint/abci/types.proto#L366
+type Validator struct {
+	Address []byte `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	Power   int64  `protobuf:"varint,3,opt,name=power,proto3" json:"power,omitempty"`
+}
+
+func (m *Validator) Reset()         { *m = Validator{} }
+func (m *Validator) String() string { return proto.CompactTextString(m) }
+func (*Validator) ProtoMessage()    {}
+func (*Validator) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8fd0dc67df6b10ed, []int{7}
+}
+func (m *Validator) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Validator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Validator.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Validator) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Validator.Merge(m, src)
+}
+func (m *Validator) XXX_Size() int {
+	return m.Size()
+}
+func (m *Validator) XXX_DiscardUnknown() {
+	xxx_messageInfo_Validator.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Validator proto.InternalMessageInfo
+
+func (m *Validator) GetAddress() []byte {
+	if m != nil {
+		return m.Address
+	}
+	return nil
+}
+
+func (m *Validator) GetPower() int64 {
+	if m != nil {
+		return m.Power
+	}
+	return 0
+}
+
+// Note this type originally resides from cometbft at commit fe45483be36ebfea7e172a3ad949e8fe09a8fd95 (version 0.37.2),
+// However, external deps were removed from this file to resolve https://github.com/cosmos/interchain-security/issues/1215.
+//
+// See https://github.com/cometbft/cometbft/blob/fe45483be36ebfea7e172a3ad949e8fe09a8fd95/proto/tendermint/abci/types.proto#L372
+type ValidatorUpdate struct {
+	PubKey PublicKey `protobuf:"bytes,1,opt,name=pub_key,json=pubKey,proto3" json:"pub_key"`
+	Power  int64     `protobuf:"varint,2,opt,name=power,proto3" json:"power,omitempty"`
+}
+
+func (m *ValidatorUpdate) Reset()         { *m = ValidatorUpdate{} }
+func (m *ValidatorUpdate) String() string { return proto.CompactTextString(m) }
+func (*ValidatorUpdate) ProtoMessage()    {}
+func (*ValidatorUpdate) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8fd0dc67df6b10ed, []int{8}
+}
+func (m *ValidatorUpdate) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ValidatorUpdate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ValidatorUpdate.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ValidatorUpdate) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ValidatorUpdate.Merge(m, src)
+}
+func (m *ValidatorUpdate) XXX_Size() int {
+	return m.Size()
+}
+func (m *ValidatorUpdate) XXX_DiscardUnknown() {
+	xxx_messageInfo_ValidatorUpdate.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ValidatorUpdate proto.InternalMessageInfo
+
+func (m *ValidatorUpdate) GetPubKey() PublicKey {
+	if m != nil {
+		return m.PubKey
+	}
+	return PublicKey{}
+}
+
+func (m *ValidatorUpdate) GetPower() int64 {
+	if m != nil {
+		return m.Power
+	}
+	return 0
+}
+
+// Note this type originally resides from cometbft at commit fe45483be36ebfea7e172a3ad949e8fe09a8fd95 (version 0.37.2),
+// However, external deps were removed from this file to resolve https://github.com/cosmos/interchain-security/issues/1215.
+//
+// See https://github.com/cometbft/cometbft/blob/fe45483be36ebfea7e172a3ad949e8fe09a8fd95/proto/tendermint/crypto/keys.proto#L9
+type PublicKey struct {
+	// Types that are valid to be assigned to Sum:
+	//
+	//	*PublicKey_Ed25519
+	//	*PublicKey_Secp256K1
+	Sum isPublicKey_Sum `protobuf_oneof:"sum"`
+}
+
+func (m *PublicKey) Reset()         { *m = PublicKey{} }
+func (m *PublicKey) String() string { return proto.CompactTextString(m) }
+func (*PublicKey) ProtoMessage()    {}
+func (*PublicKey) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8fd0dc67df6b10ed, []int{9}
+}
+func (m *PublicKey) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PublicKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PublicKey.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PublicKey) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PublicKey.Merge(m, src)
+}
+func (m *PublicKey) XXX_Size() int {
+	return m.Size()
+}
+func (m *PublicKey) XXX_DiscardUnknown() {
+	xxx_messageInfo_PublicKey.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PublicKey proto.InternalMessageInfo
+
+type isPublicKey_Sum interface {
+	isPublicKey_Sum()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+	Compare(interface{}) int
+}
+
+type PublicKey_Ed25519 struct {
+	Ed25519 []byte `protobuf:"bytes,1,opt,name=ed25519,proto3,oneof" json:"ed25519,omitempty"`
+}
+type PublicKey_Secp256K1 struct {
+	Secp256K1 []byte `protobuf:"bytes,2,opt,name=secp256k1,proto3,oneof" json:"secp256k1,omitempty"`
+}
+
+func (*PublicKey_Ed25519) isPublicKey_Sum()   {}
+func (*PublicKey_Secp256K1) isPublicKey_Sum() {}
+
+func (m *PublicKey) GetSum() isPublicKey_Sum {
+	if m != nil {
+		return m.Sum
+	}
+	return nil
+}
+
+func (m *PublicKey) GetEd25519() []byte {
+	if x, ok := m.GetSum().(*PublicKey_Ed25519); ok {
+		return x.Ed25519
+	}
+	return nil
+}
+
+func (m *PublicKey) GetSecp256K1() []byte {
+	if x, ok := m.GetSum().(*PublicKey_Secp256K1); ok {
+		return x.Secp256K1
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*PublicKey) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*PublicKey_Ed25519)(nil),
+		(*PublicKey_Secp256K1)(nil),
+	}
+}
+
 func init() {
 	proto.RegisterEnum("interchain_security.ccv.v1.ConsumerPacketDataType", ConsumerPacketDataType_name, ConsumerPacketDataType_value)
 	proto.RegisterEnum("interchain_security.ccv.v1.InfractionType", InfractionType_name, InfractionType_value)
+	proto.RegisterEnum("interchain_security.ccv.v1.Infraction", Infraction_name, Infraction_value)
 	proto.RegisterType((*ValidatorSetChangePacketData)(nil), "interchain_security.ccv.v1.ValidatorSetChangePacketData")
 	proto.RegisterType((*VSCMaturedPacketData)(nil), "interchain_security.ccv.v1.VSCMaturedPacketData")
 	proto.RegisterType((*SlashPacketData)(nil), "interchain_security.ccv.v1.SlashPacketData")
@@ -586,6 +824,9 @@ func init() {
 	proto.RegisterType((*HandshakeMetadata)(nil), "interchain_security.ccv.v1.HandshakeMetadata")
 	proto.RegisterType((*ConsumerPacketDataV1)(nil), "interchain_security.ccv.v1.ConsumerPacketDataV1")
 	proto.RegisterType((*SlashPacketDataV1)(nil), "interchain_security.ccv.v1.SlashPacketDataV1")
+	proto.RegisterType((*Validator)(nil), "interchain_security.ccv.v1.Validator")
+	proto.RegisterType((*ValidatorUpdate)(nil), "interchain_security.ccv.v1.ValidatorUpdate")
+	proto.RegisterType((*PublicKey)(nil), "interchain_security.ccv.v1.PublicKey")
 }
 
 func init() {
@@ -593,62 +834,268 @@ func init() {
 }
 
 var fileDescriptor_8fd0dc67df6b10ed = []byte{
-	// 833 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x55, 0xcd, 0x6e, 0xe3, 0x54,
-	0x14, 0xb6, 0xd3, 0x6a, 0xa0, 0x37, 0x28, 0x75, 0x3d, 0x61, 0x64, 0x3c, 0x90, 0xb1, 0x2c, 0x90,
-	0xa2, 0xa2, 0xb1, 0x49, 0x3a, 0x2b, 0xd8, 0x90, 0x1f, 0x97, 0x1a, 0xa6, 0x69, 0x64, 0x27, 0x19,
-	0x0d, 0x1b, 0xeb, 0xc6, 0xbe, 0x4d, 0xae, 0x92, 0xf8, 0x5a, 0xbe, 0x37, 0x1e, 0xf2, 0x06, 0x28,
-	0x2b, 0x5e, 0x20, 0x2b, 0xc4, 0x62, 0x1e, 0x83, 0xdd, 0x2c, 0x47, 0x62, 0x33, 0x1b, 0x46, 0xa8,
-	0x7d, 0x03, 0x9e, 0x00, 0xd9, 0xf9, 0x6d, 0xe2, 0x56, 0xaa, 0x84, 0x04, 0x3b, 0xfb, 0xdc, 0xf3,
-	0x7d, 0xf7, 0x9c, 0xef, 0x3b, 0x57, 0x07, 0x7c, 0x81, 0x7d, 0x86, 0x42, 0xb7, 0x0f, 0xb1, 0xef,
-	0x50, 0xe4, 0x8e, 0x43, 0xcc, 0x26, 0xba, 0xeb, 0x46, 0x7a, 0x54, 0xd2, 0x5f, 0xe1, 0x10, 0x69,
-	0x41, 0x48, 0x18, 0x11, 0xe5, 0x94, 0x34, 0xcd, 0x75, 0x23, 0x2d, 0x2a, 0xc9, 0x9f, 0xbb, 0x84,
-	0x8e, 0x08, 0xd5, 0x29, 0x83, 0x03, 0xec, 0xf7, 0xf4, 0xa8, 0xd4, 0x45, 0x0c, 0x96, 0x96, 0xff,
-	0x73, 0x06, 0x39, 0xdf, 0x23, 0x3d, 0x92, 0x7c, 0xea, 0xf1, 0xd7, 0x22, 0xfa, 0x98, 0x21, 0xdf,
-	0x43, 0xe1, 0x08, 0xfb, 0x4c, 0x87, 0x5d, 0x17, 0xeb, 0x6c, 0x12, 0x20, 0x3a, 0x3f, 0x54, 0xdf,
-	0xf1, 0xe0, 0xd3, 0x0e, 0x1c, 0x62, 0x0f, 0x32, 0x12, 0xda, 0x88, 0xd5, 0xfa, 0xd0, 0xef, 0xa1,
-	0x26, 0x74, 0x07, 0x88, 0xd5, 0x21, 0x83, 0x22, 0x01, 0x47, 0xd1, 0xf2, 0xdc, 0x19, 0x07, 0x1e,
-	0x64, 0x88, 0x4a, 0xbc, 0xb2, 0x57, 0xcc, 0x96, 0x15, 0x6d, 0xcd, 0xac, 0xc5, 0xcc, 0xda, 0x8a,
-	0xa9, 0x9d, 0x24, 0x56, 0x95, 0x37, 0xef, 0x9f, 0x70, 0x7f, 0xbf, 0x7f, 0x22, 0x4d, 0xe0, 0x68,
-	0xf8, 0xb5, 0xba, 0x43, 0xa4, 0x5a, 0x42, 0x74, 0x13, 0x42, 0xc5, 0x22, 0x88, 0x63, 0x14, 0xb1,
-	0x45, 0x92, 0x83, 0x3d, 0x29, 0xa3, 0xf0, 0xc5, 0x7d, 0x2b, 0x37, 0x8f, 0xcf, 0x13, 0x4d, 0x4f,
-	0xfc, 0x0c, 0x00, 0x3a, 0x84, 0xb4, 0xef, 0x40, 0x77, 0x40, 0xa5, 0x3d, 0x65, 0xaf, 0x78, 0x60,
-	0x1d, 0x24, 0x91, 0x8a, 0x3b, 0xa0, 0xea, 0xb7, 0x20, 0xdf, 0xb1, 0x6b, 0xe7, 0x90, 0x8d, 0x43,
-	0xe4, 0x6d, 0x74, 0x94, 0x76, 0x01, 0x9f, 0x76, 0x81, 0xfa, 0x07, 0x0f, 0x0e, 0xed, 0x98, 0x6f,
-	0x03, 0x6d, 0x81, 0x83, 0x55, 0xc9, 0x09, 0x2c, 0x5b, 0x96, 0x6f, 0xd7, 0xa1, 0x2a, 0x2d, 0x14,
-	0x10, 0xb6, 0x14, 0x50, 0xad, 0x35, 0xcd, 0x3d, 0x5a, 0xae, 0x02, 0x80, 0xfd, 0xcb, 0x10, 0xba,
-	0x0c, 0x13, 0x5f, 0xda, 0x53, 0xf8, 0x62, 0xae, 0xac, 0x6a, 0xf3, 0xe1, 0xd0, 0x96, 0xc3, 0xb0,
-	0x18, 0x0e, 0xcd, 0x5c, 0x65, 0x5a, 0x1b, 0x28, 0xf5, 0xb7, 0x0c, 0x10, 0x6b, 0xc4, 0xa7, 0xe3,
-	0x11, 0x0a, 0x37, 0x1a, 0x3b, 0x05, 0xfb, 0xf1, 0x60, 0x24, 0x3d, 0xe5, 0xca, 0x65, 0xed, 0xf6,
-	0x69, 0xd4, 0x76, 0xd1, 0xad, 0x49, 0x80, 0xac, 0x04, 0x2f, 0xbe, 0x00, 0x87, 0xf4, 0xa6, 0x66,
-	0x49, 0x2f, 0xd9, 0xf2, 0x97, 0x77, 0x51, 0x6e, 0xc9, 0x7c, 0xc6, 0x59, 0xdb, 0x2c, 0xe2, 0x25,
-	0xc8, 0x47, 0xd4, 0xdd, 0xf1, 0x33, 0x51, 0x21, 0x5b, 0xfe, 0xea, 0x2e, 0xf6, 0xb4, 0x39, 0x38,
-	0xe3, 0xac, 0x54, 0xbe, 0xea, 0x03, 0xb0, 0xef, 0x41, 0x06, 0xd5, 0x2e, 0x38, 0x3a, 0x83, 0xbe,
-	0x47, 0xfb, 0x70, 0x80, 0xce, 0x11, 0x83, 0x71, 0x50, 0x3c, 0x01, 0x8f, 0x82, 0x90, 0x44, 0xd8,
-	0x43, 0xa1, 0x73, 0x89, 0x90, 0x13, 0x10, 0x32, 0x74, 0xa0, 0xe7, 0xcd, 0x67, 0xe1, 0xc0, 0x7a,
-	0xb8, 0x3c, 0x3d, 0x45, 0xa8, 0x49, 0xc8, 0xb0, 0xe2, 0x79, 0xa1, 0x28, 0x81, 0x0f, 0x22, 0x14,
-	0xd2, 0xd8, 0xb2, 0x4c, 0x92, 0xb5, 0xfc, 0x55, 0x5f, 0x67, 0x40, 0x7e, 0x57, 0xcd, 0x4e, 0xe9,
-	0x5f, 0x73, 0xe3, 0xe5, 0x6d, 0x6e, 0x3c, 0xbd, 0x87, 0x1b, 0x9d, 0xd2, 0xff, 0xc1, 0x8f, 0x3f,
-	0x79, 0x70, 0xb4, 0x53, 0xd8, 0x7f, 0xfc, 0x1e, 0xbf, 0x4f, 0x79, 0x8f, 0xc7, 0x77, 0x75, 0xbe,
-	0x7e, 0x93, 0x89, 0x49, 0x1b, 0xe8, 0xe3, 0xdf, 0x79, 0xf0, 0x28, 0xdd, 0x4b, 0xf1, 0x1b, 0xa0,
-	0xd4, 0x2e, 0x1a, 0x76, 0xfb, 0xdc, 0xb0, 0x9c, 0x66, 0xa5, 0xf6, 0x83, 0xd1, 0x72, 0x5a, 0x2f,
-	0x9b, 0x86, 0xd3, 0x6e, 0xd8, 0x4d, 0xa3, 0x66, 0x9e, 0x9a, 0x46, 0x5d, 0xe0, 0xe4, 0x8f, 0xa7,
-	0x33, 0xe5, 0xa8, 0xed, 0xd3, 0x00, 0xb9, 0xf8, 0x12, 0x2f, 0x35, 0x14, 0x75, 0x20, 0xa7, 0x82,
-	0xed, 0xe7, 0x15, 0xfb, 0x4c, 0xe0, 0xe5, 0xc3, 0xe9, 0x4c, 0xc9, 0x6e, 0x08, 0x2b, 0x9e, 0x80,
-	0x4f, 0x52, 0x01, 0xb1, 0x6b, 0x42, 0x46, 0xce, 0x4f, 0x67, 0x8a, 0xd0, 0xd9, 0x72, 0x4a, 0xde,
-	0xff, 0xf9, 0xd7, 0x02, 0x77, 0xfc, 0x9a, 0x07, 0xb9, 0x9b, 0x2d, 0x8a, 0xcf, 0xc0, 0x63, 0xb3,
-	0x71, 0x6a, 0x55, 0x6a, 0x2d, 0xf3, 0xa2, 0x91, 0x56, 0xf6, 0xc3, 0xe9, 0x4c, 0x39, 0x5c, 0x83,
-	0x8c, 0x51, 0xc0, 0x26, 0xa2, 0xbe, 0x8b, 0xaa, 0x5f, 0xb4, 0xab, 0xcf, 0x0d, 0xc7, 0x36, 0xbf,
-	0x6b, 0x08, 0xbc, 0x9c, 0x9b, 0xce, 0x14, 0x50, 0x27, 0xe3, 0xee, 0x10, 0xd9, 0xb8, 0xe7, 0x8b,
-	0xc7, 0x40, 0xda, 0x05, 0xbc, 0x68, 0xb4, 0xcc, 0x73, 0x43, 0xc8, 0xc8, 0x1f, 0x4d, 0x67, 0xca,
-	0x87, 0x75, 0xf2, 0xca, 0x67, 0x78, 0x84, 0xe6, 0xb5, 0x56, 0x1b, 0x6f, 0xae, 0x0a, 0xfc, 0xdb,
-	0xab, 0x02, 0xff, 0xd7, 0x55, 0x81, 0xff, 0xe5, 0xba, 0xc0, 0xbd, 0xbd, 0x2e, 0x70, 0xef, 0xae,
-	0x0b, 0xdc, 0x8f, 0xcf, 0x7a, 0x98, 0xf5, 0xc7, 0x5d, 0xcd, 0x25, 0x23, 0x7d, 0xb1, 0x78, 0xd7,
-	0x96, 0x3e, 0x5d, 0xad, 0xf0, 0xe8, 0x44, 0xff, 0x29, 0xd9, 0xe3, 0xc9, 0x42, 0xed, 0x3e, 0x48,
-	0x36, 0xea, 0xc9, 0x3f, 0x01, 0x00, 0x00, 0xff, 0xff, 0x17, 0x85, 0x90, 0x57, 0xef, 0x07, 0x00,
-	0x00,
+	// 934 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x56, 0xcb, 0x6e, 0xdb, 0x46,
+	0x17, 0x16, 0x25, 0xc5, 0x8e, 0x8e, 0x03, 0x49, 0x1e, 0xeb, 0xf7, 0xaf, 0xb2, 0xad, 0x4c, 0x10,
+	0x48, 0x21, 0xb8, 0x88, 0x54, 0xc9, 0x71, 0x81, 0x26, 0x9b, 0xea, 0x5a, 0xa9, 0x8e, 0x65, 0x81,
+	0xba, 0xa4, 0x29, 0x10, 0x10, 0x23, 0x72, 0x2c, 0x11, 0x92, 0x48, 0x82, 0x43, 0xd2, 0x55, 0x9f,
+	0xa0, 0xd0, 0xaa, 0x2f, 0x20, 0xa0, 0x45, 0xd1, 0x45, 0x1e, 0xa3, 0xbb, 0x2c, 0xb3, 0xec, 0x2a,
+	0x28, 0xec, 0x8d, 0xd7, 0x7d, 0x82, 0x82, 0x94, 0x75, 0x67, 0x5c, 0x07, 0xe8, 0x22, 0x3b, 0xce,
+	0x39, 0xe7, 0x3b, 0xb7, 0xef, 0x1b, 0x62, 0xe0, 0xa1, 0xa2, 0x9a, 0xc4, 0x90, 0x7a, 0x58, 0x51,
+	0x45, 0x4a, 0x24, 0xcb, 0x50, 0xcc, 0x51, 0x5a, 0x92, 0xec, 0xb4, 0x9d, 0x49, 0x5f, 0x28, 0x06,
+	0x49, 0xe9, 0x86, 0x66, 0x6a, 0x88, 0xf5, 0x08, 0x4b, 0x49, 0x92, 0x9d, 0xb2, 0x33, 0x6c, 0xac,
+	0xab, 0x75, 0x35, 0x37, 0x2c, 0xed, 0x7c, 0x4d, 0x11, 0xfc, 0x15, 0x03, 0x9f, 0xb4, 0xf1, 0x40,
+	0x91, 0xb1, 0xa9, 0x19, 0x0d, 0x62, 0x16, 0x7a, 0x58, 0xed, 0x92, 0x3a, 0x96, 0xfa, 0xc4, 0x2c,
+	0x62, 0x13, 0xa3, 0x1f, 0x61, 0xd7, 0x9e, 0xf9, 0x45, 0x4b, 0x97, 0xb1, 0x49, 0x68, 0x9c, 0xe1,
+	0x02, 0xc9, 0x9d, 0xec, 0xe7, 0xa9, 0x77, 0x97, 0x4b, 0xcd, 0x93, 0xb6, 0x5c, 0x4c, 0x9e, 0x7b,
+	0xfd, 0xf6, 0xc0, 0xf7, 0xf7, 0xdb, 0x83, 0xf8, 0x08, 0x0f, 0x07, 0x4f, 0xf8, 0x8d, 0x9c, 0xbc,
+	0x10, 0xb5, 0x57, 0x21, 0x14, 0x25, 0xc1, 0xb1, 0x51, 0x62, 0xde, 0x04, 0x89, 0x8a, 0x1c, 0xf7,
+	0x73, 0x4c, 0x32, 0x28, 0x84, 0xa7, 0xf6, 0x69, 0x60, 0x55, 0x46, 0x9f, 0x02, 0xd0, 0x01, 0xa6,
+	0x3d, 0x11, 0x4b, 0x7d, 0x1a, 0x0f, 0x70, 0x81, 0x64, 0x48, 0x08, 0xb9, 0x96, 0x9c, 0xd4, 0xa7,
+	0xfc, 0xd7, 0x10, 0x6b, 0x37, 0x0a, 0xa7, 0xd8, 0xb4, 0x0c, 0x22, 0x2f, 0x0d, 0xe7, 0x55, 0x80,
+	0xf1, 0x2a, 0xc0, 0x5f, 0x32, 0x10, 0x69, 0x38, 0xf9, 0x96, 0xd0, 0x2f, 0x21, 0x34, 0x6f, 0xd9,
+	0x85, 0xed, 0x64, 0x1f, 0xde, 0x69, 0x25, 0xf9, 0xf8, 0xcd, 0x32, 0xa2, 0x6b, 0xcb, 0xe0, 0x85,
+	0x45, 0xc6, 0xf7, 0x98, 0xbe, 0x0c, 0xa0, 0xa8, 0xe7, 0x06, 0x96, 0x4c, 0x45, 0x53, 0xe3, 0x01,
+	0x8e, 0x49, 0x86, 0xb3, 0x9f, 0xdd, 0xd6, 0x49, 0x75, 0x1e, 0x2d, 0x2c, 0x21, 0xf9, 0xdf, 0xfd,
+	0x80, 0x0a, 0x9a, 0x4a, 0xad, 0x21, 0x31, 0x96, 0xe6, 0x2c, 0x43, 0xd0, 0x1c, 0xe9, 0xc4, 0x1d,
+	0x31, 0x9c, 0xcd, 0xde, 0x96, 0x78, 0x13, 0xdd, 0x1c, 0xe9, 0x44, 0x70, 0xf1, 0xe8, 0x39, 0x44,
+	0xe8, 0xea, 0x0a, 0xdd, 0x79, 0xfe, 0x45, 0x48, 0x6b, 0x5b, 0xaf, 0xf8, 0x84, 0xf5, 0x2c, 0xe8,
+	0x1c, 0x62, 0x36, 0x95, 0x36, 0xe8, 0x75, 0x37, 0xb1, 0x93, 0xfd, 0xe2, 0x56, 0x4e, 0x3c, 0x64,
+	0x51, 0xf1, 0x09, 0x9e, 0xf9, 0xf2, 0x5b, 0x10, 0x94, 0xb1, 0x89, 0xf9, 0x0e, 0xec, 0x56, 0xb0,
+	0x2a, 0xd3, 0x1e, 0xee, 0x93, 0x53, 0x62, 0x62, 0xc7, 0x88, 0x8e, 0x60, 0x5f, 0x37, 0x34, 0x5b,
+	0x91, 0x89, 0x21, 0x9e, 0x13, 0x22, 0xea, 0x9a, 0x36, 0x10, 0xb1, 0x2c, 0x4f, 0xa5, 0x11, 0x12,
+	0xf6, 0x66, 0xde, 0x32, 0x21, 0x75, 0x4d, 0x1b, 0xe4, 0x64, 0xd9, 0x40, 0x71, 0xd8, 0xb6, 0x89,
+	0x41, 0x1d, 0xda, 0xfc, 0x6e, 0xd4, 0xec, 0xc8, 0xbf, 0xf2, 0x43, 0x6c, 0x73, 0x9b, 0xed, 0xcc,
+	0x7f, 0xc6, 0xc6, 0x8b, 0x77, 0xb1, 0xf1, 0xe8, 0x3d, 0xd8, 0x68, 0x67, 0x3e, 0x04, 0x3e, 0xae,
+	0x19, 0xd8, 0xdd, 0x68, 0xec, 0xc3, 0xb9, 0x9e, 0xdf, 0x7a, 0x5c, 0xcf, 0xc3, 0xbb, 0x5d, 0x4f,
+	0x97, 0xaf, 0xe5, 0x2b, 0xfa, 0x14, 0x42, 0xf3, 0x3e, 0x1d, 0xf5, 0x38, 0x02, 0x23, 0x94, 0xba,
+	0xf3, 0x3d, 0x10, 0x66, 0x47, 0x14, 0x83, 0x7b, 0xba, 0x76, 0x41, 0x0c, 0xb7, 0x5a, 0x40, 0x98,
+	0x1e, 0xf8, 0x21, 0x44, 0xd6, 0x7e, 0xcb, 0xa8, 0x08, 0xdb, 0xba, 0xd5, 0x11, 0xfb, 0x64, 0x74,
+	0x97, 0x15, 0xd5, 0xad, 0xce, 0x40, 0x91, 0x4e, 0xc8, 0x28, 0x1f, 0x74, 0x56, 0x24, 0x6c, 0xe9,
+	0x56, 0xe7, 0x84, 0x8c, 0x16, 0xe5, 0xfc, 0xcb, 0xe5, 0xbe, 0x83, 0xd0, 0x1c, 0x80, 0x58, 0xd8,
+	0x26, 0x72, 0xf6, 0xf8, 0x38, 0xf3, 0xd5, 0xb4, 0xd7, 0x8a, 0x4f, 0x98, 0x19, 0x50, 0x02, 0x42,
+	0x94, 0x48, 0x7a, 0xf6, 0xf8, 0xcb, 0x7e, 0xc6, 0x4d, 0xe1, 0x78, 0x17, 0xa6, 0x27, 0xf7, 0xaf,
+	0x7f, 0x39, 0x60, 0xae, 0x7f, 0x3d, 0x60, 0xf2, 0xf7, 0x20, 0x40, 0xad, 0xe1, 0xe1, 0x1f, 0x0c,
+	0xec, 0x7b, 0x8b, 0x1b, 0x3d, 0x05, 0xae, 0x70, 0x56, 0x6b, 0xb4, 0x4e, 0x4b, 0x82, 0x58, 0xcf,
+	0x15, 0x4e, 0x4a, 0x4d, 0xb1, 0xf9, 0xa2, 0x5e, 0x12, 0x5b, 0xb5, 0x46, 0xbd, 0x54, 0xa8, 0x96,
+	0xab, 0xa5, 0x62, 0xd4, 0xc7, 0xfe, 0x6f, 0x3c, 0xe1, 0x76, 0x5b, 0x2a, 0xd5, 0x89, 0xa4, 0x9c,
+	0x2b, 0x33, 0x51, 0xa1, 0x34, 0xb0, 0x9e, 0xe0, 0xc6, 0xb3, 0x5c, 0xa3, 0x12, 0x65, 0xd8, 0xc8,
+	0x78, 0xc2, 0xed, 0x2c, 0x29, 0x0d, 0x1d, 0xc1, 0x47, 0x9e, 0x00, 0x47, 0xc6, 0x51, 0x3f, 0x1b,
+	0x1b, 0x4f, 0xb8, 0x68, 0x7b, 0x4d, 0xba, 0x6c, 0xf0, 0xa7, 0xdf, 0x12, 0xbe, 0xc3, 0x57, 0x0c,
+	0x84, 0x57, 0x89, 0x46, 0x8f, 0xe1, 0xe3, 0x6a, 0xad, 0x2c, 0xe4, 0x0a, 0xcd, 0xea, 0x59, 0xcd,
+	0xab, 0xed, 0xbd, 0xf1, 0x84, 0x8b, 0x2c, 0x40, 0xa5, 0xa1, 0x6e, 0x8e, 0x50, 0x7a, 0x13, 0x55,
+	0x3c, 0x6b, 0xe5, 0x9f, 0x95, 0xc4, 0x46, 0xf5, 0x9b, 0x5a, 0x94, 0x61, 0xc3, 0xe3, 0x09, 0x07,
+	0x45, 0xcd, 0xea, 0x0c, 0x48, 0x43, 0xe9, 0xaa, 0xe8, 0x10, 0xe2, 0x9b, 0x80, 0xe7, 0xb5, 0x66,
+	0xf5, 0xb4, 0x14, 0xf5, 0xb3, 0x0f, 0xc6, 0x13, 0xee, 0x7e, 0x51, 0xbb, 0x50, 0x4d, 0x65, 0x48,
+	0x6e, 0x7a, 0x7d, 0x09, 0xb0, 0xa8, 0x8a, 0x58, 0xd8, 0x5f, 0xc2, 0xaf, 0x74, 0xb8, 0xe6, 0x5b,
+	0xe9, 0x03, 0xfd, 0x1f, 0xf6, 0x56, 0x7c, 0xb3, 0x92, 0xf9, 0xda, 0xeb, 0xcb, 0x04, 0xf3, 0xe6,
+	0x32, 0xc1, 0xfc, 0x75, 0x99, 0x60, 0x7e, 0xbe, 0x4a, 0xf8, 0xde, 0x5c, 0x25, 0x7c, 0x7f, 0x5e,
+	0x25, 0x7c, 0xdf, 0x3f, 0xee, 0x2a, 0x66, 0xcf, 0xea, 0xa4, 0x24, 0x6d, 0x98, 0x96, 0x34, 0x3a,
+	0xd4, 0x68, 0x7a, 0x21, 0xcf, 0x47, 0xf3, 0x97, 0x90, 0x7d, 0x94, 0xfe, 0xc1, 0x7d, 0x0e, 0x39,
+	0x7f, 0x36, 0xda, 0xd9, 0x72, 0xdf, 0x36, 0x47, 0xff, 0x04, 0x00, 0x00, 0xff, 0xff, 0xaa, 0x13,
+	0x36, 0x53, 0x36, 0x09, 0x00, 0x00,
 }
 
+func (this *PublicKey) Compare(that interface{}) int {
+	if that == nil {
+		if this == nil {
+			return 0
+		}
+		return 1
+	}
+
+	that1, ok := that.(*PublicKey)
+	if !ok {
+		that2, ok := that.(PublicKey)
+		if ok {
+			that1 = &that2
+		} else {
+			return 1
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return 0
+		}
+		return 1
+	} else if this == nil {
+		return -1
+	}
+	if that1.Sum == nil {
+		if this.Sum != nil {
+			return 1
+		}
+	} else if this.Sum == nil {
+		return -1
+	} else {
+		thisType := -1
+		switch this.Sum.(type) {
+		case *PublicKey_Ed25519:
+			thisType = 0
+		case *PublicKey_Secp256K1:
+			thisType = 1
+		default:
+			panic(fmt.Sprintf("compare: unexpected type %T in oneof", this.Sum))
+		}
+		that1Type := -1
+		switch that1.Sum.(type) {
+		case *PublicKey_Ed25519:
+			that1Type = 0
+		case *PublicKey_Secp256K1:
+			that1Type = 1
+		default:
+			panic(fmt.Sprintf("compare: unexpected type %T in oneof", that1.Sum))
+		}
+		if thisType == that1Type {
+			if c := this.Sum.Compare(that1.Sum); c != 0 {
+				return c
+			}
+		} else if thisType < that1Type {
+			return -1
+		} else if thisType > that1Type {
+			return 1
+		}
+	}
+	return 0
+}
+func (this *PublicKey_Ed25519) Compare(that interface{}) int {
+	if that == nil {
+		if this == nil {
+			return 0
+		}
+		return 1
+	}
+
+	that1, ok := that.(*PublicKey_Ed25519)
+	if !ok {
+		that2, ok := that.(PublicKey_Ed25519)
+		if ok {
+			that1 = &that2
+		} else {
+			return 1
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return 0
+		}
+		return 1
+	} else if this == nil {
+		return -1
+	}
+	if c := bytes.Compare(this.Ed25519, that1.Ed25519); c != 0 {
+		return c
+	}
+	return 0
+}
+func (this *PublicKey_Secp256K1) Compare(that interface{}) int {
+	if that == nil {
+		if this == nil {
+			return 0
+		}
+		return 1
+	}
+
+	that1, ok := that.(*PublicKey_Secp256K1)
+	if !ok {
+		that2, ok := that.(PublicKey_Secp256K1)
+		if ok {
+			that1 = &that2
+		} else {
+			return 1
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return 0
+		}
+		return 1
+	} else if this == nil {
+		return -1
+	}
+	if c := bytes.Compare(this.Secp256K1, that1.Secp256K1); c != 0 {
+		return c
+	}
+	return 0
+}
+func (this *PublicKey) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*PublicKey)
+	if !ok {
+		that2, ok := that.(PublicKey)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if that1.Sum == nil {
+		if this.Sum != nil {
+			return false
+		}
+	} else if this.Sum == nil {
+		return false
+	} else if !this.Sum.Equal(that1.Sum) {
+		return false
+	}
+	return true
+}
+func (this *PublicKey_Ed25519) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*PublicKey_Ed25519)
+	if !ok {
+		that2, ok := that.(PublicKey_Ed25519)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !bytes.Equal(this.Ed25519, that1.Ed25519) {
+		return false
+	}
+	return true
+}
+func (this *PublicKey_Secp256K1) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*PublicKey_Secp256K1)
+	if !ok {
+		that2, ok := that.(PublicKey_Secp256K1)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !bytes.Equal(this.Secp256K1, that1.Secp256K1) {
+		return false
+	}
+	return true
+}
 func (m *ValidatorSetChangePacketData) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1009,6 +1456,143 @@ func (m *SlashPacketDataV1) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *Validator) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Validator) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Validator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Power != 0 {
+		i = encodeVarintWire(dAtA, i, uint64(m.Power))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Address) > 0 {
+		i -= len(m.Address)
+		copy(dAtA[i:], m.Address)
+		i = encodeVarintWire(dAtA, i, uint64(len(m.Address)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ValidatorUpdate) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ValidatorUpdate) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ValidatorUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Power != 0 {
+		i = encodeVarintWire(dAtA, i, uint64(m.Power))
+		i--
+		dAtA[i] = 0x10
+	}
+	{
+		size, err := m.PubKey.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintWire(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *PublicKey) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PublicKey) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PublicKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Sum != nil {
+		{
+			size := m.Sum.Size()
+			i -= size
+			if _, err := m.Sum.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PublicKey_Ed25519) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PublicKey_Ed25519) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Ed25519 != nil {
+		i -= len(m.Ed25519)
+		copy(dAtA[i:], m.Ed25519)
+		i = encodeVarintWire(dAtA, i, uint64(len(m.Ed25519)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+func (m *PublicKey_Secp256K1) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PublicKey_Secp256K1) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Secp256K1 != nil {
+		i -= len(m.Secp256K1)
+		copy(dAtA[i:], m.Secp256K1)
+		i = encodeVarintWire(dAtA, i, uint64(len(m.Secp256K1)))
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
+}
 func encodeVarintWire(dAtA []byte, offset int, v uint64) int {
 	offset -= sovWire(v)
 	base := offset
@@ -1185,6 +1769,73 @@ func (m *SlashPacketDataV1) Size() (n int) {
 	return n
 }
 
+func (m *Validator) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Address)
+	if l > 0 {
+		n += 1 + l + sovWire(uint64(l))
+	}
+	if m.Power != 0 {
+		n += 1 + sovWire(uint64(m.Power))
+	}
+	return n
+}
+
+func (m *ValidatorUpdate) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.PubKey.Size()
+	n += 1 + l + sovWire(uint64(l))
+	if m.Power != 0 {
+		n += 1 + sovWire(uint64(m.Power))
+	}
+	return n
+}
+
+func (m *PublicKey) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Sum != nil {
+		n += m.Sum.Size()
+	}
+	return n
+}
+
+func (m *PublicKey_Ed25519) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Ed25519 != nil {
+		l = len(m.Ed25519)
+		n += 1 + l + sovWire(uint64(l))
+	}
+	return n
+}
+func (m *PublicKey_Secp256K1) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Secp256K1 != nil {
+		l = len(m.Secp256K1)
+		n += 1 + l + sovWire(uint64(l))
+	}
+	return n
+}
+
 func sovWire(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -1249,7 +1900,7 @@ func (m *ValidatorSetChangePacketData) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ValidatorUpdates = append(m.ValidatorUpdates, types.ValidatorUpdate{})
+			m.ValidatorUpdates = append(m.ValidatorUpdates, ValidatorUpdate{})
 			if err := m.ValidatorUpdates[len(m.ValidatorUpdates)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -1490,7 +2141,7 @@ func (m *SlashPacketData) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Infraction |= types1.Infraction(b&0x7F) << shift
+				m.Infraction |= Infraction(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2008,6 +2659,327 @@ func (m *SlashPacketDataV1) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWire(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthWire
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Validator) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWire
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Validator: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Validator: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWire
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthWire
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWire
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Address = append(m.Address[:0], dAtA[iNdEx:postIndex]...)
+			if m.Address == nil {
+				m.Address = []byte{}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Power", wireType)
+			}
+			m.Power = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWire
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Power |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWire(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthWire
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ValidatorUpdate) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWire
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ValidatorUpdate: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ValidatorUpdate: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PubKey", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWire
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWire
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWire
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.PubKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Power", wireType)
+			}
+			m.Power = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWire
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Power |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWire(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthWire
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PublicKey) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWire
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PublicKey: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PublicKey: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ed25519", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWire
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthWire
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWire
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := make([]byte, postIndex-iNdEx)
+			copy(v, dAtA[iNdEx:postIndex])
+			m.Sum = &PublicKey_Ed25519{v}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Secp256K1", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWire
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthWire
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWire
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := make([]byte, postIndex-iNdEx)
+			copy(v, dAtA[iNdEx:postIndex])
+			m.Sum = &PublicKey_Secp256K1{v}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipWire(dAtA[iNdEx:])
