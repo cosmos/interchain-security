@@ -16,7 +16,7 @@ To see the data structures used in the model, see the `ProtocolState` type in cc
 The "public" endpoints of the model are those functions that take as an input the protocol state, and return a `Result`.
 Other functions are for utility.
 
-The parameters of the protocol are defined as consts in ccv.qnt.
+The parameters of the protocol are defined as consts in [ccv.qnt](ccv.qnt).
 
 ### Tests
 
