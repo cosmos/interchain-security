@@ -38,7 +38,7 @@ type (
 )
 
 // Migration of consumer genesis content as it is exported from a provider version v2
-// to a version readable by current consumer (version v3).
+// (ICS provider module version) to a format readable by current consumer implementation.
 func migrateFromV2(jsonRaw []byte, ctx client.Context) (json.RawMessage, error) {
 	// v2 uses deprecated fields of GenesisState type
 	oldConsumerGenesis := consumerTypes.GenesisState{}
