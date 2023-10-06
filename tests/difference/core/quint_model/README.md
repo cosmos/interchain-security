@@ -52,8 +52,8 @@ that were running at the time the packet was sent (and are still running).
 
 Invariants can also be model-checked by Apalache, using this command:
 ```
-quint verify --invariant ValidatorUpdatesArePropagated,ValidatorSetHasExistedInv,SameVSCPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv --main CCVDefaultState
-Machine ccv_statemachine.qnt
+quint verify --invariant ValidatorUpdatesArePropagated,ValidatorSetHasExistedInv,SameVSCPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv \
+--main CCVDefaultStateMachine ccv_statemachine.qnt
 ```
 
 ### Sanity Checks
