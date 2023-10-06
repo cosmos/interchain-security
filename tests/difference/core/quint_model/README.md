@@ -60,7 +60,7 @@ quint verify --invariant ValidatorUpdatesArePropagatedInv,ValidatorSetHasExisted
 
 Sanity checks verify that certain patterns of behaviour can appear in the model.
 In detail, they are invariant checks that we expect to fail.
-They usually negate the appearance of some behaviour, i.e. not(DesirableBehaviour).
+They usually negate the appearance of some behaviour, i.e. `not(DesirableBehaviour)`.
 Then, a counterexample for this is an example trace exhibiting the behaviour.
 
 They are run like invariant checks, i.e. `quint run --invariant SANITY_CHECK_NAME ccv_statemachine.qnt --main CCVDefaultStateMachine`.
