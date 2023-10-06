@@ -31,7 +31,7 @@ quint test ccv_statemachine.qnt --main CCVDefaultStateMachine
 
 ### Invariants
 
-The invariants to check are in ccv_statemachine.qnt.
+The invariants to check are in [ccv_statemachine.qnt](ccv_statemachine.qnt).
 Check a single invariant by running
 `quint run --invariant INVARIANT_NAME ccv_statemachine.qnt --main CCVDefaultStateMachine`,
 or all invariants one after another with the help of the script `run_invariants.sh`.
