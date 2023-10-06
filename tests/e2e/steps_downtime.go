@@ -53,11 +53,20 @@ func stepsDowntime(consumerName string) []Step {
 						validatorID("carol"): 501,
 					},
 				},
+<<<<<<< HEAD
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   500,
 						validatorID("carol"): 501,
+=======
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 509,
+						// Bob's stake may or may not be slashed at this point depending on comet vs cometmock
+						// See https://github.com/cosmos/interchain-security/issues/1304
+						ValidatorID("carol"): 501,
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 					},
 				},
 			},
@@ -277,6 +286,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				chain:     chainID(consumerName),
 				validator: validatorID("bob"),
 			},
+<<<<<<< HEAD
 			state: State{
 				// slash packet queued on consumer, but powers not affected on either chain yet
 				chainID("provi"): ChainState{
@@ -284,6 +294,15 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("alice"): 511,
 						validatorID("bob"):   500,
 						validatorID("carol"): 500,
+=======
+			State: State{
+				// slash packet queued for bob on consumer, but powers not affected on either chain yet
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500,
+						ValidatorID("carol"): 500,
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 					},
 				},
 				chainID(consumerName): ChainState{
@@ -292,6 +311,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
+					ConsumerPendingPacketQueueSize: uintPtr(1), // bob's downtime slash packet is queued
 				},
 			},
 		},
@@ -312,11 +332,14 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   0, // bob is jailed
 						validatorID("carol"): 500,
 					},
+<<<<<<< HEAD
 					// no provider throttling engaged yet
 					GlobalSlashQueueSize: uintPointer(0),
 					ConsumerChainQueueSizes: &map[chainID]uint{
 						chainID(consumerName): uint(0),
 					},
+=======
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 				},
 				chainID(consumerName): ChainState{
 					// VSC packet applying jailing is not yet relayed to consumer
@@ -325,14 +348,17 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
+					ConsumerPendingPacketQueueSize: uintPtr(0), // slash packet handled ack clears consumer queue
 				},
 			},
 		},
+		// Invoke carol downtime slash on consumer
 		{
 			action: downtimeSlashAction{
 				chain:     chainID(consumerName),
 				validator: validatorID("carol"),
 			},
+<<<<<<< HEAD
 			state: State{
 				// powers not affected on either chain yet
 				chainID("provi"): ChainState{
@@ -348,10 +374,27 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("alice"): 511,
 						validatorID("bob"):   500,
 						validatorID("carol"): 500,
+=======
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 500,
 					},
+				},
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   500, // VSC packet jailing bob is not yet relayed to consumer
+						ValidatorID("carol"): 500,
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
+					},
+					ConsumerPendingPacketQueueSize: uintPtr(1), // carol's downtime slash packet is queued
 				},
 			},
 		},
+		// Relay slash packet to provider, and ack back to consumer
 		{
 			action: relayPacketsAction{
 				chainA:  chainID("provi"),
@@ -359,6 +402,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				port:    "provider",
 				channel: 0,
 			},
+<<<<<<< HEAD
 			state: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
@@ -376,11 +420,28 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("alice"): 511,
 						validatorID("bob"):   0,
 						validatorID("carol"): 500,
+=======
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 500, // slash packet for carol recv by provider, carol not slashed due to throttling
 					},
+				},
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0, // VSC packet applying bob jailing is also relayed and recv by consumer
+						ValidatorID("carol"): 500,
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
+					},
+					ConsumerPendingPacketQueueSize: uintPtr(1), // slash packet bounced ack keeps carol's downtime slash packet queued
 				},
 			},
 		},
 		{
+<<<<<<< HEAD
 			action: slashThrottleDequeue{
 				chain:            chainID(consumerName),
 				currentQueueSize: 1,
@@ -400,6 +461,22 @@ func stepsThrottledDowntime(consumerName string) []Step {
 					GlobalSlashQueueSize: uintPointer(0), // slash packets dequeued
 					ConsumerChainQueueSizes: &map[chainID]uint{
 						chainID(consumerName): 0,
+=======
+			Action: slashMeterReplenishmentAction{
+				TargetValue: 0, // We just want slash meter to be non-negative
+
+				// Slash meter replenish fraction is set to 10%, replenish period is 20 seconds, see config.go
+				// Meter is initially at 10%, decremented to -23% from bob being jailed. It'll then take three replenishments
+				// for meter to become positive again. 3*20 = 60 seconds + buffer = 100 seconds
+				Timeout: 100 * time.Second,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 500, // Carol still not slashed, packet must be retried
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 					},
 				},
 				chainID(consumerName): ChainState{
@@ -409,11 +486,31 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   0,
 						validatorID("carol"): 500,
 					},
+					ConsumerPendingPacketQueueSize: uintPtr(1), // packet still queued
 				},
 			},
 		},
-		// A block is incremented each action, hence why VSC is committed on provider,
-		// and can now be relayed as packet to consumer
+		// Wait for retry delay period to pass.
+		// Retry delay period is set to 30 seconds, see config.go,
+		// wait this amount of time to elapse the period.
+		{
+			Action: waitTimeAction{
+				WaitTime: 30 * time.Second,
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 500,
+					},
+				},
+				ChainID(consumerName): ChainState{
+					ConsumerPendingPacketQueueSize: uintPtr(1), // packet still queued
+				},
+			},
+		},
+		// Relay now that retry delay period has passed, confirm provider applies jailing
 		{
 			action: relayPacketsAction{
 				chainA:  chainID("provi"),
@@ -421,6 +518,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				port:    "provider",
 				channel: 0,
 			},
+<<<<<<< HEAD
 			state: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
@@ -440,6 +538,18 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   0,
 						validatorID("carol"): 0,
 					},
+=======
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 0, // jailed!
+					},
+				},
+				ChainID(consumerName): ChainState{
+					ConsumerPendingPacketQueueSize: uintPtr(0), // relayed slash packet handled ack clears consumer queue
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 				},
 			},
 		},

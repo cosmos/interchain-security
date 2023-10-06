@@ -69,14 +69,6 @@ func (k Keeper) GetSlashMeterReplenishFraction(ctx sdk.Context) string {
 	return f
 }
 
-// GetMaxThrottledPackets returns the maximum amount of throttled slash or vsc matured packets
-// that can be queued for a single consumer before the provider chain halts.
-func (k Keeper) GetMaxThrottledPackets(ctx sdk.Context) int64 {
-	var p int64
-	k.paramSpace.Get(ctx, types.KeyMaxThrottledPackets, &p)
-	return p
-}
-
 func (k Keeper) GetConsumerRewardDenomRegistrationFee(ctx sdk.Context) sdk.Coin {
 	// Due to difficulties doing migrations in coordinated upgrades, this param is hardcoded to 10 ATOM in v1.1.0-multiden.
 	// The below code is the proper way to store the param. A future scheduled upgrade will
@@ -96,7 +88,6 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetVscTimeoutPeriod(ctx),
 		k.GetSlashMeterReplenishPeriod(ctx),
 		k.GetSlashMeterReplenishFraction(ctx),
-		k.GetMaxThrottledPackets(ctx),
 		k.GetConsumerRewardDenomRegistrationFee(ctx),
 	)
 }

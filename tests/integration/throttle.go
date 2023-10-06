@@ -63,8 +63,13 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		// Send a slash packet from consumer to provider
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
 		tmVal := s.providerChain.Vals.Validators[0]
+<<<<<<< HEAD
 		packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
 		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
+=======
+		slashPacket := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
+		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket.GetData())
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 
 		// Assert validator 0 is jailed and has no power
 		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
@@ -82,10 +87,16 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		// Now send a second slash packet from consumer to provider for a different validator.
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
 		tmVal = s.providerChain.Vals.Validators[2]
+<<<<<<< HEAD
 		packet = s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 2)
 		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
+=======
+		slashPacket = s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 2)
+		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket.GetData())
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 
-		// Require that slash packet has not been handled
+		// Require that slash packet has not been handled, a bounce result would have
+		// been returned, but the IBC helper throws out acks.
 		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
 		s.Require().False(vals[2].IsJailed())
 
@@ -135,11 +146,14 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx)
 		s.Require().True(slashMeter.IsPositive())
 
-		// Assert validator 2 is jailed once pending slash packets are handled in ccv endblocker.
-		s.providerChain.NextBlock()
-		vals = providerStakingKeeper.GetAllValidators(cacheCtx)
-		slashedVal = vals[2]
-		s.Require().True(slashedVal.IsJailed())
+		// Assert validator 2 is jailed once slash packet is retried.
+		tmVal2 := s.providerChain.Vals.Validators[2]
+		packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(),
+			*tmVal2, stakingtypes.Infraction_INFRACTION_DOWNTIME, 3) // make sure to use a new seq num
+		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, packet.GetData())
+
+		stakingVal2 := s.mustGetStakingValFromTmVal(*tmVal2)
+		s.Require().True(stakingVal2.IsJailed())
 
 		// Assert validator 2 has no power, this should be apparent next block,
 		// since the staking endblocker runs before the ccv endblocker.
@@ -156,6 +170,7 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	s.SetupAllCCVChannels()
 	s.setupValidatorPowers()
 
+<<<<<<< HEAD
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 
@@ -172,6 +187,14 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 		s.Require().Equal(uint64(0),
 			providerKeeper.GetThrottledPacketDataSize(s.providerCtx(), consumerChainID))
 	}
+=======
+	var (
+		timeoutHeight    = clienttypes.Height{}
+		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccvtypes.DefaultCCVTimeoutPeriod).UnixNano())
+	)
+
+	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 
 	// Choose 3 consumer bundles. It doesn't matter which ones.
 	idx := 0
@@ -184,7 +207,7 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 		idx++
 	}
 
-	// Send some packets to provider from the 3 chosen consumers.
+	// Send some slash packets to provider from the 3 chosen consumers.
 	// They will each slash a different validator according to idx.
 	idx = 0
 	valsToSlash := []tmtypes.Validator{}
@@ -200,6 +223,7 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 			*bundle,
 			*tmVal,
 			stakingtypes.Infraction_INFRACTION_DOWNTIME,
+<<<<<<< HEAD
 			3, // use sequence 3, 1 and 2 are used above.
 		)
 		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
@@ -209,45 +233,72 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
 		packet = s.constructVSCMaturedPacketFromConsumer(*bundle, 5) // use sequence 5
 		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
+=======
+			1, // all consumers use 1 seq num
+		)
+		sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, slashPacket.GetData())
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 
 		idx++
 	}
 
-	// Confirm that the slash packet and trailing VSC matured packet
-	// were handled immediately for the first consumer (this packet was recv first).
+	// Confirm that the slash packet for the first consumer was handled (this packet was recv first).
 	s.confirmValidatorJailed(valsToSlash[0], true)
-	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(
-		s.providerCtx(), senderBundles[0].Chain.ChainID))
 
-	// Packets were queued for the second and third consumers.
+	// Packets were bounced for the second and third consumers.
 	s.confirmValidatorNotJailed(valsToSlash[1], 1000)
-	s.Require().Equal(uint64(3), providerKeeper.GetThrottledPacketDataSize(
-		s.providerCtx(), senderBundles[1].Chain.ChainID))
 	s.confirmValidatorNotJailed(valsToSlash[2], 1000)
-	s.Require().Equal(uint64(3), providerKeeper.GetThrottledPacketDataSize(
-		s.providerCtx(), senderBundles[2].Chain.ChainID))
 
 	// Total power is now 3000
 	s.Require().Equal(int64(3000),
 		providerStakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
 
 	// Now replenish the slash meter and confirm one of two queued slash
-	// packet entries are then handled. Order is irrelevant here since those
-	// two packets were sent and recv at the same block time when being queued.
+	// packet entries are then handled, when both are retried.
 	s.replenishSlashMeterTillPositive()
 
-	// 1st NextBlock will handle the slash packet, 2nd will update staking module val powers
+	// Retry from consumer with idx 1
+	bundle := senderBundles[1]
+	packet := s.constructSlashPacketFromConsumer(
+		*bundle,
+		valsToSlash[1],
+		stakingtypes.Infraction_INFRACTION_DOWNTIME,
+		2, // seq number is incremented since last try
+	)
+	sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, packet.GetData())
+
+	// retry from consumer with idx 2
+	bundle = senderBundles[2]
+	packet = s.constructSlashPacketFromConsumer(
+		*bundle,
+		valsToSlash[2],
+		stakingtypes.Infraction_INFRACTION_DOWNTIME,
+		2, // seq number is incremented since last try
+	)
+	sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, packet.GetData())
+
+	// Call NextBlocks to update staking module val powers
 	s.providerChain.NextBlock()
 	s.providerChain.NextBlock()
 
-	// If one of the entires was handled, total power will be 2000 (1000 power was slashed)
+	// If one of the entires was handled, total power will be 2000 (1000 power was just slashed)
 	s.Require().Equal(int64(2000),
 		providerStakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
 
 	// Now replenish one more time, and handle final slash packet.
 	s.replenishSlashMeterTillPositive()
 
-	// 1st NextBlock will handle the slash packet, 2nd will update last validator power
+	// Retry from consumer with idx 2
+	bundle = senderBundles[2]
+	packet = s.constructSlashPacketFromConsumer(
+		*bundle,
+		valsToSlash[2],
+		stakingtypes.Infraction_INFRACTION_DOWNTIME,
+		3, // seq number is incremented since last try
+	)
+	sendOnConsumerRecvOnProvider(s, bundle.Path, timeoutHeight, timeoutTimestamp, packet.GetData())
+
+	// Call NextBlocks to update staking module val powers
 	s.providerChain.NextBlock()
 	s.providerChain.NextBlock()
 
@@ -260,15 +311,6 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	for _, val := range valsToSlash {
 		s.confirmValidatorJailed(val, true)
 	}
-	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(
-		s.providerCtx(), senderBundles[0].Chain.ChainID))
-	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(
-		s.providerCtx(), senderBundles[1].Chain.ChainID))
-	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(
-		s.providerCtx(), senderBundles[2].Chain.ChainID))
-
-	// All global queue entries are gone too
-	s.Require().Empty(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()))
 }
 
 // TestPacketSpam confirms that the provider can handle a large number of
@@ -312,7 +354,12 @@ func (s *CCVTestSuite) TestPacketSpam() {
 			infractionType = stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 		}
 		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
+<<<<<<< HEAD
 		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum))
+=======
+		slashPacket := s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum)
+		packetsData = append(packetsData, slashPacket.GetData())
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 	}
 
 	// Recv 500 packets from consumer to provider in same block
@@ -322,17 +369,14 @@ func (s *CCVTestSuite) TestPacketSpam() {
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
-	// Execute block to handle packets in endblock
+	// Execute block
 	s.providerChain.NextBlock()
 
-	// Confirm all packets are handled or dropped (queues empty)
-	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(
-		s.providerCtx(), firstBundle.Chain.ChainID))
-	slashData, vscMData, _, _ := providerKeeper.GetAllThrottledPacketData(
-		s.providerCtx(), firstBundle.Chain.ChainID)
-	s.Require().Empty(slashData)
-	s.Require().Empty(vscMData)
-	s.Require().Empty(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()))
+	// Confirm 3 expected vals are jailed
+	for i := 0; i < 3; i++ {
+		val := s.providerChain.Vals.Validators[i]
+		s.confirmValidatorJailed(*val, true)
+	}
 }
 
 func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
@@ -366,7 +410,12 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 		// Increment ibc seq num for each packet (starting at 1)
 		ibcSeqNum++
 		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
+<<<<<<< HEAD
 		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, ibcSeqNum))
+=======
+		slashPacket := s.constructSlashPacketFromConsumer(firstBundle, *valToJail, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, ibcSeqNum)
+		packetsData = append(packetsData, slashPacket.GetData())
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 	}
 
 	// Recv 500 packets from consumer to provider in same block
@@ -378,15 +427,6 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 
 	// Execute block to handle packets in endblock
 	s.providerChain.NextBlock()
-
-	// Confirm all packets are dropped (queues empty)
-	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(
-		s.providerCtx(), firstBundle.Chain.ChainID))
-	slashData, vscMData, _, _ := providerKeeper.GetAllThrottledPacketData(
-		s.providerCtx(), firstBundle.Chain.ChainID)
-	s.Require().Empty(slashData)
-	s.Require().Empty(vscMData)
-	s.Require().Empty(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()))
 
 	// Confirm that slash meter is not affected
 	s.Require().Equal(providerKeeper.GetSlashMeterAllowance(s.providerCtx()),
@@ -417,6 +457,7 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 	}
 }
 
+<<<<<<< HEAD
 // TestQueueOrdering validates that the ordering of slash packet entries
 // in the global queue (relevant to a single chain) matches the ordering of slash packet
 // data in the chain specific queues, even in the presence of packet spam.
@@ -566,6 +607,8 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 	s.Require().Equal(0, len(vscMaturedPacketData))
 }
 
+=======
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 // TestSlashingSmallValidators tests that multiple slash packets from validators with small
 // power can be handled by the provider chain in a non-throttled manner.
 func (s *CCVTestSuite) TestSlashingSmallValidators() {
@@ -598,12 +641,21 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	tmval1 := s.providerChain.Vals.Validators[1]
 	tmval2 := s.providerChain.Vals.Validators[2]
 	tmval3 := s.providerChain.Vals.Validators[3]
+<<<<<<< HEAD
 	packet1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
 	packet2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME, 2)
 	packet3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Infraction_INFRACTION_DOWNTIME, 3)
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet1)
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet2)
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet3)
+=======
+	slashPacket1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
+	slashPacket2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Infraction_INFRACTION_DOWNTIME, 2)
+	slashPacket3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Infraction_INFRACTION_DOWNTIME, 3)
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket1.GetData())
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket2.GetData())
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket3.GetData())
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 
 	// Default slash meter replenish fraction is 0.05, so all sent packets should be handled immediately.
 	vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
@@ -645,6 +697,7 @@ func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
 	s.Require().Equal(int64(1200), providerKeeper.GetSlashMeterAllowance(s.providerCtx()).Int64())
 }
 
+<<<<<<< HEAD
 // TestSlashSameValidator tests the edge case that that the total slashed validator power
 // queued up for a single block exceeds the slash meter allowance,
 // but some of the slash packets are for the same validator, and therefore some packets
@@ -698,6 +751,8 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 	s.Require().Len(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()), 0)
 }
 
+=======
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 // Similar to TestSlashSameValidator, but 100% of val power is jailed a single block,
 // and in the first packets recv for that block.
 // This edge case should not occur in practice, but is useful to validate that
@@ -726,18 +781,29 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 
 	// Instantiate a slash packet for each validator,
 	// these first 4 packets should jail 100% of the total power.
+	ibcSeqNum := uint64(1)
 	for _, val := range s.providerChain.Vals.Validators {
 		s.setDefaultValSigningInfo(*val)
+<<<<<<< HEAD
 		packets = append(packets, s.constructSlashPacketFromConsumer(
 			s.getFirstBundle(), *val, stakingtypes.Infraction_INFRACTION_DOWNTIME, ibcSeqNum))
+=======
+		packetsData = append(packetsData, s.constructSlashPacketFromConsumer(
+			s.getFirstBundle(), *val, stakingtypes.Infraction_INFRACTION_DOWNTIME, ibcSeqNum).GetData())
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 		ibcSeqNum++
 	}
 
 	// add 5 more slash packets for each validator, that will be handled in the same block.
 	for _, val := range s.providerChain.Vals.Validators {
 		for i := 0; i < 5; i++ {
+<<<<<<< HEAD
 			packets = append(packets, s.constructSlashPacketFromConsumer(
 				s.getFirstBundle(), *val, stakingtypes.Infraction_INFRACTION_DOWNTIME, ibcSeqNum))
+=======
+			packetsData = append(packetsData, s.constructSlashPacketFromConsumer(
+				s.getFirstBundle(), *val, stakingtypes.Infraction_INFRACTION_DOWNTIME, ibcSeqNum).GetData())
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 			ibcSeqNum++
 		}
 	}
@@ -749,17 +815,7 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
-	// We should have 24 pending slash packet entries queued.
-	s.Require().Len(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()), 24)
-
-	// Call next block to process all pending slash packets in end blocker.
-	s.providerChain.NextBlock()
-
-	// All slash packets should have been handled immediately,
-	// even though the first 4 packets jailed 100% of the total power.
-	s.Require().Len(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()), 0)
-
-	// Sanity check that all validators are jailed.
+	// Check that all validators are jailed.
 	for _, val := range s.providerChain.Vals.Validators {
 		// Do not check power, since val power is not yet updated by staking endblocker.
 		s.confirmValidatorJailed(*val, false)
@@ -769,6 +825,7 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 	// "applying the validator changes would result in empty set".
 }
 
+<<<<<<< HEAD
 func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 	s.SetupAllCCVChannels()
 	providerKeeper := s.providerApp.GetProviderKeeper()
@@ -911,6 +968,8 @@ func (s *CCVTestSuite) TestVscMaturedHandledPerBlockLimit() {
 	s.Require().Empty(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())) // empty global entries = all slash packets handled
 }
 
+=======
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPower bool) {
 	sdkVal, found := s.providerApp.GetTestStakingKeeper().GetValidator(
 		s.providerCtx(), sdk.ValAddress(tmVal.Address))

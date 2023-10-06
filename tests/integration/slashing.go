@@ -68,31 +68,46 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
 
 	// Send slash packet from the first consumer chain
+<<<<<<< HEAD
 	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
 	err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
+=======
+	var (
+		timeoutHeight    = clienttypes.Height{}
+		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
+	)
+	slashPacket := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOWNTIME, 1)
+	sequence, err := s.getFirstBundle().Path.EndpointA.SendPacket(timeoutHeight, timeoutTimestamp, slashPacket.GetData())
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 	s.Require().NoError(err)
 
 	// Set outstanding slashing flag for first consumer, it's important to use the consumer's cons addr here
 	firstConsumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consumerConsAddr.ToSdkConsAddr())
 
 	// Note: RecvPacket advances two blocks. Let's say the provider is currently at height N.
-	// The received slash packet will be queued during N, and handled by the ccv module during
-	// the endblocker of N. The staking module will then register a validator update from that
-	// packet during the endblocker of N+1 (note that staking endblocker runs before ccv endblocker,
-	// hence why the VSC is registered on N+1). Then the ccv module sends VSC packets to each consumer
-	// during the endblocker of N+1. The new validator set will be committed to in block N+2,
-	// and will be in effect for the provider during block N+3.
+	// The received slash packet will be handled during N. The staking module will then register
+	// a validator update from that packet during the endblocker of N. Then the ccv module sends
+	// VSC packets to each consumer during the endblocker of N (note ccv endblocker runs after staking).
+	// The new validator set will be committed to in block N+1, and will be in effect
+	// for the provider during block N+2.
 
 	valsetUpdateIdN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// receive the slash packet on the provider chain. RecvPacket() calls the provider endblocker twice
+<<<<<<< HEAD
+=======
+	packet := s.newPacketFromConsumer(slashPacket.GetData(), sequence, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp)
+	heightBefore := s.providerCtx().BlockHeight()
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 	err = s.path.EndpointB.RecvPacket(packet)
+	heightAfter := s.providerCtx().BlockHeight()
 	s.Require().NoError(err)
+	s.Require().Equal(heightBefore+2, heightAfter)
 
 	// We've now advanced two blocks.
 
-	// VSC packets should have been sent from provider during block N+1 to each consumer
-	expectedSentValsetUpdateId := valsetUpdateIdN + 1
+	// VSC packets should have been sent from provider during block N to each consumer
+	expectedSentValsetUpdateId := valsetUpdateIdN
 	for _, bundle := range s.consumerBundles {
 		_, found := providerKeeper.GetVscSendTimestamp(s.providerCtx(),
 			bundle.Chain.ChainID, expectedSentValsetUpdateId)
@@ -104,10 +119,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.Require().Equal(valsetUpdateIdN+2,
 		providerKeeper.GetValidatorSetUpdateId(s.providerCtx()))
 
-	// Call next block so provider is now on block N + 3 mentioned above
-	s.providerChain.NextBlock()
-
-	// check that the validator was removed from the provider validator set by N + 3
+	// check that the validator was removed from the provider validator set by N + 2
 	s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
 
 	for _, bundle := range s.consumerBundles {
@@ -151,9 +163,10 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	pFlag := firstConsumerKeeper.OutstandingDowntime(s.consumerCtx(), consumerConsAddr.ToSdkConsAddr())
 	s.Require().False(pFlag)
 
-	// check that slashing packet gets acknowledged successfully
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
+	// Check that first consumer can recv ack from provider.
+	// Provider has returned SlashPacketHandledResult.
+	ack := channeltypes.NewResultAcknowledgement(ccv.SlashPacketHandledResult)
+	err = s.getFirstBundle().Path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
 	s.Require().NoError(err)
 }
 
@@ -196,6 +209,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
 
 	// Send slash packet from the first consumer chain
+<<<<<<< HEAD
 	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, 1)
 	err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
 	s.Require().NoError(err)
@@ -203,6 +217,14 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	// receive the slash packet on the provider chain. RecvPacket() advances two blocks
 	err = s.path.EndpointB.RecvPacket(packet)
 	s.Require().NoError(err)
+=======
+	var (
+		timeoutHeight    = clienttypes.Height{}
+		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
+	)
+	slashPacket := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, 1)
+	packet := sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket.GetData())
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 
 	// Advance a few more blocks to make sure any voting power changes would be reflected
 	s.providerChain.NextBlock()
@@ -234,8 +256,9 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	// check that validator was NOT tombstoned on provider
 	s.Require().False(valSignInfo.Tombstoned)
 
-	// check that slashing packet gets acknowledged successfully
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	// check that slashing packet gets acknowledged successfully,
+	// provider returns V1Result acks for double sign packets
+	ack := channeltypes.NewResultAcknowledgement(ccv.V1Result)
 	err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
 	s.Require().NoError(err)
 }
@@ -426,16 +449,10 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
 	suite.Require().False(errAck.Success())
 
-	// Expect nothing was queued
-	suite.Require().Equal(0, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
-	suite.Require().Equal(uint64(0), (providerKeeper.GetThrottledPacketDataSize(ctx, consumerChainID)))
-
 	// expect to queue entries for the slash request
 	slashingPkt.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
 	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
 	suite.Require().True(ack.Success())
-	suite.Require().Equal(1, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
-	suite.Require().Equal(uint64(1), (providerKeeper.GetThrottledPacketDataSize(ctx, consumerChainID)))
 }
 
 // TestValidatorDowntime tests if a slash packet is sent

@@ -414,6 +414,7 @@ func (suite *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.
 func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
 	tmVal tmtypes.Validator, infractionType stakingtypes.Infraction, ibcSeqNum uint64,
 ) channeltypes.Packet {
+<<<<<<< HEAD
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
 
@@ -458,6 +459,35 @@ func (s *CCVTestSuite) constructVSCMaturedPacketFromConsumer(bundle icstestingut
 	}
 
 	return channeltypes.NewPacket(data.GetBytes(),
+=======
+	packet, _ := s.constructSlashPacketFromConsumerWithData(bundle, tmVal, infractionType, ibcSeqNum)
+	return packet
+}
+
+func (s *CCVTestSuite) constructSlashPacketFromConsumerWithData(bundle icstestingutils.ConsumerBundle,
+	tmVal tmtypes.Validator, infractionType stakingtypes.Infraction, ibcSeqNum uint64,
+) (channeltypes.Packet, ccv.SlashPacketData) {
+	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
+		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
+
+	spdData := ccv.SlashPacketData{
+		Validator: abci.Validator{
+			Address: tmVal.Address,
+			Power:   tmVal.VotingPower,
+		},
+		ValsetUpdateId: valsetUpdateId,
+		Infraction:     infractionType,
+	}
+
+	cpdData := ccv.ConsumerPacketData{
+		Type: ccv.SlashPacket,
+		Data: &ccv.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: &spdData,
+		},
+	}
+
+	return channeltypes.NewPacket(cpdData.GetBytes(),
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 		ibcSeqNum,
 		ccv.ConsumerPortID,              // Src port
 		bundle.Path.EndpointA.ChannelID, // Src channel
@@ -465,7 +495,11 @@ func (s *CCVTestSuite) constructVSCMaturedPacketFromConsumer(bundle icstestingut
 		bundle.Path.EndpointB.ChannelID, // Dst channel
 		clienttypes.Height{},
 		uint64(bundle.GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano()),
+<<<<<<< HEAD
 	)
+=======
+	), spdData
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 }
 
 // incrementTime increments the overall time by jumpPeriod
@@ -614,4 +648,12 @@ func (s *CCVTestSuite) setupValidatorPowers() {
 		s.Require().Equal(int64(1000), power)
 	}
 	s.Require().Equal(int64(4000), stakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
+}
+
+// mustGetStakingValFromTmVal returns the staking validator from the current state of the staking keeper,
+// corresponding to a given tendermint validator. Note this func will fail the test if the validator is not found.
+func (s *CCVTestSuite) mustGetStakingValFromTmVal(tmVal tmtypes.Validator) (stakingVal stakingtypes.Validator) {
+	stakingVal, found := s.providerApp.GetTestStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), sdk.ConsAddress(tmVal.Address))
+	s.Require().True(found)
+	return stakingVal
 }

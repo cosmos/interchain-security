@@ -7,13 +7,15 @@ import (
 	"github.com/stretchr/testify/require"
 
 	testutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
-	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 func TestPacketSendingPermitted(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testutil.GetConsumerKeeperAndCtx(t, testutil.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
+
+	consumerKeeper.SetParams(ctx, ccvtypes.DefaultParams())
 
 	ctx = ctx.WithBlockTime(time.Now())
 
@@ -42,7 +44,8 @@ func TestPacketSendingPermitted(t *testing.T) {
 	require.False(t, consumerKeeper.PacketSendingPermitted(ctx))
 
 	// Elapse retry delay period
-	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(2 * consumerkeeper.RetryDelayPeriod))
+	period := consumerKeeper.GetRetryDelayPeriod(ctx)
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(2 * period))
 
 	// Now packet sending is permitted again
 	require.True(t, consumerKeeper.PacketSendingPermitted(ctx))

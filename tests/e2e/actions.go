@@ -1937,6 +1937,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	tr.waitBlocks(chainID("provi"), 2, 30*time.Second)
 }
 
+<<<<<<< HEAD
 // slashThrottleDequeue polls slash queue sizes until nextQueueSize is achieved
 type slashThrottleDequeue struct {
 	chain            chainID
@@ -1955,8 +1956,28 @@ func (tr TestRun) waitForSlashThrottleDequeue(
 
 	if initialGlobalQueueSize != action.currentQueueSize {
 		panic(fmt.Sprintf("wrong initial queue size: %d - expected global queue: %d\n", initialGlobalQueueSize, action.currentQueueSize))
+=======
+// slashMeterReplenishmentAction polls the slash meter on provider until value is achieved
+type slashMeterReplenishmentAction struct {
+	TargetValue int64
+	// panic if timeout is exceeded
+	Timeout time.Duration
+}
+
+func (tr TestConfig) waitForSlashMeterReplenishment(
+	action slashMeterReplenishmentAction,
+	verbose bool,
+) {
+	timeout := time.Now().Add(action.Timeout)
+	initialSlashMeter := tr.getSlashMeter()
+
+	if initialSlashMeter >= 0 {
+		panic(fmt.Sprintf("No need to wait for slash meter replenishment, current value: %d", initialSlashMeter))
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 	}
+
 	for {
+<<<<<<< HEAD
 		globalQueueSize := int(tr.getGlobalSlashQueueSize())
 		chainQueueSize := int(tr.getConsumerChainPacketQueueSize(action.chain))
 		if verbose {
@@ -1965,22 +1986,45 @@ func (tr TestRun) waitForSlashThrottleDequeue(
 
 		// check if global queue size is equal to chain queue size
 		if globalQueueSize == chainQueueSize && globalQueueSize == action.nextQueueSize { //nolint:gocritic // this is the comparison that we want here.
+=======
+		slashMeter := tr.getSlashMeter()
+		if verbose {
+			fmt.Printf("waiting for slash meter to be replenished, current value: %d\n", slashMeter)
+		}
+
+		// check if meter has reached target value
+		if slashMeter >= action.TargetValue {
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 			break
 		}
 
 		if time.Now().After(timeout) {
+<<<<<<< HEAD
 			panic(fmt.Sprintf("\n\n\nwaitForSlashThrottleDequeuemethod has timed out after: %s\n\n", action.timeout))
+=======
+			panic(fmt.Sprintf("\n\nwaitForSlashMeterReplenishment has timed out after: %s\n\n", action.Timeout))
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 		}
 
-		time.Sleep(500 * time.Millisecond)
+		tr.WaitTime(5 * time.Second)
 	}
+<<<<<<< HEAD
 	// wair for 2 blocks to be created
 	// allowing the jailing to be incorporated into voting power
 	tr.waitBlocks(action.chain, 2, time.Minute)
+=======
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 }
 
-func uintPointer(i uint) *uint {
-	return &i
+type waitTimeAction struct {
+	WaitTime time.Duration
+}
+
+func (tr TestConfig) waitForTime(
+	action waitTimeAction,
+	verbose bool,
+) {
+	tr.WaitTime(action.WaitTime)
 }
 
 // GetPathNameForGorelayer returns the name of the path between two given chains used by Gorelayer.

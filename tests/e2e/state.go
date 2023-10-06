@@ -23,11 +23,18 @@ type ChainState struct {
 	RepresentativePowers           *map[validatorID]uint
 	Params                         *[]Param
 	Rewards                        *Rewards
+<<<<<<< HEAD
 	ConsumerChains                 *map[chainID]bool
 	AssignedKeys                   *map[validatorID]string
 	ProviderKeys                   *map[validatorID]string // validatorID: validator provider key
 	ConsumerChainQueueSizes        *map[chainID]uint
 	GlobalSlashQueueSize           *uint
+=======
+	ConsumerChains                 *map[ChainID]bool
+	AssignedKeys                   *map[ValidatorID]string
+	ProviderKeys                   *map[ValidatorID]string // validatorID: validator provider key
+	ConsumerPendingPacketQueueSize *uint                   // Only relevant to consumer chains
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 	RegisteredConsumerRewardDenoms *[]string
 }
 
@@ -168,6 +175,7 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 		chainState.ProviderKeys = &providerKeys
 	}
 
+<<<<<<< HEAD
 	if modelState.GlobalSlashQueueSize != nil {
 		globalQueueSize := tr.getGlobalSlashQueueSize()
 		chainState.GlobalSlashQueueSize = &globalQueueSize
@@ -181,9 +189,16 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 		chainState.ConsumerChainQueueSizes = &consumerChainQueueSizes
 	}
 
+=======
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 	if modelState.RegisteredConsumerRewardDenoms != nil {
 		registeredConsumerRewardDenoms := tr.getRegisteredConsumerRewardDenoms(chain)
 		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
+	}
+
+	if modelState.ConsumerPendingPacketQueueSize != nil {
+		pendingPacketQueueSize := tr.getPendingPacketQueueSize(chain)
+		chainState.ConsumerPendingPacketQueueSize = &pendingPacketQueueSize
 	}
 
 	if *verbose {
@@ -667,9 +682,16 @@ func (tr TestRun) getProviderAddressFromConsumer(consumerChain chainID, validato
 	return addr
 }
 
+<<<<<<< HEAD
 func (tr TestRun) getGlobalSlashQueueSize() uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chainID("provi")].binaryName,
+=======
+func (tr TestConfig) getSlashMeter() int64 {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec",
+		tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 
 		"query", "provider", "throttle-state",
 		`--node`, tr.getQueryNode(chainID("provi")),
@@ -680,6 +702,7 @@ func (tr TestRun) getGlobalSlashQueueSize() uint {
 		log.Fatal(err, "\n", string(bz))
 	}
 
+<<<<<<< HEAD
 	packets := gjson.Get(string(bz), "packets").Array()
 	return uint(len(packets))
 }
@@ -700,6 +723,10 @@ func (tr TestRun) getConsumerChainPacketQueueSize(consumerChain chainID) uint {
 
 	size := gjson.Get(string(bz), "size").Uint()
 	return uint(size)
+=======
+	slashMeter := gjson.Get(string(bz), "slash_meter")
+	return slashMeter.Int()
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 }
 
 func (tr TestRun) getRegisteredConsumerRewardDenoms(chain chainID) []string {
@@ -724,7 +751,32 @@ func (tr TestRun) getRegisteredConsumerRewardDenoms(chain chainID) []string {
 	return rewardDenoms
 }
 
+<<<<<<< HEAD
 func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {
+=======
+func (tr TestConfig) getPendingPacketQueueSize(chain ChainID) uint {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+
+		"query", "ccvconsumer", "throttle-state",
+		`--node`, tr.getQueryNode(chain),
+		`-o`, `json`,
+	)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	if !gjson.ValidBytes(bz) {
+		panic("invalid json response from query ccvconsumer throttle-state: " + string(bz))
+	}
+
+	packetData := gjson.Get(string(bz), "packet_data_queue").Array()
+	return uint(len(packetData))
+}
+
+func (tr TestConfig) getValidatorNode(chain ChainID, validator ValidatorID) string {
+>>>>>>> 88499b7 (feat!: completed throttle v2 (provider changes + migration + testing) (#1321))
 	// for CometMock, validatorNodes are all the same address as the query node (which is CometMocks address)
 	if tr.useCometmock {
 		return tr.getQueryNode(chain)
@@ -771,4 +823,8 @@ func (tr TestRun) curlJsonRPCRequest(method, params, address string) {
 
 	verbosity := false
 	executeCommandWithVerbosity(cmd, "curlJsonRPCRequest", verbosity)
+}
+
+func uintPtr(i uint) *uint {
+	return &i
 }
