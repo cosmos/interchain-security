@@ -571,7 +571,7 @@
     "State": {
       "democ": {
         "ValBalances": {
-          "alice": 9889999998,
+          "alice": 9899999999,
           "bob": 9960000001
         },
         "ValPowers": null,
@@ -589,7 +589,18 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
-        "Proposals": null
+        "Proposals": {
+          "1": {
+            "RawProposal": {
+              "Deposit": 10000001,
+              "Status": "PROPOSAL_STATUS_PASSED",
+              "Subspace": "transfer",
+              "Key": "SendEnabled",
+              "Value": "true"
+            },
+            "Type": "main.ParamsProposal"
+          }
+        }
       }
     }
   },

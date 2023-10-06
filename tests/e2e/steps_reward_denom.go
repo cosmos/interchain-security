@@ -75,6 +75,8 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 						ValidatorID("alice"): 9889999998,
 						ValidatorID("bob"):   9960000001,
 					},
+					// Check that the "SendEnabled" transfer parameter is set to false
+					Params: &([]Param{{Subspace: "transfer", Key: "SendEnabled", Value: "false"}}),
 					Proposals: &map[uint]Proposal{
 						1: ParamsProposal{
 							Deposit:  10000001,
@@ -97,9 +99,20 @@ func stepsRewardDenomConsumer(consumerName string) []Step {
 			},
 			State: State{
 				ChainID(consumerName): ChainState{
+					// Check that alice gets the prop deposit refunded
 					ValBalances: &map[ValidatorID]uint{
-						ValidatorID("alice"): 9889999998,
+						ValidatorID("alice"): 9899999999,
 						ValidatorID("bob"):   9960000001,
+					},
+					// Check that the prop passed
+					Proposals: &map[uint]Proposal{
+						1: ParamsProposal{
+							Deposit:  10000001,
+							Status:   "PROPOSAL_STATUS_PASSED",
+							Subspace: "transfer",
+							Key:      "SendEnabled",
+							Value:    "true",
+						},
 					},
 					// Check that the parameter is changed on gov-consumer chain
 					Params: &([]Param{{Subspace: "transfer", Key: "SendEnabled", Value: "true"}}),
