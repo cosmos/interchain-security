@@ -25,6 +25,7 @@ func (k Keeper) GetConsumerParams(ctx sdk.Context) ccvtypes.ConsumerParams {
 		k.GetSoftOptOutThreshold(ctx),
 		k.GetRewardDenoms(ctx),
 		k.GetProviderRewardDenoms(ctx),
+		k.GetRetryDelayPeriod(ctx),
 	)
 }
 
@@ -137,4 +138,10 @@ func (k Keeper) GetProviderRewardDenoms(ctx sdk.Context) []string {
 	var denoms []string
 	k.paramStore.Get(ctx, ccvtypes.KeyProviderRewardDenoms, &denoms)
 	return denoms
+}
+
+func (k Keeper) GetRetryDelayPeriod(ctx sdk.Context) time.Duration {
+	var period time.Duration
+	k.paramStore.Get(ctx, ccvtypes.KeyRetryDelayPeriod, &period)
+	return period
 }

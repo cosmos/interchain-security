@@ -377,8 +377,10 @@ func (tr *TestConfig) runStep(step Step, verbose bool) {
 		tr.registerRepresentative(action, verbose)
 	case assignConsumerPubKeyAction:
 		tr.assignConsumerPubKey(action, verbose)
-	case slashThrottleDequeueAction:
-		tr.waitForSlashThrottleDequeue(action, verbose)
+	case slashMeterReplenishmentAction:
+		tr.waitForSlashMeterReplenishment(action, verbose)
+	case waitTimeAction:
+		tr.waitForTime(action, verbose)
 	case startRelayerAction:
 		tr.startRelayer(action, verbose)
 	case submitChangeRewardDenomsProposalAction:

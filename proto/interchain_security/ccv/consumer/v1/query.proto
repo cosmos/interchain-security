@@ -7,6 +7,7 @@ option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/consumer/typ
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "interchain_security/ccv/consumer/v1/consumer.proto";
+import "interchain_security/ccv/v1/wire.proto";
 
 service Query {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
@@ -23,6 +24,11 @@ service Query {
 
   rpc QueryProviderInfo(QueryProviderInfoRequest) returns (QueryProviderInfoResponse) {
     option (google.api.http).get = "/interchain_security/ccv/consumer/provider-info";
+  }
+
+  // QueryThrottleState returns on-chain state relevant to throttled consumer packets 
+  rpc QueryThrottleState(QueryThrottleStateRequest) returns (QueryThrottleStateResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/consumer/throttle_state";
   }
 }
 
@@ -64,6 +70,14 @@ message QueryProviderInfoResponse {
   ChainInfo consumer = 1 [ (gogoproto.nullable) = false ];
   ChainInfo provider = 2 [ (gogoproto.nullable) = false ];
 }
+
+message QueryThrottleStateRequest {}
+
+message QueryThrottleStateResponse {
+  SlashRecord slash_record = 1 [ (gogoproto.nullable) = true ];
+  repeated interchain_security.ccv.v1.ConsumerPacketData packet_data_queue = 2 [ (gogoproto.nullable) = false ];
+}
+
 
 message ChainInfo {
   string chainID = 1;
