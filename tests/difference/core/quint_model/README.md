@@ -38,7 +38,7 @@ or all invariants one after another with the help of the script `run_invariants.
 Each invariant takes about a minute to run.
 
 Invariants are as follows:
-- [X] ValidatorUpdatesArePropagated: When a validator power update is comitted on chain, a packet containing that change in voting power is sent to all running consumers.
+- [X] ValidatorUpdatesArePropagatedInv: When a validator power update is comitted on chain, a packet containing that change in voting power is sent to all running consumers.
 - [X] ValidatorSetHasExistedInv: Every validator set on consumer chains is/was a validator set on the provider.
 - [X] SameVSCPacketsInv: Ensure that consumer chains receive the same VSCPackets in the same order.
 Because of nuances with starting/stopping consumers, this invariant is not as simple as it sounds. In detail:
@@ -52,7 +52,7 @@ that were running at the time the packet was sent (and are still running).
 
 Invariants can also be model-checked by Apalache, using this command:
 ```
-quint verify --invariant ValidatorUpdatesArePropagated,ValidatorSetHasExistedInv,SameVSCPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv \
+quint verify --invariant ValidatorUpdatesArePropagatedInv,ValidatorSetHasExistedInv,SameVSCPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv \
 --main CCVDefaultStateMachine ccv_statemachine.qnt
 ```
 
