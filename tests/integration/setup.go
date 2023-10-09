@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"sync"
 	"testing"
 
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
@@ -167,7 +166,9 @@ func (s *CCVTestSuite) registerPacketSniffer(chain *ibctesting.TestChain) {
 		s.packetSniffers = make(map[*ibctesting.TestChain]*packetSniffer)
 	}
 	p := newPacketSniffer()
-	chain.App.GetBaseApp().SetStreamingManager(p)
+	chain.App.GetBaseApp().SetStreamingManager(store.StreamingManager{
+		ABCIListeners: []store.ABCIListener{p},
+	})
 	s.packetSniffers[chain] = p
 }
 
@@ -380,8 +381,7 @@ type packetSniffer struct {
 	packets map[string]channeltypes.Packet
 }
 
-// TODO: @MSalopek this was deprecated, figure out how to use it or ask @tbruyelle
-// var _ baseapp.StreamingService = &packetSniffer{}
+var _ store.ABCIListener = &packetSniffer{}
 
 func newPacketSniffer() *packetSniffer {
 	return &packetSniffer{
@@ -407,10 +407,6 @@ func getSentPacketKey(sequence uint64, channelID string) string {
 func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit, cs []*store.StoreKVPair) error {
 	return nil
 }
-
-func (*packetSniffer) Close() error                                       { return nil }
-func (*packetSniffer) Listeners() map[store.StoreKey][]store.ABCIListener { return nil }
-func (*packetSniffer) Stream(wg *sync.WaitGroup) error                    { return nil }
 
 // [legacy simibc method]
 // ABCIToSDKEvents converts a list of ABCI events to Cosmos SDK events.
