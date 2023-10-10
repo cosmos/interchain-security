@@ -201,8 +201,8 @@ module CCVDefaultStateMachine {
                     if (commonPackets.size() == 0) {
                         true // they don't share any packets, so nothing to check
                     } else {
-                        val newestCommonPacket = commonPackets.MaxBy(packet => packet.sendingTime)
-                        val oldestCommonPacket = commonPackets.MinBy(packet => packet.sendingTime)
+                        val newestCommonPacket = commonPackets.maxBy(packet => packet.sendingTime)
+                        val oldestCommonPacket = commonPackets.minBy(packet => packet.sendingTime)
                         // get all packets sent between the oldest and newest common packet
                         val packetsBetween1 = packets1.select(
                             packet => packet.sendingTime >= oldestCommonPacket.sendingTime and packet.sendingTime <= newestCommonPacket.sendingTime

@@ -37,24 +37,6 @@ module extraSpells {
     assert(requires(4 < 3, "false: 4 < 3") == "false: 4 < 3"),
   }
 
-
-  /// Compute the maximum of two integers.
-  ///
-  /// - @param __i first integer
-  /// - @param __j second integer
-  /// - @returns the maximum of __i and __j
-  pure def max(__i: int, __j: int): int = {
-    if (__i > __j) __i else __j
-  }
-
-  run maxTest = all {
-    assert(max(3, 4) == 4),
-    assert(max(6, 3) == 6),
-    assert(max(10, 10) == 10),
-    assert(max(-3, -5) == -3),
-    assert(max(-5, -3) == -3),
-  }
-
   /// Compute the absolute value of an integer
   ///
   /// - @param __i : an integer whose absolute value we are interested in
@@ -178,35 +160,31 @@ module extraSpells {
         __set.union(Set(elem))
     }
 
-    pure def Values(__map: a -> b): Set[b] = {
+    pure def values(__map: a -> b): Set[b] = {
         __map.keys().fold(Set(), (__s, __k) => __s.add(__map.get(__k)))
     }
-    run ValuesTest =
+    run valuesTest =
     all {
-        assert(Values(Map(1 -> 2, 3 -> 4)) == Set(2, 4)),
-        assert(Values(Map()) == Set())
+        assert(values(Map(1 -> 2, 3 -> 4)) == Set(2, 4)),
+        assert(values(Map()) == Set())
     }
 
     // Returns the maximal element of the set.
     // If the set is empty, the function call will fail at runtime.
-    pure def Max(__set: Set[int]): int = {
-        __set.fold(oneOf(__set), (__m, __e) => max(__m, __e))
-    }
+    pure def max(__set: Set[int]): int = maxBy(__set, __a => __a)
 
-    run MaxTest =
+    run maxTest =
     all {
-        assert(Max(Set(1, 2, 3)) == 3),
+        assert(max(Set(1, 2, 3)) == 3),
     }
 
     // Returns the minimal element of the set.
     // If the set is empty, the function call will fail at runtime.
-    pure def Min(__set: Set[int]): int = {
-        __set.fold(oneOf(__set), (__m, __e) => if(__m < __e) __m else __e)
-    }
+    pure def min(__set: Set[int]): int = minBy(__set, __a => __a)
 
-    run MinTest =
+    run minTest =
     all {
-        assert(Min(Set(1, 2, 3)) == 1),
+        assert(min(Set(1, 2, 3)) == 1),
     }
 
     pure def HasSubsequence(__this: List[a], __other: List[a]): bool = {
@@ -236,21 +214,21 @@ module extraSpells {
     // Returns the maximum element of a set, according to a given function.
     // If two elements are equally large, an arbitrary one will be returned.
     // If the set is empty, the function call will fail at runtime.
-    pure def MaxBy(__set: Set[a], __f: a => int): a = {
+    pure def maxBy(__set: Set[a], __f: a => int): a = {
       __set.fold(
         oneOf(__set),
         (__m, __e) => if(__f(__m) > __f(__e)) {__m } else {__e}
       )
     }
 
-    run MaxByTest =
+    run maxByTest =
     all {
-      assert(MaxBy(Set(1, 2, 3), __x => __x) == 3),
-      assert(MaxBy(Set(1, 2, 3), __x => -__x) == 1),
+      assert(maxBy(Set(1, 2, 3), __x => __x) == 3),
+      assert(maxBy(Set(1, 2, 3), __x => -__x) == 1),
     }
 
-    // Like MaxBy, but returns the minimum element.
-    pure def MinBy(__set: Set[a], __f: a => int): a = {
+    // Like maxBy, but returns the minimum element.
+    pure def minBy(__set: Set[a], __f: a => int): a = {
       __set.fold(
         oneOf(__set),
         (__m, __e) => if(__f(__m) < __f(__e)) {__m } else {__e}

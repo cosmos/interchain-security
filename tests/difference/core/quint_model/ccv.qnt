@@ -821,7 +821,7 @@ module CCV {
         CcvTimeout.keys().forall(chain => CcvTimeout.get(chain) > 0)
 
     run CcvTimeoutLargerThanUnbondingPeriodTest =
-        CcvTimeout.get(PROVIDER_CHAIN) > UnbondingPeriodPerChain.Values().Max()
+        CcvTimeout.get(PROVIDER_CHAIN) > UnbondingPeriodPerChain.values().max()
 
     run ProviderIsNotAConsumerTest =
         not(ConsumerChains.contains(PROVIDER_CHAIN))
