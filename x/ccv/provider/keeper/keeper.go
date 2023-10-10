@@ -179,8 +179,7 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 }
 
 // SetProposedConsumerChain stores a consumer chainId corresponding to a submitted consumer addition proposal
-// This consumer chainId is deleted once the voting period for the proposal ends
-// does not end.
+// This consumer chainId is deleted once the voting period for the proposal ends.
 func (k Keeper) SetProposedConsumerChain(ctx sdk.Context, chainID string, proposalID uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.ProposedConsumerChainKey(proposalID), []byte(chainID))
