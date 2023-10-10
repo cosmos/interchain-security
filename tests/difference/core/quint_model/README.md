@@ -40,19 +40,19 @@ Each invariant takes about a minute to run.
 Invariants are as follows:
 - [X] ValidatorUpdatesArePropagatedInv: When a validator power update is comitted on chain, a packet containing that change in voting power is sent to all running consumers.
 - [X] ValidatorSetHasExistedInv: Every validator set on consumer chains is/was a validator set on the provider.
-- [X] SameVSCPacketsInv: Ensure that consumer chains receive the same VSCPackets in the same order.
+- [X] SameVscPacketsInv: Ensure that consumer chains receive the same VscPackets in the same order.
 Because of nuances with starting/stopping consumers, this invariant is not as simple as it sounds. In detail:
 For consumer chains c1, c2, if both c1 and c2 received a packet p1 sent at t1 and a packet p2 sent at t2,
 then both have received ALL packets that were sent between t1 and t2 in the same order.
 - [X] MatureOnTimeInv: For every ValidatorSetChangePacket received by a consumer chain at 
-time t, a MaturedVSCPacket is sent back to the provider in the first block 
+time t, a MaturedVscPacket is sent back to the provider in the first block 
 with a timestamp >= t + UnbondingPeriod on that consumer.
-- [X] EventuallyMatureOnProviderInv: If we send a VSCPacket, this is eventually responded to by all consumers
+- [X] EventuallyMatureOnProviderInv: If we send a VscPacket, this is eventually responded to by all consumers
 that were running at the time the packet was sent (and are still running).
 
 Invariants can also be model-checked by Apalache, using this command:
 ```
-quint verify --invariant ValidatorUpdatesArePropagatedInv,ValidatorSetHasExistedInv,SameVSCPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv \
+quint verify --invariant ValidatorUpdatesArePropagatedInv,ValidatorSetHasExistedInv,SameVscPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv \
 --main CCVDefaultStateMachine ccv_statemachine.qnt
 ```
 
@@ -68,5 +68,5 @@ The available sanity checks are:
 - CanRunConsumer
 - CanStopConsumer
 - CanTimeoutConsumer
-- CanSendVSCPackets
-- CanSendVSCMaturedPackets
+- CanSendVscPackets
+- CanSendVscMaturedPackets
