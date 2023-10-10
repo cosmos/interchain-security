@@ -24,7 +24,7 @@ module CCVDefaultStateMachine {
     // some utility stateful vals to make invariants easier to define
     val providerValidatorHistory = currentState.providerState.chainState.votingPowerHistory
     val runningConsumers = getRunningConsumers(currentState.providerState)
-    val unusedConsumers = getUnusedConsumers(currentState.providerState)
+    val nonConsumers = getNonConsumers(currentState.providerState)
 
     action init: bool = all {
         val providerState = GetEmptyProviderState
@@ -124,7 +124,7 @@ module CCVDefaultStateMachine {
         },
 
         val consumerStatus = currentState.providerState.consumerStatus
-        nondet consumersToStart = oneOf(unusedConsumers.powerset())
+        nondet consumersToStart = oneOf(nonConsumers.powerset())
         nondet consumersToStop = oneOf(runningConsumers.powerset())
         nondet timeAdvancement = oneOf(timeAdvancements)
         EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),

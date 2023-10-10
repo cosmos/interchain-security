@@ -512,24 +512,23 @@ module CCV {
             val runningConsumers = currentConsumerStatusMap.keys().filter(
                 chain => currentConsumerStatusMap.get(chain) == RUNNING
             )
-            // if a consumer is both started and stopped, this is an error
-                // if a consumer is stopped, it must be running
-                if (consumersToStop.exclude(runningConsumers).size() > 0) {
-                    (currentConsumerStatusMap, "Cannot stop a consumer that is not running")
-                } else {
-                    val newConsumerStatusMap = currentConsumerStatusMap.keys().mapBy(
-                        (chain) => 
-                        if (consumersToTimeout.contains(chain)) {
-                            TIMEDOUT
-                        } else if (consumersToStop.contains(chain)) {
-                            STOPPED
-                        } else {
-                            currentConsumerStatusMap.get(chain)
-                        }
-                    )
-                    (newConsumerStatusMap, "")
-                }
+            // all consumers to stop must be running right now, else we have an error
+            if (consumersToStop.exclude(runningConsumers).size() > 0) {
+                (currentConsumerStatusMap, "Cannot stop a consumer that is not running")
+            } else {
+                val newConsumerStatusMap = currentConsumerStatusMap.keys().mapBy(
+                    (chain) => 
+                    if (consumersToTimeout.contains(chain)) {
+                        TIMEDOUT
+                    } else if (consumersToStop.contains(chain)) {
+                        STOPPED
+                    } else {
+                        currentConsumerStatusMap.get(chain)
+                    }
+                )
+                (newConsumerStatusMap, "")
             }
+        }
         
     // Returns the new ConsumerStatusMap according to the consumers to start.
     // The second return is an error string: If it is not equal to "",
@@ -540,23 +539,21 @@ module CCV {
             val nonConsumers = currentConsumerStatusMap.keys().filter(
                 chain => currentConsumerStatusMap.get(chain) == NOT_CONSUMER
             )
-            // if a consumer is both started and stopped, this is an error
-                // if a consumer is stopped, it must be running
-                if (consumersToStart.exclude(nonConsumers).size() > 0) {
-                    (currentConsumerStatusMap, "cannot start a consumer that is stopped or already a consumer")
-                } else {
-                    // if a consumer is started, it must be a nonconsumer
-                    val newConsumerStatusMap = currentConsumerStatusMap.keys().mapBy(
-                        (chain) => 
-                        if (consumersToStart.contains(chain)) {
-                            RUNNING
-                        } else {
-                            currentConsumerStatusMap.get(chain)
-                        }
-                    )
-                    (newConsumerStatusMap, "")
-                }
+            // all consumers to start must be nonConsumers right now, otherwise we have an error
+            if (consumersToStart.exclude(nonConsumers).size() > 0) {
+                (currentConsumerStatusMap, "cannot start a consumer that is stopped or already a consumer")
+            } else {
+                val newConsumerStatusMap = currentConsumerStatusMap.keys().mapBy(
+                    (chain) => 
+                    if (consumersToStart.contains(chain)) {
+                        RUNNING
+                    } else {
+                        currentConsumerStatusMap.get(chain)
+                    }
+                )
+                (newConsumerStatusMap, "")
             }
+        }
 
     pure def StartStopConsumers(
         currentConsumerStatusMap: Chain -> str,
