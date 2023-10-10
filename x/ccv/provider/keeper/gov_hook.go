@@ -19,7 +19,7 @@ type GovHooks struct {
 }
 
 // Implements GovHooks interface
-// GovHooks exist in cosmos-sdk/x/gov/keeper/hooks.go of v0.45.16-lsm-ics and on
+// see https://github.com/cosmos/cosmos-sdk/blob/release/v0.47.x/x/gov/types/hooks.go
 var _ sdkgov.GovHooks = GovHooks{}
 
 func (k *Keeper) GovHooks(gk *govkeeper.Keeper) GovHooks {
