@@ -187,30 +187,6 @@ module extraSpells {
         assert(min(Set(1, 2, 3)) == 1),
     }
 
-    pure def HasSubsequence(__this: List[a], __other: List[a]): bool = {
-      if(__other.length() > __this.length()) {
-        false
-      } else {
-        0.to(__this.length() - __other.length()) // go through all possible starting points of __other in __this
-        .exists(
-          __start => __this.slice(__start, __start + __other.length()) == __other
-        )
-      }
-    }
-
-    run HasSubsequenceTest =
-    all {
-      assert(List(1, 2, 3, 4).HasSubsequence(List(1, 2))),
-      assert(List(1, 2, 3, 4).HasSubsequence(List(2, 3))),
-      assert(List(1, 2, 3, 4).HasSubsequence(List(3, 4))),
-      assert(List(1, 2, 3, 4).HasSubsequence(List(1, 2, 3))),
-      assert(not(List(1, 2, 3, 4).HasSubsequence(List(1, 3)))),
-      assert(not(List().HasSubsequence(List(1)))),
-      assert(List().HasSubsequence(List())),
-      assert(List(1).HasSubsequence(List())),
-      assert(List(1).HasSubsequence(List(1))),
-    }
-
     // Returns the maximum element of a set, according to a given function.
     // If two elements are equally large, an arbitrary one will be returned.
     // If the set is empty, the function call will fail at runtime.
