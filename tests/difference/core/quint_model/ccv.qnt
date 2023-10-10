@@ -5,26 +5,26 @@ module CCVTypes {
     type Node = str
     type Chain = str
     type Power = int
-    type VSCId = int
+    type VscId = int
     type ValidatorSet = Node -> Power
     type Height = int
     // a list of validator sets per blocks, ordered by recency
     type VotingPowerHistory = List[ValidatorSet]
 
-    type VSCPacket =
+    type VscPacket =
         {   
             // the identifier for this packet
-            id: VSCId,
+            id: VscId,
             // the new validator set. in the implementation, this would be a list of validator updates
             validatorSet: ValidatorSet,
             // the time at which the packet was sent. used to check whether packets have timed out.
             sendingTime: Time
         }
 
-    type VSCMaturedPacket = 
+    type VscMaturedPacket = 
         {
-            // the id of the VSCPacket that matured
-            id: VSCId,
+            // the id of the VscPacket that matured
+            id: VscId,
             // the time at which the packet was sent. used to check whether packets have timed out.
             sendingTime: Time
         }
@@ -61,15 +61,15 @@ module CCVTypes {
             chainState: ChainState,
 
             // Stores, for each consumer chain, the list of packets that have been sent to the consumer chain
-            // and have not been received yet.
+            // and *have not been received yet*.
             // In the implementation, this would roughly be the unacknowledged packets on an ibc channel.
-            outstandingPacketsToConsumer: Chain -> List[VSCPacket],
+            outstandingPacketsToConsumer: Chain -> List[VscPacket],
 
-            // the set of received VSCMaturedPackets
-            receivedMaturations: Set[VSCMaturedPacket],
+            // the set of received VscMaturedPackets
+            receivedMaturations: Set[VscMaturedPacket],
 
-            // stores which VSC Packets have been sent to compare with receivedMaturations to detect timeouts due to non-responsiveness
-            sentVSCPackets: Chain -> List[VSCPacket],
+            // Stores VscPackets which have been sent but where the provider has *not received a response yet*.
+            sentVscPackets: Chain -> List[VscPacket],
 
             // stores whether, in this block, the validator set has changed.
             // this is needed because the validator set might be considered to have changed, even though
@@ -82,7 +82,7 @@ module CCVTypes {
             consumerStatus: Chain -> str,
 
             // a monotonic strictly increasing and positive ID that is used
-            // to uniquely identify the VSCs sent to the consumer chains.
+            // to uniquely identify the Vscs sent to the consumer chains.
             runningVscId: int,
         }
 
@@ -92,7 +92,7 @@ module CCVTypes {
             chainState: GetEmptyChainState,
             outstandingPacketsToConsumer: Map(),
             receivedMaturations: Set(),
-            sentVSCPackets: Map(),
+            sentVscPackets: Map(),
             providerValidatorSetChangedInThisBlock: false,
             consumerStatus: Map(),
             runningVscId: 0,
@@ -104,18 +104,18 @@ module CCVTypes {
         // the state that each chain needs to store
         chainState: ChainState,
 
-        // Stores the maturation times for VSCPackets received by this consumer
-        maturationTimes: VSCPacket -> Time,
+        // Stores the maturation times for VscPackets received by this consumer
+        maturationTimes: VscPacket -> Time,
 
         // stores the received vscpackets in descending order of recency,
         // i.e. newest first.
-        receivedVSCPackets: List[VSCPacket],
+        receivedVscPackets: List[VscPacket],
 
         // Stores the list of packets that have been sent to the provider chain by this consumer
         // and have not been received yet.
         // ordered by recency, so the head is the oldest packet.
         // In the implementation, essentially unacknowledged IBC packets.
-        outstandingPacketsToProvider: List[VSCMaturedPacket],
+        outstandingPacketsToProvider: List[VscMaturedPacket],
     }
 
     // utility function: returns a consumer state that is initialized minimally.
@@ -124,7 +124,7 @@ module CCVTypes {
             chainState: GetEmptyChainState,
             maturationTimes: Map(),
             outstandingPacketsToProvider: List(),
-            receivedVSCPackets: List(),
+            receivedVscPackets: List(),
         }
 
     // the state of the protocol consists of the composition of the state of one provider chain with potentially many consumer chains.
@@ -178,7 +178,7 @@ module CCVTypes {
                     },
                     outstandingPacketsToConsumer: Map(),
                     receivedMaturations: Set(),
-                    sentVSCPackets: Map(),
+                    sentVscPackets: Map(),
                     providerValidatorSetChangedInThisBlock: false,
                     consumerStatus: Map(),
                     runningVscId: 0,
@@ -194,7 +194,7 @@ module CCVTypes {
     // possible consumer statuses
     pure val STOPPED = "stopped" // the chain was once a consumer chain, but has been voluntarily dropped by the provider.
     pure val TIMEDOUT = "timedout" // the chain has timed out and was dropped by the provider. This is only used for involuntary drops.
-    pure val RUNNING = "running" // the chain is currently a consumer chain. Running chains are those that get sent VSCPackets.
+    pure val RUNNING = "running" // the chain is currently a consumer chain. Running chains are those that get sent VscPackets.
     pure val UNUSED = "unused" // the chain has never been a consumer chain, and is available to become one.
     // When a chain is dropped, it cannot become a consumer again - we assume that would be done by another consumer becoming running.
 
@@ -214,7 +214,7 @@ module CCV {
 
     // Things that explicitly are modelled:
     // * Validator set changes are propagated from provider to consumers
-    // * VSC packets mature
+    // * Vsc packets mature
 
     // We assume that packet receive + ack happen synchronously, 
     // i.e. when the packet is delivered, the ack is delivered right afterwards.
@@ -235,8 +235,8 @@ module CCV {
     // For each chain, this defines the time between the initiation of an unbonding and its maturation.
     const UnbondingPeriodPerChain: Chain -> int
 
-    // The maximum time duration between sending any VSCPacket to any consumer chain and receiving the
-    // corresponding VSCMaturedPacket, without timing out the consumer chain and consequently removing it.
+    // The maximum time duration between sending any VscPacket to any consumer chain and receiving the
+    // corresponding VscMaturedPacket, without timing out the consumer chain and consequently removing it.
     const VscTimeout: int
 
     // The timeoutTimestamp for sent packets. Can differ by chain.
@@ -267,7 +267,7 @@ module CCV {
             }
     }
 
-    // Delivers the next queued VSCMaturedPacket from a consumer chain to the provider chain.
+    // Delivers the next queued VscMaturedPacket from a consumer chain to the provider chain.
     // Only argument is the consumer chain, from which the packet will be delivered.
     // If this packet will time out on the provider on delivery,
     // the consumer will be dropped.
@@ -324,7 +324,7 @@ module CCV {
         }
     }   
 
-    // Delivers the next queued VSCPacket from the provider chain to a consumer chain.
+    // Delivers the next queued VscPacket from the provider chain to a consumer chain.
     // Only argument is the consumer chain, to which the packet will be delivered.
     // If this packet will time out on the consumer on delivery,
     // the consumer will be dropped.
@@ -384,7 +384,7 @@ module CCV {
 
     /// Ends a block on the provider. This means that the current validator set is committed on chain,
     /// packets are queued, and the next block is started. Also, consumers that have passed
-    /// the VSCTimeout without responding to a pending vscpacket are dropped.
+    /// the VscTimeout without responding to a pending vscpacket are dropped.
     pure def endAndBeginBlockForProvider(
         currentState: ProtocolState,
         // by how much the timestamp should be advanced,
@@ -408,10 +408,10 @@ module CCV {
             "providerState", providerStateAfterTimeAdvancement
         )
         
-        // check for VSC timeouts
+        // check for Vsc timeouts
         val timedOutConsumers = getRunningConsumers(providerStateAfterTimeAdvancement).filter(
             consumer => 
-            val res = TimeoutDueToVSCTimeout(tmpState, consumer)
+            val res = TimeoutDueToVscTimeout(tmpState, consumer)
             res._1
         )
 
@@ -474,9 +474,9 @@ module CCV {
         // by how much the timestamp of the chain should be advanced for the next block
         timeAdvancement: Time): Result = {
             if (not(currentState.consumerStates.keys().contains(chain))) {
+                // if the chain is not a consumer, return an error
                 Err("chain is not a consumer")
             } else {
-                // if the chain is not a consumer, return an error
                 val currentConsumerState = currentState.consumerStates.get(chain)
                 val newChainState = currentConsumerState.chainState.endAndBeginBlockShared(timeAdvancement)
                 val newConsumerState = currentConsumerState.with(
@@ -644,7 +644,7 @@ module CCV {
     }
 
     // returns the providerState with the following modifications:
-    // * sends VSCPackets to all running consumers
+    // * sends VscPackets to all running consumers
     // * increments the runningVscId
     // This should only be called when the provider chain is ending a block,
     // and only when the running validator set is considered to have changed
@@ -665,7 +665,7 @@ module CCV {
             }
         )
         providerState.with(
-            // send VSCPackets to consumers
+            // send VscPackets to consumers
             "outstandingPacketsToConsumer",
             ConsumerChains.mapBy(
                 (consumer) => 
@@ -674,11 +674,11 @@ module CCV {
                 )
             )
             ).with(
-                // update the sent VSCPackets
-                "sentVSCPackets",
+                // update the sent VscPackets
+                "sentVscPackets",
                 ConsumerChains.mapBy(
                     (consumer) => 
-                    providerState.sentVSCPackets.get(consumer).concat(
+                    providerState.sentVscPackets.get(consumer).concat(
                         newSentPacketsPerConsumer.get(consumer)
                     )
                 )
@@ -694,7 +694,7 @@ module CCV {
     // To receive a packet, modify the running validator set (not the one entered into the block yet,
     // but the candidate that would be put into the block if it ended now)
     // and store the maturation time for the packet.
-    pure def recvPacketOnConsumer(currentState: ProtocolState, receiver: Chain, packet: VSCPacket): Result = {
+    pure def recvPacketOnConsumer(currentState: ProtocolState, receiver: Chain, packet: VscPacket): Result = {
         if(not(isCurrentlyConsumer(receiver, currentState.providerState))) {
             Err("Receiver is not currently a consumer - must have 'running' status!")
         } else {
@@ -713,8 +713,8 @@ module CCV {
                     currentConsumerState.chainState.lastTimestamp + UnbondingPeriodPerChain.get(receiver)
                 )
             ).with(
-                "receivedVSCPackets",
-                currentConsumerState.receivedVSCPackets.prepend(packet)
+                "receivedVscPackets",
+                currentConsumerState.receivedVscPackets.prepend(packet)
             )
             val newConsumerStates = currentState.consumerStates.set(receiver, newConsumerState)
             val newState = currentState.with(
@@ -726,20 +726,20 @@ module CCV {
 
     // receives a given packet on the provider. The arguments are the consumer chain that sent the packet, and the packet itself.
     // To receive a packet, add it to the list of received maturations.
-    pure def recvPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VSCMaturedPacket): Result = {
+    pure def recvPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VscMaturedPacket): Result = {
         if (not(isCurrentlyConsumer(sender, currentState.providerState))) {
             Err("Sender is not currently a consumer - must have 'running' status!")
-        } else if (currentState.providerState.sentVSCPackets.get(sender).head().id != packet.id) {
-            // the packet is not the oldest sentVSCPacket, something went wrong
-            Err("Received maturation is not for the oldest sentVSCPacket")
+        } else if (currentState.providerState.sentVscPackets.get(sender).head().id != packet.id) {
+            // the packet is not the oldest sentVscPacket, something went wrong
+            Err("Received maturation is not for the oldest sentVscPacket")
         } else {
             val currentReceivedMaturations = currentState.providerState.receivedMaturations
             val newReceivedMaturations = currentReceivedMaturations.union(Set(packet))
             val newProviderState = currentState.providerState.with(
                 "receivedMaturations", newReceivedMaturations
             )
-            // prune the sentVSCPacket
-            val newSentVSCPacket = currentState.providerState.sentVSCPackets.get(sender).tail()
+            // prune the sentVscPacket
+            val newSentVscPacket = currentState.providerState.sentVscPackets.get(sender).tail()
             val newState = currentState.with(
                 "providerState", newProviderState
             )
@@ -820,11 +820,11 @@ module CCV {
         )
     }
 
-    // Returns whether the consumer has timed out due to the VSCTimeout, and an error message.
+    // Returns whether the consumer has timed out due to the VscTimeout, and an error message.
     // If the second return is not equal to "", the first return should be ignored.
     // If it is equal to "", the first return will be true if the consumer has timed out and should be dropped,
     // or false otherwise.
-    pure def TimeoutDueToVSCTimeout(currentState: ProtocolState, consumer: Chain): (bool, str) =
+    pure def TimeoutDueToVscTimeout(currentState: ProtocolState, consumer: Chain): (bool, str) =
         // check for errors: the consumer is not running
         if (not(isCurrentlyConsumer(consumer, currentState.providerState))) {
             (false, "Consumer is not currently a consumer - must have 'running' status!")
@@ -832,11 +832,11 @@ module CCV {
             val providerState = currentState.providerState
             val consumerState = currentState.consumerStates.get(consumer)
 
-            // has a packet been sent on the provider more than VSCTimeout ago, but we have not received an answer since then?
-            val sentVSCPackets = providerState.sentVSCPackets.get(consumer)
-            if(sentVSCPackets.length() > 0) {
-                val oldestSentVSCPacket = sentVSCPackets.head() // if length is 0, this is undefined, but we check for this before we use it
-                if(oldestSentVSCPacket.sendingTime + VscTimeout < providerState.chainState.lastTimestamp) {
+            // has a packet been sent on the provider more than VscTimeout ago, but we have not received an answer since then?
+            val sentVscPackets = providerState.sentVscPackets.get(consumer)
+            if(sentVscPackets.length() > 0) {
+                val oldestSentVscPacket = sentVscPackets.head() // if length is 0, this is undefined, but we check for this before we use it
+                if(oldestSentVscPacket.sendingTime + VscTimeout < providerState.chainState.lastTimestamp) {
                     (true, "")
                 } else {
                     // no timeout yet, it has not been VscTimeout since that packet was sent

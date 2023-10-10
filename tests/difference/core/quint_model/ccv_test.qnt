@@ -119,9 +119,9 @@ module CCVTest {
             )
         )
     ).with(
-        // put an entry into sentVSCPacket on the provider that corresponds to the packet we put on the consumer
+        // put an entry into sentVscPacket on the provider that corresponds to the packet we put on the consumer
         "providerState", _DeliverPacketToProvider_TestState.providerState.with(
-            "sentVSCPackets", _DeliverPacketToProvider_TestState.providerState.sentVSCPackets.put(
+            "sentVscPackets", _DeliverPacketToProvider_TestState.providerState.sentVscPackets.put(
                 "sender", List({
                     id: 0,
                     validatorSet: _DeliverPacketToProvider_TestState.providerState.chainState.currentValidatorSet,

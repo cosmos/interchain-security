@@ -36,7 +36,7 @@ module CCVDefaultStateMachine {
             "outstandingPacketsToConsumer", 
             ConsumerChains.mapBy(chain => List())
         ).with(
-            "sentVSCPackets", 
+            "sentVscPackets", 
             ConsumerChains.mapBy(chain => List())
         ).with(
             // set the validator set to be the initial validator set in the history
@@ -61,26 +61,26 @@ module CCVDefaultStateMachine {
             trace' = trace.append("VotingPowerChange")
         }
 
-    // The receiver receives the next outstanding VSCPacket from the provider.
+    // The receiver receives the next outstanding VscPacket from the provider.
     // This will time out the consumer if the packet timeout has passed on the receiver.
-    action DeliverVSCPacket(receiver: Chain): bool = 
+    action DeliverVscPacket(receiver: Chain): bool = 
         val resultAndTimeout = deliverPacketToConsumer(currentState, receiver)
         val result = resultAndTimeout._1
         all {
             result.hasError == false,
             currentState' = result.newState,
-            trace' = trace.append("DeliverVSCPacket")
+            trace' = trace.append("DeliverVscPacket")
         }
 
-    // The provider receives the next outstanding VSCMaturedPacket from the sender.
+    // The provider receives the next outstanding VscMaturedPacket from the sender.
     // This will time out the consumer if the packet timeout has passed on the provider.
-    action DeliverVSCMaturedPacket(sender: Chain): bool =
+    action DeliverVscMaturedPacket(sender: Chain): bool =
         val resultAndTimeout = deliverPacketToProvider(currentState, sender)
         val result = resultAndTimeout._1
         all {
             result.hasError == false,
             currentState' = result.newState,
-            trace' = trace.append("DeliverVSCMaturedPacket")
+            trace' = trace.append("DeliverVscMaturedPacket")
         }
 
     action EndAndBeginBlockForProvider(
@@ -141,7 +141,7 @@ module CCVDefaultStateMachine {
         all {
             runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
             nondet sender = oneOf(runningConsumers)
-            DeliverVSCMaturedPacket(sender),
+            DeliverVscMaturedPacket(sender),
         },
 
         // again, we could filter by chains that can actually receive,
@@ -149,7 +149,7 @@ module CCVDefaultStateMachine {
         all {
             runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
             nondet recciver = oneOf(runningConsumers)
-            DeliverVSCPacket(recciver),
+            DeliverVscPacket(recciver),
         },
     }
 
@@ -177,7 +177,7 @@ module CCVDefaultStateMachine {
             // ... for each consumer that is running then ...
             runningConsumers.forall(
                 // ...the validator set is in a sent packet
-                consumer => currentState.providerState.sentVSCPackets.get(consumer).toSet().exists(
+                consumer => currentState.providerState.sentVscPackets.get(consumer).toSet().exists(
                     packet => packet.validatorSet == providerValSetInCurBlock
                 )
             )
@@ -191,12 +191,12 @@ module CCVDefaultStateMachine {
     // we need a slightly weaker invariant:
     // For consumer chains c1, c2, if both c1 and c2 received a packet p1 sent at t1 and a packet p2 sent at t2,
     // then both have received ALL packets that were sent between t1 and t2.
-    val SameVSCPacketsInv =
+    val SameVscPacketsInv =
         runningConsumers.forall(
             consumer1 => runningConsumers.forall(
                 consumer2 => {
-                    val packets1 = currentState.consumerStates.get(consumer1).receivedVSCPackets
-                    val packets2 = currentState.consumerStates.get(consumer2).receivedVSCPackets
+                    val packets1 = currentState.consumerStates.get(consumer1).receivedVscPackets
+                    val packets2 = currentState.consumerStates.get(consumer2).receivedVscPackets
                     val commonPackets = packets1.toSet().intersect(packets2.toSet())
                     if (commonPackets.size() == 0) {
                         true // they don't share any packets, so nothing to check
@@ -218,7 +218,7 @@ module CCVDefaultStateMachine {
         )
 
     // For every ValidatorSetChangePacket received by a consumer chain at 
-    // time t, a MaturedVSCPacket is sent back to the provider in the first block 
+    // time t, a MaturedVscPacket is sent back to the provider in the first block 
     // with a timestamp >= t + UnbondingPeriod
     // NOTE: because we remove the maturationTimes entry when we send the packets,
     // it suffices to check that there is never an entry in maturationTimes
@@ -234,16 +234,16 @@ module CCVDefaultStateMachine {
             }
         )
 
-    // If we send a VSCPacket, this is eventually responded to by all consumers
+    // If we send a VscPacket, this is eventually responded to by all consumers
     // that were running at the time the packet was sent (and are still running).
-    // Since we remove sentVSCPackets when we receive responses for them,
-    // we just check that if a sentVSCPacket has been sent more than
-    // VSCTimeout ago, the consumer must have been dropped.
+    // Since we remove sentVscPackets when we receive responses for them,
+    // we just check that if a sentVscPacket has been sent more than
+    // VscTimeout ago, the consumer must have been dropped.
     // In practice, when this is true, a pending unbonding can mature.
     val EventuallyMatureOnProviderInv =
         runningConsumers.forall(
             consumer => {
-                val sentPackets = currentState.providerState.sentVSCPackets.get(consumer).toSet()
+                val sentPackets = currentState.providerState.sentVscPackets.get(consumer).toSet()
                 sentPackets.forall(
                     packet =>
                         // consumer still has time to respond
@@ -283,13 +283,13 @@ module CCVDefaultStateMachine {
                 currentState.providerState.consumerStatus.get(consumer) == TIMEDOUT
         ))
 
-    val CanSendVSCPackets =
+    val CanSendVscPackets =
         not(ConsumerChains.exists(
             consumer => 
                 currentState.providerState.outstandingPacketsToConsumer.get(consumer).length() > 0
         ))
 
-    val CanSendVSCMaturedPackets =
+    val CanSendVscMaturedPackets =
         not(ConsumerChains.exists(
             consumer => 
                 currentState.consumerStates.get(consumer).outstandingPacketsToProvider.length() > 0
@@ -312,8 +312,8 @@ module CCVDefaultStateMachine {
     /// * a block is ended on the provider, i.e. a packet is sent to the consumer
     /// * the consumer receives the packet
     /// * the chains wait until the unbonding period is over
-    /// * the consumer sends a VSCMaturedPacket to the provider
-    /// * the provider receives the VSCMaturedPacket
+    /// * the consumer sends a VscMaturedPacket to the provider
+    /// * the provider receives the VscMaturedPacket
     run HappyPathTest: bool = { 
         init.then(
             all {
@@ -327,7 +327,7 @@ module CCVDefaultStateMachine {
                     "consumer2" -> List(),
                     "consumer3" -> List()
                 )),
-                assert(currentState.providerState.sentVSCPackets == Map(
+                assert(currentState.providerState.sentVscPackets == Map(
                     "consumer1" -> List(),
                     "consumer2" -> List(),
                     "consumer3" -> List()
@@ -354,7 +354,7 @@ module CCVDefaultStateMachine {
                     // the validator set on the provider was entered into the history
                     assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet.put("node1", 50), InitialValidatorSet)),
                     // deliver the packet
-                    DeliverVSCPacket("consumer1")
+                    DeliverVscPacket("consumer1")
                 }
             )
             .then(
@@ -380,7 +380,7 @@ module CCVDefaultStateMachine {
                     // it was removed from the maturationTimes
                     assert(currentState.consumerStates.get("consumer1").maturationTimes.keys().size() == 0),
                     // receive the packet on the provider
-                    DeliverVSCMaturedPacket("consumer1")
+                    DeliverVscMaturedPacket("consumer1")
                 }
             )
             .then(
@@ -395,8 +395,8 @@ module CCVDefaultStateMachine {
             )
         }
 
-    /// a manual test case for the SameVSCPacketsInv, since it needs very specific behaviour to even apply.
-    run SameVSCPacketsManualTest =
+    /// a manual test case for the SameVscPacketsInv, since it needs very specific behaviour to even apply.
+    run SameVscPacketsManualTest =
         init.then(
             // start all consumers except for consumer3
             EndAndBeginBlockForProvider(1 * Second, Set("consumer1", "consumer2"), Set())
@@ -408,10 +408,10 @@ module CCVDefaultStateMachine {
             EndAndBeginBlockForProvider(1 * Second, Set(), Set())
         ).then(
             // deliver the packets
-            DeliverVSCPacket("consumer1")
+            DeliverVscPacket("consumer1")
         ).then(
             // deliver to consumer2
-            DeliverVSCPacket("consumer2")
+            DeliverVscPacket("consumer2")
         ).then(
             // start consumer3
             EndAndBeginBlockForProvider(1 * Second, Set("consumer3"), Set())
@@ -423,25 +423,25 @@ module CCVDefaultStateMachine {
             EndAndBeginBlockForProvider(1 * Second, Set(), Set())
         ).then(
             //deliver to consumer1
-            DeliverVSCPacket("consumer1")
+            DeliverVscPacket("consumer1")
         ).then(
             // deliver to consumer2
-            DeliverVSCPacket("consumer2")
+            DeliverVscPacket("consumer2")
         ).then(
             // deliver to consumer3
-            DeliverVSCPacket("consumer3")
+            DeliverVscPacket("consumer3")
         )
         .then(
-            // the SameVSCPacketInv should hold here
+            // the SameVscPacketInv should hold here
             all {
-                assert(SameVSCPacketsInv),
+                assert(SameVscPacketsInv),
                 // action does not matter, but needed to have uniform effect
                 step
             }
         )
 
     // a manual test for the EventuallyMatureOnProvider invariant
-    run VSCTimeoutManualTest =
+    run VscTimeoutManualTest =
         init
         .then(
             // start all consumer chains
@@ -456,7 +456,7 @@ module CCVDefaultStateMachine {
             EndAndBeginBlockForProvider(1 * Second, Set(), Set())
         )
         .then(
-            // advance time on provider by VSCTimeout + 1 Second
+            // advance time on provider by VscTimeout + 1 Second
             EndAndBeginBlockForProvider(VscTimeout + 5 * Second, Set(), Set())
         )
         // .then(
