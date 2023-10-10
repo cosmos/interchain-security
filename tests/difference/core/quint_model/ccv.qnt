@@ -275,7 +275,7 @@ module CCV {
     // that indicates whether the consumer timed out or not.
     // If the result has an error, the second return should be ignored.
     pure def deliverPacketToProvider(currentState: ProtocolState, sender: Chain): (Result, bool) = {
-        if (not(isCurrentlyConsumer(sender, currentState.providerState))) {
+        if (not(isRunningConsumer(sender, currentState.providerState))) {
             (Err("Sender is not currently a consumer - must have 'running' status!"), false)
         } else if (length(currentState.consumerStates.get(sender).outstandingPacketsToProvider) == 0) {
             (Err("No outstanding packets to deliver"), false)
@@ -325,7 +325,7 @@ module CCV {
     // that indicates whether the consumer timed out or not.
     // If the result has an error, the second return should be ignored.
     pure def deliverPacketToConsumer(currentState: ProtocolState, receiver: Chain): (Result, bool) = {
-        if (not(isCurrentlyConsumer(receiver, currentState.providerState))) {
+        if (not(isRunningConsumer(receiver, currentState.providerState))) {
             (Err("Receiver is not currently a consumer - must have 'running' status!"), false)
         } else if (length(currentState.providerState.outstandingPacketsToConsumer.get(receiver)) == 0) {
             (Err("No outstanding packets to deliver"), false)
@@ -613,7 +613,7 @@ module CCV {
             (consumer) => 
             // if validator set changed and the consumer is running, send a packet
             if (providerState.providerValidatorSetChangedInThisBlock and 
-                isCurrentlyConsumer(consumer, providerState)) {
+                isRunningConsumer(consumer, providerState)) {
                 List({
                         id: providerState.runningVscId,
                         validatorSet: providerState.chainState.currentValidatorSet,
@@ -654,7 +654,7 @@ module CCV {
     // but the candidate that would be put into the block if it ended now)
     // and store the maturation time for the packet.
     pure def recvPacketOnConsumer(currentState: ProtocolState, receiver: Chain, packet: VscPacket): Result = {
-        if(not(isCurrentlyConsumer(receiver, currentState.providerState))) {
+        if(not(isRunningConsumer(receiver, currentState.providerState))) {
             Err("Receiver is not currently a consumer - must have 'running' status!")
         } else {
             // update the running validator set, but not the history yet,
@@ -686,7 +686,7 @@ module CCV {
     // receives a given packet on the provider. The arguments are the consumer chain that sent the packet, and the packet itself.
     // To receive a packet, add it to the list of received maturations.
     pure def recvPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VscMaturedPacket): Result = {
-        if (not(isCurrentlyConsumer(sender, currentState.providerState))) {
+        if (not(isRunningConsumer(sender, currentState.providerState))) {
             Err("Sender is not currently a consumer - must have 'running' status!")
         } else if (currentState.providerState.sentVscPackets.get(sender).head().id != packet.id) {
             // the packet is not the oldest sentVscPacket, something went wrong
@@ -760,7 +760,7 @@ module CCV {
     }
 
     // Returns true if the given chain is currently a running consumer, false otherwise.
-    pure def isCurrentlyConsumer(chain: Chain, providerState: ProviderState): bool = {
+    pure def isRunningConsumer(chain: Chain, providerState: ProviderState): bool = {
         val status = providerState.consumerStatus.get(chain)
         status == RUNNING
     }
@@ -785,7 +785,7 @@ module CCV {
     // or false otherwise.
     pure def TimeoutDueToVscTimeout(currentState: ProtocolState, consumer: Chain): (bool, str) =
         // check for errors: the consumer is not running
-        if (not(isCurrentlyConsumer(consumer, currentState.providerState))) {
+        if (not(isRunningConsumer(consumer, currentState.providerState))) {
             (false, "Consumer is not currently a consumer - must have 'running' status!")
         } else {
             val providerState = currentState.providerState
