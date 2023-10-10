@@ -250,7 +250,7 @@ module CCV {
     // the power of a validator on the provider chain is changed to the given amount. We do not care how this happens,
     // e.g. via undelegations, or delegations, ...
     pure def votingPowerChange(currentState: ProtocolState, validator: Node, amount: int): Result = {
-            if (amount < 0) {
+            if (amount <= 0) {
                 Err("Voting power changes must be positive")
             } else {
                 pure val currentValidatorSet = currentState.providerState.chainState.currentValidatorSet
@@ -311,14 +311,7 @@ module CCV {
                 if (result.hasError) {
                     (Err(result.error.message), false)
                 } else {
-                    val result2 = removeOutstandingPacketFromConsumer(tmpState, sender)
-                    val tmpState2 = result2.newState
-                    val err2 = result2.error
-                    if (result2.hasError) {
-                        (Err(err2.message), false)
-                    } else {
-                        (Ok(tmpState2), false) // false because the packet did not time out
-                    }
+                    (Ok(removeOutstandingPacketFromConsumer(tmpState, sender)), false) // false because the packet did not time out
                 }
             }
         }
@@ -367,14 +360,7 @@ module CCV {
                 if (result.hasError) {
                     (Err(result.error.message), false)
                 } else {
-                    val result2 = removeOutstandingPacketFromProvider(tmpState, receiver)
-                    val tmpState2 = result2.newState
-                    val err2 = result2.error
-                    if (result2.hasError) {
-                        (Err(err2.message), false)
-                    } else {
-                        (Ok(tmpState2), false) // false because the packet did not time out
-                    }
+                    (Ok(removeOutstandingPacketFromProvider(tmpState, receiver)), false) // false because the packet did not time out
                 }
             }
         }
@@ -749,7 +735,7 @@ module CCV {
 
     // removes the oldest outstanding packet from the consumer. on-chain, this would happen when the packet is acknowledged.
     // only the oldest packet can be removed, since we model ordered channels.
-    pure def removeOutstandingPacketFromConsumer(currentState: ProtocolState, sender: Chain): Result = {
+    pure def removeOutstandingPacketFromConsumer(currentState: ProtocolState, sender: Chain): ProtocolState = {
         val currentOutstandingPackets = currentState.consumerStates.get(sender).outstandingPacketsToProvider
         val newOutstandingPackets = currentOutstandingPackets.tail()
         val newConsumerState = currentState.consumerStates.get(sender).with(
@@ -759,13 +745,13 @@ module CCV {
         val newState = currentState.with(
             "consumerStates", newConsumerStates
         )
-        Ok(newState)
+        newState
     }
 
     // removes the oldest outstanding packet (to the given consumer) from the provider.
     // on-chain, this would happen when the packet is acknowledged.
     // only the oldest packet can be removed, since we model ordered channels.
-    pure def removeOutstandingPacketFromProvider(currentState: ProtocolState, receiver: Chain): Result = {
+    pure def removeOutstandingPacketFromProvider(currentState: ProtocolState, receiver: Chain): ProtocolState = {
         val currentOutstandingPackets = currentState.providerState.outstandingPacketsToConsumer.get(receiver)
         val newOutstandingPackets = currentOutstandingPackets.tail()
         val newProviderState = currentState.providerState.with(
@@ -775,7 +761,7 @@ module CCV {
         val newState = currentState.with(
             "providerState", newProviderState
         )
-        Ok(newState)
+        newState
     }
 
     // Updates the given oldValidatorSet by setting the validator to newVotingPower.
