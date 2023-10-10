@@ -78,7 +78,7 @@ module CCVTypes {
             providerValidatorSetChangedInThisBlock: bool,
 
             // stores, for each consumer chain, its current status -
-            // unused, running, or stopped
+            // not consumer, running, or stopped
             consumerStatus: Chain -> str,
 
             // a monotonic strictly increasing and positive ID that is used
@@ -132,7 +132,7 @@ module CCVTypes {
         providerState: ProviderState,
         // the state of each consumer chain.
         // note that we assume that this contains all consumer chains that may ever exist,
-        // and consumer chains that are currently not running will have providerState.consumerStatus == UNUSED or STOPPED.
+        // and consumer chains that are currently not running will have providerState.consumerStatus == NOT_CONSUMER or STOPPED.
         consumerStates: Chain -> ConsumerState
     }
 
@@ -195,7 +195,7 @@ module CCVTypes {
     pure val STOPPED = "stopped" // the chain was once a consumer chain, but has been voluntarily dropped by the provider.
     pure val TIMEDOUT = "timedout" // the chain has timed out and was dropped by the provider. This is only used for involuntary drops.
     pure val RUNNING = "running" // the chain is currently a consumer chain. Running chains are those that get sent VscPackets.
-    pure val UNUSED = "unused" // the chain has never been a consumer chain, and is available to become one.
+    pure val NOT_CONSUMER = "not consumer" // the chain has never been a consumer chain, and is available to become one.
     // When a chain is dropped, it cannot become a consumer again - we assume that would be done by another consumer becoming running.
 
     // the provider chain.
@@ -376,7 +376,7 @@ module CCV {
         // by how much the timestamp should be advanced,
         // i.e. the timestamp for the next block is oldTimestamp + timeAdvancement
         timeAdvancement: Time,
-        // a set of consumers that were unused before, but should be set to running now.
+        // a set of consumers that were not consumers before, but should be set to running now.
         consumersToStart: Set[Chain],
         // a set of consumers that were running before, but should be set to stopped now.
         // This argument only needs to contain "voluntary" stops -
@@ -500,29 +500,6 @@ module CCV {
     // which do not hold the core logic of the protocol, but are still part of it
     // ===================
 
-    // Get the running consumer that is furthest away from the provider in terms of timestamp.
-    pure def getFurthestConsumer(currentState: ProtocolState): Chain = {
-        val furthestConsumer = getRunningConsumers(currentState.providerState).MaxBy(
-            consumer => abs(
-                currentState.providerState.chainState.lastTimestamp -
-                currentState.consumerStates.get(consumer).chainState.lastTimestamp
-            )
-        )
-        furthestConsumer
-    }
-
-    pure def getRunningConsumersFromMap(consumerStatus: Chain -> str): Set[Chain] = {
-        consumerStatus.keys().filter(
-            chain => consumerStatus.get(chain) == RUNNING
-        )
-    }
-
-    pure def getStoppedConsumersFromMap(consumerStatus: Chain -> str): Set[Chain] = {
-        consumerStatus.keys().filter(
-            chain => consumerStatus.get(chain) == STOPPED
-        )
-    }
-
     // Returns the new ConsumerStatusMap according to the consumers to stop
     // and the consumers to time out.
     // If a consumer is both stopped and timed out, it will be timed out.
@@ -540,7 +517,6 @@ module CCV {
                 if (consumersToStop.exclude(runningConsumers).size() > 0) {
                     (currentConsumerStatusMap, "Cannot stop a consumer that is not running")
                 } else {
-                    // if a consumer is started, it must be unused
                     val newConsumerStatusMap = currentConsumerStatusMap.keys().mapBy(
                         (chain) => 
                         if (consumersToTimeout.contains(chain)) {
@@ -561,15 +537,15 @@ module CCV {
     pure def startConsumers(
         currentConsumerStatusMap: Chain -> str,
         consumersToStart: Set[Chain]): (Chain -> str, str) = {
-            val unusedConsumers = currentConsumerStatusMap.keys().filter(
-                chain => currentConsumerStatusMap.get(chain) == UNUSED
+            val nonConsumers = currentConsumerStatusMap.keys().filter(
+                chain => currentConsumerStatusMap.get(chain) == NOT_CONSUMER
             )
             // if a consumer is both started and stopped, this is an error
                 // if a consumer is stopped, it must be running
-                if (consumersToStart.exclude(unusedConsumers).size() > 0) {
-                    (currentConsumerStatusMap, "cannot start a consumer that is not unused")
+                if (consumersToStart.exclude(nonConsumers).size() > 0) {
+                    (currentConsumerStatusMap, "cannot start a consumer that is stopped or already a consumer")
                 } else {
-                    // if a consumer is started, it must be unused
+                    // if a consumer is started, it must be a nonconsumer
                     val newConsumerStatusMap = currentConsumerStatusMap.keys().mapBy(
                         (chain) => 
                         if (consumersToStart.contains(chain)) {
@@ -799,10 +775,10 @@ module CCV {
         )
     }
 
-    // Returns the set of all consumer chains that currently have the status UNUSED.
-    pure def getUnusedConsumers(providerState: ProviderState): Set[Chain] = {
+    // Returns the set of all consumer chains that currently have the status NOT_CONSUMER.
+    pure def getNonConsumers(providerState: ProviderState): Set[Chain] = {
         providerState.consumerStatus.keys().filter(
-            chain => providerState.consumerStatus.get(chain) == UNUSED
+            chain => providerState.consumerStatus.get(chain) == NOT_CONSUMER
         )
     }
 

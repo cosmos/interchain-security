@@ -189,7 +189,7 @@ module CCVTest {
     run ConsumerStatusMapHappyPathTest = 
     {
         val currentConsumerStatusMap = Map(
-            "chain1" -> UNUSED,
+            "chain1" -> NOT_CONSUMER,
             "chain2" -> RUNNING,
             "chain3" -> STOPPED
         )
@@ -208,7 +208,7 @@ module CCVTest {
     run ConsumerStatusMapAlreadyRunningTest =
     {
         val currentConsumerStatusMap = Map(
-            "chain1" -> UNUSED,
+            "chain1" -> NOT_CONSUMER,
             "chain2" -> RUNNING,
             "chain3" -> STOPPED
         )
@@ -218,13 +218,13 @@ module CCVTest {
             Set("chain3"),
             Set()
         )
-        res._2 == "cannot start a consumer that is not unused"
+        res._2 == "cannot start a consumer that is stopped or running"
     }
 
     run ConsumerStatusMapAlreadyStoppedTest =
     {
         val currentConsumerStatusMap = Map(
-            "chain1" -> UNUSED,
+            "chain1" -> NOT_CONSUMER,
             "chain2" -> RUNNING,
             "chain3" -> STOPPED
         )
@@ -240,7 +240,7 @@ module CCVTest {
     run ChainBothInStartAndStopTest =
     {
         val currentConsumerStatusMap = Map(
-            "chain1" -> UNUSED,
+            "chain1" -> NOT_CONSUMER,
             "chain2" -> RUNNING,
             "chain3" -> STOPPED
         )

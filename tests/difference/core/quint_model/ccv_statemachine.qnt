@@ -31,7 +31,7 @@ module CCVDefaultStateMachine {
         val consumerStates = ConsumerChains.mapBy(chain => GetEmptyConsumerState)
         val providerStateWithConsumers = providerState.with(
             "consumerStatus", 
-            ConsumerChains.mapBy(chain => UNUSED)
+            ConsumerChains.mapBy(chain => NOT_CONSUMER)
         ).with(
             "outstandingPacketsToConsumer", 
             ConsumerChains.mapBy(chain => List())
@@ -318,9 +318,9 @@ module CCVDefaultStateMachine {
         init.then(
             all {
                 assert(currentState.providerState.consumerStatus == Map(
-                    "consumer1" -> UNUSED,
-                    "consumer2" -> UNUSED,
-                    "consumer3" -> UNUSED
+                    "consumer1" -> NOT_CONSUMER,
+                    "consumer2" -> NOT_CONSUMER,
+                    "consumer3" -> NOT_CONSUMER
                 )),
                 assert(currentState.providerState.outstandingPacketsToConsumer == Map(
                     "consumer1" -> List(),
