@@ -198,7 +198,7 @@ func (k Keeper) DeleteProposedConsumerChainInStore(ctx sdk.Context, proposalID u
 	store.Delete(types.ProposedConsumerChainKey(proposalID))
 }
 
-// GetAllProposedConsumerChainIDs get consumer chainId in gov consumerAddition proposal before voting period ends.
+// GetAllProposedConsumerChainIDs returns the proposed chainID of all gov consumerAddition proposals that are still in the voting period.
 func (k Keeper) GetAllProposedConsumerChainIDs(ctx sdk.Context) []types.ProposedChain {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ProposedConsumerChainByteKey})
