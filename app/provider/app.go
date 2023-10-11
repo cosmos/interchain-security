@@ -14,9 +14,6 @@ import (
 	ibctransferkeeper "github.com/cosmos/ibc-go/v8/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v8/modules/core"
-	ibcclient "github.com/cosmos/ibc-go/v8/modules/core/02-client"
-	ibcclientclient "github.com/cosmos/ibc-go/v8/modules/core/02-client/client"
-	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
@@ -140,8 +137,6 @@ var (
 		gov.NewAppModuleBasic(
 			[]govclient.ProposalHandler{
 				paramsclient.ProposalHandler,
-				ibcclientclient.UpdateClientProposalHandler,
-				ibcclientclient.UpgradeProposalHandler,
 				icsproviderclient.ConsumerAdditionProposalHandler,
 				icsproviderclient.ConsumerRemovalProposalHandler,
 				icsproviderclient.EquivocationProposalHandler,
@@ -453,7 +448,7 @@ func New(
 		app.GetSubspace(providertypes.ModuleName),
 		scopedIBCProviderKeeper,
 		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
+		app.IBCKeeper.PortKeeper,
 		app.IBCKeeper.ConnectionKeeper,
 		app.IBCKeeper.ClientKeeper,
 		app.StakingKeeper,
@@ -477,9 +472,7 @@ func New(
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		// NOTE: @MSalopek -> remove NewSoftwareUpgradeProposalHandler
 		// AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(&app.UpgradeKeeper)).
-		AddRoute(ibcexported.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(providertypes.RouterKey, icsprovider.NewProviderProposalHandler(app.ProviderKeeper)).
-		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
+		AddRoute(providertypes.RouterKey, icsprovider.NewProviderProposalHandler(app.ProviderKeeper))
 	govConfig := govtypes.DefaultConfig()
 
 	app.GovKeeper = *govkeeper.NewKeeper(
@@ -503,7 +496,7 @@ func New(
 		app.GetSubspace(ibctransfertypes.ModuleName),
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
+		app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
 		app.BankKeeper,
 		scopedTransferKeeper,
@@ -556,8 +549,6 @@ func New(
 			govtypes.ModuleName: gov.NewAppModuleBasic(
 				[]govclient.ProposalHandler{
 					paramsclient.ProposalHandler,
-					ibcclientclient.UpdateClientProposalHandler,
-					ibcclientclient.UpgradeProposalHandler,
 					icsproviderclient.ConsumerAdditionProposalHandler,
 					icsproviderclient.ConsumerRemovalProposalHandler,
 					icsproviderclient.EquivocationProposalHandler,

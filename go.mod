@@ -9,7 +9,7 @@ require (
 	cosmossdk.io/math v1.1.3-rc.1
 	github.com/cometbft/cometbft v0.38.0
 	github.com/cometbft/cometbft-db v0.8.0
-	github.com/cosmos/cosmos-sdk v0.50.0-rc.0.0.20230905141004-6a9777fff287
+	github.com/cosmos/cosmos-sdk v0.50.0-rc.1
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/cosmos/ics23/go v0.10.0
 	github.com/golang/mock v1.6.0
@@ -157,22 +157,22 @@ require (
 )
 
 require (
+	cosmossdk.io/client/v2 v2.0.0-20230818115413-c402c51a1508
 	cosmossdk.io/log v1.2.1
 	cosmossdk.io/store v1.0.0-rc.0
 	cosmossdk.io/tools/confix v0.0.0-20231011130440-f28a93a063c5
 	cosmossdk.io/x/evidence v0.0.0-20230818115413-c402c51a1508
 	cosmossdk.io/x/feegrant v0.0.0-20230818115413-c402c51a1508
 	cosmossdk.io/x/tx v0.10.0
-	cosmossdk.io/x/upgrade v0.0.0-20230818115413-c402c51a1508
+	cosmossdk.io/x/upgrade v0.0.0-20230915171831-2196edacb99d
 	github.com/cosmos/cosmos-db v1.0.0
-	github.com/cosmos/ibc-go/modules/capability v1.0.0-rc5
-	github.com/cosmos/ibc-go/v8 v8.0.0-alpha.1
+	github.com/cosmos/ibc-go/modules/capability v1.0.0-rc6
+	github.com/cosmos/ibc-go/v8 v8.0.0-beta.1
 	github.com/spf13/viper v1.17.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230913181813-007df8e322eb
 )
 
 require (
-	cosmossdk.io/client/v2 v2.0.0-20230818115413-c402c51a1508 // indirect
 	cosmossdk.io/collections v0.4.0 // indirect
 	cosmossdk.io/x/circuit v0.0.0-20230818115413-c402c51a1508 // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
