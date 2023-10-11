@@ -1,15 +1,23 @@
 package keeper_test
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 
 	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 func TestValidatorConsensusKeyInUse(t *testing.T) {
@@ -63,7 +71,8 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		k, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
 
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().GetValidator(ctx,
@@ -79,4 +88,62 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAfterProposalSubmission(t *testing.T) {
+	// encodingConfig := appparams.MakeTestEncodingConfig()
+	// v1beta1.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	// v1.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	// cdc := encodingConfig.Codec
+
+	k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	newValidator := cryptotestutil.NewCryptoIdentityFromIntSeed(0)
+
+	content := types.NewConsumerAdditionProposal(
+		"chainID",
+		"description",
+		"chainID",
+		clienttypes.NewHeight(4, 5),
+		[]byte("gen_hash"),
+		[]byte("bin_hash"),
+		time.Now(),
+		ccvtypes.DefaultConsumerRedistributeFrac,
+		ccvtypes.DefaultBlocksPerDistributionTransmission,
+		"",
+		ccvtypes.DefaultHistoricalEntries,
+		ccvtypes.DefaultCCVTimeoutPeriod,
+		ccvtypes.DefaultTransferTimeoutPeriod,
+		ccvtypes.DefaultConsumerUnbondingPeriod,
+	)
+
+	propContent, err := v1.NewLegacyContent(content, authtypes.NewModuleAddress("gov").String())
+	require.NoError(t, err)
+
+	// _, err = v1.LegacyContentFromMessage(propContent)
+	// require.NoError(t, err)
+
+	prop, err := v1.NewProposal(
+		[]sdk.Msg{propContent},
+		0,
+		time.Now(),
+		time.Now(),
+		"",
+		"",
+		"",
+		// sdk.NewCoins(sdk.NewCoin("stake", math.OneInt())),
+		sdk.AccAddress(newValidator.SDKValOpAddress()),
+	)
+
+	require.NoError(t, err)
+
+	gomock.InOrder(
+		mocks.MockGovKeeper.EXPECT().GetProposal(ctx, uint64(0)).Return(prop, true),
+	)
+
+	tHooks := k.Hooks()
+	tHooks.AfterProposalSubmission(ctx, 0)
+
+	fmt.Println(len(k.GetAllProposedConsumerChainIDs(ctx)))
 }

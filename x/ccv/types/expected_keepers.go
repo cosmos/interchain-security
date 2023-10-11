@@ -20,6 +20,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
 
 // StakingKeeper defines the contract expected by provider-chain ccv module from a Staking Module that will keep track
@@ -144,4 +145,8 @@ type ScopedKeeper interface {
 	GetCapability(ctx sdk.Context, name string) (*capabilitytypes.Capability, bool)
 	AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) bool
 	ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error
+}
+
+type GovKeeper interface {
+	GetProposal(ctx sdk.Context, proposalID uint64) (v1.Proposal, bool)
 }

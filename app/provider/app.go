@@ -427,6 +427,7 @@ func New(
 		app.EvidenceKeeper,
 		app.DistrKeeper,
 		app.BankKeeper,
+		app.GovKeeper,
 		authtypes.FeeCollectorName,
 	)
 
@@ -456,10 +457,8 @@ func New(
 
 	// Set legacy router for backwards compatibility with gov v1beta1
 	govKeeper.SetLegacyRouter(govRouter)
-
-	govHook := app.ProviderKeeper.GovHooks(govKeeper)
 	app.GovKeeper = *govKeeper.SetHooks(
-		govtypes.NewMultiGovHooks(govHook),
+		govtypes.NewMultiGovHooks(app.ProviderKeeper.Hooks()),
 	)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(

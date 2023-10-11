@@ -1,9 +1,14 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkgov "github.com/cosmos/cosmos-sdk/x/gov/types"
+	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
@@ -13,12 +18,19 @@ type Hooks struct {
 	k *Keeper
 }
 
-var _ stakingtypes.StakingHooks = Hooks{}
+var (
+	_ stakingtypes.StakingHooks = Hooks{}
+	_ sdkgov.GovHooks           = Hooks{}
+)
 
 // Returns new provider hooks
 func (k *Keeper) Hooks() Hooks {
 	return Hooks{k}
 }
+
+//
+// staking hooks
+//
 
 // This stores a record of each unbonding op from staking, allowing us to track which consumer chains have unbonded
 func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
@@ -178,4 +190,73 @@ func (h Hooks) AfterValidatorBeginUnbonding(_ sdk.Context, _ sdk.ConsAddress, _ 
 
 func (h Hooks) BeforeDelegationRemoved(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
 	return nil
+}
+
+//
+// gov hooks
+//
+
+// AfterProposalSubmission - call hook if registered
+// After consumerAddition proposal submission, the consumer chainID is stored
+func (h Hooks) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) {
+	p, ok := h.k.govKeeper.GetProposal(ctx, proposalID)
+	if !ok {
+		panic(fmt.Errorf("failed to get proposal %d in  gov hook", proposalID))
+	}
+	msgs := p.GetMessages()
+
+	for _, msg := range msgs {
+		sdkMsg, isLegacyProposal := msg.GetCachedValue().(*v1.MsgExecLegacyContent)
+		if !isLegacyProposal {
+			continue
+		}
+
+		content, err := v1.LegacyContentFromMessage(sdkMsg)
+		if err != nil {
+			panic(fmt.Errorf("failed to get legacy proposal %d content in  gov hook", proposalID))
+		}
+
+		consProp, ok := content.(*types.ConsumerAdditionProposal)
+		if ok {
+			h.k.SetProposedConsumerChain(ctx, consProp.ChainId, proposalID)
+		}
+	}
+}
+
+// AfterProposalVotingPeriodEnded - call hook if registered
+// After proposal voting ends, the consumer chainID in store is deleted.
+// When a proposal passes, this chainID will be available in providerKeeper.GetAllPendingConsumerAdditionProps
+// or providerKeeper.GetAllConsumerChains(ctx).
+func (h Hooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID uint64) {
+	p, ok := h.k.govKeeper.GetProposal(ctx, proposalID)
+	if !ok {
+		panic(fmt.Errorf("failed to get proposal %d in  gov hook", proposalID))
+	}
+	msgs := p.GetMessages()
+
+	for _, msg := range msgs {
+		if sdkMsg, isLegacyProposal := msg.GetCachedValue().(*v1.MsgExecLegacyContent); isLegacyProposal {
+			content, err := v1.LegacyContentFromMessage(sdkMsg)
+			if err != nil {
+				panic(fmt.Errorf("failed to get legacy proposal %d content in  gov hook", proposalID))
+			}
+
+			if content.ProposalType() != types.ProposalTypeConsumerAddition {
+				continue
+			}
+
+			h.k.DeleteProposedConsumerChainInStore(ctx, proposalID)
+		}
+
+		continue
+	}
+}
+
+func (h Hooks) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress) {
+}
+
+func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress) {
+}
+
+func (h Hooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64) {
 }
