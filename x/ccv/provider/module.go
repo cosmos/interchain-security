@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
+	"cosmossdk.io/core/appmodule"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -17,17 +17,23 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/client/cli"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 var (
-	_ module.AppModule      = AppModule{}
-	_ porttypes.IBCModule   = AppModule{}
-	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.AppModule           = (*AppModule)(nil)
+	_ module.AppModuleBasic      = (*AppModuleBasic)(nil)
+	_ module.AppModuleSimulation = (*AppModule)(nil)
+	_ module.HasGenesis          = (*AppModule)(nil)
+	_ module.HasName             = (*AppModule)(nil)
+	_ module.HasConsensusVersion = (*AppModule)(nil)
+	_ module.HasInvariants       = (*AppModule)(nil)
+	_ module.HasServices         = (*AppModule)(nil)
+	_ appmodule.AppModule        = (*AppModule)(nil)
+	_ appmodule.HasBeginBlocker  = (*AppModule)(nil)
+	_ appmodule.HasEndBlocker    = (*AppModule)(nil)
 )
 
 // AppModuleBasic is the IBC Provider AppModuleBasic
@@ -37,6 +43,12 @@ type AppModuleBasic struct{}
 func (AppModuleBasic) Name() string {
 	return providertypes.ModuleName
 }
+
+// IsAppModule implements the appmodule.AppModule interface.
+func (AppModule) IsAppModule() {}
+
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (AppModule) IsOnePerModuleType() {}
 
 // RegisterLegacyAminoCodec implements AppModuleBasic interface
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
@@ -112,13 +124,11 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 // InitGenesis performs genesis initialization for the provider module. It returns no validator updates.
 // Note: This method along with ValidateGenesis satisfies the CCV spec:
 // https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-initg1
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
 	var genesisState providertypes.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 
 	am.keeper.InitGenesis(ctx, &genesisState)
-
-	return []abci.ValidatorUpdate{}
 }
 
 // ExportGenesis returns the exported genesis state as raw bytes for the provider
@@ -133,17 +143,18 @@ func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // NOTE: @MSalopek -> swapped sdk.Context with context.Context
 // NOTE: @MSalopek -> renamed BeginBlock to BeginBlocker
-func (am AppModule) BeginBlocker(ctx context.Context) {
+func (am AppModule) BeginBlock(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	// Create clients to consumer chains that are due to be spawned via pending consumer addition proposals
 	am.keeper.BeginBlockInit(sdkCtx)
 	// Stop and remove state for any consumer chains that are due to be stopped via pending consumer removal proposals
 	am.keeper.BeginBlockCCR(sdkCtx)
+	return nil
 }
 
 // NOTE: @MSalopek -> swapped sdk.Context with context.Context
 // NOTE: @MSalopek -> renamed EndBlock to EndBlocker
-func (am AppModule) EndBlocker(ctx context.Context) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// EndBlock logic needed for the Consumer Initiated Slashing sub-protocol.
@@ -156,7 +167,7 @@ func (am AppModule) EndBlocker(ctx context.Context) []abci.ValidatorUpdate {
 	// EndBlock logic need for the  Reward Distribution sub-protocol
 	am.keeper.EndBlockRD(sdkCtx)
 
-	return []abci.ValidatorUpdate{}
+	return nil
 }
 
 // AppModuleSimulation functions
