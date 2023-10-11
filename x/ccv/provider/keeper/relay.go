@@ -452,7 +452,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				"chainID", initTimeoutTimestamp.ChainId)
 			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
 			if err != nil {
-				if ccv.ErrConsumerChainNotFound.Is(err) {
+				if providertypes.ErrConsumerChainNotFound.Is(err) {
 					// consumer chain not found
 					continue
 				}
@@ -479,7 +479,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				)
 				err := k.StopConsumerChain(ctx, channelToChain.ChainId, true)
 				if err != nil {
-					if ccv.ErrConsumerChainNotFound.Is(err) {
+					if providertypes.ErrConsumerChainNotFound.Is(err) {
 						// consumer chain not found
 						continue
 					}
