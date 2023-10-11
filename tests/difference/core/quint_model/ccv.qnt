@@ -250,8 +250,8 @@ module ccv {
     // the power of a validator on the provider chain is changed to the given amount. We do not care how this happens,
     // e.g. via undelegations, or delegations, ...
     pure def votingPowerChange(currentState: ProtocolState, validator: Node, amount: int): Result = {
-            if (amount <= 0) {
-                Err("Voting power changes must be positive")
+            if (amount < 0) {
+                Err("Voting power changes must be nonnegative")
             } else {
                 pure val currentValidatorSet = currentState.providerState.chainState.currentValidatorSet
                 pure val newValidatorSet = getUpdatedValidatorSet(currentValidatorSet, validator, amount)
