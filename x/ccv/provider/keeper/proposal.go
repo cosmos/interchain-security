@@ -108,14 +108,14 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			ccv.EventTypeConsumerClientCreated,
+			types.EventTypeConsumerClientCreated,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 			sdk.NewAttribute(ccv.AttributeChainID, chainID),
 			sdk.NewAttribute(clienttypes.AttributeKeyClientID, clientID),
-			sdk.NewAttribute(ccv.AttributeInitialHeight, prop.InitialHeight.String()),
-			sdk.NewAttribute(ccv.AttributeInitializationTimeout, strconv.Itoa(int(ts.UnixNano()))),
-			sdk.NewAttribute(ccv.AttributeTrustingPeriod, clientState.TrustingPeriod.String()),
-			sdk.NewAttribute(ccv.AttributeUnbondingPeriod, clientState.UnbondingPeriod.String()),
+			sdk.NewAttribute(types.AttributeInitialHeight, prop.InitialHeight.String()),
+			sdk.NewAttribute(types.AttributeInitializationTimeout, strconv.Itoa(int(ts.UnixNano()))),
+			sdk.NewAttribute(types.AttributeTrustingPeriod, clientState.TrustingPeriod.String()),
+			sdk.NewAttribute(types.AttributeUnbondingPeriod, clientState.UnbondingPeriod.String()),
 		),
 	)
 
@@ -612,8 +612,8 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, p *types.Chan
 		}
 		k.SetConsumerRewardDenom(ctx, denomToAdd)
 		ctx.EventManager().EmitEvent(sdk.NewEvent(
-			ccv.EventTypeAddConsumerRewardDenom,
-			sdk.NewAttribute(ccv.AttributeConsumerRewardDenom, denomToAdd),
+			types.EventTypeAddConsumerRewardDenom,
+			sdk.NewAttribute(types.AttributeConsumerRewardDenom, denomToAdd),
 		))
 	}
 	for _, denomToRemove := range p.DenomsToRemove {
@@ -624,8 +624,8 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, p *types.Chan
 		}
 		k.DeleteConsumerRewardDenom(ctx, denomToRemove)
 		ctx.EventManager().EmitEvent(sdk.NewEvent(
-			ccv.EventTypeRemoveConsumerRewardDenom,
-			sdk.NewAttribute(ccv.AttributeConsumerRewardDenom, denomToRemove),
+			types.EventTypeRemoveConsumerRewardDenom,
+			sdk.NewAttribute(types.AttributeConsumerRewardDenom, denomToRemove),
 		))
 	}
 	return nil
