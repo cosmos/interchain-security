@@ -183,7 +183,7 @@ func TestConsumerGenesisTransformationV2(t *testing.T) {
 
 	cmd, err := getGenesisTransformCmd()
 	require.NoError(t, err, "Error setting up transformation command: %s", err)
-	cmd.SetArgs([]string{version, filePath})
+	cmd.SetArgs([]string{filePath})
 
 	output := new(bytes.Buffer)
 	cmd.SetOutput(output)
