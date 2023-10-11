@@ -22,7 +22,6 @@ const (
 
 	AttributeChainID                  = "chain_id"
 	AttributeValidatorAddress         = "validator_address"
-	AttributeValidatorConsumerAddress = "validator_consumer_address"
 	AttributeInfractionType           = "infraction_type"
 	AttributeInfractionHeight         = "infraction_height"
 	AttributeConsumerHeight           = "consumer_height"
