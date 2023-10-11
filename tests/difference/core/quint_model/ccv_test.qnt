@@ -218,7 +218,7 @@ module ccv_test {
             Set("chain3"),
             Set()
         )
-        res._2 == "cannot start a consumer that is stopped or running"
+        res._2 == "cannot start a consumer that is stopped or already a consumer"
     }
 
     run ConsumerStatusMapAlreadyStoppedTest =
