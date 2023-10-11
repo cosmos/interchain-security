@@ -20,7 +20,6 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
-	tendermint "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	ibctestingtypes "github.com/cosmos/ibc-go/v8/testing/types"
 	"github.com/spf13/cast"
@@ -106,9 +105,9 @@ import (
 
 	appparams "github.com/cosmos/interchain-security/v3/app/params"
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
-	ibcprovider "github.com/cosmos/interchain-security/v3/x/ccv/provider"
-	ibcproviderclient "github.com/cosmos/interchain-security/v3/x/ccv/provider/client"
-	ibcproviderkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+	icsprovider "github.com/cosmos/interchain-security/v3/x/ccv/provider"
+	icsproviderclient "github.com/cosmos/interchain-security/v3/x/ccv/provider/client"
+	icsproviderkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
@@ -140,10 +139,10 @@ var (
 				paramsclient.ProposalHandler,
 				ibcclientclient.UpdateClientProposalHandler,
 				ibcclientclient.UpgradeProposalHandler,
-				ibcproviderclient.ConsumerAdditionProposalHandler,
-				ibcproviderclient.ConsumerRemovalProposalHandler,
-				ibcproviderclient.EquivocationProposalHandler,
-				ibcproviderclient.ChangeRewardDenomsProposalHandler,
+				icsproviderclient.ConsumerAdditionProposalHandler,
+				icsproviderclient.ConsumerRemovalProposalHandler,
+				icsproviderclient.EquivocationProposalHandler,
+				icsproviderclient.ChangeRewardDenomsProposalHandler,
 			},
 		),
 		params.AppModuleBasic{},
@@ -154,9 +153,9 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-		tendermint.AppModuleBasic{},
+		// tendermint.AppModuleBasic{},
 		// router.AppModuleBasic{},
-		ibcprovider.AppModuleBasic{},
+		icsprovider.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -214,7 +213,7 @@ type App struct { // nolint: golint
 	IBCKeeper             *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	EvidenceKeeper        evidencekeeper.Keeper
 	TransferKeeper        ibctransferkeeper.Keeper
-	ProviderKeeper        ibcproviderkeeper.Keeper
+	ProviderKeeper        icsproviderkeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 
 	// make scoped keepers public for test purposes
@@ -275,6 +274,7 @@ func New(
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey,
 		providertypes.StoreKey,
+		consensusparamtypes.StoreKey,
 	)
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
 
@@ -439,7 +439,7 @@ func New(
 		runtime.ProvideCometInfoService(),
 	)
 
-	app.ProviderKeeper = ibcproviderkeeper.NewKeeper(
+	app.ProviderKeeper = icsproviderkeeper.NewKeeper(
 		appCodec,
 		keys[providertypes.StoreKey],
 		app.GetSubspace(providertypes.ModuleName),
@@ -460,7 +460,7 @@ func New(
 		authcodec.NewBech32Codec(sdk.Bech32PrefixConsAddr),
 	)
 
-	providerModule := ibcprovider.NewAppModule(&app.ProviderKeeper, app.GetSubspace(providertypes.ModuleName))
+	providerModule := icsprovider.NewAppModule(&app.ProviderKeeper, app.GetSubspace(providertypes.ModuleName))
 
 	// register the proposal types
 	govRouter := govv1beta1.NewRouter()
@@ -470,7 +470,7 @@ func New(
 		// NOTE: @MSalopek -> remove NewSoftwareUpgradeProposalHandler
 		// AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(&app.UpgradeKeeper)).
 		AddRoute(ibcexported.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(providertypes.RouterKey, ibcprovider.NewProviderProposalHandler(app.ProviderKeeper)).
+		AddRoute(providertypes.RouterKey, icsprovider.NewProviderProposalHandler(app.ProviderKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 	govConfig := govtypes.DefaultConfig()
 
@@ -846,7 +846,7 @@ func (app *App) SimulationManager() *module.SimulationManager {
 // ProviderApp interface implementations for integration tests
 
 // GetProviderKeeper implements the ProviderApp interface.
-func (app *App) GetProviderKeeper() ibcproviderkeeper.Keeper {
+func (app *App) GetProviderKeeper() icsproviderkeeper.Keeper {
 	return app.ProviderKeeper
 }
 
