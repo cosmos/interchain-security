@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	confixcmd "cosmossdk.io/tools/confix/cmd"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
@@ -122,6 +123,8 @@ func txCommand() *cobra.Command {
 		authcmd.GetAuxToFeeCommand(),
 	)
 
+	providerApp.ModuleBasics.AddTxCommands(cmd)
+
 	return cmd
 }
 
@@ -190,7 +193,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		genutilcli.InitCmd(providerApp.ModuleBasics, providerApp.DefaultNodeHome),
 		debug.Cmd(),
 		pruning.Cmd(newApp, providerApp.DefaultNodeHome),
-		// config.Cmd(), // replace with confixcmd.ConfigCommand() ?
+		confixcmd.ConfigCommand(),
 	)
 
 	server.AddCommands(rootCmd, providerApp.DefaultNodeHome, newApp, appExport, addModuleInitFlags)
