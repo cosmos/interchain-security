@@ -6,10 +6,13 @@ option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/provider/typ
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
 import "google/protobuf/any.proto";
 
 // Msg defines the Msg service.
 service Msg {
+  option (cosmos.msg.v1.service) = true;
+
   rpc AssignConsumerKey(MsgAssignConsumerKey)
       returns (MsgAssignConsumerKeyResponse);
 }
