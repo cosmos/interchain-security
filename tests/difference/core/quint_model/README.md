@@ -22,18 +22,18 @@ The parameters of the protocol are defined as consts in [ccv.qnt](ccv.qnt).
 
 To run unit tests, run 
 ```
-quint test ccv_test.qnt --main CCVTest
+quint test ccv_test.
 ```
 and 
 ```
-quint test ccv_statemachine.qnt --main CCVDefaultStateMachine
+quint test ccv_statemachine.qnt
 ```
 
 ### Invariants
 
 The invariants to check are in [ccv_statemachine.qnt](ccv_statemachine.qnt).
 Check a single invariant by running
-`quint run --invariant INVARIANT_NAME ccv_statemachine.qnt --main CCVDefaultStateMachine`,
+`quint run --invariant INVARIANT_NAME ccv_statemachine.qnt`,
 or all invariants one after another with the help of the script `run_invariants.sh`.
 Each invariant takes about a minute to run.
 
@@ -53,7 +53,7 @@ that were running at the time the packet was sent (and are still running).
 Invariants can also be model-checked by Apalache, using this command:
 ```
 quint verify --invariant ValidatorUpdatesArePropagatedInv,ValidatorSetHasExistedInv,SameVscPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv \
---main CCVDefaultStateMachine ccv_statemachine.qnt
+ ccv_statemachine.qnt
 ```
 
 ### Sanity Checks
@@ -63,7 +63,7 @@ In detail, they are invariant checks that we expect to fail.
 They usually negate the appearance of some behaviour, i.e. `not(DesirableBehaviour)`.
 Then, a counterexample for this is an example trace exhibiting the behaviour.
 
-They are run like invariant checks, i.e. `quint run --invariant SANITY_CHECK_NAME ccv_statemachine.qnt --main CCVDefaultStateMachine`.
+They are run like invariant checks, i.e. `quint run --invariant SANITY_CHECK_NAME ccv_statemachine.qnt`.
 The available sanity checks are:
 - CanRunConsumer
 - CanStopConsumer
