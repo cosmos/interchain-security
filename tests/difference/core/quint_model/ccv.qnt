@@ -1,5 +1,5 @@
 // -*- mode: Bluespec; -*-
-module CCVTypes {
+module ccv_types {
     import Time.* from "./libraries/Time"
 
     type Node = str
@@ -204,7 +204,7 @@ module CCVTypes {
     pure val PROVIDER_CHAIN = "provider"
 }
 
-module CCV {
+module ccv {
     // Implements the core logic of the cross-chain validation protocol.
 
     // Things that are not modelled:
@@ -222,7 +222,7 @@ module CCV {
     
     import Time.* from "./libraries/Time"
     import extraSpells.* from "./libraries/extraSpells"
-    import CCVTypes.*
+    import ccv_types.*
   
 
     // ===================

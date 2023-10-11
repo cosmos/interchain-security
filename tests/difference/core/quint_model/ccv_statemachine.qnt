@@ -1,7 +1,7 @@
 // -*- mode: Bluespec; -*-
-module CCVDefaultStateMachine {
+module ccv_statemachine {
     // A basic state machine that utilizes the CCV protocol.
-    import CCVTypes.* from "./ccv"
+    import ccv_types.* from "./ccv"
     import Time.* from "./libraries/Time"
     import extraSpells.* from "./libraries/extraSpells"
 
@@ -13,96 +13,38 @@ module CCVDefaultStateMachine {
     pure val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10")
     pure val InitialValidatorSet = nodes.mapBy(node => 100)
 
-    import CCV(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains).* from "./ccv"
+    import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains).* from "./ccv"
 
 
     var currentState: ProtocolState
+
+
+    pure def ACTIONS = Set(
+        "VotingPowerChange",
+        "DeliverVscPacket",
+        "DeliverVscMaturedPacket",
+        "EndAndBeginBlockForProvider",
+        "EndAndBeginBlockForConsumer"
+    )
+
+    // a type storing the parameters used in actions.
+    // this is used in the trace to store
+    // the name of the last action, plus the parameters we passed to it.
+    // Note: This type holds ALL parameters that are used in ANY action,
+    // so not all of these fields are relevant to each action.
+    type Action =
+        {
+            kind: str,
+            consumerChain: Chain,
+            timeAdvancement: Time,
+            consumersToStart: Set[Chain],
+            consumersToStop: Set[Chain],
+            validator: Node,
+            newVotingPower: int,
+        }
     
-    // bookkeeping
-    var trace: List[str]
 
-    // some utility stateful vals to make invariants easier to define
-    val providerValidatorHistory = currentState.providerState.chainState.votingPowerHistory
-    val runningConsumers = getRunningConsumers(currentState.providerState)
-    val nonConsumers = getNonConsumers(currentState.providerState)
-
-    action init: bool = all {
-        val providerState = GetEmptyProviderState
-        val consumerStates = ConsumerChains.mapBy(chain => GetEmptyConsumerState)
-        val providerStateWithConsumers = providerState.with(
-            "consumerStatus", 
-            ConsumerChains.mapBy(chain => NOT_CONSUMER)
-        ).with(
-            "outstandingPacketsToConsumer", 
-            ConsumerChains.mapBy(chain => List())
-        ).with(
-            "sentVscPackets", 
-            ConsumerChains.mapBy(chain => List())
-        ).with(
-            // set the validator set to be the initial validator set in the history
-            "chainState", providerState.chainState.with(
-                "votingPowerHistory", List(InitialValidatorSet)
-            ).with(
-                "currentValidatorSet", InitialValidatorSet
-            )
-        )
-        currentState' = {
-            providerState: providerStateWithConsumers,
-            consumerStates: consumerStates
-        },
-        trace' = List("init")
-    }
-
-    action VotingPowerChange(validator: Node, newVotingPower: int): bool = 
-        val result = votingPowerChange(currentState, validator, newVotingPower)
-        all {
-            result.hasError == false,
-            currentState' = result.newState,
-            trace' = trace.append("VotingPowerChange")
-        }
-
-    // The receiver receives the next outstanding VscPacket from the provider.
-    // This will time out the consumer if the packet timeout has passed on the receiver.
-    action DeliverVscPacket(receiver: Chain): bool = 
-        val resultAndTimeout = deliverPacketToConsumer(currentState, receiver)
-        val result = resultAndTimeout._1
-        all {
-            result.hasError == false,
-            currentState' = result.newState,
-            trace' = trace.append("DeliverVscPacket")
-        }
-
-    // The provider receives the next outstanding VscMaturedPacket from the sender.
-    // This will time out the consumer if the packet timeout has passed on the provider.
-    action DeliverVscMaturedPacket(sender: Chain): bool =
-        val resultAndTimeout = deliverPacketToProvider(currentState, sender)
-        val result = resultAndTimeout._1
-        all {
-            result.hasError == false,
-            currentState' = result.newState,
-            trace' = trace.append("DeliverVscMaturedPacket")
-        }
-
-    action EndAndBeginBlockForProvider(
-        timeAdvancement: Time,
-        consumersToStart: Set[Chain],
-        consumersToStop: Set[Chain]): bool = 
-        val result = endAndBeginBlockForProvider(currentState, timeAdvancement, consumersToStart, consumersToStop)
-        all {
-            result.hasError == false,
-            currentState' = result.newState,
-            trace' = trace.append("EndAndBeginBlockForProvider")
-        }
-
-    action EndAndBeginBlockForConsumer(
-        chain: Chain,
-        timeAdvancement: Time): bool = 
-        val result = endAndBeginBlockForConsumer(currentState, chain, timeAdvancement)
-        all {
-            result.hasError == false,
-            currentState' = result.newState,
-            trace' = trace.append("EndAndBeginBlockForConsumer")
-        }
+    var trace: List[Action]
 
     // a few different values for time advancements.
     // to keep the number of possible steps small, we only have a few different values.
@@ -110,6 +52,17 @@ module CCVDefaultStateMachine {
     // and then longer values for increasingly severe downtime scenarios.
     // Note that these can still be combined, so in effect we can get all time advancements by any amount of seconds.
     pure val timeAdvancements = Set(1 * Second, 1 * Day, 1 * Week, 4 * Week)
+
+    pure def emptyAction =
+            {
+                kind: "",
+                consumerChain: "",
+                timeAdvancement: 0 * Second,
+                consumersToStart: Set(),
+                consumersToStop: Set(),
+                validator: "",
+                newVotingPower: 0,
+            }
 
     // step allows the most generic nondeterminism, in particular it becomes relatively likely
     // that over a long enough runtime, all consumers would time out by mismatching their time advancements,
@@ -153,6 +106,89 @@ module CCVDefaultStateMachine {
         },
     }
 
+    // some utility stateful vals to make invariants easier to define
+    val providerValidatorHistory = currentState.providerState.chainState.votingPowerHistory
+    val runningConsumers = getRunningConsumers(currentState.providerState)
+    val nonConsumers = getNonConsumers(currentState.providerState)
+
+    action init: bool = all {
+        val providerState = GetEmptyProviderState
+        val consumerStates = ConsumerChains.mapBy(chain => GetEmptyConsumerState)
+        val providerStateWithConsumers = providerState.with(
+            "consumerStatus", 
+            ConsumerChains.mapBy(chain => NOT_CONSUMER)
+        ).with(
+            "outstandingPacketsToConsumer", 
+            ConsumerChains.mapBy(chain => List())
+        ).with(
+            "sentVscPackets", 
+            ConsumerChains.mapBy(chain => List())
+        ).with(
+            // set the validator set to be the initial validator set in the history
+            "chainState", providerState.chainState.with(
+                "votingPowerHistory", List(InitialValidatorSet)
+            ).with(
+                "currentValidatorSet", InitialValidatorSet
+            )
+        )
+        currentState' = {
+            providerState: providerStateWithConsumers,
+            consumerStates: consumerStates
+        },
+        trace' = List(emptyAction.with("kind", "init")),
+    }
+
+    action VotingPowerChange(validator: Node, newVotingPower: int): bool = 
+        val result = votingPowerChange(currentState, validator, newVotingPower)
+        all {
+            result.hasError == false,
+            currentState' = result.newState,
+            trace' = trace.append(emptyAction.with("kind", "VotingPowerChange").with("validator", validator).with("newVotingPower", newVotingPower))
+        }
+
+    // The receiver receives the next outstanding VscPacket from the provider.
+    // This will time out the consumer if the packet timeout has passed on the receiver.
+    action DeliverVscPacket(receiver: Chain): bool = 
+        val resultAndTimeout = deliverPacketToConsumer(currentState, receiver)
+        val result = resultAndTimeout._1
+        all {
+            result.hasError == false,
+            currentState' = result.newState,
+            trace' = trace.append(emptyAction.with("kind", "DeliverVscPacket").with("consumerChain", receiver))
+        }
+
+    // The provider receives the next outstanding VscMaturedPacket from the sender.
+    // This will time out the consumer if the packet timeout has passed on the provider.
+    action DeliverVscMaturedPacket(sender: Chain): bool =
+        val resultAndTimeout = deliverPacketToProvider(currentState, sender)
+        val result = resultAndTimeout._1
+        all {
+            result.hasError == false,
+            currentState' = result.newState,
+            trace' = trace.append(emptyAction.with("kind", "DeliverVscMaturedPacket").with("consumerChain", sender))
+        }
+
+    action EndAndBeginBlockForProvider(
+        timeAdvancement: Time,
+        consumersToStart: Set[Chain],
+        consumersToStop: Set[Chain]): bool = 
+        val result = endAndBeginBlockForProvider(currentState, timeAdvancement, consumersToStart, consumersToStop)
+        all {
+            result.hasError == false,
+            currentState' = result.newState,
+            trace' = trace.append(emptyAction.with("kind", "EndAndBeginBlockForProvider").with("timeAdvancement", timeAdvancement).with("consumersToStart", consumersToStart).with("consumersToStop", consumersToStop))
+        }
+
+    action EndAndBeginBlockForConsumer(
+        chain: Chain,
+        timeAdvancement: Time): bool = 
+        val result = endAndBeginBlockForConsumer(currentState, chain, timeAdvancement)
+        all {
+            result.hasError == false,
+            currentState' = result.newState,
+            trace' = trace.append(emptyAction.with("kind", "EndAndBeginBlockForConsumer").with("consumerChain", chain).with("timeAdvancement", timeAdvancement))
+        }
+
     // ==================
     // INVARIANT CHECKS
     // ==================
@@ -169,7 +205,7 @@ module CCVDefaultStateMachine {
 
     // Any update in the power of a validator on the provider
     // MUST be present in a ValidatorSetChangePacket that is sent to all registered consumer chains
-    val ValUpdatePrecondition = trace[trace.length()-1] == "EndAndBeginBlockForProvider"
+    val ValUpdatePrecondition = trace[trace.length()-1].kind == "EndAndBeginBlockForProvider"
     val ValidatorUpdatesArePropagatedInv = 
         // when the provider has just entered a validator set into a block...
         if (ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisBlock) {
@@ -389,8 +425,7 @@ module CCVDefaultStateMachine {
                     assert(currentState.providerState.receivedMaturations.size() == 1),
                     // the packet was removed from the consumer
                     assert(currentState.consumerStates.get("consumer1").outstandingPacketsToProvider.length() == 0),
-                    currentState' = currentState, // just so this still has an effect
-                    trace' = trace.append("HappyPathTest")
+                    VotingPowerChange("node1", 50) // just so this still has an effect
                 }
             )
         }
@@ -436,7 +471,7 @@ module CCVDefaultStateMachine {
             all {
                 assert(SameVscPacketsInv),
                 // action does not matter, but needed to have uniform effect
-                step
+                VotingPowerChange("node1", 50)
             }
         )
 
@@ -459,13 +494,13 @@ module CCVDefaultStateMachine {
             // advance time on provider by VscTimeout + 1 Second
             EndAndBeginBlockForProvider(VscTimeout + 5 * Second, Set(), Set())
         )
-        // .then(
-        //     all {
-        //         // the consumer chains should have timed out
-        //         assert(ConsumerChains.forall(
-        //             chain => currentState.providerState.consumerStatus.get(chain) == TIMEDOUT
-        //         )),
-        //         VotingPowerChange("node2", 50)// action needs to be there but does not matter
-        //     }
-        // )
+        .then(
+            all {
+                // the consumer chains should have timed out
+                assert(ConsumerChains.forall(
+                    chain => currentState.providerState.consumerStatus.get(chain) == TIMEDOUT
+                )),
+                VotingPowerChange("node1", 50) // action needs to be there but does not matter what it is
+            }
+        )
 }

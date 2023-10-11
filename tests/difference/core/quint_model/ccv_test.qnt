@@ -1,8 +1,8 @@
 // -*- mode: Bluespec; -*-
 
 // contains test logic for the stateless functions in the CCV module
-module CCVTest {
-    import CCVTypes.* from "./ccv"
+module ccv_test {
+    import ccv_types.* from "./ccv"
     import Time.* from "./libraries/Time"
     import extraSpells.* from "./libraries/extraSpells"
 
@@ -11,7 +11,7 @@ module CCVTest {
     pure val unbondingPeriods = chains.mapBy(chain => 2 * Week)
     pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
 
-    import CCV(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains).* from "./ccv"
+    import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains).* from "./ccv"
 
     // negative voting powers give an error
     run VotingPowerNegativeTest =
