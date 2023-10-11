@@ -254,7 +254,7 @@ module ccv {
                 Err("Voting power changes must be nonnegative")
             } else {
                 pure val currentValidatorSet = currentState.providerState.chainState.currentValidatorSet
-                pure val newValidatorSet = getUpdatedValidatorSet(currentValidatorSet, validator, amount)
+                pure val newValidatorSet = currentValidatorSet.put(validator, amount)
                 // set the validator set changed flag
                 val newProviderState = currentState.providerState.with(
                     "providerValidatorSetChangedInThisBlock", true
@@ -736,14 +736,6 @@ module ccv {
         )
         newState
     }
-
-    // Updates the given oldValidatorSet by setting the validator to newVotingPower.
-    // If newVotingPower is zero, the validator is removed.
-    pure def getUpdatedValidatorSet(oldValidatorSet: ValidatorSet, validator: Node, newVotingPower: int): ValidatorSet =
-        if (newVotingPower > 0) 
-        oldValidatorSet.put(validator, newVotingPower)
-        else
-        oldValidatorSet.mapRemove(validator)
 
     // Returns a ProtocolState where the current validator set on the provider is set to 
     // newValidatorSet.

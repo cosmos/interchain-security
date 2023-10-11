@@ -35,7 +35,7 @@ module ccv_test {
         result.newState.providerState.chainState.currentValidatorSet.get("validator") == 5
     }
 
-    // validators that get zero voting power are removed
+    // voting power of 0 is allowed and applied as usual
     run VotingPowerZeroTest =
     {
         val tmpResult = votingPowerChange(
@@ -49,7 +49,7 @@ module ccv_test {
             0
         )
         not(finalResult.hasError) and
-        not(finalResult.newState.providerState.chainState.currentValidatorSet.keys().contains("validator"))
+        finalResult.newState.providerState.chainState.currentValidatorSet.get("validator") == 0
     }
 
     run VotingPowerSetsFlagTest =
