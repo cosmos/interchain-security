@@ -145,7 +145,6 @@ module ccv_test {
     run StateModificationOK_DeliverPacketToProviderHappyPathTest =
     {
         val result = DeliverPacketToProviderHappyPathTest_resultAndTimeout._1
-        val timedOut = DeliverPacketToProviderHappyPathTest_resultAndTimeout._2
         val newProviderState = result.newState.providerState
         val newConsumerState = result.newState.consumerStates.get("sender")
         not(result.hasError) and
@@ -168,17 +167,16 @@ module ccv_test {
     run DidTimeOut_DeliverPacketToProviderTimeoutTest =
     {
         val result = DeliverPacketToProviderTimeoutTest_resultAndTimeout._1
-        val timedOut = DeliverPacketToProviderTimeoutTest_resultAndTimeout._2
+        val timeout = DeliverPacketToProviderTimeoutTest_resultAndTimeout._2
         val newProviderState = result.newState.providerState
         val newConsumerState = result.newState.consumerStates.get("sender")
         not(result.hasError) and
-        timedOut
+        timeout
     }
 
     run StateModificationOK_DeliverPacketToProviderTimeoutTest =
     {
         val result = DeliverPacketToProviderTimeoutTest_resultAndTimeout._1
-        val timedOut = DeliverPacketToProviderTimeoutTest_resultAndTimeout._2
         val newProviderState = result.newState.providerState
         val newConsumerState = result.newState.consumerStates.get("sender")
         not(result.hasError) and

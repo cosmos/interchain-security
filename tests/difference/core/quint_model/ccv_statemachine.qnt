@@ -18,15 +18,6 @@ module ccv_statemachine {
 
     var currentState: ProtocolState
 
-
-    pure def ACTIONS = Set(
-        "VotingPowerChange",
-        "DeliverVscPacket",
-        "DeliverVscMaturedPacket",
-        "EndAndBeginBlockForProvider",
-        "EndAndBeginBlockForConsumer"
-    )
-
     // a type storing the parameters used in actions.
     // this is used in the trace to store
     // the name of the last action, plus the parameters we passed to it.
@@ -85,7 +76,6 @@ module ccv_statemachine {
         nondet node = oneOf(nodes)
         // very restricted set of voting powers. exact values are not important,
         // and this keeps the state space smaller.
-        // 0 for getting a validator out of the validator set, and two non-zero values
         nondet newVotingPower = oneOf(Set(0, 50, 100))
         VotingPowerChange(node, newVotingPower),
 
