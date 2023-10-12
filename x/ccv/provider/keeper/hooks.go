@@ -197,58 +197,21 @@ func (h Hooks) BeforeDelegationRemoved(_ sdk.Context, _ sdk.AccAddress, _ sdk.Va
 //
 
 // AfterProposalSubmission - call hook if registered
-// After consumerAddition proposal submission, the consumer chainID is stored
+// After a consumerAddition proposal submission, a record is created
+// that maps the proposal ID to the consumer chain ID.
 func (h Hooks) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) {
-	p, ok := h.k.govKeeper.GetProposal(ctx, proposalID)
-	if !ok {
-		panic(fmt.Errorf("failed to get proposal %d in  gov hook", proposalID))
-	}
-	msgs := p.GetMessages()
-
-	for _, msg := range msgs {
-		sdkMsg, isLegacyProposal := msg.GetCachedValue().(*v1.MsgExecLegacyContent)
-		if !isLegacyProposal {
-			continue
-		}
-
-		content, err := v1.LegacyContentFromMessage(sdkMsg)
-		if err != nil {
-			panic(fmt.Errorf("failed to get legacy proposal %d content in  gov hook", proposalID))
-		}
-
-		consProp, ok := content.(*types.ConsumerAdditionProposal)
-		if ok {
-			h.k.SetProposedConsumerChain(ctx, consProp.ChainId, proposalID)
-		}
+	if p, ok := h.GetConsumerAdditionLegacyPropFromProp(ctx, proposalID); ok {
+		h.k.SetProposedConsumerChain(ctx, p.ChainId, proposalID)
 	}
 }
 
 // AfterProposalVotingPeriodEnded - call hook if registered
 // After proposal voting ends, the consumer chainID in store is deleted.
-// When a proposal passes, this chainID will be available in providerKeeper.GetAllPendingConsumerAdditionProps
+// When a consumerAddition proposal passes, the consumer chainID is available in providerKeeper.GetAllPendingConsumerAdditionProps
 // or providerKeeper.GetAllConsumerChains(ctx).
 func (h Hooks) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID uint64) {
-	p, ok := h.k.govKeeper.GetProposal(ctx, proposalID)
-	if !ok {
-		panic(fmt.Errorf("failed to get proposal %d in  gov hook", proposalID))
-	}
-	msgs := p.GetMessages()
-
-	for _, msg := range msgs {
-		if sdkMsg, isLegacyProposal := msg.GetCachedValue().(*v1.MsgExecLegacyContent); isLegacyProposal {
-			content, err := v1.LegacyContentFromMessage(sdkMsg)
-			if err != nil {
-				panic(fmt.Errorf("failed to get legacy proposal %d content in  gov hook", proposalID))
-			}
-
-			if content.ProposalType() != types.ProposalTypeConsumerAddition {
-				continue
-			}
-
-			h.k.DeleteProposedConsumerChainInStore(ctx, proposalID)
-		}
-
-		continue
+	if _, ok := h.GetConsumerAdditionLegacyPropFromProp(ctx, proposalID); ok {
+		h.k.DeleteProposedConsumerChainInStore(ctx, proposalID)
 	}
 }
 
@@ -259,4 +222,35 @@ func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr s
 }
 
 func (h Hooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64) {
+}
+
+func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
+	ctx sdk.Context,
+	proposalID uint64,
+) (types.ConsumerAdditionProposal, bool) {
+	p, ok := h.k.govKeeper.GetProposal(ctx, proposalID)
+	if !ok {
+		panic(fmt.Errorf("failed to get proposal %d from store", proposalID))
+	}
+
+	// Iterate over the messages in the proposal
+	// Note that only ONE message can contain a consumer addition proposal
+	for _, msg := range p.GetMessages() {
+		sdkMsg, isLegacyProposal := msg.GetCachedValue().(*v1.MsgExecLegacyContent)
+		if !isLegacyProposal {
+			continue
+		}
+
+		content, err := v1.LegacyContentFromMessage(sdkMsg)
+		if err != nil {
+			panic(fmt.Errorf("failed to get legacy proposal %d from prop message", proposalID))
+		}
+
+		// returns if legacy prop is of ConsumerAddition proposal type
+		prop, ok := content.(*types.ConsumerAdditionProposal)
+		if ok {
+			return *prop, true
+		}
+	}
+	return types.ConsumerAdditionProposal{}, false
 }

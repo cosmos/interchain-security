@@ -1,23 +1,24 @@
 package keeper_test
 
 import (
-	"fmt"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+
 	"testing"
 	"time"
 
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"cosmossdk.io/math"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
 	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 func TestValidatorConsensusKeyInUse(t *testing.T) {
@@ -90,60 +91,141 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 	}
 }
 
-func TestAfterProposalSubmission(t *testing.T) {
-	// encodingConfig := appparams.MakeTestEncodingConfig()
-	// v1beta1.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	// v1.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	// cdc := encodingConfig.Codec
+func TestAfterSubmissionAndAfterProposalVotingPeriodEnded(t *testing.T) {
+	acct := cryptotestutil.NewCryptoIdentityFromIntSeed(0)
 
-	k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	newValidator := cryptotestutil.NewCryptoIdentityFromIntSeed(0)
-
-	content := types.NewConsumerAdditionProposal(
-		"chainID",
-		"description",
-		"chainID",
-		clienttypes.NewHeight(4, 5),
-		[]byte("gen_hash"),
-		[]byte("bin_hash"),
-		time.Now(),
-		ccvtypes.DefaultConsumerRedistributeFrac,
-		ccvtypes.DefaultBlocksPerDistributionTransmission,
-		"",
-		ccvtypes.DefaultHistoricalEntries,
-		ccvtypes.DefaultCCVTimeoutPeriod,
-		ccvtypes.DefaultTransferTimeoutPeriod,
-		ccvtypes.DefaultConsumerUnbondingPeriod,
+	propMsg, err := v1.NewLegacyContent(
+		testkeeper.GetTestConsumerAdditionProp(),
+		authtypes.NewModuleAddress("gov").String(),
 	)
-
-	propContent, err := v1.NewLegacyContent(content, authtypes.NewModuleAddress("gov").String())
 	require.NoError(t, err)
 
-	// _, err = v1.LegacyContentFromMessage(propContent)
-	// require.NoError(t, err)
-
 	prop, err := v1.NewProposal(
-		[]sdk.Msg{propContent},
+		[]sdk.Msg{propMsg},
 		0,
 		time.Now(),
 		time.Now(),
 		"",
 		"",
 		"",
-		// sdk.NewCoins(sdk.NewCoin("stake", math.OneInt())),
-		sdk.AccAddress(newValidator.SDKValOpAddress()),
+		sdk.AccAddress(acct.SDKValOpAddress()),
 	)
-
 	require.NoError(t, err)
 
+	k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// pass the prop to the mocked gov keeper,
+	// which is called by both the AfterProposalVotingPeriodEnded and
+	// AfterProposalSubmission gov hooks
 	gomock.InOrder(
-		mocks.MockGovKeeper.EXPECT().GetProposal(ctx, uint64(0)).Return(prop, true),
+		mocks.MockGovKeeper.EXPECT().GetProposal(ctx, prop.Id).Return(prop, true).Times(2),
 	)
 
-	tHooks := k.Hooks()
-	tHooks.AfterProposalSubmission(ctx, 0)
+	k.Hooks().AfterProposalSubmission(ctx, prop.Id)
+	// verify that the proposal ID is created
+	require.NotEmpty(t, k.GetProposedConsumerChain(ctx, prop.Id))
 
-	fmt.Println(len(k.GetAllProposedConsumerChainIDs(ctx)))
+	k.Hooks().AfterProposalVotingPeriodEnded(ctx, prop.Id)
+	// verify that the proposal ID is deleted
+	require.Empty(t, k.GetProposedConsumerChain(ctx, prop.Id))
+}
+
+func TestGetConsumerAdditionLegacyPropFromProp(t *testing.T) {
+	acct := cryptotestutil.NewCryptoIdentityFromIntSeed(0)
+	anotherAcct := cryptotestutil.NewCryptoIdentityFromIntSeed(1)
+
+	// create a dummy bank send message
+	dummyMsg := &banktypes.MsgSend{
+		FromAddress: sdk.AccAddress(acct.SDKValOpAddress()).String(),
+		ToAddress:   sdk.AccAddress(anotherAcct.SDKValOpAddress()).String(),
+		Amount:      sdk.NewCoins(sdk.NewCoin("stake", math.OneInt())),
+	}
+
+	testCases := map[string]struct {
+		propMsg func() sdk.Msg
+		// setup 			func(sdk.Context, k providerkeeper, proposalID uint64)
+		expPanic        bool
+		expConsuAddProp bool
+	}{
+
+		"prop not found": {
+			propMsg: func() sdk.Msg {
+				return dummyMsg
+			},
+			expPanic: true,
+		},
+		"msgs in prop contain no legacy props": {
+			propMsg: func() sdk.Msg {
+				return dummyMsg
+			},
+			expConsuAddProp: false,
+		},
+		"msgs contain a legacy prop but not of ConsumerAdditionProposal type": {
+			propMsg: func() sdk.Msg {
+				textProp, err := v1.NewLegacyContent(
+					v1beta1.NewTextProposal("a title", "a legacy text prop"),
+					authtypes.NewModuleAddress("gov").String(),
+				)
+				require.NoError(t, err)
+
+				return textProp
+			},
+			expConsuAddProp: false,
+		},
+		"msg contains a prop of ConsumerAdditionProposal type - hook should create a new proposed chain": {
+			propMsg: func() sdk.Msg {
+				// create a dummy consumer addition prop
+				consuProp, err := v1.NewLegacyContent(
+					testkeeper.GetTestConsumerAdditionProp(),
+					authtypes.NewModuleAddress("gov").String(),
+				)
+				require.NoError(t, err)
+
+				return consuProp
+			},
+			expConsuAddProp: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+			defer ctrl.Finish()
+
+			// create a dummy prop for each test case
+			prop, err := v1.NewProposal(
+				[]sdk.Msg{tc.propMsg()},
+				0,
+				time.Now(),
+				time.Now(),
+				"",
+				"",
+				"",
+				sdk.AccAddress(acct.SDKValOpAddress()),
+			)
+			require.NoError(t, err)
+
+			if !tc.expPanic {
+				// pass the prop to the mocked gov keeper,
+				// which is called by the AfterProposalSubmission gov hook
+				gomock.InOrder(
+					mocks.MockGovKeeper.EXPECT().GetProposal(ctx, prop.Id).Return(prop, true),
+				)
+			} else {
+				gomock.InOrder(
+					mocks.MockGovKeeper.EXPECT().GetProposal(ctx, prop.Id).Return(v1.Proposal{}, false),
+				)
+				defer func() {
+					if r := recover(); r == nil {
+						require.Fail(t, r.(string))
+					}
+				}()
+			}
+
+			// retrieve consumer addition proposal
+			_, ok := k.Hooks().GetConsumerAdditionLegacyPropFromProp(ctx, prop.Id)
+			require.Equal(t, tc.expConsuAddProp, ok)
+		})
+	}
 }
