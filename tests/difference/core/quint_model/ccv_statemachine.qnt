@@ -121,7 +121,7 @@ module ccv_statemachine {
             "outstandingPacketsToConsumer", 
             ConsumerChains.mapBy(chain => List())
         ).with(
-            "sentVscPackets", 
+            "sentVscPacketsToConsumer", 
             ConsumerChains.mapBy(chain => List())
         ).with(
             // set the validator set to be the initial validator set in the history
@@ -213,7 +213,7 @@ module ccv_statemachine {
             // ... for each consumer that is running then ...
             runningConsumers.forall(
                 // ...the validator set is in a sent packet
-                consumer => currentState.providerState.sentVscPackets.get(consumer).toSet().exists(
+                consumer => currentState.providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
                     packet => packet.validatorSet == providerValSetInCurBlock
                 )
             )
@@ -272,14 +272,14 @@ module ccv_statemachine {
 
     // If we send a VscPacket, this is eventually responded to by all consumers
     // that were running at the time the packet was sent (and are still running).
-    // Since we remove sentVscPackets when we receive responses for them,
+    // Since we remove sentVscPacketsToConsumer when we receive responses for them,
     // we just check that if a sentVscPacket has been sent more than
     // VscTimeout ago, the consumer must have been dropped.
     // In practice, when this is true, a pending unbonding can mature.
     val EventuallyMatureOnProviderInv =
         runningConsumers.forall(
             consumer => {
-                val sentPackets = currentState.providerState.sentVscPackets.get(consumer).toSet()
+                val sentPackets = currentState.providerState.sentVscPacketsToConsumer.get(consumer).toSet()
                 sentPackets.forall(
                     packet =>
                         // consumer still has time to respond
@@ -363,7 +363,7 @@ module ccv_statemachine {
                     "consumer2" -> List(),
                     "consumer3" -> List()
                 )),
-                assert(currentState.providerState.sentVscPackets == Map(
+                assert(currentState.providerState.sentVscPacketsToConsumer == Map(
                     "consumer1" -> List(),
                     "consumer2" -> List(),
                     "consumer3" -> List()

@@ -69,7 +69,7 @@ module ccv_types {
             receivedMaturations: Set[VscMaturedPacket],
 
             // Stores VscPackets which have been sent but where the provider has *not received a response yet*.
-            sentVscPackets: Chain -> List[VscPacket],
+            sentVscPacketsToConsumer: Chain -> List[VscPacket],
 
             // stores whether, in this block, the validator set has changed.
             // this is needed because the validator set might be considered to have changed, even though
@@ -92,7 +92,7 @@ module ccv_types {
             chainState: GetEmptyChainState,
             outstandingPacketsToConsumer: Map(),
             receivedMaturations: Set(),
-            sentVscPackets: Map(),
+            sentVscPacketsToConsumer: Map(),
             providerValidatorSetChangedInThisBlock: false,
             consumerStatus: Map(),
             runningVscId: 0,
@@ -178,7 +178,7 @@ module ccv_types {
                     },
                     outstandingPacketsToConsumer: Map(),
                     receivedMaturations: Set(),
-                    sentVscPackets: Map(),
+                    sentVscPacketsToConsumer: Map(),
                     providerValidatorSetChangedInThisBlock: false,
                     consumerStatus: Map(),
                     runningVscId: 0,
@@ -634,10 +634,10 @@ module ccv {
             )
             ).with(
                 // update the sent VscPackets
-                "sentVscPackets",
+                "sentVscPacketsToConsumer",
                 ConsumerChains.mapBy(
                     (consumer) => 
-                    providerState.sentVscPackets.get(consumer).concat(
+                    providerState.sentVscPacketsToConsumer.get(consumer).concat(
                         newSentPacketsPerConsumer.get(consumer)
                     )
                 )
@@ -688,7 +688,7 @@ module ccv {
     pure def recvPacketOnProvider(currentState: ProtocolState, sender: Chain, packet: VscMaturedPacket): Result = {
         if (not(isRunningConsumer(sender, currentState.providerState))) {
             Err("Sender is not currently a consumer - must have 'running' status!")
-        } else if (currentState.providerState.sentVscPackets.get(sender).head().id != packet.id) {
+        } else if (currentState.providerState.sentVscPacketsToConsumer.get(sender).head().id != packet.id) {
             // the packet is not the oldest sentVscPacket, something went wrong
             Err("Received maturation is not for the oldest sentVscPacket")
         } else {
@@ -698,7 +698,7 @@ module ccv {
                 "receivedMaturations", newReceivedMaturations
             )
             // prune the sentVscPacket
-            val newSentVscPacket = currentState.providerState.sentVscPackets.get(sender).tail()
+            val newSentVscPacket = currentState.providerState.sentVscPacketsToConsumer.get(sender).tail()
             val newState = currentState.with(
                 "providerState", newProviderState
             )
@@ -784,9 +784,9 @@ module ccv {
             val consumerState = currentState.consumerStates.get(consumer)
 
             // has a packet been sent on the provider more than VscTimeout ago, but we have not received an answer since then?
-            val sentVscPackets = providerState.sentVscPackets.get(consumer)
-            if(sentVscPackets.length() > 0) {
-                val oldestSentVscPacket = sentVscPackets.head() // if length is 0, this is undefined, but we check for this before we use it
+            val sentVscPacketsToConsumer = providerState.sentVscPacketsToConsumer.get(consumer)
+            if(sentVscPacketsToConsumer.length() > 0) {
+                val oldestSentVscPacket = sentVscPacketsToConsumer.head() // if length is 0, this is undefined, but we check for this before we use it
                 if(oldestSentVscPacket.sendingTime + VscTimeout < providerState.chainState.lastTimestamp) {
                     (true, "")
                 } else {
