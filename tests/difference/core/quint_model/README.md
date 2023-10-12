@@ -22,7 +22,7 @@ The parameters of the protocol are defined as consts in [ccv.qnt](ccv.qnt).
 
 To run unit tests, run 
 ```
-quint test ccv_test.
+quint test ccv_test.qnt
 ```
 and 
 ```
