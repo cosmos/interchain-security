@@ -56,7 +56,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	chainID := prop.ChainId
 	// check that a client for this chain does not exist
 	if _, found := k.GetConsumerClientId(ctx, chainID); found {
-		return errorsmod.Wrap(ccv.ErrDuplicateConsumerChain,
+		return errorsmod.Wrap(types.ErrDuplicateConsumerChain,
 			fmt.Sprintf("cannot create client for existent consumer chain: %s", chainID))
 	}
 
@@ -108,14 +108,14 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			ccv.EventTypeConsumerClientCreated,
+			types.EventTypeConsumerClientCreated,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 			sdk.NewAttribute(ccv.AttributeChainID, chainID),
 			sdk.NewAttribute(clienttypes.AttributeKeyClientID, clientID),
-			sdk.NewAttribute(ccv.AttributeInitialHeight, prop.InitialHeight.String()),
-			sdk.NewAttribute(ccv.AttributeInitializationTimeout, strconv.Itoa(int(ts.UnixNano()))),
-			sdk.NewAttribute(ccv.AttributeTrustingPeriod, clientState.TrustingPeriod.String()),
-			sdk.NewAttribute(ccv.AttributeUnbondingPeriod, clientState.UnbondingPeriod.String()),
+			sdk.NewAttribute(types.AttributeInitialHeight, prop.InitialHeight.String()),
+			sdk.NewAttribute(types.AttributeInitializationTimeout, strconv.Itoa(int(ts.UnixNano()))),
+			sdk.NewAttribute(types.AttributeTrustingPeriod, clientState.TrustingPeriod.String()),
+			sdk.NewAttribute(types.AttributeUnbondingPeriod, clientState.UnbondingPeriod.String()),
 		),
 	)
 
@@ -155,7 +155,7 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan bool) (err error) {
 	// check that a client for chainID exists
 	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
-		return errorsmod.Wrap(ccv.ErrConsumerChainNotFound,
+		return errorsmod.Wrap(types.ErrConsumerChainNotFound,
 			fmt.Sprintf("cannot stop non-existent consumer chain: %s", chainID))
 	}
 
@@ -612,8 +612,8 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, p *types.Chan
 		}
 		k.SetConsumerRewardDenom(ctx, denomToAdd)
 		ctx.EventManager().EmitEvent(sdk.NewEvent(
-			ccv.EventTypeAddConsumerRewardDenom,
-			sdk.NewAttribute(ccv.AttributeConsumerRewardDenom, denomToAdd),
+			types.EventTypeAddConsumerRewardDenom,
+			sdk.NewAttribute(types.AttributeConsumerRewardDenom, denomToAdd),
 		))
 	}
 	for _, denomToRemove := range p.DenomsToRemove {
@@ -624,8 +624,8 @@ func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, p *types.Chan
 		}
 		k.DeleteConsumerRewardDenom(ctx, denomToRemove)
 		ctx.EventManager().EmitEvent(sdk.NewEvent(
-			ccv.EventTypeRemoveConsumerRewardDenom,
-			sdk.NewAttribute(ccv.AttributeConsumerRewardDenom, denomToRemove),
+			types.EventTypeRemoveConsumerRewardDenom,
+			sdk.NewAttribute(types.AttributeConsumerRewardDenom, denomToRemove),
 		))
 	}
 	return nil

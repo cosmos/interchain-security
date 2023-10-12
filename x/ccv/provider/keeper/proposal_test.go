@@ -231,6 +231,7 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 	defer ctrl.Finish()
 
 	for _, tc := range testCases {
+		tc := tc
 		providerKeeper.SetPendingConsumerAdditionProp(ctx, &tc.ConsumerAdditionProposal)
 	}
 
@@ -580,6 +581,7 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 	defer ctrl.Finish()
 
 	for _, tc := range testCases {
+		tc := tc
 		providerKeeper.SetPendingConsumerRemovalProp(ctx, &tc.ConsumerRemovalProposal)
 	}
 
