@@ -90,6 +90,7 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 		return fmt.Errorf("validator is unbonded. provider consensus address: %s", providerAddr.String())
 	}
 
+        // check if the validator is already tombstoned to avoid slashing a validator more than once
 	if k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
 		return fmt.Errorf("validator is tombstoned. provider consensus address: %s", providerAddr.String())
 	}
