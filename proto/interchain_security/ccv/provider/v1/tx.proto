@@ -35,7 +35,7 @@ message MsgAssignConsumerKeyResponse {}
 
 
 // MsgSubmitConsumerMisbehaviour defines a message that reports a light client attack,
-//  also known as a misbehaviour, observed on a consumer chain
+// also known as a misbehaviour, observed on a consumer chain
 message MsgSubmitConsumerMisbehaviour {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
