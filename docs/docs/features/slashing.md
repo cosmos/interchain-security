@@ -21,7 +21,7 @@ Slash throttling (sometimes called jail throttling) mechanism ensures that only 
 :::
 
 # Cryptographic verification of equivocation and slashing
-The Cryptographic verification of equivocation allows external agents to submit evidences of light client and double signing attack observed on a consumer chain. When a valid evidence is received, the malicious validators will be slashed, jailed, and tombstoned on the provider.
+The Cryptographic verification of equivocation allows external agents to submit evidences of light client and double signing attacks observed on a consumer chain. When valid evidence is received, the malicious validators will be slashed, jailed, and tombstoned on the provider.
 
 The feature is outlined in [ADR-005](../adrs/adr-005-cryptographic-equivocation-verification.md) and [ADR-013](../adrs/adr-013-equivocation-slashing.md).
 
