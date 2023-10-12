@@ -39,7 +39,6 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 	k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
 
 	// Tombstone the validator so that we cannot slash the validator more than once
-	// (see cosmos/cosmos-sdk/blob/v0.45.16-ics-lsm/x/evidence/keeper/infraction.go#L81).
 	// Note that we cannot simply use the fact that a validator is jailed to avoid slashing more than once
 	// because then a validator could i) perform an equivocation, ii) get jailed (e.g., through downtime)
 	// and in such a case the validator would not get slashed when we call `SlashValidator`.
