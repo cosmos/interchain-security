@@ -22,59 +22,63 @@ import "gogoproto/gogo.proto";
 // SetConsumerGenesis.
 //
 message ConsumerParams {
-  // TODO: Remove enabled flag and find a better way to setup integration tests
-  // See: https://github.com/cosmos/interchain-security/issues/339
-  bool enabled = 1;
+    // TODO: Remove enabled flag and find a better way to setup integration tests
+    // See: https://github.com/cosmos/interchain-security/issues/339
+    bool enabled = 1;
 
-  ///////////////////////
-  // Distribution Params
-  // Number of blocks between ibc-token-transfers from the consumer chain to
-  // the provider chain. Note that at this transmission event a fraction of
-  // the accumulated tokens are divided and sent consumer redistribution
-  // address.
-  int64 blocks_per_distribution_transmission = 2;
+    ///////////////////////
+    // Distribution Params
+    // Number of blocks between ibc-token-transfers from the consumer chain to
+    // the provider chain. Note that at this transmission event a fraction of
+    // the accumulated tokens are divided and sent consumer redistribution
+    // address.
+    int64 blocks_per_distribution_transmission = 2;
 
-  // Channel, and provider-chain receiving address to send distribution token
-  // transfers over. These parameters is auto-set during the consumer <->
-  // provider handshake procedure.
-  string distribution_transmission_channel = 3;
-  string provider_fee_pool_addr_str = 4;
-  // Sent CCV related IBC packets will timeout after this duration
-  google.protobuf.Duration ccv_timeout_period = 5
-      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+    // Channel, and provider-chain receiving address to send distribution token
+    // transfers over. These parameters is auto-set during the consumer <->
+    // provider handshake procedure.
+    string distribution_transmission_channel = 3;
+    string provider_fee_pool_addr_str = 4;
+    // Sent CCV related IBC packets will timeout after this duration
+    google.protobuf.Duration ccv_timeout_period = 5
+        [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
-  // Sent transfer related IBC packets will timeout after this duration
-  google.protobuf.Duration transfer_timeout_period = 6
-      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+    // Sent transfer related IBC packets will timeout after this duration
+    google.protobuf.Duration transfer_timeout_period = 6
+        [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
-  // The fraction of tokens allocated to the consumer redistribution address
-  // during distribution events. The fraction is a string representing a
-  // decimal number. For example "0.75" would represent 75%.
-  string consumer_redistribution_fraction = 7;
+    // The fraction of tokens allocated to the consumer redistribution address
+    // during distribution events. The fraction is a string representing a
+    // decimal number. For example "0.75" would represent 75%.
+    string consumer_redistribution_fraction = 7;
 
-  // The number of historical info entries to persist in store.
-  // This param is a part of the cosmos sdk staking module. In the case of
-  // a ccv enabled consumer chain, the ccv module acts as the staking module.
-  int64 historical_entries = 8;
+    // The number of historical info entries to persist in store.
+    // This param is a part of the cosmos sdk staking module. In the case of
+    // a ccv enabled consumer chain, the ccv module acts as the staking module.
+    int64 historical_entries = 8;
 
-  // Unbonding period for the consumer,
-  // which should be smaller than that of the provider in general.
-  google.protobuf.Duration unbonding_period = 9
-      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+    // Unbonding period for the consumer,
+    // which should be smaller than that of the provider in general.
+    google.protobuf.Duration unbonding_period = 9
+        [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
-  // The threshold for the percentage of validators at the bottom of the set who
-  // can opt out of running the consumer chain without being punished. For
-  // example, a value of 0.05 means that the validators in the bottom 5% of the
-  // set can opt out
-  string soft_opt_out_threshold = 10;
+    // The threshold for the percentage of validators at the bottom of the set who
+    // can opt out of running the consumer chain without being punished. For
+    // example, a value of 0.05 means that the validators in the bottom 5% of the
+    // set can opt out
+    string soft_opt_out_threshold = 10;
 
-  // Reward denoms. These are the denominations which are allowed to be sent to
-  // the provider as rewards.
-  repeated string reward_denoms = 11;
+    // Reward denoms. These are the denominations which are allowed to be sent to
+    // the provider as rewards.
+    repeated string reward_denoms = 11;
 
-  // Provider-originated reward denoms. These are denoms coming from the
-  // provider which are allowed to be used as rewards. e.g. "uatom"
-  repeated string provider_reward_denoms = 12;
+    // Provider-originated reward denoms. These are denoms coming from the
+    // provider which are allowed to be used as rewards. e.g. "uatom"
+    repeated string provider_reward_denoms = 12;
+
+    // The period after which a consumer can retry sending a throttled packet.
+    google.protobuf.Duration retry_delay_period = 13
+        [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 }
 
 // ConsumerGenesisState defines shared genesis information between provider and

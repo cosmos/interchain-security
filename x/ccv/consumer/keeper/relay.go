@@ -115,12 +115,12 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
-				ccv.EventTypeVSCMatured,
+				types.EventTypeVSCMatured,
 				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 				sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
-				sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
+				sdk.NewAttribute(types.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
 				sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(maturityTime.VscId))),
-				sdk.NewAttribute(ccv.AttributeTimestamp, ctx.BlockTime().String()),
+				sdk.NewAttribute(types.AttributeTimestamp, ctx.BlockTime().String()),
 			),
 		)
 	}
@@ -162,7 +162,7 @@ func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, vals
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			ccv.EventTypeConsumerSlashRequest,
+			types.EventTypeConsumerSlashRequest,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 			sdk.NewAttribute(ccv.AttributeValidatorAddress, sdk.ConsAddress(validator.Address).String()),
 			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(valsetUpdateID))),

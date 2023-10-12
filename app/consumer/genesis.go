@@ -114,9 +114,7 @@ func GetConsumerGenesisTransformCmd() *cobra.Command {
 Example:
 $ %s transform /path/to/ccv_consumer_genesis.json `, version.AppName),
 		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return TransformConsumerGenesis(cmd, args)
-		},
+		RunE: TransformConsumerGenesis,
 	}
 
 	return cmd

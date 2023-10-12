@@ -539,6 +539,7 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 		"0", // disable soft opt-out
 		[]string{},
 		[]string{},
+		ccv.DefaultRetryDelayPeriod,
 	)
 	return consumertypes.NewInitialGenesisState(client, providerConsState, valUpdates, params)
 }
