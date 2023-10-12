@@ -85,6 +85,7 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
 	}
 
+        // check if the validator is unbonded to prevent panicking when slashing (see cosmos/cosmos-sdk/blob/v0.47.5/x/staking/keeper/slash.go#L61)
 	if validator.IsUnbonded() {
 		return fmt.Errorf("validator is unbonded. provider consensus address: %s", providerAddr.String())
 	}
