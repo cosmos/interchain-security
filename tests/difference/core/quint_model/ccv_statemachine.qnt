@@ -482,7 +482,7 @@ module ccv_statemachine {
         )
         .then(
             // advance time on provider by VscTimeout + 1 Second
-            EndAndBeginBlockForProvider(VscTimeout + 5 * Second, Set(), Set())
+            EndAndBeginBlockForProvider(VscTimeout + 1 * Second, Set(), Set())
         )
         .then(
             all {
