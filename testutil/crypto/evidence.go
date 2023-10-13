@@ -54,3 +54,39 @@ func MakeAndSignVote(
 	vote.Signature = v.Signature
 	return vote
 }
+
+// MakeAndSignVoteWithForgedValAddress makes and signs a vote using two different keys:
+// one to derive the validator address in the vote and a second to sign it.
+func MakeAndSignVoteWithForgedValAddress(
+	blockID tmtypes.BlockID,
+	blockHeight int64,
+	blockTime time.Time,
+	valSet *tmtypes.ValidatorSet,
+	signer tmtypes.PrivValidator,
+	chainID string,
+) *tmtypes.Vote {
+
+	// create the vote using a different key than the signing key
+	forgedSigner := tmtypes.NewMockPV()
+	vote, err := tmtypes.MakeVote(
+		blockHeight,
+		blockID,
+		valSet,
+		forgedSigner,
+		chainID,
+		blockTime,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// sign vote using the given private key
+	v := vote.ToProto()
+	err = signer.SignVote(chainID, v)
+	if err != nil {
+		panic(err)
+	}
+
+	vote.Signature = v.Signature
+	return vote
+}

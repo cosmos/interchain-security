@@ -48,6 +48,30 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 		expPass bool
 	}{
 		{
+			"verifying public key doesn't correspond to validator address",
+			[]*tmtypes.Vote{
+				testutil.MakeAndSignVoteWithForgedValAddress(
+					blockID1,
+					ctx.BlockHeight(),
+					ctx.BlockTime(),
+					valSet,
+					signer1,
+					chainID,
+				),
+				testutil.MakeAndSignVoteWithForgedValAddress(
+					blockID2,
+					ctx.BlockHeight(),
+					ctx.BlockTime(),
+					valSet,
+					signer1,
+					chainID,
+				),
+			},
+			chainID,
+			valPubkey1,
+			false,
+		},
+		{
 			"evidence has votes with different block height - shouldn't pass",
 			[]*tmtypes.Vote{
 				testutil.MakeAndSignVote(

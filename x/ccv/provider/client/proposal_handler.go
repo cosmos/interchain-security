@@ -439,9 +439,4 @@ func postConsumerRemovalProposalHandlerFn(clientCtx client.Context) http.Handler
 		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
 	}
 }
-
-func CheckPropUnbondingPeriod(clientCtx client.Context, propUnbondingPeriod time.Duration) {
-	queryClient := stakingtypes.NewQueryClient(clientCtx)
-
-
 */

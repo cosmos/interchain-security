@@ -34,8 +34,6 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 		k.stakingKeeper.Jail(ctx, providerAddr.ToSdkConsAddr())
 	}
 
-	// Jail the validator to trigger the unbonding of the validator
-	// (see cosmos/cosmos-sdk/blob/v0.45.16-ics-lsm/x/staking/keeper/val_state_change.go#L192).
 	k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
 
 	// Tombstone the validator so that we cannot slash the validator more than once
@@ -85,12 +83,12 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
 	}
 
-        // check if the validator is unbonded to prevent panicking when slashing (see cosmos/cosmos-sdk/blob/v0.47.5/x/staking/keeper/slash.go#L61)
+	// check if the validator is unbonded to prevent panicking when slashing (see cosmos/cosmos-sdk/blob/v0.47.5/x/staking/keeper/slash.go#L61)
 	if validator.IsUnbonded() {
 		return fmt.Errorf("validator is unbonded. provider consensus address: %s", providerAddr.String())
 	}
 
-        // check if the validator is already tombstoned to avoid slashing a validator more than once
+	// check if the validator is already tombstoned to avoid slashing a validator more than once
 	if k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
 		return fmt.Errorf("validator is tombstoned. provider consensus address: %s", providerAddr.String())
 	}

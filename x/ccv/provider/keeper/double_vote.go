@@ -62,6 +62,15 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 		return fmt.Errorf("validator public key cannot be empty")
 	}
 
+	// check that the validator address in the evidence is derived from the provided public key
+	if !bytes.Equal(pubkey.Address(), evidence.VoteA.ValidatorAddress) {
+		return errorsmod.Wrapf(
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
+			"public key %s doesn't correspond to the validator address %s in double vote evidence",
+			pubkey.String(), evidence.VoteA.ValidatorAddress.String(),
+		)
+	}
+
 	// Note that since we're only jailing validators for double voting on a consumer chain,
 	// the age of the evidence is irrelevant and therefore isn't checked.
 
