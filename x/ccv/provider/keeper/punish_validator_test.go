@@ -10,7 +10,6 @@ import (
 
 	"cosmossdk.io/math"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
@@ -18,19 +17,36 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
 // TestJailAndTombstoneValidator tests that the jailing of a validator is only executed
 // under the conditions that the validator is neither unbonded, nor jailed, nor tombstoned.
-func TestJailAndTombstoneValidator(t *testing.T) {
-	providerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(7842334).ProviderConsAddress()
+func TestPunishValidator(t *testing.T) {
+	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
+
+	// manually build a validator instead of using `stakingtypes.NewValidator`
+	// to guarantee that the validator is bonded is jailed for testing
+
+	validator, err := stakingtypes.NewValidator(
+		sdk.ValAddress(pubKey.Address().Bytes()),
+		pubKey,
+		stakingtypes.NewDescription("", "", "", "", ""),
+	)
+	require.NoError(t, err)
+
+	slashFraction, _ := sdk.NewDecFromStr("0.5")
+	consAddr, _ := validator.GetConsAddr()
+	providerConsAddr := types.NewProviderConsAddress(consAddr)
+
+	fmt.Println(validator.GetOperator())
+
 	testCases := []struct {
 		name          string
 		provAddr      types.ProviderConsAddress
 		expectedCalls func(sdk.Context, testkeeper.MockedKeepers, types.ProviderConsAddress) []*gomock.Call
+		expErr        bool
 	}{
 		{
 			"unfound validator",
@@ -47,6 +63,7 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 					).Times(1),
 				}
 			},
+			true,
 		},
 		{
 			"unbonded validator",
@@ -62,6 +79,7 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 					).Times(1),
 				}
 			},
+			true,
 		},
 		{
 			"tombstoned validator",
@@ -80,6 +98,7 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 					).Times(1),
 				}
 			},
+			true,
 		},
 		{
 			"jailed validator",
@@ -87,23 +106,46 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				provAddr types.ProviderConsAddress,
 			) []*gomock.Call {
-				return []*gomock.Call{
+				validator.Jailed = true
+				validator.Status = stakingtypes.Unbonding
+				gc := append([]*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{Jailed: true}, true,
+						validator, true,
 					).Times(1),
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
 						false,
 					).Times(1),
+				},
+					testkeeper.GetMocksForSlashValidator(
+						ctx,
+						mocks,
+						validator,
+						consAddr,
+						[]stakingtypes.UnbondingDelegation{},
+						[]stakingtypes.Redelegation{},
+						sdk.NewInt(2),
+						slashFraction,
+						int64(1),
+						int64(0),
+						int64(1),
+					)...,
+				)
+
+				gc = append(
+					gc,
 					mocks.MockSlashingKeeper.EXPECT().JailUntil(
 						ctx, providerConsAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime).
 						Times(1),
 					mocks.MockSlashingKeeper.EXPECT().Tombstone(
 						ctx, providerConsAddr.ToSdkConsAddr()).
 						Times(1),
-				}
+				)
+				return gc
+
 			},
+			false,
 		},
 		{
 			"bonded validator",
@@ -111,15 +153,35 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				provAddr types.ProviderConsAddress,
 			) []*gomock.Call {
-				return []*gomock.Call{
+				validator.Jailed = false
+				validator.Status = stakingtypes.Bonded
+				gc := append([]*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
-						stakingtypes.Validator{Status: stakingtypes.Bonded}, true,
+						validator, true,
 					).Times(1),
 					mocks.MockSlashingKeeper.EXPECT().IsTombstoned(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
 						false,
 					).Times(1),
+				},
+					testkeeper.GetMocksForSlashValidator(
+						ctx,
+						mocks,
+						validator,
+						consAddr,
+						[]stakingtypes.UnbondingDelegation{},
+						[]stakingtypes.Redelegation{},
+						sdk.NewInt(2),
+						slashFraction,
+						int64(1),
+						int64(0),
+						int64(1),
+					)...,
+				)
+
+				gc = append(
+					gc,
 					mocks.MockStakingKeeper.EXPECT().Jail(
 						ctx, providerConsAddr.ToSdkConsAddr()).
 						Times(1),
@@ -129,22 +191,29 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 					mocks.MockSlashingKeeper.EXPECT().Tombstone(
 						ctx, providerConsAddr.ToSdkConsAddr()).
 						Times(1),
-				}
+				)
+				return gc
 			},
+			false,
 		},
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
+		t.Run(tc.name, func(t *testing.T) {
+			providerKeeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(
+				t, testkeeper.NewInMemKeeperParams(t))
 
-		// Setup expected mock calls
-		gomock.InOrder(tc.expectedCalls(ctx, mocks, tc.provAddr)...)
+			// Setup expected mock calls
+			gomock.InOrder(tc.expectedCalls(ctx, mocks, tc.provAddr)...)
 
-		// Execute method and assert expected mock calls
-		providerKeeper.JailAndTombstoneValidator(ctx, tc.provAddr)
-
-		ctrl.Finish()
+			// Execute method and assert expected mock calls
+			err := providerKeeper.PunishValidator(ctx, tc.provAddr)
+			if tc.expErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
 	}
 }
 
@@ -357,26 +426,16 @@ func TestSlashValidator(t *testing.T) {
 	testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
-	pkAny, _ := codectypes.NewAnyWithValue(pubKey)
 
-	// manually build a validator instead of using `stakingtypes.NewValidator` to guarantee that the validator is bonded
-	validator := stakingtypes.Validator{
-		OperatorAddress:         sdk.ValAddress(pubKey.Address().Bytes()).String(),
-		ConsensusPubkey:         pkAny,
-		Jailed:                  false,
-		Status:                  stakingtypes.Bonded,
-		Tokens:                  sdk.ZeroInt(),
-		DelegatorShares:         sdk.ZeroDec(),
-		Description:             stakingtypes.Description{},
-		UnbondingHeight:         int64(0),
-		UnbondingTime:           time.Unix(0, 0).UTC(),
-		Commission:              stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-		MinSelfDelegation:       math.OneInt(),
-		UnbondingOnHoldRefCount: 0,
-	}
+	validator, err := stakingtypes.NewValidator(
+		sdk.ValAddress(pubKey.Address().Bytes()),
+		pubKey,
+		stakingtypes.NewDescription("", "", "", "", ""),
+	)
+	require.NoError(t, err)
+	validator.Status = stakingtypes.Bonded
 
 	consAddr, _ := validator.GetConsAddr()
-	providerAddr := types.NewProviderConsAddress(consAddr)
 
 	// we create 1000 tokens worth of undelegations, 750 of them are non-matured
 	// we also create 1000 tokens worth of redelegations, 750 of them are non-matured
@@ -400,86 +459,20 @@ func TestSlashValidator(t *testing.T) {
 	expectedInfractionHeight := int64(0)
 	expectedSlashPower := int64(3750)
 
-	expectedCalls := []*gomock.Call{
-		mocks.MockStakingKeeper.EXPECT().
-			GetValidatorByConsAddr(ctx, gomock.Any()).
-			Return(validator, true),
-		mocks.MockSlashingKeeper.EXPECT().
-			IsTombstoned(ctx, consAddr).
-			Return(false),
-		mocks.MockStakingKeeper.EXPECT().
-			GetUnbondingDelegationsFromValidator(ctx, validator.GetOperator()).
-			Return(undelegations),
-		mocks.MockStakingKeeper.EXPECT().
-			GetRedelegationsFromSrcValidator(ctx, validator.GetOperator()).
-			Return(redelegations),
-		mocks.MockStakingKeeper.EXPECT().
-			GetLastValidatorPower(ctx, validator.GetOperator()).
-			Return(currentPower),
-		mocks.MockStakingKeeper.EXPECT().
-			PowerReduction(ctx).
-			Return(powerReduction),
-		mocks.MockStakingKeeper.EXPECT().
-			SlashUnbondingDelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			DoAndReturn(
-				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ sdk.Dec) math.Int {
-					sum := sdk.NewInt(0)
-					for _, r := range undelegation.Entries {
-						if r.IsMature(ctx.BlockTime()) {
-							continue
-						}
-						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
-					}
-					return sum
-				}).AnyTimes(),
-		mocks.MockStakingKeeper.EXPECT().
-			SlashRedelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			DoAndReturn(
-				func(_ sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ sdk.Dec) math.Int {
-					sum := sdk.NewInt(0)
-					for _, r := range redelegation.Entries {
-						if r.IsMature(ctx.BlockTime()) {
-							continue
-						}
-						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
-					}
-					return sum
-				}).AnyTimes(),
-		mocks.MockSlashingKeeper.EXPECT().
-			SlashFractionDoubleSign(ctx).
-			Return(slashFraction),
-		mocks.MockStakingKeeper.EXPECT().
-			SlashWithInfractionReason(ctx, consAddr, expectedInfractionHeight, expectedSlashPower, slashFraction, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN).
-			Times(1),
-	}
-
-	gomock.InOrder(expectedCalls...)
-	keeper.SlashValidator(ctx, providerAddr)
-}
-
-// TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded asserts that `SlashValidator` does not call
-// the staking module's `Slash` method if the validator to be slashed is unbonded
-func TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded(t *testing.T) {
-	keeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
-
-	pubKey, _ := cryptocodec.FromTmPubKeyInterface(tmtypes.NewMockPV().PrivKey.PubKey())
-
-	// validator is initially unbonded
-	validator, _ := stakingtypes.NewValidator(pubKey.Address().Bytes(), pubKey, stakingtypes.Description{})
-
-	consAddr, _ := validator.GetConsAddr()
-	providerAddr := types.NewProviderConsAddress(consAddr)
-
-	expectedCalls := []*gomock.Call{
-		mocks.MockStakingKeeper.EXPECT().
-			GetValidatorByConsAddr(ctx, gomock.Any()).
-			Return(validator, true),
-	}
-
-	gomock.InOrder(expectedCalls...)
-	keeper.SlashValidator(ctx, providerAddr)
+	gomock.InOrder(
+		testkeeper.GetMocksForSlashValidator(
+			ctx,
+			mocks,
+			validator,
+			consAddr,
+			undelegations,
+			redelegations,
+			powerReduction,
+			slashFraction,
+			currentPower,
+			expectedInfractionHeight,
+			expectedSlashPower,
+		)...,
+	)
+	keeper.SlashValidator(ctx, validator)
 }

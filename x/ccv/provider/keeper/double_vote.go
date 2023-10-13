@@ -35,10 +35,7 @@ func (k Keeper) HandleConsumerDoubleVoting(
 		types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress.Bytes())),
 	)
 
-	if err := k.SlashValidator(ctx, providerAddr); err != nil {
-		return err
-	}
-	if err := k.JailAndTombstoneValidator(ctx, providerAddr); err != nil {
+	if err := k.PunishValidator(ctx, providerAddr); err != nil {
 		return err
 	}
 

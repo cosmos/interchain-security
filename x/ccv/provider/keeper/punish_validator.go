@@ -14,8 +14,7 @@ import (
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
-// JailAndTombstoneValidator jails and tombstones the validator with the given provider consensus address
-func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) error {
+func (k Keeper) PunishValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) error {
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 	if !found {
 		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
@@ -29,20 +28,48 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 		return fmt.Errorf("validator is tombstoned. provider consensus address: %s", providerAddr.String())
 	}
 
-	// jail validator if not already
-	if !validator.IsJailed() {
-		k.stakingKeeper.Jail(ctx, providerAddr.ToSdkConsAddr())
+	k.SlashValidator(ctx, validator)
+	k.JailAndTombstoneValidator(ctx, validator)
+
+	return nil
+}
+
+// JailAndTombstoneValidator jails and tombstones the validator with the given provider consensus address
+func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, validator stakingtypes.Validator) {
+	consAdrr, err := validator.GetConsAddr()
+	if err != nil {
+		panic(err)
 	}
 
-	k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
+	// jail validator if not already
+	if !validator.IsJailed() {
+		k.stakingKeeper.Jail(ctx, consAdrr)
+	}
+
+	k.slashingKeeper.JailUntil(ctx, consAdrr, evidencetypes.DoubleSignJailEndTime)
 
 	// Tombstone the validator so that we cannot slash the validator more than once
 	// Note that we cannot simply use the fact that a validator is jailed to avoid slashing more than once
 	// because then a validator could i) perform an equivocation, ii) get jailed (e.g., through downtime)
 	// and in such a case the validator would not get slashed when we call `SlashValidator`.
-	k.slashingKeeper.Tombstone(ctx, providerAddr.ToSdkConsAddr())
+	k.slashingKeeper.Tombstone(ctx, consAdrr)
+}
 
-	return nil
+// SlashValidator slashes the given validator
+func (k Keeper) SlashValidator(ctx sdk.Context, validator stakingtypes.Validator) {
+	undelegations := k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, validator.GetOperator())
+	redelegations := k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, validator.GetOperator())
+	lastPower := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
+	powerReduction := k.stakingKeeper.PowerReduction(ctx)
+	totalPower := k.ComputePowerToSlash(ctx, validator, undelegations, redelegations, lastPower, powerReduction)
+	slashFraction := k.slashingKeeper.SlashFractionDoubleSign(ctx)
+
+	consAdrr, err := validator.GetConsAddr()
+	if err != nil {
+		panic(err)
+	}
+
+	k.stakingKeeper.SlashWithInfractionReason(ctx, consAdrr, 0, totalPower, slashFraction, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
 }
 
 // ComputePowerToSlash computes the power to be slashed based on the tokens in non-matured `undelegations` and
@@ -74,32 +101,4 @@ func (k Keeper) ComputePowerToSlash(ctx sdk.Context, validator stakingtypes.Vali
 		undelegationsInTokens.Add(redelegationsInTokens), powerReduction)
 
 	return power + undelegationsAndRedelegationsInPower
-}
-
-// SlashValidator slashes validator with `providerAddr`
-func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) error {
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
-	if !found {
-		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
-	}
-
-	// check if the validator is unbonded to prevent panicking when slashing (see cosmos/cosmos-sdk/blob/v0.47.5/x/staking/keeper/slash.go#L61)
-	if validator.IsUnbonded() {
-		return fmt.Errorf("validator is unbonded. provider consensus address: %s", providerAddr.String())
-	}
-
-	// check if the validator is already tombstoned to avoid slashing a validator more than once
-	if k.slashingKeeper.IsTombstoned(ctx, providerAddr.ToSdkConsAddr()) {
-		return fmt.Errorf("validator is tombstoned. provider consensus address: %s", providerAddr.String())
-	}
-
-	undelegations := k.stakingKeeper.GetUnbondingDelegationsFromValidator(ctx, validator.GetOperator())
-	redelegations := k.stakingKeeper.GetRedelegationsFromSrcValidator(ctx, validator.GetOperator())
-	lastPower := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
-	powerReduction := k.stakingKeeper.PowerReduction(ctx)
-	totalPower := k.ComputePowerToSlash(ctx, validator, undelegations, redelegations, lastPower, powerReduction)
-	slashFraction := k.slashingKeeper.SlashFractionDoubleSign(ctx)
-
-	k.stakingKeeper.SlashWithInfractionReason(ctx, providerAddr.ToSdkConsAddr(), 0, totalPower, slashFraction, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
-	return nil
 }
