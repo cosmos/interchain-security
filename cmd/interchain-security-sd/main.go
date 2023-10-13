@@ -6,8 +6,8 @@ import (
 
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 
-	app "github.com/cosmos/interchain-security/v3/app/provider"
-	"github.com/cosmos/interchain-security/v3/cmd/interchain-security-pd/cmd"
+	app "github.com/cosmos/interchain-security/v3/app/sovereign"
+	"github.com/cosmos/interchain-security/v3/cmd/interchain-security-sd/cmd"
 )
 
 func main() {

@@ -306,7 +306,7 @@ func queryCommand() *cobra.Command {
 		authcmd.GetSimulateCmd(),
 	)
 
-	// @MSalopek: deprecated by usage of autocli
+	// @MSalopek: should be deprecated by usage of autocli?
 	consumer.ModuleBasics.AddQueryCommands(cmd)
 
 	return cmd
