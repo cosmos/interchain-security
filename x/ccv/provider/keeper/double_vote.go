@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -57,6 +58,15 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 ) error {
 	if pubkey == nil {
 		return fmt.Errorf("validator public key cannot be empty")
+	}
+
+	// check that the validator address in the evidence is derived from the provided public key
+	if !bytes.Equal(pubkey.Address(), evidence.VoteA.ValidatorAddress) {
+		return errorsmod.Wrapf(
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
+			"public key %s doesn't correspond to the validator address %s in double vote evidence",
+			pubkey.String(), evidence.VoteA.ValidatorAddress.String(),
+		)
 	}
 
 	// Note that since we're only jailing validators for double voting on a consumer chain,
