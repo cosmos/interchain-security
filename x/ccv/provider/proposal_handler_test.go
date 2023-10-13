@@ -111,7 +111,6 @@ func TestProviderProposalHandler(t *testing.T) {
 		if tc.expValidConsumerAddition || tc.expValidConsumerRemoval ||
 			tc.expValidChangeRewardDenom {
 			require.NoError(t, err)
-			require.Error(t, err)
 		} else {
 			require.Error(t, err)
 		}
