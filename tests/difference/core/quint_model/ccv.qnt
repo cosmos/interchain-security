@@ -267,7 +267,7 @@ module ccv {
     }
 
     // Delivers the next queued VscMaturedPacket from a consumer chain to the provider chain.
-    // Only argument is the consumer chain, from which the packet will be delivered.
+    // Arguments are the currentState and the the consumer chain, from which the packet will be delivered.
     // If this packet will time out on the provider on delivery,
     // the consumer will be dropped.
     // The first return is the result of the operation, the second result is a boolean
