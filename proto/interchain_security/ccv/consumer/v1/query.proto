@@ -26,7 +26,7 @@ service Query {
     option (google.api.http).get = "/interchain_security/ccv/consumer/provider-info";
   }
 
-  // QueryThrottleState returns on-chain state relevant to throttled consumer packets 
+  // QueryThrottleState returns on-chain state relevant to throttled consumer packets
   rpc QueryThrottleState(QueryThrottleStateRequest) returns (QueryThrottleStateResponse) {
     option (google.api.http).get = "/interchain_security/ccv/consumer/throttle_state";
   }
