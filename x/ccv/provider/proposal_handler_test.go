@@ -63,6 +63,13 @@ func TestProviderProposalHandler(t *testing.T) {
 			expValidChangeRewardDenom: true,
 		},
 		{
+			name: "valid change reward denoms proposal",
+			content: providertypes.NewChangeRewardDenomsProposal(
+				"title", "description", []string{"denom1"}, []string{"denom2"}),
+			blockTime:                 hourFromNow,
+			expValidChangeRewardDenom: true,
+		},
+		{
 			name:      "nil proposal",
 			content:   nil,
 			blockTime: hourFromNow,
@@ -104,6 +111,7 @@ func TestProviderProposalHandler(t *testing.T) {
 		if tc.expValidConsumerAddition || tc.expValidConsumerRemoval ||
 			tc.expValidChangeRewardDenom {
 			require.NoError(t, err)
+			require.Error(t, err)
 		} else {
 			require.Error(t, err)
 		}

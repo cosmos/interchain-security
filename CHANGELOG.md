@@ -3,17 +3,12 @@
 ## [Unreleased]
 
 Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
+### Cryptographic verification of equivocation
+* New feature enabling the provider chain to verify equivocation evidence on its own instead of trusting consumer chains, see [EPIC](https://github.com/cosmos/interchain-security/issues/732).
 
 ## v2.1.0-lsm-provider
 
 * (feature!) [#1280](https://github.com/cosmos/interchain-security/pull/1280) provider proposal for changing reward denoms
-* (feature!) [#826](https://github.com/cosmos/interchain-security/pull/826) add new endpoint to provider to handle consumer light client attacks
-* (feature!) [#1227](https://github.com/cosmos/interchain-security/pull/1227) add new endpoint to provider to handle consumer double signing attacks
-
-
-### Cryptographic verification of equivocation
-* New feature enabling the provider chain to verify equivocation evidence on its own instead of trusting consumer chains, see [EPIC](https://github.com/cosmos/interchain-security/issues/732).
-
 
 ## v2.0.0-lsm
 

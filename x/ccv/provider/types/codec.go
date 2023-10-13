@@ -41,6 +41,10 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		(*sdk.Msg)(nil),
 		&MsgSubmitConsumerDoubleVoting{},
 	)
+	registry.RegisterImplementations(
+		(*govtypes.Content)(nil),
+		&ChangeRewardDenomsProposal{},
+	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
