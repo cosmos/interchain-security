@@ -11,8 +11,7 @@ import (
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
-// NewProviderProposalHandler defines the handler for consumer addition,
-// consumer removal and equivocation proposals.
+// NewProviderProposalHandler defines the handler for consumer addition and removal proposals.
 // Passed proposals are executed during EndBlock.
 func NewProviderProposalHandler(k keeper.Keeper) govv1beta1.Handler {
 	return func(ctx sdk.Context, content govv1beta1.Content) error {
@@ -21,8 +20,6 @@ func NewProviderProposalHandler(k keeper.Keeper) govv1beta1.Handler {
 			return k.HandleConsumerAdditionProposal(ctx, c)
 		case *types.ConsumerRemovalProposal:
 			return k.HandleConsumerRemovalProposal(ctx, c)
-		case *types.EquivocationProposal:
-			return k.HandleEquivocationProposal(ctx, c)
 		case *types.ChangeRewardDenomsProposal:
 			return k.HandleConsumerRewardDenomProposal(ctx, c)
 		default:

@@ -50,10 +50,6 @@ type StakingKeeper interface {
 	GetUnbondingType(ctx context.Context, id uint64) (stakingtypes.UnbondingType, error)
 	BondDenom(ctx context.Context) (string, error)
 }
-type EvidenceKeeper interface {
-	// NOTE: REFACTOR OR REMOVE @MSalopek this is deprecated, or otherwise not aviailable in v50
-	// HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
-}
 
 // SlashingKeeper defines the contract expected to perform ccv slashing
 type SlashingKeeper interface {

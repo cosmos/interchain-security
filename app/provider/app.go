@@ -140,7 +140,6 @@ var (
 				paramsclient.ProposalHandler,
 				icsproviderclient.ConsumerAdditionProposalHandler,
 				icsproviderclient.ConsumerRemovalProposalHandler,
-				icsproviderclient.EquivocationProposalHandler,
 				icsproviderclient.ChangeRewardDenomsProposalHandler,
 			},
 		),
@@ -433,16 +432,6 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	// create evidence keeper with router
-	app.EvidenceKeeper = *evidencekeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[evidencetypes.StoreKey]),
-		app.StakingKeeper,
-		app.SlashingKeeper,
-		app.AccountKeeper.AddressCodec(),
-		runtime.ProvideCometInfoService(),
-	)
-
 	app.ProviderKeeper = icsproviderkeeper.NewKeeper(
 		appCodec,
 		keys[providertypes.StoreKey],
@@ -455,7 +444,6 @@ func New(
 		app.StakingKeeper,
 		app.SlashingKeeper,
 		app.AccountKeeper,
-		app.EvidenceKeeper,
 		app.DistrKeeper,
 		app.BankKeeper,
 		authtypes.FeeCollectorName,
@@ -465,6 +453,16 @@ func New(
 	)
 
 	providerModule := icsprovider.NewAppModule(&app.ProviderKeeper, app.GetSubspace(providertypes.ModuleName))
+
+	// create evidence keeper with router
+	app.EvidenceKeeper = *evidencekeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[evidencetypes.StoreKey]),
+		app.StakingKeeper,
+		app.SlashingKeeper,
+		app.AccountKeeper.AddressCodec(),
+		runtime.ProvideCometInfoService(),
+	)
 
 	// register the proposal types
 	govRouter := govv1beta1.NewRouter()
@@ -553,7 +551,6 @@ func New(
 					paramsclient.ProposalHandler,
 					icsproviderclient.ConsumerAdditionProposalHandler,
 					icsproviderclient.ConsumerRemovalProposalHandler,
-					icsproviderclient.EquivocationProposalHandler,
 					icsproviderclient.ChangeRewardDenomsProposalHandler,
 				},
 			),

@@ -108,38 +108,6 @@ func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalPropo
 	return proposal, nil
 }
 
-type EquivocationProposalJSON struct {
-	// evidencetypes "cosmossdk.io/x/evidence/types"
-	Summary string `json:"summary"`
-	types.EquivocationProposal
-
-	Deposit string `json:"deposit"`
-}
-
-type EquivocationProposalReq struct {
-	Proposer sdk.AccAddress `json:"proposer"`
-
-	// evidencetypes "cosmossdk.io/x/evidence/types"
-	types.EquivocationProposal
-
-	Deposit sdk.Coins `json:"deposit"`
-}
-
-func ParseEquivocationProposalJSON(proposalFile string) (EquivocationProposalJSON, error) {
-	proposal := EquivocationProposalJSON{}
-
-	contents, err := os.ReadFile(filepath.Clean(proposalFile))
-	if err != nil {
-		return proposal, err
-	}
-
-	if err := json.Unmarshal(contents, &proposal); err != nil {
-		return proposal, err
-	}
-
-	return proposal, nil
-}
-
 type ChangeRewardDenomsProposalJSON struct {
 	Summary string `json:"summary"`
 	types.ChangeRewardDenomsProposal
