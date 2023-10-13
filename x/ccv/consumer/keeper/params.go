@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -36,9 +37,9 @@ func (k Keeper) SetParams(ctx sdk.Context, params ccvtypes.Params) {
 // GetParams implements StakingKeeper GetParams interface method
 // it returns an a empty stakingtypes.Params struct
 // NOTE: this method must be implemented on the consumer keeper because the evidence module keeper
-// in cosmos-sdk v0.47 requires this exact method with this exact signature to be available on the StakingKeepr
-func (k Keeper) GetParams(ctx sdk.Context) stakingtypes.Params {
-	return stakingtypes.Params{}
+// in cosmos-sdk v0.50 requires this exact method with this exact signature to be available on the StakingKeepr
+func (k Keeper) GetParams(context.Context) (stakingtypes.Params, error) {
+	return stakingtypes.Params{}, nil
 }
 
 // GetEnabled returns the enabled flag for the consumer module

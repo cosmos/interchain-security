@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"reflect"
@@ -175,6 +176,16 @@ func (k *Keeper) SetHooks(sh ccv.ConsumerHooks) *Keeper {
 	k.hooks = sh
 
 	return k
+}
+
+// ValidatorAddressCodec returns the app validator address codec.
+func (k Keeper) ValidatorAddressCodec() addresscodec.Codec {
+	return k.validatorAddressCodec
+}
+
+// ConsensusAddressCodec returns the app consensus address codec.
+func (k Keeper) ConsensusAddressCodec() addresscodec.Codec {
+	return k.consensusAddressCodec
 }
 
 // ChanCloseInit defines a wrapper function for the channel Keeper's function
@@ -600,8 +611,9 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 }
 
 // Implement from stakingkeeper interface
-func (k Keeper) GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Validator) {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) GetAllValidators(ctx context.Context) (validators []stakingtypes.Validator, err error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	store := sdkCtx.KVStore(k.storeKey)
 
 	iterator := storetypes.KVStorePrefixIterator(store, stakingtypes.ValidatorsKey)
 	defer iterator.Close()
@@ -611,7 +623,7 @@ func (k Keeper) GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Val
 		validators = append(validators, validator)
 	}
 
-	return validators
+	return validators, err
 }
 
 // getAndIncrementPendingPacketsIdx returns the current pending packets index and increments it.
