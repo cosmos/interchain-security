@@ -4,7 +4,6 @@ package interchain_security.ccv.provider.v1;
 
 option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/provider/types";
 
-import "interchain_security/ccv/v1/shared_consumer.proto";
 import "interchain_security/ccv/v1/wire.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
@@ -209,6 +208,7 @@ message ConsumerRemovalProposals {
 // AddressList contains a list of consensus addresses
 message AddressList { repeated bytes addresses = 1; }
 
+// ChannelToChain is used to map a CCV channel ID to the consumer chainID
 message ChannelToChain {
   string channel_id = 1;
   string chain_id = 2;

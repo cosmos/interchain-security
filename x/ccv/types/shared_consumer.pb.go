@@ -9,10 +9,8 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
-	_ "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	_07_tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	_ "google.golang.org/protobuf/types/known/durationpb"
-	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -34,7 +32,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // ConsumerParams defines the parameters for CCV consumer module.
 //
 // Note this type is referenced in both the consumer and provider CCV modules,
-// and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis.
+// and persisted on the provider, see MakeConsumerGenesis and
+// SetConsumerGenesis.
 type ConsumerParams struct {
 	// TODO: Remove enabled flag and find a better way to setup integration tests
 	// See: https://github.com/cosmos/interchain-security/issues/339
@@ -201,27 +200,10 @@ func (m *ConsumerParams) GetProviderRewardDenoms() []string {
 // Note this type is referenced in both the consumer and provider CCV modules,
 // and persisted on the provider, see MakeConsumerGenesis and SetConsumerGenesis.
 type ConsumerGenesisState struct {
-	Params            ConsumerParams `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
-	ProviderClientId  string         `protobuf:"bytes,2,opt,name=provider_client_id,json=providerClientId,proto3" json:"provider_client_id,omitempty"`
-	ProviderChannelId string         `protobuf:"bytes,3,opt,name=provider_channel_id,json=providerChannelId,proto3" json:"provider_channel_id,omitempty"`
-	NewChain          bool           `protobuf:"varint,4,opt,name=new_chain,json=newChain,proto3" json:"new_chain,omitempty"`
-	// ProviderClientState filled in on new chain, nil on restart.
-	ProviderClientState *_07_tendermint.ClientState `protobuf:"bytes,5,opt,name=provider_client_state,json=providerClientState,proto3" json:"provider_client_state,omitempty"`
-	// ProviderConsensusState filled in on new chain, nil on restart.
-	ProviderConsensusState *_07_tendermint.ConsensusState `protobuf:"bytes,6,opt,name=provider_consensus_state,json=providerConsensusState,proto3" json:"provider_consensus_state,omitempty"`
-	// MaturingPackets nil on new chain, filled in on restart.
-	MaturingPackets []MaturingVSCPacket `protobuf:"bytes,7,rep,name=maturing_packets,json=maturingPackets,proto3" json:"maturing_packets"`
-	// InitialValset filled in on new chain and on restart.
-	InitialValSet []types.ValidatorUpdate `protobuf:"bytes,8,rep,name=initial_val_set,json=initialValSet,proto3" json:"initial_val_set"`
-	// HeightToValsetUpdateId nil on new chain, filled in on restart.
-	HeightToValsetUpdateId []HeightToValsetUpdateID `protobuf:"bytes,9,rep,name=height_to_valset_update_id,json=heightToValsetUpdateId,proto3" json:"height_to_valset_update_id"`
-	// OutstandingDowntimes nil on new chain, filled  in on restart.
-	OutstandingDowntimeSlashing []OutstandingDowntime `protobuf:"bytes,10,rep,name=outstanding_downtime_slashing,json=outstandingDowntimeSlashing,proto3" json:"outstanding_downtime_slashing"`
-	// PendingConsumerPackets nil on new chain, filled in on restart.
-	PendingConsumerPackets ConsumerPacketDataList `protobuf:"bytes,11,opt,name=pending_consumer_packets,json=pendingConsumerPackets,proto3" json:"pending_consumer_packets"`
-	// LastTransmissionBlockHeight nil on new chain, filled in on restart.
-	LastTransmissionBlockHeight LastTransmissionBlockHeight `protobuf:"bytes,12,opt,name=last_transmission_block_height,json=lastTransmissionBlockHeight,proto3" json:"last_transmission_block_height"`
-	PreCCV                      bool                        `protobuf:"varint,13,opt,name=preCCV,proto3" json:"preCCV,omitempty"`
+	Params   ConsumerParams `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
+	Provider ProviderInfo   `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider"`
+	// true for new chain, false for chain restart.
+	NewChain bool `protobuf:"varint,3,opt,name=new_chain,json=newChain,proto3" json:"new_chain,omitempty"`
 }
 
 func (m *ConsumerGenesisState) Reset()         { *m = ConsumerGenesisState{} }
@@ -264,18 +246,11 @@ func (m *ConsumerGenesisState) GetParams() ConsumerParams {
 	return ConsumerParams{}
 }
 
-func (m *ConsumerGenesisState) GetProviderClientId() string {
+func (m *ConsumerGenesisState) GetProvider() ProviderInfo {
 	if m != nil {
-		return m.ProviderClientId
+		return m.Provider
 	}
-	return ""
-}
-
-func (m *ConsumerGenesisState) GetProviderChannelId() string {
-	if m != nil {
-		return m.ProviderChannelId
-	}
-	return ""
+	return ProviderInfo{}
 }
 
 func (m *ConsumerGenesisState) GetNewChain() bool {
@@ -285,88 +260,29 @@ func (m *ConsumerGenesisState) GetNewChain() bool {
 	return false
 }
 
-func (m *ConsumerGenesisState) GetProviderClientState() *_07_tendermint.ClientState {
-	if m != nil {
-		return m.ProviderClientState
-	}
-	return nil
+// ProviderInfo defines all information a consumer needs from a provider
+// Shared data type between provider and consumer
+type ProviderInfo struct {
+	// ProviderClientState filled in on new chain, nil on restart.
+	ClientState *_07_tendermint.ClientState `protobuf:"bytes,1,opt,name=client_state,json=clientState,proto3" json:"client_state,omitempty"`
+	// ProviderConsensusState filled in on new chain, nil on restart.
+	ConsensusState *_07_tendermint.ConsensusState `protobuf:"bytes,2,opt,name=consensus_state,json=consensusState,proto3" json:"consensus_state,omitempty"`
+	// InitialValset filled in on new chain and on restart.
+	InitialValSet []types.ValidatorUpdate `protobuf:"bytes,3,rep,name=initial_val_set,json=initialValSet,proto3" json:"initial_val_set"`
 }
 
-func (m *ConsumerGenesisState) GetProviderConsensusState() *_07_tendermint.ConsensusState {
-	if m != nil {
-		return m.ProviderConsensusState
-	}
-	return nil
-}
-
-func (m *ConsumerGenesisState) GetMaturingPackets() []MaturingVSCPacket {
-	if m != nil {
-		return m.MaturingPackets
-	}
-	return nil
-}
-
-func (m *ConsumerGenesisState) GetInitialValSet() []types.ValidatorUpdate {
-	if m != nil {
-		return m.InitialValSet
-	}
-	return nil
-}
-
-func (m *ConsumerGenesisState) GetHeightToValsetUpdateId() []HeightToValsetUpdateID {
-	if m != nil {
-		return m.HeightToValsetUpdateId
-	}
-	return nil
-}
-
-func (m *ConsumerGenesisState) GetOutstandingDowntimeSlashing() []OutstandingDowntime {
-	if m != nil {
-		return m.OutstandingDowntimeSlashing
-	}
-	return nil
-}
-
-func (m *ConsumerGenesisState) GetPendingConsumerPackets() ConsumerPacketDataList {
-	if m != nil {
-		return m.PendingConsumerPackets
-	}
-	return ConsumerPacketDataList{}
-}
-
-func (m *ConsumerGenesisState) GetLastTransmissionBlockHeight() LastTransmissionBlockHeight {
-	if m != nil {
-		return m.LastTransmissionBlockHeight
-	}
-	return LastTransmissionBlockHeight{}
-}
-
-func (m *ConsumerGenesisState) GetPreCCV() bool {
-	if m != nil {
-		return m.PreCCV
-	}
-	return false
-}
-
-// HeightValsetUpdateID represents a mapping internal to the consumer CCV module
-// AND used in shared consumer genesis state, which links a block height to each recv valset update id.
-type HeightToValsetUpdateID struct {
-	Height         uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
-	ValsetUpdateId uint64 `protobuf:"varint,2,opt,name=valset_update_id,json=valsetUpdateId,proto3" json:"valset_update_id,omitempty"`
-}
-
-func (m *HeightToValsetUpdateID) Reset()         { *m = HeightToValsetUpdateID{} }
-func (m *HeightToValsetUpdateID) String() string { return proto.CompactTextString(m) }
-func (*HeightToValsetUpdateID) ProtoMessage()    {}
-func (*HeightToValsetUpdateID) Descriptor() ([]byte, []int) {
+func (m *ProviderInfo) Reset()         { *m = ProviderInfo{} }
+func (m *ProviderInfo) String() string { return proto.CompactTextString(m) }
+func (*ProviderInfo) ProtoMessage()    {}
+func (*ProviderInfo) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d0a8be0efc64dfbc, []int{2}
 }
-func (m *HeightToValsetUpdateID) XXX_Unmarshal(b []byte) error {
+func (m *ProviderInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *HeightToValsetUpdateID) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ProviderInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_HeightToValsetUpdateID.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ProviderInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -376,228 +292,35 @@ func (m *HeightToValsetUpdateID) XXX_Marshal(b []byte, deterministic bool) ([]by
 		return b[:n], nil
 	}
 }
-func (m *HeightToValsetUpdateID) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HeightToValsetUpdateID.Merge(m, src)
+func (m *ProviderInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProviderInfo.Merge(m, src)
 }
-func (m *HeightToValsetUpdateID) XXX_Size() int {
+func (m *ProviderInfo) XXX_Size() int {
 	return m.Size()
 }
-func (m *HeightToValsetUpdateID) XXX_DiscardUnknown() {
-	xxx_messageInfo_HeightToValsetUpdateID.DiscardUnknown(m)
+func (m *ProviderInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProviderInfo.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_HeightToValsetUpdateID proto.InternalMessageInfo
+var xxx_messageInfo_ProviderInfo proto.InternalMessageInfo
 
-func (m *HeightToValsetUpdateID) GetHeight() uint64 {
+func (m *ProviderInfo) GetClientState() *_07_tendermint.ClientState {
 	if m != nil {
-		return m.Height
+		return m.ClientState
 	}
-	return 0
+	return nil
 }
 
-func (m *HeightToValsetUpdateID) GetValsetUpdateId() uint64 {
+func (m *ProviderInfo) GetConsensusState() *_07_tendermint.ConsensusState {
 	if m != nil {
-		return m.ValsetUpdateId
+		return m.ConsensusState
 	}
-	return 0
+	return nil
 }
 
-// OutstandingDowntime defines the type used internally to the consumer CCV module,
-// AND used in shared consumer genesis state, in order to not send multiple slashing
-// requests for the same downtime infraction.
-type OutstandingDowntime struct {
-	ValidatorConsensusAddress string `protobuf:"bytes,1,opt,name=validator_consensus_address,json=validatorConsensusAddress,proto3" json:"validator_consensus_address,omitempty"`
-}
-
-func (m *OutstandingDowntime) Reset()         { *m = OutstandingDowntime{} }
-func (m *OutstandingDowntime) String() string { return proto.CompactTextString(m) }
-func (*OutstandingDowntime) ProtoMessage()    {}
-func (*OutstandingDowntime) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d0a8be0efc64dfbc, []int{3}
-}
-func (m *OutstandingDowntime) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *OutstandingDowntime) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_OutstandingDowntime.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *OutstandingDowntime) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_OutstandingDowntime.Merge(m, src)
-}
-func (m *OutstandingDowntime) XXX_Size() int {
-	return m.Size()
-}
-func (m *OutstandingDowntime) XXX_DiscardUnknown() {
-	xxx_messageInfo_OutstandingDowntime.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_OutstandingDowntime proto.InternalMessageInfo
-
-func (m *OutstandingDowntime) GetValidatorConsensusAddress() string {
+func (m *ProviderInfo) GetInitialValSet() []types.ValidatorUpdate {
 	if m != nil {
-		return m.ValidatorConsensusAddress
-	}
-	return ""
-}
-
-// LastTransmissionBlockHeight is the last time validator holding
-// pools were transmitted to the provider chain. This type is used internally
-// to the consumer CCV module AND used in shared consumer genesis state.
-type LastTransmissionBlockHeight struct {
-	Height int64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
-}
-
-func (m *LastTransmissionBlockHeight) Reset()         { *m = LastTransmissionBlockHeight{} }
-func (m *LastTransmissionBlockHeight) String() string { return proto.CompactTextString(m) }
-func (*LastTransmissionBlockHeight) ProtoMessage()    {}
-func (*LastTransmissionBlockHeight) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d0a8be0efc64dfbc, []int{4}
-}
-func (m *LastTransmissionBlockHeight) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *LastTransmissionBlockHeight) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_LastTransmissionBlockHeight.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *LastTransmissionBlockHeight) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LastTransmissionBlockHeight.Merge(m, src)
-}
-func (m *LastTransmissionBlockHeight) XXX_Size() int {
-	return m.Size()
-}
-func (m *LastTransmissionBlockHeight) XXX_DiscardUnknown() {
-	xxx_messageInfo_LastTransmissionBlockHeight.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_LastTransmissionBlockHeight proto.InternalMessageInfo
-
-func (m *LastTransmissionBlockHeight) GetHeight() int64 {
-	if m != nil {
-		return m.Height
-	}
-	return 0
-}
-
-// MaturingVSCPacket represents a vsc packet that is maturing internal to the
-// consumer CCV module, where the consumer has not yet relayed a VSCMatured packet
-// back to the provider.  This type is used internally to the consumer CCV module
-// AND used in shared consumer genesis state.
-type MaturingVSCPacket struct {
-	VscId        uint64    `protobuf:"varint,1,opt,name=vscId,proto3" json:"vscId,omitempty"`
-	MaturityTime time.Time `protobuf:"bytes,2,opt,name=maturity_time,json=maturityTime,proto3,stdtime" json:"maturity_time"`
-}
-
-func (m *MaturingVSCPacket) Reset()         { *m = MaturingVSCPacket{} }
-func (m *MaturingVSCPacket) String() string { return proto.CompactTextString(m) }
-func (*MaturingVSCPacket) ProtoMessage()    {}
-func (*MaturingVSCPacket) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d0a8be0efc64dfbc, []int{5}
-}
-func (m *MaturingVSCPacket) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MaturingVSCPacket) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MaturingVSCPacket.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MaturingVSCPacket) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MaturingVSCPacket.Merge(m, src)
-}
-func (m *MaturingVSCPacket) XXX_Size() int {
-	return m.Size()
-}
-func (m *MaturingVSCPacket) XXX_DiscardUnknown() {
-	xxx_messageInfo_MaturingVSCPacket.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MaturingVSCPacket proto.InternalMessageInfo
-
-func (m *MaturingVSCPacket) GetVscId() uint64 {
-	if m != nil {
-		return m.VscId
-	}
-	return 0
-}
-
-func (m *MaturingVSCPacket) GetMaturityTime() time.Time {
-	if m != nil {
-		return m.MaturityTime
-	}
-	return time.Time{}
-}
-
-// ConsumerPacketDataList is a list of consumer packet data packets.
-//
-// Note this type is is used internally to the consumer CCV module
-// for exporting / importing state in InitGenesis and ExportGenesis,
-// AND included in the consumer genesis type (reffed by provider and consumer modules),
-// hence this is a shared type.
-type ConsumerPacketDataList struct {
-	List []ConsumerPacketData `protobuf:"bytes,1,rep,name=list,proto3" json:"list"`
-}
-
-func (m *ConsumerPacketDataList) Reset()         { *m = ConsumerPacketDataList{} }
-func (m *ConsumerPacketDataList) String() string { return proto.CompactTextString(m) }
-func (*ConsumerPacketDataList) ProtoMessage()    {}
-func (*ConsumerPacketDataList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d0a8be0efc64dfbc, []int{6}
-}
-func (m *ConsumerPacketDataList) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ConsumerPacketDataList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ConsumerPacketDataList.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ConsumerPacketDataList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ConsumerPacketDataList.Merge(m, src)
-}
-func (m *ConsumerPacketDataList) XXX_Size() int {
-	return m.Size()
-}
-func (m *ConsumerPacketDataList) XXX_DiscardUnknown() {
-	xxx_messageInfo_ConsumerPacketDataList.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ConsumerPacketDataList proto.InternalMessageInfo
-
-func (m *ConsumerPacketDataList) GetList() []ConsumerPacketData {
-	if m != nil {
-		return m.List
+		return m.InitialValSet
 	}
 	return nil
 }
@@ -605,11 +328,7 @@ func (m *ConsumerPacketDataList) GetList() []ConsumerPacketData {
 func init() {
 	proto.RegisterType((*ConsumerParams)(nil), "interchain_security.ccv.v1.ConsumerParams")
 	proto.RegisterType((*ConsumerGenesisState)(nil), "interchain_security.ccv.v1.ConsumerGenesisState")
-	proto.RegisterType((*HeightToValsetUpdateID)(nil), "interchain_security.ccv.v1.HeightToValsetUpdateID")
-	proto.RegisterType((*OutstandingDowntime)(nil), "interchain_security.ccv.v1.OutstandingDowntime")
-	proto.RegisterType((*LastTransmissionBlockHeight)(nil), "interchain_security.ccv.v1.LastTransmissionBlockHeight")
-	proto.RegisterType((*MaturingVSCPacket)(nil), "interchain_security.ccv.v1.MaturingVSCPacket")
-	proto.RegisterType((*ConsumerPacketDataList)(nil), "interchain_security.ccv.v1.ConsumerPacketDataList")
+	proto.RegisterType((*ProviderInfo)(nil), "interchain_security.ccv.v1.ProviderInfo")
 }
 
 func init() {
@@ -827,116 +546,6 @@ func (m *ConsumerGenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.PreCCV {
-		i--
-		if m.PreCCV {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x68
-	}
-	{
-		size, err := m.LastTransmissionBlockHeight.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintSharedConsumer(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x62
-	{
-		size, err := m.PendingConsumerPackets.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintSharedConsumer(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x5a
-	if len(m.OutstandingDowntimeSlashing) > 0 {
-		for iNdEx := len(m.OutstandingDowntimeSlashing) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.OutstandingDowntimeSlashing[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintSharedConsumer(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x52
-		}
-	}
-	if len(m.HeightToValsetUpdateId) > 0 {
-		for iNdEx := len(m.HeightToValsetUpdateId) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.HeightToValsetUpdateId[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintSharedConsumer(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x4a
-		}
-	}
-	if len(m.InitialValSet) > 0 {
-		for iNdEx := len(m.InitialValSet) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.InitialValSet[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintSharedConsumer(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x42
-		}
-	}
-	if len(m.MaturingPackets) > 0 {
-		for iNdEx := len(m.MaturingPackets) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.MaturingPackets[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintSharedConsumer(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x3a
-		}
-	}
-	if m.ProviderConsensusState != nil {
-		{
-			size, err := m.ProviderConsensusState.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintSharedConsumer(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.ProviderClientState != nil {
-		{
-			size, err := m.ProviderClientState.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintSharedConsumer(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x2a
-	}
 	if m.NewChain {
 		i--
 		if m.NewChain {
@@ -945,22 +554,18 @@ func (m *ConsumerGenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0
 		}
 		i--
-		dAtA[i] = 0x20
+		dAtA[i] = 0x18
 	}
-	if len(m.ProviderChannelId) > 0 {
-		i -= len(m.ProviderChannelId)
-		copy(dAtA[i:], m.ProviderChannelId)
-		i = encodeVarintSharedConsumer(dAtA, i, uint64(len(m.ProviderChannelId)))
-		i--
-		dAtA[i] = 0x1a
+	{
+		size, err := m.Provider.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintSharedConsumer(dAtA, i, uint64(size))
 	}
-	if len(m.ProviderClientId) > 0 {
-		i -= len(m.ProviderClientId)
-		copy(dAtA[i:], m.ProviderClientId)
-		i = encodeVarintSharedConsumer(dAtA, i, uint64(len(m.ProviderClientId)))
-		i--
-		dAtA[i] = 0x12
-	}
+	i--
+	dAtA[i] = 0x12
 	{
 		size, err := m.Params.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
@@ -974,7 +579,7 @@ func (m *ConsumerGenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *HeightToValsetUpdateID) Marshal() (dAtA []byte, err error) {
+func (m *ProviderInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -984,147 +589,20 @@ func (m *HeightToValsetUpdateID) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *HeightToValsetUpdateID) MarshalTo(dAtA []byte) (int, error) {
+func (m *ProviderInfo) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *HeightToValsetUpdateID) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ProviderInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.ValsetUpdateId != 0 {
-		i = encodeVarintSharedConsumer(dAtA, i, uint64(m.ValsetUpdateId))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.Height != 0 {
-		i = encodeVarintSharedConsumer(dAtA, i, uint64(m.Height))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *OutstandingDowntime) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *OutstandingDowntime) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *OutstandingDowntime) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.ValidatorConsensusAddress) > 0 {
-		i -= len(m.ValidatorConsensusAddress)
-		copy(dAtA[i:], m.ValidatorConsensusAddress)
-		i = encodeVarintSharedConsumer(dAtA, i, uint64(len(m.ValidatorConsensusAddress)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *LastTransmissionBlockHeight) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *LastTransmissionBlockHeight) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *LastTransmissionBlockHeight) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Height != 0 {
-		i = encodeVarintSharedConsumer(dAtA, i, uint64(m.Height))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *MaturingVSCPacket) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MaturingVSCPacket) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MaturingVSCPacket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	n9, err9 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.MaturityTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.MaturityTime):])
-	if err9 != nil {
-		return 0, err9
-	}
-	i -= n9
-	i = encodeVarintSharedConsumer(dAtA, i, uint64(n9))
-	i--
-	dAtA[i] = 0x12
-	if m.VscId != 0 {
-		i = encodeVarintSharedConsumer(dAtA, i, uint64(m.VscId))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ConsumerPacketDataList) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ConsumerPacketDataList) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ConsumerPacketDataList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.List) > 0 {
-		for iNdEx := len(m.List) - 1; iNdEx >= 0; iNdEx-- {
+	if len(m.InitialValSet) > 0 {
+		for iNdEx := len(m.InitialValSet) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.List[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.InitialValSet[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -1132,8 +610,32 @@ func (m *ConsumerPacketDataList) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 				i = encodeVarintSharedConsumer(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0xa
+			dAtA[i] = 0x1a
 		}
+	}
+	if m.ConsensusState != nil {
+		{
+			size, err := m.ConsensusState.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSharedConsumer(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ClientState != nil {
+		{
+			size, err := m.ClientState.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSharedConsumer(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -1209,121 +711,30 @@ func (m *ConsumerGenesisState) Size() (n int) {
 	_ = l
 	l = m.Params.Size()
 	n += 1 + l + sovSharedConsumer(uint64(l))
-	l = len(m.ProviderClientId)
-	if l > 0 {
-		n += 1 + l + sovSharedConsumer(uint64(l))
-	}
-	l = len(m.ProviderChannelId)
-	if l > 0 {
-		n += 1 + l + sovSharedConsumer(uint64(l))
-	}
+	l = m.Provider.Size()
+	n += 1 + l + sovSharedConsumer(uint64(l))
 	if m.NewChain {
 		n += 2
 	}
-	if m.ProviderClientState != nil {
-		l = m.ProviderClientState.Size()
+	return n
+}
+
+func (m *ProviderInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ClientState != nil {
+		l = m.ClientState.Size()
 		n += 1 + l + sovSharedConsumer(uint64(l))
 	}
-	if m.ProviderConsensusState != nil {
-		l = m.ProviderConsensusState.Size()
+	if m.ConsensusState != nil {
+		l = m.ConsensusState.Size()
 		n += 1 + l + sovSharedConsumer(uint64(l))
-	}
-	if len(m.MaturingPackets) > 0 {
-		for _, e := range m.MaturingPackets {
-			l = e.Size()
-			n += 1 + l + sovSharedConsumer(uint64(l))
-		}
 	}
 	if len(m.InitialValSet) > 0 {
 		for _, e := range m.InitialValSet {
-			l = e.Size()
-			n += 1 + l + sovSharedConsumer(uint64(l))
-		}
-	}
-	if len(m.HeightToValsetUpdateId) > 0 {
-		for _, e := range m.HeightToValsetUpdateId {
-			l = e.Size()
-			n += 1 + l + sovSharedConsumer(uint64(l))
-		}
-	}
-	if len(m.OutstandingDowntimeSlashing) > 0 {
-		for _, e := range m.OutstandingDowntimeSlashing {
-			l = e.Size()
-			n += 1 + l + sovSharedConsumer(uint64(l))
-		}
-	}
-	l = m.PendingConsumerPackets.Size()
-	n += 1 + l + sovSharedConsumer(uint64(l))
-	l = m.LastTransmissionBlockHeight.Size()
-	n += 1 + l + sovSharedConsumer(uint64(l))
-	if m.PreCCV {
-		n += 2
-	}
-	return n
-}
-
-func (m *HeightToValsetUpdateID) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Height != 0 {
-		n += 1 + sovSharedConsumer(uint64(m.Height))
-	}
-	if m.ValsetUpdateId != 0 {
-		n += 1 + sovSharedConsumer(uint64(m.ValsetUpdateId))
-	}
-	return n
-}
-
-func (m *OutstandingDowntime) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ValidatorConsensusAddress)
-	if l > 0 {
-		n += 1 + l + sovSharedConsumer(uint64(l))
-	}
-	return n
-}
-
-func (m *LastTransmissionBlockHeight) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Height != 0 {
-		n += 1 + sovSharedConsumer(uint64(m.Height))
-	}
-	return n
-}
-
-func (m *MaturingVSCPacket) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.VscId != 0 {
-		n += 1 + sovSharedConsumer(uint64(m.VscId))
-	}
-	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.MaturityTime)
-	n += 1 + l + sovSharedConsumer(uint64(l))
-	return n
-}
-
-func (m *ConsumerPacketDataList) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.List) > 0 {
-		for _, e := range m.List {
 			l = e.Size()
 			n += 1 + l + sovSharedConsumer(uint64(l))
 		}
@@ -1800,9 +1211,9 @@ func (m *ConsumerGenesisState) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProviderClientId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Provider", wireType)
 			}
-			var stringLen uint64
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowSharedConsumer
@@ -1812,57 +1223,26 @@ func (m *ConsumerGenesisState) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthSharedConsumer
 			}
-			postIndex := iNdEx + intStringLen
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthSharedConsumer
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ProviderClientId = string(dAtA[iNdEx:postIndex])
+			if err := m.Provider.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProviderChannelId", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSharedConsumer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ProviderChannelId = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field NewChain", wireType)
 			}
@@ -1882,9 +1262,59 @@ func (m *ConsumerGenesisState) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.NewChain = bool(v != 0)
-		case 5:
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSharedConsumer(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthSharedConsumer
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ProviderInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSharedConsumer
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ProviderInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ProviderInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProviderClientState", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ClientState", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1911,16 +1341,16 @@ func (m *ConsumerGenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ProviderClientState == nil {
-				m.ProviderClientState = &_07_tendermint.ClientState{}
+			if m.ClientState == nil {
+				m.ClientState = &_07_tendermint.ClientState{}
 			}
-			if err := m.ProviderClientState.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ClientState.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
-		case 6:
+		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProviderConsensusState", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsensusState", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1947,48 +1377,14 @@ func (m *ConsumerGenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ProviderConsensusState == nil {
-				m.ProviderConsensusState = &_07_tendermint.ConsensusState{}
+			if m.ConsensusState == nil {
+				m.ConsensusState = &_07_tendermint.ConsensusState{}
 			}
-			if err := m.ProviderConsensusState.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ConsensusState.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MaturingPackets", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSharedConsumer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.MaturingPackets = append(m.MaturingPackets, MaturingVSCPacket{})
-			if err := m.MaturingPackets[len(m.MaturingPackets)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 8:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field InitialValSet", wireType)
 			}
@@ -2019,585 +1415,6 @@ func (m *ConsumerGenesisState) Unmarshal(dAtA []byte) error {
 			}
 			m.InitialValSet = append(m.InitialValSet, types.ValidatorUpdate{})
 			if err := m.InitialValSet[len(m.InitialValSet)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 9:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field HeightToValsetUpdateId", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSharedConsumer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.HeightToValsetUpdateId = append(m.HeightToValsetUpdateId, HeightToValsetUpdateID{})
-			if err := m.HeightToValsetUpdateId[len(m.HeightToValsetUpdateId)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 10:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OutstandingDowntimeSlashing", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSharedConsumer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.OutstandingDowntimeSlashing = append(m.OutstandingDowntimeSlashing, OutstandingDowntime{})
-			if err := m.OutstandingDowntimeSlashing[len(m.OutstandingDowntimeSlashing)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 11:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PendingConsumerPackets", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSharedConsumer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.PendingConsumerPackets.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 12:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastTransmissionBlockHeight", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSharedConsumer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.LastTransmissionBlockHeight.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 13:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PreCCV", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSharedConsumer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.PreCCV = bool(v != 0)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSharedConsumer(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *HeightToValsetUpdateID) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSharedConsumer
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: HeightToValsetUpdateID: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: HeightToValsetUpdateID: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
-			}
-			m.Height = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSharedConsumer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Height |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ValsetUpdateId", wireType)
-			}
-			m.ValsetUpdateId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSharedConsumer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ValsetUpdateId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSharedConsumer(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *OutstandingDowntime) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSharedConsumer
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: OutstandingDowntime: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: OutstandingDowntime: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorConsensusAddress", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSharedConsumer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ValidatorConsensusAddress = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSharedConsumer(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *LastTransmissionBlockHeight) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSharedConsumer
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: LastTransmissionBlockHeight: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LastTransmissionBlockHeight: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
-			}
-			m.Height = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSharedConsumer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Height |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSharedConsumer(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MaturingVSCPacket) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSharedConsumer
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MaturingVSCPacket: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MaturingVSCPacket: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field VscId", wireType)
-			}
-			m.VscId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSharedConsumer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.VscId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MaturityTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSharedConsumer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.MaturityTime, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSharedConsumer(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ConsumerPacketDataList) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSharedConsumer
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ConsumerPacketDataList: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ConsumerPacketDataList: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field List", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSharedConsumer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthSharedConsumer
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.List = append(m.List, ConsumerPacketData{})
-			if err := m.List[len(m.List)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
