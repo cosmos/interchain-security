@@ -153,7 +153,6 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-		// tendermint.AppModuleBasic{},
 		// router.AppModuleBasic{},
 		icsprovider.AppModuleBasic{},
 	)
