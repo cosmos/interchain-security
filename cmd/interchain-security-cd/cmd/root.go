@@ -307,7 +307,7 @@ func queryCommand() *cobra.Command {
 	)
 
 	// @MSalopek: deprecated by usage of autocli
-	// consumer.ModuleBasics.AddQueryCommands(cmd)
+	consumer.ModuleBasics.AddQueryCommands(cmd)
 
 	return cmd
 }
