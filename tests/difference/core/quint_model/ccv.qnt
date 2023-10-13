@@ -148,17 +148,15 @@ module ccv_types {
     }
 
     // we return either a result or an error.
-    // if hasError is true, newState may be arbitrary, but the error will be meaningful.
-    // if hasError is false, error may be arbitrary, but newState will be meaningful.
+    // if hasError() is true, newState may be arbitrary, but the error will be meaningful.
+    // if hasError() is false, error may be arbitrary, but newState will be meaningful.
     type Result = {
-        hasError: bool,
         newState: ProtocolState,
         error: Error
     }
 
     pure def Ok(newState: ProtocolState): Result = {
         {
-            hasError: false,
             newState: newState,
             error: {
                 message: ""
@@ -168,7 +166,6 @@ module ccv_types {
 
     pure def Err(msg: str): Result = {
         {
-            hasError: true,
             newState: {
                 providerState: {
                     chainState: {
@@ -190,6 +187,8 @@ module ccv_types {
             }
         }
     }
+
+    pure def hasError(result: Result): bool = result.error.message != ""
 
     // possible consumer statuses
     pure val STOPPED = "stopped" // the chain was once a consumer chain, but has been voluntarily dropped by the provider.
@@ -308,7 +307,7 @@ module ccv {
                 // the packet has not timed out, so receive it on the provider
                 val result = recvPacketOnProvider(currentState, sender, packet)
                 val tmpState = result.newState
-                if (result.hasError) {
+                if (result.hasError()) {
                     (Err(result.error.message), false)
                 } else {
                     (Ok(removeOutstandingPacketFromConsumer(tmpState, sender)), false) // false because the packet did not time out
@@ -357,7 +356,7 @@ module ccv {
                 // the packet has not timed out, so receive it on the consumer
                 val result = recvPacketOnConsumer(currentState, receiver, packet)
                 val tmpState = result.newState
-                if (result.hasError) {
+                if (result.hasError()) {
                     (Err(result.error.message), false)
                 } else {
                     (Ok(removeOutstandingPacketFromProvider(tmpState, receiver)), false) // false because the packet did not time out

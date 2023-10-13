@@ -131,7 +131,7 @@ module ccv_statemachine {
     action VotingPowerChange(validator: Node, newVotingPower: int): bool = 
         val result = votingPowerChange(currentState, validator, newVotingPower)
         all {
-            result.hasError == false,
+            result.hasError() == false,
             currentState' = result.newState,
             trace' = trace.append(emptyAction.with("kind", "VotingPowerChange").with("validator", validator).with("newVotingPower", newVotingPower))
         }
@@ -142,7 +142,7 @@ module ccv_statemachine {
         val resultAndTimeout = deliverPacketToConsumer(currentState, receiver)
         val result = resultAndTimeout._1
         all {
-            result.hasError == false,
+            result.hasError() == false,
             currentState' = result.newState,
             trace' = trace.append(emptyAction.with("kind", "DeliverVscPacket").with("consumerChain", receiver))
         }
@@ -153,7 +153,7 @@ module ccv_statemachine {
         val resultAndTimeout = deliverPacketToProvider(currentState, sender)
         val result = resultAndTimeout._1
         all {
-            result.hasError == false,
+            result.hasError() == false,
             currentState' = result.newState,
             trace' = trace.append(emptyAction.with("kind", "DeliverVscMaturedPacket").with("consumerChain", sender))
         }
@@ -164,7 +164,7 @@ module ccv_statemachine {
         consumersToStop: Set[Chain]): bool = 
         val result = endAndBeginBlockForProvider(currentState, timeAdvancement, consumersToStart, consumersToStop)
         all {
-            result.hasError == false,
+            result.hasError() == false,
             currentState' = result.newState,
             trace' = trace.append(emptyAction.with("kind", "EndAndBeginBlockForProvider").with("timeAdvancement", timeAdvancement).with("consumersToStart", consumersToStart).with("consumersToStop", consumersToStop))
         }
@@ -174,7 +174,7 @@ module ccv_statemachine {
         timeAdvancement: Time): bool = 
         val result = endAndBeginBlockForConsumer(currentState, chain, timeAdvancement)
         all {
-            result.hasError == false,
+            result.hasError() == false,
             currentState' = result.newState,
             trace' = trace.append(emptyAction.with("kind", "EndAndBeginBlockForConsumer").with("consumerChain", chain).with("timeAdvancement", timeAdvancement))
         }

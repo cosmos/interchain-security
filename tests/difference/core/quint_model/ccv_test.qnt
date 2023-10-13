@@ -20,7 +20,7 @@ module ccv_test {
             GetEmptyProtocolState,
             "validator",
             -1
-        ).hasError
+        ).hasError()
     }
 
     run VotingPowerOkTest =
@@ -30,7 +30,7 @@ module ccv_test {
             "validator",
             5
         )
-        not(result.hasError) and
+        not(result.hasError()) and
         result.newState.providerState.chainState.currentValidatorSet.keys().contains("validator") and
         result.newState.providerState.chainState.currentValidatorSet.get("validator") == 5
     }
@@ -48,7 +48,7 @@ module ccv_test {
             "validator",
             0
         )
-        not(finalResult.hasError) and
+        not(finalResult.hasError()) and
         finalResult.newState.providerState.chainState.currentValidatorSet.get("validator") == 0
     }
 
@@ -67,7 +67,7 @@ module ccv_test {
             0
         )
         // still should set the flag
-        not(finalResult.hasError) and
+        not(finalResult.hasError()) and
         finalResult.newState.providerState.providerValidatorSetChangedInThisBlock
     }
 
@@ -80,7 +80,7 @@ module ccv_test {
             "validator",
             0
         )
-        not(result.hasError) and
+        not(result.hasError()) and
         result.newState.providerState.chainState.votingPowerHistory == List()
     }
 
@@ -138,7 +138,7 @@ module ccv_test {
     {
         val result = DeliverPacketToProviderHappyPathTest_resultAndTimeout._1
         val timeout = DeliverPacketToProviderHappyPathTest_resultAndTimeout._2
-        not(result.hasError) and
+        not(result.hasError()) and
         not(timeout)
     }
 
@@ -147,7 +147,7 @@ module ccv_test {
         val result = DeliverPacketToProviderHappyPathTest_resultAndTimeout._1
         val newProviderState = result.newState.providerState
         val newConsumerState = result.newState.consumerStates.get("sender")
-        not(result.hasError) and
+        not(result.hasError()) and
         newProviderState.receivedMaturations.size() == 1 and
         newConsumerState.outstandingPacketsToProvider.length() == 0
     }
@@ -170,7 +170,7 @@ module ccv_test {
         val timeout = DeliverPacketToProviderTimeoutTest_resultAndTimeout._2
         val newProviderState = result.newState.providerState
         val newConsumerState = result.newState.consumerStates.get("sender")
-        not(result.hasError) and
+        not(result.hasError()) and
         timeout
     }
 
@@ -179,7 +179,7 @@ module ccv_test {
         val result = DeliverPacketToProviderTimeoutTest_resultAndTimeout._1
         val newProviderState = result.newState.providerState
         val newConsumerState = result.newState.consumerStates.get("sender")
-        not(result.hasError) and
+        not(result.hasError()) and
         newProviderState.receivedMaturations.size() == 0 and
         newProviderState.consumerStatus.get("sender") == TIMEDOUT
     }
