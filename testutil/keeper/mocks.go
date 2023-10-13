@@ -384,29 +384,6 @@ func (mr *MockStakingKeeperMockRecorder) ValidatorByConsAddr(ctx, consAddr inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidatorByConsAddr", reflect.TypeOf((*MockStakingKeeper)(nil).ValidatorByConsAddr), ctx, consAddr)
 }
 
-// MockEvidenceKeeper is a mock of EvidenceKeeper interface.
-type MockEvidenceKeeper struct {
-	ctrl     *gomock.Controller
-	recorder *MockEvidenceKeeperMockRecorder
-}
-
-// MockEvidenceKeeperMockRecorder is the mock recorder for MockEvidenceKeeper.
-type MockEvidenceKeeperMockRecorder struct {
-	mock *MockEvidenceKeeper
-}
-
-// NewMockEvidenceKeeper creates a new mock instance.
-func NewMockEvidenceKeeper(ctrl *gomock.Controller) *MockEvidenceKeeper {
-	mock := &MockEvidenceKeeper{ctrl: ctrl}
-	mock.recorder = &MockEvidenceKeeperMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockEvidenceKeeper) EXPECT() *MockEvidenceKeeperMockRecorder {
-	return m.recorder
-}
-
 // MockSlashingKeeper is a mock of SlashingKeeper interface.
 type MockSlashingKeeper struct {
 	ctrl     *gomock.Controller
@@ -863,7 +840,7 @@ func (m *MockConsumerHooks) EXPECT() *MockConsumerHooksMockRecorder {
 }
 
 // AfterValidatorBonded mocks base method.
-func (m *MockConsumerHooks) AfterValidatorBonded(ctx types0.Context, consAddr types0.ConsAddress, valAddresses types0.ValAddress) error {
+func (m *MockConsumerHooks) AfterValidatorBonded(ctx context.Context, consAddr types0.ConsAddress, valAddresses types0.ValAddress) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AfterValidatorBonded", ctx, consAddr, valAddresses)
 	ret0, _ := ret[0].(error)

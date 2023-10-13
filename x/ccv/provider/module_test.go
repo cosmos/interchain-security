@@ -159,6 +159,21 @@ func TestInitGenesis(t *testing.T) {
 			continue // Nothing else to verify
 		}
 
+		appModule.InitGenesis(ctx, cdc, jsonBytes)
+
+		numStatesCounted := 0
+		for _, state := range tc.consumerStates {
+			numStatesCounted += 1
+			channelID, found := providerKeeper.GetChainToChannel(ctx, state.ChainId)
+			require.True(t, found)
+			require.Equal(t, state.ChannelId, channelID)
+
+			chainID, found := providerKeeper.GetChannelToChain(ctx, state.ChannelId)
+			require.True(t, found)
+			require.Equal(t, state.ChainId, chainID)
+		}
+		require.Equal(t, len(tc.consumerStates), numStatesCounted)
+
 		// Expect slash meter to be initialized to it's allowance value
 		// (replenish fraction * mocked value defined above)
 		slashMeter := providerKeeper.GetSlashMeter(ctx)
