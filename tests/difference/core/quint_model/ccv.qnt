@@ -280,8 +280,6 @@ module ccv {
             (Err("No outstanding packets to deliver"), false)
         } else {
             val packet = currentState.consumerStates.get(sender).outstandingPacketsToProvider.head()
-            // if the packet has timed out, drop the consumer. its state doesn't matter anymore
-            val timeout = CcvTimeout.get(sender)
             if(packet.sendingTime + CcvTimeout.get(sender) < currentState.providerState.chainState.lastTimestamp) {
                 // drop consumer
                 val result = stopConsumers(
