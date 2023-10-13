@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -109,10 +110,12 @@ func GetConsumerGenesisTransformCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "transform [genesis-file]",
 		Short: "Transform CCV consumer genesis from an older provider version not supporting current format",
-		Long: fmt.Sprintf(`Transform the consumer genesis file from a provider version v1,v2 or v3 to a version supported by this consumer. Result is printed to STDOUT.
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Transform the consumer genesis file from a provider version v1,v2 or v3 to a version supported by this consumer. Result is printed to STDOUT.
 
 Example:
-$ %s transform /path/to/ccv_consumer_genesis.json `, version.AppName),
+$ %s transform /path/to/ccv_consumer_genesis.json`, version.AppName),
+		),
 		Args: cobra.ExactArgs(1),
 		RunE: TransformConsumerGenesis,
 	}
