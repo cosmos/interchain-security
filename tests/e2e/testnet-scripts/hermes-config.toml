@@ -8,9 +8,13 @@ enabled = true
 refresh = true
 misbehaviour = true
 
+# mode disabled since connections are created manually in the tests
+# see addIbcChannelHermes in /tests/e2e/actions.go#L1113
 [mode.connections]
 enabled = false
 
+# mode disabled since channels are created manually in the tests
+# see addIbcConnection in /tests/e2e/actions.go#L879
 [mode.channels]
 enabled = false
 
