@@ -32,8 +32,6 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 		return err
 	}
 
-	provAddrs := make([]types.ProviderConsAddress, len(byzantineValidators))
-
 	// slash, jail, and tombstone the Byzantine validators
 	for _, v := range byzantineValidators {
 		providerAddr := k.GetProviderAddrFromConsumerAddr(
@@ -44,21 +42,16 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 		err := k.SlashValidator(ctx, providerAddr)
 		if err != nil {
 			logger.Error("failed to slash validator: %s", err)
-			continue
 		}
 		err = k.JailAndTombstoneValidator(ctx, providerAddr)
 		if err != nil {
 			logger.Error("failed to jail or tombstone validator: %s", err)
-			continue
 		}
-
-		provAddrs = append(provAddrs, providerAddr)
 	}
 
 	logger.Info(
 		"confirmed equivocation light client attack",
 		"byzantine validators", byzantineValidators,
-		"byzantine validators that got slashes, jailed, and tombstoned", provAddrs,
 	)
 
 	return nil

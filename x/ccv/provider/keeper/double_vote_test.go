@@ -45,6 +45,30 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 		expPass bool
 	}{
 		{
+			"invalid verifying public key - shouldn't pass",
+			[]*tmtypes.Vote{
+				testutil.MakeAndSignVote(
+					blockID1,
+					ctx.BlockHeight(),
+					ctx.BlockTime(),
+					valSet,
+					signer1,
+					chainID,
+				),
+				testutil.MakeAndSignVote(
+					blockID2,
+					ctx.BlockHeight(),
+					ctx.BlockTime(),
+					valSet,
+					signer1,
+					chainID,
+				),
+			},
+			chainID,
+			nil,
+			false,
+		},
+		{
 			"verifying public key doesn't correspond to validator address",
 			[]*tmtypes.Vote{
 				testutil.MakeAndSignVoteWithForgedValAddress(
@@ -210,30 +234,6 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 			},
 			chainID,
 			valPubkey1,
-			false,
-		},
-		{
-			"invalid public key - shouldn't pass",
-			[]*tmtypes.Vote{
-				testutil.MakeAndSignVote(
-					blockID1,
-					ctx.BlockHeight(),
-					ctx.BlockTime(),
-					valSet,
-					signer1,
-					chainID,
-				),
-				testutil.MakeAndSignVote(
-					blockID2,
-					ctx.BlockHeight(),
-					ctx.BlockTime(),
-					valSet,
-					signer1,
-					chainID,
-				),
-			},
-			chainID,
-			nil,
 			false,
 		},
 		{
