@@ -22,7 +22,7 @@ func (k Keeper) HandleConsumerDoubleVoting(
 	pubkey cryptotypes.PubKey,
 ) error {
 	// verifies the double voting evidence using the consumer chain public key
-	if err := k.VerifyDoubleVotingEvidence(ctx, *evidence, chainID, pubkey); err != nil {
+	if err := k.VerifyDoubleVotingEvidence(*evidence, chainID, pubkey); err != nil {
 		return err
 	}
 
@@ -51,7 +51,6 @@ func (k Keeper) HandleConsumerDoubleVoting(
 // VerifyDoubleVotingEvidence verifies a double voting evidence
 // for a given chain id and a validator public key
 func (k Keeper) VerifyDoubleVotingEvidence(
-	ctx sdk.Context,
 	evidence tmtypes.DuplicateVoteEvidence,
 	chainID string,
 	pubkey cryptotypes.PubKey,

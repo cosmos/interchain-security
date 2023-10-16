@@ -69,6 +69,8 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 			false,
 		},
 		{
+			// Note that the signer1 key is used to sign the vote and
+			// signer2 is used to derive the validator addresss of the same vote
 			"verifying public key doesn't correspond to validator address",
 			[]*tmtypes.Vote{
 				testutil.MakeAndSignVoteWithForgedValAddress(
@@ -77,6 +79,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 					ctx.BlockTime(),
 					valSet,
 					signer1,
+					signer2,
 					chainID,
 				),
 				testutil.MakeAndSignVoteWithForgedValAddress(
@@ -85,6 +88,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 					ctx.BlockTime(),
 					valSet,
 					signer1,
+					signer2,
 					chainID,
 				),
 			},
@@ -288,7 +292,6 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 
 	for _, tc := range testCases {
 		err = keeper.VerifyDoubleVotingEvidence(
-			ctx,
 			tmtypes.DuplicateVoteEvidence{
 				VoteA:            tc.votes[0],
 				VoteB:            tc.votes[1],
