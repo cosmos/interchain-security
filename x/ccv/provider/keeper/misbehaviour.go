@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -32,6 +34,8 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 		return err
 	}
 
+	provAddrs := make([]types.ProviderConsAddress, len(byzantineValidators))
+
 	// slash, jail, and tombstone the Byzantine validators
 	for _, v := range byzantineValidators {
 		providerAddr := k.GetProviderAddrFromConsumerAddr(
@@ -42,16 +46,27 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 		err := k.SlashValidator(ctx, providerAddr)
 		if err != nil {
 			logger.Error("failed to slash validator: %s", err)
+			continue
 		}
 		err = k.JailAndTombstoneValidator(ctx, providerAddr)
+		// JailAndTombstoneValidator should never return an error if
+		// SlashValidator succeeded because both methods fails if the malicious
+		// validator is either or both !found, unbonded and tombstoned.
 		if err != nil {
-			logger.Error("failed to jail or tombstone validator: %s", err)
+			panic(err)
 		}
+
+		provAddrs = append(provAddrs, providerAddr)
+	}
+
+	// Return an error if no validators were punished
+	if len(provAddrs) == 0 {
+		return fmt.Errorf("failed to slash, jail, or tombstone all validators: %v", byzantineValidators)
 	}
 
 	logger.Info(
 		"confirmed equivocation light client attack",
-		"byzantine validators", byzantineValidators,
+		"byzantine validators slashed, jailed and tombstoned", provAddrs,
 	)
 
 	return nil
