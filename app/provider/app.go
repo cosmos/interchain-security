@@ -251,6 +251,8 @@ func New(
 	appCodec := encodingConfig.Codec
 	legacyAmino := encodingConfig.Amino
 	txConfig := encodingConfig.TxConfig
+	std.RegisterLegacyAminoCodec(legacyAmino)
+	std.RegisterInterfaces(interfaceRegistry)
 
 	// ABCI++, v50
 	voteExtOp := func(bApp *baseapp.BaseApp) {
@@ -555,6 +557,9 @@ func New(
 				},
 			),
 		})
+	ModuleBasics.RegisterLegacyAminoCodec(app.legacyAmino)
+	ModuleBasics.RegisterInterfaces(app.interfaceRegistry)
+
 	app.MM.SetOrderPreBlockers(
 		upgradetypes.ModuleName,
 	)
@@ -931,6 +936,7 @@ func (app *App) AutoCliOpts() autocli.AppOptions {
 
 	return autocli.AppOptions{
 		Modules:               modules,
+		ModuleOptions:         runtimeservices.ExtractAutoCLIOptions(app.MM.Modules),
 		AddressCodec:          authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 		ValidatorAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 		ConsensusAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
@@ -1012,9 +1018,7 @@ func MakeTestEncodingConfig() appparams.EncodingConfig {
 
 func makeEncodingConfig() appparams.EncodingConfig {
 	encodingConfig := appparams.MakeTestEncodingConfig()
-	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
-	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
-	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	// std.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	// std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	return encodingConfig
 }

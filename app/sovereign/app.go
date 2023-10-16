@@ -823,6 +823,7 @@ func (app *App) AutoCliOpts() autocli.AppOptions {
 
 	return autocli.AppOptions{
 		Modules:               modules,
+		ModuleOptions:         runtimeservices.ExtractAutoCLIOptions(app.MM.Modules),
 		AddressCodec:          authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 		ValidatorAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 		ConsensusAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
