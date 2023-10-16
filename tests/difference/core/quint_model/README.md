@@ -4,7 +4,7 @@ This folder contains a Quint model for the core logic of Cross-Chain Validation 
 The files are as follows:
 - ccv.qnt: Contains the type definitions, data structures, functional logic for CCV.
 The core of the protocol.
-- ccv_statemachine.qnt: Contains the state machine layer for CCV. Very roughly speaking, this could be seen as "e2e tests".
+- ccv_model.qnt: Contains the stateful part of the model for CCV. Very roughly speaking, this could be seen as "e2e tests".
 Also contains invariants.
 - ccv_test.qnt: Contains unit tests for the functional layer of CCV.
 - libraries/*: Libraries that don't belong to CCV, but are used by it.
@@ -26,14 +26,14 @@ quint test ccv_test.qnt
 ```
 and 
 ```
-quint test ccv_statemachine.qnt
+quint test ccv_model.qnt
 ```
 
 ### Invariants
 
-The invariants to check are in [ccv_statemachine.qnt](ccv_statemachine.qnt).
+The invariants to check are in [ccv_model.qnt](ccv_model.qnt).
 Check a single invariant by running
-`quint run --invariant INVARIANT_NAME ccv_statemachine.qnt`,
+`quint run --invariant INVARIANT_NAME ccv_model.qnt`,
 or all invariants one after another with the help of the script `run_invariants.sh`.
 Each invariant takes about a minute to run.
 
@@ -53,7 +53,7 @@ that were running at the time the packet was sent (and are still running).
 Invariants can also be model-checked by Apalache, using this command:
 ```
 quint verify --invariant ValidatorUpdatesArePropagatedInv,ValidatorSetHasExistedInv,SameVscPacketsInv,MatureOnTimeInv,EventuallyMatureOnProviderInv \
- ccv_statemachine.qnt
+ ccv_model.qnt
 ```
 
 ### Sanity Checks
@@ -63,7 +63,7 @@ In detail, they are invariant checks that we expect to fail.
 They usually negate the appearance of some behaviour, i.e. `not(DesirableBehaviour)`.
 Then, a counterexample for this is an example trace exhibiting the behaviour.
 
-They are run like invariant checks, i.e. `quint run --invariant SANITY_CHECK_NAME ccv_statemachine.qnt`.
+They are run like invariant checks, i.e. `quint run --invariant SANITY_CHECK_NAME ccv_model.qnt`.
 The available sanity checks are:
 - CanRunConsumer
 - CanStopConsumer

@@ -1,6 +1,6 @@
 // -*- mode: Bluespec; -*-
-module ccv_statemachine {
-    // A basic state machine that utilizes the CCV protocol.
+module ccv_model {
+    // A basic stateful model that utilizes the CCV protocol.
     import ccv_types.* from "./ccv"
     import Time.* from "./libraries/Time"
     import extraSpells.* from "./libraries/extraSpells"
