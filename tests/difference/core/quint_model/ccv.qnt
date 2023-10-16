@@ -143,9 +143,7 @@ module ccv_types {
             consumerStates: Map(),
         }
 
-    type Error = {
-        message: str
-    }
+    type Error = str
 
     // we return either a result or an error.
     // if hasError() is true, newState may be arbitrary, but the error will be meaningful.
@@ -158,9 +156,7 @@ module ccv_types {
     pure def Ok(newState: ProtocolState): Result = {
         {
             newState: newState,
-            error: {
-                message: ""
-            }
+            error: ""
         }
     }
 
@@ -182,13 +178,11 @@ module ccv_types {
                 },
                 consumerStates: Map(),
             },
-            error: {
-                message: msg
-            }
+            error: msg
         }
     }
 
-    pure def hasError(result: Result): bool = result.error.message != ""
+    pure def hasError(result: Result): bool = result.error != ""
 
     // possible consumer statuses
     pure val STOPPED = "stopped" // the chain was once a consumer chain, but has been voluntarily dropped by the provider.
@@ -306,7 +300,7 @@ module ccv {
                 val result = recvPacketOnProvider(currentState, sender, packet)
                 val tmpState = result.newState
                 if (result.hasError()) {
-                    (Err(result.error.message), false)
+                    (result, false)
                 } else {
                     (Ok(removeOutstandingPacketFromConsumer(tmpState, sender)), false) // false because the packet did not time out
                 }
@@ -355,7 +349,7 @@ module ccv {
                 val result = recvPacketOnConsumer(currentState, receiver, packet)
                 val tmpState = result.newState
                 if (result.hasError()) {
-                    (Err(result.error.message), false)
+                    (result, false)
                 } else {
                     (Ok(removeOutstandingPacketFromProvider(tmpState, receiver)), false) // false because the packet did not time out
                 }
@@ -652,21 +646,18 @@ module ccv {
             // update the running validator set, but not the history yet,
             // as that only happens when the next block is started
             val currentConsumerState = currentState.consumerStates.get(receiver)
-            val newConsumerState = currentConsumerState.with(
-                "chainState",
-                currentConsumerState.chainState.with(
-                    "currentValidatorSet", packet.validatorSet
-                )
-            ).with(
-                "maturationTimes",
-                currentConsumerState.maturationTimes.put(
-                    packet, 
-                    currentConsumerState.chainState.lastTimestamp + UnbondingPeriodPerChain.get(receiver)
-                )
-            ).with(
-                "receivedVscPackets",
-                currentConsumerState.receivedVscPackets.prepend(packet)
-            )
+            val newConsumerState = 
+                {
+                    ...currentConsumerState,
+                    chainState: currentConsumerState.chainState.with(
+                        "currentValidatorSet", packet.validatorSet
+                    ),
+                    maturationTimes: currentConsumerState.maturationTimes.put(
+                        packet, 
+                        currentConsumerState.chainState.lastTimestamp + UnbondingPeriodPerChain.get(receiver)
+                    ),
+                    receivedVscPackets: currentConsumerState.receivedVscPackets.prepend(packet)
+                }
             val newConsumerStates = currentState.consumerStates.set(receiver, newConsumerState)
             val newState = currentState.with(
                 "consumerStates", newConsumerStates

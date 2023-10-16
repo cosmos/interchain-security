@@ -198,18 +198,16 @@ module ccv_model {
     val ValUpdatePrecondition = trace[trace.length()-1].kind == "EndAndBeginBlockForProvider"
     val ValidatorUpdatesArePropagatedInv = 
         // when the provider has just entered a validator set into a block...
-        if (ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisBlock) {
-            val providerValSetInCurBlock = providerValidatorHistory.head()
-            // ... for each consumer that is running then ...
-            runningConsumers.forall(
-                // ...the validator set is in a sent packet
-                consumer => currentState.providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
-                    packet => packet.validatorSet == providerValSetInCurBlock
-                )
+        ValUpdatePrecondition and currentState.providerState.providerValidatorSetChangedInThisBlock
+            implies
+        val providerValSetInCurBlock = providerValidatorHistory.head()
+        // ... for each consumer that is running then ...
+        runningConsumers.forall(
+            // ...the validator set is in a sent packet
+            consumer => currentState.providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
+                packet => packet.validatorSet == providerValSetInCurBlock
             )
-        } else {
-            true
-        }
+        )
 
     // Every consumer chain receives the same sequence of 
     // ValidatorSetChangePackets in the same order.
