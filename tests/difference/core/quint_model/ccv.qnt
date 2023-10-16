@@ -620,30 +620,25 @@ module ccv {
                 List()
             }
         )
-        providerState.with(
-            // send VscPackets to consumers
-            "outstandingPacketsToConsumer",
-            ConsumerChains.mapBy(
+        val newOutstandingPacketsToConsumer = ConsumerChains.mapBy(
                 (consumer) => 
                 providerState.outstandingPacketsToConsumer.get(consumer).concat(
                     newSentPacketsPerConsumer.get(consumer)
                 )
             )
-            ).with(
-                // update the sent VscPackets
-                "sentVscPacketsToConsumer",
-                ConsumerChains.mapBy(
+        val newSentVscPackets = ConsumerChains.mapBy(
                     (consumer) => 
                     providerState.sentVscPacketsToConsumer.get(consumer).concat(
                         newSentPacketsPerConsumer.get(consumer)
                     )
                 )
-            ).with(
-                // the validator set has not changed yet in the new block
-                "providerValidatorSetChangedInThisBlock", false
-            ).with(
-                "runningVscId", providerState.runningVscId + 1
-            )
+        {
+            ...providerState,
+            outstandingPacketsToConsumer: newOutstandingPacketsToConsumer,
+            sentVscPacketsToConsumer: newSentVscPackets,
+            providerValidatorSetChangedInThisBlock: false,
+            runningVscId: providerState.runningVscId + 1,
+        }
     }
 
     // receives a given packet (sent by the provider) on the consumer. The arguments are the consumer chain that is receiving the packet, and the packet itself.
