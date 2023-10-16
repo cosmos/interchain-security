@@ -44,10 +44,12 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 		err := k.SlashValidator(ctx, providerAddr)
 		if err != nil {
 			logger.Error("failed to slash validator: %s", err)
+			continue
 		}
 		err = k.JailAndTombstoneValidator(ctx, providerAddr)
 		if err != nil {
 			logger.Error("failed to jail or tombstone validator: %s", err)
+			continue
 		}
 
 		provAddrs = append(provAddrs, providerAddr)
@@ -55,7 +57,8 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 
 	logger.Info(
 		"confirmed equivocation light client attack",
-		"byzantine validators", provAddrs,
+		"byzantine validators", byzantineValidators,
+		"byzantine validators that got slashes, jailed, and tombstoned", provAddrs,
 	)
 
 	return nil

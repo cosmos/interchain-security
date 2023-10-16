@@ -127,7 +127,7 @@ func NewSubmitConsumerDoubleVotingCmd() *cobra.Command {
  , see cometbft/proto/tendermint/types/evidence.proto and the IBC header
  definition can be found in the IBC messages, see ibc-go/proto/ibc/lightclients/tendermint/v1/tendermint.proto.
 
-Examples:
+Example:
 %s tx provider submit-consumer-double-voting [path/to/evidence.json] [path/to/infraction_header.json] --from node0 --home ../node0 --chain-id $CID
 `, version.AppName)),
 		Args: cobra.ExactArgs(2),
