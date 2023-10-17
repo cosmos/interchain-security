@@ -281,6 +281,6 @@ func TestHandleConsumerDoubleVoting(t *testing.T) {
 	runCCVTestByName(t, "TestHandleConsumerDoubleVoting")
 }
 
-func TestHandleConsumerDoubleVotingSlashesUndelegations(t *testing.T) {
-	runCCVTestByName(t, "TestHandleConsumerDoubleVotingSlashesUndelegations")
+func TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations(t *testing.T) {
+	runCCVTestByName(t, "TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations")
 }
