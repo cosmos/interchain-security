@@ -62,7 +62,10 @@ func main() {
 		{DemocracyTestRun(true), democracySteps},
 		{DemocracyTestRun(false), rewardDenomConsumerSteps},
 		{SlashThrottleTestRun(), slashThrottleSteps},
+		{ConsumerMisbehaviourTestRun(), consumerMisbehaviourSteps},
+		{DefaultTestRun(), consumerDoubleSignSteps},
 	}
+
 	if includeMultiConsumer != nil && *includeMultiConsumer {
 		testRuns = append(testRuns, testRunWithSteps{MultiConsumerTestRun(), multipleConsumers})
 	}
@@ -129,8 +132,6 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.submitConsumerAdditionProposal(action, verbose)
 	case submitConsumerRemovalProposalAction:
 		tr.submitConsumerRemovalProposal(action, verbose)
-	case submitEquivocationProposalAction:
-		tr.submitEquivocationProposal(action, verbose)
 	case submitParamChangeProposalAction:
 		tr.submitParamChangeProposal(action, verbose)
 	case voteGovProposalAction:
@@ -173,6 +174,14 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.waitForSlashThrottleDequeue(action, verbose)
 	case startRelayerAction:
 		tr.startRelayer(action, verbose)
+	case forkConsumerChainAction:
+		tr.forkConsumerChain(action, verbose)
+	case updateLightClientAction:
+		tr.updateLightClient(action, verbose)
+	case assertChainIsHaltedAction:
+		tr.assertChainIsHalted(action, verbose)
+	case startConsumerEvidenceDetectorAction:
+		tr.startConsumerEvidenceDetector(action, verbose)
 	case submitChangeRewardDenomsProposalAction:
 		tr.submitChangeRewardDenomsProposal(action, verbose)
 	default:

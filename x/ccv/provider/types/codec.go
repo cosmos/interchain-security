@@ -29,7 +29,17 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	)
 	registry.RegisterImplementations(
 		(*govtypes.Content)(nil),
-		&EquivocationProposal{},
+		&ChangeRewardDenomsProposal{},
+	)
+
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&MsgSubmitConsumerMisbehaviour{},
+	)
+
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&MsgSubmitConsumerDoubleVoting{},
 	)
 	registry.RegisterImplementations(
 		(*govtypes.Content)(nil),

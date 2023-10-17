@@ -7,7 +7,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
@@ -30,6 +29,8 @@ type StakingKeeper interface {
 	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
 	Jail(sdk.Context, sdk.ConsAddress) // jail a validator
 	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec, stakingtypes.InfractionType)
+	SlashUnbondingDelegation(sdk.Context, stakingtypes.UnbondingDelegation, int64, sdk.Dec) sdk.Int
+	SlashRedelegation(sdk.Context, stakingtypes.Validator, stakingtypes.Redelegation, int64, sdk.Dec) sdk.Int
 	Unjail(ctx sdk.Context, addr sdk.ConsAddress)
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
@@ -44,11 +45,9 @@ type StakingKeeper interface {
 	GetLastTotalPower(ctx sdk.Context) sdk.Int
 	GetLastValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
 	BondDenom(ctx sdk.Context) (res string)
+	GetUnbondingDelegationsFromValidator(ctx sdk.Context, valAddr sdk.ValAddress) (ubds []stakingtypes.UnbondingDelegation)
+	GetRedelegationsFromSrcValidator(ctx sdk.Context, valAddr sdk.ValAddress) (reds []stakingtypes.Redelegation)
 	GetUnbondingType(ctx sdk.Context, id uint64) (unbondingType stakingtypes.UnbondingType, found bool)
-}
-
-type EvidenceKeeper interface {
-	HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
 }
 
 // SlashingKeeper defines the contract expected to perform ccv slashing
@@ -87,6 +86,10 @@ type ClientKeeper interface {
 	GetClientState(ctx sdk.Context, clientID string) (ibcexported.ClientState, bool)
 	GetLatestClientConsensusState(ctx sdk.Context, clientID string) (ibcexported.ConsensusState, bool)
 	GetSelfConsensusState(ctx sdk.Context, height ibcexported.Height) (ibcexported.ConsensusState, error)
+	ClientStore(ctx sdk.Context, clientID string) sdk.KVStore
+	SetClientState(ctx sdk.Context, clientID string, clientState ibcexported.ClientState)
+	GetClientConsensusState(ctx sdk.Context, clientID string, height ibcexported.Height) (ibcexported.ConsensusState, bool)
+	CheckMisbehaviourAndUpdateState(ctx sdk.Context, misbehaviour ibcexported.Misbehaviour) error
 }
 
 // DistributionKeeper defines the expected interface of the distribution keeper

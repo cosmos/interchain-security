@@ -10,7 +10,6 @@ import "google/protobuf/duration.proto";
 import "ibc/core/client/v1/client.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "tendermint/crypto/keys.proto";
-import "cosmos/evidence/v1beta1/evidence.proto";
 import "cosmos/base/v1beta1/coin.proto";
 
 // ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
@@ -85,15 +84,6 @@ message ConsumerRemovalProposal {
     google.protobuf.Timestamp stop_time = 4
         [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
  } 
-
-message EquivocationProposal {
-  // the title of the proposal
-  string title = 1;
-  // the description of the proposal
-  string description = 2;
-	// the list of equivocations that will be processed
-  repeated cosmos.evidence.v1beta1.Equivocation equivocations = 3;
-}
 
 // ChangeRewardDenomsProposal is a governance proposal on the provider chain to
 // mutate the set of denoms accepted by the provider as rewards.

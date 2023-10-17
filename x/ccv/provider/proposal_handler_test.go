@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -19,12 +18,11 @@ import (
 )
 
 // TestProviderProposalHandler tests the highest level handler for proposals
-// concerning creating, stopping consumer chains and submitting equivocations.
+// concerning creating, stopping consumer chains and changing reward denom.
 func TestProviderProposalHandler(t *testing.T) {
 	// Snapshot times asserted in tests
 	now := time.Now().UTC()
 	hourFromNow := now.Add(time.Hour).UTC()
-	equivocation := &evidencetypes.Equivocation{Height: 42}
 
 	testCases := []struct {
 		name                      string
@@ -32,7 +30,6 @@ func TestProviderProposalHandler(t *testing.T) {
 		blockTime                 time.Time
 		expValidConsumerAddition  bool
 		expValidConsumerRemoval   bool
-		expValidEquivocation      bool
 		expValidChangeRewardDenom bool
 	}{
 		{
@@ -59,19 +56,11 @@ func TestProviderProposalHandler(t *testing.T) {
 			expValidConsumerRemoval: true,
 		},
 		{
-			// no slash log for equivocation
-			name: "invalid equivocation proposal",
-			content: providertypes.NewEquivocationProposal(
-				"title", "description", []*evidencetypes.Equivocation{equivocation}),
-			blockTime:            hourFromNow,
-			expValidEquivocation: false,
-		},
-		{
-			name: "valid equivocation proposal",
-			content: providertypes.NewEquivocationProposal(
-				"title", "description", []*evidencetypes.Equivocation{equivocation}),
-			blockTime:            hourFromNow,
-			expValidEquivocation: true,
+			name: "valid change reward denoms proposal",
+			content: providertypes.NewChangeRewardDenomsProposal(
+				"title", "description", []string{"denom1"}, []string{"denom2"}),
+			blockTime:                 hourFromNow,
+			expValidChangeRewardDenom: true,
 		},
 		{
 			name: "valid change reward denoms proposal",
@@ -111,9 +100,6 @@ func TestProviderProposalHandler(t *testing.T) {
 		case tc.expValidConsumerRemoval:
 			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
 
-		case tc.expValidEquivocation:
-			providerKeeper.SetSlashLog(ctx, providertypes.NewProviderConsAddress(equivocation.GetConsensusAddress()))
-			mocks.MockEvidenceKeeper.EXPECT().HandleEquivocationEvidence(ctx, equivocation)
 		case tc.expValidChangeRewardDenom:
 			// Nothing to mock
 		}
@@ -123,7 +109,7 @@ func TestProviderProposalHandler(t *testing.T) {
 		err := proposalHandler(ctx, tc.content)
 
 		if tc.expValidConsumerAddition || tc.expValidConsumerRemoval ||
-			tc.expValidEquivocation || tc.expValidChangeRewardDenom {
+			tc.expValidChangeRewardDenom {
 			require.NoError(t, err)
 		} else {
 			require.Error(t, err)

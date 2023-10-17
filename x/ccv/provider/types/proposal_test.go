@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-
 	"github.com/golang/protobuf/proto" //nolint:staticcheck // see: https://github.com/cosmos/interchain-security/issues/236
 	"github.com/stretchr/testify/require"
 
@@ -305,62 +303,6 @@ func TestConsumerAdditionProposalString(t *testing.T) {
 		100000000000)
 
 	require.Equal(t, expect, proposal.String(), "string method for ConsumerAdditionProposal returned unexpected string")
-}
-
-func TestEquivocationProposalValidateBasic(t *testing.T) {
-	tests := []struct {
-		name          string
-		proposal      govtypes.Content
-		expectedError string
-	}{
-		{
-			name:          "fail: validate abstract - empty title",
-			proposal:      types.NewEquivocationProposal("", "", nil),
-			expectedError: "proposal title cannot be blank: invalid proposal content",
-		},
-		{
-			name:          "fail: equivocations is empty",
-			proposal:      types.NewEquivocationProposal("title", "desc", nil),
-			expectedError: "invalid equivocation proposal: empty equivocations",
-		},
-		{
-			name: "fail: invalid equivocation",
-			proposal: types.NewEquivocationProposal("title", "desc",
-				[]*evidencetypes.Equivocation{
-					{
-						Time:             time.Now(),
-						Height:           1,
-						Power:            1,
-						ConsensusAddress: "addr",
-					},
-					{}, // invalid one
-				}),
-			expectedError: "invalid equivocation time: 0001-01-01 00:00:00 +0000 UTC",
-		},
-		{
-			name: "ok",
-			proposal: types.NewEquivocationProposal("title", "desc",
-				[]*evidencetypes.Equivocation{
-					{
-						Time:             time.Now(),
-						Height:           1,
-						Power:            1,
-						ConsensusAddress: "addr",
-					},
-				}),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.proposal.ValidateBasic()
-
-			if tt.expectedError != "" {
-				require.EqualError(t, err, tt.expectedError)
-				return
-			}
-			require.NoError(t, err)
-		})
-	}
 }
 
 func TestChangeRewardDenomsProposalValidateBasic(t *testing.T) {

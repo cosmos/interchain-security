@@ -23,12 +23,10 @@ var happyPathSteps = concatSteps(
 	stepsDowntimeWithOptOut("consu"),
 	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
-	stepsRejectEquivocationProposal("consu", 2),   // prop to tombstone bob is rejected
-	stepsDoubleSignOnProviderAndConsumer("consu"), // carol double signs on provider, bob double signs on consumer
-	stepsSubmitEquivocationProposal("consu", 2),   // now prop to tombstone bob is submitted and accepted
+	stepsDoubleSignOnProvider("consu"), // carol double signs on provider
 	stepsStartRelayer(),
-	stepsConsumerRemovalPropNotPassing("consu", 3), // submit removal prop but vote no on it - chain should stay
-	stepsStopChain("consu", 4),                     // stop chain
+	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
+	stepsStopChain("consu", 3),                     // stop chain
 )
 
 var shortHappyPathSteps = concatSteps(
@@ -87,4 +85,19 @@ var changeoverSteps = concatSteps(
 	stepsChangeoverToConsumer("sover"),
 
 	stepsPostChangeoverDelegate("sover"),
+)
+
+var consumerMisbehaviourSteps = concatSteps(
+	// start provider and consumer chain
+	stepsStartChainsWithSoftOptOut("consu"),
+	// make a consumer validator to misbehave and get jailed
+	stepsCauseConsumerMisbehaviour("consu"),
+)
+
+var consumerDoubleSignSteps = concatSteps(
+	// start provider and consumer chain
+	stepsStartChains([]string{"consu"}, false),
+
+	// make a consumer validator double sign and get jailed
+	stepsCauseDoubleSignOnConsumer("consu", "provi"),
 )
