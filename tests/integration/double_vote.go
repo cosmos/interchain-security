@@ -1,8 +1,6 @@
 package integration
 
 import (
-	"fmt"
-
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	testutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
@@ -307,8 +305,8 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 
 		// check that undelegations was successful
 		ubds, _ := s.providerApp.GetTestStakingKeeper().GetUnbondingDelegation(s.providerCtx(), delAddr, validator.GetOperator())
+		// should have a single entry since undelegations are merged
 		s.Require().Len(ubds.Entries, 1)
-		fmt.Println(ubds.String())
 
 		// save the delegation shares of the validator to redelegate to
 		// Note this shares should not be slashed!
