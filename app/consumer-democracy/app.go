@@ -877,10 +877,10 @@ func (app *App) GetTestSlashingKeeper() testutil.TestSlashingKeeper {
 	return app.SlashingKeeper
 }
 
-// // GetTestEvidenceKeeper implements the ConsumerApp interface.
-// func (app *App) GetTestEvidenceKeeper() testutil.TestEvidenceKeeper {
-// 	return app.EvidenceKeeper
-// }
+// GetTestEvidenceKeeper implements the ConsumerApp interface.
+func (app *App) GetTestEvidenceKeeper() evidencekeeper.Keeper {
+	return app.EvidenceKeeper
+}
 
 // GetTestStakingKeeper implements the ConsumerApp interface.
 func (app *App) GetTestStakingKeeper() testutil.TestStakingKeeper {
@@ -892,15 +892,15 @@ func (app *App) GetTestDistributionKeeper() testutil.TestDistributionKeeper {
 	return app.DistrKeeper
 }
 
-// // GetTestMintKeeper implements the ConsumerApp interface.
-// func (app *App) GetTestMintKeeper() testutil.TestMintKeeper {
-// 	return app.MintKeeper
-// }
+// GetTestMintKeeper implements the ConsumerApp interface.
+func (app *App) GetTestMintKeeper() mintkeeper.Keeper {
+	return app.MintKeeper
+}
 
-// // GetTestGovKeeper implements the ConsumerApp interface.
-// func (app *App) GetTestGovKeeper() testutil.TestGovKeeper {
-// 	return app.GovKeeper
-// }
+// GetTestGovKeeper implements the ConsumerApp interface.
+func (app *App) GetTestGovKeeper() govkeeper.Keeper {
+	return app.GovKeeper
+}
 
 // TestingApp functions
 

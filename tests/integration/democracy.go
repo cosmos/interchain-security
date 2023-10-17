@@ -10,6 +10,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -159,9 +160,12 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	}
 }
 
+// @MSalopek -> this is broken for v50
 func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	govKeeper := s.consumerApp.GetTestGovKeeper()
-	params := govKeeper.GetParams(s.consumerCtx())
+	params, err := govKeeper.Params.Get(s.consumerCtx())
+	s.Require().NoError(err)
+
 	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
 	bankKeeper := s.consumerApp.GetTestBankKeeper()
 	accountKeeper := s.consumerApp.GetTestAccountKeeper()
@@ -174,14 +178,15 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	depositAmount := params.MinDeposit
 	duration := (3 * time.Second)
 	params.VotingPeriod = &duration
-	err = govKeeper.SetParams(s.consumerCtx(), params)
+	err = govKeeper.Params.Set(s.consumerCtx(), params)
 	s.Assert().NoError(err)
 	proposer := s.consumerChain.SenderAccount
 	s.consumerChain.NextBlock()
 	votersOldBalances := getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts)
 
 	// submit proposal with forbidden and allowed changes
-	mintParams := mintKeeper.GetParams(s.consumerCtx())
+	mintParams, err := mintKeeper.Params.Get(s.consumerCtx())
+	s.Require().NoError(err)
 	mintParams.InflationMax = newMintParamValue
 	msg_1 := &minttypes.MsgUpdateParams{
 		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
@@ -201,11 +206,15 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.consumerChain.NextBlock()
 	// at this moment, proposal is added, but not yet executed. we are saving old param values for comparison
 	oldAuthParamValue := accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
-	oldMintParamValue := mintKeeper.GetParams(s.consumerCtx()).InflationMax
+	oldMintParams, err := mintKeeper.Params.Get(s.consumerCtx())
+	s.Require().NoError(err)
+	oldMintParamValue := oldMintParams.InflationMax
 	s.consumerChain.NextBlock()
 	// at this moment, proposal is executed or deleted if forbidden
 	currentAuthParamValue := accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
-	currentMintParamValue := mintKeeper.GetParams(s.consumerCtx()).InflationMax
+	currentMintParam, err := mintKeeper.Params.Get(s.consumerCtx())
+	s.Require().NoError(err)
+	currentMintParamValue := currentMintParam.InflationMax
 	// check that parameters are not changed, since the proposal contained both forbidden and allowed changes
 	s.Assert().Equal(oldAuthParamValue, currentAuthParamValue)
 	s.Assert().NotEqual(newAuthParamValue, currentAuthParamValue)
@@ -219,9 +228,14 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().NoError(err)
 	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*params.VotingPeriod)
 	s.consumerChain.NextBlock()
-	oldMintParamValue = mintKeeper.GetParams(s.consumerCtx()).InflationMax
+	oldMintParam, err := mintKeeper.Params.Get(s.consumerCtx())
+	s.Require().NoError(err)
+	oldMintParamValue = oldMintParam.InflationMax
 	s.consumerChain.NextBlock()
-	currentMintParamValue = mintKeeper.GetParams(s.consumerCtx()).InflationMax
+	currentMintParam, err = mintKeeper.Params.Get(s.consumerCtx())
+	s.Require().NoError(err)
+
+	currentMintParamValue = currentMintParam.InflationMax
 	// check that parameters are changed, since the proposal contained only allowed changes
 	s.Assert().Equal(newMintParamValue, currentMintParamValue)
 	s.Assert().NotEqual(oldMintParamValue, currentMintParamValue)
@@ -244,10 +258,10 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
-func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.Context, msgs []sdk.Msg,
+func submitProposalWithDepositAndVote(govKeeper govkeeper.Keeper, ctx sdk.Context, msgs []sdk.Msg,
 	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
 ) error {
-	proposal, err := govKeeper.SubmitProposal(ctx, msgs, "", "title", "summary", proposer)
+	proposal, err := govKeeper.SubmitProposal(ctx, msgs, "", "title", "summary", proposer, false)
 	if err != nil {
 		return err
 	}

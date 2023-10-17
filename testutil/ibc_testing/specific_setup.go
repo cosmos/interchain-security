@@ -65,7 +65,7 @@ func ConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter {
 func DemocracyConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter {
 	return func() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		encoding := appConsumerDemocracy.MakeTestEncodingConfig()
-		testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, simtestutil.EmptyAppOptions{})
+		testApp := appConsumerDemocracy.New(log.NewNopLogger(), db.NewMemDB(), nil, true, simtestutil.EmptyAppOptions{})
 		genesisState := appConsumerDemocracy.NewDefaultGenesisState(encoding.Codec)
 		// Feed consumer genesis with provider validators
 		// TODO See if useful for democracy

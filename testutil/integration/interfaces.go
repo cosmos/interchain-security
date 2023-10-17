@@ -15,8 +15,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
+	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -79,9 +79,10 @@ type DemocConsumerApp interface {
 	// Tests a staking keeper interface with more capabilities than the expected_keepers interface
 	GetTestStakingKeeper() TestStakingKeeper
 	// Tests a mint keeper interface with more capabilities than the expected_keepers interface
-	GetTestMintKeeper() TestMintKeeper
-	// Tests a gov keeper interface with more capabilities than the expected_keepers interface
-	GetTestGovKeeper() TestGovKeeper
+	GetTestMintKeeper() mintkeeper.Keeper
+
+	// @MSalopek -> on v50 we need to access the Params collection which does not have a getter
+	GetTestGovKeeper() govkeeper.Keeper
 }
 
 //
@@ -124,7 +125,6 @@ type TestAccountKeeper interface {
 
 type TestSlashingKeeper interface {
 	ccvtypes.SlashingKeeper
-	IterateMissedBlockBitmap(ctx context.Context, addr sdk.ConsAddress, cb func(index int64, missed bool) (stop bool)) error
 	SetValidatorSigningInfo(ctx context.Context, address sdk.ConsAddress, info slashingtypes.ValidatorSigningInfo) error
 	SignedBlocksWindow(ctx context.Context) (int64, error)
 	HandleValidatorSignature(ctx context.Context, addr cryptotypes.Address, power int64, signed comet.BlockIDFlag) error
@@ -132,10 +132,7 @@ type TestSlashingKeeper interface {
 	// NOTE: @MSalopek deprecated in v50
 	// IterateValidatorMissedBlockBitArray(ctx sdk.Context,
 	// address sdk.ConsAddress, handler func(index int64, missed bool) (stop bool))
-}
-
-type TestEvidenceKeeper interface {
-	// HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
+	IterateMissedBlockBitmap(ctx context.Context, addr sdk.ConsAddress, cb func(index int64, missed bool) (stop bool)) error
 }
 
 type TestDistributionKeeper interface {
@@ -144,16 +141,4 @@ type TestDistributionKeeper interface {
 	GetDistributionAccount(ctx context.Context) sdk.ModuleAccountI
 	GetValidatorOutstandingRewards(ctx context.Context, val sdk.ValAddress) (rewards distributiontypes.ValidatorOutstandingRewards, err error)
 	GetCommunityTax(ctx context.Context) (math.LegacyDec, error)
-}
-
-type TestMintKeeper interface {
-	GetParams(ctx sdk.Context) (params minttypes.Params)
-}
-
-type TestGovKeeper interface {
-	GetParams(ctx sdk.Context) govv1.Params
-	SetParams(ctx sdk.Context, params govv1.Params) error
-	SubmitProposal(ctx sdk.Context, messages []sdk.Msg, metadata, title, summary string, proposer sdk.AccAddress) (govv1.Proposal, error)
-	AddDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress, depositAmount sdk.Coins) (bool, error)
-	AddVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress, options govv1.WeightedVoteOptions, metadata string) error
 }
