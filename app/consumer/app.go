@@ -746,6 +746,11 @@ func (app *App) GetTestSlashingKeeper() testutil.TestSlashingKeeper {
 	return app.SlashingKeeper
 }
 
+// GetTestEvidenceKeeper implements the ConsumerApp interface.
+func (app *App) GetTestEvidenceKeeper() evidencekeeper.Keeper {
+	return app.EvidenceKeeper
+}
+
 // TestingApp functions
 
 // GetBaseApp implements the TestingApp interface.

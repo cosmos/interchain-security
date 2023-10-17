@@ -8,6 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	sdkdistrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/integration"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
@@ -111,7 +112,17 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.Require().Equal(0, len(rewardCoins))
 
 	// check that the fee pool has the expected amount of coins
-	communityCoins := s.providerApp.GetTestDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
+	testDistKeeper := s.providerApp.GetTestDistributionKeeper()
+	// try casting to the sdk distribution keeper
+	sdkDistKeeper, ok := testDistKeeper.(sdkdistrkeeper.Keeper)
+	s.Require().True(ok)
+	s.Require().NotEmpty(sdkDistKeeper)
+
+	feePool, err := sdkDistKeeper.FeePool.Get(s.consumerCtx().Context())
+	s.Require().NoError(err)
+	s.Require().NotEmpty(feePool)
+
+	communityCoins := feePool.GetCommunityPool()
 	s.Require().True(communityCoins[ibcCoinIndex].Amount.Equal(sdk.NewDecCoinFromCoin(providerExpectedRewards[0]).Amount))
 }
 

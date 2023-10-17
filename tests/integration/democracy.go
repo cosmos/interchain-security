@@ -10,10 +10,12 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 
+	sdkdistrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
@@ -74,13 +76,16 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	accountKeeper := s.consumerApp.GetTestAccountKeeper()
 	distrKeeper := s.consumerApp.GetTestDistributionKeeper()
 	bankKeeper := s.consumerApp.GetTestBankKeeper()
-	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
+	bondDenom, err := stakingKeeper.BondDenom(s.consumerCtx())
+	s.Require().NoError(err)
 
 	currentRepresentativesRewards := map[string]math.LegacyDec{}
 	nextRepresentativesRewards := map[string]math.LegacyDec{}
 	representativesTokens := map[string]math.Int{}
 
-	for _, representative := range stakingKeeper.GetAllValidators(s.consumerCtx()) {
+	representatives, err := stakingKeeper.GetAllValidators(s.consumerCtx())
+	s.Require().NoError(err)
+	for _, representative := range representatives {
 		currentRepresentativesRewards[representative.OperatorAddress] = math.LegacyNewDec(0)
 		nextRepresentativesRewards[representative.OperatorAddress] = math.LegacyNewDec(0)
 		representativesTokens[representative.OperatorAddress] = representative.GetTokens()
@@ -90,24 +95,31 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	providerRedistributeAccount := accountKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName)
 	// balance of consumer redistribute address will always be 0 when checked between 2 NextBlock() calls
 
+	dk, ok := distrKeeper.(sdkdistrkeeper.Keeper)
+	s.Require().True(ok)
+	feePool, err := dk.FeePool.Get(s.consumerCtx().Context())
+	s.Require().NoError(err)
+	s.Require().NotEmpty(feePool)
 	currentDistrModuleAccountBalance := math.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
 	currentProviderFeeAccountBalance := math.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), providerRedistributeAccount.GetAddress(), bondDenom).Amount)
-	currentCommunityPoolBalance := distrKeeper.GetFeePoolCommunityCoins(s.consumerCtx()).AmountOf(bondDenom)
+	currentCommunityPoolBalance := feePool.GetCommunityPool().AmountOf(bondDenom)
 	for key := range currentRepresentativesRewards {
 		representativeAddr, _ := sdk.ValAddressFromBech32(key)
-		representativeReward := distrKeeper.GetValidatorOutstandingRewards(s.consumerCtx(), representativeAddr).Rewards.AmountOf(bondDenom)
-		currentRepresentativesRewards[key] = representativeReward
+		representativeReward, err := distrKeeper.GetValidatorOutstandingRewards(s.consumerCtx(), representativeAddr)
+		s.Require().NoError(err)
+		currentRepresentativesRewards[key] = representativeReward.Rewards.AmountOf(bondDenom)
 	}
 
 	s.consumerChain.NextBlock()
 
 	nextDistrModuleAccountBalance := math.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
 	nextProviderFeeAccountBalance := math.LegacyNewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), providerRedistributeAccount.GetAddress(), bondDenom).Amount)
-	nextCommunityPoolBalance := distrKeeper.GetFeePoolCommunityCoins(s.consumerCtx()).AmountOf(bondDenom)
+	nextCommunityPoolBalance := feePool.GetCommunityPool().AmountOf(bondDenom)
 	for key := range nextRepresentativesRewards {
 		representativeAddr, _ := sdk.ValAddressFromBech32(key)
-		representativeReward := distrKeeper.GetValidatorOutstandingRewards(s.consumerCtx(), representativeAddr).Rewards.AmountOf(bondDenom)
-		nextRepresentativesRewards[key] = representativeReward
+		representativeReward, err := distrKeeper.GetValidatorOutstandingRewards(s.consumerCtx(), representativeAddr)
+		s.Require().NoError(err)
+		nextRepresentativesRewards[key] = representativeReward.Rewards.AmountOf(bondDenom)
 	}
 
 	distrModuleDifference := nextDistrModuleAccountBalance.Sub(currentDistrModuleAccountBalance)
@@ -126,8 +138,9 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	// confirm that the total amount given to the community pool plus all representatives is equal to the total amount taken out of distribution
 	s.Require().Equal(distrModuleDifference, consumerRedistributeDifference)
 	// confirm that the percentage given to the community pool is equal to the configured community tax percentage.
-	s.Require().Equal(communityPoolDifference.Quo(consumerRedistributeDifference),
-		distrKeeper.GetCommunityTax(s.consumerCtx()))
+	tax, err := distrKeeper.GetCommunityTax(s.consumerCtx())
+	s.Require().NoError(err)
+	s.Require().Equal(communityPoolDifference.Quo(consumerRedistributeDifference), tax)
 	// check that the fraction actually kept by the consumer is the correct fraction. using InEpsilon because the math code uses truncations
 	s.Require().InEpsilon(distrModuleDifference.Quo(
 		providerDifference.Add(distrModuleDifference)).MustFloat64(),
@@ -147,9 +160,12 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	}
 }
 
+// @MSalopek -> this is broken for v50
 func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	govKeeper := s.consumerApp.GetTestGovKeeper()
-	params := govKeeper.GetParams(s.consumerCtx())
+	params, err := govKeeper.Params.Get(s.consumerCtx())
+	s.Require().NoError(err)
+
 	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
 	bankKeeper := s.consumerApp.GetTestBankKeeper()
 	accountKeeper := s.consumerApp.GetTestAccountKeeper()
@@ -157,18 +173,20 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	newAuthParamValue := uint64(128)
 	newMintParamValue := math.LegacyNewDecWithPrec(1, 1) // "0.100000000000000000"
 	votingAccounts := s.consumerChain.SenderAccounts
-	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
+	bondDenom, err := stakingKeeper.BondDenom(s.consumerCtx())
+	s.Require().NoError(err)
 	depositAmount := params.MinDeposit
 	duration := (3 * time.Second)
 	params.VotingPeriod = &duration
-	err := govKeeper.SetParams(s.consumerCtx(), params)
+	err = govKeeper.Params.Set(s.consumerCtx(), params)
 	s.Assert().NoError(err)
 	proposer := s.consumerChain.SenderAccount
 	s.consumerChain.NextBlock()
 	votersOldBalances := getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts)
 
 	// submit proposal with forbidden and allowed changes
-	mintParams := mintKeeper.GetParams(s.consumerCtx())
+	mintParams, err := mintKeeper.Params.Get(s.consumerCtx())
+	s.Require().NoError(err)
 	mintParams.InflationMax = newMintParamValue
 	msg_1 := &minttypes.MsgUpdateParams{
 		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
@@ -188,11 +206,15 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.consumerChain.NextBlock()
 	// at this moment, proposal is added, but not yet executed. we are saving old param values for comparison
 	oldAuthParamValue := accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
-	oldMintParamValue := mintKeeper.GetParams(s.consumerCtx()).InflationMax
+	oldMintParams, err := mintKeeper.Params.Get(s.consumerCtx())
+	s.Require().NoError(err)
+	oldMintParamValue := oldMintParams.InflationMax
 	s.consumerChain.NextBlock()
 	// at this moment, proposal is executed or deleted if forbidden
 	currentAuthParamValue := accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
-	currentMintParamValue := mintKeeper.GetParams(s.consumerCtx()).InflationMax
+	currentMintParam, err := mintKeeper.Params.Get(s.consumerCtx())
+	s.Require().NoError(err)
+	currentMintParamValue := currentMintParam.InflationMax
 	// check that parameters are not changed, since the proposal contained both forbidden and allowed changes
 	s.Assert().Equal(oldAuthParamValue, currentAuthParamValue)
 	s.Assert().NotEqual(newAuthParamValue, currentAuthParamValue)
@@ -206,9 +228,14 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().NoError(err)
 	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*params.VotingPeriod)
 	s.consumerChain.NextBlock()
-	oldMintParamValue = mintKeeper.GetParams(s.consumerCtx()).InflationMax
+	oldMintParam, err := mintKeeper.Params.Get(s.consumerCtx())
+	s.Require().NoError(err)
+	oldMintParamValue = oldMintParam.InflationMax
 	s.consumerChain.NextBlock()
-	currentMintParamValue = mintKeeper.GetParams(s.consumerCtx()).InflationMax
+	currentMintParam, err = mintKeeper.Params.Get(s.consumerCtx())
+	s.Require().NoError(err)
+
+	currentMintParamValue = currentMintParam.InflationMax
 	// check that parameters are changed, since the proposal contained only allowed changes
 	s.Assert().Equal(newMintParamValue, currentMintParamValue)
 	s.Assert().NotEqual(oldMintParamValue, currentMintParamValue)
@@ -231,10 +258,10 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
-func submitProposalWithDepositAndVote(govKeeper testutil.TestGovKeeper, ctx sdk.Context, msgs []sdk.Msg,
+func submitProposalWithDepositAndVote(govKeeper govkeeper.Keeper, ctx sdk.Context, msgs []sdk.Msg,
 	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
 ) error {
-	proposal, err := govKeeper.SubmitProposal(ctx, msgs, "", "title", "summary", proposer)
+	proposal, err := govKeeper.SubmitProposal(ctx, msgs, "", "title", "summary", proposer, false)
 	if err != nil {
 		return err
 	}

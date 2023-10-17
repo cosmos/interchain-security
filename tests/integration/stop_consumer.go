@@ -23,8 +23,8 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
 	s.Require().NoError(err)
 
-	validator, found := providerStakingKeeper.GetValidator(s.providerCtx(), valAddr)
-	s.Require().True(found)
+	validator, err := providerStakingKeeper.GetValidator(s.providerCtx(), valAddr)
+	s.Require().NoError(err)
 
 	// get delegator address
 	delAddr := s.providerChain.SenderAccount.GetAddress()
@@ -64,7 +64,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 			func(suite *CCVTestSuite) error {
 				for i := 0; i < ubdOpsNum; i++ {
 					// undelegate one quarter of the shares
-					_, err := providerStakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, testShares.QuoInt64(int64(ubdOpsNum)))
+					_, _, err := providerStakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, testShares.QuoInt64(int64(ubdOpsNum)))
 					if err != nil {
 						return err
 					}

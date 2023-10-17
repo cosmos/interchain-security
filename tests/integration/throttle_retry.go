@@ -33,7 +33,8 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
 	// Assert that we start out with no jailings
 	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
-	vals := providerStakingKeeper.GetAllValidators(s.providerCtx())
+	vals, err := providerStakingKeeper.GetAllValidators(s.providerCtx())
+	s.Require().NoError(err)
 	for _, val := range vals {
 		s.Require().False(val.IsJailed())
 	}
@@ -82,14 +83,16 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	s.providerChain.NextBlock()
 
 	// Default slash meter replenish fraction is 0.05, so packet should be handled on provider.
-	vals = s.providerApp.GetTestStakingKeeper().GetAllValidators(s.providerCtx())
+	vals, err = s.providerApp.GetTestStakingKeeper().GetAllValidators(s.providerCtx())
+	s.Require().NoError(err)
 	s.Require().True(vals[1].IsJailed())
 
 	val1Operator, err := sdk.ValAddressFromHex(vals[1].GetOperator())
 	s.Require().NoError(err)
 
-	s.Require().Equal(int64(0),
-		s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), val1Operator))
+	power1, err := s.providerApp.GetTestStakingKeeper().GetLastValidatorPower(s.providerCtx(), val1Operator)
+	s.Require().NoError(err)
+	s.Require().Equal(int64(0), power1)
 	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(s.providerCtx(),
 		s.getFirstBundle().Chain.ChainID))
 
@@ -144,8 +147,9 @@ func (s *CCVTestSuite) TestSlashRetries() {
 	val2Operator, err := sdk.ValAddressFromHex(vals[2].GetOperator())
 	s.Require().NoError(err)
 
-	s.Require().Equal(int64(1000),
-		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val2Operator))
+	power2, err := providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), val2Operator)
+	s.Require().NoError(err)
+	s.Require().Equal(int64(1000), power2)
 	s.Require().Equal(uint64(1), providerKeeper.GetThrottledPacketDataSize(s.providerCtx(),
 		s.getFirstBundle().Chain.ChainID))
 

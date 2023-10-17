@@ -757,9 +757,9 @@ func (app *App) GetTestSlashingKeeper() testutil.TestSlashingKeeper {
 	return app.SlashingKeeper
 }
 
-// func (app *App) GetTestEvidenceKeeper() testutil.TestEvidenceKeeper {
-// 	return app.EvidenceKeeper
-// }
+func (app *App) GetTestEvidenceKeeper() evidencekeeper.Keeper {
+	return app.EvidenceKeeper
+}
 
 func (app *App) GetTestStakingKeeper() testutil.TestStakingKeeper {
 	return app.StakingKeeper
@@ -769,13 +769,13 @@ func (app *App) GetTestDistributionKeeper() testutil.TestDistributionKeeper {
 	return app.DistrKeeper
 }
 
-// func (app *App) GetTestMintKeeper() testutil.TestMintKeeper {
-// 	return app.MintKeeper
-// }
+func (app *App) GetTestMintKeeper() mintkeeper.Keeper {
+	return app.MintKeeper
+}
 
-// func (app *App) GetTestGovKeeper() testutil.TestGovKeeper {
-// 	return app.GovKeeper
-// }
+func (app *App) GetTestGovKeeper() govkeeper.Keeper {
+	return app.GovKeeper
+}
 
 // TestingApp functions
 

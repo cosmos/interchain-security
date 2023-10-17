@@ -334,7 +334,8 @@ func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestinguti
 		"unexpected unbonding period in consumer client state",
 	)
 
-	providerUnbondingPeriod := providerStakingKeeper.UnbondingTime(s.providerCtx())
+	providerUnbondingPeriod, err := providerStakingKeeper.UnbondingTime(s.providerCtx())
+	s.Require().NoError(err)
 	cs, ok = consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientState(
 		consumerBundle.GetCtx(), consumerBundle.Path.EndpointA.ClientID)
 	s.Require().True(ok)

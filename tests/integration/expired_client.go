@@ -285,10 +285,11 @@ func upgradeExpiredClient(s *CCVTestSuite, clientTo ChainType) {
 	tmClientState.AllowUpdateAfterExpiry = true
 	hostChain.App.GetIBCKeeper().ClientKeeper.SetClientState(hostChain.GetContext(), substitute, tmClientState)
 
-	content := clienttypes.NewClientUpdateProposal(ibctesting.Title, ibctesting.Description, subject, substitute)
-
-	updateProp, ok := content.(*clienttypes.ClientUpdateProposal)
-	s.Require().True(ok)
-	err = hostChain.App.GetIBCKeeper().ClientKeeper.ClientUpdateProposal(hostChain.GetContext(), updateProp)
+	recoverMsg := clienttypes.NewMsgRecoverClient(hostChain.App.GetIBCKeeper().GetAuthority(), subject, substitute)
+	err = recoverMsg.ValidateBasic()
 	s.Require().NoError(err)
+
+	res, err := hostChain.App.GetIBCKeeper().RecoverClient(hostChain.GetContext(), recoverMsg)
+	s.Require().NoError(err)
+	s.Require().NotNil(res)
 }
