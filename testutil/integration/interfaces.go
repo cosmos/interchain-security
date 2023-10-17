@@ -124,6 +124,7 @@ type TestAccountKeeper interface {
 
 type TestSlashingKeeper interface {
 	ccvtypes.SlashingKeeper
+	IterateMissedBlockBitmap(ctx context.Context, addr sdk.ConsAddress, cb func(index int64, missed bool) (stop bool)) error
 	SetValidatorSigningInfo(ctx context.Context, address sdk.ConsAddress, info slashingtypes.ValidatorSigningInfo) error
 	SignedBlocksWindow(ctx context.Context) (int64, error)
 	HandleValidatorSignature(ctx context.Context, addr cryptotypes.Address, power int64, signed comet.BlockIDFlag) error

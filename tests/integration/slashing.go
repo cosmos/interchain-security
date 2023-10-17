@@ -7,6 +7,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
+	"cosmossdk.io/core/comet"
 	"cosmossdk.io/math"
 	evidencetypes "cosmossdk.io/x/evidence/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -56,8 +57,8 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	)
 	s.Require().True(found)
 
-	stakingVal, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
-	s.Require().True(found)
+	stakingVal, err := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
+	s.Require().NoError(err)
 	valOldBalance := stakingVal.Tokens
 
 	// Setup first val with mapped consensus addresss to be jailed on provider by setting signing info
@@ -133,16 +134,16 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	}
 
 	// Get staking keeper's validator obj after the relayed slash packet
-	stakingValAfter, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
-	s.Require().True(ok)
+	stakingValAfter, err := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
+	s.Require().NoError(err)
 
 	// check that the validator's tokens were NOT slashed on provider
 	valNewBalance := stakingValAfter.GetTokens()
 	s.Require().Equal(valOldBalance, valNewBalance)
 
 	// Get signing info for the validator
-	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
-	s.Require().True(found)
+	valSignInfo, err := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
+	s.Require().NoError(err)
 
 	// check that the validator is successfully jailed on provider
 	s.Require().True(stakingValAfter.Jailed)
@@ -189,8 +190,8 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 		consumerConsAddr)
 	s.Require().True(found)
 
-	stakingVal, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
-	s.Require().True(found)
+	stakingVal, err := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
+	s.Require().NoError(err)
 	valOldBalance := stakingVal.Tokens
 
 	// Setup first val with mapped consensus addresss to be jailed on provider by setting signing info
@@ -218,16 +219,16 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain)
 
 	// Get staking keeper's validator obj after the relayed slash packet
-	stakingValAfter, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
-	s.Require().True(ok)
+	stakingValAfter, err := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
+	s.Require().NoError(err)
 
 	// check that the validator's tokens were NOT slashed on provider
 	valNewBalance := stakingValAfter.GetTokens()
 	s.Require().Equal(valOldBalance, valNewBalance)
 
 	// Get signing info for the validator
-	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
-	s.Require().True(found)
+	valSignInfo, err := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
+	s.Require().NoError(err)
 
 	// check that the validator's unjailing time is NOT updated on provider
 	s.Require().Zero(valSignInfo.JailedUntil)
@@ -296,8 +297,8 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 	consAddr := sdk.ConsAddress(tmVal.Address)
 
 	// check that validator bonded status
-	validator, found := providerStakingKeeper.GetValidatorByConsAddr(suite.providerCtx(), consAddr)
-	suite.Require().True(found)
+	validator, err := providerStakingKeeper.GetValidatorByConsAddr(suite.providerCtx(), consAddr)
+	suite.Require().NoError(err)
 	suite.Require().Equal(stakingtypes.Bonded, validator.GetStatus())
 
 	// set init VSC id for chain0
@@ -322,7 +323,8 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 	suite.Require().True(providerStakingKeeper.IsValidatorJailed(suite.providerCtx(), consAddr))
 
 	signingInfo, _ := providerSlashingKeeper.GetValidatorSigningInfo(suite.providerCtx(), consAddr)
-	jailDuration := providerSlashingKeeper.DowntimeJailDuration(suite.providerCtx())
+	jailDuration, err := providerSlashingKeeper.DowntimeJailDuration(suite.providerCtx())
+	suite.Require().NoError(err)
 	suite.Require().Equal(suite.providerCtx().BlockTime().Add(jailDuration), signingInfo.JailedUntil)
 }
 
@@ -470,13 +472,17 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 
 	// Sign 100 blocks
 	valPower := int64(1)
-	height, signedBlocksWindow := int64(0), consumerSlashingKeeper.SignedBlocksWindow(ctx)
+	height := int64(0)
+	signedBlocksWindow, err := consumerSlashingKeeper.SignedBlocksWindow(ctx)
+	suite.Require().NoError(err)
 	for ; height < signedBlocksWindow; height++ {
 		ctx = ctx.WithBlockHeight(height)
-		consumerSlashingKeeper.HandleValidatorSignature(ctx, vals[0].Address, valPower, true)
+		consumerSlashingKeeper.HandleValidatorSignature(ctx, vals[0].Address, valPower, comet.BlockIDFlagCommit)
 	}
 
-	missedBlockThreshold := (2 * signedBlocksWindow) - consumerSlashingKeeper.MinSignedPerWindow(ctx)
+	minSigned, err := consumerSlashingKeeper.MinSignedPerWindow(ctx)
+	suite.Require().NoError(err)
+	missedBlockThreshold := (2 * signedBlocksWindow) - minSigned
 	ctx = suite.consumerCtx()
 
 	// construct slash packet to be sent and get its commit
@@ -491,7 +497,7 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 	// Miss 50 blocks and expect a slash packet to be sent
 	for ; height <= missedBlockThreshold; height++ {
 		ctx = ctx.WithBlockHeight(height)
-		consumerSlashingKeeper.HandleValidatorSignature(ctx, vals[0].Address, valPower, false)
+		consumerSlashingKeeper.HandleValidatorSignature(ctx, vals[0].Address, valPower, comet.BlockIDFlagAbsent)
 	}
 
 	ctx = suite.consumerCtx()
@@ -499,11 +505,13 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 	// check validator signing info
 	res, _ := consumerSlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
 	// expect increased jail time
-	suite.Require().True(res.JailedUntil.Equal(ctx.BlockTime().Add(consumerSlashingKeeper.DowntimeJailDuration(ctx))), "did not update validator jailed until signing info")
+	jailDuration, err := consumerSlashingKeeper.DowntimeJailDuration(ctx)
+	suite.Require().NoError(err)
+	suite.Require().True(res.JailedUntil.Equal(ctx.BlockTime().Add(jailDuration)), "did not update validator jailed until signing info")
 	// expect missed block counters reseted
 	suite.Require().Zero(res.MissedBlocksCounter, "did not reset validator missed block counter")
 	suite.Require().Zero(res.IndexOffset)
-	consumerSlashingKeeper.IterateValidatorMissedBlockBitArray(ctx, consAddr, func(_ int64, missed bool) bool {
+	consumerSlashingKeeper.IterateMissedBlockBitmap(ctx, consAddr, func(_ int64, missed bool) bool {
 		suite.Require().True(missed)
 		return false
 	})
@@ -534,17 +542,18 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 	// verify that the slash packet was sent
 	suite.Require().True(consumerKeeper.OutstandingDowntime(ctx, consAddr))
 
+	// @MSalopek -> not sure how to handle this
 	// check that the outstanding slashing flag prevents the jailed validator to keep missing block
 	for ; height < missedBlockThreshold+signedBlocksWindow; height++ {
 		ctx = ctx.WithBlockHeight(height)
-		consumerSlashingKeeper.HandleValidatorSignature(ctx, vals[0].Address, valPower, false)
+		consumerSlashingKeeper.HandleValidatorSignature(ctx, vals[0].Address, valPower, comet.BlockIDFlagAbsent)
 	}
 
 	res, _ = consumerSlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
 
 	suite.Require().Zero(res.MissedBlocksCounter, "did not reset validator missed block counter")
 	suite.Require().Zero(res.IndexOffset)
-	consumerSlashingKeeper.IterateValidatorMissedBlockBitArray(ctx, consAddr, func(_ int64, missed bool) bool {
+	consumerSlashingKeeper.IterateMissedBlockBitmap(ctx, consAddr, func(_ int64, missed bool) bool {
 		suite.Require().True(missed, "did not reset validator missed block bit array")
 		return false
 	})
