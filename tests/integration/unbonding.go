@@ -82,7 +82,8 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 		s.SetupCCVChannel(s.path)
 
 		// set VSC timeout period to not trigger the removal of the consumer chain
-		providerUnbondingPeriod := stakingKeeper.UnbondingTime(s.providerCtx())
+		providerUnbondingPeriod, err := stakingKeeper.UnbondingTime(s.providerCtx())
+		s.Require().NoError(err)
 		consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(s.consumerCtx())
 		providerKeeper.SetVscTimeoutPeriod(s.providerCtx(), providerUnbondingPeriod+consumerUnbondingPeriod+24*time.Hour)
 
@@ -225,7 +226,8 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 		checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true, "test: "+tc.name)
 
 		// get provider unbonding period
-		providerUnbondingPeriod := stakingKeeper.UnbondingTime(s.providerCtx())
+		providerUnbondingPeriod, err := stakingKeeper.UnbondingTime(s.providerCtx())
+		s.Require().NoError(err)
 		// update init timeout timestamp
 		tc.updateInitTimeoutTimestamp(&providerKeeper, providerUnbondingPeriod)
 
@@ -321,7 +323,8 @@ func (s *CCVTestSuite) TestUnbondingNoConsumer() {
 	// increment time so that the unbonding period ends on the provider;
 	// cannot use incrementTimeByUnbondingPeriod() since it tries
 	// to also update the provider's client on the consumer
-	providerUnbondingPeriod := providerStakingKeeper.UnbondingTime(s.providerCtx())
+	providerUnbondingPeriod, err := providerStakingKeeper.UnbondingTime(s.providerCtx())
+	s.Require().NoError(err)
 	s.coordinator.IncrementTimeBy(providerUnbondingPeriod + time.Hour)
 
 	// call NextBlock on the provider (which increments the height)
@@ -360,12 +363,13 @@ func (s *CCVTestSuite) TestRedelegationNoConsumer() {
 
 	// 1 redelegation record should exist for original delegator
 	redelegations := checkRedelegations(s, delAddr, 1)
-
+	unbondingTime, err := stakingKeeper.UnbondingTime(s.providerCtx())
+	s.Require().NoError(err)
 	// Check that the only entry has appropriate maturation time, the unbonding period from now
 	checkRedelegationEntryCompletionTime(
 		s,
 		redelegations[0].Entries[0],
-		s.providerCtx().BlockTime().Add(stakingKeeper.UnbondingTime(s.providerCtx())),
+		s.providerCtx().BlockTime().Add(unbondingTime),
 	)
 
 	// required before call to incrementTimeByUnbondingPeriod or else a panic
@@ -393,7 +397,8 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 	stakingKeeper := s.providerApp.GetTestStakingKeeper()
 
 	// set VSC timeout period to not trigger the removal of the consumer chain
-	providerUnbondingPeriod := stakingKeeper.UnbondingTime(s.providerCtx())
+	providerUnbondingPeriod, err := stakingKeeper.UnbondingTime(s.providerCtx())
+	s.Require().NoError(err)
 	consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(s.consumerCtx())
 	providerKeeper.SetVscTimeoutPeriod(s.providerCtx(), providerUnbondingPeriod+consumerUnbondingPeriod+24*time.Hour)
 
@@ -414,11 +419,13 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 	// 1 redelegation record should exist for original delegator
 	redelegations := checkRedelegations(s, delAddr, 1)
 
+	unbondingTime, err := stakingKeeper.UnbondingTime(s.providerCtx())
+	s.Require().NoError(err)
 	// Check that the only entry has appropriate maturation time, the unbonding period from now
 	checkRedelegationEntryCompletionTime(
 		s,
 		redelegations[0].Entries[0],
-		s.providerCtx().BlockTime().Add(stakingKeeper.UnbondingTime(s.providerCtx())),
+		s.providerCtx().BlockTime().Add(unbondingTime),
 	)
 
 	// Save the current valset update ID
