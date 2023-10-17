@@ -10,7 +10,7 @@ import (
 
 	"cosmossdk.io/core/comet"
 
-	evidencetypes "cosmossdk.io/x/evidence/types"
+	evidencekeeper "cosmossdk.io/x/evidence/keeper"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -69,7 +69,7 @@ type ConsumerApp interface {
 	// Tests a slashing keeper interface with more capabilities than the expected_keepers interface
 	GetTestSlashingKeeper() TestSlashingKeeper
 	// Tests an evidence keeper interface with more capabilities than the expected_keepers interface
-	GetTestEvidenceKeeper() TestEvidenceKeeper
+	GetTestEvidenceKeeper() evidencekeeper.Keeper
 }
 
 type DemocConsumerApp interface {
@@ -135,7 +135,7 @@ type TestSlashingKeeper interface {
 }
 
 type TestEvidenceKeeper interface {
-	HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
+	// HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
 }
 
 type TestDistributionKeeper interface {

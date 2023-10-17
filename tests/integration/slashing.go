@@ -559,6 +559,8 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 	})
 }
 
+// @MSalopek -> this test might be broken for v50 -> HandleEquivocationEvidence is deprecated so we must submit evidence using a Msg
+// HandleEquivocationEvidence is deprecated so we must submit evidence using a Msg
 // TestValidatorDoubleSigning tests if a slash packet is sent
 // when a double-signing evidence is handled by the evidence module
 func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
@@ -608,7 +610,13 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	expCommit := suite.commitSlashPacket(ctx, *packetData)
 
 	// expect to send slash packet when handling double-sign evidence
-	suite.consumerApp.GetTestEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
+	// NOTE: using IBCKeeper Authority as msg submitter (equal to gov module addr)
+	addr, err := sdk.AccAddressFromBech32(suite.consumerApp.GetIBCKeeper().GetAuthority())
+	suite.Require().NoError(err)
+	evidenceMsg, err := evidencetypes.NewMsgSubmitEvidence(addr, e)
+	suite.Require().NoError(err)
+	suite.Require().NotEmpty(evidenceMsg)
+	suite.consumerApp.GetTestEvidenceKeeper().SubmitEvidence(ctx, e)
 
 	// check slash packet is queued
 	pendingPackets := suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)
