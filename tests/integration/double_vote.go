@@ -1,6 +1,8 @@
 package integration
 
 import (
+	"fmt"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	testutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
@@ -294,6 +296,9 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegations() {
 		_, shares, _ = delegateByIdx(s, delAddr, sdk.NewInt(50000000), idx)
 		_ = undelegate(s, delAddr, valAddr, shares)
 
+		ubds, _ := s.providerApp.GetTestStakingKeeper().GetUnbondingDelegation(s.providerCtx(), delAddr, validator.GetOperator())
+		fmt.Println(ubds.String())
+
 		err = s.providerApp.GetProviderKeeper().HandleConsumerDoubleVoting(
 			s.providerCtx(),
 			evidence,
@@ -305,7 +310,9 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegations() {
 		slashFraction := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(s.providerCtx())
 
 		// check undelegations are slashed
-		ubds, _ := s.providerApp.GetTestStakingKeeper().GetUnbondingDelegation(s.providerCtx(), delAddr, validator.GetOperator())
+		ubds, _ = s.providerApp.GetTestStakingKeeper().GetUnbondingDelegation(s.providerCtx(), delAddr, validator.GetOperator())
+		fmt.Println(ubds.String())
+
 		s.Require().True(len(ubds.Entries) > 0)
 		for _, unb := range ubds.Entries {
 			initialBalance := unb.InitialBalance.ToDec()

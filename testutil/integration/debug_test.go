@@ -280,3 +280,7 @@ func TestCheckMisbehaviour(t *testing.T) {
 func TestHandleConsumerDoubleVoting(t *testing.T) {
 	runCCVTestByName(t, "TestHandleConsumerDoubleVoting")
 }
+
+func TestHandleConsumerDoubleVotingSlashesUndelegations(t *testing.T) {
+	runCCVTestByName(t, "TestHandleConsumerDoubleVotingSlashesUndelegations")
+}
