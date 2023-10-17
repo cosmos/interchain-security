@@ -9,6 +9,7 @@
         -webkit-font-feature-settings: 'kern', 'liga', 'calt', 'zero' 0;
         text-size-adjust: 100%;
         -moz-osx-font-smoothing: grayscale;
+        font-smoothing: antialiased;
         font-variant-ligatures: contextual common-ligatures;
         font-kerning: normal;
         text-rendering: optimizeLegibility;
@@ -17,8 +18,8 @@
             @apply font-intervar
         }
     }
-    
-    *, 
+
+    *,
     *::before,
     *::after {
         box-sizing: border-box;
@@ -26,6 +27,9 @@
     }
 
     svg { display: inline; }
-    
-    ::selection{}    
+
+    ::selection{
+      background-color: var(--ifm-color-primary);
+      color: white;
+    }
 }
