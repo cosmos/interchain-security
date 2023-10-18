@@ -373,7 +373,7 @@ func checkRedelegationEntryCompletionTime(
 func getStakingUnbondingDelegationEntry(ctx sdk.Context, k testutil.TestStakingKeeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
 	stakingUbd, err := k.GetUnbondingDelegationByUnbondingID(ctx, id)
 	if err != nil {
-		panic(fmt.Sprintf("could not get unbonding delegation", err))
+		panic(fmt.Sprintf("could not get unbonding delegation: %v", err))
 	}
 
 	found = false
