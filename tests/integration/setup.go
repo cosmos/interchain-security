@@ -6,6 +6,7 @@ import (
 	"sync"
 	"testing"
 
+	storetypes "cosmossdk.io/store/types"
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
@@ -24,6 +25,8 @@ import (
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
+
+var _ storetypes.ABCIListener = (*packetSniffer)(nil)
 
 // Callback for instantiating a new coordinator with a provider test chains
 // and provider app before every test defined on the suite.
@@ -167,7 +170,9 @@ func (s *CCVTestSuite) registerPacketSniffer(chain *ibctesting.TestChain) {
 		s.packetSniffers = make(map[*ibctesting.TestChain]*packetSniffer)
 	}
 	p := newPacketSniffer()
-	chain.App.GetBaseApp().SetStreamingManager(p)
+	listeners := []storetypes.ABCIListener{p}
+	streamingManager := storetypes.StreamingManager{ABCIListeners: listeners, StopNodeOnErr: true}
+	chain.App.GetBaseApp().SetStreamingManager(streamingManager)
 	s.packetSniffers[chain] = p
 }
 
@@ -375,13 +380,10 @@ func preProposalKeyAssignment(s *CCVTestSuite, chainID string) {
 }
 
 // packetSniffer implements the StreamingService interface.
-// Implements ListenEndBlock to record packets from events.
+// Implements ListenFinalizeBlock to record packets from events.
 type packetSniffer struct {
 	packets map[string]channeltypes.Packet
 }
-
-// TODO: @MSalopek this was deprecated, figure out how to use it or ask @tbruyelle
-// var _ baseapp.StreamingService = &packetSniffer{}
 
 func newPacketSniffer() *packetSniffer {
 	return &packetSniffer{
