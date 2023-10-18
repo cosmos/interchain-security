@@ -145,7 +145,7 @@ func TestIsValidatorJailed(t *testing.T) {
 	// At this point, the state of the consumer keeper is s.t. IsValidatorJailed() queries the standalone staking keeper
 
 	// Now mock that a validator is jailed from the standalone staking keeper
-	mocks.MockStakingKeeper.EXPECT().IsValidatorJailed(ctx, consAddr).Return(true).Times(1)
+	mocks.MockStakingKeeper.EXPECT().IsValidatorJailed(ctx, consAddr).Return(true, nil).Times(1)
 
 	// Confirm IsValidatorJailed returns true
 	isJailed3, err := consumerKeeper.IsValidatorJailed(ctx, consAddr)
