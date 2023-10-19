@@ -168,6 +168,7 @@ require (
 )
 
 require (
+	github.com/informalsystems/itf-go v0.0.1
 	github.com/spf13/viper v1.16.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230711160842-782d3b101e98
 )
@@ -179,7 +180,6 @@ require (
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/getsentry/sentry-go v0.23.0 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
-	github.com/informalsystems/itf-go v0.0.1 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
