@@ -15,6 +15,16 @@ module ccv_model {
 
     import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains).* from "./ccv"
 
+    type Parameters = {
+        VscTimeout: Time,
+        CcvTimeout: Chain -> Time,
+        UnbondingPeriodPerChain: Chain -> Time,
+        ConsumerChains: Set[Chain],
+        Nodes: Set[Node],
+        InitialValidatorSet: Node -> int,
+    }
+
+    var params: Parameters
 
     var currentState: ProtocolState
 
@@ -126,6 +136,14 @@ module ccv_model {
             consumerStates: consumerStates
         },
         trace' = List(emptyAction.with("kind", "init")),
+        params' = {
+            VscTimeout: VscTimeout,
+            CcvTimeout: CcvTimeout,
+            UnbondingPeriodPerChain: UnbondingPeriodPerChain,
+            ConsumerChains: ConsumerChains,
+            Nodes: nodes,
+            InitialValidatorSet: InitialValidatorSet,
+        }
     }
 
     action VotingPowerChange(validator: Node, newVotingPower: int): bool = 
@@ -133,7 +151,8 @@ module ccv_model {
         all {
             result.hasError() == false,
             currentState' = result.newState,
-            trace' = trace.append(emptyAction.with("kind", "VotingPowerChange").with("validator", validator).with("newVotingPower", newVotingPower))
+            trace' = trace.append(emptyAction.with("kind", "VotingPowerChange").with("validator", validator).with("newVotingPower", newVotingPower)),
+            params' = params,
         }
 
     // The receiver receives the next outstanding VscPacket from the provider.
@@ -144,7 +163,8 @@ module ccv_model {
         all {
             result.hasError() == false,
             currentState' = result.newState,
-            trace' = trace.append(emptyAction.with("kind", "DeliverVscPacket").with("consumerChain", receiver))
+            trace' = trace.append(emptyAction.with("kind", "DeliverVscPacket").with("consumerChain", receiver)),
+            params' = params,
         }
 
     // The provider receives the next outstanding VscMaturedPacket from the sender.
@@ -155,7 +175,8 @@ module ccv_model {
         all {
             result.hasError() == false,
             currentState' = result.newState,
-            trace' = trace.append(emptyAction.with("kind", "DeliverVscMaturedPacket").with("consumerChain", sender))
+            trace' = trace.append(emptyAction.with("kind", "DeliverVscMaturedPacket").with("consumerChain", sender)),
+            params' = params,
         }
 
     action EndAndBeginBlockForProvider(
@@ -166,7 +187,8 @@ module ccv_model {
         all {
             result.hasError() == false,
             currentState' = result.newState,
-            trace' = trace.append(emptyAction.with("kind", "EndAndBeginBlockForProvider").with("timeAdvancement", timeAdvancement).with("consumersToStart", consumersToStart).with("consumersToStop", consumersToStop))
+            trace' = trace.append(emptyAction.with("kind", "EndAndBeginBlockForProvider").with("timeAdvancement", timeAdvancement).with("consumersToStart", consumersToStart).with("consumersToStop", consumersToStop)),
+            params' = params,
         }
 
     action EndAndBeginBlockForConsumer(
@@ -176,7 +198,8 @@ module ccv_model {
         all {
             result.hasError() == false,
             currentState' = result.newState,
-            trace' = trace.append(emptyAction.with("kind", "EndAndBeginBlockForConsumer").with("consumerChain", chain).with("timeAdvancement", timeAdvancement))
+            trace' = trace.append(emptyAction.with("kind", "EndAndBeginBlockForConsumer").with("consumerChain", chain).with("timeAdvancement", timeAdvancement)),
+            params' = params,
         }
 
     // ==================

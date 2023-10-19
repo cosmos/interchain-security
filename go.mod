@@ -1,6 +1,8 @@
 module github.com/cosmos/interchain-security/v3
 
-go 1.20
+go 1.21.1
+
+toolchain go1.21.3
 
 require (
 	cosmossdk.io/errors v1.0.0
@@ -177,6 +179,7 @@ require (
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/getsentry/sentry-go v0.23.0 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
+	github.com/informalsystems/itf-go v0.0.1 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
