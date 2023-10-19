@@ -23,6 +23,8 @@ func NewProviderProposalHandler(k keeper.Keeper) govv1beta1.Handler {
 			return k.HandleConsumerRemovalProposal(ctx, c)
 		case *types.EquivocationProposal:
 			return k.HandleEquivocationProposal(ctx, c)
+		case *types.ChangeRewardDenomsProposal:
+			return k.HandleConsumerRewardDenomProposal(ctx, c)
 		default:
 			return errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized ccv proposal content type: %T", c)
 		}

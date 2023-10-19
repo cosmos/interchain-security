@@ -10,6 +10,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/cosmos/ibc-go/v7/testing/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -33,8 +34,8 @@ import (
 
 	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
-	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
 	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
@@ -216,7 +217,7 @@ func (b *Builder) getAppBytesAndSenders(
 
 	if genesis[consumertypes.ModuleName] != nil {
 		app.AppCodec().MustUnmarshalJSON(genesis[consumertypes.ModuleName], &genesisConsumer)
-		genesisConsumer.InitialValSet = initValPowers
+		genesisConsumer.Provider.InitialValSet = initValPowers
 		genesisConsumer.Params.Enabled = true
 		genesis[consumertypes.ModuleName] = app.AppCodec().MustMarshalJSON(&genesisConsumer)
 	}
@@ -252,7 +253,7 @@ func (b *Builder) getAppBytesAndSenders(
 
 func (b *Builder) newChain(
 	coord *ibctesting.Coordinator,
-	appInit ibctesting.AppIniter,
+	appInit icstestingutils.AppIniter,
 	chainID string,
 	validators *tmtypes.ValidatorSet,
 	signers map[string]tmtypes.PrivValidator,
@@ -349,7 +350,8 @@ func (b *Builder) createProviderAndConsumer() {
 	// Create provider
 	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, icstestingutils.ProviderAppIniter, ibctesting.GetChainID(0), validators, signers)
 	// Create consumer, using the same validators.
-	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, icstestingutils.ConsumerAppIniter, ibctesting.GetChainID(1), validators, signers)
+	valUpdates := testutil.ToValidatorUpdates(b.suite.T(), validators)
+	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, icstestingutils.ConsumerAppIniter(valUpdates), ibctesting.GetChainID(1), validators, signers)
 
 	b.coordinator = coordinator
 	b.valAddresses = addresses
@@ -524,19 +526,20 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consume
 	providerConsState := b.provider().LastHeader.ConsensusState()
 
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.provider().Vals)
-	params := consumertypes.NewParams(
+	params := ccv.NewParams(
 		true,
 		1000, // ignore distribution
 		"",   // ignore distribution
 		"",   // ignore distribution
 		ccv.DefaultCCVTimeoutPeriod,
-		consumertypes.DefaultTransferTimeoutPeriod,
-		consumertypes.DefaultConsumerRedistributeFrac,
-		consumertypes.DefaultHistoricalEntries,
+		ccv.DefaultTransferTimeoutPeriod,
+		ccv.DefaultConsumerRedistributeFrac,
+		ccv.DefaultHistoricalEntries,
 		b.initState.UnbondingC,
 		"0", // disable soft opt-out
 		[]string{},
 		[]string{},
+		ccv.DefaultRetryDelayPeriod,
 	)
 	return consumertypes.NewInitialGenesisState(client, providerConsState, valUpdates, params)
 }

@@ -64,7 +64,7 @@ func NewKeeper(
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
-		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
+		paramSpace = paramSpace.WithKeyTable(ccv.ParamKeyTable())
 	}
 
 	k := Keeper{
@@ -310,7 +310,7 @@ func (k Keeper) DeletePreCCV(ctx sdk.Context) {
 func (k Keeper) SetInitialValSet(ctx sdk.Context, initialValSet []tmtypes.ValidatorUpdate) {
 	store := ctx.KVStore(k.storeKey)
 	initialValSetState := types.GenesisState{
-		InitialValSet: initialValSet,
+		Provider: ccv.ProviderInfo{InitialValSet: initialValSet},
 	}
 	bz := k.cdc.MustMarshal(&initialValSetState)
 	store.Set(types.InitialValSetKey(), bz)
@@ -322,7 +322,7 @@ func (k Keeper) GetInitialValSet(ctx sdk.Context) []tmtypes.ValidatorUpdate {
 	bz := store.Get(types.InitialValSetKey())
 	if bz != nil {
 		k.cdc.MustUnmarshal(bz, &initialValSet)
-		return initialValSet.InitialValSet
+		return initialValSet.Provider.InitialValSet
 	}
 	return []tmtypes.ValidatorUpdate{}
 }

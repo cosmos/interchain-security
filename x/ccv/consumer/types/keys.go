@@ -26,6 +26,7 @@ const (
 	ConsumerRedistributeName = "cons_redistribute"
 
 	// ConsumerToSendToProviderName is a "buffer" address for outgoing fees to be transferred to the provider chain
+	//#nosec G101 -- (false positive) this is not a hardcoded credential
 	ConsumerToSendToProviderName = "cons_to_send_to_provider"
 )
 

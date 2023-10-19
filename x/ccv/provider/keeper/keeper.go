@@ -251,7 +251,7 @@ func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.Channel
 	return channels
 }
 
-func (k Keeper) SetConsumerGenesis(ctx sdk.Context, chainID string, gen consumertypes.GenesisState) error {
+func (k Keeper) SetConsumerGenesis(ctx sdk.Context, chainID string, gen ccv.ConsumerGenesisState) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := gen.Marshal()
 	if err != nil {
@@ -262,14 +262,14 @@ func (k Keeper) SetConsumerGenesis(ctx sdk.Context, chainID string, gen consumer
 	return nil
 }
 
-func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (consumertypes.GenesisState, bool) {
+func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (ccv.ConsumerGenesisState, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerGenesisKey(chainID))
 	if bz == nil {
-		return consumertypes.GenesisState{}, false
+		return ccv.ConsumerGenesisState{}, false
 	}
 
-	var data consumertypes.GenesisState
+	var data ccv.ConsumerGenesisState
 	if err := data.Unmarshal(bz); err != nil {
 		// An error here would indicate something is very wrong,
 		// the ConsumerGenesis is assumed to be correctly serialized in SetConsumerGenesis.
@@ -299,7 +299,7 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 		return errorsmod.Wrapf(ccv.ErrClientNotFound, "cannot find client for consumer chain %s", tmClient.ChainId)
 	}
 	if ccvClientId != clientID {
-		return errorsmod.Wrapf(ccv.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
+		return errorsmod.Wrapf(types.ErrInvalidConsumerClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
 	}
 
 	// Verify that there isn't already a CCV channel for the consumer chain
@@ -575,7 +575,7 @@ func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64) {
 		return nil
 	}
 
-	var ops ccv.MaturedUnbondingOps
+	var ops types.MaturedUnbondingOps
 	if err := ops.Unmarshal(bz); err != nil {
 		// An error here would indicate something is very wrong,
 		// the MaturedUnbondingOps are assumed to be correctly serialized in AppendMaturedUnbondingOps.
@@ -590,7 +590,7 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) {
 		return
 	}
 	existingIds := k.GetMaturedUnbondingOps(ctx)
-	maturedOps := ccv.MaturedUnbondingOps{
+	maturedOps := types.MaturedUnbondingOps{
 		Ids: append(existingIds, ids...),
 	}
 
@@ -814,7 +814,7 @@ func (k Keeper) DeleteInitChainHeight(ctx sdk.Context, chainID string) {
 
 // GetPendingVSCPackets returns the list of pending ValidatorSetChange packets stored under chain ID
 func (k Keeper) GetPendingVSCPackets(ctx sdk.Context, chainID string) []ccv.ValidatorSetChangePacketData {
-	var packets ccv.ValidatorSetChangePackets
+	var packets types.ValidatorSetChangePackets
 
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingVSCsKey(chainID))
@@ -835,7 +835,7 @@ func (k Keeper) AppendPendingVSCPackets(ctx sdk.Context, chainID string, newPack
 	pds := append(k.GetPendingVSCPackets(ctx, chainID), newPackets...)
 
 	store := ctx.KVStore(k.storeKey)
-	packets := ccv.ValidatorSetChangePackets{List: pds}
+	packets := types.ValidatorSetChangePackets{List: pds}
 	buf, err := packets.Marshal()
 	if err != nil {
 		// An error here would indicate something is very wrong,

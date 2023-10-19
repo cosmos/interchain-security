@@ -10,41 +10,30 @@ import (
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
-// NewInitialGenesisState returns a consumer GenesisState for a completely new consumer chain.
-func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
-	initValSet []abci.ValidatorUpdate, params Params,
-) *GenesisState {
-	return &GenesisState{
-		Params:                 params,
-		NewChain:               true,
-		ProviderClientState:    cs,
-		ProviderConsensusState: consState,
-		InitialValSet:          initValSet,
-	}
-}
-
 // NewRestartGenesisState returns a consumer GenesisState that has already been established.
 func NewRestartGenesisState(
 	clientID, channelID string,
 	maturingPackets []MaturingVSCPacket,
 	initValSet []abci.ValidatorUpdate,
 	heightToValsetUpdateIDs []HeightToValsetUpdateID,
-	pendingConsumerPackets ccv.ConsumerPacketDataList,
+	pendingConsumerPackets ConsumerPacketDataList,
 	outstandingDowntimes []OutstandingDowntime,
 	lastTransBlockHeight LastTransmissionBlockHeight,
-	params Params,
+	params ccv.ConsumerParams,
 ) *GenesisState {
 	return &GenesisState{
-		Params:                      params,
-		ProviderClientId:            clientID,
-		ProviderChannelId:           channelID,
+		NewChain: false,
+		Params:   params,
+		Provider: ccv.ProviderInfo{
+			InitialValSet: initValSet,
+		},
 		MaturingPackets:             maturingPackets,
-		NewChain:                    false,
-		InitialValSet:               initValSet,
 		HeightToValsetUpdateId:      heightToValsetUpdateIDs,
 		PendingConsumerPackets:      pendingConsumerPackets,
 		OutstandingDowntimeSlashing: outstandingDowntimes,
 		LastTransmissionBlockHeight: lastTransBlockHeight,
+		ProviderClientId:            clientID,
+		ProviderChannelId:           channelID,
 	}
 }
 
@@ -52,7 +41,22 @@ func NewRestartGenesisState(
 // unless explicitly specified in genesis.
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
-		Params: DefaultParams(),
+		Params: ccv.DefaultParams(),
+	}
+}
+
+// NewInitialGenesisState returns a GenesisState for a completely new consumer chain.
+func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
+	initValSet []abci.ValidatorUpdate, params ccv.ConsumerParams,
+) *GenesisState {
+	return &GenesisState{
+		NewChain: true,
+		Params:   params,
+		Provider: ccv.ProviderInfo{
+			ClientState:    cs,
+			ConsensusState: consState,
+			InitialValSet:  initValSet,
+		},
 	}
 }
 
@@ -77,7 +81,7 @@ func (gs GenesisState) Validate() error {
 	if !gs.Params.Enabled {
 		return nil
 	}
-	if len(gs.InitialValSet) == 0 {
+	if len(gs.Provider.InitialValSet) == 0 {
 		return errorsmod.Wrap(ccv.ErrInvalidGenesis, "initial validator set is empty")
 	}
 	if err := gs.Params.Validate(); err != nil {
@@ -85,16 +89,16 @@ func (gs GenesisState) Validate() error {
 	}
 
 	if gs.NewChain {
-		if gs.ProviderClientState == nil {
+		if gs.Provider.ClientState == nil {
 			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "provider client state cannot be nil for new chain")
 		}
-		if err := gs.ProviderClientState.Validate(); err != nil {
+		if err := gs.Provider.ClientState.Validate(); err != nil {
 			return errorsmod.Wrapf(ccv.ErrInvalidGenesis, "provider client state invalid for new chain %s", err.Error())
 		}
-		if gs.ProviderConsensusState == nil {
+		if gs.Provider.ConsensusState == nil {
 			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "provider consensus state cannot be nil for new chain")
 		}
-		if err := gs.ProviderConsensusState.ValidateBasic(); err != nil {
+		if err := gs.Provider.ConsensusState.ValidateBasic(); err != nil {
 			return errorsmod.Wrapf(ccv.ErrInvalidGenesis, "provider consensus state invalid for new chain %s", err.Error())
 		}
 		if gs.ProviderClientId != "" {
@@ -140,13 +144,13 @@ func (gs GenesisState) Validate() error {
 				}
 			}
 		}
-		if gs.HeightToValsetUpdateId == nil {
+		/* 		if gs.HeightToValsetUpdateId == nil {
 			return errorsmod.Wrap(
 				ccv.ErrInvalidGenesis,
 				"empty height to validator set update id mapping",
 			)
-		}
-		if gs.ProviderClientState != nil || gs.ProviderConsensusState != nil {
+		} */
+		if gs.Provider.ClientState != nil || gs.Provider.ConsensusState != nil {
 			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "provider client state and consensus state must be nil for a restarting genesis state")
 		}
 		for _, mat := range gs.MaturingPackets {

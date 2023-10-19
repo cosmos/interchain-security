@@ -5,6 +5,8 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	simapp "github.com/cosmos/ibc-go/v7/testing/simapp"
 	"github.com/stretchr/testify/require"
 
 	errorsmod "cosmossdk.io/errors"
@@ -12,9 +14,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	tmtypes "github.com/cometbft/cometbft/types"
-
-	simapp "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/simapp"
-	ibctesting "github.com/cosmos/interchain-security/v3/legacy_ibc_testing/testing"
 )
 
 // UpdateReceiverClient DELIVERs a header to the receiving endpoint

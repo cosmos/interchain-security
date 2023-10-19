@@ -67,7 +67,7 @@ func TestInitGenesis(t *testing.T) {
 			MaturityTime: time.Now().UTC(),
 		},
 	}
-	pendingDataPackets := ccv.ConsumerPacketDataList{
+	pendingDataPackets := consumertypes.ConsumerPacketDataList{
 		List: []ccv.ConsumerPacketData{
 			{
 				Type: ccv.SlashPacket,
@@ -92,7 +92,7 @@ func TestInitGenesis(t *testing.T) {
 	)
 
 	// create default parameters for a new chain
-	params := consumertypes.DefaultParams()
+	params := ccv.DefaultParams()
 	params.Enabled = true
 
 	// define three test cases which respectively create a genesis struct, use it to call InitGenesis
@@ -255,7 +255,7 @@ func TestExportGenesis(t *testing.T) {
 	valset := []abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}
 
 	// create pending consumer packets
-	consPackets := ccv.ConsumerPacketDataList{
+	consPackets := consumertypes.ConsumerPacketDataList{
 		List: []ccv.ConsumerPacketData{
 			{
 				Type: ccv.SlashPacket,
@@ -280,7 +280,7 @@ func TestExportGenesis(t *testing.T) {
 	)
 	ltbh := consumertypes.LastTransmissionBlockHeight{Height: int64(1000)}
 	// create default parameters for a new chain
-	params := consumertypes.DefaultParams()
+	params := ccv.DefaultParams()
 	params.Enabled = true
 
 	// define two test cases which respectively populate the consumer chain store

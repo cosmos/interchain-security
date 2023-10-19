@@ -7,8 +7,6 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 const (
@@ -34,13 +32,16 @@ const (
 	// (and for consistency with other protobuf schemas defined for ccv).
 	DefaultHistoricalEntries = int64(stakingtypes.DefaultHistoricalEntries)
 
-	// In general, the default unbonding period on the consumer is one day less
+	// In general, the default unbonding period on the consumer is one week less
 	// than the default unbonding period on the provider, where the provider uses
 	// the staking module default.
-	DefaultConsumerUnbondingPeriod = stakingtypes.DefaultUnbondingTime - 24*time.Hour
+	DefaultConsumerUnbondingPeriod = stakingtypes.DefaultUnbondingTime - 7*24*time.Hour
 
 	// By default, the bottom 5% of the validator set can opt out of validating consumer chains
 	DefaultSoftOptOutThreshold = "0.05"
+
+	// Default retry delay period is 1 hour.
+	DefaultRetryDelayPeriod = time.Hour
 )
 
 // Reflection based keys for params subspace
@@ -56,11 +57,12 @@ var (
 	KeySoftOptOutThreshold               = []byte("SoftOptOutThreshold")
 	KeyRewardDenoms                      = []byte("RewardDenoms")
 	KeyProviderRewardDenoms              = []byte("ProviderRewardDenoms")
+	KeyRetryDelayPeriod                  = []byte("RetryDelayPeriod")
 )
 
 // ParamKeyTable type declaration for parameters
 func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
+	return paramtypes.NewKeyTable().RegisterParamSet(&ConsumerParams{})
 }
 
 // NewParams creates new consumer parameters with provided arguments
@@ -68,9 +70,10 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
 	ccvTimeoutPeriod, transferTimeoutPeriod time.Duration,
 	consumerRedistributionFraction string, historicalEntries int64,
-	consumerUnbondingPeriod time.Duration, softOptOutThreshold string, rewardDenoms, providerRewardDenoms []string,
-) Params {
-	return Params{
+	consumerUnbondingPeriod time.Duration, softOptOutThreshold string,
+	rewardDenoms, providerRewardDenoms []string, retryDelayPeriod time.Duration,
+) ConsumerParams {
+	return ConsumerParams{
 		Enabled:                           enabled,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
 		DistributionTransmissionChannel:   distributionTransmissionChannel,
@@ -83,11 +86,12 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		SoftOptOutThreshold:               softOptOutThreshold,
 		RewardDenoms:                      rewardDenoms,
 		ProviderRewardDenoms:              providerRewardDenoms,
+		RetryDelayPeriod:                  retryDelayPeriod,
 	}
 }
 
 // DefaultParams is the default params for the consumer module
-func DefaultParams() Params {
+func DefaultParams() ConsumerParams {
 	var rewardDenoms []string
 	var provideRewardDenoms []string
 	return NewParams(
@@ -95,7 +99,7 @@ func DefaultParams() Params {
 		DefaultBlocksPerDistributionTransmission,
 		"",
 		"",
-		ccvtypes.DefaultCCVTimeoutPeriod,
+		DefaultCCVTimeoutPeriod,
 		DefaultTransferTimeoutPeriod,
 		DefaultConsumerRedistributeFrac,
 		DefaultHistoricalEntries,
@@ -103,36 +107,37 @@ func DefaultParams() Params {
 		DefaultSoftOptOutThreshold,
 		rewardDenoms,
 		provideRewardDenoms,
+		DefaultRetryDelayPeriod,
 	)
 }
 
 // Validate all ccv-consumer module parameters
-func (p Params) Validate() error {
-	if err := ccvtypes.ValidateBool(p.Enabled); err != nil {
+func (p ConsumerParams) Validate() error {
+	if err := ValidateBool(p.Enabled); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidatePositiveInt64(p.BlocksPerDistributionTransmission); err != nil {
+	if err := ValidatePositiveInt64(p.BlocksPerDistributionTransmission); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateDistributionTransmissionChannel(p.DistributionTransmissionChannel); err != nil {
+	if err := ValidateDistributionTransmissionChannel(p.DistributionTransmissionChannel); err != nil {
 		return err
 	}
 	if err := ValidateProviderFeePoolAddrStr(p.ProviderFeePoolAddrStr); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
+	if err := ValidateDuration(p.CcvTimeoutPeriod); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateDuration(p.TransferTimeoutPeriod); err != nil {
+	if err := ValidateDuration(p.TransferTimeoutPeriod); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateStringFraction(p.ConsumerRedistributionFraction); err != nil {
+	if err := ValidateStringFraction(p.ConsumerRedistributionFraction); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidatePositiveInt64(p.HistoricalEntries); err != nil {
+	if err := ValidatePositiveInt64(p.HistoricalEntries); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateDuration(p.UnbondingPeriod); err != nil {
+	if err := ValidateDuration(p.UnbondingPeriod); err != nil {
 		return err
 	}
 	if err := ValidateSoftOptOutThreshold(p.SoftOptOutThreshold); err != nil {
@@ -144,35 +149,40 @@ func (p Params) Validate() error {
 	if err := ValidateDenoms(p.ProviderRewardDenoms); err != nil {
 		return err
 	}
+	if err := ValidateDuration(p.RetryDelayPeriod); err != nil {
+		return err
+	}
 	return nil
 }
 
 // ParamSetPairs implements params.ParamSet
-func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
+func (p *ConsumerParams) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, ccvtypes.ValidateBool),
+		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, ValidateBool),
 		paramtypes.NewParamSetPair(KeyBlocksPerDistributionTransmission,
-			p.BlocksPerDistributionTransmission, ccvtypes.ValidatePositiveInt64),
+			p.BlocksPerDistributionTransmission, ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyDistributionTransmissionChannel,
-			p.DistributionTransmissionChannel, ccvtypes.ValidateDistributionTransmissionChannel),
+			p.DistributionTransmissionChannel, ValidateDistributionTransmissionChannel),
 		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
 			p.ProviderFeePoolAddrStr, ValidateProviderFeePoolAddrStr),
-		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod,
-			p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(KeyCCVTimeoutPeriod,
+			p.CcvTimeoutPeriod, ValidateDuration),
 		paramtypes.NewParamSetPair(KeyTransferTimeoutPeriod,
-			p.TransferTimeoutPeriod, ccvtypes.ValidateDuration),
+			p.TransferTimeoutPeriod, ValidateDuration),
 		paramtypes.NewParamSetPair(KeyConsumerRedistributionFrac,
-			p.ConsumerRedistributionFraction, ccvtypes.ValidateStringFraction),
+			p.ConsumerRedistributionFraction, ValidateStringFraction),
 		paramtypes.NewParamSetPair(KeyHistoricalEntries,
-			p.HistoricalEntries, ccvtypes.ValidatePositiveInt64),
+			p.HistoricalEntries, ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyConsumerUnbondingPeriod,
-			p.UnbondingPeriod, ccvtypes.ValidateDuration),
+			p.UnbondingPeriod, ValidateDuration),
 		paramtypes.NewParamSetPair(KeySoftOptOutThreshold,
 			p.SoftOptOutThreshold, ValidateSoftOptOutThreshold),
 		paramtypes.NewParamSetPair(KeyRewardDenoms,
 			p.RewardDenoms, ValidateDenoms),
 		paramtypes.NewParamSetPair(KeyProviderRewardDenoms,
 			p.ProviderRewardDenoms, ValidateDenoms),
+		paramtypes.NewParamSetPair(KeyRetryDelayPeriod,
+			p.RetryDelayPeriod, ValidateDuration),
 	}
 }
 
@@ -181,8 +191,8 @@ func ValidateProviderFeePoolAddrStr(i interface{}) error {
 	if i == "" {
 		return nil
 	}
-	// Otherwise validate as usual for a bech32 address
-	return ccvtypes.ValidateBech32(i)
+	// Cannot validate provider chain address on the consumer chain
+	return nil
 }
 
 func ValidateSoftOptOutThreshold(i interface{}) error {

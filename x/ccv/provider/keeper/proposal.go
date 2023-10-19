@@ -19,7 +19,6 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
@@ -57,7 +56,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	chainID := prop.ChainId
 	// check that a client for this chain does not exist
 	if _, found := k.GetConsumerClientId(ctx, chainID); found {
-		return errorsmod.Wrap(ccv.ErrDuplicateConsumerChain,
+		return errorsmod.Wrap(types.ErrDuplicateConsumerChain,
 			fmt.Sprintf("cannot create client for existent consumer chain: %s", chainID))
 	}
 
@@ -109,14 +108,14 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			ccv.EventTypeConsumerClientCreated,
+			types.EventTypeConsumerClientCreated,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 			sdk.NewAttribute(ccv.AttributeChainID, chainID),
 			sdk.NewAttribute(clienttypes.AttributeKeyClientID, clientID),
-			sdk.NewAttribute(ccv.AttributeInitialHeight, prop.InitialHeight.String()),
-			sdk.NewAttribute(ccv.AttributeInitializationTimeout, strconv.Itoa(int(ts.UnixNano()))),
-			sdk.NewAttribute(ccv.AttributeTrustingPeriod, clientState.TrustingPeriod.String()),
-			sdk.NewAttribute(ccv.AttributeUnbondingPeriod, clientState.UnbondingPeriod.String()),
+			sdk.NewAttribute(types.AttributeInitialHeight, prop.InitialHeight.String()),
+			sdk.NewAttribute(types.AttributeInitializationTimeout, strconv.Itoa(int(ts.UnixNano()))),
+			sdk.NewAttribute(types.AttributeTrustingPeriod, clientState.TrustingPeriod.String()),
+			sdk.NewAttribute(types.AttributeUnbondingPeriod, clientState.UnbondingPeriod.String()),
 		),
 	)
 
@@ -156,7 +155,7 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan bool) (err error) {
 	// check that a client for chainID exists
 	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
-		return errorsmod.Wrap(ccv.ErrConsumerChainNotFound,
+		return errorsmod.Wrap(types.ErrConsumerChainNotFound,
 			fmt.Sprintf("cannot stop non-existent consumer chain: %s", chainID))
 	}
 
@@ -215,21 +214,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		k.DeleteUnbondingOpIndex(ctx, chainID, unbondingOpsIndex.VscId)
 	}
 
-	// Remove any existing throttling related entries from the global queue,
-	// only for this consumer.
-	// Note: this call panics if the throttling state is invalid
-	k.DeleteGlobalSlashEntriesForConsumer(ctx, chainID)
-
-	if k.GetThrottledPacketDataSize(ctx, chainID) > 0 {
-		k.Logger(ctx).Info("There are throttled slash and/or vsc matured packet data instances queued,"+
-			" from a consumer that is being removed. This packet data will be thrown out!", "chainID", chainID)
-	}
-
-	// Remove all throttled slash packets and vsc matured packets queued for this consumer.
-	// Note: queued VSC matured packets can be safely removed from the per-chain queue,
-	// since all unbonding operations for this consumer are release above.
-	k.DeleteThrottledPacketDataForConsumer(ctx, chainID)
-
 	k.Logger(ctx).Info("consumer chain removed from provider", "chainID", chainID)
 
 	return nil
@@ -239,7 +223,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 func (k Keeper) MakeConsumerGenesis(
 	ctx sdk.Context,
 	prop *types.ConsumerAdditionProposal,
-) (gen consumertypes.GenesisState, nextValidatorsHash []byte, err error) {
+) (gen ccv.ConsumerGenesisState, nextValidatorsHash []byte, err error) {
 	chainID := prop.ChainId
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
@@ -302,7 +286,7 @@ func (k Keeper) MakeConsumerGenesis(
 	}
 	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
 
-	consumerGenesisParams := consumertypes.NewParams(
+	consumerGenesisParams := ccv.NewParams(
 		true,
 		prop.BlocksPerDistributionTransmission,
 		prop.DistributionTransmissionChannel,
@@ -315,9 +299,10 @@ func (k Keeper) MakeConsumerGenesis(
 		"0.05",
 		[]string{},
 		[]string{},
+		ccv.DefaultRetryDelayPeriod,
 	)
 
-	gen = *consumertypes.NewInitialGenesisState(
+	gen = *ccv.NewInitialConsumerGenesisState(
 		clientState,
 		consState.(*ibctmtypes.ConsensusState),
 		initialUpdatesWithConsumerKeys,
@@ -614,6 +599,34 @@ func (k Keeper) HandleEquivocationProposal(ctx sdk.Context, p *types.Equivocatio
 			return fmt.Errorf("no equivocation record found for validator %s", ev.GetConsensusAddress().String())
 		}
 		k.evidenceKeeper.HandleEquivocationEvidence(ctx, ev)
+	}
+	return nil
+}
+
+func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, p *types.ChangeRewardDenomsProposal) error {
+	for _, denomToAdd := range p.DenomsToAdd {
+		// Log error and move on if one of the denoms is already registered
+		if k.ConsumerRewardDenomExists(ctx, denomToAdd) {
+			ctx.Logger().Error("denom %s already registered", denomToAdd)
+			continue
+		}
+		k.SetConsumerRewardDenom(ctx, denomToAdd)
+		ctx.EventManager().EmitEvent(sdk.NewEvent(
+			types.EventTypeAddConsumerRewardDenom,
+			sdk.NewAttribute(types.AttributeConsumerRewardDenom, denomToAdd),
+		))
+	}
+	for _, denomToRemove := range p.DenomsToRemove {
+		// Log error and move on if one of the denoms is not registered
+		if !k.ConsumerRewardDenomExists(ctx, denomToRemove) {
+			ctx.Logger().Error("denom %s not registered", denomToRemove)
+			continue
+		}
+		k.DeleteConsumerRewardDenom(ctx, denomToRemove)
+		ctx.EventManager().EmitEvent(sdk.NewEvent(
+			types.EventTypeRemoveConsumerRewardDenom,
+			sdk.NewAttribute(types.AttributeConsumerRewardDenom, denomToRemove),
+		))
 	}
 	return nil
 }

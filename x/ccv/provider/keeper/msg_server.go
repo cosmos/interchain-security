@@ -12,7 +12,6 @@ import (
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 type msgServer struct {
@@ -100,32 +99,11 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
-			ccvtypes.EventTypeAssignConsumerKey,
-			sdk.NewAttribute(ccvtypes.AttributeProviderValidatorAddress, msg.ProviderAddr),
-			sdk.NewAttribute(ccvtypes.AttributeConsumerConsensusPubKey, consumerTMPublicKey.String()),
+			types.EventTypeAssignConsumerKey,
+			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
+			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, consumerTMPublicKey.String()),
 		),
 	})
 
 	return &types.MsgAssignConsumerKeyResponse{}, nil
-}
-
-func (k msgServer) RegisterConsumerRewardDenom(goCtx context.Context, msg *types.MsgRegisterConsumerRewardDenom) (*types.MsgRegisterConsumerRewardDenomResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	depositer, err := sdk.AccAddressFromBech32(msg.Depositor)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := k.Keeper.RegisterConsumerRewardDenom(ctx, msg.Denom, depositer); err != nil {
-		return nil, err
-	}
-
-	ctx.EventManager().EmitEvent(sdk.NewEvent(
-		ccvtypes.EventTypeRegisterConsumerRewardDenom,
-		sdk.NewAttribute(ccvtypes.AttributeConsumerRewardDenom, msg.Denom),
-		sdk.NewAttribute(ccvtypes.AttributeConsumerRewardDepositor, msg.Depositor),
-	))
-
-	return &types.MsgRegisterConsumerRewardDenomResponse{}, nil
 }

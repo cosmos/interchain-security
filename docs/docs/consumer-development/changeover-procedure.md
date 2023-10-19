@@ -48,7 +48,7 @@ RevisionNumber: 0, RevisionHeight: 111
 
 * `spawn_time` listed in the proposal MUST be before the `upgrade_height` listed in the the upgrade proposal on the standalone chain.
 :::caution
-`spawn_time` must occur before the `upgrade_height` on the standalone chain is reached becasue the `provider` chain must generate the `ConsumerGenesis` that contains the **validator set** that will be used after the changeover.
+`spawn_time` must occur before the `upgrade_height` on the standalone chain is reached because the `provider` chain must generate the `ConsumerGenesis` that contains the **validator set** that will be used after the changeover.
 :::
 
 * `unbonding_period` must correspond to the value used on the standalone chain. Otherwise, the clients used for the ccv protocol may be incorrectly initialized.
@@ -128,7 +128,7 @@ To help validators and other node runners onboard onto your chain, please prepar
 
 This should include (at minimum):
 
-- [ ] genesis.json with CCV data (after spawn time passes)
+- [ ] genesis.json with CCV data (after spawn time passes). Check if CCV data needs to be transformed (see [Transform Consumer Genesis](./consumer-genesis-transformation.md))
 - [ ] information about relevant seed/peer nodes you are running
 - [ ] relayer information (compatible versions)
 - [ ] copy of your governance proposal (as JSON)

@@ -4,6 +4,7 @@ package interchain_security.ccv.provider.v1;
 
 option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/provider/types";
 
+import "interchain_security/ccv/v1/wire.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
@@ -12,6 +13,11 @@ import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "tendermint/crypto/keys.proto";
 import "cosmos/evidence/v1beta1/evidence.proto";
 import "cosmos/base/v1beta1/coin.proto";
+
+//
+// Note any type defined in this file is ONLY used internally to the provider CCV module.
+// These schemas can change with proper consideration of compatibility or migration. 
+// 
 
 // ConsumerAdditionProposal is a governance proposal on the provider chain to
 // spawn a new consumer chain. If it passes, then all validators on the provider
@@ -96,6 +102,10 @@ message ConsumerRemovalProposal {
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 }
 
+// EquivocationProposal is a governance proposal on the provider chain to
+// punish a validator for equivocation on a consumer chain.
+// 
+// This type is only used internally to the consumer CCV module.  
 message EquivocationProposal {
   // the title of the proposal
   string title = 1;
@@ -103,6 +113,19 @@ message EquivocationProposal {
   string description = 2;
   // the list of equivocations that will be processed
   repeated cosmos.evidence.v1beta1.Equivocation equivocations = 3;
+}
+
+// ChangeRewardDenomsProposal is a governance proposal on the provider chain to
+// mutate the set of denoms accepted by the provider as rewards.
+message ChangeRewardDenomsProposal {
+  // the title of the proposal
+  string title = 1;
+  // the description of the proposal
+  string description = 2;
+  // the list of consumer reward denoms to add
+  repeated string denoms_to_add = 3;
+  // the list of consumer reward denoms to remove
+  repeated string denoms_to_remove = 4;
 }
 
 // A persisted queue entry indicating that a slash packet data instance needs to
@@ -128,6 +151,10 @@ message GlobalSlashEntry {
 
 // Params defines the parameters for CCV Provider module
 message Params {
+
+  // Reserve 8th slot for removed max throttled packet param
+  reserved 8;
+
   ibc.lightclients.tendermint.v1.ClientState template_client = 1;
   // TrustingPeriodFraction is used to compute the consumer and provider IBC
   // client's TrustingPeriod from the chain defined UnbondingPeriod
@@ -155,22 +182,13 @@ message Params {
   // total voting power that the slash meter can hold.
   string slash_meter_replenish_fraction = 7;
 
-  // The maximum amount of throttled slash or vsc matured packets
-  // that can be queued for a single consumer before the provider chain halts.
-  int64 max_throttled_packets = 8;
-
   // The fee required to be paid to add a reward denom
   cosmos.base.v1beta1.Coin consumer_reward_denom_registration_fee = 9
       [ (gogoproto.nullable) = false ];
 }
 
-message HandshakeMetadata {
-  string provider_fee_pool_addr = 1;
-  string version = 2;
-}
-
 // SlashAcks contains cons addresses of consumer chain validators
-// successfully slashed on the provider chain
+// successfully slashed on the provider chain. 
 message SlashAcks { repeated string addresses = 1; }
 
 // ConsumerAdditionProposals holds pending governance proposals on the provider
@@ -190,6 +208,7 @@ message ConsumerRemovalProposals {
 // AddressList contains a list of consensus addresses
 message AddressList { repeated bytes addresses = 1; }
 
+// ChannelToChain is used to map a CCV channel ID to the consumer chainID
 message ChannelToChain {
   string channel_id = 1;
   string chain_id = 2;
@@ -220,6 +239,16 @@ message VscSendTimestamp {
   google.protobuf.Timestamp timestamp = 2
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 }
+
+// ValidatorSetChangePackets is a pb list of ccv.ValidatorSetChangePacketData.
+message ValidatorSetChangePackets {
+  repeated interchain_security.ccv.v1.ValidatorSetChangePacketData list = 1
+      [ (gogoproto.nullable) = false ];
+}
+
+// MaturedUnbondingOps defines a list of ids corresponding to ids of matured
+// unbonding operations.
+message MaturedUnbondingOps { repeated uint64 ids = 1; }
 
 // ExportedVscSendTimestamps is VscSendTimestamp with chainID info for exporting to genesis
 message ExportedVscSendTimestamp {

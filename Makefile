@@ -77,6 +77,10 @@ test-gaia-e2e-parallel-tagged:
 test-no-cache:
 	go test ./... -count=1 && go run ./tests/e2e/...
 
+# test reading a trace from a file
+test-trace:
+	go run ./tests/e2e/... --test-file tests/e2e/tracehandler_testdata/happyPath.json::default
+
 ###############################################################################
 ###                                Linting                                  ###
 ###############################################################################
@@ -97,6 +101,8 @@ mockgen_cmd=go run github.com/golang/mock/mockgen
 mocks:
 	$(mockgen_cmd) -package=keeper -destination=testutil/keeper/mocks.go -source=x/ccv/types/expected_keepers.go
 
+
+BUILDDIR ?= $(CURDIR)/build
 BUILD_TARGETS := build
 
 build: BUILD_ARGS=-o $(BUILDDIR)/
@@ -177,3 +183,10 @@ build-docs:
 	@cd docs && ./build.sh
 
 .PHONY: build-docs
+
+###############################################################################
+### 							Test Traces									###
+###############################################################################
+
+e2e-traces:
+	cd tests/e2e; go test -timeout 30s -run ^TestWriteExamples -v
