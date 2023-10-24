@@ -3,8 +3,10 @@ package types
 import (
 	"encoding/json"
 	"strings"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 )
 
 // provider message types
@@ -12,7 +14,13 @@ const (
 	TypeMsgAssignConsumerKey = "assign_consumer_key"
 )
 
-var _ sdk.Msg = &MsgAssignConsumerKey{}
+var (
+	_ sdk.Msg = &MsgAssignConsumerKey{}
+	_ sdk.Msg = &MsgConsumerAddition{}
+
+	_ sdk.HasValidateBasic = &MsgAssignConsumerKey{}
+	_ sdk.HasValidateBasic = &MsgConsumerAddition{}
+)
 
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
 // Delegator address and validator address are the same.
@@ -94,3 +102,76 @@ func ParseConsumerKeyFromJson(jsonStr string) (pkType, key string, err error) {
 	}
 	return pubKey.Type, pubKey.Key, nil
 }
+
+// NewMsgConsumerAddition creates a new MsgConsumerAddition instance.
+// Delegator address and validator address are the same.
+func NewMsgConsumerAddition(signer, chainID string,
+	initialHeight clienttypes.Height, genesisHash, binaryHash []byte,
+	spawnTime time.Time,
+	consumerRedistributionFraction string,
+	blocksPerDistributionTransmission int64,
+	distributionTransmissionChannel string,
+	historicalEntries int64,
+	ccvTimeoutPeriod time.Duration,
+	transferTimeoutPeriod time.Duration,
+	unbondingPeriod time.Duration) *MsgConsumerAddition {
+	return &MsgConsumerAddition{
+		ChainId:                           chainID,
+		InitialHeight:                     initialHeight,
+		GenesisHash:                       genesisHash,
+		BinaryHash:                        binaryHash,
+		SpawnTime:                         spawnTime,
+		ConsumerRedistributionFraction:    consumerRedistributionFraction,
+		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
+		DistributionTransmissionChannel:   distributionTransmissionChannel,
+		HistoricalEntries:                 historicalEntries,
+		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
+		TransferTimeoutPeriod:             transferTimeoutPeriod,
+		UnbondingPeriod:                   unbondingPeriod,
+	}
+}
+
+// TODO: remove if not needed
+/* // Route implements the sdk.Msg interface.
+func (msg MsgConsumerAddition) Route() string { return RouterKey }
+
+// Type implements the sdk.Msg interface.
+func (msg MsgConsumerAddition) Type() string {
+	return TypeMsgConsumerAdditionKey
+}
+*/
+
+// GetSigners implements the sdk.Msg interface. It returns the address(es) that
+// must sign over msg.GetSignBytes().
+// If the validator address is not same as delegator's, then the validator must
+// sign the msg as well.
+func (msg *MsgConsumerAddition) GetSigners() []sdk.AccAddress {
+	valAddr, err := sdk.ValAddressFromBech32(msg.Signer)
+	if err != nil {
+		// same behavior as in cosmos-sdk
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
+}
+
+// GetSignBytes returns the message bytes to sign over.
+func (msg *MsgConsumerAddition) GetSignBytes() []byte {
+	bz := ModuleCdc.MustMarshalJSON(msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg *MsgConsumerAddition) ValidateBasic() error {
+	if strings.TrimSpace(msg.ChainId) == "" {
+		return ErrBlankConsumerChainID
+	}
+	//TODO
+	return nil
+}
+
+// UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
+/* func (msg *MsgConsumerAddition) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+	//return unpacker.UnpackAny(msg., new(exported.ClientState))
+	return nil
+}
+*/

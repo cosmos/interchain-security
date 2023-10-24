@@ -23,4 +23,5 @@ var (
 	ErrInvalidDepositorAddress          = errorsmod.Register(ModuleName, 15, "invalid depositor address")
 	ErrNoUnbondingTime                  = errorsmod.Register(ModuleName, 16, "provider unbonding time not found")
 	ErrInvalidAddress                   = errorsmod.Register(ModuleName, 17, "invalid address")
+	ErrUnauthorized                     = errorsmod.Register(ModuleName, 18, "unauthorized")
 )

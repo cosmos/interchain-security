@@ -110,3 +110,14 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 
 	return &types.MsgAssignConsumerKeyResponse{}, nil
 }
+
+// ConsumerAddition defines a rpc handler method for MsgConsumerAddition
+func (k msgServer) ConsumerAddition(goCtx context.Context, msg *types.MsgConsumerAddition) (*types.MsgConsumerAdditionResponse, error) {
+	if k.GetAuthority() != msg.Signer {
+		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Signer)
+	}
+
+	// TODO: Call keeper implementation !
+
+	return &types.MsgConsumerAdditionResponse{}, nil
+}
