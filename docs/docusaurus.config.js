@@ -91,7 +91,7 @@ const config = {
           {
             type: "docsVersionDropdown",
             position: "left",
-            dropdownActiveClassDisabled: true,
+            dropdownActiveClassDisabled: false,
           },
         ],
       },

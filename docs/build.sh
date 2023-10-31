@@ -1,10 +1,25 @@
 #!/bin/sh
 
-# This builds docs using docusaurus.
 COMMIT=$(git rev-parse HEAD)
-echo "building docusaurus main docs"
-(git clean -fdx && git reset --hard && git checkout $COMMIT)
-npm ci && npm run build
-mv build ~/output
-echo "done building docusaurus main docs"
-# echo $DOCS_DOMAIN > ~/output/CNAME
+for version in $(jq -r .[] versions.json); do
+    echo "Building docusaurus $version docs ..."
+    git checkout $version
+    npm cache clean --force && npm install && npm run docusaurus docs:version $version
+
+    # versions.json / package-lock.json, get mangled by Docusarus causing problems
+    rm versions.json package-lock.json
+done
+
+# Rebuild main/commit level docs
+echo "Building docusaurus main docs ..."
+
+rm package-lock.json
+git checkout $COMMIT 
+
+# Move figures over
+cp -R figures ./versioned_docs/
+
+# Actual build
+npm install && npm run build
+
+echo "Finished building docs ... "
