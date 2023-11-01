@@ -329,13 +329,13 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 // // 	suite.Run(t, new(CoreSuite))
 // // }
 
-// SetupTest sets up the test suite in a 'zero' state which matches
-// the initial state in the model.
-func (s *CoreSuite) SetupTest() {
-	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(&s.Suite, initStateVar)
-	s.initState = initStateVar
-	s.valAddresses = valAddresses
-	s.offsetHeight = offsetHeight
-	s.offsetTimeUnix = offsetTimeUnix
-	s.simibc = simibc.MakeRelayedPath(s.Suite.T(), path)
-}
+// // SetupTest sets up the test suite in a 'zero' state which matches
+// // the initial state in the model.
+// func (s *CoreSuite) SetupTest() {
+// 	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(&s.Suite, initStateVar)
+// 	s.initState = initStateVar
+// 	s.valAddresses = valAddresses
+// 	s.offsetHeight = offsetHeight
+// 	s.offsetTimeUnix = offsetTimeUnix
+// 	s.simibc = simibc.MakeRelayedPath(s.Suite.T(), path)
+// }
