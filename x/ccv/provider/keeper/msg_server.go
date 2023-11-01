@@ -121,3 +121,16 @@ func (k msgServer) ConsumerAddition(goCtx context.Context, msg *types.MsgConsume
 
 	return &types.MsgConsumerAdditionResponse{}, nil
 }
+
+// ConsumerRemoval defines a rpc handler method for MsgConsumerRemoval
+func (k msgServer) ConsumerRemoval(
+	goCtx context.Context,
+	msg *types.MsgConsumerRemoval) (*types.MsgConsumerRemovalResponse, error) {
+	if k.GetAuthority() != msg.Signer {
+		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Signer)
+	}
+
+	// TODO: Call keeper implementation !
+
+	return &types.MsgConsumerRemovalResponse{}, nil
+}

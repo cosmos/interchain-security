@@ -94,7 +94,9 @@ message ConsumerAdditionProposal {
 // remove (and stop) a consumer chain. If it passes, all the consumer chain's
 // state is removed from the provider chain. The outstanding unbonding operation
 // funds are released.
+// Deprecated: Use MsgConsumerRemoval instead
 message ConsumerRemovalProposal {
+  option deprecated = true;
   option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
 
   // the title of the proposal
@@ -111,6 +113,7 @@ message ConsumerRemovalProposal {
 
 // ChangeRewardDenomsProposal is a governance proposal on the provider chain to
 // mutate the set of denoms accepted by the provider as rewards.
+
 message ChangeRewardDenomsProposal {
   option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
 

@@ -5,8 +5,10 @@ import (
 	"strings"
 	"time"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // provider message types
@@ -15,11 +17,13 @@ const (
 )
 
 var (
-	_ sdk.Msg = &MsgAssignConsumerKey{}
-	_ sdk.Msg = &MsgConsumerAddition{}
+	_ sdk.Msg = (*MsgAssignConsumerKey)(nil)
+	_ sdk.Msg = (*MsgConsumerAddition)(nil)
+	_ sdk.Msg = (*MsgConsumerRemoval)(nil)
 
-	_ sdk.HasValidateBasic = &MsgAssignConsumerKey{}
-	_ sdk.HasValidateBasic = &MsgConsumerAddition{}
+	_ sdk.HasValidateBasic = (*MsgAssignConsumerKey)(nil)
+	_ sdk.HasValidateBasic = (*MsgConsumerAddition)(nil)
+	_ sdk.HasValidateBasic = (*MsgConsumerRemoval)(nil)
 )
 
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
@@ -104,7 +108,6 @@ func ParseConsumerKeyFromJson(jsonStr string) (pkType, key string, err error) {
 }
 
 // NewMsgConsumerAddition creates a new MsgConsumerAddition instance.
-// Delegator address and validator address are the same.
 func NewMsgConsumerAddition(signer, chainID string,
 	initialHeight clienttypes.Height, genesisHash, binaryHash []byte,
 	spawnTime time.Time,
@@ -128,18 +131,9 @@ func NewMsgConsumerAddition(signer, chainID string,
 		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
 		TransferTimeoutPeriod:             transferTimeoutPeriod,
 		UnbondingPeriod:                   unbondingPeriod,
+		Signer:                            signer,
 	}
 }
-
-// TODO: remove if not needed
-/* // Route implements the sdk.Msg interface.
-func (msg MsgConsumerAddition) Route() string { return RouterKey }
-
-// Type implements the sdk.Msg interface.
-func (msg MsgConsumerAddition) Type() string {
-	return TypeMsgConsumerAdditionKey
-}
-*/
 
 // GetSigners implements the sdk.Msg interface. It returns the address(es) that
 // must sign over msg.GetSignBytes().
@@ -154,24 +148,76 @@ func (msg *MsgConsumerAddition) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{valAddr.Bytes()}
 }
 
-// GetSignBytes returns the message bytes to sign over.
-func (msg *MsgConsumerAddition) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(msg)
-	return sdk.MustSortJSON(bz)
-}
-
 // ValidateBasic implements the sdk.Msg interface.
 func (msg *MsgConsumerAddition) ValidateBasic() error {
 	if strings.TrimSpace(msg.ChainId) == "" {
 		return ErrBlankConsumerChainID
 	}
-	//TODO
+
+	if strings.TrimSpace(msg.ChainId) == "" {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "consumer chain id must not be blank")
+	}
+
+	if msg.InitialHeight.IsZero() {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "initial height cannot be zero")
+	}
+
+	if len(msg.GenesisHash) == 0 {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "genesis hash cannot be empty")
+	}
+	if len(msg.BinaryHash) == 0 {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "binary hash cannot be empty")
+	}
+
+	if msg.SpawnTime.IsZero() {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "spawn time cannot be zero")
+	}
+
+	if err := ccvtypes.ValidateStringFraction(msg.ConsumerRedistributionFraction); err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerAdditionProposal, "consumer redistribution fraction is invalid: %s", err)
+	}
+
+	if err := ccvtypes.ValidatePositiveInt64(msg.BlocksPerDistributionTransmission); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "blocks per distribution transmission cannot be < 1")
+	}
+
+	if err := ccvtypes.ValidateDistributionTransmissionChannel(msg.DistributionTransmissionChannel); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "distribution transmission channel")
+	}
+
+	if err := ccvtypes.ValidatePositiveInt64(msg.HistoricalEntries); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "historical entries cannot be < 1")
+	}
+
+	if err := ccvtypes.ValidateDuration(msg.CcvTimeoutPeriod); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "ccv timeout period cannot be zero")
+	}
+
+	if err := ccvtypes.ValidateDuration(msg.TransferTimeoutPeriod); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "transfer timeout period cannot be zero")
+	}
+
+	if err := ccvtypes.ValidateDuration(msg.UnbondingPeriod); err != nil {
+		return errorsmod.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
+	}
+
 	return nil
 }
 
-// UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-/* func (msg *MsgConsumerAddition) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
-	//return unpacker.UnpackAny(msg., new(exported.ClientState))
+// NewMsgConsumerRemoval creates a new MsgConsumerRemoval instance
+func NewMsgConsumerRemoval(signer string) *MsgConsumerRemoval {
+	//@bermuell: TODO finsh implementation!
+	return &MsgConsumerRemoval{}
+}
+
+func (msg *MsgConsumerRemoval) ValidateBasic() error {
+
+	if strings.TrimSpace(msg.ChainId) == "" {
+		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
+	}
+
+	if msg.StopTime.IsZero() {
+		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
+	}
 	return nil
 }
-*/
