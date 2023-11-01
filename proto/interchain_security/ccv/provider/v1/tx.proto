@@ -17,13 +17,16 @@ service Msg {
   option (cosmos.msg.v1.service) = true;
 
   rpc AssignConsumerKey(MsgAssignConsumerKey)
-      returns (MsgAssignConsumerKeyResponse);
+    returns (MsgAssignConsumerKeyResponse);
 
   rpc ConsumerAddition(MsgConsumerAddition)
-      returns (MsgConsumerAdditionResponse);
+    returns (MsgConsumerAdditionResponse);
 
-   rpc ConsumerRemoval(MsgConsumerRemoval)
-      returns (MsgConsumerRemovalResponse);
+  rpc ConsumerRemoval(MsgConsumerRemoval)
+    returns (MsgConsumerRemovalResponse);
+
+  rpc ChangeRewardDenoms(MsgChangeRewardDenoms)
+    returns (MsgChangeRewardDenomsResponse);
 }
 
 message MsgAssignConsumerKey {
@@ -112,21 +115,48 @@ message MsgConsumerAddition {
   string signer = 13 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
-// MsgConsumerAdditionResponse defines the Msg/MsgIBCSoftwareUpgrade response type
+// MsgConsumerAdditionResponse defines response type for MsgConsumerAddition messages
 message MsgConsumerAdditionResponse {}
 
+
+// MsgConsumerRemoval message contains a governance proposal on the provider chain to
+// remove (and stop) a consumer chain. If it passes, all the consumer chain's
+// state is removed from the provider chain. The outstanding unbonding operation
+// funds are released.
+//
+// Note: this replaces ConsumerRemovalProposal which is deprecated and will be removed soon
 message MsgConsumerRemoval {
   option (cosmos.msg.v1.signer) = "signer";
 
   // the chain-id of the consumer chain to be stopped
-  string chain_id = 3;
+  string chain_id = 1;
   // the time on the provider chain at which all validators are responsible to
   // stop their consumer chain validator node
-  google.protobuf.Timestamp stop_time = 4
+  google.protobuf.Timestamp stop_time = 2
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 
   // signer address
-  string signer = 13 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string signer = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
+// MsgConsumerRemovalResponse defines response type for MsgConsumerRemoval messages
 message MsgConsumerRemovalResponse {}
+
+// ChangeRewardDenomsProposal is a governance proposal on the provider chain to
+// mutate the set of denoms accepted by the provider as rewards.
+//
+// Note: this replaces ChangeRewardDenomsProposal which is deprecated and will be removed soon
+message MsgChangeRewardDenoms {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // the list of consumer reward denoms to add
+  repeated string denoms_to_add = 1;
+  // the list of consumer reward denoms to remove
+  repeated string denoms_to_remove = 2;
+  // signer address
+  string signer = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+}
+
+// MsgChangeRewardDenomsResponse defines response type for MsgChangeRewardDenoms messages
+message MsgChangeRewardDenomsResponse {}

@@ -2,10 +2,12 @@ package types
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
@@ -20,10 +22,12 @@ var (
 	_ sdk.Msg = (*MsgAssignConsumerKey)(nil)
 	_ sdk.Msg = (*MsgConsumerAddition)(nil)
 	_ sdk.Msg = (*MsgConsumerRemoval)(nil)
+	_ sdk.Msg = (*MsgChangeRewardDenoms)(nil)
 
 	_ sdk.HasValidateBasic = (*MsgAssignConsumerKey)(nil)
 	_ sdk.HasValidateBasic = (*MsgConsumerAddition)(nil)
 	_ sdk.HasValidateBasic = (*MsgConsumerRemoval)(nil)
+	_ sdk.HasValidateBasic = (*MsgChangeRewardDenoms)(nil)
 )
 
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
@@ -219,5 +223,45 @@ func (msg *MsgConsumerRemoval) ValidateBasic() error {
 	if msg.StopTime.IsZero() {
 		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
 	}
+	return nil
+}
+
+// MsgChangeRewardDenoms creates a new MsgChangeRewardDenoms instance
+func NewMsgChangeRewardDenoms(signer string) *MsgChangeRewardDenoms {
+	//@bermuell: TODO finsh implementation!
+	return &MsgChangeRewardDenoms{}
+}
+
+func (msg *MsgChangeRewardDenoms) ValidateBasic() error {
+	emptyDenomsToAdd := len(msg.DenomsToAdd) == 0
+	emptyDenomsToRemove := len(msg.DenomsToRemove) == 0
+	// Return error if both sets are empty or nil
+	if emptyDenomsToAdd && emptyDenomsToRemove {
+		return fmt.Errorf(
+			"invalid change reward denoms proposal: both denoms to add and denoms to remove are empty")
+	}
+
+	// Return error if a denom is in both sets
+	for _, denomToAdd := range msg.DenomsToAdd {
+		for _, denomToRemove := range msg.DenomsToRemove {
+			if denomToAdd == denomToRemove {
+				return fmt.Errorf(
+					"invalid change reward denoms proposal: %s cannot be both added and removed", denomToAdd)
+			}
+		}
+	}
+
+	// Return error if any denom is "invalid"
+	for _, denom := range msg.DenomsToAdd {
+		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
+			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
+		}
+	}
+	for _, denom := range msg.DenomsToRemove {
+		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
+			return fmt.Errorf("invalid change reward denoms proposal: %s is not a valid denom", denom)
+		}
+	}
+
 	return nil
 }

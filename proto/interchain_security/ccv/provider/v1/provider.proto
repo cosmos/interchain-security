@@ -113,8 +113,9 @@ message ConsumerRemovalProposal {
 
 // ChangeRewardDenomsProposal is a governance proposal on the provider chain to
 // mutate the set of denoms accepted by the provider as rewards.
-
+// Deprecated: Use MsgChangeRewardDenoms instead
 message ChangeRewardDenomsProposal {
+  option deprecated = true;
   option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
 
   // the title of the proposal
