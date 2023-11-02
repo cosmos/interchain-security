@@ -93,7 +93,7 @@ func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		// Add provider to coordinator, store returned test chain and app.
 		// Concrete provider app type is passed to the generic function here.
 		provider, providerApp := icstestingutils.AddProvider[Tp](t, coordinator, providerAppIniter)
-
+		fmt.Println("------ provider added ----------")
 		// Pass variables to suite.
 		return coordinator, provider, providerApp
 	}
@@ -103,6 +103,7 @@ func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		coordinator *ibctesting.Coordinator,
 		index int,
 	) *icstestingutils.ConsumerBundle {
+		fmt.Println("------ adding consumer ----------")
 		return icstestingutils.AddConsumer[Tp, Tc](coordinator, s, index, consumerAppIniter)
 	}
 
@@ -163,6 +164,7 @@ func (suite *CCVTestSuite) SetupTest() {
 		err = bundle.Path.EndpointA.UpdateClient()
 		suite.Require().NoError(err)
 	}
+	fmt.Println("## REACHED END ---")
 }
 
 func (s *CCVTestSuite) registerPacketSniffer(chain *ibctesting.TestChain) {
@@ -395,6 +397,7 @@ func (ps *packetSniffer) ListenFinalizeBlock(ctx context.Context, req abci.Reque
 	// TODO: @MSalopek this was deprecated, figure out how to use it
 	packets := ParsePacketsFromEvents(res.GetEvents())
 	for _, packet := range packets {
+		fmt.Println("#----------- packet --------------- #", packet)
 		ps.packets[getSentPacketKey(packet.Sequence, packet.SourceChannel)] = packet
 	}
 	return nil
@@ -407,6 +410,7 @@ func getSentPacketKey(sequence uint64, channelID string) string {
 }
 
 func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit, cs []*store.StoreKVPair) error {
+	fmt.Println("# HAVE A COMMIT ##", res)
 	return nil
 }
 

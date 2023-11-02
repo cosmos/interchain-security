@@ -77,6 +77,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	clientState.UnbondingPeriod = consumerUnbondingPeriod
 
 	consumerGen, validatorSetHash, err := k.MakeConsumerGenesis(ctx, prop)
+	fmt.Println("## ERRORS IN PROPOSAL ###", err)
 	if err != nil {
 		return err
 	}
@@ -246,6 +247,7 @@ func (k Keeper) MakeConsumerGenesis(
 		return gen, nil, errorsmod.Wrapf(types.ErrNoUnbondingTime, "ubonding time not found: %s", err)
 	}
 	height := clienttypes.GetSelfHeight(ctx)
+	fmt.Println("## PROVIDER HEIGHT at MakeConsumerGenesis", height)
 
 	clientState := k.GetTemplateClient(ctx)
 	// this is the counter party chain ID for the consumer
@@ -261,6 +263,7 @@ func (k Keeper) MakeConsumerGenesis(
 	clientState.UnbondingPeriod = providerUnbondingPeriod
 
 	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
+	fmt.Println("! NO CONSENSUS STATE !", err)
 	if err != nil {
 		return gen, nil, errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
 	}

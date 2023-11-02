@@ -70,6 +70,7 @@ func AddProvider[T testutil.ProviderApp](t *testing.T, coordinator *ibctesting.C
 	ibctesting.DefaultTestingAppInit = appIniter
 	provider := ibctesting.NewTestChain(t, coordinator, provChainID)
 	coordinator.Chains[provChainID] = provider
+	fmt.Println("### PROVI BLOCK", coordinator.Chains[provChainID].GetContext().BlockHeight())
 
 	providerToReturn, ok := provider.App.(T)
 	if !ok {
@@ -131,6 +132,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		providerChain.GetContext(),
 		prop,
 	)
+	fmt.Println("### ERRORED ON CREATE #####", err)
 	s.Require().NoError(err)
 
 	// commit the state on the provider chain

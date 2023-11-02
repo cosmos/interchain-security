@@ -277,11 +277,6 @@ func New(
 		consensusparamtypes.StoreKey,
 	)
 
-	// register streaming services
-	if err := bApp.RegisterStreamingServices(appOpts, keys); err != nil {
-		panic(err)
-	}
-
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
@@ -311,7 +306,6 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		runtime.EventService{},
 	)
-
 	bApp.SetParamStore(&app.ConsensusParamsKeeper.ParamsStore)
 
 	// add capability keeper and ScopeToModule for ibc module
@@ -576,8 +570,8 @@ func New(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
-		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
+		ibctransfertypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
@@ -592,18 +586,18 @@ func New(
 
 	app.MM.SetOrderEndBlockers(
 		crisistypes.ModuleName,
-		govtypes.ModuleName,
-		stakingtypes.ModuleName,
-		ibctransfertypes.ModuleName,
-		ibcexported.ModuleName,
-		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
+		govtypes.ModuleName,
+		capabilitytypes.ModuleName,
+		evidencetypes.ModuleName,
+		stakingtypes.ModuleName,
+		ibcexported.ModuleName,
+		ibctransfertypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		minttypes.ModuleName,
 		genutiltypes.ModuleName,
-		evidencetypes.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
@@ -617,6 +611,7 @@ func New(
 	// so that other modules that want to create or claim capabilities afterwards in InitChain
 	// can do so safely.
 	app.MM.SetOrderInitGenesis(
+		genutiltypes.ModuleName,
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -626,10 +621,9 @@ func New(
 		govtypes.ModuleName,
 		minttypes.ModuleName,
 		crisistypes.ModuleName,
-		ibcexported.ModuleName,
 		evidencetypes.ModuleName,
+		ibcexported.ModuleName,
 		ibctransfertypes.ModuleName,
-		genutiltypes.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,

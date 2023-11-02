@@ -1,6 +1,8 @@
 package integration
 
 import (
+	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -18,6 +20,7 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 	initValsetLen := len(consumerKeeper.GetAllCCValidator(cCtx()))
 	// save current block height
 	initHeight := cCtx().BlockHeight()
+	fmt.Println("### AFTER SETUP ###")
 
 	// define an utility function that creates a new cross-chain validator
 	// and then call track historical info in the next block

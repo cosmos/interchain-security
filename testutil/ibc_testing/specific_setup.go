@@ -6,6 +6,7 @@ package ibc_testing
 
 import (
 	"encoding/json"
+	"fmt"
 
 	db "github.com/cosmos/cosmos-db"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
@@ -34,6 +35,7 @@ var (
 func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	encoding := appProvider.MakeTestEncodingConfig()
 	testApp := appProvider.New(log.NewNopLogger(), db.NewMemDB(), nil, true, simtestutil.EmptyAppOptions{})
+	fmt.Println("$$$$ ProviderAppIniter done")
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Codec)
 }
 
@@ -43,7 +45,7 @@ func ConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter {
 		encoding := appConsumer.MakeTestEncodingConfig()
 		testApp := appConsumer.New(log.NewNopLogger(), db.NewMemDB(), nil, true, simtestutil.EmptyAppOptions{})
 		genesisState := appConsumer.NewDefaultGenesisState(encoding.Codec)
-		// NOTE ibc-go/v7/testing.SetupWithGenesisValSet requires a staking module
+		// NOTE: starting from ibc-go/v7/testing.SetupWithGenesisValSet requires a staking module
 		// genesisState or it panics. Feed a minimum one.
 		genesisState[stakingtypes.ModuleName] = encoding.Codec.MustMarshalJSON(
 			&stakingtypes.GenesisState{
@@ -56,7 +58,7 @@ func ConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter {
 		consumerGenesis.InitialValSet = initValPowers
 		consumerGenesis.Params.Enabled = true
 		genesisState[consumertypes.ModuleName] = encoding.Codec.MustMarshalJSON(&consumerGenesis)
-
+		fmt.Println("$$$$ ConsumerAppIniter done")
 		return testApp, genesisState
 	}
 }
