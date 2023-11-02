@@ -94,6 +94,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
 	altSigners[clientTMValset.Validators[2].Address.String()] = clientSigners[clientTMValset.Validators[2].Address.String()]
 
+	// create a consumer client header
 	clientHeader := s.consumerChain.CreateTMClientHeader(
 		s.consumerChain.ChainID,
 		int64(clientHeight.RevisionHeight+1),
@@ -105,7 +106,6 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 		clientSigners,
 	)
 
-	// TODO: figure out how to test an amnesia cases for "amnesia" attack
 	testCases := []struct {
 		name                   string
 		getMisbehaviour        func() *ibctmtypes.Misbehaviour
@@ -160,13 +160,12 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 			true,
 		},
 		{
-			"valid light client attack - equivocation",
+			"light client attack - equivocation",
 			func() *ibctmtypes.Misbehaviour {
 				return &ibctmtypes.Misbehaviour{
 					ClientId: s.path.EndpointA.ClientID,
 					Header1:  clientHeader,
-					// the resulting header contains invalid fields
-					// i.e. ValidatorsHash, NextValidatorsHash etc.
+					// the resulting header contains a different BlockID
 					Header2: s.consumerChain.CreateTMClientHeader(
 						s.consumerChain.ChainID,
 						int64(clientHeight.RevisionHeight+1),
@@ -185,7 +184,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 			true,
 		},
 		{
-			"valid light client attack - amnesia",
+			"light client attack - amnesia",
 			func() *ibctmtypes.Misbehaviour {
 				// create a valid header with a different hash
 				// and commit round
