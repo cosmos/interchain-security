@@ -114,8 +114,7 @@ func (m *MsgAssignConsumerKeyResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgAssignConsumerKeyResponse proto.InternalMessageInfo
 
 // MsgSubmitConsumerMisbehaviour defines a message that reports a light client attack,
-//
-//	also known as a misbehaviour, observed on a consumer chain
+// also known as a misbehaviour, observed on a consumer chain
 type MsgSubmitConsumerMisbehaviour struct {
 	Submitter string `protobuf:"bytes,1,opt,name=submitter,proto3" json:"submitter,omitempty"`
 	// The Misbehaviour of the consumer chain wrapping

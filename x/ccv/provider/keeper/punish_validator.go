@@ -32,8 +32,6 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 		k.stakingKeeper.Jail(ctx, providerAddr.ToSdkConsAddr())
 	}
 
-	// Jail the validator to trigger the unbonding of the validator
-	// (see cosmos/cosmos-sdk/blob/v0.45.16-ics-lsm/x/staking/keeper/val_state_change.go#L192).
 	k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
 
 	// Tombstone the validator so that we cannot slash the validator more than once

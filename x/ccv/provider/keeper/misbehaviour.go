@@ -13,7 +13,7 @@ import (
 )
 
 // HandleConsumerMisbehaviour checks if the given IBC misbehaviour corresponds to an equivocation light client attack,
-// and in this case, jails the Byzantine validators
+// and in this case, slashes, jails, and tombstones
 func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
 	logger := k.Logger(ctx)
 
@@ -50,7 +50,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 		}
 		err = k.JailAndTombstoneValidator(ctx, providerAddr)
 		// JailAndTombstoneValidator should never return an error if
-		// SlashValidator succeeded because both methods fails if the malicious
+		// SlashValidator succeeded because both methods fail if the malicious
 		// validator is either or both !found, unbonded and tombstoned.
 		if err != nil {
 			panic(err)
