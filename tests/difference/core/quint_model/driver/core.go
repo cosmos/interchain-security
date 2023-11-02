@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"testing"
 	"time"
 
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
-	"github.com/stretchr/testify/suite"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
@@ -19,9 +19,7 @@ import (
 )
 
 type CoreSuite struct {
-	suite.Suite
-
-	initState InitState
+	t *testing.T
 
 	// simulate a relayed path
 	simibc simibc.RelayedPath
@@ -46,15 +44,11 @@ func (s *CoreSuite) chainID(chain string) string {
 
 // chain returns the TestChain for a given chain identifier
 func (s *CoreSuite) chain(chain string) *ibctesting.TestChain {
-	return map[string]*ibctesting.TestChain{P: s.providerChain(), C: s.consumerChain()}[chain]
+	return s.simibc.Chain(chain)
 }
 
 func (s *CoreSuite) providerChain() *ibctesting.TestChain {
-	return s.simibc.Chain(ibctesting.GetChainID(0))
-}
-
-func (s *CoreSuite) consumerChain() *ibctesting.TestChain {
-	return s.simibc.Chain(ibctesting.GetChainID(1))
+	return s.chain("provider")
 }
 
 func (b *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
@@ -65,8 +59,8 @@ func (b *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {
 	return b.providerChain().App.(*appProvider.App).SlashingKeeper
 }
 
-func (b *CoreSuite) consumerKeeper() consumerkeeper.Keeper {
-	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
+func (b *CoreSuite) consumerKeeper(chain string) consumerkeeper.Keeper {
+	return b.chain(chain).App.(*appConsumer.App).ConsumerKeeper
 }
 
 // height returns the height of the current header of chain
@@ -97,16 +91,18 @@ func (s *CoreSuite) consAddr(i int64) sdk.ConsAddress {
 // isJailed returns the jail status of validator with id (ix) i
 func (s *CoreSuite) isJailed(i int64) bool {
 	val, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-	s.Require().Truef(found, "GetValidator() -> !found")
+	if !found {
+		s.t.Errorf("GetValidator(%v) -> !found", s.validator(i))
+	}
 	return val.IsJailed()
 }
 
-// consumerPower returns the power on the consumer chain for
+// consumerPower returns the power on the consumer chain chain for
 // validator with id (ix) i
-func (s *CoreSuite) consumerPower(i int64) (int64, error) {
-	v, found := s.consumerKeeper().GetCCValidator(s.ctx(C), s.validator(i))
+func (s *CoreSuite) consumerPower(i int64, chain string) (int64, error) {
+	v, found := s.consumerKeeper(chain).GetCCValidator(s.ctx(C), s.validator(i))
 	if !found {
-		return 0, fmt.Errorf("GetCCValidator() -> !found")
+		return 0, fmt.Errorf("GetCCValidator(%v) -> !found", s.validator(i))
 	}
 	return v.Power, nil
 }
@@ -115,7 +111,9 @@ func (s *CoreSuite) consumerPower(i int64) (int64, error) {
 // the delegator account to the validator with id (ix) i
 func (s *CoreSuite) delegation(i int64) int64 {
 	d, found := s.providerStakingKeeper().GetDelegation(s.ctx(P), s.delegator(), s.validator(i))
-	s.Require().Truef(found, "GetDelegation() -> !found")
+	if !found {
+		s.t.Errorf("GetDelegation(%v) -> !found", s.validator(i))
+	}
 	return d.Shares.TruncateInt64()
 }
 
@@ -123,7 +121,9 @@ func (s *CoreSuite) delegation(i int64) int64 {
 // on the provider chain
 func (s *CoreSuite) validatorStatus(i int64) stakingtypes.BondStatus {
 	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-	s.Require().Truef(found, "GetValidator() -> !found")
+	if !found {
+		s.t.Errorf("GetValidator(%v) -> !found", s.validator(i))
+	}
 	return v.GetStatus()
 }
 
@@ -131,7 +131,9 @@ func (s *CoreSuite) validatorStatus(i int64) stakingtypes.BondStatus {
 // id (ix) i has delegated to it in total on the provider chain
 func (s *CoreSuite) providerTokens(i int64) int64 {
 	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-	s.Require().Truef(found, "GetValidator() -> !found")
+	if !found {
+		s.t.Errorf("GetValidator(%v) -> !found", s.validator(i))
+	}
 	return v.Tokens.Int64()
 }
 
@@ -170,14 +172,14 @@ func (s *CoreSuite) undelegate(val, amt int64) {
 
 // consumerSlash simulates a slash event occurring on the consumer chain.
 // It can be for a downtime or doublesign.
-func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
+func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool, chain string) {
 	kind := stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 	if isDowntime {
 		kind = stakingtypes.Infraction_INFRACTION_DOWNTIME
 	}
 	ctx := s.ctx(C)
 	before := len(ctx.EventManager().Events())
-	s.consumerKeeper().SlashWithInfractionReason(ctx, val, h, 0, sdk.Dec{}, kind)
+	s.consumerKeeper(chain).SlashWithInfractionReason(ctx, val, h, 0, sdk.Dec{}, kind)
 	// consumer module emits packets on slash, so these must be collected.
 	evts := ctx.EventManager().Events()
 	packets := simibc.ParsePacketsFromEvents(evts[before:])
@@ -200,11 +202,11 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 	s.simibc.DeliverPackets(s.chainID(chain), numPackets)
 }
 
-// func (s *CoreSuite) endAndBeginBlock(chain string) {
-// 	s.simibc.EndAndBeginBlock(s.chainID(chain), s.initState.BlockInterval, func() {
-// 		s.compareModelAndSystemState()
-// 	})
-// }
+func (s *CoreSuite) endAndBeginBlock(chain string, timeAdvancement time.Duration) {
+	s.simibc.EndAndBeginBlock(s.chainID(chain), timeAdvancement, func() {
+		// s.compareModelAndSystemState()
+	})
+}
 
 // // compareModelAndSystemState compares the state in the SUT to the state in the
 // // the model.

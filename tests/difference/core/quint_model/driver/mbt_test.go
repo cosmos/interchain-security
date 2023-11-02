@@ -6,28 +6,43 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/api/tendermint/abci"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 	"github.com/cosmos/interchain-security/v3/testutil/integration"
 	"github.com/informalsystems/itf-go/itf"
-	"github.com/stretchr/testify/require"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 )
 
-const INITIAL_ACCOUNT_BALANCE = 1000000000
+const (
+	INITIAL_ACCOUNT_BALANCE = 1000000000
+
+	// Parameters used in the staking module
+	StakingParamsMaxEntries    = 10000
+	StakingParamsMaxValidators = 100
+	StakingParamsUnbondingTime = 5 * 7 * 24 * time.Hour // 5 weeks
+)
+
+// Parameters used by CometBFT
+var (
+	ConsensusParams = cmttypes.DefaultConsensusParams()
+)
 
 func getAppBytesAndSenders(
-	t *testing.T,
 	chainID string,
 	app ibctesting.TestingApp,
 	genesis map[string]json.RawMessage,
@@ -68,29 +83,48 @@ func getAppBytesAndSenders(
 	genesisAuth := authtypes.NewGenesisState(authtypes.DefaultParams(), accounts)
 	genesis[authtypes.ModuleName] = app.AppCodec().MustMarshalJSON(genesisAuth)
 
+	// create initial validator set and its delegations
 	stakingValidators := make([]stakingtypes.Validator, 0, len(nodes))
 	delegations := make([]stakingtypes.Delegation, 0, len(nodes))
 
 	// Sum bonded is needed for BondedPool account
 	sumBonded := sdk.NewInt(0)
-	initValPowers := []abci.ValidatorUpdate{}
+	initValPowers := []abcitypes.ValidatorUpdate{}
 
 	for i, val := range nodes {
-		tokens := sdk.NewInt(int64(val.VotingPower))
+		_, valSetVal := initialValSet.GetByAddress(val.Address.Bytes())
+		valAccount := accounts[i]
+		if valSetVal == nil {
+			log.Panicf("error getting validator with address %v from valSet %v", val, initialValSet)
+		}
+		tokens := sdk.NewInt(valSetVal.VotingPower)
 		sumBonded = sumBonded.Add(tokens)
 
 		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
-		require.NoError(b.suite.T(), err)
+		if err != nil {
+			log.Panicf("error getting pubkey for val %v", val)
+		}
 		pkAny, err := codectypes.NewAnyWithValue(pk)
-		require.NoError(b.suite.T(), err)
+		if err != nil {
+			log.Panicf("error getting pubkeyAny for val %v", val)
+		}
+
+		var valStatus stakingtypes.BondStatus
+		if val.VotingPower > 0 {
+			valStatus = stakingtypes.Bonded
+		} else {
+			valStatus = stakingtypes.Unbonded
+		}
+
+		delShares := sdk.NewDec(tokens.Int64()) // as many shares as tokens
 
 		validator := stakingtypes.Validator{
 			OperatorAddress:   sdk.ValAddress(val.Address).String(),
 			ConsensusPubkey:   pkAny,
 			Jailed:            false,
-			Status:            status,
+			Status:            valStatus,
 			Tokens:            tokens,
-			DelegatorShares:   sumShares,
+			DelegatorShares:   delShares,
 			Description:       stakingtypes.Description{},
 			UnbondingHeight:   int64(0),
 			UnbondingTime:     time.Unix(0, 0).UTC(),
@@ -101,13 +135,11 @@ func getAppBytesAndSenders(
 		stakingValidators = append(stakingValidators, validator)
 
 		// Store delegation from the model delegator account
-		delegations = append(delegations, stakingtypes.NewDelegation(accounts[0].GetAddress(), val.Address.Bytes(), delShares))
-		// Remaining delegation is from extra account
-		delegations = append(delegations, stakingtypes.NewDelegation(accounts[1].GetAddress(), val.Address.Bytes(), sumShares.Sub(delShares)))
+		delegations = append(delegations, stakingtypes.NewDelegation(valAccount.GetAddress(), val.Address.Bytes(), delShares))
 
 		// add initial validator powers so consumer InitGenesis runs correctly
 		pub, _ := val.ToProto()
-		initValPowers = append(initValPowers, abci.ValidatorUpdate{
+		initValPowers = append(initValPowers, abcitypes.ValidatorUpdate{
 			Power:  val.VotingPower,
 			PubKey: pub.PubKey,
 		})
@@ -123,17 +155,17 @@ func getAppBytesAndSenders(
 		bondDenom = genesisStaking.Params.BondDenom
 	}
 
-	if genesis[consumertypes.ModuleName] != nil {
-		app.AppCodec().MustUnmarshalJSON(genesis[consumertypes.ModuleName], &genesisConsumer)
+	if genesis[ccvtypes.ModuleName] != nil {
+		app.AppCodec().MustUnmarshalJSON(genesis[ccvtypes.ModuleName], &genesisConsumer)
 		genesisConsumer.Provider.InitialValSet = initValPowers
 		genesisConsumer.Params.Enabled = true
-		genesis[consumertypes.ModuleName] = app.AppCodec().MustMarshalJSON(&genesisConsumer)
+		genesis[ccvtypes.ModuleName] = app.AppCodec().MustMarshalJSON(&genesisConsumer)
 	}
 
 	// Set model parameters
-	genesisStaking.Params.MaxEntries = uint32(b.initState.MaxEntries)
-	genesisStaking.Params.MaxValidators = uint32(b.initState.MaxValidators)
-	genesisStaking.Params.UnbondingTime = b.initState.UnbondingP
+	genesisStaking.Params.MaxEntries = StakingParamsMaxEntries
+	genesisStaking.Params.MaxValidators = StakingParamsMaxValidators
+	genesisStaking.Params.UnbondingTime = StakingParamsUnbondingTime
 	genesisStaking = *stakingtypes.NewGenesisState(genesisStaking.Params, stakingValidators, delegations)
 	genesis[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(&genesisStaking)
 
@@ -154,29 +186,34 @@ func getAppBytesAndSenders(
 	genesis[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(genesisBank)
 
 	stateBytes, err := json.MarshalIndent(genesis, "", " ")
-	require.NoError(b.suite.T(), err)
+	if err != nil {
+		log.Panicf("error marshalling genesis: %v", err)
+	}
 
 	return stateBytes, senderAccounts
 }
 
 func newChain(
+	t *testing.T,
 	coord *ibctesting.Coordinator,
 	appInit icstestingutils.AppIniter,
 	chainID string,
-	validators *tmtypes.ValidatorSet,
-	signers map[string]tmtypes.PrivValidator,
+	validators *cmttypes.ValidatorSet,
+	signers map[string]cmttypes.PrivValidator,
+	nodes []*cmttypes.Validator,
 ) *ibctesting.TestChain {
 	app, genesis := appInit()
 
 	baseapp.SetChainID(chainID)(app.GetBaseApp())
 
-	stateBytes, senderAccounts := b.getAppBytesAndSenders(chainID, app, genesis, validators)
+	stateBytes, senderAccounts := getAppBytesAndSenders(chainID, app, genesis, validators, nodes)
 
+	protoConsParams := ConsensusParams.ToProto()
 	app.InitChain(
-		abci.RequestInitChain{
+		abcitypes.RequestInitChain{
 			ChainId:         chainID,
-			Validators:      []abci.ValidatorUpdate{},
-			ConsensusParams: b.initState.ConsensusParams,
+			Validators:      []abcitypes.ValidatorUpdate{},
+			ConsensusParams: &protoConsParams,
 			AppStateBytes:   stateBytes,
 		},
 	)
@@ -184,8 +221,8 @@ func newChain(
 	app.Commit()
 
 	app.BeginBlock(
-		abci.RequestBeginBlock{
-			Header: tmproto.Header{
+		abcitypes.RequestBeginBlock{
+			Header: cmtproto.Header{
 				ChainID:            chainID,
 				Height:             app.LastBlockHeight() + 1,
 				AppHash:            app.LastCommitID().Hash,
@@ -196,11 +233,11 @@ func newChain(
 	)
 
 	chain := &ibctesting.TestChain{
-		T:           b.suite.T(),
+		T:           t,
 		Coordinator: coord,
 		ChainID:     chainID,
 		App:         app,
-		CurrentHeader: tmproto.Header{
+		CurrentHeader: cmtproto.Header{
 			ChainID: chainID,
 			Height:  1,
 			Time:    coord.CurrentTime.UTC(),
@@ -308,8 +345,30 @@ func TestItfTrace(t *testing.T) {
 	t.Log(addressMap)
 	t.Log(signers)
 
+	// get a slice of validators in the right order
+	nodes := make([]*cmttypes.Validator, len(valNames))
+	for i, valName := range valNames {
+		nodes[i] = addressMap[valName]
+	}
+
+	initValUpdates := types.TM2PB.ValidatorUpdates(valSet)
+
 	t.Log("Creating coordinator")
-	coordinator := ibctesting.NewCoordinator(t, len(consumers))
+	coordinator := ibctesting.NewCoordinator(t, 0) // start without chains, which we add later
+
+	// start provider
+	t.Log("Creating provider chain")
+	providerChain := newChain(t, coordinator, icstestingutils.ProviderAppIniter, "provider", valSet, signers, nodes)
+	coordinator.Chains["provider"] = providerChain
+
+	// start consumer chains
+	for _, chain := range consumers {
+		t.Logf("Creating consumer chain %v", chain)
+		consumerChain := newChain(t, coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes)
+		coordinator.Chains[chain] = consumerChain
+	}
+
+	t.Log("Started chains")
 
 	// initializing the provider chain
 
@@ -330,7 +389,8 @@ func TestItfTrace(t *testing.T) {
 		case "VotingPowerChange":
 			node := lastAction["validator"].Value.(string)
 			newVotingPower := lastAction["newVotingPower"].Value.(int64)
-			t.Log(node, newVotingPower)
+			t.Logf("Setting provider voting power of %v to %v", node, newVotingPower)
+
 		case "EndAndBeginBlockForProvider":
 			timeAdvancement := lastAction["timeAdvancement"].Value.(int64)
 			consumersToStart := lastAction["consumersToStart"].Value.(itf.ListExprType)
