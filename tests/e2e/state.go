@@ -467,7 +467,11 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 }
 
 type TmValidatorSetYaml struct {
-	Total      string `yaml:"total"`
+	BlockHeight string `yaml:"block_height"`
+	Pagination  struct {
+		NextKey string `yaml:"next_key"`
+		Total   string `yaml:"total"`
+	} `yaml:"pagination"`
 	Validators []struct {
 		Address     string    `yaml:"address"`
 		VotingPower string    `yaml:"voting_power"`
@@ -502,14 +506,15 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 		log.Fatalf("yaml.Unmarshal returned an error while unmarshalling validator set: %v, input: %s", err, string(bz))
 	}
 
-	total, err := strconv.Atoi(valset.Total)
+	total, err := strconv.Atoi(valset.Pagination.Total)
 	if err != nil {
-		log.Fatalf("strconv.Atoi returned an error while coonverting total for validator set: %v, input: %s, validator set: %s", err, valset.Total, pretty.Sprint(valset))
+		log.Fatalf("strconv.Atoi returned an error while coonverting total for validator set: %v, input: %s, validator set: %s", err, valset.Pagination.Total, pretty.Sprint(valset))
 	}
 
+	// this only works on small valsets -> otherwise pagination must be used
 	if total != len(valset.Validators) {
 		log.Fatalf("Total number of validators %v does not match number of validators in list %v. Probably a query pagination issue. Validator set: %v",
-			valset.Total, uint(len(valset.Validators)), pretty.Sprint(valset))
+			valset.Pagination.Total, uint(len(valset.Validators)), pretty.Sprint(valset))
 	}
 
 	for _, val := range valset.Validators {
