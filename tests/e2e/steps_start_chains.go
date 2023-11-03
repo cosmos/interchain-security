@@ -34,7 +34,7 @@ func stepStartProviderChain() []Step {
 func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint, setupTransferChans bool) []Step {
 	s := []Step{
 		{
-			action: submitConsumerAdditionProposalAction{
+			action: submitConsumerAdditionLegacyProposalAction{
 				chain:         chainID("provi"),
 				from:          validatorID("alice"),
 				deposit:       10000001,
