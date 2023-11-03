@@ -536,7 +536,7 @@ func New(
 		upgrade.NewAppModule(&app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
-		ibctm.AppModuleBasic{},
+		ibctm.NewAppModule(),
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
 		providerModule,
