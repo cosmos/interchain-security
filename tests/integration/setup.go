@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"sync"
 	"testing"
 
 	storetypes "cosmossdk.io/store/types"
@@ -172,9 +171,11 @@ func (s *CCVTestSuite) registerPacketSniffer(chain *ibctesting.TestChain) {
 		s.packetSniffers = make(map[*ibctesting.TestChain]*packetSniffer)
 	}
 	p := newPacketSniffer()
-	listeners := []storetypes.ABCIListener{p}
-	streamingManager := storetypes.StreamingManager{ABCIListeners: listeners, StopNodeOnErr: true}
-	chain.App.GetBaseApp().SetStreamingManager(streamingManager)
+	// listeners := []storetypes.ABCIListener{p}
+	// streamingManager := storetypes.StreamingManager{ABCIListeners: listeners, StopNodeOnErr: true}
+	chain.App.GetBaseApp().SetStreamingManager(store.StreamingManager{
+		ABCIListeners: []store.ABCIListener{p},
+	})
 	s.packetSniffers[chain] = p
 }
 
@@ -381,6 +382,8 @@ func preProposalKeyAssignment(s *CCVTestSuite, chainID string) {
 	}
 }
 
+var _ store.ABCIListener = &packetSniffer{}
+
 // packetSniffer implements the StreamingService interface.
 // Implements ListenFinalizeBlock to record packets from events.
 type packetSniffer struct {
@@ -414,25 +417,25 @@ func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit,
 	return nil
 }
 
-func (*packetSniffer) Close() error                                       { return nil }
-func (*packetSniffer) Listeners() map[store.StoreKey][]store.ABCIListener { return nil }
-func (*packetSniffer) Stream(wg *sync.WaitGroup) error                    { return nil }
+// func (*packetSniffer) Close() error                                       { return nil }
+// func (*packetSniffer) Listeners() map[store.StoreKey][]store.ABCIListener { return nil }
+// func (*packetSniffer) Stream(wg *sync.WaitGroup) error                    { return nil }
 
-// [legacy simibc method]
-// ABCIToSDKEvents converts a list of ABCI events to Cosmos SDK events.
-func ABCIToSDKEvents(abciEvents []abci.Event) sdk.Events {
-	var events sdk.Events
-	for _, evt := range abciEvents {
-		var attributes []sdk.Attribute
-		for _, attr := range evt.GetAttributes() {
-			attributes = append(attributes, sdk.NewAttribute(attr.Key, attr.Value))
-		}
+// // [legacy simibc method]
+// // ABCIToSDKEvents converts a list of ABCI events to Cosmos SDK events.
+// func ABCIToSDKEvents(abciEvents []abci.Event) sdk.Events {
+// 	var events sdk.Events
+// 	for _, evt := range abciEvents {
+// 		var attributes []sdk.Attribute
+// 		for _, attr := range evt.GetAttributes() {
+// 			attributes = append(attributes, sdk.NewAttribute(attr.Key, attr.Value))
+// 		}
 
-		events = events.AppendEvent(sdk.NewEvent(evt.GetType(), attributes...))
-	}
+// 		events = events.AppendEvent(sdk.NewEvent(evt.GetType(), attributes...))
+// 	}
 
-	return events
-}
+// 	return events
+// }
 
 // [legacy simibc method]
 // ParsePacketsFromEvents returns all packets found in events.
