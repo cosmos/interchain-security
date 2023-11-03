@@ -8,7 +8,7 @@ title: Cryptographic verification of equivocation evidence
 * 5/1/2023: First draft
 * 7/23/2023: Add light client attacks handling
 * 9/6/2023: Add double signing attacks handling
-* 11/3/2023: Add Amnesia attacks handling
+* 11/3/2023: Update limitations to handle amnesia attacks
 
 ## Status
 
