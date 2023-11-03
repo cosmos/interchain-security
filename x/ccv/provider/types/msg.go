@@ -17,12 +17,13 @@ var _ sdk.Msg = &MsgAssignConsumerKey{}
 // NewMsgAssignConsumerKey creates a new MsgAssignConsumerKey instance.
 // Delegator address and validator address are the same.
 func NewMsgAssignConsumerKey(chainID string, providerValidatorAddress sdk.ValAddress,
-	consumerConsensusPubKey string,
+	consumerConsensusPubKey, signer string,
 ) (*MsgAssignConsumerKey, error) {
 	return &MsgAssignConsumerKey{
 		ChainId:      chainID,
 		ProviderAddr: providerValidatorAddress.String(),
 		ConsumerKey:  consumerConsensusPubKey,
+		Signer:       signer,
 	}, nil
 }
 

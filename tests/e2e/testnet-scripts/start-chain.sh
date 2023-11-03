@@ -373,11 +373,11 @@ fi
 # poll for chain start
 if [[ "$USE_COMETMOCK" == "true" ]]; then
     set +e
-    until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658"; do sleep 0.3 ; done
+    until $BIN query block --type=height 0 --node "tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658"; do sleep 0.3 ; done
     set -e
 else
     set +e
-    until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":
+    until $BIN query block --type=height 0 --node "tcp://$CHAIN_IP_PREFIX.$QUERY_IP_SUFFIX:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":
     ""}},"block":null}'; do sleep 0.3 ; done
     set -e
 fi
