@@ -50,7 +50,7 @@ NODES=$(echo "$VALIDATORS" | jq '. | length')
 # SETUP NETWORK NAMESPACES, see: https://adil.medium.com/container-networking-under-the-hood-network-namespaces-6b2b8fe8dc2a
 
 # Create virtual bridge device (acts like a switch)
-ip link add name virtual-bridge type bridge || true 
+ip link add name virtual-bridge type bridge || true
 
 for i in $(seq 0 $(($NODES - 1)));
 do
@@ -59,11 +59,11 @@ do
         VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
         VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$i].ip_suffix")
         NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
-        IP_ADDR="$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX/24" 
+        IP_ADDR="$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX/24"
 
-        # Create network namespace 
+        # Create network namespace
         ip netns add $NET_NAMESPACE_NAME
-        # Create virtual ethernet device to connect with bridge 
+        # Create virtual ethernet device to connect with bridge
         ip link add $NET_NAMESPACE_NAME-in type veth peer name $NET_NAMESPACE_NAME-out
         # Connect input end of virtual ethernet device to namespace
         ip link set $NET_NAMESPACE_NAME-in netns $NET_NAMESPACE_NAME
@@ -84,7 +84,7 @@ do
         VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
         NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
 
-        # Enable in/out interfaces for the namespace 
+        # Enable in/out interfaces for the namespace
         ip link set $NET_NAMESPACE_NAME-out up
         ip netns exec $NET_NAMESPACE_NAME ip link set dev $NET_NAMESPACE_NAME-in up
         # Enable loopback device
@@ -92,7 +92,7 @@ do
     fi
 done
 
-# Assign IP for bridge, to route between default network namespace and bridge 
+# Assign IP for bridge, to route between default network namespace and bridge
 # BRIDGE_IP="$CHAIN_IP_PREFIX.254/24"
 # ip addr add $BRIDGE_IP dev virtual-bridge
 
@@ -127,7 +127,7 @@ do
         fi
 
         # Modify tendermint configs of validator
-        if [ "$TENDERMINT_CONFIG_TRANSFORM" != "" ] ; then 
+        if [ "$TENDERMINT_CONFIG_TRANSFORM" != "" ] ; then
             #'s/foo/bar/;s/abc/def/'
             sed -i "$TENDERMINT_CONFIG_TRANSFORM" $CHAIN_ID/validator$VAL_ID/config/config.toml
         fi
@@ -160,7 +160,7 @@ do
     do
         if [ $i -ne $j ]; then
             PEER_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$j].val_id")
-            PEER_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$j].ip_suffix")  
+            PEER_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$j].ip_suffix")
             NODE_ID=$($BIN tendermint show-node-id --home /$CHAIN_ID/validator$PEER_VAL_ID)
             ADDRESS="$NODE_ID@$CHAIN_IP_PREFIX.$PEER_VAL_IP_SUFFIX:26656"
             # (jq -r '.body.memo' /$CHAIN_ID/validator$j/config/gentx/*) # Getting the address from the gentx should also work

@@ -21,7 +21,7 @@ ADD . /interchain-security
 
 WORKDIR /interchain-security
 
-# Do not specify version here. It leads to odd replacement behavior 
+# Do not specify version here. It leads to odd replacement behavior
 RUN if [ -d "./cosmos-sdk" ]; then go mod edit -replace github.com/cosmos/cosmos-sdk=./cosmos-sdk; fi
 RUN go mod tidy
 
