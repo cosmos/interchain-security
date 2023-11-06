@@ -20,6 +20,8 @@ service Msg {
 message MsgAssignConsumerKey {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
+  option (cosmos.msg.v1.signer) = "signer";
+
   // The chain id of the consumer chain to assign a consensus public key to
   string chain_id = 1;
   // The validator address on the provider
@@ -28,6 +30,9 @@ message MsgAssignConsumerKey {
   // in json string format corresponding to proto-any, ex:
   // `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`
   string consumer_key = 3;
+
+  // signer address
+  string signer = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 message MsgAssignConsumerKeyResponse {}

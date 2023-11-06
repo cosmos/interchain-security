@@ -39,6 +39,7 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 				return err
 			}
 
+			signer := clientCtx.GetFromAddress().String()
 			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
@@ -47,7 +48,7 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 
 			providerValAddr := clientCtx.GetFromAddress()
 
-			msg, err := types.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), args[1])
+			msg, err := types.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), args[1], signer)
 			if err != nil {
 				return err
 			}

@@ -465,7 +465,7 @@ func (tr *TestRun) voteGovProposal(
 
 	wg.Wait()
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(action.chain, 1, 10*time.Second)
+	tr.waitBlocks(action.chain, 2, 10*time.Second)
 	tr.WaitTime(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
 }
 
@@ -659,7 +659,7 @@ rpc_addr = "%s"
 rpc_timeout = "10s"
 store_prefix = "ibc"
 trusting_period = "14days"
-websocket_addr = "%s"
+event_source = { mode = "push", url = "%s", batch_delay = "500ms" }
 
 [chains.gas_price]
 	denom = "stake"
@@ -1888,7 +1888,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		tr.getValidatorNode(chainID("provi"), action.validator),
 		gas,
 	)
-
+	fmt.Println(assignKey)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
 		tr.containerConfig.instanceName,

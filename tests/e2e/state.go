@@ -384,14 +384,15 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	propType := gjson.Get(string(bz), `messages.0.content.@type`).String()
-	deposit := gjson.Get(string(bz), `total_deposit.#(denom=="stake").amount`).Uint()
-	status := gjson.Get(string(bz), `status`).String()
+	propType := gjson.Get(string(bz), `proposal.messages.0.value.content.type`).String()
+	rawContent := gjson.Get(string(bz), `proposal.messages.0.value.content.value`)
+	deposit := gjson.Get(string(bz), `proposal.total_deposit.#(denom=="stake").amount`).Uint()
+	status := gjson.Get(string(bz), `proposal.status`).String()
 
 	switch propType {
 	case "/cosmos.gov.v1beta1.TextProposal":
-		title := gjson.Get(string(bz), `content.title`).String()
-		description := gjson.Get(string(bz), `content.description`).String()
+		title := rawContent.Get("title").String()
+		description := rawContent.Get("description").String()
 
 		return TextProposal{
 			Deposit:     uint(deposit),
@@ -400,8 +401,8 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			Description: description,
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal":
-		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
-		spawnTime := gjson.Get(string(bz), `messages.0.content.spawn_time`).Time().Sub(tr.containerConfig.now)
+		chainId := rawContent.Get("chain_id").String()
+		spawnTime := rawContent.Get("spawn_time").Time().Sub(tr.containerConfig.now)
 
 		var chain chainID
 		for i, conf := range tr.chainConfigs {
@@ -417,13 +418,13 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			Chain:     chain,
 			SpawnTime: int(spawnTime.Milliseconds()),
 			InitialHeight: clienttypes.Height{
-				RevisionNumber: gjson.Get(string(bz), `messages.0.content.initial_height.revision_number`).Uint(),
-				RevisionHeight: gjson.Get(string(bz), `messages.0.content.initial_height.revision_height`).Uint(),
+				RevisionNumber: rawContent.Get("initial_height.revision_number").Uint(),
+				RevisionHeight: rawContent.Get("initial_height.revision_height").Uint(),
 			},
 		}
 	case "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal":
-		height := gjson.Get(string(bz), `messages.0.content.plan.height`).Uint()
-		title := gjson.Get(string(bz), `messages.0.content.plan.name`).String()
+		height := rawContent.Get("plan.height").Uint()
+		title := rawContent.Get("plan.name").String()
 		return UpgradeProposal{
 			Deposit:       uint(deposit),
 			Status:        status,
@@ -432,8 +433,8 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
 		}
 	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
-		chainId := gjson.Get(string(bz), `messages.0.content.chain_id`).String()
-		stopTime := gjson.Get(string(bz), `messages.0.content.stop_time`).Time().Sub(tr.containerConfig.now)
+		chainId := rawContent.Get("chain_id").String()
+		stopTime := rawContent.Get("stop_time").Time().Sub(tr.containerConfig.now)
 
 		var chain chainID
 		for i, conf := range tr.chainConfigs {
@@ -454,9 +455,9 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 		return ParamsProposal{
 			Deposit:  uint(deposit),
 			Status:   status,
-			Subspace: gjson.Get(string(bz), `messages.0.content.changes.0.subspace`).String(),
-			Key:      gjson.Get(string(bz), `messages.0.content.changes.0.key`).String(),
-			Value:    gjson.Get(string(bz), `messages.0.content.changes.0.value`).String(),
+			Subspace: rawContent.Get("changes.0.subspace").String(),
+			Key:      rawContent.Get("changes.0.key").String(),
+			Value:    rawContent.Get("changes.0.value").String(),
 		}
 	}
 
@@ -466,7 +467,11 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 }
 
 type TmValidatorSetYaml struct {
-	Total      string `yaml:"total"`
+	BlockHeight string `yaml:"block_height"`
+	Pagination  struct {
+		NextKey string `yaml:"next_key"`
+		Total   string `yaml:"total"`
+	} `yaml:"pagination"`
 	Validators []struct {
 		Address     string    `yaml:"address"`
 		VotingPower string    `yaml:"voting_power"`
@@ -501,14 +506,15 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 		log.Fatalf("yaml.Unmarshal returned an error while unmarshalling validator set: %v, input: %s", err, string(bz))
 	}
 
-	total, err := strconv.Atoi(valset.Total)
+	total, err := strconv.Atoi(valset.Pagination.Total)
 	if err != nil {
-		log.Fatalf("strconv.Atoi returned an error while coonverting total for validator set: %v, input: %s, validator set: %s", err, valset.Total, pretty.Sprint(valset))
+		log.Fatalf("strconv.Atoi returned an error while coonverting total for validator set: %v, input: %s, validator set: %s", err, valset.Pagination.Total, pretty.Sprint(valset))
 	}
 
+	// this only works on small valsets -> otherwise pagination must be used
 	if total != len(valset.Validators) {
 		log.Fatalf("Total number of validators %v does not match number of validators in list %v. Probably a query pagination issue. Validator set: %v",
-			valset.Total, uint(len(valset.Validators)), pretty.Sprint(valset))
+			valset.Pagination.Total, uint(len(valset.Validators)), pretty.Sprint(valset))
 	}
 
 	for _, val := range valset.Validators {
