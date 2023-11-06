@@ -90,8 +90,8 @@ message ConsumerRemovalProposal {
 // punish a validator for equivocation on a consumer chain.
 // 
 // This type is only used internally to the consumer CCV module.  
-// WARNING: This message is deprecated now that MsgSubmitConsumerDoubleVoting 
-// allows to submit consumer equivocations. (see proto/interchain-security/ccv/provider/v1/tx.proto#L54)
+// WARNING: This message is deprecated now that equivocations can be submitted
+// and verified automatically on the provider. (see SubmitConsumerDoubleVoting in proto/interchain-security/ccv/provider/v1/tx.proto).
 message EquivocationProposal {
   option deprecated = true;
   // the title of the proposal
