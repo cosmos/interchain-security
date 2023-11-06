@@ -29,23 +29,20 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	)
 	registry.RegisterImplementations(
 		(*govtypes.Content)(nil),
-		&ChangeRewardDenomsProposal{},
-	)
-
-	registry.RegisterImplementations(
-		(*sdk.Msg)(nil),
-		&MsgSubmitConsumerMisbehaviour{},
-	)
-
-	registry.RegisterImplementations(
-		(*sdk.Msg)(nil),
-		&MsgSubmitConsumerDoubleVoting{},
+		&EquivocationProposal{},
 	)
 	registry.RegisterImplementations(
 		(*govtypes.Content)(nil),
 		&ChangeRewardDenomsProposal{},
 	)
-
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&MsgSubmitConsumerMisbehaviour{},
+	)
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
+		&MsgSubmitConsumerDoubleVoting{},
+	)
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 
