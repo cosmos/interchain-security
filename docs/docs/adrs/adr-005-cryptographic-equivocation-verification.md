@@ -8,6 +8,7 @@ title: Cryptographic verification of equivocation evidence
 * 5/1/2023: First draft
 * 7/23/2023: Add light client attacks handling
 * 9/6/2023: Add double signing attacks handling
+* 11/3/2023: Update limitations to clarify amnesia attacks are ignored
 
 ## Status
 
@@ -137,7 +138,7 @@ either using its infraction height or its unsigned timestamp. Note that changes 
 The underlying reason is that a malicious validator could take advantage of getting tombstoned 
 to avoid being slashed on the provider ([see comment](https://github.com/cosmos/interchain-security/pull/1232#issuecomment-1693127641)). 
 
-- Currently, the endpoint can only handle "equivocation" light client attacks. This is because the "lunatic" attacks require the endpoint to possess the ability to dissociate which header is conflicted or trusted upon receiving a misbehavior message. Without this information, it's not possible to define the Byzantine validators from the conflicting headers (see [comment](https://github.com/cosmos/interchain-security/pull/826#discussion_r1268668684)).
+- Currently, the endpoint can only handle _equivocation_ light client attacks. This is because the _lunatic_ attacks require the endpoint to possess the ability to dissociate which header is conflicted or trusted upon receiving a misbehavior message. Without this information, it's not possible to extract the Byzantine validators from the conflicting headers (see [comment](https://github.com/cosmos/interchain-security/pull/826#discussion_r1268668684)). In addition, "amnesia" attacks are ignored, similar to CometBFT (see [ADR-056](https://github.com/cometbft/cometbft/blob/main/docs/architecture/tendermint-core/adr-056-light-client-amnesia-attacks.md#decision)).
 
 
 ## Consequences
