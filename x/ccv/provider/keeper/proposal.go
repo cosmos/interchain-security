@@ -247,6 +247,7 @@ func (k Keeper) MakeConsumerGenesis(
 		return gen, nil, errorsmod.Wrapf(types.ErrNoUnbondingTime, "ubonding time not found: %s", err)
 	}
 	height := clienttypes.GetSelfHeight(ctx)
+	height.RevisionHeight = height.RevisionHeight
 	fmt.Println("## PROVIDER HEIGHT at MakeConsumerGenesis", height)
 
 	clientState := k.GetTemplateClient(ctx)

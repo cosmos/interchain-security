@@ -450,7 +450,7 @@ func New(
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		ibc.NewAppModule(app.IBCKeeper),
-		ibctm.AppModuleBasic{},
+		ibctm.NewAppModule(),
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
 		consumerModule,

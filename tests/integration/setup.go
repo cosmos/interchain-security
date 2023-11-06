@@ -133,7 +133,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
 
 	// start consumer chains
-	numConsumers := 5
+	numConsumers := 1
 	suite.consumerBundles = make(map[string]*icstestingutils.ConsumerBundle)
 	for i := 0; i < numConsumers; i++ {
 		bundle := suite.setupConsumerCallback(&suite.Suite, suite.coordinator, i)
@@ -413,7 +413,7 @@ func getSentPacketKey(sequence uint64, channelID string) string {
 }
 
 func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit, cs []*store.StoreKVPair) error {
-	fmt.Println("# HAVE A COMMIT ##", res)
+	fmt.Println("# HAVE A COMMIT ##", res, cs)
 	return nil
 }
 

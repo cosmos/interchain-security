@@ -99,6 +99,12 @@ func NewAppModule(k keeper.Keeper, paramSpace paramtypes.Subspace) AppModule {
 	}
 }
 
+// IsAppModule implements the appmodule.AppModule interface.
+func (AppModule) IsAppModule() {}
+
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (AppModule) IsOnePerModuleType() {}
+
 // RegisterInvariants implements the AppModule interface
 func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 	// TODO

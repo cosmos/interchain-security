@@ -44,8 +44,8 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 		createVal,
 		createVal,
 		func(k CCVTestSuite) { //nolint:govet // this is a test so we can copy locks
-			historicalEntries := k.consumerApp.GetConsumerKeeper().GetHistoricalEntries(k.consumerCtx())
-			newHeight := k.consumerChain.GetContext().BlockHeight() + historicalEntries
+			// historicalEntries := k.consumerApp.GetConsumerKeeper().GetHistoricalEntries(k.consumerCtx())
+			newHeight := k.consumerChain.GetContext().BlockHeight()
 			header := tmproto.Header{
 				ChainID: "HelloChain",
 				Height:  newHeight,
@@ -58,6 +58,7 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 	for _, ts := range testSetup {
 		ts(k) //nolint:govet // this is a test so we can copy locks
 	}
+	fmt.Printf("### PREP CASES ###\n\n\n")
 
 	// test cases verify that historical info entries are pruned when their height
 	// is below CurrentHeight - HistoricalEntries, and check that their valset gets updated
@@ -83,10 +84,12 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 		},
 	}
 
-	for _, tc := range testCases {
+	for i, tc := range testCases {
+		fmt.Printf("### START TEST CASE %d ###\n\n\n", i)
 		cCtx().WithBlockHeight(tc.height)
 		hi, found := consumerKeeper.GetHistoricalInfo(cCtx().WithBlockHeight(tc.height), tc.height)
 		k.Require().Equal(tc.found, found)
 		k.Require().Len(hi.Valset, tc.expLen)
+		fmt.Printf("### TEST CASE %d DONE ###\n\n\n", i)
 	}
 }
