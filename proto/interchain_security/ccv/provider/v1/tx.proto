@@ -58,7 +58,6 @@ message MsgAssignConsumerKeyResponse {}
 //
 // Note: this replaces ConsumerAdditionProposal which is deprecated and will be removed soon
 message MsgConsumerAddition {
-  option (amino.name)           = "cosmos-sdk/MsgConsumerAddition";
   option (cosmos.msg.v1.signer) = "signer";
 
    // the proposed chain-id of the new consumer chain, must be different from all
