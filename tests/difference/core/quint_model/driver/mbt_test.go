@@ -3,13 +3,12 @@ package main
 import (
 	"log"
 	"testing"
+	"time"
 
 	cmttypes "github.com/cometbft/cometbft/types"
-	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
+	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/v3/testutil/integration"
 	"github.com/informalsystems/itf-go/itf"
-
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 )
 
 // Given a map from node names to voting powers, create a validator set with the right voting powers.
@@ -85,7 +84,25 @@ func TestItfTrace(t *testing.T) {
 		consumers[i] = chain.Value.(string)
 	}
 
-	t.Log("Consumer chains are: ", consumers)
+	chains := append(consumers, "provider")
+
+	t.Log("Chains are: ", chains)
+
+	// create params struct
+	vscTimeout := time.Duration(params["VscTimeout"].Value.(int64))
+
+	unbondingPeriodPerChain := make(map[ChainId]time.Duration, len(consumers))
+	ccvTimeoutPerChain := make(map[ChainId]time.Duration, len(consumers))
+	for _, consumer := range chains {
+		unbondingPeriodPerChain[ChainId(consumer)] = time.Duration(params["UnbondingPeriodPerChain"].Value.(itf.MapExprType)[consumer].Value.(int64))
+		ccvTimeoutPerChain[ChainId(consumer)] = time.Duration(params["CcvTimeout"].Value.(itf.MapExprType)[consumer].Value.(int64))
+	}
+
+	modelParams := ModelParams{
+		VscTimeout:              vscTimeout,
+		CcvTimeout:              ccvTimeoutPerChain,
+		UnbondingPeriodPerChain: unbondingPeriodPerChain,
+	}
 
 	valExprs := params["Nodes"].Value.(itf.ListExprType)
 	valNames := make([]string, len(valExprs))
@@ -105,20 +122,14 @@ func TestItfTrace(t *testing.T) {
 		nodes[i] = addressMap[valName]
 	}
 
-	t.Log("Creating coordinator")
-	coordinator := ibctesting.NewCoordinator(t, 0) // start without chains, which we add later
-
-	// start provider
-	t.Log("Creating provider chain")
-	providerChain := newChain(t, coordinator, icstestingutils.ProviderAppIniter, "provider", valSet, signers, nodes)
-	coordinator.Chains["provider"] = providerChain
-
-	// start consumer chains
-	for _, chain := range consumers {
-		t.Logf("Creating consumer chain %v", chain)
-		consumerChain := newChain(t, coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes)
-		coordinator.Chains[chain] = consumerChain
+	valAddresses := make([]types.ValAddress, len(valNames))
+	for i, valNode := range nodes {
+		pbVal := cmttypes.TM2PB.Validator(valNode)
+		valAddresses[i] = pbVal.Address
 	}
+
+	driver := newDriver(t, valAddresses)
+	driver.setupChains(modelParams, valSet, signers, nodes, consumers)
 
 	t.Log("Started chains")
 

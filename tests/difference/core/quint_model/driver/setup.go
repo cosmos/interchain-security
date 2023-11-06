@@ -14,8 +14,14 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
+	"github.com/stretchr/testify/require"
+
+	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -252,14 +258,17 @@ func newChain(
 		SenderAccounts: senderAccounts,
 	}
 
-	coord.CommitBlock(chain)
+	chain.NextBlock()
 
 	return chain
 }
 
 // Creates a path for cross-chain validation from the consumer to the provider and configures the channel config of the endpoints
-// as well as the clients
-func ConfigureNewPath(consumerChain *ibctesting.TestChain, providerChain *ibctesting.TestChain) *ibctesting.Path {
+// as well as the clients.
+// this function stops when there is an initialized, ready-to-relay channel between the provider and consumer.
+func (s *Driver) ConfigureNewPath(consumerChain *ibctesting.TestChain, providerChain *ibctesting.TestChain, params ModelParams, lastProviderHeader *ibctmtypes.Header) *ibctesting.Path {
+	consumerChainId := ChainId(consumerChain.ChainID)
+
 	path := ibctesting.NewPath(consumerChain, providerChain)
 	consumerEndPoint := path.EndpointA
 	providerEndPoint := path.EndpointB
@@ -270,95 +279,115 @@ func ConfigureNewPath(consumerChain *ibctesting.TestChain, providerChain *ibctes
 	consumerEndPoint.ChannelConfig.Order = channeltypes.ORDERED
 	providerEndPoint.ChannelConfig.Order = channeltypes.ORDERED
 
-	// Configure and create the consumer Client
+	// Configure and create the client on the provider
 	tmCfg := providerEndPoint.ClientConfig.(*ibctesting.TendermintConfig)
-	tmCfg.UnbondingPeriod = b.initState.UnbondingC
-	tmCfg.TrustingPeriod = b.initState.Trusting
-	err := b.providerEndpoint().CreateClient()
-	b.suite.Require().NoError(err)
-	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.providerCtx(), b.consumer().ChainID, b.providerEndpoint().ClientID)
+	tmCfg.UnbondingPeriod = params.UnbondingPeriodPerChain[ChainId(providerChain.ChainID)]
+	err := providerEndPoint.CreateClient()
+	require.NoError(s.t, err, "Error creating client on provider for chain %v", consumerChain.ChainID)
 
+	// Create the Consumer chain ID mapping in the provider state
+	s.providerKeeper().SetConsumerClientId(providerChain.GetContext(), consumerChain.ChainID, providerEndPoint.ClientID)
+
+	// Configure and create the client on the consumer
+	tmCfg = consumerEndPoint.ClientConfig.(*ibctesting.TendermintConfig)
+	tmCfg.UnbondingPeriod = params.UnbondingPeriodPerChain[consumerChainId]
+
+	consumerClientState := ibctmtypes.NewClientState(
+		providerChain.ChainID, tmCfg.TrustLevel, tmCfg.TrustingPeriod, tmCfg.UnbondingPeriod, tmCfg.MaxClockDrift,
+		providerChain.LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
+		[]string{"upgrade", "upgradedIBCState"},
+	)
+
+	consumerGenesis := createConsumerGenesis(params, providerChain, consumerClientState)
+
+	s.consumerKeeper(consumerChainId).InitGenesis(s.ctx(consumerChainId), consumerGenesis)
+
+	// Client ID is set in InitGenesis and we treat it as a block box. So
+	// must query it to use it with the endpoint.
+	clientID, _ := s.consumerKeeper(consumerChainId).GetProviderClientID(s.ctx(consumerChainId))
+	consumerEndPoint.ClientID = clientID
+
+	// Handshake
+	s.coordinator.CreateConnections(path)
+	s.coordinator.CreateChannels(path)
+
+	// Usually the consumer sets the channel ID when it receives a first VSC packet
+	// to the provider. For testing purposes, we can set it here. This is because
+	// we model a blank slate: a provider and consumer that have fully established
+	// their channel, and are ready for anything to happen.
+	s.consumerKeeper(consumerChainId).SetProviderChannel(s.ctx(consumerChainId), consumerEndPoint.ChannelID)
+
+	// // Catch up consumer height to provider height. The provider was one ahead TODO: activate this
+	// // from committing additional validators.
+	// simibc.EndBlock(consumerChain, func() {})
+
+	// simibc.BeginBlock(consumerChain, initState.BlockInterval)
+	// simibc.BeginBlock(providerChain, initState.BlockInterval)
+
+	// Commit a block on both chains, giving us two committed headers from
+	// the same time and height. This is the starting point for all our
+	// data driven testing.
+	lastConsumerHeader, _ := simibc.EndBlock(consumerChain, func() {})
+
+	// Get ready to update clients.
+	simibc.BeginBlock(providerChain, 0)
+	simibc.BeginBlock(consumerChain, 0)
+
+	// Update clients to the latest header.
+	err = simibc.UpdateReceiverClient(consumerEndPoint, providerEndPoint, lastConsumerHeader)
+	require.NoError(s.t, err, "Error updating client on consumer for chain %v", consumerChain.ChainID)
+	err = simibc.UpdateReceiverClient(providerEndPoint, consumerEndPoint, lastProviderHeader)
+	require.NoError(s.t, err, "Error updating client on provider for chain %v", consumerChain.ChainID)
+
+	// path is ready to go
 	return path
 }
 
-func SetupChains(t *testing.T,
-	s *CoreSuite,
+func (s *Driver) setupChains(
+	params ModelParams,
 	valSet *cmttypes.ValidatorSet, // the initial validator set
 	signers map[string]cmttypes.PrivValidator, // a map of validator addresses to private validators (signers)
 	nodes []*cmttypes.Validator, // the list of nodes, even ones that have no voting power initially
 	consumers []string, // a list of consumer chain names
 ) {
 	initValUpdates := cmttypes.TM2PB.ValidatorUpdates(valSet)
-
-	t.Log("Creating coordinator")
-	coordinator := ibctesting.NewCoordinator(t, 0) // start without chains, which we add later
-
 	// start provider
-	t.Log("Creating provider chain")
-	providerChain := newChain(t, coordinator, icstestingutils.ProviderAppIniter, "provider", valSet, signers, nodes)
-	coordinator.Chains["provider"] = providerChain
+	s.t.Log("Creating provider chain")
+	providerChain := newChain(s.t, s.coordinator, icstestingutils.ProviderAppIniter, "provider", valSet, signers, nodes)
+	s.coordinator.Chains["provider"] = providerChain
+
+	providerHeader, _ := simibc.EndBlock(providerChain, func() {})
 
 	// start consumer chains
 	for _, chain := range consumers {
-		t.Logf("Creating consumer chain %v", chain)
-		consumerChain := newChain(t, coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes)
-		coordinator.Chains[chain] = consumerChain
+		s.t.Logf("Creating consumer chain %v", chain)
+		consumerChain := newChain(s.t, s.coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes)
+		s.coordinator.Chains[chain] = consumerChain
 
-		path := ConfigureNewPath(consumerChain, providerChain)
+		path := s.ConfigureNewPath(consumerChain, providerChain, params, providerHeader)
+		relayedPath := simibc.MakeRelayedPath(s.t, path)
+		s.simibcs[ChainId(chain)] = &relayedPath
 	}
+}
 
-	// Create a client for the provider chain to use, using ibc go testing.
-	b.createProvidersLocalClient()
+func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.TestChain, consumerClientState *ibctmtypes.ClientState) *consumertypes.GenesisState {
+	providerConsState := providerChain.LastHeader.ConsensusState()
 
-	// Manually create a client for the consumer chain to and bootstrap
-	// via genesis.
-	clientState := b.createConsumersLocalClientGenesis()
-
-	consumerGenesis := b.createConsumerGenesis(clientState)
-
-	b.consumerKeeper().InitGenesis(b.consumerCtx(), consumerGenesis)
-
-	// Client ID is set in InitGenesis and we treat it as a block box. So
-	// must query it to use it with the endpoint.
-	clientID, _ := b.consumerKeeper().GetProviderClientID(b.consumerCtx())
-	b.consumerEndpoint().ClientID = clientID
-
-	// Handshake
-	b.coordinator.CreateConnections(b.path)
-	b.coordinator.CreateChannels(b.path)
-
-	// Usually the consumer sets the channel ID when it receives a first VSC packet
-	// to the provider. For testing purposes, we can set it here. This is because
-	// we model a blank slate: a provider and consumer that have fully established
-	// their channel, and are ready for anything to happen.
-	b.consumerKeeper().SetProviderChannel(b.consumerCtx(), b.consumerEndpoint().ChannelID)
-
-	// Catch up consumer height to provider height. The provider was one ahead
-	// from committing additional validators.
-	simibc.EndBlock(b.consumer(), func() {})
-
-	simibc.BeginBlock(b.consumer(), initState.BlockInterval)
-	simibc.BeginBlock(b.provider(), initState.BlockInterval)
-
-	// Commit a block on both chains, giving us two committed headers from
-	// the same time and height. This is the starting point for all our
-	// data driven testing.
-	lastProviderHeader, _ := simibc.EndBlock(b.provider(), func() {})
-	lastConsumerHeader, _ := simibc.EndBlock(b.consumer(), func() {})
-
-	// Want the height and time of last COMMITTED block
-	heightLastCommitted = b.provider().CurrentHeader.Height
-	timeLastCommitted = b.provider().CurrentHeader.Time.Unix()
-
-	// Get ready to update clients.
-	simibc.BeginBlock(b.provider(), initState.BlockInterval)
-	simibc.BeginBlock(b.consumer(), initState.BlockInterval)
-
-	// Update clients to the latest header. Now everything is ready to go!
-	// Ignore errors for brevity. Everything is checked in Assuptions test.
-	_ = simibc.UpdateReceiverClient(b.consumerEndpoint(), b.providerEndpoint(), lastConsumerHeader)
-	_ = simibc.UpdateReceiverClient(b.providerEndpoint(), b.consumerEndpoint(), lastProviderHeader)
-
-	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
+	valUpdates := cmttypes.TM2PB.ValidatorUpdates(providerChain.Vals)
+	params := ccv.NewParams(
+		true,
+		1000, // ignore distribution
+		"",   // ignore distribution
+		"",   // ignore distribution
+		ccv.DefaultCCVTimeoutPeriod,
+		ccv.DefaultTransferTimeoutPeriod,
+		ccv.DefaultConsumerRedistributeFrac,
+		ccv.DefaultHistoricalEntries,
+		consumerClientState.UnbondingPeriod,
+		"0", // disable soft opt-out
+		[]string{},
+		[]string{},
+		ccv.DefaultRetryDelayPeriod,
+	)
+	return consumertypes.NewInitialGenesisState(consumerClientState, providerConsState, valUpdates, params)
 }

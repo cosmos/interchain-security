@@ -15,94 +15,100 @@ import (
 
 	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
+
 	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 )
 
+// Define a new type for ChainIds to be more explicit
+// about what the string represents.
 type ChainId string
 
-type Params struct {
-	VscTimeout time.Duration
-	CcvTimeout map[ChainId]time.Duration
+type ModelParams struct {
+	VscTimeout              time.Duration
+	CcvTimeout              map[ChainId]time.Duration
+	UnbondingPeriodPerChain map[ChainId]time.Duration
 }
 
-type CoreSuite struct {
+type Driver struct {
 	t *testing.T
 
+	coordinator *ibctesting.Coordinator
+
 	// simulate IBC network: for each consumer chain name, we have a path between consumer and provider
-	simibcs map[string]*simibc.RelayedPath
+	simibcs map[ChainId]*simibc.RelayedPath
 
 	// keep around validators for easy access
 	valAddresses []sdk.ValAddress
-
-	// offsets: the model time and heights start at 0
-	// so offsets are needed for comparisons.
-	offsetTimeUnix int64
-	offsetHeight   int64
 }
 
 // ctx returns the sdk.Context for the chain
-func (s *CoreSuite) ctx(chain string) sdk.Context {
+func (s *Driver) ctx(chain ChainId) sdk.Context {
 	return s.chain(chain).GetContext()
 }
 
 // returns the path from the given chain to the provider.
-func (s *CoreSuite) path(chain string) *simibc.RelayedPath {
+func (s *Driver) path(chain ChainId) *simibc.RelayedPath {
 	return s.simibcs[chain]
 }
 
-func (s *CoreSuite) chainID(chain string) string {
-	return map[string]string{P: ibctesting.GetChainID(0), C: ibctesting.GetChainID(1)}[chain]
-}
-
 // chain returns the TestChain for a given chain identifier
-func (s *CoreSuite) chain(chain string) *ibctesting.TestChain {
-	return s.path(chain).Chain(chain)
+func (s *Driver) chain(chain ChainId) *ibctesting.TestChain {
+	return s.path(chain).Chain(string(chain))
 }
 
-func (s *CoreSuite) providerChain() *ibctesting.TestChain {
+func (s *Driver) providerChain() *ibctesting.TestChain {
 	return s.chain("provider")
 }
 
-func (b *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
+func (s *Driver) providerCtx() sdk.Context {
+	return s.providerChain().GetContext()
+}
+
+func (s *Driver) providerKeeper() providerkeeper.Keeper {
+	return s.providerChain().App.(*appProvider.App).ProviderKeeper
+}
+
+func (b *Driver) providerStakingKeeper() stakingkeeper.Keeper {
 	return *b.providerChain().App.(*appProvider.App).StakingKeeper
 }
 
-func (b *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {
+func (b *Driver) providerSlashingKeeper() slashingkeeper.Keeper {
 	return b.providerChain().App.(*appProvider.App).SlashingKeeper
 }
 
-func (b *CoreSuite) consumerKeeper(chain string) consumerkeeper.Keeper {
+func (b *Driver) consumerKeeper(chain ChainId) consumerkeeper.Keeper {
 	return b.chain(chain).App.(*appConsumer.App).ConsumerKeeper
 }
 
 // height returns the height of the current header of chain
-func (s *CoreSuite) height(chain string) int64 {
+func (s *Driver) height(chain ChainId) int64 {
 	return s.chain(chain).CurrentHeader.GetHeight()
 }
 
 // time returns the time of the current header of chain
-func (s *CoreSuite) time(chain string) time.Time {
+func (s *Driver) time(chain ChainId) time.Time {
 	return s.chain(chain).CurrentHeader.Time
 }
 
 // delegator retrieves the address for the delegator account
-func (s *CoreSuite) delegator() sdk.AccAddress {
+func (s *Driver) delegator() sdk.AccAddress {
 	return s.providerChain().SenderAccount.GetAddress()
 }
 
 // validator returns the address for the validator with id (ix) i
-func (s *CoreSuite) validator(i int64) sdk.ValAddress {
+func (s *Driver) validator(i int64) sdk.ValAddress {
 	return s.valAddresses[i]
 }
 
 // consAddr returns the ConsAdd for the validator with id (ix) i
-func (s *CoreSuite) consAddr(i int64) sdk.ConsAddress {
+func (s *Driver) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(s.validator(i))
 }
 
 // isJailed returns the jail status of validator with id (ix) i
-func (s *CoreSuite) isJailed(i int64) bool {
+func (s *Driver) isJailed(i int64) bool {
 	val, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
 
 	require.True(s.t, found, "GetValidator(%v) -> !found", s.validator(i))
@@ -111,7 +117,7 @@ func (s *CoreSuite) isJailed(i int64) bool {
 
 // consumerPower returns the power on the consumer chain chain for
 // validator with id (ix) i
-func (s *CoreSuite) consumerPower(i int64, chain string) (int64, error) {
+func (s *Driver) consumerPower(i int64, chain ChainId) (int64, error) {
 	v, found := s.consumerKeeper(chain).GetCCValidator(s.ctx(C), s.validator(i))
 	if !found {
 		return 0, fmt.Errorf("GetCCValidator(%v) -> !found", s.validator(i))
@@ -121,7 +127,7 @@ func (s *CoreSuite) consumerPower(i int64, chain string) (int64, error) {
 
 // delegation returns the number of delegated tokens in the delegation from
 // the delegator account to the validator with id (ix) i
-func (s *CoreSuite) delegation(i int64) int64 {
+func (s *Driver) delegation(i int64) int64 {
 	d, found := s.providerStakingKeeper().GetDelegation(s.ctx(P), s.delegator(), s.validator(i))
 	require.True(s.t, found, "GetDelegation(%v) -> !found", s.validator(i))
 	return d.Shares.TruncateInt64()
@@ -129,7 +135,7 @@ func (s *CoreSuite) delegation(i int64) int64 {
 
 // validatorStatus returns the validator status for validator with id (ix) i
 // on the provider chain
-func (s *CoreSuite) validatorStatus(i int64) stakingtypes.BondStatus {
+func (s *Driver) validatorStatus(i int64) stakingtypes.BondStatus {
 	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
 	require.True(s.t, found, "GetValidator(%v) -> !found", s.validator(i))
 	return v.GetStatus()
@@ -137,13 +143,13 @@ func (s *CoreSuite) validatorStatus(i int64) stakingtypes.BondStatus {
 
 // providerTokens returns the number of tokens that the validator with
 // id (ix) i has delegated to it in total on the provider chain
-func (s *CoreSuite) providerTokens(i int64) int64 {
+func (s *Driver) providerTokens(i int64) int64 {
 	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
 	require.True(s.t, found, "GetValidator(%v) -> !found", s.validator(i))
 	return v.Tokens.Int64()
 }
 
-func (s *CoreSuite) validatorSet(chain string) []stakingtypes.Validator {
+func (s *Driver) validatorSet(chain ChainId) []stakingtypes.Validator {
 	if chain == P {
 		return s.providerStakingKeeper().GetLastValidators(s.ctx(P))
 	} else {
@@ -152,14 +158,14 @@ func (s *CoreSuite) validatorSet(chain string) []stakingtypes.Validator {
 }
 
 // delegatorBalance returns the balance of the delegator account
-func (s *CoreSuite) delegatorBalance() int64 {
+func (s *Driver) delegatorBalance() int64 {
 	d := s.delegator()
 	bal := s.providerChain().App.(*appProvider.App).BankKeeper.GetBalance(s.ctx(P), d, sdk.DefaultBondDenom)
 	return bal.Amount.Int64()
 }
 
 // delegate delegates amt tokens to validator val
-func (s *CoreSuite) delegate(val, amt int64) {
+func (s *Driver) delegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
@@ -172,7 +178,7 @@ func (s *CoreSuite) delegate(val, amt int64) {
 }
 
 // undelegate undelegates amt tokens from validator val
-func (s *CoreSuite) undelegate(val, amt int64) {
+func (s *Driver) undelegate(val, amt int64) {
 	providerStaking := s.providerStakingKeeper()
 	server := stakingkeeper.NewMsgServerImpl(&providerStaking)
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
@@ -186,7 +192,7 @@ func (s *CoreSuite) undelegate(val, amt int64) {
 
 // consumerSlash simulates a slash event occurring on the consumer chain.
 // It can be for a downtime or doublesign.
-func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool, chain string) {
+func (s *Driver) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool, chain ChainId) {
 	kind := stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 	if isDowntime {
 		kind = stakingtypes.Infraction_INFRACTION_DOWNTIME
@@ -198,27 +204,40 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool,
 	evts := ctx.EventManager().Events()
 	packets := simibc.ParsePacketsFromEvents(evts[before:])
 	if len(packets) > 0 {
-		s.path(chain).Outboxes.AddPacket(s.chainID(C), packets[0])
+		s.path(chain).Outboxes.AddPacket(C, packets[0])
 	}
 }
 
-func (s *CoreSuite) updateClient(chain string) {
-	s.path(chain).UpdateClient(s.chainID(chain))
+func (s *Driver) updateClient(chain ChainId) {
+	s.path(chain).UpdateClient(string(chain))
 }
 
 // deliver numPackets packets from the network to chain
-func (s *CoreSuite) deliver(chain string, numPackets int) {
+func (s *Driver) deliver(chain ChainId, numPackets int) {
 	// Makes sure client is updated
 	s.updateClient(chain)
 	// Deliver any outstanding acks
-	s.path(chain).DeliverAcks(s.chainID(chain), 999999)
+	s.path(chain).DeliverAcks(string(chain), 999999)
 	// Consume deliverable packets from the network
-	s.path(chain).DeliverPackets(s.chainID(chain), numPackets)
+	s.path(chain).DeliverPackets(string(chain), numPackets)
 }
 
-func (s *CoreSuite) endAndBeginBlock(chain string, timeAdvancement time.Duration, preCommitCallback func()) {
-	s.path(chain).EndAndBeginBlock(s.chainID(chain), timeAdvancement, func() {
+func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration, preCommitCallback func()) {
+	s.path(chain).EndAndBeginBlock(string(chain), timeAdvancement, func() {
 	})
+}
+
+func newDriver(t *testing.T, valAddresses []sdk.ValAddress) *Driver {
+	t.Log("Creating coordinator")
+	coordinator := ibctesting.NewCoordinator(t, 0) // start without chains, which we add later
+
+	suite := &Driver{
+		t:            t,
+		coordinator:  coordinator,
+		simibcs:      make(map[ChainId]*simibc.RelayedPath),
+		valAddresses: valAddresses,
+	}
+	return suite
 }
 
 // // The state of the data returned is equivalent to the state of two chains
