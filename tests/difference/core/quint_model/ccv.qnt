@@ -235,6 +235,11 @@ module ccv {
     // The timeoutTimestamp for sent packets. Can differ by chain.
     const CcvTimeout: Chain -> int
 
+    // The trusting period on each chain.
+    // If headers on a channel between two chains are not updated within this period,
+    // they expire and the channel will be closed.
+    const TrustingPeriodPerChain: Chain -> int // TODO: USE THIS!
+
     // ===================
     // PROTOCOL LOGIC contains the meat of the protocol
     // functions here roughly correspond to API calls that can be triggered from external sources

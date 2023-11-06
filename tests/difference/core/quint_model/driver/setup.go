@@ -39,7 +39,6 @@ const (
 	// Parameters used in the staking module
 	StakingParamsMaxEntries    = 10000
 	StakingParamsMaxValidators = 100
-	StakingParamsUnbondingTime = 5 * 7 * 24 * time.Hour // 5 weeks
 )
 
 // Parameters used by CometBFT
@@ -49,6 +48,7 @@ var (
 
 func getAppBytesAndSenders(
 	chainID string,
+	modelParams ModelParams,
 	app ibctesting.TestingApp,
 	genesis map[string]json.RawMessage,
 	initialValSet *cmttypes.ValidatorSet,
@@ -115,7 +115,7 @@ func getAppBytesAndSenders(
 		}
 
 		var valStatus stakingtypes.BondStatus
-		if val.VotingPower > 0 {
+		if tokens.Int64() > 0 {
 			valStatus = stakingtypes.Bonded
 		} else {
 			valStatus = stakingtypes.Unbonded
@@ -145,7 +145,7 @@ func getAppBytesAndSenders(
 		// add initial validator powers so consumer InitGenesis runs correctly
 		pub, _ := val.ToProto()
 		initValPowers = append(initValPowers, abcitypes.ValidatorUpdate{
-			Power:  val.VotingPower,
+			Power:  tokens.Int64(),
 			PubKey: pub.PubKey,
 		})
 	}
@@ -170,7 +170,7 @@ func getAppBytesAndSenders(
 	// Set model parameters
 	genesisStaking.Params.MaxEntries = StakingParamsMaxEntries
 	genesisStaking.Params.MaxValidators = StakingParamsMaxValidators
-	genesisStaking.Params.UnbondingTime = StakingParamsUnbondingTime
+	genesisStaking.Params.UnbondingTime = modelParams.UnbondingPeriodPerChain[ChainId(chainID)]
 	genesisStaking = *stakingtypes.NewGenesisState(genesisStaking.Params, stakingValidators, delegations)
 	genesis[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(&genesisStaking)
 
@@ -200,6 +200,7 @@ func getAppBytesAndSenders(
 
 func newChain(
 	t *testing.T,
+	modelParams ModelParams,
 	coord *ibctesting.Coordinator,
 	appInit icstestingutils.AppIniter,
 	chainID string,
@@ -211,7 +212,7 @@ func newChain(
 
 	baseapp.SetChainID(chainID)(app.GetBaseApp())
 
-	stateBytes, senderAccounts := getAppBytesAndSenders(chainID, app, genesis, validators, nodes)
+	stateBytes, senderAccounts := getAppBytesAndSenders(chainID, modelParams, app, genesis, validators, nodes)
 
 	protoConsParams := ConsensusParams.ToProto()
 	app.InitChain(
@@ -282,6 +283,7 @@ func (s *Driver) ConfigureNewPath(consumerChain *ibctesting.TestChain, providerC
 	// Configure and create the client on the provider
 	tmCfg := providerEndPoint.ClientConfig.(*ibctesting.TendermintConfig)
 	tmCfg.UnbondingPeriod = params.UnbondingPeriodPerChain[ChainId(providerChain.ChainID)]
+	tmCfg.TrustingPeriod = params.TrustingPeriodPerChain[ChainId(providerChain.ChainID)]
 	err := providerEndPoint.CreateClient()
 	require.NoError(s.t, err, "Error creating client on provider for chain %v", consumerChain.ChainID)
 
@@ -291,6 +293,7 @@ func (s *Driver) ConfigureNewPath(consumerChain *ibctesting.TestChain, providerC
 	// Configure and create the client on the consumer
 	tmCfg = consumerEndPoint.ClientConfig.(*ibctesting.TendermintConfig)
 	tmCfg.UnbondingPeriod = params.UnbondingPeriodPerChain[consumerChainId]
+	tmCfg.TrustingPeriod = params.TrustingPeriodPerChain[consumerChainId]
 
 	consumerClientState := ibctmtypes.NewClientState(
 		providerChain.ChainID, tmCfg.TrustLevel, tmCfg.TrustingPeriod, tmCfg.UnbondingPeriod, tmCfg.MaxClockDrift,
@@ -317,17 +320,11 @@ func (s *Driver) ConfigureNewPath(consumerChain *ibctesting.TestChain, providerC
 	// their channel, and are ready for anything to happen.
 	s.consumerKeeper(consumerChainId).SetProviderChannel(s.ctx(consumerChainId), consumerEndPoint.ChannelID)
 
-	// // Catch up consumer height to provider height. The provider was one ahead TODO: activate this
-	// // from committing additional validators.
-	// simibc.EndBlock(consumerChain, func() {})
-
-	// simibc.BeginBlock(consumerChain, initState.BlockInterval)
-	// simibc.BeginBlock(providerChain, initState.BlockInterval)
-
 	// Commit a block on both chains, giving us two committed headers from
 	// the same time and height. This is the starting point for all our
 	// data driven testing.
 	lastConsumerHeader, _ := simibc.EndBlock(consumerChain, func() {})
+	lastProviderHeader, _ = simibc.EndBlock(providerChain, func() {})
 
 	// Get ready to update clients.
 	simibc.BeginBlock(providerChain, 0)
@@ -353,15 +350,16 @@ func (s *Driver) setupChains(
 	initValUpdates := cmttypes.TM2PB.ValidatorUpdates(valSet)
 	// start provider
 	s.t.Log("Creating provider chain")
-	providerChain := newChain(s.t, s.coordinator, icstestingutils.ProviderAppIniter, "provider", valSet, signers, nodes)
+	providerChain := newChain(s.t, params, s.coordinator, icstestingutils.ProviderAppIniter, "provider", valSet, signers, nodes)
 	s.coordinator.Chains["provider"] = providerChain
 
 	providerHeader, _ := simibc.EndBlock(providerChain, func() {})
+	simibc.BeginBlock(providerChain, 0)
 
 	// start consumer chains
 	for _, chain := range consumers {
 		s.t.Logf("Creating consumer chain %v", chain)
-		consumerChain := newChain(s.t, s.coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes)
+		consumerChain := newChain(s.t, params, s.coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes)
 		s.coordinator.Chains[chain] = consumerChain
 
 		path := s.ConfigureNewPath(consumerChain, providerChain, params, providerHeader)
@@ -389,5 +387,8 @@ func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.Te
 		[]string{},
 		ccv.DefaultRetryDelayPeriod,
 	)
+	params.CcvTimeoutPeriod = modelParams.CcvTimeout[ChainId(consumerClientState.ChainId)]
+	params.UnbondingPeriod = modelParams.UnbondingPeriodPerChain[ChainId(consumerClientState.ChainId)]
+
 	return consumertypes.NewInitialGenesisState(consumerClientState, providerConsState, valUpdates, params)
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/v3/testutil/integration"
 	"github.com/informalsystems/itf-go/itf"
+	"github.com/stretchr/testify/require"
 )
 
 // Given a map from node names to voting powers, create a validator set with the right voting powers.
@@ -61,11 +62,21 @@ func TestItfTrace(t *testing.T) {
 		log.Fatalf("Error loading trace file: %s", err)
 	}
 
-	if trace.Vars[0] != "currentState" ||
-		trace.Vars[1] != "params" ||
-		trace.Vars[2] != "trace" {
-		t.Fatalf("Error loading trace file %s: Variables should be currentState, params, trace but are %s",
-			path, trace.Vars)
+	expectedVarNames := []string{"currentState", "params", "trace"}
+
+	varNames := make(map[string]bool, len(expectedVarNames))
+	// populate the set
+	for _, varName := range trace.Vars {
+		varNames[varName] = true
+	}
+
+	// sanity check: there are as many var names as we expect
+	require.Equal(t, len(expectedVarNames), len(varNames), "Expected %v var names, got %v", expectedVarNames, varNames)
+
+	// sanity check: each expected var name should be in the set
+	for _, expectedVarName := range expectedVarNames {
+		_, ok := varNames[expectedVarName]
+		require.True(t, ok, "Expected var name %v not found in actual var names %v", expectedVarName, varNames)
 	}
 
 	t.Log("Reading params...")
@@ -92,16 +103,19 @@ func TestItfTrace(t *testing.T) {
 	vscTimeout := time.Duration(params["VscTimeout"].Value.(int64))
 
 	unbondingPeriodPerChain := make(map[ChainId]time.Duration, len(consumers))
+	trustingPeriodPerChain := make(map[ChainId]time.Duration, len(consumers))
 	ccvTimeoutPerChain := make(map[ChainId]time.Duration, len(consumers))
 	for _, consumer := range chains {
-		unbondingPeriodPerChain[ChainId(consumer)] = time.Duration(params["UnbondingPeriodPerChain"].Value.(itf.MapExprType)[consumer].Value.(int64))
-		ccvTimeoutPerChain[ChainId(consumer)] = time.Duration(params["CcvTimeout"].Value.(itf.MapExprType)[consumer].Value.(int64))
+		unbondingPeriodPerChain[ChainId(consumer)] = time.Duration(params["UnbondingPeriodPerChain"].Value.(itf.MapExprType)[consumer].Value.(int64)) * time.Second
+		trustingPeriodPerChain[ChainId(consumer)] = time.Duration(params["TrustingPeriodPerChain"].Value.(itf.MapExprType)[consumer].Value.(int64)) * time.Second
+		ccvTimeoutPerChain[ChainId(consumer)] = time.Duration(params["CcvTimeout"].Value.(itf.MapExprType)[consumer].Value.(int64)) * time.Second
 	}
 
 	modelParams := ModelParams{
 		VscTimeout:              vscTimeout,
 		CcvTimeout:              ccvTimeoutPerChain,
 		UnbondingPeriodPerChain: unbondingPeriodPerChain,
+		TrustingPeriodPerChain:  trustingPeriodPerChain,
 	}
 
 	valExprs := params["Nodes"].Value.(itf.ListExprType)
@@ -146,7 +160,8 @@ func TestItfTrace(t *testing.T) {
 		actionKind := lastAction["kind"].Value.(string)
 		switch actionKind {
 		case "init":
-			// start the chain(s)
+			t.Log("Initializing...")
+			t.Logf(driver.getStateString())
 		case "VotingPowerChange":
 			node := lastAction["validator"].Value.(string)
 			newVotingPower := lastAction["newVotingPower"].Value.(int64)

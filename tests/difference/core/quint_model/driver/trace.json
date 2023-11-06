@@ -4,13 +4,13 @@
         "format-description": "https://apalache.informal.systems/docs/adr/015adr-trace.html",
         "source": "ccv_model.qnt",
         "status": "ok",
-        "description": "Created by Quint on Thu Oct 19 2023 10:50:02 GMT+0200 (Central European Summer Time)",
-        "timestamp": 1697705402333
+        "description": "Created by Quint on Mon Nov 06 2023 10:21:20 GMT+0100 (Central European Standard Time)",
+        "timestamp": 1699262480568
     },
     "vars": [
         "currentState",
-        "params",
-        "trace"
+        "trace",
+        "params"
     ],
     "states": [
         {
@@ -313,7 +313,7 @@
                         [
                             "node1",
                             {
-                                "#bigint": "50"
+                                "#bigint": "100"
                             }
                         ],
                         [
@@ -386,6 +386,34 @@
                         "node9"
                     ]
                 },
+                "TrustingPeriodPerChain": {
+                    "#map": [
+                        [
+                            "consumer1",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ],
+                        [
+                            "consumer2",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ],
+                        [
+                            "consumer3",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ],
+                        [
+                            "provider",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ]
+                    ]
+                },
                 "UnbondingPeriodPerChain": {
                     "#map": [
                         [
@@ -450,68 +478,7 @@
                             {
                                 "chainState": {
                                     "currentValidatorSet": {
-                                        "#map": [
-                                            [
-                                                "node1",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node10",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node2",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node3",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node4",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node5",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node6",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node7",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node8",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node9",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ]
-                                        ]
+                                        "#map": []
                                     },
                                     "lastTimestamp": {
                                         "#bigint": "0"
@@ -530,68 +497,7 @@
                             {
                                 "chainState": {
                                     "currentValidatorSet": {
-                                        "#map": [
-                                            [
-                                                "node1",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node10",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node2",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node3",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node4",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node5",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node6",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node7",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node8",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node9",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ]
-                                        ]
+                                        "#map": []
                                     },
                                     "lastTimestamp": {
                                         "#bigint": "0"
@@ -610,68 +516,7 @@
                             {
                                 "chainState": {
                                     "currentValidatorSet": {
-                                        "#map": [
-                                            [
-                                                "node1",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node10",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node2",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node3",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node4",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node5",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node6",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node7",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node8",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node9",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ]
-                                        ]
+                                        "#map": []
                                     },
                                     "lastTimestamp": {
                                         "#bigint": "0"
@@ -891,11 +736,731 @@
                         "#map": [
                             [
                                 "consumer1",
+                                "not consumer"
+                            ],
+                            [
+                                "consumer2",
+                                "not consumer"
+                            ],
+                            [
+                                "consumer3",
+                                "not consumer"
+                            ]
+                        ]
+                    },
+                    "outstandingPacketsToConsumer": {
+                        "#map": [
+                            [
+                                "consumer1",
+                                []
+                            ],
+                            [
+                                "consumer2",
+                                []
+                            ],
+                            [
+                                "consumer3",
+                                []
+                            ]
+                        ]
+                    },
+                    "providerValidatorSetChangedInThisBlock": false,
+                    "receivedMaturations": {
+                        "#set": []
+                    },
+                    "runningVscId": {
+                        "#bigint": "0"
+                    },
+                    "sentVscPacketsToConsumer": {
+                        "#map": [
+                            [
+                                "consumer1",
+                                []
+                            ],
+                            [
+                                "consumer2",
+                                []
+                            ],
+                            [
+                                "consumer3",
+                                []
+                            ]
+                        ]
+                    }
+                }
+            },
+            "params": {
+                "CcvTimeout": {
+                    "#map": [
+                        [
+                            "consumer1",
+                            {
+                                "#bigint": "1814400"
+                            }
+                        ],
+                        [
+                            "consumer2",
+                            {
+                                "#bigint": "1814400"
+                            }
+                        ],
+                        [
+                            "consumer3",
+                            {
+                                "#bigint": "1814400"
+                            }
+                        ],
+                        [
+                            "provider",
+                            {
+                                "#bigint": "1814400"
+                            }
+                        ]
+                    ]
+                },
+                "ConsumerChains": {
+                    "#set": [
+                        "consumer1",
+                        "consumer2",
+                        "consumer3"
+                    ]
+                },
+                "InitialValidatorSet": {
+                    "#map": [
+                        [
+                            "node1",
+                            {
+                                "#bigint": "100"
+                            }
+                        ],
+                        [
+                            "node10",
+                            {
+                                "#bigint": "100"
+                            }
+                        ],
+                        [
+                            "node2",
+                            {
+                                "#bigint": "100"
+                            }
+                        ],
+                        [
+                            "node3",
+                            {
+                                "#bigint": "100"
+                            }
+                        ],
+                        [
+                            "node4",
+                            {
+                                "#bigint": "100"
+                            }
+                        ],
+                        [
+                            "node5",
+                            {
+                                "#bigint": "100"
+                            }
+                        ],
+                        [
+                            "node6",
+                            {
+                                "#bigint": "100"
+                            }
+                        ],
+                        [
+                            "node7",
+                            {
+                                "#bigint": "100"
+                            }
+                        ],
+                        [
+                            "node8",
+                            {
+                                "#bigint": "100"
+                            }
+                        ],
+                        [
+                            "node9",
+                            {
+                                "#bigint": "100"
+                            }
+                        ]
+                    ]
+                },
+                "Nodes": {
+                    "#set": [
+                        "node1",
+                        "node10",
+                        "node2",
+                        "node3",
+                        "node4",
+                        "node5",
+                        "node6",
+                        "node7",
+                        "node8",
+                        "node9"
+                    ]
+                },
+                "TrustingPeriodPerChain": {
+                    "#map": [
+                        [
+                            "consumer1",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ],
+                        [
+                            "consumer2",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ],
+                        [
+                            "consumer3",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ],
+                        [
+                            "provider",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ]
+                    ]
+                },
+                "UnbondingPeriodPerChain": {
+                    "#map": [
+                        [
+                            "consumer1",
+                            {
+                                "#bigint": "1209600"
+                            }
+                        ],
+                        [
+                            "consumer2",
+                            {
+                                "#bigint": "1209600"
+                            }
+                        ],
+                        [
+                            "consumer3",
+                            {
+                                "#bigint": "1209600"
+                            }
+                        ],
+                        [
+                            "provider",
+                            {
+                                "#bigint": "1209600"
+                            }
+                        ]
+                    ]
+                },
+                "VscTimeout": {
+                    "#bigint": "3024000"
+                }
+            },
+            "trace": [
+                {
+                    "consumerChain": "",
+                    "consumersToStart": {
+                        "#set": []
+                    },
+                    "consumersToStop": {
+                        "#set": []
+                    },
+                    "kind": "init",
+                    "newVotingPower": {
+                        "#bigint": "0"
+                    },
+                    "timeAdvancement": {
+                        "#bigint": "0"
+                    },
+                    "validator": ""
+                },
+                {
+                    "consumerChain": "",
+                    "consumersToStart": {
+                        "#set": []
+                    },
+                    "consumersToStop": {
+                        "#set": []
+                    },
+                    "kind": "EndAndBeginBlockForProvider",
+                    "newVotingPower": {
+                        "#bigint": "0"
+                    },
+                    "timeAdvancement": {
+                        "#bigint": "604800"
+                    },
+                    "validator": ""
+                }
+            ]
+        },
+        {
+            "#meta": {
+                "index": 2
+            },
+            "currentState": {
+                "consumerStates": {
+                    "#map": [
+                        [
+                            "consumer1",
+                            {
+                                "chainState": {
+                                    "currentValidatorSet": {
+                                        "#map": [
+                                            [
+                                                "node1",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node10",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node2",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node3",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node4",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node5",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node6",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node7",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node8",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node9",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ]
+                                        ]
+                                    },
+                                    "lastTimestamp": {
+                                        "#bigint": "0"
+                                    },
+                                    "votingPowerHistory": []
+                                },
+                                "maturationTimes": {
+                                    "#map": []
+                                },
+                                "outstandingPacketsToProvider": [],
+                                "receivedVscPackets": []
+                            }
+                        ],
+                        [
+                            "consumer2",
+                            {
+                                "chainState": {
+                                    "currentValidatorSet": {
+                                        "#map": []
+                                    },
+                                    "lastTimestamp": {
+                                        "#bigint": "0"
+                                    },
+                                    "votingPowerHistory": []
+                                },
+                                "maturationTimes": {
+                                    "#map": []
+                                },
+                                "outstandingPacketsToProvider": [],
+                                "receivedVscPackets": []
+                            }
+                        ],
+                        [
+                            "consumer3",
+                            {
+                                "chainState": {
+                                    "currentValidatorSet": {
+                                        "#map": [
+                                            [
+                                                "node1",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node10",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node2",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node3",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node4",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node5",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node6",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node7",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node8",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ],
+                                            [
+                                                "node9",
+                                                {
+                                                    "#bigint": "100"
+                                                }
+                                            ]
+                                        ]
+                                    },
+                                    "lastTimestamp": {
+                                        "#bigint": "0"
+                                    },
+                                    "votingPowerHistory": []
+                                },
+                                "maturationTimes": {
+                                    "#map": []
+                                },
+                                "outstandingPacketsToProvider": [],
+                                "receivedVscPackets": []
+                            }
+                        ]
+                    ]
+                },
+                "providerState": {
+                    "chainState": {
+                        "currentValidatorSet": {
+                            "#map": [
+                                [
+                                    "node1",
+                                    {
+                                        "#bigint": "100"
+                                    }
+                                ],
+                                [
+                                    "node10",
+                                    {
+                                        "#bigint": "100"
+                                    }
+                                ],
+                                [
+                                    "node2",
+                                    {
+                                        "#bigint": "100"
+                                    }
+                                ],
+                                [
+                                    "node3",
+                                    {
+                                        "#bigint": "100"
+                                    }
+                                ],
+                                [
+                                    "node4",
+                                    {
+                                        "#bigint": "100"
+                                    }
+                                ],
+                                [
+                                    "node5",
+                                    {
+                                        "#bigint": "100"
+                                    }
+                                ],
+                                [
+                                    "node6",
+                                    {
+                                        "#bigint": "100"
+                                    }
+                                ],
+                                [
+                                    "node7",
+                                    {
+                                        "#bigint": "100"
+                                    }
+                                ],
+                                [
+                                    "node8",
+                                    {
+                                        "#bigint": "100"
+                                    }
+                                ],
+                                [
+                                    "node9",
+                                    {
+                                        "#bigint": "100"
+                                    }
+                                ]
+                            ]
+                        },
+                        "lastTimestamp": {
+                            "#bigint": "3024000"
+                        },
+                        "votingPowerHistory": [
+                            {
+                                "#map": [
+                                    [
+                                        "node1",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node10",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node2",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node3",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node4",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node5",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node6",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node7",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node8",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node9",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ]
+                                ]
+                            },
+                            {
+                                "#map": [
+                                    [
+                                        "node1",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node10",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node2",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node3",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node4",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node5",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node6",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node7",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node8",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node9",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ]
+                                ]
+                            },
+                            {
+                                "#map": [
+                                    [
+                                        "node1",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node10",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node2",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node3",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node4",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node5",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node6",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node7",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node8",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node9",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    },
+                    "consumerStatus": {
+                        "#map": [
+                            [
+                                "consumer1",
                                 "running"
                             ],
                             [
                                 "consumer2",
-                                "running"
+                                "not consumer"
                             ],
                             [
                                 "consumer3",
@@ -1058,697 +1623,32 @@
                         "node9"
                     ]
                 },
-                "UnbondingPeriodPerChain": {
+                "TrustingPeriodPerChain": {
                     "#map": [
                         [
                             "consumer1",
                             {
-                                "#bigint": "1209600"
+                                "#bigint": "604800"
                             }
                         ],
                         [
                             "consumer2",
                             {
-                                "#bigint": "1209600"
+                                "#bigint": "604800"
                             }
                         ],
                         [
                             "consumer3",
                             {
-                                "#bigint": "1209600"
+                                "#bigint": "604800"
                             }
                         ],
                         [
                             "provider",
                             {
-                                "#bigint": "1209600"
+                                "#bigint": "604800"
                             }
                         ]
-                    ]
-                },
-                "VscTimeout": {
-                    "#bigint": "3024000"
-                }
-            },
-            "trace": [
-                {
-                    "consumerChain": "",
-                    "consumersToStart": {
-                        "#set": []
-                    },
-                    "consumersToStop": {
-                        "#set": []
-                    },
-                    "kind": "init",
-                    "newVotingPower": {
-                        "#bigint": "0"
-                    },
-                    "timeAdvancement": {
-                        "#bigint": "0"
-                    },
-                    "validator": ""
-                },
-                {
-                    "consumerChain": "",
-                    "consumersToStart": {
-                        "#set": [
-                            "consumer1",
-                            "consumer2",
-                            "consumer3"
-                        ]
-                    },
-                    "consumersToStop": {
-                        "#set": []
-                    },
-                    "kind": "EndAndBeginBlockForProvider",
-                    "newVotingPower": {
-                        "#bigint": "0"
-                    },
-                    "timeAdvancement": {
-                        "#bigint": "604800"
-                    },
-                    "validator": ""
-                }
-            ]
-        },
-        {
-            "#meta": {
-                "index": 2
-            },
-            "currentState": {
-                "consumerStates": {
-                    "#map": [
-                        [
-                            "consumer1",
-                            {
-                                "chainState": {
-                                    "currentValidatorSet": {
-                                        "#map": [
-                                            [
-                                                "node1",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node10",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node2",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node3",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node4",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node5",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node6",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node7",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node8",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node9",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ]
-                                        ]
-                                    },
-                                    "lastTimestamp": {
-                                        "#bigint": "0"
-                                    },
-                                    "votingPowerHistory": []
-                                },
-                                "maturationTimes": {
-                                    "#map": []
-                                },
-                                "outstandingPacketsToProvider": [],
-                                "receivedVscPackets": []
-                            }
-                        ],
-                        [
-                            "consumer2",
-                            {
-                                "chainState": {
-                                    "currentValidatorSet": {
-                                        "#map": [
-                                            [
-                                                "node1",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node10",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node2",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node3",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node4",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node5",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node6",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node7",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node8",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node9",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ]
-                                        ]
-                                    },
-                                    "lastTimestamp": {
-                                        "#bigint": "0"
-                                    },
-                                    "votingPowerHistory": []
-                                },
-                                "maturationTimes": {
-                                    "#map": []
-                                },
-                                "outstandingPacketsToProvider": [],
-                                "receivedVscPackets": []
-                            }
-                        ],
-                        [
-                            "consumer3",
-                            {
-                                "chainState": {
-                                    "currentValidatorSet": {
-                                        "#map": [
-                                            [
-                                                "node1",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node10",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node2",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node3",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node4",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node5",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node6",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node7",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node8",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node9",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ]
-                                        ]
-                                    },
-                                    "lastTimestamp": {
-                                        "#bigint": "0"
-                                    },
-                                    "votingPowerHistory": []
-                                },
-                                "maturationTimes": {
-                                    "#map": []
-                                },
-                                "outstandingPacketsToProvider": [],
-                                "receivedVscPackets": []
-                            }
-                        ]
-                    ]
-                },
-                "providerState": {
-                    "chainState": {
-                        "currentValidatorSet": {
-                            "#map": [
-                                [
-                                    "node1",
-                                    {
-                                        "#bigint": "100"
-                                    }
-                                ],
-                                [
-                                    "node10",
-                                    {
-                                        "#bigint": "0"
-                                    }
-                                ],
-                                [
-                                    "node2",
-                                    {
-                                        "#bigint": "100"
-                                    }
-                                ],
-                                [
-                                    "node3",
-                                    {
-                                        "#bigint": "100"
-                                    }
-                                ],
-                                [
-                                    "node4",
-                                    {
-                                        "#bigint": "100"
-                                    }
-                                ],
-                                [
-                                    "node5",
-                                    {
-                                        "#bigint": "100"
-                                    }
-                                ],
-                                [
-                                    "node6",
-                                    {
-                                        "#bigint": "100"
-                                    }
-                                ],
-                                [
-                                    "node7",
-                                    {
-                                        "#bigint": "100"
-                                    }
-                                ],
-                                [
-                                    "node8",
-                                    {
-                                        "#bigint": "100"
-                                    }
-                                ],
-                                [
-                                    "node9",
-                                    {
-                                        "#bigint": "100"
-                                    }
-                                ]
-                            ]
-                        },
-                        "lastTimestamp": {
-                            "#bigint": "604800"
-                        },
-                        "votingPowerHistory": [
-                            {
-                                "#map": [
-                                    [
-                                        "node1",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node10",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node2",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node3",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node4",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node5",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node6",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node7",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node8",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node9",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ]
-                                ]
-                            },
-                            {
-                                "#map": [
-                                    [
-                                        "node1",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node10",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node2",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node3",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node4",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node5",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node6",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node7",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node8",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ],
-                                    [
-                                        "node9",
-                                        {
-                                            "#bigint": "100"
-                                        }
-                                    ]
-                                ]
-                            }
-                        ]
-                    },
-                    "consumerStatus": {
-                        "#map": [
-                            [
-                                "consumer1",
-                                "running"
-                            ],
-                            [
-                                "consumer2",
-                                "running"
-                            ],
-                            [
-                                "consumer3",
-                                "running"
-                            ]
-                        ]
-                    },
-                    "outstandingPacketsToConsumer": {
-                        "#map": [
-                            [
-                                "consumer1",
-                                []
-                            ],
-                            [
-                                "consumer2",
-                                []
-                            ],
-                            [
-                                "consumer3",
-                                []
-                            ]
-                        ]
-                    },
-                    "providerValidatorSetChangedInThisBlock": true,
-                    "receivedMaturations": {
-                        "#set": []
-                    },
-                    "runningVscId": {
-                        "#bigint": "0"
-                    },
-                    "sentVscPacketsToConsumer": {
-                        "#map": [
-                            [
-                                "consumer1",
-                                []
-                            ],
-                            [
-                                "consumer2",
-                                []
-                            ],
-                            [
-                                "consumer3",
-                                []
-                            ]
-                        ]
-                    }
-                }
-            },
-            "params": {
-                "CcvTimeout": {
-                    "#map": [
-                        [
-                            "consumer1",
-                            {
-                                "#bigint": "1814400"
-                            }
-                        ],
-                        [
-                            "consumer2",
-                            {
-                                "#bigint": "1814400"
-                            }
-                        ],
-                        [
-                            "consumer3",
-                            {
-                                "#bigint": "1814400"
-                            }
-                        ],
-                        [
-                            "provider",
-                            {
-                                "#bigint": "1814400"
-                            }
-                        ]
-                    ]
-                },
-                "ConsumerChains": {
-                    "#set": [
-                        "consumer1",
-                        "consumer2",
-                        "consumer3"
-                    ]
-                },
-                "InitialValidatorSet": {
-                    "#map": [
-                        [
-                            "node1",
-                            {
-                                "#bigint": "100"
-                            }
-                        ],
-                        [
-                            "node10",
-                            {
-                                "#bigint": "100"
-                            }
-                        ],
-                        [
-                            "node2",
-                            {
-                                "#bigint": "100"
-                            }
-                        ],
-                        [
-                            "node3",
-                            {
-                                "#bigint": "100"
-                            }
-                        ],
-                        [
-                            "node4",
-                            {
-                                "#bigint": "100"
-                            }
-                        ],
-                        [
-                            "node5",
-                            {
-                                "#bigint": "100"
-                            }
-                        ],
-                        [
-                            "node6",
-                            {
-                                "#bigint": "100"
-                            }
-                        ],
-                        [
-                            "node7",
-                            {
-                                "#bigint": "100"
-                            }
-                        ],
-                        [
-                            "node8",
-                            {
-                                "#bigint": "100"
-                            }
-                        ],
-                        [
-                            "node9",
-                            {
-                                "#bigint": "100"
-                            }
-                        ]
-                    ]
-                },
-                "Nodes": {
-                    "#set": [
-                        "node1",
-                        "node10",
-                        "node2",
-                        "node3",
-                        "node4",
-                        "node5",
-                        "node6",
-                        "node7",
-                        "node8",
-                        "node9"
                     ]
                 },
                 "UnbondingPeriodPerChain": {
@@ -1804,11 +1704,7 @@
                 {
                     "consumerChain": "",
                     "consumersToStart": {
-                        "#set": [
-                            "consumer1",
-                            "consumer2",
-                            "consumer3"
-                        ]
+                        "#set": []
                     },
                     "consumersToStop": {
                         "#set": []
@@ -1825,19 +1721,22 @@
                 {
                     "consumerChain": "",
                     "consumersToStart": {
-                        "#set": []
+                        "#set": [
+                            "consumer1",
+                            "consumer3"
+                        ]
                     },
                     "consumersToStop": {
                         "#set": []
                     },
-                    "kind": "VotingPowerChange",
+                    "kind": "EndAndBeginBlockForProvider",
                     "newVotingPower": {
                         "#bigint": "0"
                     },
                     "timeAdvancement": {
-                        "#bigint": "0"
+                        "#bigint": "2419200"
                     },
-                    "validator": "node10"
+                    "validator": ""
                 }
             ]
         },
@@ -1933,68 +1832,7 @@
                             {
                                 "chainState": {
                                     "currentValidatorSet": {
-                                        "#map": [
-                                            [
-                                                "node1",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node10",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node2",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node3",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node4",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node5",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node6",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node7",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node8",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node9",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ]
-                                        ]
+                                        "#map": []
                                     },
                                     "lastTimestamp": {
                                         "#bigint": "0"
@@ -2077,74 +1915,9 @@
                                         ]
                                     },
                                     "lastTimestamp": {
-                                        "#bigint": "1"
+                                        "#bigint": "0"
                                     },
-                                    "votingPowerHistory": [
-                                        {
-                                            "#map": [
-                                                [
-                                                    "node1",
-                                                    {
-                                                        "#bigint": "100"
-                                                    }
-                                                ],
-                                                [
-                                                    "node10",
-                                                    {
-                                                        "#bigint": "100"
-                                                    }
-                                                ],
-                                                [
-                                                    "node2",
-                                                    {
-                                                        "#bigint": "100"
-                                                    }
-                                                ],
-                                                [
-                                                    "node3",
-                                                    {
-                                                        "#bigint": "100"
-                                                    }
-                                                ],
-                                                [
-                                                    "node4",
-                                                    {
-                                                        "#bigint": "100"
-                                                    }
-                                                ],
-                                                [
-                                                    "node5",
-                                                    {
-                                                        "#bigint": "100"
-                                                    }
-                                                ],
-                                                [
-                                                    "node6",
-                                                    {
-                                                        "#bigint": "100"
-                                                    }
-                                                ],
-                                                [
-                                                    "node7",
-                                                    {
-                                                        "#bigint": "100"
-                                                    }
-                                                ],
-                                                [
-                                                    "node8",
-                                                    {
-                                                        "#bigint": "100"
-                                                    }
-                                                ],
-                                                [
-                                                    "node9",
-                                                    {
-                                                        "#bigint": "100"
-                                                    }
-                                                ]
-                                            ]
-                                        }
-                                    ]
+                                    "votingPowerHistory": []
                                 },
                                 "maturationTimes": {
                                     "#map": []
@@ -2168,13 +1941,13 @@
                                 [
                                     "node10",
                                     {
-                                        "#bigint": "0"
+                                        "#bigint": "100"
                                     }
                                 ],
                                 [
                                     "node2",
                                     {
-                                        "#bigint": "100"
+                                        "#bigint": "50"
                                     }
                                 ],
                                 [
@@ -2222,9 +1995,73 @@
                             ]
                         },
                         "lastTimestamp": {
-                            "#bigint": "604800"
+                            "#bigint": "3024000"
                         },
                         "votingPowerHistory": [
+                            {
+                                "#map": [
+                                    [
+                                        "node1",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node10",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node2",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node3",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node4",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node5",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node6",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node7",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node8",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node9",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ]
+                                ]
+                            },
                             {
                                 "#map": [
                                     [
@@ -2363,7 +2200,7 @@
                             ],
                             [
                                 "consumer2",
-                                "running"
+                                "not consumer"
                             ],
                             [
                                 "consumer3",
@@ -2526,6 +2363,34 @@
                         "node9"
                     ]
                 },
+                "TrustingPeriodPerChain": {
+                    "#map": [
+                        [
+                            "consumer1",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ],
+                        [
+                            "consumer2",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ],
+                        [
+                            "consumer3",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ],
+                        [
+                            "provider",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ]
+                    ]
+                },
                 "UnbondingPeriodPerChain": {
                     "#map": [
                         [
@@ -2579,11 +2444,7 @@
                 {
                     "consumerChain": "",
                     "consumersToStart": {
-                        "#set": [
-                            "consumer1",
-                            "consumer2",
-                            "consumer3"
-                        ]
+                        "#set": []
                     },
                     "consumersToStop": {
                         "#set": []
@@ -2600,6 +2461,26 @@
                 {
                     "consumerChain": "",
                     "consumersToStart": {
+                        "#set": [
+                            "consumer1",
+                            "consumer3"
+                        ]
+                    },
+                    "consumersToStop": {
+                        "#set": []
+                    },
+                    "kind": "EndAndBeginBlockForProvider",
+                    "newVotingPower": {
+                        "#bigint": "0"
+                    },
+                    "timeAdvancement": {
+                        "#bigint": "2419200"
+                    },
+                    "validator": ""
+                },
+                {
+                    "consumerChain": "",
+                    "consumersToStart": {
                         "#set": []
                     },
                     "consumersToStop": {
@@ -2607,29 +2488,12 @@
                     },
                     "kind": "VotingPowerChange",
                     "newVotingPower": {
-                        "#bigint": "0"
+                        "#bigint": "50"
                     },
                     "timeAdvancement": {
                         "#bigint": "0"
                     },
-                    "validator": "node10"
-                },
-                {
-                    "consumerChain": "consumer3",
-                    "consumersToStart": {
-                        "#set": []
-                    },
-                    "consumersToStop": {
-                        "#set": []
-                    },
-                    "kind": "EndAndBeginBlockForConsumer",
-                    "newVotingPower": {
-                        "#bigint": "0"
-                    },
-                    "timeAdvancement": {
-                        "#bigint": "1"
-                    },
-                    "validator": ""
+                    "validator": "node2"
                 }
             ]
         },
@@ -2725,68 +2589,7 @@
                             {
                                 "chainState": {
                                     "currentValidatorSet": {
-                                        "#map": [
-                                            [
-                                                "node1",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node10",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node2",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node3",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node4",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node5",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node6",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node7",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node8",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ],
-                                            [
-                                                "node9",
-                                                {
-                                                    "#bigint": "100"
-                                                }
-                                            ]
-                                        ]
+                                        "#map": []
                                     },
                                     "lastTimestamp": {
                                         "#bigint": "0"
@@ -2869,7 +2672,7 @@
                                         ]
                                     },
                                     "lastTimestamp": {
-                                        "#bigint": "1"
+                                        "#bigint": "86400"
                                     },
                                     "votingPowerHistory": [
                                         {
@@ -2960,7 +2763,7 @@
                                 [
                                     "node10",
                                     {
-                                        "#bigint": "0"
+                                        "#bigint": "100"
                                     }
                                 ],
                                 [
@@ -3014,9 +2817,73 @@
                             ]
                         },
                         "lastTimestamp": {
-                            "#bigint": "604800"
+                            "#bigint": "3024000"
                         },
                         "votingPowerHistory": [
+                            {
+                                "#map": [
+                                    [
+                                        "node1",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node10",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node2",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node3",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node4",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node5",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node6",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node7",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node8",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ],
+                                    [
+                                        "node9",
+                                        {
+                                            "#bigint": "100"
+                                        }
+                                    ]
+                                ]
+                            },
                             {
                                 "#map": [
                                     [
@@ -3155,7 +3022,7 @@
                             ],
                             [
                                 "consumer2",
-                                "running"
+                                "not consumer"
                             ],
                             [
                                 "consumer3",
@@ -3318,6 +3185,34 @@
                         "node9"
                     ]
                 },
+                "TrustingPeriodPerChain": {
+                    "#map": [
+                        [
+                            "consumer1",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ],
+                        [
+                            "consumer2",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ],
+                        [
+                            "consumer3",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ],
+                        [
+                            "provider",
+                            {
+                                "#bigint": "604800"
+                            }
+                        ]
+                    ]
+                },
                 "UnbondingPeriodPerChain": {
                     "#map": [
                         [
@@ -3371,11 +3266,7 @@
                 {
                     "consumerChain": "",
                     "consumersToStart": {
-                        "#set": [
-                            "consumer1",
-                            "consumer2",
-                            "consumer3"
-                        ]
+                        "#set": []
                     },
                     "consumersToStop": {
                         "#set": []
@@ -3392,34 +3283,20 @@
                 {
                     "consumerChain": "",
                     "consumersToStart": {
-                        "#set": []
+                        "#set": [
+                            "consumer1",
+                            "consumer3"
+                        ]
                     },
                     "consumersToStop": {
                         "#set": []
                     },
-                    "kind": "VotingPowerChange",
+                    "kind": "EndAndBeginBlockForProvider",
                     "newVotingPower": {
                         "#bigint": "0"
                     },
                     "timeAdvancement": {
-                        "#bigint": "0"
-                    },
-                    "validator": "node10"
-                },
-                {
-                    "consumerChain": "consumer3",
-                    "consumersToStart": {
-                        "#set": []
-                    },
-                    "consumersToStop": {
-                        "#set": []
-                    },
-                    "kind": "EndAndBeginBlockForConsumer",
-                    "newVotingPower": {
-                        "#bigint": "0"
-                    },
-                    "timeAdvancement": {
-                        "#bigint": "1"
+                        "#bigint": "2419200"
                     },
                     "validator": ""
                 },
@@ -3439,6 +3316,23 @@
                         "#bigint": "0"
                     },
                     "validator": "node2"
+                },
+                {
+                    "consumerChain": "consumer3",
+                    "consumersToStart": {
+                        "#set": []
+                    },
+                    "consumersToStop": {
+                        "#set": []
+                    },
+                    "kind": "EndAndBeginBlockForConsumer",
+                    "newVotingPower": {
+                        "#bigint": "0"
+                    },
+                    "timeAdvancement": {
+                        "#bigint": "86400"
+                    },
+                    "validator": ""
                 }
             ]
         }

@@ -8,17 +8,19 @@ module ccv_model {
     pure val consumerChains = Set("consumer1", "consumer2", "consumer3")
     pure val chains = consumerChains.union(Set(PROVIDER_CHAIN))
     pure val unbondingPeriods = chains.mapBy(chain => 2 * Week)
+    pure val trustingPeriods = chains.mapBy(chain => 1 * Week)
     pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
 
     pure val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10")
     pure val InitialValidatorSet = nodes.mapBy(node => 100)
 
-    import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains).* from "./ccv"
+    import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains, TrustingPeriodPerChain = trustingPeriods).* from "./ccv"
 
     type Parameters = {
         VscTimeout: Time,
         CcvTimeout: Chain -> Time,
         UnbondingPeriodPerChain: Chain -> Time,
+        TrustingPeriodPerChain: Chain -> Time, // TODO: integrate trusting period in logic
         ConsumerChains: Set[Chain],
         Nodes: Set[Node],
         InitialValidatorSet: Node -> int,
@@ -143,6 +145,7 @@ module ccv_model {
             ConsumerChains: ConsumerChains,
             Nodes: nodes,
             InitialValidatorSet: InitialValidatorSet,
+            TrustingPeriodPerChain: TrustingPeriodPerChain,
         }
     }
 

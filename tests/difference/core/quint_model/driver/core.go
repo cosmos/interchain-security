@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -29,6 +30,7 @@ type ModelParams struct {
 	VscTimeout              time.Duration
 	CcvTimeout              map[ChainId]time.Duration
 	UnbondingPeriodPerChain map[ChainId]time.Duration
+	TrustingPeriodPerChain  map[ChainId]time.Duration
 }
 
 type Driver struct {
@@ -55,7 +57,7 @@ func (s *Driver) path(chain ChainId) *simibc.RelayedPath {
 
 // chain returns the TestChain for a given chain identifier
 func (s *Driver) chain(chain ChainId) *ibctesting.TestChain {
-	return s.path(chain).Chain(string(chain))
+	return s.coordinator.GetChain(string(chain))
 }
 
 func (s *Driver) providerChain() *ibctesting.TestChain {
@@ -151,9 +153,9 @@ func (s *Driver) providerTokens(i int64) int64 {
 
 func (s *Driver) validatorSet(chain ChainId) []stakingtypes.Validator {
 	if chain == P {
-		return s.providerStakingKeeper().GetLastValidators(s.ctx(P))
+		return s.providerStakingKeeper().GetAllValidators(s.ctx(P))
 	} else {
-		return s.consumerKeeper(chain).GetAllValidators(s.ctx(C))
+		return s.consumerKeeper(chain).GetAllValidators(s.ctx(chain))
 	}
 }
 
@@ -222,6 +224,50 @@ func (s *Driver) deliver(chain ChainId, numPackets int) {
 	s.path(chain).DeliverPackets(string(chain), numPackets)
 }
 
+func (s *Driver) getStateString() string {
+	var state strings.Builder
+
+	state.WriteString("Provider\n")
+	state.WriteString(s.getChainStateString("provider"))
+	state.WriteString("\n")
+
+	for chain := range s.simibcs {
+		state.WriteString(fmt.Sprintf("Chain %s\n", chain))
+		state.WriteString(s.getChainStateString(chain))
+		state.WriteString("\n")
+	}
+
+	return state.String()
+}
+
+func (s *Driver) getChainStateString(chain ChainId) string {
+	ctx := s.ctx(chain)
+
+	// Get the current block height
+	height := ctx.BlockHeight()
+
+	// Get the current block time
+	blockTime := ctx.BlockTime()
+
+	// Get the validator set for the current block
+	validatorSet := s.validatorSet(chain)
+
+	// Build the chain info string
+	var chainInfo strings.Builder
+	chainInfo.WriteString(fmt.Sprintf("  Height: %d\n", height))
+	chainInfo.WriteString(fmt.Sprintf("  Time: %s\n", blockTime))
+
+	// Build the validator info string
+	var validatorInfo strings.Builder
+	for _, validator := range validatorSet {
+		validatorInfo.WriteString(fmt.Sprintf("    Validator %s: power=%d\n", validator.GetOperator().String(), validator.BondedTokens()))
+	}
+
+	chainInfo.WriteString(validatorInfo.String())
+
+	return chainInfo.String()
+}
+
 func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration, preCommitCallback func()) {
 	s.path(chain).EndAndBeginBlock(string(chain), timeAdvancement, func() {
 	})
@@ -239,83 +285,3 @@ func newDriver(t *testing.T, valAddresses []sdk.ValAddress) *Driver {
 	}
 	return suite
 }
-
-// // The state of the data returned is equivalent to the state of two chains
-// // after a full handshake, but the precise order of steps used to reach the
-// // state does not necessarily mimic the order of steps that happen in a
-// // live scenario.
-// func GetZeroState(
-// 	suite *suite.Suite,
-// 	initState InitState,
-// ) (path *ibctesting.Path, addrs []sdk.ValAddress, heightLastCommitted, timeLastCommitted int64) {
-// 	b := Builder{initState: initState, suite: suite}
-
-// 	b.createProviderAndConsumer()
-
-// 	b.setProviderParams()
-
-// 	// This is the simplest way to initialize the slash meter
-// 	// after a change to the param value.
-// 	b.providerKeeper().InitializeSlashMeter(b.providerCtx())
-
-// 	b.addExtraProviderValidators()
-
-// 	// Commit the additional validators
-// 	b.coordinator.CommitBlock(b.provider())
-
-// 	b.configurePath()
-
-// 	// Create a client for the provider chain to use, using ibc go testing.
-// 	b.createProvidersLocalClient()
-
-// 	// Manually create a client for the consumer chain to and bootstrap
-// 	// via genesis.
-// 	clientState := b.createConsumersLocalClientGenesis()
-
-// 	consumerGenesis := b.createConsumerGenesis(clientState)
-
-// 	b.consumerKeeper().InitGenesis(b.consumerCtx(), consumerGenesis)
-
-// 	// Client ID is set in InitGenesis and we treat it as a block box. So
-// 	// must query it to use it with the endpoint.
-// 	clientID, _ := b.consumerKeeper().GetProviderClientID(b.consumerCtx())
-// 	b.consumerEndpoint().ClientID = clientID
-
-// 	// Handshake
-// 	b.coordinator.CreateConnections(b.path)
-// 	b.coordinator.CreateChannels(b.path)
-
-// 	// Usually the consumer sets the channel ID when it receives a first VSC packet
-// 	// to the provider. For testing purposes, we can set it here. This is because
-// 	// we model a blank slate: a provider and consumer that have fully established
-// 	// their channel, and are ready for anything to happen.
-// 	b.consumerKeeper().SetProviderChannel(b.consumerCtx(), b.consumerEndpoint().ChannelID)
-
-// 	// Catch up consumer height to provider height. The provider was one ahead
-// 	// from committing additional validators.
-// 	simibc.EndBlock(b.consumer(), func() {})
-
-// 	simibc.BeginBlock(b.consumer(), initState.BlockInterval)
-// 	simibc.BeginBlock(b.provider(), initState.BlockInterval)
-
-// 	// Commit a block on both chains, giving us two committed headers from
-// 	// the same time and height. This is the starting point for all our
-// 	// data driven testing.
-// 	lastProviderHeader, _ := simibc.EndBlock(b.provider(), func() {})
-// 	lastConsumerHeader, _ := simibc.EndBlock(b.consumer(), func() {})
-
-// 	// Want the height and time of last COMMITTED block
-// 	heightLastCommitted = b.provider().CurrentHeader.Height
-// 	timeLastCommitted = b.provider().CurrentHeader.Time.Unix()
-
-// 	// Get ready to update clients.
-// 	simibc.BeginBlock(b.provider(), initState.BlockInterval)
-// 	simibc.BeginBlock(b.consumer(), initState.BlockInterval)
-
-// 	// Update clients to the latest header. Now everything is ready to go!
-// 	// Ignore errors for brevity. Everything is checked in Assuptions test.
-// 	_ = simibc.UpdateReceiverClient(b.consumerEndpoint(), b.providerEndpoint(), lastConsumerHeader)
-// 	_ = simibc.UpdateReceiverClient(b.providerEndpoint(), b.consumerEndpoint(), lastProviderHeader)
-
-// 	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
-// }
