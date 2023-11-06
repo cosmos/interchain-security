@@ -96,7 +96,7 @@ message EquivocationProposal {
   option deprecated = true;
   // the title of the proposal
   string title = 1;
-  // the description of the proposal
+// the description of the proposal
   string description = 2;
   // the list of equivocations that will be processed
   repeated cosmos.evidence.v1beta1.Equivocation equivocations = 3;

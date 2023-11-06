@@ -1,13 +1,14 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	time "time"
 
 	errorsmod "cosmossdk.io/errors"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	ccvtypes "github.com/cosmos/interchain-security/v2/x/ccv/types"
@@ -16,18 +17,21 @@ import (
 const (
 	ProposalTypeConsumerAddition   = "ConsumerAddition"
 	ProposalTypeConsumerRemoval    = "ConsumerRemoval"
+	ProposalTypeEquivocation       = "Equivocation"
 	ProposalTypeChangeRewardDenoms = "ChangeRewardDenoms"
 )
 
 var (
 	_ govtypes.Content = &ConsumerAdditionProposal{}
 	_ govtypes.Content = &ConsumerRemovalProposal{}
+	_ govtypes.Content = &EquivocationProposal{}
 	_ govtypes.Content = &ChangeRewardDenomsProposal{}
 )
 
 func init() {
 	govtypes.RegisterProposalType(ProposalTypeConsumerAddition)
 	govtypes.RegisterProposalType(ProposalTypeConsumerRemoval)
+	govtypes.RegisterProposalType(ProposalTypeEquivocation)
 	govtypes.RegisterProposalType(ProposalTypeChangeRewardDenoms)
 }
 
@@ -192,6 +196,40 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 
 	if sccp.StopTime.IsZero() {
 		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
+	}
+	return nil
+}
+
+// NewEquivocationProposal creates a new equivocation proposal.
+// [DEPRECATED]: do not use
+func NewEquivocationProposal(title, description string, equivocations []*evidencetypes.Equivocation) govtypes.Content {
+	return &EquivocationProposal{
+		Title:         title,
+		Description:   description,
+		Equivocations: equivocations,
+	}
+}
+
+// ProposalRoute returns the routing key of an equivocation  proposal.
+func (sp *EquivocationProposal) ProposalRoute() string { return RouterKey }
+
+// ProposalType returns the type of a equivocation proposal.
+func (sp *EquivocationProposal) ProposalType() string {
+	return ProposalTypeEquivocation
+}
+
+// ValidateBasic runs basic stateless validity checks
+func (sp *EquivocationProposal) ValidateBasic() error {
+	if err := govtypes.ValidateAbstract(sp); err != nil {
+		return err
+	}
+	if len(sp.Equivocations) == 0 {
+		return errors.New("invalid equivocation proposal: empty equivocations")
+	}
+	for i := 0; i < len(sp.Equivocations); i++ {
+		if err := sp.Equivocations[i].ValidateBasic(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
