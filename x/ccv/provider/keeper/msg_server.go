@@ -117,8 +117,11 @@ func (k msgServer) ConsumerAddition(goCtx context.Context, msg *types.MsgConsume
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Signer)
 	}
 
-	// TODO: Call keeper implementation !
-
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	err := k.Keeper.HandleNewConsumerAdditionProposal(ctx, msg)
+	if err != nil {
+		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
+	}
 	return &types.MsgConsumerAdditionResponse{}, nil
 }
 
@@ -130,20 +133,26 @@ func (k msgServer) ConsumerRemoval(
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Signer)
 	}
 
-	// TODO: Call keeper implementation !
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	err := k.Keeper.HandleNewConsumerRemovalProposal(ctx, msg)
+	if err != nil {
+		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
+	}
 
 	return &types.MsgConsumerRemovalResponse{}, nil
 }
 
-// ConsumerRemoval defines a rpc handler method for MsgConsumerRemoval
-func (k msgServer) ChangeRewardDenoms(
-	goCtx context.Context,
-	msg *types.MsgChangeRewardDenoms) (*types.MsgChangeRewardDenomsResponse, error) {
+// ChangeRewardDenoms defines a rpc handler method for MsgChangeRewardDenoms
+func (k msgServer) ChangeRewardDenoms(goCtx context.Context, msg *types.MsgChangeRewardDenoms) (*types.MsgChangeRewardDenomsResponse, error) {
 	if k.GetAuthority() != msg.Signer {
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Signer)
 	}
 
-	// TODO: Call keeper implementation !
+	sdkCtx := sdk.UnwrapSDKContext(goCtx)
+	err := k.Keeper.HandleNewConsumerRewardDenomProposal(sdkCtx, msg)
+	if err != nil {
+		return nil, errorsmod.Wrapf(err, "failed handling Change Reward Denoms proposal")
+	}
 
 	return &types.MsgChangeRewardDenomsResponse{}, nil
 }

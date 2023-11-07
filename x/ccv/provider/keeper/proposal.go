@@ -24,6 +24,50 @@ import (
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
+// Wrapper for the new proposal messages MsgConsumerAddition.
+// Will replace legacy handler HandleConsumerAdditionProposal
+func (k Keeper) HandleNewConsumerAdditionProposal(ctx sdk.Context, proposal *types.MsgConsumerAddition) error {
+	p := types.ConsumerAdditionProposal{
+		Title:                             "New ConsumerAddition Proposal",
+		ChainId:                           proposal.ChainId,
+		InitialHeight:                     proposal.InitialHeight,
+		GenesisHash:                       proposal.GenesisHash,
+		BinaryHash:                        proposal.BinaryHash,
+		SpawnTime:                         proposal.SpawnTime,
+		UnbondingPeriod:                   proposal.UnbondingPeriod,
+		CcvTimeoutPeriod:                  proposal.CcvTimeoutPeriod,
+		TransferTimeoutPeriod:             proposal.TransferTimeoutPeriod,
+		ConsumerRedistributionFraction:    proposal.ConsumerRedistributionFraction,
+		BlocksPerDistributionTransmission: proposal.BlocksPerDistributionTransmission,
+		HistoricalEntries:                 proposal.HistoricalEntries,
+		DistributionTransmissionChannel:   proposal.DistributionTransmissionChannel,
+	}
+	return k.HandleConsumerAdditionProposal(ctx, &p)
+
+}
+
+// Wrapper for the new proposal messages MsgConsumerRemoval.
+// Will replace legacy handler HandleConsumerRemovalProposal
+func (k Keeper) HandleNewConsumerRemovalProposal(ctx sdk.Context, proposal *types.MsgConsumerRemoval) error {
+	p := types.ConsumerRemovalProposal{
+		ChainId:  proposal.ChainId,
+		StopTime: proposal.StopTime,
+	}
+	return k.HandleConsumerRemovalProposal(ctx, &p)
+
+}
+
+// Wrapper for the new proposal messages MsgChangeRewardDenoms.
+// Will replace legacy handler HandleConsumerRewardDenomProposal
+func (k Keeper) HandleNewConsumerRewardDenomProposal(ctx sdk.Context, proposal *types.MsgChangeRewardDenoms) error {
+	p := types.ChangeRewardDenomsProposal{
+		Title:          "New ChangeRewardDenomsProposal",
+		DenomsToAdd:    proposal.DenomsToAdd,
+		DenomsToRemove: proposal.DenomsToRemove,
+	}
+	return k.HandleConsumerRewardDenomProposal(ctx, &p)
+}
+
 // HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
 // If the client can be successfully created in a cached context, it stores the proposal as a pending proposal.
 //
