@@ -218,7 +218,7 @@ func newChain(
 	app.InitChain(
 		abcitypes.RequestInitChain{
 			ChainId:         chainID,
-			Validators:      []abcitypes.ValidatorUpdate{},
+			Validators:      cmttypes.TM2PB.ValidatorUpdates(validators),
 			ConsensusParams: &protoConsParams,
 			AppStateBytes:   stateBytes,
 		},
