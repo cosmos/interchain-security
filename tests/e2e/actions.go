@@ -43,7 +43,8 @@ func (tr TestConfig) sendTokens(
 		tr.validatorConfigs[action.From].DelAddress,
 		tr.validatorConfigs[action.To].DelAddress,
 		fmt.Sprint(action.Amount)+`stake`,
-
+		`--gas-prices`, `0.0025stake`,
+		`--gas-adjustment`, `1.5`,
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
@@ -205,6 +206,9 @@ func (tr TestConfig) submitTextProposal(
 		`--description`, action.Description,
 		`--deposit`, fmt.Sprint(action.Deposit)+`stake`,
 		`--from`, `validator`+fmt.Sprint(action.From),
+		`--gas`, "auto",
+		`--gas-prices`, `0.0025stake`,
+		`--gas-adjustment`, `1.5`,
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
@@ -274,16 +278,22 @@ func (tr TestConfig) submitConsumerAdditionProposal(
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	// CONSUMER ADDITION PROPOSAL
-	bz, err = exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.Chain].BinaryName,
+	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.Chain].BinaryName,
 		"tx", "gov", "submit-legacy-proposal", "consumer-addition", "/temp-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.From),
+		`--gas-prices`, `0.0025stake`,
+		`--gas-adjustment`, `1.5`,
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
-		`--gas`, `900000`,
+		`--gas`, "auto",
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
 		`--keyring-backend`, `test`,
 		`-y`,
-	).CombinedOutput()
+	)
+
+	log.Println(cmd)
+
+	bz, err = cmd.CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
@@ -338,10 +348,12 @@ func (tr TestConfig) submitConsumerRemovalProposal(
 		"tx", "gov", "submit-legacy-proposal", "consumer-removal",
 		"/temp-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.From),
+		`--gas-prices`, `0.0025stake`,
+		`--gas-adjustment`, `1.5`,
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
-		`--gas`, "900000",
+		`--gas`, "auto",
 		`--keyring-backend`, `test`,
 		`-y`,
 	).CombinedOutput()
@@ -414,10 +426,12 @@ func (tr TestConfig) submitParamChangeProposal(
 		"tx", "gov", "submit-legacy-proposal", "param-change", "/params-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.From),
+		`--gas-prices`, `0.0025stake`,
+		`--gas-adjustment`, `1.5`,
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
-		`--gas`, "900000",
+		`--gas`, "auto",
 		`--keyring-backend`, `test`,
 		`-y`,
 	)
@@ -490,7 +504,9 @@ func (tr TestConfig) submitEquivocationProposal(action submitEquivocationProposa
 		`--chain-id`, string(providerChain.ChainId),
 		`--home`, tr.getValidatorHome(providerChain.ChainId, action.From),
 		`--node`, tr.getValidatorNode(providerChain.ChainId, action.From),
-		`--gas`, "9000000",
+		`--gas`, "auto",
+		`--gas-prices`, `0.0025stake`,
+		`--gas-adjustment`, `1.5`,
 		`--keyring-backend`, `test`,
 		`-y`,
 	).CombinedOutput()
@@ -527,11 +543,13 @@ func (tr *TestConfig) voteGovProposal(
 				fmt.Sprint(action.PropNumber), vote,
 
 				`--from`, `validator`+fmt.Sprint(val),
+				`--gas-prices`, `0.0025stake`,
+				`--gas-adjustment`, `1.5`,
 				`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 				`--home`, tr.getValidatorHome(action.Chain, val),
 				`--node`, tr.getValidatorNode(action.Chain, val),
 				`--keyring-backend`, `test`,
-				`--gas`, "900000",
+				`--gas`, "auto",
 				`-y`,
 			).CombinedOutput()
 			if err != nil {
@@ -740,7 +758,7 @@ websocket_addr = "%s"
 
 [chains.gas_price]
 	denom = "stake"
-	price = 0.000
+	price = 0.025
 
 [chains.trust_threshold]
 	denominator = "3"
@@ -1014,6 +1032,10 @@ func (tr TestConfig) addIbcConnectionHermes(
 		"--a-client", "07-tendermint-"+fmt.Sprint(action.ClientA),
 		"--b-client", "07-tendermint-"+fmt.Sprint(action.ClientB),
 	)
+
+	if verbose {
+		log.Println("addIbcConnectionHermes cmd: ", cmd.String())
+	}
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -1386,6 +1408,9 @@ func (tr TestConfig) delegateTokens(
 		fmt.Sprint(action.Amount)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.From),
+		`--gas`, "auto",
+		`--gas-prices`, `0.0025stake`,
+		`--gas-adjustment`, `1.5`,
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
@@ -1430,10 +1455,12 @@ func (tr TestConfig) unbondTokens(
 		fmt.Sprint(action.Amount)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.Sender),
+		`--gas-prices`, `0.0025stake`,
+		`--gas-adjustment`, `1.5`,
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.Sender),
 		`--node`, tr.getValidatorNode(action.Chain, action.Sender),
-		`--gas`, "900000",
+		`--gas`, "auto",
 		`--keyring-backend`, `test`,
 		`-y`,
 	)
@@ -1497,10 +1524,12 @@ func (tr TestConfig) cancelUnbondTokens(
 		fmt.Sprint(action.Amount)+`stake`,
 		fmt.Sprint(creationHeight),
 		`--from`, `validator`+fmt.Sprint(action.Delegator),
+		`--gas-prices`, `0.0025stake`,
+		`--gas-adjustment`, `1.5`,
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.Delegator),
 		`--node`, tr.getValidatorNode(action.Chain, action.Delegator),
-		`--gas`, "900000",
+		`--gas`, "auto",
 		`--keyring-backend`, `test`,
 		`-o`, `json`,
 		`-y`,
@@ -1550,11 +1579,13 @@ func (tr TestConfig) redelegateTokens(action redelegateTokensAction, verbose boo
 		redelegateDst,
 		fmt.Sprint(action.Amount)+`stake`,
 		`--from`, `validator`+fmt.Sprint(action.TxSender),
+		`--gas-prices`, `0.0025stake`,
+		`--gas-adjustment`, `1.5`,
 		`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.TxSender),
 		`--node`, tr.getValidatorNode(action.Chain, action.TxSender),
 		// Need to manually set gas limit past default (200000), since redelegate has a lot of operations
-		`--gas`, "900000",
+		`--gas`, "auto",
 		`--keyring-backend`, `test`,
 		`-y`,
 	)
@@ -1680,7 +1711,9 @@ func (tr TestConfig) unjailValidator(action unjailValidatorAction, verbose bool)
 		`--chain-id`, string(tr.chainConfigs[action.Provider].ChainId),
 		`--home`, tr.getValidatorHome(action.Provider, action.Validator),
 		`--node`, tr.getValidatorNode(action.Provider, action.Validator),
-		`--gas`, "900000",
+		`--gas`, "auto",
+		`--gas-prices`, `0.0025stake`,
+		`--gas-adjustment`, `1.5`,
 		`--keyring-backend`, `test`,
 		`-y`,
 	)
@@ -1738,6 +1771,9 @@ func (tr TestConfig) registerRepresentative(
 				`--commission-max-change-rate`, "0.01",
 				`--min-self-delegation`, "1",
 				`--from`, `validator`+fmt.Sprint(val),
+				`--gas`, "auto",
+				`--gas-prices`, `0.0025stake`,
+				`--gas-adjustment`, `1.5`,
 				`--chain-id`, string(tr.chainConfigs[action.Chain].ChainId),
 				`--home`, tr.getValidatorHome(action.Chain, val),
 				`--node`, tr.getValidatorNode(action.Chain, val),
@@ -1802,7 +1838,9 @@ func (tr TestConfig) submitChangeRewardDenomsProposal(action submitChangeRewardD
 		`--chain-id`, string(providerChain.ChainId),
 		`--home`, tr.getValidatorHome(providerChain.ChainId, action.From),
 		`--node`, tr.getValidatorNode(providerChain.ChainId, action.From),
-		`--gas`, "9000000",
+		`--gas`, "auto",
+		`--gas-prices`, `0.0025stake`,
+		`--gas-adjustment`, `1.5`,
 		`--keyring-backend`, `test`,
 		`-y`,
 	).CombinedOutput()
@@ -1955,7 +1993,7 @@ func (tr TestConfig) assignConsumerPubKey(action assignConsumerPubKeyAction, ver
 		gas = "9000000"
 	}
 	assignKey := fmt.Sprintf(
-		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
+		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas %s --gas-prices %s --gas-adjustment 1.5 --keyring-backend test -y -o json`,
 		tr.chainConfigs[ChainID("provi")].BinaryName,
 		string(tr.chainConfigs[action.Chain].ChainId),
 		action.ConsumerPubkey,
@@ -1964,6 +2002,7 @@ func (tr TestConfig) assignConsumerPubKey(action assignConsumerPubKeyAction, ver
 		tr.getValidatorHome(ChainID("provi"), action.Validator),
 		tr.getValidatorNode(ChainID("provi"), action.Validator),
 		gas,
+		`0.0025stake`,
 	)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
