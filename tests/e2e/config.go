@@ -184,7 +184,6 @@ func SlashThrottleTestRun() TestRun {
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-					".app_state.gov.params.expedited_voting_period = \"10s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
@@ -231,7 +230,6 @@ func DefaultTestRun() TestRun {
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-					".app_state.gov.params.expedited_voting_period = \"10s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
@@ -248,7 +246,6 @@ func DefaultTestRun() TestRun {
 func DemocracyTestRun(allowReward bool) TestRun {
 	consumerGenChanges := ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"20\" | " +
 		".app_state.gov.voting_params.voting_period = \"10s\" | " +
-		".app_state.gov.params.expedited_voting_period = \"5s\" | " +
 		".app_state.slashing.params.signed_blocks_window = \"10\" | " +
 		".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 		".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
@@ -331,7 +328,6 @@ func MultiConsumerTestRun() TestRun {
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-					".app_state.gov.params.expedited_voting_period = \"10s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
@@ -343,7 +339,6 @@ func MultiConsumerTestRun() TestRun {
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-					".app_state.gov.params.expedited_voting_period = \"10s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +
@@ -391,7 +386,6 @@ func ChangeoverTestRun() TestRun {
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 20,
 				genesisChanges: ".app_state.gov.params.voting_period = \"20s\" | " +
-					".app_state.gov.params.expedited_voting_period = \"10s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"15\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"60s\" | " +

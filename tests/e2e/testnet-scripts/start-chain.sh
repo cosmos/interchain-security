@@ -55,18 +55,18 @@ NODES=$(echo "$VALIDATORS" | jq '. | length')
 # SETUP NETWORK NAMESPACES, see: https://adil.medium.com/container-networking-under-the-hood-network-namespaces-6b2b8fe8dc2a
 
 # Create virtual bridge device (acts like a switch)
-ip link add name virtual-bridge type bridge || true
+ip link add name virtual-bridge type bridge || true 
 
 for i in $(seq 0 $(($NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
     VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$i].ip_suffix")
     NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
-    IP_ADDR="$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX/24"
+    IP_ADDR="$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX/24" 
 
-    # Create network namespace
+    # Create network namespace 
     ip netns add $NET_NAMESPACE_NAME
-    # Create virtual ethernet device to connect with bridge
+    # Create virtual ethernet device to connect with bridge 
     ip link add $NET_NAMESPACE_NAME-in type veth peer name $NET_NAMESPACE_NAME-out
     # Connect input end of virtual ethernet device to namespace
     ip link set $NET_NAMESPACE_NAME-in netns $NET_NAMESPACE_NAME
@@ -84,14 +84,14 @@ do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
     NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
 
-    # Enable in/out interfaces for the namespace
+    # Enable in/out interfaces for the namespace 
     ip link set $NET_NAMESPACE_NAME-out up
     ip netns exec $NET_NAMESPACE_NAME ip link set dev $NET_NAMESPACE_NAME-in up
     # Enable loopback device
     ip netns exec $NET_NAMESPACE_NAME ip link set dev lo up
 done
 
-# Assign IP for bridge, to route between default network namespace and bridge
+# Assign IP for bridge, to route between default network namespace and bridge 
 BRIDGE_IP="$CHAIN_IP_PREFIX.254/24"
 ip addr add $BRIDGE_IP dev virtual-bridge
 
@@ -129,11 +129,11 @@ do
         --keyring-backend test \
         --recover > /dev/null
     fi
-
+    
     # Give validators their initial token allocations
     # move the genesis in
     mv /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$VAL_ID/config/genesis.json
-
+    
     # give this validator some money
     ALLOCATION=$(echo "$VALIDATORS" | jq -r ".[$i].allocation")
     $BIN genesis add-genesis-account validator$VAL_ID $ALLOCATION \
@@ -178,7 +178,7 @@ do
     fi
 
     # Make a gentx (this command also sets up validator state on disk even if we are not going to use the gentx for anything)
-    if [ "$SKIP_GENTX" = "false" ] ; then
+    if [ "$SKIP_GENTX" = "false" ] ; then 
         STAKE_AMOUNT=$(echo "$VALIDATORS" | jq -r ".[$i].stake")
         $BIN genesis gentx validator$VAL_ID "$STAKE_AMOUNT" \
             --home /$CHAIN_ID/validator$VAL_ID \
@@ -186,7 +186,7 @@ do
             --moniker validator$VAL_ID \
             --chain-id=$CHAIN_ID
 
-        # Copy gentxs to the first validator for possible future collection.
+        # Copy gentxs to the first validator for possible future collection. 
         # Obviously we don't need to copy the first validator's gentx to itself
         if [ $VAL_ID != $FIRST_VAL_ID ]; then
             cp /$CHAIN_ID/validator$VAL_ID/config/gentx/* /$CHAIN_ID/validator$FIRST_VAL_ID/config/gentx/
@@ -194,7 +194,7 @@ do
     fi
 
     # Modify tendermint configs of validator
-    if [ "$TENDERMINT_CONFIG_TRANSFORM" != "" ] ; then
+    if [ "$TENDERMINT_CONFIG_TRANSFORM" != "" ] ; then 
         #'s/foo/bar/;s/abc/def/'
         sed -i "$TENDERMINT_CONFIG_TRANSFORM" $CHAIN_ID/validator$VAL_ID/config/config.toml
     fi
@@ -209,7 +209,7 @@ if [ "$SKIP_GENTX" = "false" ] ; then
     # make the final genesis.json
     $BIN genesis collect-gentxs --home /$CHAIN_ID/validator$FIRST_VAL_ID
 
-    # and copy it to the root
+    # and copy it to the root 
     cp /$CHAIN_ID/validator$FIRST_VAL_ID/config/genesis.json /$CHAIN_ID/genesis.json
 
     # put the now final genesis.json into the correct folders
@@ -249,7 +249,7 @@ do
     do
         if [ $i -ne $j ]; then
             PEER_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$j].val_id")
-            PEER_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$j].ip_suffix")
+            PEER_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$j].ip_suffix")  
             NODE_ID=$($BIN tendermint show-node-id --home /$CHAIN_ID/validator$PEER_VAL_ID)
             ADDRESS="$NODE_ID@$CHAIN_IP_PREFIX.$PEER_VAL_IP_SUFFIX:26656"
             # (jq -r '.body.memo' /$CHAIN_ID/validator$j/config/gentx/*) # Getting the address from the gentx should also work
