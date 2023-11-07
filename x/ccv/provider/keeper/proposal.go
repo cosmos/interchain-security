@@ -24,7 +24,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
-// Wrapper for the new proposal messages MsgConsumerAddition.
+// Wrapper for the new proposal message MsgConsumerAddition
 // Will replace legacy handler HandleConsumerAdditionProposal
 func (k Keeper) HandleNewConsumerAdditionProposal(ctx sdk.Context, proposal *types.MsgConsumerAddition) error {
 	p := types.ConsumerAdditionProposal{
@@ -46,7 +46,7 @@ func (k Keeper) HandleNewConsumerAdditionProposal(ctx sdk.Context, proposal *typ
 
 }
 
-// Wrapper for the new proposal messages MsgConsumerRemoval.
+// Wrapper for the new proposal message MsgConsumerRemoval
 // Will replace legacy handler HandleConsumerRemovalProposal
 func (k Keeper) HandleNewConsumerRemovalProposal(ctx sdk.Context, proposal *types.MsgConsumerRemoval) error {
 	p := types.ConsumerRemovalProposal{
@@ -57,7 +57,7 @@ func (k Keeper) HandleNewConsumerRemovalProposal(ctx sdk.Context, proposal *type
 
 }
 
-// Wrapper for the new proposal messages MsgChangeRewardDenoms.
+// Wrapper for the new proposal message MsgChangeRewardDenoms
 // Will replace legacy handler HandleConsumerRewardDenomProposal
 func (k Keeper) HandleNewConsumerRewardDenomProposal(ctx sdk.Context, proposal *types.MsgChangeRewardDenoms) error {
 	p := types.ChangeRewardDenomsProposal{
