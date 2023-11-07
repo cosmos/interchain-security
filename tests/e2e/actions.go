@@ -217,7 +217,7 @@ func (tr TestRun) submitTextProposal(
 	tr.waitBlocks(action.chain, 1, 10*time.Second)
 }
 
-type submitConsumerAdditionLegacyProposalAction struct {
+type submitConsumerAdditionProposalAction struct {
 	preCCV              bool
 	chain               chainID
 	from                validatorID
@@ -228,8 +228,8 @@ type submitConsumerAdditionLegacyProposalAction struct {
 	distributionChannel string
 }
 
-func (tr TestRun) submitConsumerAdditionLegacyProposal(
-	action submitConsumerAdditionLegacyProposalAction,
+func (tr TestRun) submitConsumerAdditionProposal(
+	action submitConsumerAdditionProposalAction,
 	verbose bool,
 ) {
 	spawnTime := tr.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)

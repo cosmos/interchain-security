@@ -41,7 +41,7 @@ func stepsSovereignTransferChan() []Step {
 func stepsChangeoverToConsumer(consumerName string) []Step {
 	s := []Step{
 		{
-			action: submitConsumerAdditionLegacyProposalAction{
+			action: submitConsumerAdditionProposalAction{
 				preCCV:        true,
 				chain:         chainID("provi"),
 				from:          validatorID("alice"),
