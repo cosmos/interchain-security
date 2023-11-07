@@ -206,6 +206,63 @@ module ccv_model {
         }
 
     // ==================
+    // UTILITY FUNCTIONS
+    // ==================
+
+    pure def earliest(packets: Set[VscPacket]): VscPacket =
+        val latestPossiblePacket: VscPacket = {
+            id: 0,
+            validatorSet: Map(),
+            sendingTime: 9999999999999 * Second,
+        }
+        packets.fold(
+            latestPossiblePacket,
+            (res, pack) => if(res.sendingTime < pack.sendingTime) { res } else { pack }
+        )
+
+    pure def latest(packets: Set[VscPacket]): VscPacket =
+        val earliestPossiblePacket: VscPacket = {
+            id: 0,
+            validatorSet: Map(),
+            sendingTime: -9999999999 * Second,
+        }
+        packets.fold(
+            earliestPossiblePacket,
+            (res, pack) => if(res.sendingTime >= pack.sendingTime) { res } else { pack }
+        )
+
+    // run maxByTest =
+    // all {
+    //   assert(maxBy(Set(1, 2, 3), __x => __x) == 3),
+    //   assert(maxBy(Set(1, 2, 3), __x => -__x) == 1),
+    // }
+    run earliestLatestTest = {
+    val packet1 = {
+            id: 1,
+            validatorSet: Map(),
+            sendingTime: 1 * Second,
+        }
+
+        val packet2 = {
+            id: 2,
+            validatorSet: Map(),
+            sendingTime: 2 * Second,
+        }
+
+        val packet3 = {
+            id: 3,
+            validatorSet: Map(),
+            sendingTime: 3 * Second,
+        }
+        all {
+            assert(earliest(Set(packet1, packet2, packet3)) == packet1),
+            assert(earliest(Set(packet3, packet2, packet1)) == packet1),
+            assert(latest(Set(packet1, packet2, packet3)) == packet3),
+            assert(latest(Set(packet3, packet2, packet1)) == packet3),
+        }
+    }
+
+    // ==================
     // INVARIANT CHECKS
     // ==================
 
@@ -251,8 +308,8 @@ module ccv_model {
                     if (commonPackets.size() == 0) {
                         true // they don't share any packets, so nothing to check
                     } else {
-                        val newestCommonPacket = commonPackets.maxBy(packet => packet.sendingTime)
-                        val oldestCommonPacket = commonPackets.minBy(packet => packet.sendingTime)
+                        val newestCommonPacket = commonPackets.latest()
+                        val oldestCommonPacket = commonPackets.earliest()
                         // get all packets sent between the oldest and newest common packet
                         val packetsBetween1 = packets1.select(
                             packet => packet.sendingTime >= oldestCommonPacket.sendingTime and packet.sendingTime <= newestCommonPacket.sendingTime

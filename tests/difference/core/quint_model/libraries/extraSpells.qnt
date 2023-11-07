@@ -168,46 +168,4 @@ module extraSpells {
         assert(values(Map(1 -> 2, 3 -> 4)) == Set(2, 4)),
         assert(values(Map()) == Set())
     }
-
-    // Returns the maximal element of the set.
-    // If the set is empty, the function call will fail at runtime.
-    pure def max(__set: Set[int]): int = maxBy(__set, __a => __a)
-
-    run maxTest =
-    all {
-        assert(max(Set(1, 2, 3)) == 3),
-    }
-
-    // Returns the minimal element of the set.
-    // If the set is empty, the function call will fail at runtime.
-    pure def min(__set: Set[int]): int = minBy(__set, __a => __a)
-
-    run minTest =
-    all {
-        assert(min(Set(1, 2, 3)) == 1),
-    }
-
-    // Returns the maximum element of a set, according to a given function.
-    // If two elements are equally large, an arbitrary one will be returned.
-    // If the set is empty, the function call will fail at runtime.
-    pure def maxBy(__set: Set[a], __f: a => int): a = {
-      __set.fold(
-        oneOf(__set),
-        (__m, __e) => if(__f(__m) > __f(__e)) {__m } else {__e}
-      )
-    }
-
-    run maxByTest =
-    all {
-      assert(maxBy(Set(1, 2, 3), __x => __x) == 3),
-      assert(maxBy(Set(1, 2, 3), __x => -__x) == 1),
-    }
-
-    // Like maxBy, but returns the minimum element.
-    pure def minBy(__set: Set[a], __f: a => int): a = {
-      __set.fold(
-        oneOf(__set),
-        (__m, __e) => if(__f(__m) < __f(__e)) {__m } else {__e}
-      )
-    }
 }

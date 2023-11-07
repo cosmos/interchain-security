@@ -478,7 +478,7 @@ module ccv {
                         }
                     ).toList()
                 )
-                val newConsumerState2 = newConsumerState.with(
+                val newConsumerState2: ConsumerState = newConsumerState.with(
                     "maturationTimes", newMaturationTimes
                 ).with(
                     "outstandingPacketsToProvider", newOutstandingPackets
@@ -801,7 +801,9 @@ module ccv {
         CcvTimeout.keys().forall(chain => CcvTimeout.get(chain) > 0)
 
     run CcvTimeoutLargerThanUnbondingPeriodTest =
-        CcvTimeout.get(PROVIDER_CHAIN) > UnbondingPeriodPerChain.values().max()
+        UnbondingPeriodPerChain.values().forall(
+            value => CcvTimeout.get(PROVIDER_CHAIN) > value
+        )
 
     run ProviderIsNotAConsumerTest =
         not(ConsumerChains.contains(PROVIDER_CHAIN))
