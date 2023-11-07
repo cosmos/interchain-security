@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -111,34 +109,6 @@ func ParseConsumerKeyFromJson(jsonStr string) (pkType, key string, err error) {
 	return pubKey.Type, pubKey.Key, nil
 }
 
-// NewMsgConsumerAddition creates a new MsgConsumerAddition instance.
-func NewMsgConsumerAddition(signer, chainID string,
-	initialHeight clienttypes.Height, genesisHash, binaryHash []byte,
-	spawnTime time.Time,
-	consumerRedistributionFraction string,
-	blocksPerDistributionTransmission int64,
-	distributionTransmissionChannel string,
-	historicalEntries int64,
-	ccvTimeoutPeriod time.Duration,
-	transferTimeoutPeriod time.Duration,
-	unbondingPeriod time.Duration) *MsgConsumerAddition {
-	return &MsgConsumerAddition{
-		ChainId:                           chainID,
-		InitialHeight:                     initialHeight,
-		GenesisHash:                       genesisHash,
-		BinaryHash:                        binaryHash,
-		SpawnTime:                         spawnTime,
-		ConsumerRedistributionFraction:    consumerRedistributionFraction,
-		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
-		DistributionTransmissionChannel:   distributionTransmissionChannel,
-		HistoricalEntries:                 historicalEntries,
-		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
-		TransferTimeoutPeriod:             transferTimeoutPeriod,
-		UnbondingPeriod:                   unbondingPeriod,
-		Signer:                            signer,
-	}
-}
-
 // GetSigners implements the sdk.Msg interface. It returns the address(es) that
 // must sign over msg.GetSignBytes().
 // If the validator address is not same as delegator's, then the validator must
@@ -208,12 +178,6 @@ func (msg *MsgConsumerAddition) ValidateBasic() error {
 	return nil
 }
 
-// NewMsgConsumerRemoval creates a new MsgConsumerRemoval instance
-func NewMsgConsumerRemoval(signer string) *MsgConsumerRemoval {
-	//@bermuell: TODO finsh implementation!
-	return &MsgConsumerRemoval{}
-}
-
 func (msg *MsgConsumerRemoval) ValidateBasic() error {
 
 	if strings.TrimSpace(msg.ChainId) == "" {
@@ -224,12 +188,6 @@ func (msg *MsgConsumerRemoval) ValidateBasic() error {
 		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
 	}
 	return nil
-}
-
-// MsgChangeRewardDenoms creates a new MsgChangeRewardDenoms instance
-func NewMsgChangeRewardDenoms(signer string) *MsgChangeRewardDenoms {
-	//@bermuell: TODO finsh implementation!
-	return &MsgChangeRewardDenoms{}
 }
 
 func (msg *MsgChangeRewardDenoms) ValidateBasic() error {
