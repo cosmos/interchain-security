@@ -636,11 +636,13 @@ func (app *App) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sdk.
 
 // BeginBlocker application updates every begin block
 func (app *App) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+	fmt.Println("------------- calling consumer App BeginBlocker --------------")
 	return app.MM.BeginBlock(ctx)
 }
 
 // EndBlocker application updates every end block
 func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
+	fmt.Println("------------- calling consumer App EndBlocker --------------")
 	return app.MM.EndBlock(ctx)
 }
 

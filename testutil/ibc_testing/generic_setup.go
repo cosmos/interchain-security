@@ -16,8 +16,9 @@ import (
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
-	testkeeper "github.com/cosmos/interchain-security/v3/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 type (
@@ -70,7 +71,7 @@ func AddProvider[T testutil.ProviderApp](t *testing.T, coordinator *ibctesting.C
 	ibctesting.DefaultTestingAppInit = appIniter
 	provider := ibctesting.NewTestChain(t, coordinator, provChainID)
 	coordinator.Chains[provChainID] = provider
-	fmt.Println("### PROVI BLOCK", coordinator.Chains[provChainID].GetContext().BlockHeight())
+	fmt.Println("ICS integration ## AddProvider - block height: ", coordinator.Chains[provChainID].GetContext().BlockHeight())
 
 	providerToReturn, ok := provider.App.(T)
 	if !ok {
@@ -123,19 +124,30 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	providerApp := providerChain.App.(Tp)
 	providerKeeper := providerApp.GetProviderKeeper()
 
-	prop := testkeeper.GetTestConsumerAdditionProp()
-	prop.ChainId = chainID
-	// NOTE: the initial height passed to CreateConsumerClient
-	// must be the height on the consumer when InitGenesis is called
-	prop.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 3}
-	err := providerKeeper.CreateConsumerClient(
-		providerChain.GetContext(),
-		prop,
-	)
-	fmt.Println("### ERRORED ON CREATE #####", err)
-	s.Require().NoError(err)
+	prop := providertypes.ConsumerAdditionProposal{
+		Title:         fmt.Sprintf("start chain %s", chainID),
+		Description:   "description",
+		ChainId:       chainID,
+		InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2},
+		GenesisHash:   []byte("gen_hash"),
+		BinaryHash:    []byte("bin_hash"),
+		// NOTE: we cannot use the time.Now() because the coordinator chooses a hardcoded start time
+		// using time.Now() could set the spawn time to be too far in the past or too far in the future
+		SpawnTime:                         coordinator.CurrentTime,
+		UnbondingPeriod:                   ccvtypes.DefaultConsumerUnbondingPeriod,
+		CcvTimeoutPeriod:                  ccvtypes.DefaultBlocksPerDistributionTransmission,
+		TransferTimeoutPeriod:             ccvtypes.DefaultCCVTimeoutPeriod,
+		ConsumerRedistributionFraction:    ccvtypes.DefaultConsumerRedistributeFrac,
+		BlocksPerDistributionTransmission: ccvtypes.DefaultBlocksPerDistributionTransmission,
+		HistoricalEntries:                 ccvtypes.DefaultHistoricalEntries,
+		DistributionTransmissionChannel:   "",
+	}
 
-	// commit the state on the provider chain
+	providerKeeper.SetPendingConsumerAdditionProp(providerChain.GetContext(), &prop)
+	propsToExecute := providerKeeper.GetConsumerAdditionPropsToExecute(providerChain.GetContext())
+	s.Require().Len(propsToExecute, 1)
+
+	// this causes BeginBlock and EndBlock to be called on the provider chain
 	coordinator.CommitBlock(providerChain)
 
 	// get genesis state created by the provider
@@ -144,6 +156,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		chainID,
 	)
 	s.Require().True(found, "consumer genesis not found")
+	fmt.Println("# ICS integration ## AddConsumer - consumerGenesisState: ", consumerGenesisState.InitialValSet)
 
 	// use InitialValSet as the valset on the consumer
 	var valz []*tmtypes.Validator

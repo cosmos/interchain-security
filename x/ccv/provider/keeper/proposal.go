@@ -54,6 +54,7 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
 // Spec tag: [CCV-PCF-CRCLIENT.1]
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditionProposal) error {
+	fmt.Println("CreateConsumerClient ##", prop.SpawnTime, prop.ChainId, ctx.BlockHeight())
 	chainID := prop.ChainId
 	// check that a client for this chain does not exist
 	if _, found := k.GetConsumerClientId(ctx, chainID); found {
@@ -247,8 +248,7 @@ func (k Keeper) MakeConsumerGenesis(
 		return gen, nil, errorsmod.Wrapf(types.ErrNoUnbondingTime, "ubonding time not found: %s", err)
 	}
 	height := clienttypes.GetSelfHeight(ctx)
-	height.RevisionHeight = height.RevisionHeight
-	fmt.Println("## PROVIDER HEIGHT at MakeConsumerGenesis", height)
+	fmt.Println("MakeConsumerGenesis ## PROVIDER HEIGHT at MakeConsumerGenesis", height)
 
 	clientState := k.GetTemplateClient(ctx)
 	// this is the counter party chain ID for the consumer
@@ -264,7 +264,6 @@ func (k Keeper) MakeConsumerGenesis(
 	clientState.UnbondingPeriod = providerUnbondingPeriod
 
 	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
-	fmt.Println("! NO CONSENSUS STATE !", err)
 	if err != nil {
 		return gen, nil, errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
 	}

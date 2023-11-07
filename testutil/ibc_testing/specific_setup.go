@@ -58,7 +58,7 @@ func ConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter {
 		consumerGenesis.InitialValSet = initValPowers
 		consumerGenesis.Params.Enabled = true
 		genesisState[consumertypes.ModuleName] = encoding.Codec.MustMarshalJSON(&consumerGenesis)
-		fmt.Println("$$$$ ConsumerAppIniter done")
+		fmt.Println("$$$$ ConsumerAppIniter done", consumerGenesis.InitialValSet)
 		return testApp, genesisState
 	}
 }

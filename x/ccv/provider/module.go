@@ -149,6 +149,7 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 	am.keeper.BeginBlockInit(sdkCtx)
 	// Stop and remove state for any consumer chains that are due to be stopped via pending consumer removal proposals
 	am.keeper.BeginBlockCCR(sdkCtx)
+	fmt.Println("x/provider ## BeginBlock")
 	return nil
 }
 
@@ -167,6 +168,7 @@ func (am AppModule) EndBlock(ctx context.Context) error {
 	// EndBlock logic need for the  Reward Distribution sub-protocol
 	am.keeper.EndBlockRD(sdkCtx)
 
+	fmt.Println("x/provider ## EndBlock")
 	return nil
 }
 

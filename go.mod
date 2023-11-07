@@ -211,3 +211,7 @@ require (
 replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 
 replace github.com/cosmos/cosmos-sdk => ../cosmos-sdk
+
+replace github.com/cosmos/ibc-go => ../ibc-go
+
+replace github.com/cosmos/ibc-go/v8 => ../ibc-go

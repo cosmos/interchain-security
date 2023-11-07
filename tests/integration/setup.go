@@ -92,7 +92,7 @@ func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		// Add provider to coordinator, store returned test chain and app.
 		// Concrete provider app type is passed to the generic function here.
 		provider, providerApp := icstestingutils.AddProvider[Tp](t, coordinator, providerAppIniter)
-		fmt.Println("------ provider added ----------")
+		fmt.Println("ICS Integration ## setupProviderCallback called")
 		// Pass variables to suite.
 		return coordinator, provider, providerApp
 	}
@@ -102,7 +102,7 @@ func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		coordinator *ibctesting.Coordinator,
 		index int,
 	) *icstestingutils.ConsumerBundle {
-		fmt.Println("------ adding consumer ----------")
+		fmt.Println("ICS Integration ## setupConsumerCallback called")
 		return icstestingutils.AddConsumer[Tp, Tc](coordinator, s, index, consumerAppIniter)
 	}
 
@@ -121,6 +121,7 @@ func (suite *CCVTestSuite) BeforeTest(suiteName, testName string) {
 
 // SetupTest sets up in-mem state before every test
 func (suite *CCVTestSuite) SetupTest() {
+	fmt.Println("ICS integration ## SetupTest")
 	suite.packetSniffers = make(map[*ibctesting.TestChain]*packetSniffer)
 
 	// Instantiate new coordinator and provider chain using callback
@@ -140,6 +141,7 @@ func (suite *CCVTestSuite) SetupTest() {
 		suite.consumerBundles[bundle.Chain.ChainID] = bundle
 		suite.registerPacketSniffer(bundle.Chain)
 	}
+	fmt.Println("ICS integration ## SetupTest ## registered consumers")
 
 	// initialize each consumer chain with it's corresponding genesis state
 	// stored on the provider.
@@ -149,9 +151,9 @@ func (suite *CCVTestSuite) SetupTest() {
 			chainID,
 		)
 		suite.Require().True(found, "consumer genesis not found")
-
 		initConsumerChain(suite, chainID, &consumerGenesisState)
 	}
+	fmt.Println("ICS integration ## SetupTest ## initConsumerChain done")
 
 	// try updating all clients
 	for _, bundle := range suite.consumerBundles {
@@ -163,7 +165,8 @@ func (suite *CCVTestSuite) SetupTest() {
 		err = bundle.Path.EndpointA.UpdateClient()
 		suite.Require().NoError(err)
 	}
-	fmt.Println("## REACHED END ---")
+	fmt.Println("ICS integration ## SetupTest ## UpdateClient done")
+	fmt.Println("ICS integration ## SetupTest ## SETUP TEST ## DONE")
 }
 
 func (s *CCVTestSuite) registerPacketSniffer(chain *ibctesting.TestChain) {
@@ -400,7 +403,6 @@ func (ps *packetSniffer) ListenFinalizeBlock(ctx context.Context, req abci.Reque
 	// TODO: @MSalopek this was deprecated, figure out how to use it
 	packets := ParsePacketsFromEvents(res.GetEvents())
 	for _, packet := range packets {
-		fmt.Println("#----------- packet --------------- #", packet)
 		ps.packets[getSentPacketKey(packet.Sequence, packet.SourceChannel)] = packet
 	}
 	return nil
@@ -413,7 +415,6 @@ func getSentPacketKey(sequence uint64, channelID string) string {
 }
 
 func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit, cs []*store.StoreKVPair) error {
-	fmt.Println("# HAVE A COMMIT ##", res, cs)
 	return nil
 }
 

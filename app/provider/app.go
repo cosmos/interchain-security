@@ -565,42 +565,26 @@ func New(
 	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
 	app.MM.SetOrderBeginBlockers(
 		// upgrades should be run first
-		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
-		crisistypes.ModuleName,
-		govtypes.ModuleName,
+		minttypes.ModuleName,
+		distrtypes.ModuleName,
+		slashingtypes.ModuleName,
+		evidencetypes.ModuleName,
 		stakingtypes.ModuleName,
 		ibcexported.ModuleName,
 		ibctransfertypes.ModuleName,
-		authtypes.ModuleName,
-		banktypes.ModuleName,
-		distrtypes.ModuleName,
-		slashingtypes.ModuleName,
-		minttypes.ModuleName,
 		genutiltypes.ModuleName,
-		evidencetypes.ModuleName,
-		paramstypes.ModuleName,
-		vestingtypes.ModuleName,
 		providertypes.ModuleName,
 	)
 
 	app.MM.SetOrderEndBlockers(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
-		capabilitytypes.ModuleName,
 		stakingtypes.ModuleName,
-		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
-		authtypes.ModuleName,
-		banktypes.ModuleName,
-		distrtypes.ModuleName,
-		slashingtypes.ModuleName,
-		minttypes.ModuleName,
+		ibctransfertypes.ModuleName,
+		capabilitytypes.ModuleName,
 		genutiltypes.ModuleName,
-		evidencetypes.ModuleName,
-		paramstypes.ModuleName,
-		upgradetypes.ModuleName,
-		vestingtypes.ModuleName,
 		providertypes.ModuleName,
 	)
 

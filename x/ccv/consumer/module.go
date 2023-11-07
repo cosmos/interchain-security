@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
+	"cosmossdk.io/core/appmodule"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -17,8 +18,6 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/client/cli"
 	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
@@ -26,9 +25,17 @@ import (
 )
 
 var (
-	_ module.AppModule      = AppModule{}
-	_ porttypes.IBCModule   = AppModule{}
-	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.AppModule           = (*AppModule)(nil)
+	_ module.AppModuleBasic      = (*AppModuleBasic)(nil)
+	_ module.AppModuleSimulation = (*AppModule)(nil)
+	_ module.HasABCIGenesis      = (*AppModule)(nil)
+	_ module.HasName             = (*AppModule)(nil)
+	_ module.HasConsensusVersion = (*AppModule)(nil)
+	_ module.HasInvariants       = (*AppModule)(nil)
+	_ module.HasServices         = (*AppModule)(nil)
+	_ appmodule.AppModule        = (*AppModule)(nil)
+	_ appmodule.HasBeginBlocker  = (*AppModule)(nil)
+	_ appmodule.HasEndBlocker    = (*AppModule)(nil)
 )
 
 // AppModuleBasic is the IBC Consumer AppModuleBasic
@@ -143,8 +150,9 @@ func (AppModule) ConsensusVersion() uint64 {
 // BeginBlock implements the AppModule interface
 // Set the VSC ID for the subsequent block to the same value as the current block
 // Panic if the provider's channel was established and then closed
-func (am AppModule) BeginBlock(ctx context.Context) {
+func (am AppModule) BeginBlock(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	fmt.Println("----------- start consumer BeginBlock:", sdkCtx.BlockHeight())
 
 	// Update smallest validator power that cannot opt out.
 	am.keeper.UpdateSmallestNonOptOutPower(sdkCtx)
@@ -164,20 +172,23 @@ func (am AppModule) BeginBlock(ctx context.Context) {
 	am.keeper.Logger(sdkCtx).Debug("block height was mapped to vscID", "height", blockHeight+1, "vscID", vID)
 
 	am.keeper.TrackHistoricalInfo(sdkCtx)
+	fmt.Println("----------- end consumer BeginBlock:", sdkCtx.BlockHeight(), vID)
+	return nil
 }
 
 // EndBlock implements the AppModule interface
 // Flush PendingChanges to ABCI, send pending packets, write acknowledgements for packets that have finished unbonding.
 //
 // TODO: e2e tests confirming behavior with and without standalone -> consumer changeover
-func (am AppModule) EndBlock(ctx context.Context) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
+	// @MSalopek -> is this correctly handled?
 	// If PreCCV state is active, consumer is a previously standalone chain
 	// that was just upgraded to include the consumer ccv module, execute changeover logic.
 	if am.keeper.IsPreCCV(sdkCtx) {
-		initialValUpdates := am.keeper.ChangeoverToConsumer(sdkCtx)
-		return initialValUpdates
+		_ = am.keeper.ChangeoverToConsumer(sdkCtx)
+		return nil
 	}
 
 	// Execute EndBlock logic for the Reward Distribution sub-protocol
@@ -192,7 +203,7 @@ func (am AppModule) EndBlock(ctx context.Context) []abci.ValidatorUpdate {
 
 	data, ok := am.keeper.GetPendingChanges(sdkCtx)
 	if !ok {
-		return []abci.ValidatorUpdate{}
+		return nil
 	}
 	// apply changes to cross-chain validator set
 	tendermintUpdates := am.keeper.ApplyCCValidatorChanges(sdkCtx, data.ValidatorUpdates)
@@ -200,7 +211,7 @@ func (am AppModule) EndBlock(ctx context.Context) []abci.ValidatorUpdate {
 
 	am.keeper.Logger(sdkCtx).Debug("sending validator updates to consensus engine", "len updates", len(tendermintUpdates))
 
-	return tendermintUpdates
+	return nil
 }
 
 // AppModuleSimulation functions
