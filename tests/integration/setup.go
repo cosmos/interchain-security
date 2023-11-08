@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"sync"
 	"testing"
 
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
@@ -167,7 +166,9 @@ func (s *CCVTestSuite) registerPacketSniffer(chain *ibctesting.TestChain) {
 		s.packetSniffers = make(map[*ibctesting.TestChain]*packetSniffer)
 	}
 	p := newPacketSniffer()
-	chain.App.GetBaseApp().SetStreamingManager(p)
+	chain.App.GetBaseApp().SetStreamingManager(store.StreamingManager{
+		ABCIListeners: []store.ABCIListener{p},
+	})
 	s.packetSniffers[chain] = p
 }
 
@@ -380,8 +381,7 @@ type packetSniffer struct {
 	packets map[string]channeltypes.Packet
 }
 
-// TODO: @MSalopek this was deprecated, figure out how to use it or ask @tbruyelle
-// var _ baseapp.StreamingService = &packetSniffer{}
+var _ store.ABCIListener = &packetSniffer{}
 
 func newPacketSniffer() *packetSniffer {
 	return &packetSniffer{
@@ -390,7 +390,6 @@ func newPacketSniffer() *packetSniffer {
 }
 
 func (ps *packetSniffer) ListenFinalizeBlock(ctx context.Context, req abci.RequestFinalizeBlock, res abci.ResponseFinalizeBlock) error {
-	// TODO: @MSalopek this was deprecated, figure out how to use it
 	packets := ParsePacketsFromEvents(res.GetEvents())
 	for _, packet := range packets {
 		ps.packets[getSentPacketKey(packet.Sequence, packet.SourceChannel)] = packet
@@ -408,29 +407,7 @@ func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit,
 	return nil
 }
 
-func (*packetSniffer) Close() error                                       { return nil }
-func (*packetSniffer) Listeners() map[store.StoreKey][]store.ABCIListener { return nil }
-func (*packetSniffer) Stream(wg *sync.WaitGroup) error                    { return nil }
-
-// [legacy simibc method]
-// ABCIToSDKEvents converts a list of ABCI events to Cosmos SDK events.
-func ABCIToSDKEvents(abciEvents []abci.Event) sdk.Events {
-	var events sdk.Events
-	for _, evt := range abciEvents {
-		var attributes []sdk.Attribute
-		for _, attr := range evt.GetAttributes() {
-			attributes = append(attributes, sdk.NewAttribute(attr.Key, attr.Value))
-		}
-
-		events = events.AppendEvent(sdk.NewEvent(evt.GetType(), attributes...))
-	}
-
-	return events
-}
-
-// [legacy simibc method]
 // ParsePacketsFromEvents returns all packets found in events.
-// func ParsePacketsFromEvents(events []sdk.Event) (packets []channeltypes.Packet) {
 func ParsePacketsFromEvents(events []abci.Event) (packets []channeltypes.Packet) {
 	for i, ev := range events {
 		if ev.Type == channeltypes.EventTypeSendPacket {
