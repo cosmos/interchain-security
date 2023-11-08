@@ -158,7 +158,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 				}
 			},
 			// Expect to get only the validators
-			// who signed both headers are returned
+			// who signed both headers
 			altValset.Validators,
 			true,
 		},

@@ -63,16 +63,16 @@ func MakeAndSignVoteWithForgedValAddress(
 	blockTime time.Time,
 	valSet *tmtypes.ValidatorSet,
 	signer tmtypes.PrivValidator,
+	valAddressSigner tmtypes.PrivValidator,
 	chainID string,
 ) *tmtypes.Vote {
 
 	// create the vote using a different key than the signing key
-	forgedSigner := tmtypes.NewMockPV()
 	vote, err := tmtypes.MakeVote(
 		blockHeight,
 		blockID,
 		valSet,
-		forgedSigner,
+		valAddressSigner,
 		chainID,
 		blockTime,
 	)

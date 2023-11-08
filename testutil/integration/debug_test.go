@@ -281,6 +281,10 @@ func TestHandleConsumerDoubleVoting(t *testing.T) {
 	runCCVTestByName(t, "TestHandleConsumerDoubleVoting")
 }
 
+func TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations(t *testing.T) {
+	runCCVTestByName(t, "TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations")
+}
+
 // Throttle retry tests
 //
 

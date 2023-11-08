@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"fmt"
 
 	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -78,18 +79,26 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 // GetByzantineValidators returns the validators that signed both headers.
 // If the misbehavior is an equivocation light client attack, then these
 // validators are the Byzantine validators.
-func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) ([]*tmtypes.Validator, error) {
+func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) (validators []*tmtypes.Validator, err error) {
 	// construct the trusted and conflicted light blocks
 	lightBlock1, err := headerToLightBlock(*misbehaviour.Header1)
 	if err != nil {
-		return nil, err
+		return
 	}
 	lightBlock2, err := headerToLightBlock(*misbehaviour.Header2)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	var validators []*tmtypes.Validator
+	// Check if the misbehaviour corresponds to an Amnesia attack,
+	// meaning that the conflicting headers have both valid state transitions
+	// and different commit rounds. In this case, we return no validators as
+	// we can't identify the byzantine validators.
+	//
+	// Note that we cannot differentiate which of the headers is trusted or malicious,
+	if !headersStateTransitionsAreConflicting(*lightBlock1.Header, *lightBlock2.Header) && lightBlock1.Commit.Round != lightBlock2.Commit.Round {
+		return
+	}
 
 	// compare the signatures of the headers
 	// and return the intersection of validators who signed both
@@ -167,4 +176,15 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 	}
 
 	return nil
+}
+
+// Check if the given block headers have conflicting state transitions.
+// Note that this method was copied from ConflictingHeaderIsInvalid in CometBFT,
+// see https://github.com/cometbft/cometbft/blob/v0.34.27/types/evidence.go#L285
+func headersStateTransitionsAreConflicting(h1, h2 tmtypes.Header) bool {
+	return !bytes.Equal(h1.ValidatorsHash, h2.ValidatorsHash) ||
+		!bytes.Equal(h1.NextValidatorsHash, h2.NextValidatorsHash) ||
+		!bytes.Equal(h1.ConsensusHash, h2.ConsensusHash) ||
+		!bytes.Equal(h1.AppHash, h2.AppHash) ||
+		!bytes.Equal(h1.LastResultsHash, h2.LastResultsHash)
 }

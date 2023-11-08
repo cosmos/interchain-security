@@ -24,7 +24,7 @@ func (k Keeper) HandleConsumerDoubleVoting(
 	pubkey cryptotypes.PubKey,
 ) error {
 	// verifies the double voting evidence using the consumer chain public key
-	if err := k.VerifyDoubleVotingEvidence(ctx, *evidence, chainID, pubkey); err != nil {
+	if err := k.VerifyDoubleVotingEvidence(*evidence, chainID, pubkey); err != nil {
 		return err
 	}
 
@@ -35,7 +35,10 @@ func (k Keeper) HandleConsumerDoubleVoting(
 		types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress.Bytes())),
 	)
 
-	if err := k.PunishValidator(ctx, providerAddr); err != nil {
+	if err := k.SlashValidator(ctx, providerAddr); err != nil {
+		return err
+	}
+	if err := k.JailAndTombstoneValidator(ctx, providerAddr); err != nil {
 		return err
 	}
 
@@ -50,7 +53,6 @@ func (k Keeper) HandleConsumerDoubleVoting(
 // VerifyDoubleVotingEvidence verifies a double voting evidence
 // for a given chain id and a validator public key
 func (k Keeper) VerifyDoubleVotingEvidence(
-	ctx sdk.Context,
 	evidence tmtypes.DuplicateVoteEvidence,
 	chainID string,
 	pubkey cryptotypes.PubKey,
@@ -71,7 +73,7 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 	// Note that since we're only jailing validators for double voting on a consumer chain,
 	// the age of the evidence is irrelevant and therefore isn't checked.
 
-	// H/R/S must be the same
+	// height/round/type must be the same
 	if evidence.VoteA.Height != evidence.VoteB.Height ||
 		evidence.VoteA.Round != evidence.VoteB.Round ||
 		evidence.VoteA.Type != evidence.VoteB.Type {
