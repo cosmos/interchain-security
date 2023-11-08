@@ -14,7 +14,8 @@ import (
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
-func (k Keeper) PunishValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) error {
+// JailAndTombstoneValidator jails and tombstones the validator with the given provider consensus address
+func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) error {
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 	if !found {
 		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
@@ -28,8 +29,18 @@ func (k Keeper) PunishValidator(ctx sdk.Context, providerAddr types.ProviderCons
 		return fmt.Errorf("validator is tombstoned. provider consensus address: %s", providerAddr.String())
 	}
 
-	k.SlashValidator(ctx, validator)
-	k.JailAndTombstoneValidator(ctx, validator)
+	// jail validator if not already
+	if !validator.IsJailed() {
+		k.stakingKeeper.Jail(ctx, providerAddr.ToSdkConsAddr())
+	}
+
+	k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
+
+	// Tombstone the validator so that we cannot slash the validator more than once
+	// Note that we cannot simply use the fact that a validator is jailed to avoid slashing more than once
+	// because then a validator could i) perform an equivocation, ii) get jailed (e.g., through downtime)
+	// and in such a case the validator would not get slashed when we call `SlashValidator`.
+	k.slashingKeeper.Tombstone(ctx, providerAddr.ToSdkConsAddr())
 
 	return nil
 }

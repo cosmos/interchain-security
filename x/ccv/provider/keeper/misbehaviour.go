@@ -16,7 +16,7 @@ import (
 )
 
 // HandleConsumerMisbehaviour checks if the given IBC misbehaviour corresponds to an equivocation light client attack,
-// and in this case, slashes, jails, and tombstones the Byzantine validators
+// and in this case, slashes, jails, and tombstones
 func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
 	logger := k.Logger(ctx)
 
@@ -39,7 +39,6 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 
 	provAddrs := make([]types.ProviderConsAddress, len(byzantineValidators))
 
-	var errors []error
 	// slash, jail, and tombstone the Byzantine validators
 	for _, v := range byzantineValidators {
 		providerAddr := k.GetProviderAddrFromConsumerAddr(
@@ -47,28 +46,31 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, misbehaviour ibctmty
 			misbehaviour.Header1.Header.ChainID,
 			types.NewConsumerConsAddress(sdk.ConsAddress(v.Address.Bytes())),
 		)
-		err := k.PunishValidator(ctx, providerAddr)
+		err := k.SlashValidator(ctx, providerAddr)
 		if err != nil {
-			errors = append(errors, err)
+			logger.Error("failed to slash validator: %s", err)
+			continue
+		}
+		err = k.JailAndTombstoneValidator(ctx, providerAddr)
+		// JailAndTombstoneValidator should never return an error if
+		// SlashValidator succeeded because both methods fail if the malicious
+		// validator is either or both !found, unbonded and tombstoned.
+		if err != nil {
+			panic(err)
 		}
 
 		provAddrs = append(provAddrs, providerAddr)
 	}
 
+	// Return an error if no validators were punished
+	if len(provAddrs) == 0 {
+		return fmt.Errorf("failed to slash, jail, or tombstone all validators: %v", byzantineValidators)
+	}
+
 	logger.Info(
 		"confirmed equivocation light client attack",
-		"byzantine validators", provAddrs,
+		"byzantine validators slashed, jailed and tombstoned", provAddrs,
 	)
-
-	// If we fail to slash all validators we return an error. However, if we only fail to slash some validators
-	// we just log an error to avoid having the whole `MsgSubmitMisbehaviour` failing and reverting the partial slashing.
-	if len(errors) == len(byzantineValidators) {
-		return fmt.Errorf("failed to slash, jail, or tombstone all validators: %v", errors)
-	}
-
-	if len(errors) > 0 {
-		logger.Error("failed to slash, jail, or tombstone validators: %v", errors)
-	}
 
 	return nil
 }
