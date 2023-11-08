@@ -118,7 +118,7 @@ func (k msgServer) ConsumerAddition(goCtx context.Context, msg *types.MsgConsume
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	err := k.Keeper.HandleNewConsumerAdditionProposal(ctx, msg)
+	err := k.Keeper.HandleConsumerAdditionProposal(ctx, msg)
 	if err != nil {
 		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
 	}
@@ -134,7 +134,7 @@ func (k msgServer) ConsumerRemoval(
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	err := k.Keeper.HandleNewConsumerRemovalProposal(ctx, msg)
+	err := k.Keeper.HandleConsumerRemovalProposal(ctx, msg)
 	if err != nil {
 		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
 	}
@@ -149,7 +149,7 @@ func (k msgServer) ChangeRewardDenoms(goCtx context.Context, msg *types.MsgChang
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(goCtx)
-	err := k.Keeper.HandleNewConsumerRewardDenomProposal(sdkCtx, msg)
+	err := k.Keeper.HandleConsumerRewardDenomProposal(sdkCtx, msg)
 	if err != nil {
 		return nil, errorsmod.Wrapf(err, "failed handling Change Reward Denoms proposal")
 	}

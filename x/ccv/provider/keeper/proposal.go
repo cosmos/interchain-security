@@ -25,8 +25,8 @@ import (
 )
 
 // Wrapper for the new proposal message MsgConsumerAddition
-// Will replace legacy handler HandleConsumerAdditionProposal
-func (k Keeper) HandleNewConsumerAdditionProposal(ctx sdk.Context, proposal *types.MsgConsumerAddition) error {
+// Will replace legacy handler HandleLegacyConsumerAdditionProposal
+func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, proposal *types.MsgConsumerAddition) error {
 	p := types.ConsumerAdditionProposal{
 		Title:                             "New ConsumerAddition Proposal",
 		ChainId:                           proposal.ChainId,
@@ -42,39 +42,39 @@ func (k Keeper) HandleNewConsumerAdditionProposal(ctx sdk.Context, proposal *typ
 		HistoricalEntries:                 proposal.HistoricalEntries,
 		DistributionTransmissionChannel:   proposal.DistributionTransmissionChannel,
 	}
-	return k.HandleConsumerAdditionProposal(ctx, &p)
+	return k.HandleLegacyConsumerAdditionProposal(ctx, &p)
 
 }
 
 // Wrapper for the new proposal message MsgConsumerRemoval
-// Will replace legacy handler HandleConsumerRemovalProposal
-func (k Keeper) HandleNewConsumerRemovalProposal(ctx sdk.Context, proposal *types.MsgConsumerRemoval) error {
+// Will replace legacy handler HandleLegacyConsumerRemovalProposal
+func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, proposal *types.MsgConsumerRemoval) error {
 	p := types.ConsumerRemovalProposal{
 		ChainId:  proposal.ChainId,
 		StopTime: proposal.StopTime,
 	}
-	return k.HandleConsumerRemovalProposal(ctx, &p)
+	return k.HandleLegacyConsumerRemovalProposal(ctx, &p)
 
 }
 
 // Wrapper for the new proposal message MsgChangeRewardDenoms
-// Will replace legacy handler HandleConsumerRewardDenomProposal
-func (k Keeper) HandleNewConsumerRewardDenomProposal(ctx sdk.Context, proposal *types.MsgChangeRewardDenoms) error {
+// Will replace legacy handler HandleLegacyConsumerRewardDenomProposal
+func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, proposal *types.MsgChangeRewardDenoms) error {
 	p := types.ChangeRewardDenomsProposal{
 		Title:          "New ChangeRewardDenomsProposal",
 		DenomsToAdd:    proposal.DenomsToAdd,
 		DenomsToRemove: proposal.DenomsToRemove,
 	}
-	return k.HandleConsumerRewardDenomProposal(ctx, &p)
+	return k.HandleLegacyConsumerRewardDenomProposal(ctx, &p)
 }
 
-// HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
+// HandleLegacyConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
 // If the client can be successfully created in a cached context, it stores the proposal as a pending proposal.
 //
 // Note: This method implements SpawnConsumerChainProposalHandler in spec.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcaprop1
 // Spec tag: [CCV-PCF-HCAPROP.1]
-func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
+func (k Keeper) HandleLegacyConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
 	// verify the consumer addition proposal execution
 	// in cached context and discard the cached writes
 	if _, _, err := k.CreateConsumerClientInCachedCtx(ctx, *p); err != nil {
@@ -167,13 +167,13 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	return nil
 }
 
-// HandleConsumerRemovalProposal stops a consumer chain and released the outstanding unbonding operations.
+// HandleLegacyConsumerRemovalProposal stops a consumer chain and released the outstanding unbonding operations.
 // If the consumer can be successfully stopped in a cached context, it stores the proposal as a pending proposal.
 //
 // This method implements StopConsumerChainProposalHandler from spec.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcrprop1
 // Spec tag: [CCV-PCF-HCRPROP.1]
-func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.ConsumerRemovalProposal) error {
+func (k Keeper) HandleLegacyConsumerRemovalProposal(ctx sdk.Context, p *types.ConsumerRemovalProposal) error {
 	// verify the consumer removal proposal execution
 	// in cached context and discard the cached writes
 	if _, _, err := k.StopConsumerChainInCachedCtx(ctx, *p); err != nil {
@@ -655,7 +655,7 @@ func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRe
 	return
 }
 
-func (k Keeper) HandleConsumerRewardDenomProposal(ctx sdk.Context, p *types.ChangeRewardDenomsProposal) error {
+func (k Keeper) HandleLegacyConsumerRewardDenomProposal(ctx sdk.Context, p *types.ChangeRewardDenomsProposal) error {
 	for _, denomToAdd := range p.DenomsToAdd {
 		// Log error and move on if one of the denoms is already registered
 		if k.ConsumerRewardDenomExists(ctx, denomToAdd) {
