@@ -1,5 +1,9 @@
 package main
 
+import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+)
+
 const (
 	P = "provider"
 )
@@ -13,4 +17,9 @@ func getIndexOfString(s string, slice []string) int {
 		}
 	}
 	return -1
+}
+
+func init() {
+	//	tokens === power
+	sdk.DefaultPowerReduction = sdk.NewInt(1)
 }
