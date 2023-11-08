@@ -295,7 +295,7 @@ module ccv {
                     val newProviderState = currentState.providerState.with(
                         "consumerStatus", newConsumerStatus
                     )
-                    val newState = currentState.with(
+                    val newState: ProtocolState = currentState.with(
                         "providerState", newProviderState
                     )
                     (Ok(newState), true) // true because the packet timed out
@@ -344,7 +344,7 @@ module ccv {
                     val newProviderState = currentState.providerState.with(
                         "consumerStatus", newConsumerStatus
                     )
-                    val newState = currentState.with(
+                    val newState: ProtocolState = currentState.with(
                         "providerState", newProviderState
                     )
                     (Ok(newState), true) // true because the packet timed out
@@ -415,8 +415,8 @@ module ccv {
             tmpState.consumerStates.keys().mapBy(
                 (consumer) => 
                 if (consumersToStart.contains(consumer)) {
-                    val currentConsumerState = tmpState.consumerStates.get(consumer)
-                    val newConsumerState = currentConsumerState.with(
+                    val currentConsumerState: ConsumerState = tmpState.consumerStates.get(consumer)
+                    val newConsumerState: ConsumerState = currentConsumerState.with(
                         "chainState", currentConsumerState.chainState.with(
                             "currentValidatorSet", providerStateAfterConsumerAdvancement.chainState.currentValidatorSet
                         )
@@ -459,9 +459,9 @@ module ccv {
                 // if the chain is not a consumer, return an error
                 Err("chain is not a consumer")
             } else {
-                val currentConsumerState = currentState.consumerStates.get(chain)
-                val newChainState = currentConsumerState.chainState.endAndBeginBlockShared(timeAdvancement)
-                val newConsumerState = currentConsumerState.with(
+                val currentConsumerState: ConsumerState = currentState.consumerStates.get(chain)
+                val newChainState: ChainState = currentConsumerState.chainState.endAndBeginBlockShared(timeAdvancement)
+                val newConsumerState: ConsumerState = currentConsumerState.with(
                     "chainState", newChainState
                 )
                 val maturedPackets = newConsumerState.maturationTimes.keys().filter(
@@ -484,7 +484,7 @@ module ccv {
                     "outstandingPacketsToProvider", newOutstandingPackets
                 )
                 val newConsumerStates = currentState.consumerStates.set(chain, newConsumerState2)
-                val newState = currentState.with(
+                val newState: ProtocolState = currentState.with(
                     "consumerStates", newConsumerStates
                 )
                 Ok(newState)
@@ -650,8 +650,8 @@ module ccv {
         } else {
             // update the running validator set, but not the history yet,
             // as that only happens when the next block is started
-            val currentConsumerState = currentState.consumerStates.get(receiver)
-            val newConsumerState = 
+            val currentConsumerState: ConsumerState = currentState.consumerStates.get(receiver)
+            val newConsumerState: ConsumerState = 
                 {
                     ...currentConsumerState,
                     chainState: currentConsumerState.chainState.with(
@@ -769,7 +769,7 @@ module ccv {
             (false, "Consumer is not currently a consumer - must have 'running' status!")
         } else {
             val providerState = currentState.providerState
-            val consumerState = currentState.consumerStates.get(consumer)
+            val consumerState: ConsumerState = currentState.consumerStates.get(consumer)
 
             // has a packet been sent on the provider more than VscTimeout ago, but we have not received an answer since then?
             val sentVscPacketsToConsumer = providerState.sentVscPacketsToConsumer.get(consumer)
