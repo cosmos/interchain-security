@@ -145,18 +145,23 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 
 	// Check that the headers are at the same height to ensure that
 	// the misbehaviour is for a light client attack and not a time violation,
-	// see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
+	// see CheckForMisbehaviour in ibc-go/blob/v7.3.0/modules/light-clients/07-tendermint/misbehaviour_handle.go#L73
 	if !misbehaviour.Header1.GetHeight().EQ(misbehaviour.Header2.GetHeight()) {
 		return errorsmod.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
 	}
 
-	// CheckMisbehaviourAndUpdateState verifies the misbehaviour against the trusted consensus states
-	// but does NOT update the light client state.
-	// Note that the IBC CheckMisbehaviourAndUpdateState method returns an error if the trusted consensus states are expired,
-	// see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
+	// CheckMisbehaviour verifies that the headers have both he same block height and
+	// different blockID hashes
 	ok := clientState.CheckForMisbehaviour(ctx, k.cdc, clientStore, &misbehaviour)
 	if !ok {
 		return errorsmod.Wrapf(ibcclienttypes.ErrInvalidMisbehaviour, "invalid misbehaviour for client-id: %s", misbehaviour.ClientId)
+	}
+
+	// VerifyClientMessage calls verifyMisbehaviour which verifies that the headers in the misbehaviour
+	// are valid against their respective trusted consensus states and  that trustLevel of the validator set signed their commit.
+	// see checkMisbehaviourHeader in ibc-go/blob/v7.3.0/modules/light-clients/07-tendermint/misbehaviour_handle.go#L126
+	if err := clientState.VerifyClientMessage(ctx, k.cdc, clientStore, &misbehaviour); err != nil {
+		return err
 	}
 
 	return nil

@@ -143,7 +143,6 @@ func TestPunishValidator(t *testing.T) {
 						Times(1),
 				)
 				return gc
-
 			},
 			false,
 		},

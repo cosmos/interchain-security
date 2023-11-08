@@ -85,84 +85,77 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 
 	altTime := s.providerCtx().BlockTime().Add(time.Minute)
 
+	// Get the consumer client validator set
 	clientHeight := s.consumerChain.LastHeader.TrustedHeight
 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
 	clientSigners := s.consumerChain.Signers
 
-	// Create a validator set subset
+	// Create a subset of the consumer client validator set
 	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:3])
-	altSigners := make(map[string]tmtypes.PrivValidator, 1)
+	altSigners := make(map[string]tmtypes.PrivValidator, 3)
 	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
 	altSigners[clientTMValset.Validators[2].Address.String()] = clientSigners[clientTMValset.Validators[2].Address.String()]
 
-	// TODO: figure out how to test an amnesia cases for "amnesia" attack
+	// create a consumer client header
+	clientHeader := s.consumerChain.CreateTMClientHeader(
+		s.consumerChain.ChainID,
+		int64(clientHeight.RevisionHeight+1),
+		clientHeight,
+		altTime,
+		clientTMValset,
+		clientTMValset,
+		clientTMValset,
+		clientSigners,
+	)
+
 	testCases := []struct {
 		name                   string
-		misbehaviour           *ibctmtypes.Misbehaviour
+		getMisbehaviour        func() *ibctmtypes.Misbehaviour
 		expByzantineValidators []*tmtypes.Validator
 		expPass                bool
 	}{
 		{
 			"invalid misbehaviour - Header1 is empty",
-			&ibctmtypes.Misbehaviour{
-				Header1: &ibctmtypes.Header{},
-				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					altTime,
-					altValset,
-					altValset,
-					clientTMValset,
-					altSigners,
-				),
+			func() *ibctmtypes.Misbehaviour {
+				return &ibctmtypes.Misbehaviour{
+					Header1: &ibctmtypes.Header{},
+					Header2: clientHeader,
+				}
 			},
 			nil,
 			false,
 		},
 		{
 			"invalid headers - Header2 is empty",
-			&ibctmtypes.Misbehaviour{
-				Header1: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					altTime,
-					clientTMValset,
-					clientTMValset,
-					clientTMValset,
-					clientSigners,
-				),
-				Header2: &ibctmtypes.Header{},
+			func() *ibctmtypes.Misbehaviour {
+				return &ibctmtypes.Misbehaviour{
+					Header1: clientHeader,
+					Header2: &ibctmtypes.Header{},
+				}
 			},
 			nil,
 			false,
 		},
 		{
-			"invalid light client attack - lunatic attack",
-			&ibctmtypes.Misbehaviour{
-				ClientId: s.path.EndpointA.ClientID,
-				Header1: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					altTime,
-					clientTMValset,
-					clientTMValset,
-					clientTMValset,
-					clientSigners,
-				),
-				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					altTime,
-					altValset,
-					altValset,
-					clientTMValset,
-					altSigners,
-				),
+			"light client attack - lunatic attack",
+			func() *ibctmtypes.Misbehaviour {
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1:  clientHeader,
+					// the resulting header contains invalid fields
+					// i.e. ValidatorsHash, NextValidatorsHash.
+					Header2: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight+1),
+						clientHeight,
+						altTime,
+						altValset,
+						altValset,
+						clientTMValset,
+						altSigners,
+					),
+				}
 			},
 			// Expect to get only the validators
 			// who signed both headers are returned
@@ -170,20 +163,35 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 			true,
 		},
 		{
-			"valid light client attack - equivocation",
-			&ibctmtypes.Misbehaviour{
-				ClientId: s.path.EndpointA.ClientID,
-				Header1: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					altTime,
-					clientTMValset,
-					clientTMValset,
-					clientTMValset,
-					clientSigners,
-				),
-				Header2: s.consumerChain.CreateTMClientHeader(
+			"light client attack - equivocation",
+			func() *ibctmtypes.Misbehaviour {
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1:  clientHeader,
+					// the resulting header contains a different BlockID
+					Header2: s.consumerChain.CreateTMClientHeader(
+						s.consumerChain.ChainID,
+						int64(clientHeight.RevisionHeight+1),
+						clientHeight,
+						altTime.Add(time.Minute),
+						clientTMValset,
+						clientTMValset,
+						clientTMValset,
+						clientSigners,
+					),
+				}
+			},
+			// Expect to get the entire valset since
+			// all validators double-signed
+			clientTMValset.Validators,
+			true,
+		},
+		{
+			"light client attack - amnesia",
+			func() *ibctmtypes.Misbehaviour {
+				// create a valid header with a different hash
+				// and commit round
+				amnesiaHeader := s.consumerChain.CreateTMClientHeader(
 					s.consumerChain.ChainID,
 					int64(clientHeight.RevisionHeight+1),
 					clientHeight,
@@ -192,11 +200,18 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 					clientTMValset,
 					clientTMValset,
 					clientSigners,
-				),
+				)
+				amnesiaHeader.Commit.Round = 2
+
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1:  clientHeader,
+					Header2:  amnesiaHeader,
+				}
 			},
-			// Expect to get the entire valset since
-			// all validators double-signed
-			clientTMValset.Validators,
+			// Expect no validators
+			// since amnesia attacks are dropped
+			[]*tmtypes.Validator{},
 			true,
 		},
 	}
@@ -205,24 +220,26 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 		s.Run(tc.name, func() {
 			byzantineValidators, err := s.providerApp.GetProviderKeeper().GetByzantineValidators(
 				s.providerCtx(),
-				*tc.misbehaviour,
+				*tc.getMisbehaviour(),
 			)
 			if tc.expPass {
 				s.NoError(err)
-				// For both lunatic and equivocation attack all the validators
+				s.Equal(len(tc.expByzantineValidators), len(byzantineValidators))
+
+				// For both lunatic and equivocation attacks all the validators
 				// who signed the bad header (Header2) should be in returned in the evidence
-				h2Valset := tc.misbehaviour.Header2.ValidatorSet
+				if len(tc.expByzantineValidators) > 0 {
+					equivocatingVals := tc.getMisbehaviour().Header2.ValidatorSet
+					s.Equal(len(equivocatingVals.Validators), len(byzantineValidators))
 
-				s.Equal(len(h2Valset.Validators), len(byzantineValidators))
+					vs, err := tmtypes.ValidatorSetFromProto(equivocatingVals)
+					s.NoError(err)
 
-				vs, err := tmtypes.ValidatorSetFromProto(tc.misbehaviour.Header2.ValidatorSet)
-				s.NoError(err)
-
-				for _, v := range tc.expByzantineValidators {
-					idx, _ := vs.GetByAddress(v.Address)
-					s.True(idx >= 0)
+					for _, v := range tc.expByzantineValidators {
+						idx, _ := vs.GetByAddress(v.Address)
+						s.True(idx >= 0)
+					}
 				}
-
 			} else {
 				s.Error(err)
 			}
@@ -253,6 +270,12 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 	altSigners := make(map[string]tmtypes.PrivValidator, 1)
 	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
+
+	// create a validator set with only one out of the four validators from the trusted validator set
+	altValset2 := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:1])
+	altSigners2 := make(map[string]tmtypes.PrivValidator, 1)
+	altSigners2[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
+
 	testCases := []struct {
 		name         string
 		misbehaviour *ibctmtypes.Misbehaviour
@@ -325,6 +348,33 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 					altValset,
 					clientTMValset,
 					altSigners,
+				),
+			},
+			false,
+		},
+		{
+			"invalid misbehaviour without enough voting power from trusted valset  - shouldn't pass",
+			&ibctmtypes.Misbehaviour{
+				ClientId: s.path.EndpointA.ClientID,
+				Header1: s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					headerTs,
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				),
+				Header2: s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+2),
+					clientHeight,
+					headerTs,
+					altValset2,
+					altValset2,
+					clientTMValset,
+					altSigners2,
 				),
 			},
 			false,
