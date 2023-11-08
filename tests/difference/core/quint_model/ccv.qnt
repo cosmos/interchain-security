@@ -245,14 +245,15 @@ module ccv {
     // functions here roughly correspond to API calls that can be triggered from external sources
     // ===================
     
-    // the power of a validator on the provider chain is changed to the given amount. We do not care how this happens,
+    // the power of a validator on the provider chain is changed by the given amount. We do not care how this happens,
     // e.g. via undelegations, or delegations, ...
     pure def votingPowerChange(currentState: ProtocolState, validator: Node, amount: int): Result = {
-            if (amount < 0) {
-                Err("Voting power changes must be nonnegative")
+            pure val currentValidatorSet = currentState.providerState.chainState.currentValidatorSet
+            pure val oldVotingPower = if (currentValidatorSet.keys().contains(validator)) currentValidatorSet.get(validator) else 0
+            if (amount == 0) {
+                Err("Voting power cannot change by zero!")
             } else {
-                pure val currentValidatorSet = currentState.providerState.chainState.currentValidatorSet
-                pure val newValidatorSet = currentValidatorSet.put(validator, amount)
+                pure val newValidatorSet = currentValidatorSet.put(validator, oldVotingPower + amount)
                 // set the validator set changed flag
                 val newProviderState = currentState.providerState.with(
                     "providerValidatorSetChangedInThisBlock", true

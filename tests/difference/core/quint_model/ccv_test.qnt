@@ -13,13 +13,13 @@ module ccv_test {
 
     import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains).* from "./ccv"
 
-    // negative voting powers give an error
-    run VotingPowerNegativeTest =
+    // changing voting power by zero gives an error
+    run VotingPowerZeroChangeTest =
     {
         votingPowerChange(
             GetEmptyProtocolState,
             "validator",
-            -1
+            0
         ).hasError()
     }
 
@@ -46,7 +46,7 @@ module ccv_test {
         val finalResult = votingPowerChange(
             tmpResult.newState,
             "validator",
-            0
+            -5
         )
         not(finalResult.hasError()) and
         finalResult.newState.providerState.chainState.currentValidatorSet.get("validator") == 0
@@ -64,7 +64,7 @@ module ccv_test {
         val finalResult = votingPowerChange(
             tmpResult.newState,
             "validator",
-            0
+            -5
         )
         // still should set the flag
         not(finalResult.hasError()) and
@@ -78,7 +78,7 @@ module ccv_test {
         val result = votingPowerChange(
             GetEmptyProtocolState,
             "validator",
-            0
+            2
         )
         not(result.hasError()) and
         result.newState.providerState.chainState.votingPowerHistory == List()
