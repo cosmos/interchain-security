@@ -29,10 +29,10 @@ import (
 // Initialization sub-protocol related tests of proposal.go
 //
 
-// Tests the HandleConsumerAdditionProposal method against the SpawnConsumerChainProposalHandler spec.
+// Tests the HandleLegacyConsumerAdditionProposal method against the SpawnConsumerChainProposalHandler spec.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcaprop1
 // Spec tag: [CCV-PCF-HCAPROP.1]
-func TestHandleConsumerAdditionProposal(t *testing.T) {
+func TestHandleLegacyConsumerAdditionProposal(t *testing.T) {
 	type testCase struct {
 		description string
 		malleate    func(ctx sdk.Context, k providerkeeper.Keeper, chainID string)
@@ -113,7 +113,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 
 		tc.malleate(ctx, providerKeeper, tc.prop.ChainId)
 
-		err := providerKeeper.HandleConsumerAdditionProposal(ctx, tc.prop)
+		err := providerKeeper.HandleLegacyConsumerAdditionProposal(ctx, tc.prop)
 
 		if tc.expAppendProp {
 			require.NoError(t, err)
@@ -371,11 +371,11 @@ func TestGetAllConsumerAdditionProps(t *testing.T) {
 // Consumer Chain Removal sub-protocol related tests of proposal.go
 //
 
-// TestHandleConsumerRemovalProposal tests HandleConsumerRemovalProposal against its corresponding spec method.
+// TestHandleLegacyConsumerRemovalProposal tests HandleLegacyConsumerRemovalProposal against its corresponding spec method.
 //
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcrprop1
 // Spec tag: [CCV-PCF-HCRPROP.1]
-func TestHandleConsumerRemovalProposal(t *testing.T) {
+func TestHandleLegacyConsumerRemovalProposal(t *testing.T) {
 	type testCase struct {
 		description string
 		setupMocks  func(ctx sdk.Context, k providerkeeper.Keeper, chainID string)
@@ -479,7 +479,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 		tc.setupMocks(ctx, providerKeeper, tc.prop.ChainId)
 
-		err := providerKeeper.HandleConsumerRemovalProposal(ctx, tc.prop)
+		err := providerKeeper.HandleLegacyConsumerRemovalProposal(ctx, tc.prop)
 
 		if tc.expAppendProp {
 			require.NoError(t, err)
@@ -505,7 +505,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 }
 
 // Tests the StopConsumerChain method against the spec,
-// with more granularity than what's covered in TestHandleConsumerRemovalProposal, or integration tests.
+// with more granularity than what's covered in TestHandleLegacyConsumerRemovalProposal, or integration tests.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stcc1
 // Spec tag: [CCV-PCF-STCC.1]
 func TestStopConsumerChain(t *testing.T) {

@@ -110,3 +110,49 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 
 	return &types.MsgAssignConsumerKeyResponse{}, nil
 }
+
+// ConsumerAddition defines a rpc handler method for MsgConsumerAddition
+func (k msgServer) ConsumerAddition(goCtx context.Context, msg *types.MsgConsumerAddition) (*types.MsgConsumerAdditionResponse, error) {
+	if k.GetAuthority() != msg.Signer {
+		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Signer)
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	err := k.Keeper.HandleConsumerAdditionProposal(ctx, msg)
+	if err != nil {
+		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
+	}
+	return &types.MsgConsumerAdditionResponse{}, nil
+}
+
+// ConsumerRemoval defines a rpc handler method for MsgConsumerRemoval
+func (k msgServer) ConsumerRemoval(
+	goCtx context.Context,
+	msg *types.MsgConsumerRemoval) (*types.MsgConsumerRemovalResponse, error) {
+	if k.GetAuthority() != msg.Signer {
+		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Signer)
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	err := k.Keeper.HandleConsumerRemovalProposal(ctx, msg)
+	if err != nil {
+		return nil, errorsmod.Wrapf(err, "failed handling ConsumerAddition proposal")
+	}
+
+	return &types.MsgConsumerRemovalResponse{}, nil
+}
+
+// ChangeRewardDenoms defines a rpc handler method for MsgChangeRewardDenoms
+func (k msgServer) ChangeRewardDenoms(goCtx context.Context, msg *types.MsgChangeRewardDenoms) (*types.MsgChangeRewardDenomsResponse, error) {
+	if k.GetAuthority() != msg.Signer {
+		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Signer)
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(goCtx)
+	err := k.Keeper.HandleConsumerRewardDenomProposal(sdkCtx, msg)
+	if err != nil {
+		return nil, errorsmod.Wrapf(err, "failed handling Change Reward Denoms proposal")
+	}
+
+	return &types.MsgChangeRewardDenomsResponse{}, nil
+}

@@ -3,14 +3,12 @@ package cli
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	"github.com/spf13/cobra"
 )
 
 // GetTxCmd returns the transaction commands for this module
@@ -24,7 +22,6 @@ func GetTxCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(NewAssignConsumerKeyCmd())
-
 	return cmd
 }
 

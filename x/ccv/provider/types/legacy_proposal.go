@@ -194,7 +194,7 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 	}
 
 	if sccp.StopTime.IsZero() {
-		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
+		return errorsmod.Wrap(ErrInvalidConsumerRemovalProp, "stop time cannot be zero")
 	}
 	return nil
 }
