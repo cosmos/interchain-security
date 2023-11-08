@@ -125,9 +125,6 @@ func TestItfTrace(t *testing.T) {
 
 	// dummyValSet is a valSet with the right validators, but not yet right powers
 	valSet, addressMap, signers := CreateValSet(t, initialValSet)
-	t.Log("Initial validator set is: ", valSet)
-	t.Log(addressMap)
-	t.Log(signers)
 
 	// get a slice of validators in the right order
 	nodes := make([]*cmttypes.Validator, len(valNames))
@@ -156,34 +153,39 @@ func TestItfTrace(t *testing.T) {
 			t.Log("Initializing...")
 		case "VotingPowerChange":
 			node := lastAction["validator"].Value.(string)
-			newVotingPower := lastAction["newVotingPower"].Value.(int64)
-			t.Logf("Setting provider voting power of %v to %v", node, newVotingPower)
+			changeAmount := lastAction["changeAmount"].Value.(int64)
+			t.Logf("Setting provider voting power of %v to %v", node, changeAmount)
 
-			// valIndex := getIndexOfString(node, valNames)
+			valIndex := getIndexOfString(node, valNames)
 
-			// // set the voting power of the validator
-
-			// // get the previous voting power of that validator
-			// prevVotingPower := driver.validato
-
+			if changeAmount > 0 {
+				// delegate to the validator
+				driver.delegate(int64(valIndex), changeAmount)
+			} else {
+				// undelegate from the validator
+				driver.undelegate(int64(valIndex), -changeAmount)
+			}
 		case "EndAndBeginBlockForProvider":
 			timeAdvancement := lastAction["timeAdvancement"].Value.(int64)
 			consumersToStart := lastAction["consumersToStart"].Value.(itf.ListExprType)
 			consumersToStop := lastAction["consumersToStop"].Value.(itf.ListExprType)
-			t.Log(timeAdvancement, consumersToStart, consumersToStop)
+			t.Log("EndAndBeginBlockForProvider", timeAdvancement, consumersToStart, consumersToStop)
+
+			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second, func() {})
 		case "EndAndBeginBlockForConsumer":
 			consumerChain := lastAction["consumerChain"].Value.(string)
 			timeAdvancement := lastAction["timeAdvancement"].Value.(int64)
 
-			t.Log(consumerChain, timeAdvancement)
+			driver.endAndBeginBlock(ChainId(consumerChain), time.Duration(timeAdvancement)*time.Second, func() {})
+			t.Log("EndAndBeginBlockForConsumer", consumerChain, timeAdvancement)
 		case "DeliverVscPacket":
 			consumerChain := lastAction["consumerChain"].Value.(string)
 
-			t.Log(consumerChain)
+			t.Log("DeliverVscPacket", consumerChain)
 		case "DeliverVscMaturedPacket":
 			consumerChain := lastAction["consumerChain"].Value.(string)
 
-			t.Log(consumerChain)
+			t.Log("DeliverVscMaturedPacket", consumerChain)
 		default:
 
 			log.Fatalf("Error loading trace file %s, step %v: do not know action type %s",

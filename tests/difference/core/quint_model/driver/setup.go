@@ -368,8 +368,7 @@ func (s *Driver) setupChains(
 		s.coordinator.Chains[chain] = consumerChain
 
 		path := s.ConfigureNewPath(consumerChain, providerChain, params, providerHeader)
-		relayedPath := simibc.MakeRelayedPath(s.t, path)
-		s.simibcs[ChainId(chain)] = &relayedPath
+		s.simibcs[ChainId(chain)] = simibc.MakeRelayedPath(s.t, path)
 	}
 }
 

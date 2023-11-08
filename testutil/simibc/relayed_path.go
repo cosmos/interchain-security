@@ -1,9 +1,10 @@
 package simibc
 
 import (
+	"bytes"
 	"testing"
-	"time"
 
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 )
@@ -16,7 +17,7 @@ import (
 // new blocks on each chain.
 type RelayedPath struct {
 	t    *testing.T
-	path *ibctesting.Path
+	Path *ibctesting.Path
 	// clientHeaders is a map from chainID to an ordered list of headers that
 	// have been committed to that chain. The headers are used to update the
 	// client of the counterparty chain.
@@ -30,26 +31,83 @@ type RelayedPath struct {
 // MakeRelayedPath returns an initialized RelayedPath without any
 // packets, acks or headers. Requires a fully initialised path where
 // the connection and any channel handshakes have been COMPLETED.
-func MakeRelayedPath(t *testing.T, path *ibctesting.Path) RelayedPath {
+func MakeRelayedPath(t *testing.T, path *ibctesting.Path) *RelayedPath {
 	t.Helper()
-	return RelayedPath{
+	return &RelayedPath{
 		t:             t,
 		clientHeaders: map[string][]*ibctmtypes.Header{},
-		path:          path,
+		Path:          path,
 		Outboxes:      MakeOrderedOutbox(),
 	}
 }
 
+// PacketBelongs returns true if the packet belongs to this relayed path.
+func (f *RelayedPath) PacketBelongs(packet channeltypes.Packet) bool {
+	return f.PacketSentByA(packet) || f.PacketSentByB(packet)
+}
+
+// PacketSentByA returns true if the given packet was sent by chain A on this path.
+func (f *RelayedPath) PacketSentByA(packet channeltypes.Packet) bool {
+	committedByA := f.Path.EndpointA.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(
+		f.Path.EndpointA.Chain.GetContext(),
+		f.Path.EndpointA.ChannelConfig.PortID,
+		f.Path.EndpointA.ChannelID,
+		packet.GetSequence(),
+	)
+
+	return bytes.Equal(committedByA, channeltypes.CommitPacket(f.Path.EndpointA.Chain.App.AppCodec(), packet))
+}
+
+// PacketSentByB returns true if the given packet was sent by chain B on this path.
+func (f *RelayedPath) PacketSentByB(packet channeltypes.Packet) bool {
+	committedByB := f.Path.EndpointB.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(
+		f.Path.EndpointB.Chain.GetContext(),
+		f.Path.EndpointB.ChannelConfig.PortID,
+		f.Path.EndpointB.ChannelID,
+		packet.GetSequence(),
+	)
+
+	return bytes.Equal(committedByB, channeltypes.CommitPacket(f.Path.EndpointB.Chain.App.AppCodec(), packet))
+}
+
+// AddPacket adds a packet to the outbox of the chain with chainID.
+// It will fail if the chain is not involved in the relayed path,
+// or if the packet does not belong to this path,
+// i.e. if the pace
+func (f *RelayedPath) AddPacket(chainID string, packet channeltypes.Packet) {
+	if !f.InvolvesChain(chainID) {
+		f.t.Fatal("in relayed path could not add packet to chain: ", chainID, " because it is not involved in the relayed path")
+	}
+
+	f.Outboxes.AddPacket(chainID, packet)
+}
+
+// AddClientHeader adds a client header to the chain with chainID.
+// The header is used to update the client of the counterparty chain.
+// It will fail if the chain is not involved in the relayed path.
+func (f *RelayedPath) AddClientHeader(chainID string, header *ibctmtypes.Header) {
+	if !f.InvolvesChain(chainID) {
+		f.t.Fatal("in relayed path could not add client header to chain: ", chainID, " because it is not involved in the relayed path")
+	}
+	f.clientHeaders[chainID] = append(f.clientHeaders[chainID], header)
+}
+
 // Chain returns the chain with chainID
 func (f *RelayedPath) Chain(chainID string) *ibctesting.TestChain {
-	if f.path.EndpointA.Chain.ChainID == chainID {
-		return f.path.EndpointA.Chain
+	if f.Path.EndpointA.Chain.ChainID == chainID {
+		return f.Path.EndpointA.Chain
 	}
-	if f.path.EndpointB.Chain.ChainID == chainID {
-		return f.path.EndpointB.Chain
+	if f.Path.EndpointB.Chain.ChainID == chainID {
+		return f.Path.EndpointB.Chain
 	}
 	f.t.Fatal("no chain found in relayed path with chainID: ", chainID)
 	return nil
+}
+
+// InvolvesChain returns true if the chain is involved in the relayed path,
+// i.e. if it is either the source or destination chain.
+func (f *RelayedPath) InvolvesChain(chainID string) bool {
+	return f.Path.EndpointA.Chain.ChainID == chainID || f.Path.EndpointB.Chain.ChainID == chainID
 }
 
 // UpdateClient updates the chain with the latest sequence
@@ -106,35 +164,13 @@ func (f *RelayedPath) DeliverAcks(chainID string, num int) {
 	}
 }
 
-// EndAndBeginBlock calls EndBlock and commits block state, storing the header which can later
-// be used to update the client on the counterparty chain. After committing, the chain local
-// time progresses by dt, and BeginBlock is called with a header timestamped for the new time.
-//
-// preCommitCallback is called after EndBlock and before Commit, allowing arbitrary access to
-// the sdk.Context after EndBlock. The callback is useful for testing purposes to execute
-// arbitrary code before the chain sdk context is cleared in .Commit().
-// For example, app.EndBlock may lead to a new state, which you would like to query
-// to check that it is correct. However, the sdk context is cleared after .Commit(),
-// so you can query the state inside the callback.
-func (f *RelayedPath) EndAndBeginBlock(chainID string, dt time.Duration, preCommitCallback func()) {
-	c := f.Chain(chainID)
-
-	header, packets := EndBlock(c, preCommitCallback)
-	f.clientHeaders[chainID] = append(f.clientHeaders[chainID], header)
-	for _, p := range packets {
-		f.Outboxes.AddPacket(chainID, p)
-	}
-	f.Outboxes.Commit(chainID)
-	BeginBlock(c, dt)
-}
-
 // counterparty is a helper returning the counterparty chainID
 func (f *RelayedPath) counterparty(chainID string) string {
-	if f.path.EndpointA.Chain.ChainID == chainID {
-		return f.path.EndpointB.Chain.ChainID
+	if f.Path.EndpointA.Chain.ChainID == chainID {
+		return f.Path.EndpointB.Chain.ChainID
 	}
-	if f.path.EndpointB.Chain.ChainID == chainID {
-		return f.path.EndpointA.Chain.ChainID
+	if f.Path.EndpointB.Chain.ChainID == chainID {
+		return f.Path.EndpointA.Chain.ChainID
 	}
 	f.t.Fatal("no chain found in relayed path with chainID: ", chainID)
 	return ""
@@ -142,11 +178,11 @@ func (f *RelayedPath) counterparty(chainID string) string {
 
 // endpoint is a helper returning the endpoint for the chain
 func (f *RelayedPath) endpoint(chainID string) *ibctesting.Endpoint {
-	if chainID == f.path.EndpointA.Chain.ChainID {
-		return f.path.EndpointA
+	if chainID == f.Path.EndpointA.Chain.ChainID {
+		return f.Path.EndpointA
 	}
-	if chainID == f.path.EndpointB.Chain.ChainID {
-		return f.path.EndpointB
+	if chainID == f.Path.EndpointB.Chain.ChainID {
+		return f.Path.EndpointB
 	}
 	f.t.Fatal("no chain found in relayed path with chainID: ", chainID)
 	return nil

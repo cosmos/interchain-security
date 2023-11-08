@@ -55,6 +55,8 @@ func (s *Driver) ctx(chain ChainId) sdk.Context {
 
 // returns the path from the given chain to the provider.
 func (s *Driver) path(chain ChainId) *simibc.RelayedPath {
+	if s.isProviderChain(chain) {
+	}
 	return s.simibcs[chain]
 }
 
@@ -244,6 +246,15 @@ func (s *Driver) getStateString() string {
 	state.WriteString(s.getChainStateString("provider"))
 	state.WriteString("\n")
 
+	state.WriteString("Consumers Chains:\n")
+	consumerChains := s.providerKeeper().GetAllConsumerChains(s.providerCtx())
+	chainIds := make([]string, len(consumerChains))
+	for i, consumerChain := range consumerChains {
+		chainIds[i] = consumerChain.ChainId
+	}
+	state.WriteString(strings.Join(chainIds, ", "))
+	state.WriteString("\n\n")
+
 	for chain := range s.simibcs {
 		state.WriteString(fmt.Sprintf("Chain %s\n", chain))
 		state.WriteString(s.getChainStateString(chain))
@@ -300,14 +311,84 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 
 	chainInfo.WriteString(validatorInfo.String())
 
+	if !s.isProviderChain(chain) {
+		var outboxInfo strings.Builder
+		outboxInfo.WriteString("OutboxPackets:\n")
+
+		outboxInfo.WriteString("OutgoingPackets: \n")
+		outgoing := s.path(chain).Outboxes.OutboxPackets[string(chain)]
+		for _, packet := range outgoing {
+			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet))
+		}
+
+		outboxInfo.WriteString("IncomingPackets: \n")
+		incoming := s.path(chain).Outboxes.OutboxPackets[P]
+		for _, packet := range incoming {
+			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet))
+		}
+
+		outboxInfo.WriteString("utboxAcks:\n")
+
+		outboxInfo.WriteString("OutgoingAcks: \n")
+		outgoingAcks := s.path(chain).Outboxes.OutboxAcks[string(chain)]
+		for _, packet := range outgoingAcks {
+			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet))
+		}
+
+		outboxInfo.WriteString("IncomingAcks: \n")
+		incomingAcks := s.path(chain).Outboxes.OutboxAcks[P]
+		for _, packet := range incomingAcks {
+			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet))
+		}
+
+		chainInfo.WriteString(outboxInfo.String())
+	}
+
 	return chainInfo.String()
 }
 
+// endAndBeginBlock ends the current block and begins a new one.
+// Before Comitting, it runs the preCommitCallback, which allows
+// checks to be run before the context of the old block is discarded.
+// After comitting, it processes any packets that have been sent by the chain,
+// as witnessed by events, and adds them to the correct paths.
+// It also updates the client header on the paths
+// that involve the chain.
 func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration, preCommitCallback func()) {
-	s.path(chain).EndAndBeginBlock(string(chain), timeAdvancement, func() {
-	})
+	testChain, found := s.coordinator.Chains[string(chain)]
+	require.True(s.t, found, "chain %s not found", chain)
+
+	header, packets := simibc.EndBlock(testChain, preCommitCallback)
+
+	for _, path := range s.simibcs {
+		if path.InvolvesChain(string(chain)) {
+			path.AddClientHeader(string(chain), header)
+			path.Outboxes.Commit(string(chain))
+		}
+	}
+
+	// for each packet, find the path it should be sent on
+	for _, p := range packets {
+		found := false
+		for _, path := range s.simibcs {
+			if path.PacketBelongs(p) {
+				path.Outboxes.AddPacket(string(chain), p)
+				found = true
+				break
+			}
+		}
+		if !found {
+			s.t.Fatal("packet does not belong to any path: ", p)
+		}
+	}
+
+	simibc.BeginBlock(testChain, timeAdvancement)
 }
 
+// newDriver creates a new Driver object.
+// It creates a new coordinator, but does not start any chains.
+// The caller must call setupChains to start the chains and
+// fully populate the Driver.
 func newDriver(t *testing.T, validators []*cmttypes.Validator, valNames []string) *Driver {
 	t.Log("Creating coordinator")
 	coordinator := ibctesting.NewCoordinator(t, 0) // start without chains, which we add later
