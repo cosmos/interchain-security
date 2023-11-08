@@ -6,7 +6,6 @@ import (
 	"time"
 
 	cmttypes "github.com/cometbft/cometbft/types"
-	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/v3/testutil/integration"
 	"github.com/informalsystems/itf-go/itf"
 	"github.com/stretchr/testify/require"
@@ -136,14 +135,8 @@ func TestItfTrace(t *testing.T) {
 		nodes[i] = addressMap[valName]
 	}
 
-	valAddresses := make([]types.ValAddress, len(valNames))
-	for i, valNode := range nodes {
-		pbVal := cmttypes.TM2PB.Validator(valNode)
-		valAddresses[i] = pbVal.Address
-	}
-
-	driver := newDriver(t, valAddresses)
-	driver.setupChains(modelParams, valSet, signers, nodes, consumers)
+	driver := newDriver(t, nodes, valNames)
+	driver.setupChains(modelParams, valSet, signers, nodes, valNames, consumers)
 
 	t.Log("Started chains")
 
@@ -161,11 +154,17 @@ func TestItfTrace(t *testing.T) {
 		switch actionKind {
 		case "init":
 			t.Log("Initializing...")
-			t.Logf(driver.getStateString())
 		case "VotingPowerChange":
 			node := lastAction["validator"].Value.(string)
 			newVotingPower := lastAction["newVotingPower"].Value.(int64)
 			t.Logf("Setting provider voting power of %v to %v", node, newVotingPower)
+
+			// valIndex := getIndexOfString(node, valNames)
+
+			// // set the voting power of the validator
+
+			// // get the previous voting power of that validator
+			// prevVotingPower := driver.validato
 
 		case "EndAndBeginBlockForProvider":
 			timeAdvancement := lastAction["timeAdvancement"].Value.(int64)
@@ -190,6 +189,8 @@ func TestItfTrace(t *testing.T) {
 			log.Fatalf("Error loading trace file %s, step %v: do not know action type %s",
 				path, index, actionKind)
 		}
+
+		t.Logf("Current actual state: %s", driver.getStateString())
 	}
 	t.FailNow()
 }

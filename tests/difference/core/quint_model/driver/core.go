@@ -20,6 +20,8 @@ import (
 	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
+
+	cmttypes "github.com/cometbft/cometbft/types"
 )
 
 // Define a new type for ChainIds to be more explicit
@@ -42,7 +44,8 @@ type Driver struct {
 	simibcs map[ChainId]*simibc.RelayedPath
 
 	// keep around validators for easy access
-	valAddresses []sdk.ValAddress
+	validators []*cmttypes.Validator
+	valNames   []string
 }
 
 // ctx returns the sdk.Context for the chain
@@ -101,7 +104,7 @@ func (s *Driver) delegator() sdk.AccAddress {
 
 // validator returns the address for the validator with id (ix) i
 func (s *Driver) validator(i int64) sdk.ValAddress {
-	return s.valAddresses[i]
+	return sdk.ValAddress(s.validators[i].Address)
 }
 
 // consAddr returns the ConsAdd for the validator with id (ix) i
@@ -120,11 +123,19 @@ func (s *Driver) isJailed(i int64) bool {
 // consumerPower returns the power on the consumer chain chain for
 // validator with id (ix) i
 func (s *Driver) consumerPower(i int64, chain ChainId) (int64, error) {
-	v, found := s.consumerKeeper(chain).GetCCValidator(s.ctx(C), s.validator(i))
+	v, found := s.consumerKeeper(chain).GetCCValidator(s.ctx(chain), s.validator(i))
 	if !found {
 		return 0, fmt.Errorf("GetCCValidator(%v) -> !found", s.validator(i))
 	}
 	return v.Power, nil
+}
+
+// consumerTokens returns the number of tokens that the validator with
+// id (ix) i has delegated to it in total on the provider chain
+func (s *Driver) providerPower(i int64) int64 {
+	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
+	require.True(s.t, found, "GetValidator(%v) -> !found", s.validator(i))
+	return v.BondedTokens().Int64()
 }
 
 // delegation returns the number of delegated tokens in the delegation from
@@ -147,7 +158,9 @@ func (s *Driver) validatorStatus(i int64) stakingtypes.BondStatus {
 // id (ix) i has delegated to it in total on the provider chain
 func (s *Driver) providerTokens(i int64) int64 {
 	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-	require.True(s.t, found, "GetValidator(%v) -> !found", s.validator(i))
+	if !found {
+		return 0
+	}
 	return v.Tokens.Int64()
 }
 
@@ -199,14 +212,14 @@ func (s *Driver) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool, ch
 	if isDowntime {
 		kind = stakingtypes.Infraction_INFRACTION_DOWNTIME
 	}
-	ctx := s.ctx(C)
+	ctx := s.ctx(chain)
 	before := len(ctx.EventManager().Events())
 	s.consumerKeeper(chain).SlashWithInfractionReason(ctx, val, h, 0, sdk.Dec{}, kind)
 	// consumer module emits packets on slash, so these must be collected.
 	evts := ctx.EventManager().Events()
 	packets := simibc.ParsePacketsFromEvents(evts[before:])
 	if len(packets) > 0 {
-		s.path(chain).Outboxes.AddPacket(C, packets[0])
+		s.path(chain).Outboxes.AddPacket(string(chain), packets[0])
 	}
 }
 
@@ -240,6 +253,10 @@ func (s *Driver) getStateString() string {
 	return state.String()
 }
 
+func (s *Driver) isProviderChain(chain ChainId) bool {
+	return chain == "provider"
+}
+
 func (s *Driver) getChainStateString(chain ChainId) string {
 	ctx := s.ctx(chain)
 
@@ -249,18 +266,36 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 	// Get the current block time
 	blockTime := ctx.BlockTime()
 
-	// Get the validator set for the current block
-	validatorSet := s.validatorSet(chain)
-
 	// Build the chain info string
 	var chainInfo strings.Builder
 	chainInfo.WriteString(fmt.Sprintf("  Height: %d\n", height))
 	chainInfo.WriteString(fmt.Sprintf("  Time: %s\n", blockTime))
 
+	if !s.isProviderChain(chain) {
+		// Check whether the chain is in the consumer chains on the provider
+
+		consumerChains := s.providerKeeper().GetAllConsumerChains(s.providerCtx())
+
+		found := false
+		for _, consumerChain := range consumerChains {
+			if consumerChain.ChainId == string(chain) {
+				found = true
+			}
+		}
+
+		if found {
+			chainInfo.WriteString("...is currently a consumer chain")
+		} else {
+			chainInfo.WriteString("...is currently not a consumer chain")
+		}
+	}
+
 	// Build the validator info string
 	var validatorInfo strings.Builder
-	for _, validator := range validatorSet {
-		validatorInfo.WriteString(fmt.Sprintf("    Validator %s: power=%d\n", validator.GetOperator().String(), validator.BondedTokens()))
+	for index, valName := range s.valNames {
+		power := s.providerPower(int64(index))
+
+		validatorInfo.WriteString(fmt.Sprintf("    Validator %s: power=%d\n", valName, power))
 	}
 
 	chainInfo.WriteString(validatorInfo.String())
@@ -273,15 +308,16 @@ func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration, 
 	})
 }
 
-func newDriver(t *testing.T, valAddresses []sdk.ValAddress) *Driver {
+func newDriver(t *testing.T, validators []*cmttypes.Validator, valNames []string) *Driver {
 	t.Log("Creating coordinator")
 	coordinator := ibctesting.NewCoordinator(t, 0) // start without chains, which we add later
 
 	suite := &Driver{
-		t:            t,
-		coordinator:  coordinator,
-		simibcs:      make(map[ChainId]*simibc.RelayedPath),
-		valAddresses: valAddresses,
+		t:           t,
+		coordinator: coordinator,
+		simibcs:     make(map[ChainId]*simibc.RelayedPath),
+		validators:  validators,
+		valNames:    valNames,
 	}
 	return suite
 }

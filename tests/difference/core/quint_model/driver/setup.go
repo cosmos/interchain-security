@@ -54,6 +54,7 @@ func getAppBytesAndSenders(
 	initialValSet *cmttypes.ValidatorSet,
 	// the list of nodes that will be created, even ones that have no voting power initially
 	nodes []*cmttypes.Validator,
+	valNames []string,
 ) ([]byte, []ibctesting.SenderAccount) {
 	accounts := []authtypes.GenesisAccount{}
 	balances := []banktypes.Balance{}
@@ -124,13 +125,15 @@ func getAppBytesAndSenders(
 		delShares := sdk.NewDec(tokens.Int64()) // as many shares as tokens
 
 		validator := stakingtypes.Validator{
-			OperatorAddress:   sdk.ValAddress(val.Address).String(),
-			ConsensusPubkey:   pkAny,
-			Jailed:            false,
-			Status:            valStatus,
-			Tokens:            tokens,
-			DelegatorShares:   delShares,
-			Description:       stakingtypes.Description{},
+			OperatorAddress: sdk.ValAddress(val.Address).String(),
+			ConsensusPubkey: pkAny,
+			Jailed:          false,
+			Status:          valStatus,
+			Tokens:          tokens,
+			DelegatorShares: delShares,
+			Description: stakingtypes.Description{
+				Moniker: valNames[i],
+			},
 			UnbondingHeight:   int64(0),
 			UnbondingTime:     time.Unix(0, 0).UTC(),
 			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
@@ -207,12 +210,13 @@ func newChain(
 	validators *cmttypes.ValidatorSet,
 	signers map[string]cmttypes.PrivValidator,
 	nodes []*cmttypes.Validator,
+	valNames []string,
 ) *ibctesting.TestChain {
 	app, genesis := appInit()
 
 	baseapp.SetChainID(chainID)(app.GetBaseApp())
 
-	stateBytes, senderAccounts := getAppBytesAndSenders(chainID, modelParams, app, genesis, validators, nodes)
+	stateBytes, senderAccounts := getAppBytesAndSenders(chainID, modelParams, app, genesis, validators, nodes, valNames)
 
 	protoConsParams := ConsensusParams.ToProto()
 	app.InitChain(
@@ -345,12 +349,13 @@ func (s *Driver) setupChains(
 	valSet *cmttypes.ValidatorSet, // the initial validator set
 	signers map[string]cmttypes.PrivValidator, // a map of validator addresses to private validators (signers)
 	nodes []*cmttypes.Validator, // the list of nodes, even ones that have no voting power initially
+	valNames []string,
 	consumers []string, // a list of consumer chain names
 ) {
 	initValUpdates := cmttypes.TM2PB.ValidatorUpdates(valSet)
 	// start provider
 	s.t.Log("Creating provider chain")
-	providerChain := newChain(s.t, params, s.coordinator, icstestingutils.ProviderAppIniter, "provider", valSet, signers, nodes)
+	providerChain := newChain(s.t, params, s.coordinator, icstestingutils.ProviderAppIniter, "provider", valSet, signers, nodes, valNames)
 	s.coordinator.Chains["provider"] = providerChain
 
 	providerHeader, _ := simibc.EndBlock(providerChain, func() {})
@@ -359,7 +364,7 @@ func (s *Driver) setupChains(
 	// start consumer chains
 	for _, chain := range consumers {
 		s.t.Logf("Creating consumer chain %v", chain)
-		consumerChain := newChain(s.t, params, s.coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes)
+		consumerChain := newChain(s.t, params, s.coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes, valNames)
 		s.coordinator.Chains[chain] = consumerChain
 
 		path := s.ConfigureNewPath(consumerChain, providerChain, params, providerHeader)
