@@ -88,7 +88,7 @@ module ccv_model {
         nondet node = oneOf(nodes)
         // very restricted set of voting powers. exact values are not important,
         // and this keeps the state space smaller.
-        nondet newVotingPower = oneOf(Set(0, 50, 100))
+        nondet newVotingPower = oneOf(Set(-50, 50))
         VotingPowerChange(node, newVotingPower),
 
         // try to send a packet. we could filter by chains that can actually send,
