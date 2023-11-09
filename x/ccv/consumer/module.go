@@ -152,7 +152,6 @@ func (AppModule) ConsensusVersion() uint64 {
 // Panic if the provider's channel was established and then closed
 func (am AppModule) BeginBlock(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	fmt.Println("----------- start consumer BeginBlock:", sdkCtx.BlockHeight())
 
 	// Update smallest validator power that cannot opt out.
 	am.keeper.UpdateSmallestNonOptOutPower(sdkCtx)
@@ -172,7 +171,6 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 	am.keeper.Logger(sdkCtx).Debug("block height was mapped to vscID", "height", blockHeight+1, "vscID", vID)
 
 	am.keeper.TrackHistoricalInfo(sdkCtx)
-	fmt.Println("----------- end consumer BeginBlock:", sdkCtx.BlockHeight(), vID)
 	return nil
 }
 

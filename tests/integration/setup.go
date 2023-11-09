@@ -92,7 +92,7 @@ func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		// Add provider to coordinator, store returned test chain and app.
 		// Concrete provider app type is passed to the generic function here.
 		provider, providerApp := icstestingutils.AddProvider[Tp](t, coordinator, providerAppIniter)
-		fmt.Println("ICS Integration ## setupProviderCallback called")
+		// fmt.Println("ICS Integration ## setupProviderCallback called")
 		// Pass variables to suite.
 		return coordinator, provider, providerApp
 	}
@@ -102,7 +102,7 @@ func NewCCVTestSuite[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		coordinator *ibctesting.Coordinator,
 		index int,
 	) *icstestingutils.ConsumerBundle {
-		fmt.Println("ICS Integration ## setupConsumerCallback called")
+		// fmt.Println("ICS Integration ## setupConsumerCallback called")
 		return icstestingutils.AddConsumer[Tp, Tc](coordinator, s, index, consumerAppIniter)
 	}
 
@@ -121,7 +121,7 @@ func (suite *CCVTestSuite) BeforeTest(suiteName, testName string) {
 
 // SetupTest sets up in-mem state before every test
 func (suite *CCVTestSuite) SetupTest() {
-	fmt.Println("ICS integration ## SetupTest")
+	// fmt.Println("ICS integration ## SetupTest")
 	suite.packetSniffers = make(map[*ibctesting.TestChain]*packetSniffer)
 
 	// Instantiate new coordinator and provider chain using callback
@@ -141,7 +141,7 @@ func (suite *CCVTestSuite) SetupTest() {
 		suite.consumerBundles[bundle.Chain.ChainID] = bundle
 		suite.registerPacketSniffer(bundle.Chain)
 	}
-	fmt.Println("ICS integration ## SetupTest ## registered consumers")
+	// fmt.Println("ICS integration ## SetupTest ## registered consumers")
 
 	// initialize each consumer chain with it's corresponding genesis state
 	// stored on the provider.
@@ -153,7 +153,7 @@ func (suite *CCVTestSuite) SetupTest() {
 		suite.Require().True(found, "consumer genesis not found")
 		initConsumerChain(suite, chainID, &consumerGenesisState)
 	}
-	fmt.Println("ICS integration ## SetupTest ## initConsumerChain done")
+	// fmt.Println("ICS integration ## SetupTest ## initConsumerChain done")
 
 	// try updating all clients
 	for _, bundle := range suite.consumerBundles {
@@ -165,8 +165,8 @@ func (suite *CCVTestSuite) SetupTest() {
 		err = bundle.Path.EndpointA.UpdateClient()
 		suite.Require().NoError(err)
 	}
-	fmt.Println("ICS integration ## SetupTest ## UpdateClient done")
-	fmt.Println("ICS integration ## SetupTest ## SETUP TEST ## DONE")
+	// fmt.Println("ICS integration ## SetupTest ## UpdateClient done")
+	// fmt.Println("ICS integration ## SetupTest ## SETUP TEST ## DONE")
 }
 
 func (s *CCVTestSuite) registerPacketSniffer(chain *ibctesting.TestChain) {

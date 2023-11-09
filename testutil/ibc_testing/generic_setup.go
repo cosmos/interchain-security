@@ -71,7 +71,7 @@ func AddProvider[T testutil.ProviderApp](t *testing.T, coordinator *ibctesting.C
 	ibctesting.DefaultTestingAppInit = appIniter
 	provider := ibctesting.NewTestChain(t, coordinator, provChainID)
 	coordinator.Chains[provChainID] = provider
-	fmt.Println("ICS integration ## AddProvider - block height: ", coordinator.Chains[provChainID].GetContext().BlockHeight())
+	// fmt.Println("ICS integration ## AddProvider - block height: ", coordinator.Chains[provChainID].GetContext().BlockHeight())
 
 	providerToReturn, ok := provider.App.(T)
 	if !ok {
@@ -156,7 +156,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		chainID,
 	)
 	s.Require().True(found, "consumer genesis not found")
-	fmt.Println("# ICS integration ## AddConsumer - consumerGenesisState: ", consumerGenesisState.InitialValSet)
+	// fmt.Println("# ICS integration ## AddConsumer - consumerGenesisState: ", consumerGenesisState.InitialValSet)
 
 	// use InitialValSet as the valset on the consumer
 	var valz []*tmtypes.Validator

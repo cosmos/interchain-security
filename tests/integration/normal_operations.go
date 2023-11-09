@@ -1,26 +1,29 @@
 package integration
 
 import (
-	"fmt"
-
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
+// TODO: Refactor -> this test is difficult to figure out and follow
+// * There are new validators being added
+// * There are calls to NextBlock() that are not obvious why they are there and what is going on (or why)
+// * There is a tmproto.Header that is being used for something that is not obvious
+//
 // Tests the tracking of historical info in the context of new blocks being committed
 func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so we can copy locks
-	fmt.Println("Normal Operations:: TestHistoricalInfo Init")
 	consumerKeeper := k.consumerApp.GetConsumerKeeper()
 	cCtx := k.consumerChain.GetContext
 
 	// save init consumer valset length
-	// initValsetLen := len(consumerKeeper.GetAllCCValidator(cCtx()))
+	initValsetLen := len(consumerKeeper.GetAllCCValidator(cCtx()))
 	// save current block height
 	initHeight := cCtx().BlockHeight()
-	fmt.Println("Normal Operations::  AFTER SETUP ###")
 
 	// define an utility function that creates a new cross-chain validator
 	// and then call track historical info in the next block
@@ -44,8 +47,8 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 		createVal,
 		createVal,
 		func(k CCVTestSuite) { //nolint:govet // this is a test so we can copy locks
-			// historicalEntries := k.consumerApp.GetConsumerKeeper().GetHistoricalEntries(k.consumerCtx())
-			newHeight := k.consumerChain.GetContext().BlockHeight()
+			historicalEntries := k.consumerApp.GetConsumerKeeper().GetHistoricalEntries(k.consumerCtx())
+			newHeight := k.consumerChain.GetContext().BlockHeight() + historicalEntries
 			header := tmproto.Header{
 				ChainID: "HelloChain",
 				Height:  newHeight,
@@ -58,7 +61,6 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 	for _, ts := range testSetup {
 		ts(k) //nolint:govet // this is a test so we can copy locks
 	}
-	fmt.Println("Normal Operations:: PREP CASES ###\n\n\n")
 
 	// test cases verify that historical info entries are pruned when their height
 	// is below CurrentHeight - HistoricalEntries, and check that their valset gets updated
@@ -68,29 +70,26 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 		expLen int
 	}{
 		{
+			height: initHeight,
+			err:    nil,
+			expLen: initValsetLen + 1,
+		},
+		{
 			height: initHeight + 1,
 			err:    nil,
+			expLen: initValsetLen + 2,
+		},
+		{
+			height: initHeight + ccvtypes.DefaultHistoricalEntries + 3,
+			err:    stakingtypes.ErrNoHistoricalInfo,
 			expLen: 0,
 		},
-		// {
-		// 	height: initHeight + 2,
-		// 	err:    nil,
-		// 	expLen: 0,
-		// },
-		// {
-		// 	height: initHeight + ccvtypes.DefaultHistoricalEntries + 2,
-		// 	err:    nil,
-		// 	expLen: initValsetLen + 2,
-		// },
 	}
 
-	for i, tc := range testCases {
-		fmt.Printf("Normal Operations:: START TEST CASE %d ###\n", i)
+	for _, tc := range testCases {
 		cCtx().WithBlockHeight(tc.height)
 		hi, err := consumerKeeper.GetHistoricalInfo(cCtx().WithBlockHeight(tc.height), tc.height)
-		fmt.Println(err)
-		k.Require().Equal(tc.err, err)
+		k.Require().ErrorIs(err, tc.err)
 		k.Require().Len(hi.Valset, tc.expLen)
-		fmt.Printf("Normal Operations:: TEST CASE %d DONE ###\n", i)
 	}
 }
