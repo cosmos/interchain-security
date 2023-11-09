@@ -89,3 +89,6 @@ func MakeAndSignVoteWithForgedValAddress(
 	vote.Signature = v.Signature
 	return vote
 }
+
+
+func NilifyCommit(valAddr [])
