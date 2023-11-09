@@ -352,7 +352,33 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 			},
 			false,
 		},
-		// TODO: Add valset signature test case here
+		{
+			"invalid misbehaviour without enough voting power from trusted valset  - shouldn't pass",
+			&ibctmtypes.Misbehaviour{
+				ClientId: s.path.EndpointA.ClientID,
+				Header1: s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					headerTs,
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				),
+				Header2: s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					headerTs,
+					altValset2,
+					altValset2,
+					clientTMValset,
+					altSigners2,
+				),
+			},
+			false,
+		},
 		{
 			"valid misbehaviour - should pass",
 			&ibctmtypes.Misbehaviour{
