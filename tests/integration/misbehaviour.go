@@ -271,11 +271,6 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
 
-	// create a validator set with only one out of the four validators from the trusted validator set
-	altValset2 := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:1])
-	altSigners2 := make(map[string]tmtypes.PrivValidator, 1)
-	altSigners2[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
-
 	testCases := []struct {
 		name         string
 		misbehaviour *ibctmtypes.Misbehaviour
