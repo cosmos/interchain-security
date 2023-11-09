@@ -368,7 +368,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 				),
 				Header2: s.consumerChain.CreateTMClientHeader(
 					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+2),
+					int64(clientHeight.RevisionHeight+1),
 					clientHeight,
 					headerTs,
 					altValset2,
