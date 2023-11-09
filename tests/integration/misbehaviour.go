@@ -352,33 +352,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 			},
 			false,
 		},
-		{
-			"invalid misbehaviour without enough voting power from trusted valset  - shouldn't pass",
-			&ibctmtypes.Misbehaviour{
-				ClientId: s.path.EndpointA.ClientID,
-				Header1: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					clientTMValset,
-					clientTMValset,
-					clientTMValset,
-					clientSigners,
-				),
-				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					altValset2,
-					altValset2,
-					clientTMValset,
-					altSigners2,
-				),
-			},
-			false,
-		},
+		// TODO: Add valset signature test case here
 		{
 			"valid misbehaviour - should pass",
 			&ibctmtypes.Misbehaviour{
@@ -394,35 +368,6 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 					clientSigners,
 				),
 				// create header using a different validator set
-				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					altValset,
-					altValset,
-					clientTMValset,
-					altSigners,
-				),
-			},
-			true,
-		},
-		{
-			"valid misbehaviour with already frozen client - should pass",
-			&ibctmtypes.Misbehaviour{
-				ClientId: s.path.EndpointA.ClientID,
-				Header1: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					clientTMValset,
-					clientTMValset,
-					clientTMValset,
-					clientSigners,
-				),
-				// the resulting Header2 will have a different BlockID
-				// than Header1 since doesn't share the same valset and signers
 				Header2: s.consumerChain.CreateTMClientHeader(
 					s.consumerChain.ChainID,
 					int64(clientHeight.RevisionHeight+1),

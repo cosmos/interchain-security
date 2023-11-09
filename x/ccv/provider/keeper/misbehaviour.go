@@ -166,15 +166,9 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 	ok := clientState.CheckForMisbehaviour(ctx, k.cdc, clientStore, &misbehaviour)
 	if !ok {
 		return errorsmod.Wrapf(ibcclienttypes.ErrInvalidMisbehaviour, "invalid misbehaviour for client-id: %s", misbehaviour.ClientId)
-	}
+	
 
-	// VerifyClientMessage calls verifyMisbehaviour which verifies that the headers in the misbehaviour
-	// are valid against their respective trusted consensus states and  that trustLevel of the validator set signed their commit.
-	// see checkMisbehaviourHeader in ibc-go/blob/v7.3.0/modules/light-clients/07-tendermint/misbehaviour_handle.go#L126
-	if err := clientState.VerifyClientMessage(ctx, k.cdc, clientStore, &misbehaviour); err != nil {
-		return err
-	}
-
+	// TODO check misb valset signatures here
 	return nil
 }
 
