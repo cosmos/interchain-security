@@ -353,7 +353,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 			false,
 		},
 		{
-			"invalid misbehaviour without enough voting power from trusted valset  - shouldn't pass",
+			"invalid header without enough voting power from trusted valset - shouldn't pass",
 			&ibctmtypes.Misbehaviour{
 				ClientId: s.path.EndpointA.ClientID,
 				Header1: s.consumerChain.CreateTMClientHeader(
