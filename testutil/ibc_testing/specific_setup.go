@@ -43,7 +43,7 @@ func ConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter {
 		encoding := appConsumer.MakeTestEncodingConfig()
 		testApp := appConsumer.New(log.NewNopLogger(), db.NewMemDB(), nil, true, simtestutil.EmptyAppOptions{})
 		genesisState := appConsumer.NewDefaultGenesisState(encoding.Codec)
-		// NOTE ibc-go/v7/testing.SetupWithGenesisValSet requires a staking module
+		// NOTE: starting from ibc-go/v7/testing.SetupWithGenesisValSet requires a staking module
 		// genesisState or it panics. Feed a minimum one.
 		genesisState[stakingtypes.ModuleName] = encoding.Codec.MustMarshalJSON(
 			&stakingtypes.GenesisState{
