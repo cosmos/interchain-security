@@ -115,11 +115,14 @@ func UpdateHeaderCommitWithNilVotes(header *ibctmtypes.Header, validators []*tmt
 	for _, v := range validators {
 		// get validator index in valset
 		idx, _ := valset.GetByAddress(v.Address)
-		s := commit.Signatures[idx]
-		// change BlockIDFlag to nil
-		s.BlockIDFlag = tmtypes.BlockIDFlagNil
-		// update the signatures
-		commit.Signatures[idx] = s
+		if idx != -1 {
+			// get validator commit sig
+			s := commit.Signatures[idx]
+			// change BlockIDFlag to nil
+			s.BlockIDFlag = tmtypes.BlockIDFlagNil
+			// update the signatures
+			commit.Signatures[idx] = s
+		}
 	}
 
 	// update the commit in client the header
