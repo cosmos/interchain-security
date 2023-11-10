@@ -103,7 +103,7 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 	// create a map with the validators' address that signed header1
 	header1Signers := map[string]struct{}{}
 	for _, sign := range lightBlock1.Commit.Signatures {
-		if sign.Absent() {
+		if !sign.ForBlock() {
 			continue
 		}
 		header1Signers[sign.ValidatorAddress.String()] = struct{}{}
@@ -111,7 +111,7 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 
 	// iterate over the header2 signers and check if they signed header1
 	for _, sign := range lightBlock2.Commit.Signatures {
-		if sign.Absent() {
+		if !sign.ForBlock() {
 			continue
 		}
 		if _, ok := header1Signers[sign.ValidatorAddress.String()]; ok {

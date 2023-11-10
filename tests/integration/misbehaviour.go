@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
+	testutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -26,18 +27,20 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
 	clientSigners := s.consumerChain.Signers
 
+	clientHeader := s.consumerChain.CreateTMClientHeader(
+		s.consumerChain.ChainID,
+		int64(clientHeight.RevisionHeight+1),
+		clientHeight,
+		altTime,
+		clientTMValset,
+		clientTMValset,
+		clientTMValset,
+		clientSigners,
+	)
+
 	misb := &ibctmtypes.Misbehaviour{
 		ClientId: s.path.EndpointA.ClientID,
-		Header1: s.consumerChain.CreateTMClientHeader(
-			s.consumerChain.ChainID,
-			int64(clientHeight.RevisionHeight+1),
-			clientHeight,
-			altTime,
-			clientTMValset,
-			clientTMValset,
-			clientTMValset,
-			clientSigners,
-		),
+		Header1:  clientHeader,
 		// create a different header by changing the header timestamp only
 		// in order to create an equivocation, i.e. both headers have the same deterministic states
 		Header2: s.consumerChain.CreateTMClientHeader(
@@ -211,6 +214,35 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 			[]*tmtypes.Validator{},
 			true,
 		},
+		{
+			"validators who did vote nil should not be returned",
+			func() *ibctmtypes.Misbehaviour {
+				// create a valid header with a different hash
+				// and commit round
+				clientHeader := s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					altTime.Add(time.Minute),
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				)
+
+				// modify header commits in order to have 2/4 validators voting nil
+				testutil.UpdateHeaderCommitWithNilVotes(clientHeader, clientTMValset.Validators[:2])
+
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1:  clientHeader,
+					Header2:  clientHeader,
+				}
+			},
+			// Expect to validators who did NOT vote nil
+			clientTMValset.Validators[2:],
+			true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -223,21 +255,17 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 				s.NoError(err)
 				s.Equal(len(tc.expByzantineValidators), len(byzantineValidators))
 
-				// For both lunatic and equivocation attacks all the validators
-				// who signed the bad header (Header2) should be in returned in the evidence
+				// For both lunatic and equivocation attacks, all the validators
+				// who signed the bad header and didn't vote nil  should be returned
 				if len(tc.expByzantineValidators) > 0 {
-					equivocatingVals := tc.getMisbehaviour().Header2.ValidatorSet
-					s.Equal(len(equivocatingVals.Validators), len(byzantineValidators))
-
-					vs, err := tmtypes.ValidatorSetFromProto(equivocatingVals)
+					expValset := tmtypes.NewValidatorSet(tc.expByzantineValidators)
 					s.NoError(err)
 
 					for _, v := range tc.expByzantineValidators {
-						idx, _ := vs.GetByAddress(v.Address)
+						idx, _ := expValset.GetByAddress(v.Address)
 						s.True(idx >= 0)
 					}
 				}
-
 			} else {
 				s.Error(err)
 			}
@@ -268,6 +296,12 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 	altSigners := make(map[string]tmtypes.PrivValidator, 1)
 	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
+
+	// create an alternative validator set using less than 1/3 of the trusted validator set
+	altValset2 := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:1])
+	altSigners2 := make(map[string]tmtypes.PrivValidator, 1)
+	altSigners2[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
+
 	testCases := []struct {
 		name         string
 		misbehaviour *ibctmtypes.Misbehaviour
@@ -345,35 +379,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 			false,
 		},
 		{
-			"valid misbehaviour - should pass",
-			&ibctmtypes.Misbehaviour{
-				ClientId: s.path.EndpointA.ClientID,
-				Header1: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					clientTMValset,
-					clientTMValset,
-					clientTMValset,
-					clientSigners,
-				),
-				// create header using a different validator set
-				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					altValset,
-					altValset,
-					clientTMValset,
-					altSigners,
-				),
-			},
-			true,
-		},
-		{
-			"valid misbehaviour with already frozen client - should pass",
+			"one header of the misbehaviour has insufficient voting power - shouldn't pass",
 			&ibctmtypes.Misbehaviour{
 				ClientId: s.path.EndpointA.ClientID,
 				Header1: s.consumerChain.CreateTMClientHeader(
@@ -388,6 +394,34 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 				),
 				// the resulting Header2 will have a different BlockID
 				// than Header1 since doesn't share the same valset and signers
+				Header2: s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					headerTs,
+					altValset2,
+					altValset2,
+					clientTMValset,
+					altSigners2,
+				),
+			},
+			false,
+		},
+		{
+			"valid misbehaviour - should pass",
+			&ibctmtypes.Misbehaviour{
+				ClientId: s.path.EndpointA.ClientID,
+				Header1: s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					headerTs,
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				),
+				// create header using a different validator set
 				Header2: s.consumerChain.CreateTMClientHeader(
 					s.consumerChain.ChainID,
 					int64(clientHeight.RevisionHeight+1),
