@@ -12,6 +12,7 @@ import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmos/msg/v1/msg.proto";
 import "ibc/core/client/v1/client.proto";
+import "interchain_security/ccv/provider/v1/provider.proto";
 
 // Msg defines the Msg service.
 service Msg {
@@ -28,7 +29,25 @@ service Msg {
 
   rpc ChangeRewardDenoms(MsgChangeRewardDenoms)
     returns (MsgChangeRewardDenomsResponse);
+
+  rpc UpdateParams(MsgUpdateParams)
+  returns (MsgUpdateParamsResponse);
 }
+
+
+
+// MsgUpdateParams is the Msg/UpdateParams request type
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // signer is the address of the governance account.
+  string signer = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // params defines the x/provider parameters to update.
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+message MsgUpdateParamsResponse {}
 
 message MsgAssignConsumerKey {
   option (gogoproto.equal) = false;
