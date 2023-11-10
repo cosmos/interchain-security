@@ -215,8 +215,6 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 		{
 			"validators who did vote nil should not be returned",
 			func() *ibctmtypes.Misbehaviour {
-				// create a valid header with a different hash
-				// and commit round
 				clientHeader := s.consumerChain.CreateTMClientHeader(
 					s.consumerChain.ChainID,
 					int64(clientHeight.RevisionHeight+1),
@@ -228,16 +226,26 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 					clientSigners,
 				)
 
-				// modify header commits in order to have 2/4 validators voting nil
-				testutil.UpdateHeaderCommitWithNilVotes(clientHeader, clientTMValset.Validators[:2])
+				// create conflicting header with 2/4 validators voting nil
+				clientHeaderWithNilVotes := s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					altTime.Add(time.Hour),
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				)
+				testutil.UpdateHeaderCommitWithNilVotes(clientHeaderWithNilVotes, clientTMValset.Validators[:2])
 
 				return &ibctmtypes.Misbehaviour{
 					ClientId: s.path.EndpointA.ClientID,
 					Header1:  clientHeader,
-					Header2:  clientHeader,
+					Header2:  clientHeaderWithNilVotes,
 				}
 			},
-			// Expect to validators who did NOT vote nil
+			// Expect validators who did NOT vote nil
 			clientTMValset.Validators[2:],
 			true,
 		},
