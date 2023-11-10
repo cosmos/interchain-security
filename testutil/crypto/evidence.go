@@ -95,7 +95,7 @@ func MakeAndSignVoteWithForgedValAddress(
 // UpdateHeaderCommitWithNilVotes updates the given light client header
 // by changing the commit BlockIDFlag of the given validators to nil
 //
-// Note that this method is solely used for testing purpose
+// Note that this method is solely used for testing purposes
 func UpdateHeaderCommitWithNilVotes(header *ibctmtypes.Header, validators []*tmtypes.Validator) {
 	if len(validators) > len(header.ValidatorSet.Validators) {
 		panic(fmt.Sprintf("cannot change more than %d validators votes: got %d",
