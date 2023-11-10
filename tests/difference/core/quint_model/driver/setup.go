@@ -99,7 +99,6 @@ func getAppBytesAndSenders(
 
 	for i, val := range nodes {
 		_, valSetVal := initialValSet.GetByAddress(val.Address.Bytes())
-		valAccount := accounts[i]
 		if valSetVal == nil {
 			log.Panicf("error getting validator with address %v from valSet %v", val, initialValSet)
 		}
@@ -143,7 +142,7 @@ func getAppBytesAndSenders(
 		stakingValidators = append(stakingValidators, validator)
 
 		// Store delegation from the model delegator account
-		delegations = append(delegations, stakingtypes.NewDelegation(valAccount.GetAddress(), val.Address.Bytes(), delShares))
+		delegations = append(delegations, stakingtypes.NewDelegation(senderAccounts[0].SenderAccount.GetAddress(), val.Address.Bytes(), delShares))
 
 		// add initial validator powers so consumer InitGenesis runs correctly
 		pub, _ := val.ToProto()
@@ -327,12 +326,12 @@ func (s *Driver) ConfigureNewPath(consumerChain *ibctesting.TestChain, providerC
 	// Commit a block on both chains, giving us two committed headers from
 	// the same time and height. This is the starting point for all our
 	// data driven testing.
-	lastConsumerHeader, _ := simibc.EndBlock(consumerChain, func() {})
-	lastProviderHeader, _ = simibc.EndBlock(providerChain, func() {})
+	lastConsumerHeader, _ := simibc.EndBlock(consumerChain) //, func() {})
+	lastProviderHeader, _ = simibc.EndBlock(providerChain)  //, func() {})
 
 	// Get ready to update clients.
-	simibc.BeginBlock(providerChain, 0)
-	simibc.BeginBlock(consumerChain, 0)
+	simibc.BeginBlock(providerChain, 5)
+	simibc.BeginBlock(consumerChain, 5)
 
 	// Update clients to the latest header.
 	err = simibc.UpdateReceiverClient(consumerEndPoint, providerEndPoint, lastConsumerHeader)
@@ -358,7 +357,7 @@ func (s *Driver) setupChains(
 	providerChain := newChain(s.t, params, s.coordinator, icstestingutils.ProviderAppIniter, "provider", valSet, signers, nodes, valNames)
 	s.coordinator.Chains["provider"] = providerChain
 
-	providerHeader, _ := simibc.EndBlock(providerChain, func() {})
+	providerHeader, _ := simibc.EndBlock(providerChain) //, func() {})
 	simibc.BeginBlock(providerChain, 0)
 
 	// start consumer chains

@@ -1,7 +1,6 @@
 package simibc
 
 import (
-	"bytes"
 	"testing"
 
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -42,32 +41,29 @@ func MakeRelayedPath(t *testing.T, path *ibctesting.Path) *RelayedPath {
 }
 
 // PacketBelongs returns true if the packet belongs to this relayed path.
-func (f *RelayedPath) PacketBelongs(packet channeltypes.Packet) bool {
-	return f.PacketSentByA(packet) || f.PacketSentByB(packet)
+func (f *RelayedPath) PacketSentByChain(packet channeltypes.Packet, chainID string) bool {
+	if chainID == f.Path.EndpointA.Chain.ChainID {
+		return f.PacketSentByA(packet)
+	} else if chainID == f.Path.EndpointB.Chain.ChainID {
+		return f.PacketSentByB(packet)
+	}
+	return false
 }
 
 // PacketSentByA returns true if the given packet was sent by chain A on this path.
 func (f *RelayedPath) PacketSentByA(packet channeltypes.Packet) bool {
-	committedByA := f.Path.EndpointA.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(
-		f.Path.EndpointA.Chain.GetContext(),
-		f.Path.EndpointA.ChannelConfig.PortID,
-		f.Path.EndpointA.ChannelID,
-		packet.GetSequence(),
-	)
-
-	return bytes.Equal(committedByA, channeltypes.CommitPacket(f.Path.EndpointA.Chain.App.AppCodec(), packet))
+	return packet.SourcePort == f.Path.EndpointA.ChannelConfig.PortID &&
+		packet.SourceChannel == f.Path.EndpointA.ChannelID &&
+		packet.DestinationPort == f.Path.EndpointB.ChannelConfig.PortID &&
+		packet.DestinationChannel == f.Path.EndpointB.ChannelID
 }
 
 // PacketSentByB returns true if the given packet was sent by chain B on this path.
 func (f *RelayedPath) PacketSentByB(packet channeltypes.Packet) bool {
-	committedByB := f.Path.EndpointB.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(
-		f.Path.EndpointB.Chain.GetContext(),
-		f.Path.EndpointB.ChannelConfig.PortID,
-		f.Path.EndpointB.ChannelID,
-		packet.GetSequence(),
-	)
-
-	return bytes.Equal(committedByB, channeltypes.CommitPacket(f.Path.EndpointB.Chain.App.AppCodec(), packet))
+	return packet.SourcePort == f.Path.EndpointB.ChannelConfig.PortID &&
+		packet.SourceChannel == f.Path.EndpointB.ChannelID &&
+		packet.DestinationPort == f.Path.EndpointA.ChannelConfig.PortID &&
+		packet.DestinationChannel == f.Path.EndpointA.ChannelID
 }
 
 // AddPacket adds a packet to the outbox of the chain with chainID.
@@ -114,13 +110,13 @@ func (f *RelayedPath) InvolvesChain(chainID string) bool {
 // of available headers committed by the counterparty chain since
 // the last call to UpdateClient (or all for the first call).
 func (f *RelayedPath) UpdateClient(chainID string) {
-	for _, header := range f.clientHeaders[f.counterparty(chainID)] {
-		err := UpdateReceiverClient(f.endpoint(f.counterparty(chainID)), f.endpoint(chainID), header)
+	for _, header := range f.clientHeaders[f.Counterparty(chainID)] {
+		err := UpdateReceiverClient(f.endpoint(f.Counterparty(chainID)), f.endpoint(chainID), header)
 		if err != nil {
 			f.t.Fatal("in relayed path could not update client of chain: ", chainID, " with header: ", header, " err: ", err)
 		}
 	}
-	f.clientHeaders[f.counterparty(chainID)] = []*ibctmtypes.Header{}
+	f.clientHeaders[f.Counterparty(chainID)] = []*ibctmtypes.Header{}
 }
 
 // DeliverPackets delivers UP TO <num> packets to the chain which have been
@@ -135,8 +131,8 @@ func (f *RelayedPath) UpdateClient(chainID string) {
 // In order to deliver packets, the chain must have an up-to-date client
 // of the counterparty chain. Ie. UpdateClient should be called before this.
 func (f *RelayedPath) DeliverPackets(chainID string, num int) {
-	for _, p := range f.Outboxes.ConsumePackets(f.counterparty(chainID), num) {
-		ack, err := TryRecvPacket(f.endpoint(f.counterparty(chainID)), f.endpoint(chainID), p.Packet)
+	for _, p := range f.Outboxes.ConsumePackets(f.Counterparty(chainID), num) {
+		ack, err := TryRecvPacket(f.endpoint(f.Counterparty(chainID)), f.endpoint(chainID), p.Packet)
 		if err != nil {
 			f.t.Fatal("deliver")
 		}
@@ -156,16 +152,17 @@ func (f *RelayedPath) DeliverPackets(chainID string, num int) {
 // In order to deliver acks, the chain must have an up-to-date client
 // of the counterparty chain. Ie. UpdateClient should be called before this.
 func (f *RelayedPath) DeliverAcks(chainID string, num int) {
-	for _, ack := range f.Outboxes.ConsumeAcks(f.counterparty(chainID), num) {
-		err := TryRecvAck(f.endpoint(f.counterparty(chainID)), f.endpoint(chainID), ack.Packet, ack.Ack)
+	for _, ack := range f.Outboxes.ConsumeAcks(f.Counterparty(chainID), num) {
+		err := TryRecvAck(f.endpoint(f.Counterparty(chainID)), f.endpoint(chainID), ack.Packet, ack.Ack)
 		if err != nil {
 			f.t.Fatal("deliverAcks")
 		}
 	}
 }
 
-// counterparty is a helper returning the counterparty chainID
-func (f *RelayedPath) counterparty(chainID string) string {
+// Counterparty returns the chainID of the other chain,
+// from the perspective of the given chain.
+func (f *RelayedPath) Counterparty(chainID string) string {
 	if f.Path.EndpointA.Chain.ChainID == chainID {
 		return f.Path.EndpointB.Chain.ChainID
 	}

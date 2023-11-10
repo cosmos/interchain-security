@@ -154,7 +154,7 @@ func TestItfTrace(t *testing.T) {
 		case "VotingPowerChange":
 			node := lastAction["validator"].Value.(string)
 			changeAmount := lastAction["changeAmount"].Value.(int64)
-			t.Logf("Setting provider voting power of %v to %v", node, changeAmount)
+			t.Logf("Changing provider voting power of %v by %v", node, changeAmount)
 
 			valIndex := getIndexOfString(node, valNames)
 
@@ -171,21 +171,49 @@ func TestItfTrace(t *testing.T) {
 			consumersToStop := lastAction["consumersToStop"].Value.(itf.ListExprType)
 			t.Log("EndAndBeginBlockForProvider", timeAdvancement, consumersToStart, consumersToStop)
 
-			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second, func() {})
+			// TODO continue here
+			totalDuration := time.Duration(timeAdvancement) * time.Second
+			halfDuration := totalDuration / 2
+			halfDuration = halfDuration.Round(time.Second)
+			remainingDuration := totalDuration - halfDuration
+			remainingDuration = remainingDuration.Round(time.Second)
+
+			require.True(t, halfDuration+remainingDuration == totalDuration)
+
+			// TODO: start and stop consumers
+			driver.endAndBeginBlock("provider", time.Duration(1)*time.Second) //, func() {})
+			driver.endAndBeginBlock("provider", time.Duration(1)*time.Second) //, func() {})
+			driver.endAndBeginBlock("provider", time.Duration(1)*time.Second) //, func() {})
 		case "EndAndBeginBlockForConsumer":
 			consumerChain := lastAction["consumerChain"].Value.(string)
 			timeAdvancement := lastAction["timeAdvancement"].Value.(int64)
-
-			driver.endAndBeginBlock(ChainId(consumerChain), time.Duration(timeAdvancement)*time.Second, func() {})
 			t.Log("EndAndBeginBlockForConsumer", consumerChain, timeAdvancement)
+
+			// TODO continue here
+			totalDuration := time.Duration(timeAdvancement) * time.Second
+			halfDuration := totalDuration / 2
+			halfDuration = halfDuration.Round(time.Second)
+			remainingDuration := totalDuration - halfDuration
+			remainingDuration = remainingDuration.Round(time.Second)
+			// this is trying to split into two parts, but fails because all need to be non-0
+			// updating client multiple times with headers that do not progress in time is not allowed
+
+			require.True(t, halfDuration+remainingDuration == totalDuration)
+
+			// time duration needs 3 parts because the packet needs 3 commits to be delivered
+			driver.endAndBeginBlock(ChainId(consumerChain), time.Duration(1)*time.Second) //, func() {})
+			driver.endAndBeginBlock(ChainId(consumerChain), time.Duration(1)*time.Second) //, func() {})
+			driver.endAndBeginBlock(ChainId(consumerChain), time.Duration(1)*time.Second) //, func() {})
 		case "DeliverVscPacket":
 			consumerChain := lastAction["consumerChain"].Value.(string)
-
 			t.Log("DeliverVscPacket", consumerChain)
+
+			driver.DeliverPacketToConsumer(ChainId(consumerChain))
 		case "DeliverVscMaturedPacket":
 			consumerChain := lastAction["consumerChain"].Value.(string)
-
 			t.Log("DeliverVscMaturedPacket", consumerChain)
+
+			driver.DeliverPacketFromConsumer(ChainId(consumerChain))
 		default:
 
 			log.Fatalf("Error loading trace file %s, step %v: do not know action type %s",

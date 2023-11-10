@@ -55,8 +55,6 @@ func (s *Driver) ctx(chain ChainId) sdk.Context {
 
 // returns the path from the given chain to the provider.
 func (s *Driver) path(chain ChainId) *simibc.RelayedPath {
-	if s.isProviderChain(chain) {
-	}
 	return s.simibcs[chain]
 }
 
@@ -205,6 +203,7 @@ func (s *Driver) undelegate(val, amt int64) {
 	_, err := server.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 	// There may or may not be an error, depending on the trace
 	_ = err
+	providerStaking.GetAllDelegations(s.ctx(P))
 }
 
 // consumerSlash simulates a slash event occurring on the consumer chain.
@@ -304,7 +303,12 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 	// Build the validator info string
 	var validatorInfo strings.Builder
 	for index, valName := range s.valNames {
-		power := s.providerPower(int64(index))
+		var power int64
+		if s.isProviderChain(chain) {
+			power = s.providerPower(int64(index))
+		} else {
+			power, _ = s.consumerPower(int64(index), chain)
+		}
 
 		validatorInfo.WriteString(fmt.Sprintf("    Validator %s: power=%d\n", valName, power))
 	}
@@ -327,7 +331,7 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet))
 		}
 
-		outboxInfo.WriteString("utboxAcks:\n")
+		outboxInfo.WriteString("OutboxAcks:\n")
 
 		outboxInfo.WriteString("OutgoingAcks: \n")
 		outgoingAcks := s.path(chain).Outboxes.OutboxAcks[string(chain)]
@@ -354,11 +358,11 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 // as witnessed by events, and adds them to the correct paths.
 // It also updates the client header on the paths
 // that involve the chain.
-func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration, preCommitCallback func()) {
+func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) { //}, preCommitCallback func()) {
 	testChain, found := s.coordinator.Chains[string(chain)]
 	require.True(s.t, found, "chain %s not found", chain)
 
-	header, packets := simibc.EndBlock(testChain, preCommitCallback)
+	header, packets := simibc.EndBlock(testChain) //, preCommitCallback)
 
 	for _, path := range s.simibcs {
 		if path.InvolvesChain(string(chain)) {
@@ -371,7 +375,7 @@ func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration, 
 	for _, p := range packets {
 		found := false
 		for _, path := range s.simibcs {
-			if path.PacketBelongs(p) {
+			if path.PacketSentByChain(p, string(chain)) {
 				path.Outboxes.AddPacket(string(chain), p)
 				found = true
 				break
@@ -383,6 +387,26 @@ func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration, 
 	}
 
 	simibc.BeginBlock(testChain, timeAdvancement)
+
+	for _, path := range s.simibcs {
+		if path.InvolvesChain(string(chain)) {
+			path.UpdateClient(path.Counterparty(string(chain)))
+		}
+	}
+}
+
+// DeliverPacketToConsumer delivers a packet from the provider to the given consumer recipient.
+// It updates the client before delivering the packet.
+// Since the channel is ordered, the packet that is delivered is the first packet in the outbox.
+func (s *Driver) DeliverPacketToConsumer(recipient ChainId) {
+	s.path(recipient).DeliverPackets(string(recipient), 1)
+}
+
+// DeliverPacketFromConsumer delivers a packet from the given consumer sender to the provider.
+// It updates the client before delivering the packet.
+// Since the channel is ordered, the packet that is delivered is the first packet in the outbox.
+func (s *Driver) DeliverPacketFromConsumer(sender ChainId) {
+	s.path(sender).DeliverPackets(P, 1) // deliver to the provider
 }
 
 // newDriver creates a new Driver object.
