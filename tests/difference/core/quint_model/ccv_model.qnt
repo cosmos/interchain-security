@@ -54,7 +54,9 @@ module ccv_model {
     // Roughly, 1s for very small advances (like between blocks),
     // and then longer values for increasingly severe downtime scenarios.
     // Note that these can still be combined, so in effect we can get all time advancements by any amount of seconds.
-    pure val timeAdvancements = Set(1 * Second, 1 * Day, 1 * Week, 4 * Week)
+    // These should be smaller than the minimal TrustingPeriodPerChain,
+    // otherwise connections will break down.
+    pure val timeAdvancements = Set(1 * Second, 1 * Day, 1 * Week - 1 * Hour) // 4 * Week)
 
     pure def emptyAction =
             {
@@ -260,7 +262,7 @@ module ccv_model {
             assert(latest(Set(packet1, packet2, packet3)) == packet3),
             assert(latest(Set(packet3, packet2, packet1)) == packet3),
         }
-    }
+    }        
 
     // ==================
     // INVARIANT CHECKS
@@ -334,9 +336,11 @@ module ccv_model {
         runningConsumers.forall(
             consumer => {
                 val maturationTimes = currentState.consumerStates.get(consumer).maturationTimes
-                maturationTimes.keys().forall(
+                maturationTimes.listForAll(
                     // check that the maturation time is in the future
-                    packet => maturationTimes.get(packet) >= currentState.consumerStates.get(consumer).chainState.lastTimestamp
+                    pair => 
+                    val maturationTime = pair._2
+                    maturationTime >= currentState.consumerStates.get(consumer).chainState.lastTimestamp
                 )
             }
         )
@@ -469,7 +473,7 @@ module ccv_model {
                     // make sure the packet was removed from the provider
                     assert(currentState.providerState.outstandingPacketsToConsumer.get("consumer1").length() == 0),
                     // ensure the maturation time was entered on the consumer
-                    assert(currentState.consumerStates.get("consumer1").maturationTimes.keys().size() == 1),
+                    assert(currentState.consumerStates.get("consumer1").maturationTimes.length() == 1),
                     // the validator set was put as the current validator set
                     assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet == InitialValidatorSet.put("node1", 150)),
                     // advance time on provider until the unbonding period is over
@@ -485,7 +489,7 @@ module ccv_model {
                     // the packet has matured, so it was sent by the consumer
                     assert(currentState.consumerStates.get("consumer1").outstandingPacketsToProvider.length() == 1),
                     // it was removed from the maturationTimes
-                    assert(currentState.consumerStates.get("consumer1").maturationTimes.keys().size() == 0),
+                    assert(currentState.consumerStates.get("consumer1").maturationTimes.length() == 0),
                     // receive the packet on the provider
                     DeliverVscMaturedPacket("consumer1")
                 }

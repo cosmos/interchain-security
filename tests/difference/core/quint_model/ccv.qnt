@@ -104,12 +104,13 @@ module ccv_types {
         // the state that each chain needs to store
         chainState: ChainState,
 
-        // Stores the maturation times for VscPackets received by this consumer
-        maturationTimes: VscPacket -> Time,
-
         // stores the received vscpackets in descending order of recency,
         // i.e. newest first.
         receivedVscPackets: List[VscPacket],
+
+        // Stores the maturation times for VscPackets received by this consumer
+        // in the same order as they are in the receivedVscPackets.
+        maturationTimes: List[(VscPacket, Time)],
 
         // Stores the list of packets that have been sent to the provider chain by this consumer
         // and have not been received yet.
@@ -122,7 +123,7 @@ module ccv_types {
     pure def GetEmptyConsumerState(): ConsumerState = 
         {
             chainState: GetEmptyChainState,
-            maturationTimes: Map(),
+            maturationTimes: List(),
             outstandingPacketsToProvider: List(),
             receivedVscPackets: List(),
         }
@@ -465,19 +466,25 @@ module ccv {
                 val newConsumerState: ConsumerState = currentConsumerState.with(
                     "chainState", newChainState
                 )
-                val maturedPackets = newConsumerState.maturationTimes.keys().filter(
-                    packet => 
-                    val maturationTime = newConsumerState.maturationTimes.get(packet)
+                val maturedPackets = newConsumerState.maturationTimes.select(
+                    pair =>
+                    val packet = pair._1 
+                    val maturationTime = pair._2
                     maturationTime <= newChainState.lastTimestamp
+                ).transform(pair => pair._1)
+                val newMaturationTimes = newConsumerState.maturationTimes.select(
+                    pair =>
+                    val packet = pair._1 
+                    val maturationTime = pair._2
+                    maturationTime > newChainState.lastTimestamp
                 )
-                val newMaturationTimes = newConsumerState.maturationTimes.mapRemoveAll(maturedPackets)
                 val newOutstandingPackets = newConsumerState.outstandingPacketsToProvider.concat(
-                    maturedPackets.map(
+                    maturedPackets.transform(
                         packet => {
                             id: packet.id, 
                             sendingTime: newConsumerState.chainState.lastTimestamp
                         }
-                    ).toList()
+                    )
                 )
                 val newConsumerState2: ConsumerState = newConsumerState.with(
                     "maturationTimes", newMaturationTimes
@@ -658,9 +665,11 @@ module ccv {
                     chainState: currentConsumerState.chainState.with(
                         "currentValidatorSet", packet.validatorSet
                     ),
-                    maturationTimes: currentConsumerState.maturationTimes.put(
-                        packet, 
-                        currentConsumerState.chainState.lastTimestamp + UnbondingPeriodPerChain.get(receiver)
+                    maturationTimes: currentConsumerState.maturationTimes.append(
+                        (
+                            packet, 
+                            currentConsumerState.chainState.lastTimestamp + UnbondingPeriodPerChain.get(receiver)
+                        )
                     ),
                     receivedVscPackets: currentConsumerState.receivedVscPackets.prepend(packet)
                 }
