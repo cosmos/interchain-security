@@ -337,19 +337,18 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 		{
 			"identical headers - shouldn't pass",
 			&ibctmtypes.Misbehaviour{
-				ClientId: "clientID",
+				ClientId: s.path.EndpointA.ClientID,
 				Header1:  clientHeader,
 				Header2:  clientHeader,
 			},
 			false,
 		},
 		{
-			"client state not found - shouldn't pass",
+			"misbehaviour isn't for a consumer chain - shouldn't pass",
 			&ibctmtypes.Misbehaviour{
-				ClientId: "clientID",
-				Header1:  clientHeader,
-				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
+				ClientId: s.path.EndpointA.ClientID,
+				Header1: s.consumerChain.CreateTMClientHeader(
+					"aChainID",
 					int64(clientHeight.RevisionHeight+1),
 					clientHeight,
 					headerTs,
@@ -358,13 +357,15 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 					clientTMValset,
 					altSigners,
 				),
+				Header2: clientHeader,
 			},
 			false,
 		},
 		{
-			"invalid misbehaviour with empty header1 - shouldn't pass",
+			"client state not found - shouldn't pass",
 			&ibctmtypes.Misbehaviour{
-				Header1: &ibctmtypes.Header{},
+				ClientId: "clientID",
+				Header1:  clientHeader,
 				Header2: s.consumerChain.CreateTMClientHeader(
 					s.consumerChain.ChainID,
 					int64(clientHeight.RevisionHeight+1),
