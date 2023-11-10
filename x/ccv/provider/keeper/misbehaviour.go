@@ -145,8 +145,15 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 // a valid light client attack from an ICS consumer chain and that the light client isn't expired
 func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
 	// check that the misbehaviour is for an ICS consumer chain
-	if _, found := k.GetConsumerClientId(ctx, misbehaviour.Header1.Header.ChainID); !found {
+	clientID, found := k.GetConsumerClientId(ctx, misbehaviour.Header1.Header.ChainID)
+	if !found {
 		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain: %s", misbehaviour.Header1.Header.ChainID)
+	} else if misbehaviour.ClientId != clientID {
+		return fmt.Errorf("incorrect misbehaviour: expected client ID for consumer chain %s is %s got %s",
+			misbehaviour.Header1.Header.ChainID,
+			clientID,
+			misbehaviour.ClientId,
+		)
 	}
 
 	clientState, found := k.clientKeeper.GetClientState(ctx, misbehaviour.GetClientID())

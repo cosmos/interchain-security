@@ -362,7 +362,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 			false,
 		},
 		{
-			"client state not found - shouldn't pass",
+			"client ID doesn't correspond to the client ID of consumer chain  - shouldn't pass",
 			&ibctmtypes.Misbehaviour{
 				ClientId: "clientID",
 				Header1:  clientHeader,
