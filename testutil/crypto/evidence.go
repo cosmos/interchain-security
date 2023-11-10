@@ -1,8 +1,10 @@
 package crypto
 
 import (
+	"fmt"
 	"time"
 
+	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -88,4 +90,41 @@ func MakeAndSignVoteWithForgedValAddress(
 
 	vote.Signature = v.Signature
 	return vote
+}
+
+// UpdateHeaderCommitWithNilVotes updates the given light client header
+// by changing the commit BlockIDFlag of the given validators to nil
+//
+// Note that this method is solely used for testing purposes
+func UpdateHeaderCommitWithNilVotes(header *ibctmtypes.Header, validators []*tmtypes.Validator) {
+	if len(validators) > len(header.ValidatorSet.Validators) {
+		panic(fmt.Sprintf("cannot change more than %d validators votes: got %d",
+			len(header.ValidatorSet.Validators), len(header.ValidatorSet.Validators)))
+	}
+
+	commit, err := tmtypes.CommitFromProto(header.Commit)
+	if err != nil {
+		panic(err)
+	}
+
+	valset, err := tmtypes.ValidatorSetFromProto(header.ValidatorSet)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, v := range validators {
+		// get validator index in valset
+		idx, _ := valset.GetByAddress(v.Address)
+		if idx != -1 {
+			// get validator commit sig
+			s := commit.Signatures[idx]
+			// change BlockIDFlag to nil
+			s.BlockIDFlag = tmtypes.BlockIDFlagNil
+			// update the signatures
+			commit.Signatures[idx] = s
+		}
+	}
+
+	// update the commit in client the header
+	header.SignedHeader.Commit = commit.ToProto()
 }

@@ -103,7 +103,7 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 	// create a map with the validators' address that signed header1
 	header1Signers := map[string]struct{}{}
 	for _, sign := range lightBlock1.Commit.Signatures {
-		if sign.Absent() {
+		if !sign.ForBlock() {
 			continue
 		}
 		header1Signers[sign.ValidatorAddress.String()] = struct{}{}
@@ -111,7 +111,7 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 
 	// iterate over the header2 signers and check if they signed header1
 	for _, sign := range lightBlock2.Commit.Signatures {
-		if sign.Absent() {
+		if !sign.ForBlock() {
 			continue
 		}
 		if _, ok := header1Signers[sign.ValidatorAddress.String()]; ok {
@@ -142,9 +142,21 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 }
 
 // CheckMisbehaviour checks that headers in the given misbehaviour forms
-// a valid light client attack and that the corresponding light client isn't expired
+// a valid light client attack from an ICS consumer chain and that the light client isn't expired
 func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
-	clientState, found := k.clientKeeper.GetClientState(ctx, misbehaviour.GetClientID())
+	// check that the misbehaviour is for an ICS consumer chain
+	clientId, found := k.GetConsumerClientId(ctx, misbehaviour.Header1.Header.ChainID)
+	if !found {
+		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain: %s", misbehaviour.Header1.Header.ChainID)
+	} else if misbehaviour.ClientId != clientId {
+		return fmt.Errorf("incorrect misbehaviour: expected client ID for consumer chain %s is %s got %s",
+			misbehaviour.Header1.Header.ChainID,
+			clientId,
+			misbehaviour.ClientId,
+		)
+	}
+
+	clientState, found := k.clientKeeper.GetClientState(ctx, clientId)
 	if !found {
 		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot check misbehaviour for client with ID %s", misbehaviour.GetClientID())
 	}
