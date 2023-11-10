@@ -4,6 +4,10 @@
 
 Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
 
+## v2.3.0-provider-lsm
+* (fix!) [#1404](https://github.com/cosmos/interchain-security/pull/1404) Add conditions to the misbehaviour handling ensuring that validators who vote nil
+are not getting punished.
+
 ## v2.2.0-provider-lsm
 
 ### Cryptographic verification of equivocation
