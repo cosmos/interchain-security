@@ -118,7 +118,7 @@ func UpdateHeaderCommitWithNilVotes(header *ibctmtypes.Header, validators []*tmt
 		s := commit.Signatures[idx]
 		// change BlockIDFlag to nil
 		s.BlockIDFlag = tmtypes.BlockIDFlagNil
-		// reassign the signature value
+		// update the signatures
 		commit.Signatures[idx] = s
 	}
 
