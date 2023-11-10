@@ -262,7 +262,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 				s.Equal(len(tc.expByzantineValidators), len(byzantineValidators))
 
 				// For both lunatic and equivocation attacks, all the validators
-				// who signed the bad header and didn't vote nil  should be returned
+				// who signed both headers and didn't vote nil should be returned
 				if len(tc.expByzantineValidators) > 0 {
 					expValset := tmtypes.NewValidatorSet(tc.expByzantineValidators)
 					s.NoError(err)
