@@ -122,6 +122,6 @@ func UpdateHeaderCommitWithNilVotes(header *ibctmtypes.Header, validators []*tmt
 		commit.Signatures[idx] = s
 	}
 
-	// overwrite the commit the back in the header
+	// update the commit in client the header
 	header.SignedHeader.Commit = commit.ToProto()
 }
