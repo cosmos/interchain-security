@@ -168,4 +168,43 @@ module extraSpells {
         assert(values(Map(1 -> 2, 3 -> 4)) == Set(2, 4)),
         assert(values(Map()) == Set())
     }
+
+    //// Returns a new list l, where l[i] = __f(__list[i])
+    ////
+    //// - @param __list a list
+    //// - @param __f a function that is applied to each element of __list
+    ////
+    //// - @returns a set of the elements in __list
+    pure def transform(__list: List[a], __f: a => b): List[b] = {
+        __list.foldl(List(), (__l, __e) => __l.append(__f(__e)))
+    }
+
+    run transformTest =
+    all {
+        assert(transform(List(1, 2, 3), __x => __x + 1) == List(2, 3, 4)),
+        assert(transform(List(), __x => __x + 1) == List()),
+        assert(transform(List(1, 2, 3), __x => __x * 2) == List(2, 4, 6)),
+        assert(transform(List(1, 2, 3), __x => __x) == List(1, 2, 3)),
+    }
+
+
+    // listForAll returns true if the given predicate function returns true for all elements in the given list,
+    // and false otherwise.
+    //
+    // Parameters:
+    // - __list: The list to check.
+    // - __f: The predicate function to apply to each element in the list.
+    //
+    // Returns:
+    // - true if the predicate function returns true for all elements in the list, and false otherwise.
+    pure def listForAll(__list: List[a], __f: a => bool): bool = {
+        __list.foldl(true, (__b, __e) => __b and __f(__e))
+    }
+
+    run listForAllTest =
+    all {
+        assert(listForAll(List(1, 2, 3), __x => __x > 0)),
+        assert(not(listForAll(List(1, 2, 3), __x => __x > 1))),
+        assert(listForAll(List(), __x => __x > 0)),
+    }
 }
