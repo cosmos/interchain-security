@@ -284,6 +284,10 @@ func txCommand() *cobra.Command {
 		authcmd.GetSimulateCmd(),
 	)
 
+	// NOTE: this must be registered for now so that submit-legacy-proposal
+	// message can be routed to the provider handler and processed correctly.
+	providerApp.ModuleBasics.AddTxCommands(cmd)
+
 	return cmd
 }
 
