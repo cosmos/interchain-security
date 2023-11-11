@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	stdlog "log"
 	"os"
 	"path/filepath"
 
@@ -58,7 +57,9 @@ import (
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	"github.com/cosmos/cosmos-sdk/x/auth/posthandler"
+	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
@@ -103,6 +104,7 @@ import (
 	tmjson "github.com/cometbft/cometbft/libs/json"
 	tmos "github.com/cometbft/cometbft/libs/os"
 	dbm "github.com/cosmos/cosmos-db"
+	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 
 	appparams "github.com/cosmos/interchain-security/v3/app/params"
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
@@ -113,9 +115,8 @@ import (
 )
 
 const (
-	AppName              = "interchain-security-p"
-	upgradeName          = "ics-v1-to-v2"
-	AccountAddressPrefix = "cosmos"
+	AppName     = "interchain-security-p"
+	upgradeName = "ics-v1-to-v2"
 )
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -230,7 +231,7 @@ type App struct { // nolint: golint
 func init() {
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
-		stdlog.Println("Failed to get home dir %2", err)
+		panic(fmt.Sprintf("Failed to get home dir %v", err))
 	}
 
 	DefaultNodeHome = filepath.Join(userHomeDir, "."+AppName)
@@ -351,6 +352,21 @@ func New(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		logger,
 	)
+
+	// optional: enable sign mode textual by overwriting the default tx config (after setting the bank keeper)
+	enabledSignModes := append(tx.DefaultSignModes, sigtypes.SignMode_SIGN_MODE_TEXTUAL)
+	txConfigOpts := tx.ConfigOptions{
+		EnabledSignModes:           enabledSignModes,
+		TextualCoinMetadataQueryFn: txmodule.NewBankKeeperCoinMetadataQueryFn(app.BankKeeper),
+	}
+	txConfig, err := tx.NewTxConfigWithOptions(
+		appCodec,
+		txConfigOpts,
+	)
+	if err != nil {
+		panic(err)
+	}
+	app.txConfig = txConfig
 
 	app.StakingKeeper = stakingkeeper.NewKeeper(
 		appCodec,
@@ -557,8 +573,8 @@ func New(
 				},
 			),
 		})
-	ModuleBasics.RegisterLegacyAminoCodec(app.legacyAmino)
-	ModuleBasics.RegisterInterfaces(app.interfaceRegistry)
+	ModuleBasics.RegisterLegacyAminoCodec(legacyAmino)
+	ModuleBasics.RegisterInterfaces(interfaceRegistry)
 
 	app.MM.SetOrderPreBlockers(
 		upgradetypes.ModuleName,
@@ -638,7 +654,7 @@ func New(
 
 	app.MM.RegisterInvariants(&app.CrisisKeeper)
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
-	err := app.MM.RegisterServices(app.configurator)
+	err = app.MM.RegisterServices(app.configurator)
 	if err != nil {
 		panic(err)
 	}

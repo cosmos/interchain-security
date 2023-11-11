@@ -1408,7 +1408,8 @@ func (tr TestRun) cancelUnbondTokens(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
-	creationHeight := gjson.Get(string(bz), "entries.0.creation_height").Int()
+
+	creationHeight := gjson.Get(string(bz), "unbond.entries.0.creation_height").Int()
 	if creationHeight == 0 {
 		log.Fatal("invalid creation height")
 	}
@@ -1605,13 +1606,14 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 		`--node`, tr.getValidatorNode(action.provider, action.validator),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
+		`--keyring-dir`, tr.getValidatorHome(action.provider, action.validator),
 		`-y`,
 	)
 
 	if verbose {
 		fmt.Println("unjail cmd:", cmd.String())
 	}
-
+	fmt.Println("unjail cmd:", cmd.String())
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))

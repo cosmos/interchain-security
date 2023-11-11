@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -39,20 +40,24 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 
 	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
+		fmt.Println("## providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)")
 		return nil, err
 	}
 
 	// validator must already be registered
 	validator, err := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
 	if err != nil && err == stakingtypes.ErrNoValidatorFound {
+		fmt.Println("## NOT FOUND validator, err := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)")
 		return nil, stakingtypes.ErrNoValidatorFound
 	} else if err != nil {
+		fmt.Println("## ACTUAL ERRROR", err)
 		return nil, err
 	}
 
 	// parse consumer key as long as it's in the right format
 	pkType, keyStr, err := types.ParseConsumerKeyFromJson(msg.ConsumerKey)
 	if err != nil {
+		fmt.Println("## pkType, keyStr, err := types.ParseConsumerKeyFromJson(msg.ConsumerKey)", err)
 		return nil, err
 	}
 
@@ -81,6 +86,7 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	}
 
 	pubKeyBytes, err := base64.StdEncoding.DecodeString(keyStr)
+	fmt.Println("## pubKeyBytes, err := base64.StdEncoding.DecodeString(keyStr)", pubKeyBytes, err)
 	if err != nil {
 		return nil, err
 	}

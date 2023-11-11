@@ -236,7 +236,7 @@ func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step
 				validator: validatorID("bob"),
 				// reconfigure the node -> validator was using provider key
 				// until this point -> key matches config.consumerValPubKey for "bob"
-				consumerPubkey:  `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="}`,
+				consumerPubkey:  `'{"@type":"/cosmos.crypto.ed25519.PubKey","key":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="}'`,
 				reconfigureNode: true,
 			},
 			state: State{
