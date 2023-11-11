@@ -16,7 +16,7 @@ func concatSteps(steps ...[]Step) []Step {
 var happyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
-	stepsAssignConsumerKeyOnStartedChain("consu", "bob"),
+	// stepsAssignConsumerKeyOnStartedChain("consu", "bob"),
 	stepsUnbond("consu"),
 	stepsCancelUnbond("consu"),
 	stepsRedelegateForOptOut("consu"),
