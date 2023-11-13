@@ -105,6 +105,23 @@ Minimal example:
 }
 ```
 
+## ChangeRewardDenomProposal
+:::tip
+`ChangeRewardDenomProposal` will only be accepted on the provider chain if at least one of the denomsToAdd or denomsToRemove fields is populated with at least one denom. Also, a denom cannot be repeated in both sets.
+:::
+
+Proposal type used to mutate the set of denoms accepted by the provider as rewards.
+
+Minimal example:
+```js
+{
+  "title": "Add untrn as a reward denom",
+  "description": "Here is more information about the proposal",
+  "denomsToAdd": ["untrn"],
+  "denomsToRemove": []
+}
+```
+
 ### Notes
 When submitting equivocation evidence through an `EquivocationProposal` please take note that you need to use the consensus address (`valcons`) of the offending validator on the **provider chain**.
 Besides that, the `height` and the `time` fields should be mapped to the **provider chain** to avoid your evidence being rejected.
