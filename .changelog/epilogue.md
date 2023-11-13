@@ -1,5 +1,3 @@
-# CHANGELOG
-
 ## v3.1.0
 
 Date July 11th, 2023
