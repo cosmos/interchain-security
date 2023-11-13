@@ -1,11 +1,11 @@
 package crypto
 
 import (
-	"fmt"
 	"time"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
+	"github.com/tendermint/tendermint/libs/bytes"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -92,39 +92,43 @@ func MakeAndSignVoteWithForgedValAddress(
 	return vote
 }
 
-// UpdateHeaderCommitWithNilVotes updates the given light client header
-// by changing the commit BlockIDFlag of the given validators to nil
-//
+// CorruptCommitSigsInHeader corrupts the header by changing the value
+// of the commit signature for given validator address.
 // Note that this method is solely used for testing purposes
-func UpdateHeaderCommitWithNilVotes(header *ibctmtypes.Header, validators []*tmtypes.Validator) {
-	if len(validators) > len(header.ValidatorSet.Validators) {
-		panic(fmt.Sprintf("cannot change more than %d validators votes: got %d",
-			len(header.ValidatorSet.Validators), len(header.ValidatorSet.Validators)))
-	}
-
+func CorruptCommitSigsInHeader(header *ibctmtypes.Header, valAddress bytes.HexBytes) {
 	commit, err := tmtypes.CommitFromProto(header.Commit)
 	if err != nil {
 		panic(err)
 	}
 
+	for idx, sig := range commit.Signatures {
+		if sig.ValidatorAddress.String() == valAddress.String() {
+			sig.Signature = []byte("randomsig")
+			commit.Signatures[idx] = sig
+		}
+	}
+	// update the commit in client the header
+	header.SignedHeader.Commit = commit.ToProto()
+}
+
+// CorruptValidatorPubkeyInHeader corrupts the header by changing the validator pubkey
+// of the given validator address in the validator set.
+// Note that this method is solely used for testing purposes
+func CorruptValidatorPubkeyInHeader(header *ibctmtypes.Header, valAddress bytes.HexBytes) {
 	valset, err := tmtypes.ValidatorSetFromProto(header.ValidatorSet)
 	if err != nil {
 		panic(err)
 	}
 
-	for _, v := range validators {
-		// get validator index in valset
-		idx, _ := valset.GetByAddress(v.Address)
-		if idx != -1 {
-			// get validator commit sig
-			s := commit.Signatures[idx]
-			// change BlockIDFlag to nil
-			s.BlockIDFlag = tmtypes.BlockIDFlagNil
-			// update the signatures
-			commit.Signatures[idx] = s
+	for _, v := range valset.Validators {
+		if v.Address.String() == valAddress.String() {
+			v.PubKey = tmtypes.NewMockPV().PrivKey.PubKey()
 		}
 	}
 
-	// update the commit in client the header
-	header.SignedHeader.Commit = commit.ToProto()
+	vs, err := valset.ToProto()
+	if err != nil {
+		panic(err)
+	}
+	header.ValidatorSet = vs
 }
