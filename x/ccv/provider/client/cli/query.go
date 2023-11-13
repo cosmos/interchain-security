@@ -33,7 +33,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdThrottleState())
 	cmd.AddCommand(CmdThrottledConsumerPacketData())
 	cmd.AddCommand(CmdRegisteredConsumerRewardDenoms())
-
+	cmd.AddCommand(CmdProviderParams())
 	return cmd
 }
 
@@ -292,7 +292,7 @@ func CmdThrottledConsumerPacketData() *cobra.Command {
 		Short: "Query pending VSCMatured and slash packet data for a consumer chainId",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Returns the current pending VSCMatured and slash packet data instances for a consumer chainId.
-			Queue is ordered by ibc sequence number. 
+			Queue is ordered by ibc sequence number.
 Example:
 $ %s query provider throttled-consumer-packet-data foochain
 `,
@@ -349,6 +349,43 @@ $ %s query provider registered-consumer-reward-denoms
 			}
 
 			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// NewQuerySubspaceParamsCmd returns a CLI command handler for querying subspace
+// parameters managed by the x/params module.
+func CmdProviderParams() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "params [flags]",
+		Short: "Query values set as provider parameters",
+		/* 		Long: strings.TrimSpace(
+					fmt.Sprintf(`Returns the registered consumer reward denoms.
+		Example:
+		$ %s query provider registered-consumer-reward-denoms
+		`,
+						version.AppName,
+					),
+				), */
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := types.QueryParamsRequest{}
+			res, err := queryClient.QueryParams(cmd.Context(), &req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(&res.Params)
 		},
 	}
 

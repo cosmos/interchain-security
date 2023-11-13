@@ -138,12 +138,19 @@ const (
 	// handled in the current block
 	VSCMaturedHandledThisBlockBytePrefix
 
+	// ParametersKey is the is the single byte key for storing consumer's parameters.
+	ParametersByteKey
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
 //
 // Fully defined key func section
 //
+
+func ParametersKey() []byte {
+	return []byte{ParametersByteKey}
+}
 
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {

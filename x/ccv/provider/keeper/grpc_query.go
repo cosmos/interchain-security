@@ -36,6 +36,19 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 	return &types.QueryConsumerGenesisResponse{GenesisState: gen}, nil
 }
 
+func (k Keeper) QueryParams(goCtx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "no parameters found")
+	}
+	return &types.QueryParamsResponse{Params: params}, nil
+}
+
 func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsumerChainsRequest) (*types.QueryConsumerChainsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -220,9 +233,9 @@ func (k Keeper) QueryThrottledConsumerPacketData(goCtx context.Context, req *typ
 // getSlashPacketData fetches a slash packet data from the store using consumerChainId and ibcSeqNum (direct access)
 // If the returned bytes do not unmarshal to SlashPacketData, the data is considered not found.
 func (k Keeper) getSlashPacketData(ctx sdk.Context, consumerChainID string, ibcSeqNum uint64) (ccvtypes.SlashPacketData, bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ThrottledPacketDataKey(consumerChainID, ibcSeqNum))
-	if len(bz) == 0 {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.ThrottledPacketDataKey(consumerChainID, ibcSeqNum))
+	if err != nil || len(bz) == 0 {
 		return ccvtypes.SlashPacketData{}, false
 	}
 
@@ -231,7 +244,7 @@ func (k Keeper) getSlashPacketData(ctx sdk.Context, consumerChainID string, ibcS
 	}
 
 	packet := ccvtypes.SlashPacketData{}
-	err := packet.Unmarshal(bz[1:])
+	err = packet.Unmarshal(bz[1:])
 	if err != nil {
 		// If the data cannot be unmarshaled, it is considered not found
 		return ccvtypes.SlashPacketData{}, false

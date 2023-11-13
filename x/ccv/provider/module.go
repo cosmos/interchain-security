@@ -119,6 +119,15 @@ func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	providertypes.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	providertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+
+	migrator := keeper.NewMigrator(*am.keeper)
+	err := cfg.RegisterMigration(am.Name(), 2,
+		func(ctx sdk.Context) error {
+			return migrator.MigrateParams(ctx, am.paramSpace)
+		})
+	if err != nil {
+		panic(err)
+	}
 }
 
 // InitGenesis performs genesis initialization for the provider module. It returns no validator updates.
