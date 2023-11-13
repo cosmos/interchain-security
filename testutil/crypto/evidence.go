@@ -92,8 +92,8 @@ func MakeAndSignVoteWithForgedValAddress(
 	return vote
 }
 
-// CorruptCommitSigsInHeader corrupts the header by changing the value of the commit signature
-// given validator address
+// CorruptCommitSigsInHeader corrupts the header by changing the value
+// of the commit signature for given validator address.
 // Note that this method is solely used for testing purposes
 func CorruptCommitSigsInHeader(header *ibctmtypes.Header, valAddress bytes.HexBytes) {
 	commit, err := tmtypes.CommitFromProto(header.Commit)
@@ -112,7 +112,7 @@ func CorruptCommitSigsInHeader(header *ibctmtypes.Header, valAddress bytes.HexBy
 }
 
 // CorruptValidatorPubkeyInHeader corrupts the header by changing the validator pubkey
-// of the given validator address in the validator set
+// of the given validator address in the validator set.
 // Note that this method is solely used for testing purposes
 func CorruptValidatorPubkeyInHeader(header *ibctmtypes.Header, valAddress bytes.HexBytes) {
 	valset, err := tmtypes.ValidatorSetFromProto(header.ValidatorSet)

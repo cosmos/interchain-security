@@ -95,15 +95,6 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
 	altSigners[clientTMValset.Validators[2].Address.String()] = clientSigners[clientTMValset.Validators[2].Address.String()]
 
-	// maliciousSigner := tmtypes.NewMockPV()
-
-	// // Create a subset of the consumer client validator set
-	// altValset2 := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:3])
-	// altSigners2 := make(map[string]tmtypes.PrivValidator, 3)
-	// altSigners2[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
-	// altSigners2[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
-	// altSigners2[clientTMValset.Validators[2].Address.String()] = maliciousSigner
-
 	// create a consumer client header
 	clientHeader := s.consumerChain.CreateTMClientHeader(
 		s.consumerChain.ChainID,
@@ -350,7 +341,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
 
-	// create an alternative validator set using less 1/3 of the trusted validator set
+	// create an alternative validator set using less than 1/3 of the trusted validator set
 	altValset2 := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:1])
 	altSigners2 := make(map[string]tmtypes.PrivValidator, 1)
 	altSigners2[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
