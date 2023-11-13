@@ -208,7 +208,7 @@ func verifyLightBlockCommitSig(lightBlock tmtypes.LightBlock, sigIdx int) error 
 	// get validator
 	_, val := lightBlock.ValidatorSet.GetByAddress(sig.ValidatorAddress)
 
-	// verify validator pubkey correspond to signature validator address
+	// verify validator pubkey corresponds to signature validator address
 	if !bytes.Equal(val.PubKey.Address(), sig.ValidatorAddress) {
 		return fmt.Errorf("validator public key doesn't correspond to signature validator address: %d!= %d", val.PubKey.Address(), sig.ValidatorAddress)
 	}
