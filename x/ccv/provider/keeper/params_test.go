@@ -25,8 +25,7 @@ func TestParams(t *testing.T) {
 
 	defaultParams := providertypes.DefaultParams()
 	providerKeeper.SetParams(ctx, defaultParams)
-	params, err := providerKeeper.GetParams(ctx)
-	require.NoError(t, err)
+	params := providerKeeper.GetParams(ctx)
 	require.Equal(t, defaultParams, params)
 
 	newParams := providertypes.NewParams(
@@ -53,7 +52,6 @@ func TestParams(t *testing.T) {
 		},
 	)
 	providerKeeper.SetParams(ctx, newParams)
-	params, err = providerKeeper.GetParams(ctx)
-	require.NoError(t, err)
+	params = providerKeeper.GetParams(ctx)
 	require.Equal(t, newParams, params)
 }

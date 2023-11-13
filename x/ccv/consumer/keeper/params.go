@@ -7,31 +7,31 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // GetParams returns the params for the consumer ccv module
 // NOTE: it is different from the GetParams method which is required to implement StakingKeeper interface
-func (k Keeper) GetConsumerParams(ctx sdk.Context) (ccvtypes.Params, error) {
-	store := k.storeService.OpenKVStore(ctx)
-	bz, err := store.Get(types.ParametersKey())
-	if err != nil {
-		return ccvtypes.Params{}, err //TODO @bermuell: check if default arguments or error handling should be done
-	}
-	var params ccvtypes.Params
-	k.cdc.MustUnmarshal(bz, &params)
-	return params, nil
+func (k Keeper) GetConsumerParams(ctx sdk.Context) ccvtypes.Params {
+	return ccvtypes.NewParams(
+		k.GetEnabled(ctx),
+		k.GetBlocksPerDistributionTransmission(ctx),
+		k.GetDistributionTransmissionChannel(ctx),
+		k.GetProviderFeePoolAddrStr(ctx),
+		k.GetCCVTimeoutPeriod(ctx),
+		k.GetTransferTimeoutPeriod(ctx),
+		k.GetConsumerRedistributionFrac(ctx),
+		k.GetHistoricalEntries(ctx),
+		k.GetUnbondingPeriod(ctx),
+		k.GetSoftOptOutThreshold(ctx),
+		k.GetRewardDenoms(ctx),
+		k.GetProviderRewardDenoms(ctx),
+	)
 }
 
 // SetParams sets the paramset for the consumer module
-func (k Keeper) SetParams(ctx sdk.Context, params ccvtypes.Params) error {
-	if err := params.Validate(); err != nil {
-		return err
-	}
-	store := k.storeService.OpenKVStore(ctx)
-	bz := k.cdc.MustMarshal(&params)
-	return store.Set(types.ParametersKey(), bz)
+func (k Keeper) SetParams(ctx sdk.Context, params ccvtypes.Params) {
+	k.paramStore.SetParamSet(ctx, &params)
 }
 
 // GetParams implements StakingKeeper GetParams interface method
@@ -44,164 +44,98 @@ func (k Keeper) GetParams(context.Context) (stakingtypes.Params, error) {
 
 // GetEnabled returns the enabled flag for the consumer module
 func (k Keeper) GetEnabled(ctx sdk.Context) bool {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error getting parameter 'enabled': %v", err)
-		return ccvtypes.Params{}.Enabled
-	}
-	return params.Enabled
+	var enabled bool
+	k.paramStore.Get(ctx, ccvtypes.KeyEnabled, &enabled)
+	return enabled
 }
 
 func (k Keeper) GetBlocksPerDistributionTransmission(ctx sdk.Context) int64 {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error getting parameter 'BlocksPerDistributionTransmission': %v", err)
-		return ccvtypes.Params{}.BlocksPerDistributionTransmission
-	}
-
-	return params.BlocksPerDistributionTransmission
+	var bpdt int64
+	k.paramStore.Get(ctx, ccvtypes.KeyBlocksPerDistributionTransmission, &bpdt)
+	return bpdt
 }
 
 func (k Keeper) SetBlocksPerDistributionTransmission(ctx sdk.Context, bpdt int64) {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error setting parameter 'BlocksPerDistributionTransmission': %v", err)
-		return
-	}
-	params.BlocksPerDistributionTransmission = bpdt
-	k.SetParams(ctx, params)
+	k.paramStore.Set(ctx, ccvtypes.KeyBlocksPerDistributionTransmission, bpdt)
 }
 
 func (k Keeper) GetDistributionTransmissionChannel(ctx sdk.Context) string {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error getting parameter 'DistributionTransmissionChannel': %v", err)
-		return ccvtypes.Params{}.DistributionTransmissionChannel
-	}
-	return params.DistributionTransmissionChannel
+	var s string
+	k.paramStore.Get(ctx, ccvtypes.KeyDistributionTransmissionChannel, &s)
+	return s
 }
 
 func (k Keeper) SetDistributionTransmissionChannel(ctx sdk.Context, channel string) {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error setting parameter 'DistributionTransmissionChannel': %v", err)
-		return
-	}
-	params.DistributionTransmissionChannel = channel
-	k.SetParams(ctx, params)
+	k.paramStore.Set(ctx, ccvtypes.KeyDistributionTransmissionChannel, channel)
 }
 
 func (k Keeper) GetProviderFeePoolAddrStr(ctx sdk.Context) string {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error getting parameter 'ProviderFeePoolAddrStr': %v", err)
-		return ccvtypes.Params{}.ProviderFeePoolAddrStr
-	}
-	return params.ProviderFeePoolAddrStr
-
+	var s string
+	k.paramStore.Get(ctx, ccvtypes.KeyProviderFeePoolAddrStr, &s)
+	return s
 }
 
 func (k Keeper) SetProviderFeePoolAddrStr(ctx sdk.Context, addr string) {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error setting parameter 'ProviderFeePoolAddrStr': %v", err)
-		return
-	}
-	params.ProviderFeePoolAddrStr = addr
-	k.SetParams(ctx, params)
+	k.paramStore.Set(ctx, ccvtypes.KeyProviderFeePoolAddrStr, addr)
 }
 
 // GetCCVTimeoutPeriod returns the timeout period for sent ccv related ibc packets
 func (k Keeper) GetCCVTimeoutPeriod(ctx sdk.Context) time.Duration {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error getting parameter 'CcvTimeoutPeriod': %v", err)
-		return ccvtypes.Params{}.CcvTimeoutPeriod
-	}
-	return params.CcvTimeoutPeriod
+	var p time.Duration
+	k.paramStore.Get(ctx, ccvtypes.KeyCCVTimeoutPeriod, &p)
+	return p
 }
 
 // GetTransferTimeoutPeriod returns the timeout period for sent transfer related ibc packets
 func (k Keeper) GetTransferTimeoutPeriod(ctx sdk.Context) time.Duration {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error getting parameter 'TransferTimeoutPeriod': %v", err)
-		return ccvtypes.Params{}.TransferTimeoutPeriod
-	}
-	return params.TransferTimeoutPeriod
-
+	var p time.Duration
+	k.paramStore.Get(ctx, ccvtypes.KeyTransferTimeoutPeriod, &p)
+	return p
 }
 
 // GetConsumerRedistributionFrac returns the fraction of tokens allocated to the consumer redistribution
 // address during distribution events. The fraction is a string representing a
 // decimal number. For example "0.75" would represent 75%.
 func (k Keeper) GetConsumerRedistributionFrac(ctx sdk.Context) string {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error getting parameter 'ConsumerRedistributionFraction': %v", err)
-		return ccvtypes.Params{}.ConsumerRedistributionFraction
-	}
-	return params.ConsumerRedistributionFraction
-
+	var str string
+	k.paramStore.Get(ctx, ccvtypes.KeyConsumerRedistributionFrac, &str)
+	return str
 }
 
 // GetHistoricalEntries returns the number of historical info entries to persist in store
 func (k Keeper) GetHistoricalEntries(ctx sdk.Context) int64 {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error getting parameter 'HistoricalEntries': %v", err)
-		return ccvtypes.Params{}.HistoricalEntries
-	}
-	return params.HistoricalEntries
+	var n int64
+	k.paramStore.Get(ctx, ccvtypes.KeyHistoricalEntries, &n)
+	return n
 }
 
 // Only used to set an unbonding period in diff tests
-// TODO @bermuell: move this to testutil
 func (k Keeper) SetUnbondingPeriod(ctx sdk.Context, period time.Duration) {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error setting parameter 'UnbondingPeriod': %v", err)
-		return
-	}
-	params.UnbondingPeriod = period
-	k.SetParams(ctx, params)
+	k.paramStore.Set(ctx, ccvtypes.KeyConsumerUnbondingPeriod, period)
 }
 
-// GetUnbondingPeriod returns the unbonding period of the consumer
 func (k Keeper) GetUnbondingPeriod(ctx sdk.Context) time.Duration {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error getting parameter 'UnbondingPeriod': %v", err)
-		return ccvtypes.Params{}.UnbondingPeriod
-	}
-	return params.UnbondingPeriod
+	var period time.Duration
+	k.paramStore.Get(ctx, ccvtypes.KeyConsumerUnbondingPeriod, &period)
+	return period
 }
 
 // GetSoftOptOutThreshold returns the percentage of validators at the bottom of the set
 // that can opt out of running the consumer chain
 func (k Keeper) GetSoftOptOutThreshold(ctx sdk.Context) string {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error getting parameter 'SoftOptOutThreshold': %v", err)
-		return ccvtypes.Params{}.SoftOptOutThreshold
-	}
-	return params.SoftOptOutThreshold
+	var str string
+	k.paramStore.Get(ctx, ccvtypes.KeySoftOptOutThreshold, &str)
+	return str
 }
 
 func (k Keeper) GetRewardDenoms(ctx sdk.Context) []string {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error getting parameter 'RewardDenoms': %v", err)
-		return ccvtypes.Params{}.RewardDenoms
-	}
-	return params.RewardDenoms
+	var denoms []string
+	k.paramStore.Get(ctx, ccvtypes.KeyRewardDenoms, &denoms)
+	return denoms
 }
 
 func (k Keeper) GetProviderRewardDenoms(ctx sdk.Context) []string {
-	params, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error getting parameter 'UnbondingPeriod': %v", err)
-		return ccvtypes.Params{}.ProviderRewardDenoms
-	}
-	return params.ProviderRewardDenoms
+	var denoms []string
+	k.paramStore.Get(ctx, ccvtypes.KeyProviderRewardDenoms, &denoms)
+	return denoms
 }

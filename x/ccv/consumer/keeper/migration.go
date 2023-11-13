@@ -28,13 +28,13 @@ func NewMigrator(ccvConsumerKeeper Keeper, ccvConsumerParamSpace paramtypes.Subs
 func (k Keeper) MigrateConsumerPacketData(ctx sdk.Context) {
 	// deserialize packet data from old format
 	var depreciatedType ccvtypes.ConsumerPacketDataList
-	store := k.storeService.OpenKVStore(ctx)
-	bz, err := store.Get([]byte{consumertypes.PendingDataPacketsBytePrefix})
-	if err != nil || bz == nil {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get([]byte{consumertypes.PendingDataPacketsBytePrefix})
+	if bz == nil {
 		ctx.Logger().Info("no pending data packets to migrate")
 		return
 	}
-	err = depreciatedType.Unmarshal(bz)
+	err := depreciatedType.Unmarshal(bz)
 	if err != nil {
 		// An error here would indicate something is very wrong
 		panic(fmt.Errorf("failed to unmarshal pending data packets: %w", err))
@@ -60,7 +60,7 @@ func PendingDataPacketsKeyOnlyForTesting() []byte {
 // Note: a better test of the old functionality would be to directly reference the old ICS version,
 // including the version of ccv.ConsumerPacketDataList has a list of ccv.ConsumerPacketData without indexes.
 func (k Keeper) SetPendingPacketsOnlyForTesting(ctx sdk.Context, packets ccvtypes.ConsumerPacketDataList) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	bz, err := packets.Marshal()
 	if err != nil {
 		// This should never happen

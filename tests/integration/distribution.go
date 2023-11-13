@@ -28,8 +28,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.providerChain.NextBlock()
 
 	// register a consumer reward denom
-	params, err := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
-	s.Require().NoError(err)
+	params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
 	params.RewardDenoms = []string{sdk.DefaultBondDenom}
 	s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
 
@@ -50,7 +49,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	consumerFeePoolAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), authtypes.FeeCollectorName).GetAddress()
 	feePoolTokensOld := consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerFeePoolAddr)
 	fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(100)))
-	err = consumerBankKeeper.SendCoinsFromAccountToModule(s.consumerCtx(), s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
+	err := consumerBankKeeper.SendCoinsFromAccountToModule(s.consumerCtx(), s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
 	s.Require().NoError(err)
 	feePoolTokens := consumerBankKeeper.GetAllBalances(s.consumerCtx(), consumerFeePoolAddr)
 	s.Require().Equal(math.NewInt(100).Add(feePoolTokensOld.AmountOf(sdk.DefaultBondDenom)), feePoolTokens.AmountOf(sdk.DefaultBondDenom))
@@ -140,9 +139,7 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 	s.providerChain.NextBlock()
 
 	// Register denom on consumer chain
-	params, err := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
-	s.Require().NoError(err)
-
+	params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
 	params.RewardDenoms = []string{sdk.DefaultBondDenom}
 	s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
 
@@ -158,7 +155,7 @@ func (s *CCVTestSuite) TestSendRewardsRetries() {
 
 	// fill fee pool
 	fees := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(100)))
-	err = consumerBankKeeper.SendCoinsFromAccountToModule(s.consumerCtx(),
+	err := consumerBankKeeper.SendCoinsFromAccountToModule(s.consumerCtx(),
 		s.consumerChain.SenderAccount.GetAddress(), authtypes.FeeCollectorName, fees)
 	s.Require().NoError(err)
 
@@ -271,8 +268,7 @@ func (s *CCVTestSuite) TestEndBlockRD() {
 		s.providerChain.NextBlock()
 
 		if tc.denomRegistered {
-			params, err := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
-			s.Require().NoError(err)
+			params := s.consumerApp.GetConsumerKeeper().GetConsumerParams(s.consumerCtx())
 			params.RewardDenoms = []string{sdk.DefaultBondDenom}
 			s.consumerApp.GetConsumerKeeper().SetParams(s.consumerCtx(), params)
 		}
@@ -342,13 +338,12 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 				s.SetupTransferChannel()
 
 				// register a consumer reward denom
-				params, err := keeper.GetConsumerParams(ctx)
-				s.Require().NoError(err)
+				params := keeper.GetConsumerParams(ctx)
 				params.RewardDenoms = []string{sdk.DefaultBondDenom}
 				keeper.SetParams(ctx, params)
 
 				// send coins to the pool which is used for collect reward distributions to be sent to the provider
-				err = bankKeeper.SendCoinsFromAccountToModule(
+				err := bankKeeper.SendCoinsFromAccountToModule(
 					ctx,
 					s.consumerChain.SenderAccount.GetAddress(),
 					consumertypes.ConsumerToSendToProviderName,
@@ -380,8 +375,7 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 				s.SetupTransferChannel()
 
 				// register a consumer reward denom
-				params, err := keeper.GetConsumerParams(ctx)
-				s.Require().NoError(err)
+				params := keeper.GetConsumerParams(ctx)
 				params.RewardDenoms = []string{"uatom"}
 				keeper.SetParams(ctx, params)
 
@@ -397,14 +391,13 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 				s.SetupTransferChannel()
 
 				// register a consumer reward denom
-				params, err := keeper.GetConsumerParams(ctx)
-				s.Require().NoError(err)
+				params := keeper.GetConsumerParams(ctx)
 				params.RewardDenoms = []string{sdk.DefaultBondDenom}
 				params.DistributionTransmissionChannel = ""
 				keeper.SetParams(ctx, params)
 
 				// send coins to the pool which is used for collect reward distributions to be sent to the provider
-				err = bankKeeper.SendCoinsFromAccountToModule(
+				err := bankKeeper.SendCoinsFromAccountToModule(
 					ctx,
 					s.consumerChain.SenderAccount.GetAddress(),
 					consumertypes.ConsumerToSendToProviderName,
@@ -421,14 +414,13 @@ func (s *CCVTestSuite) TestSendRewardsToProvider() {
 				s.SetupTransferChannel()
 
 				// register a consumer reward denom
-				params, err := keeper.GetConsumerParams(ctx)
-				s.Require().NoError(err)
+				params := keeper.GetConsumerParams(ctx)
 				params.RewardDenoms = []string{sdk.DefaultBondDenom}
 				params.ProviderFeePoolAddrStr = ""
 				keeper.SetParams(ctx, params)
 
 				// send coins to the pool which is used for collect reward distributions to be sent to the provider
-				err = bankKeeper.SendCoinsFromAccountToModule(
+				err := bankKeeper.SendCoinsFromAccountToModule(
 					ctx,
 					s.consumerChain.SenderAccount.GetAddress(),
 					consumertypes.ConsumerToSendToProviderName,

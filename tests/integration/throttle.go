@@ -308,8 +308,7 @@ func (s *CCVTestSuite) TestPacketSpam() {
 
 	// Explicitly set params, initialize slash meter
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	params, err := providerKeeper.GetParams(s.providerCtx())
-	s.Require().NoError(err)
+	params := providerKeeper.GetParams(s.providerCtx())
 	params.SlashMeterReplenishFraction = "0.75" // Allow 3/4 of validators to be jailed
 	providerKeeper.SetParams(s.providerCtx(), params)
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
@@ -377,8 +376,7 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 
 	// Explicitly set params, initialize slash meter
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	params, err := providerKeeper.GetParams(s.providerCtx())
-	s.Require().NoError(err)
+	params := providerKeeper.GetParams(s.providerCtx())
 	params.SlashMeterReplenishFraction = "0.1"
 	providerKeeper.SetParams(s.providerCtx(), params)
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
@@ -471,8 +469,7 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 
 	// Explicitly set params, initialize slash meter
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	params, err := providerKeeper.GetParams(s.providerCtx())
-	s.Require().NoError(err)
+	params := providerKeeper.GetParams(s.providerCtx())
 	params.SlashMeterReplenishFraction = "0.05" // 5% total power can be jailed
 	providerKeeper.SetParams(s.providerCtx(), params)
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
@@ -709,8 +706,7 @@ func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
 	s.Require().Equal(int64(200), providerKeeper.GetSlashMeterAllowance(s.providerCtx()).Int64())
 
 	// Now we change replenish fraction and assert new expected allowance.
-	params, err := providerKeeper.GetParams(s.providerCtx())
-	s.Require().NoError(err)
+	params := providerKeeper.GetParams(s.providerCtx())
 	params.SlashMeterReplenishFraction = "0.3"
 	providerKeeper.SetParams(s.providerCtx(), params)
 	s.Require().Equal(int64(1200), providerKeeper.GetSlashMeterAllowance(s.providerCtx()).Int64())
@@ -729,8 +725,7 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	// Set replenish fraction to 1.0 so that all sent packets should handled immediately (no throttling)
-	params, err := providerKeeper.GetParams(s.providerCtx())
-	s.Require().NoError(err)
+	params := providerKeeper.GetParams(s.providerCtx())
 	params.SlashMeterReplenishFraction = fullSlashMeterString // needs to be const for linter
 	providerKeeper.SetParams(s.providerCtx(), params)
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
@@ -790,8 +785,7 @@ func (s CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a tes
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	// Set replenish fraction to 1.0 so that all sent packets should be handled immediately (no throttling)
-	params, err := providerKeeper.GetParams(s.providerCtx())
-	s.Require().NoError(err)
+	params := providerKeeper.GetParams(s.providerCtx())
 	params.SlashMeterReplenishFraction = fullSlashMeterString // needs to be const for linter
 	providerKeeper.SetParams(s.providerCtx(), params)
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
@@ -945,9 +939,7 @@ func (s *CCVTestSuite) TestVscMaturedHandledPerBlockLimit() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	// Set replenish fraction to 1.0 so that all sent packets should be handled immediately (no jail throttling)
-	params, err := providerKeeper.GetParams(s.providerCtx())
-	s.Require().NoError(err)
-
+	params := providerKeeper.GetParams(s.providerCtx())
 	params.SlashMeterReplenishFraction = fullSlashMeterString // needs to be const for linter
 	providerKeeper.SetParams(s.providerCtx(), params)
 	providerKeeper.InitializeSlashMeter(s.providerCtx())

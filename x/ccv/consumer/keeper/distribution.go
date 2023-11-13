@@ -204,10 +204,10 @@ func (k Keeper) AllowedRewardDenoms(ctx sdk.Context) []string {
 }
 
 func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) ccv.LastTransmissionBlockHeight {
-	store := k.storeService.OpenKVStore(ctx)
-	bz, err := store.Get(types.LastDistributionTransmissionKey())
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.LastDistributionTransmissionKey())
 	ltbh := ccv.LastTransmissionBlockHeight{}
-	if err == nil && bz != nil {
+	if bz != nil {
 		if err := ltbh.Unmarshal(bz); err != nil {
 			panic(fmt.Errorf("failed to unmarshal LastTransmissionBlockHeight: %w", err))
 		}
@@ -216,7 +216,7 @@ func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) ccv.LastTransmis
 }
 
 func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context, ltbh ccv.LastTransmissionBlockHeight) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	bz, err := ltbh.Marshal()
 	if err != nil {
 		panic(fmt.Errorf("failed to marshal LastTransmissionBlockHeight: %w", err))

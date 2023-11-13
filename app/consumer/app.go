@@ -357,7 +357,8 @@ func New(
 	// communication over IBC is not affected by these changes
 	app.ConsumerKeeper = ibcconsumerkeeper.NewNonZeroKeeper(
 		appCodec,
-		runtime.NewKVStoreService(keys[ibcconsumertypes.StoreKey]),
+		keys[ibcconsumertypes.StoreKey],
+		app.GetSubspace(ibcconsumertypes.ModuleName),
 	)
 
 	app.IBCKeeper = ibckeeper.NewKeeper(
@@ -373,7 +374,8 @@ func New(
 	// initialize the actual consumer keeper
 	app.ConsumerKeeper = ibcconsumerkeeper.NewKeeper(
 		appCodec,
-		runtime.NewKVStoreService(keys[ibcconsumertypes.StoreKey]),
+		keys[ibcconsumertypes.StoreKey],
+		app.GetSubspace(ibcconsumertypes.ModuleName),
 		scopedIBCConsumerKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.PortKeeper,

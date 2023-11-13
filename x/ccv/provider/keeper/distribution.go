@@ -1,8 +1,9 @@
 package keeper
 
 import (
-	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
@@ -24,38 +25,31 @@ func (k Keeper) SetConsumerRewardDenom(
 	ctx sdk.Context,
 	denom string,
 ) {
-	store := k.storeService.OpenKVStore(ctx)
-	err := store.Set(types.ConsumerRewardDenomsKey(denom), []byte{})
-	if err != nil {
-		k.Logger(ctx).Error("Error setting consumer reward denoms: %v", err)
-	}
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ConsumerRewardDenomsKey(denom), []byte{})
 }
 
 func (k Keeper) ConsumerRewardDenomExists(
 	ctx sdk.Context,
 	denom string,
 ) bool {
-	store := k.storeService.OpenKVStore(ctx)
-	bz, err := store.Get(types.ConsumerRewardDenomsKey(denom))
-	return err == nil && bz != nil
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerRewardDenomsKey(denom))
+	return bz != nil
 }
 
 func (k Keeper) DeleteConsumerRewardDenom(
 	ctx sdk.Context,
 	denom string,
 ) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerRewardDenomsKey(denom))
 }
 
 func (k Keeper) GetAllConsumerRewardDenoms(ctx sdk.Context) (consumerRewardDenoms []string) {
-	store := k.storeService.OpenKVStore(ctx)
-	prefix := []byte{types.ConsumerRewardDenomsBytePrefix}
-	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
-	if err != nil {
-		k.Logger(ctx).Error("Error iterating over all consumer reward denoms: %v", err)
-		return
-	}
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ConsumerRewardDenomsBytePrefix})
+
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()[1:]

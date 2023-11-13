@@ -147,9 +147,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	// Expect slash meter to be initialized to it's allowance value
 	// (replenish fraction * mocked value defined above)
 	slashMeter := pk.GetSlashMeter(ctx)
-	params, err := pk.GetParams(ctx)
-	require.NoError(t, err)
-	replenishFraction, err := math.LegacyNewDecFromStr(params.SlashMeterReplenishFraction)
+	replenishFraction, err := math.LegacyNewDecFromStr(pk.GetParams(ctx).SlashMeterReplenishFraction)
 	require.NoError(t, err)
 	expectedSlashMeterValue := math.NewInt(replenishFraction.MulInt(math.NewInt(100)).RoundInt64())
 	require.Equal(t, expectedSlashMeterValue, slashMeter)
@@ -175,7 +173,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, provGenesis.ConsumerAdditionProposals[0], addProp)
 	require.True(t, pk.PendingConsumerRemovalPropExists(ctx, cChainIDs[0], oneHourFromNow))
-	require.Equal(t, provGenesis.Params, params)
+	require.Equal(t, provGenesis.Params, pk.GetParams(ctx))
 
 	gotConsTmPubKey, found := pk.GetValidatorConsumerPubKey(ctx, cChainIDs[0], provAddr)
 	require.True(t, found)

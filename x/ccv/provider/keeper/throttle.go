@@ -229,7 +229,7 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) math.Int {
 // between chains, whereas the chain-specific queue is used to coordinate the order of slash and vsc matured packets
 // relevant to each chain.
 func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context, entry providertypes.GlobalSlashEntry) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	key := providertypes.GlobalSlashEntryKey(entry)
 	bz := entry.ProviderValConsAddr
 	store.Set(key, bz)
@@ -255,13 +255,8 @@ func (k Keeper) DeleteGlobalSlashEntriesForConsumer(ctx sdktypes.Context, consum
 // GlobalSlashEntryBytePrefix | uint64 recv time | ibc seq num | consumer chain id
 // Thus, the returned array is ordered by recv time, then ibc seq num.
 func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.GlobalSlashEntry {
-	store := k.storeService.OpenKVStore(ctx)
-	prefix := []byte{providertypes.GlobalSlashEntryBytePrefix}
-	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
-	if err != nil {
-		k.Logger(ctx).Error("error getting all global slash entries: %v", err)
-		return []providertypes.GlobalSlashEntry{}
-	}
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, []byte{providertypes.GlobalSlashEntryBytePrefix})
 	defer iterator.Close()
 
 	entries := []providertypes.GlobalSlashEntry{}
@@ -279,7 +274,7 @@ func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.G
 
 // DeleteGlobalSlashEntries deletes the given global entries from the global slash queue
 func (k Keeper) DeleteGlobalSlashEntries(ctx sdktypes.Context, entries ...providertypes.GlobalSlashEntry) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	for _, entry := range entries {
 		store.Delete(providertypes.GlobalSlashEntryKey(entry))
 	}
@@ -293,11 +288,11 @@ const (
 
 // GetThrottledPacketDataSize returns the size of the throttled packet data queue for the given consumer chain
 func (k Keeper) GetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID string) uint64 {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	key := providertypes.ThrottledPacketDataSizeKey(consumerChainID)
 	var size uint64
-	bz, err := store.Get(key)
-	if err != nil || bz == nil {
+	bz := store.Get(key)
+	if bz == nil {
 		size = 0
 	} else {
 		size = sdktypes.BigEndianToUint64(bz)
@@ -314,7 +309,7 @@ func (k Keeper) SetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID
 		panic(fmt.Sprintf("throttled packet data queue for chain %s is too large: %d", consumerChainID, size))
 	}
 
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	key := providertypes.ThrottledPacketDataSizeKey(consumerChainID)
 	bz := sdktypes.Uint64ToBigEndian(size)
 	store.Set(key, bz)
@@ -358,7 +353,7 @@ func (k Keeper) QueueThrottledVSCMaturedPacketData(
 func (k Keeper) QueueThrottledPacketData(
 	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{},
 ) error {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 
 	var bz []byte
 	var err error
@@ -392,13 +387,9 @@ func (k Keeper) QueueThrottledPacketData(
 func (k Keeper) GetLeadingVSCMaturedData(ctx sdktypes.Context, consumerChainID string) (
 	vscMaturedData []ccvtypes.VSCMaturedPacketData, ibcSeqNums []uint64,
 ) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
-	iterator, err := store.Iterator(iteratorPrefix, storetypes.PrefixEndBytes(iteratorPrefix))
-	if err != nil {
-		k.Logger(ctx).Error("error getting leading VSC matured packets: %v", err)
-		return []ccvtypes.VSCMaturedPacketData{}, []uint64{}
-	}
+	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 
 	// Iterate over the throttled packet data queue,
@@ -446,13 +437,9 @@ func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID st
 	// data after it has been handled.
 	ibcSeqNums []uint64,
 ) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
-	iterator, err := store.Iterator(iteratorPrefix, storetypes.PrefixEndBytes(iteratorPrefix))
-	if err != nil {
-		k.Logger(ctx).Error("error getting first slash packet data: %v", err)
-		return false, slashData, []ccvtypes.VSCMaturedPacketData{}, []uint64{}
-	}
+	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 
 	slashFound = false
@@ -509,13 +496,9 @@ func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID 
 	rawOrderedData = []interface{}{}
 	ibcSeqNums = []uint64{}
 
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
-	iterator, err := store.Iterator(iteratorPrefix, storetypes.PrefixEndBytes(iteratorPrefix))
-	if err != nil {
-		k.Logger(ctx).Error("error getting all throttled packets: %v", err)
-		return
-	}
+	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -554,13 +537,9 @@ func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID 
 
 // DeleteAllPacketDataForConsumer deletes all queued packet data for the given consumer chain.
 func (k Keeper) DeleteThrottledPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
-	iterator, err := store.Iterator(iteratorPrefix, storetypes.PrefixEndBytes(iteratorPrefix))
-	if err != nil {
-		k.Logger(ctx).Error("error deleting all queued packets for consumer chain %s: %v", consumerChainID, err)
-		return
-	}
+	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 
 	keysToDel := [][]byte{}
@@ -579,7 +558,7 @@ func (k Keeper) DeleteThrottledPacketDataForConsumer(ctx sdktypes.Context, consu
 // DeleteThrottledPacketData deletes the given throttled packet data instances
 // (specified by their ibc seq number) from the chain-specific throttled packet data queue.
 func (k Keeper) DeleteThrottledPacketData(ctx sdktypes.Context, consumerChainID string, ibcSeqNumbers ...uint64) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	for _, ibcSeqNum := range ibcSeqNumbers {
 		store.Delete(providertypes.ThrottledPacketDataKey(consumerChainID, ibcSeqNum))
 	}
@@ -593,15 +572,15 @@ func (k Keeper) DeleteThrottledPacketData(ctx sdktypes.Context, consumerChainID 
 //
 // Note: the value of this int should always be in the range of tendermint's [-MaxVotingPower, MaxVotingPower]
 func (k Keeper) GetSlashMeter(ctx sdktypes.Context) math.Int {
-	store := k.storeService.OpenKVStore(ctx)
-	bz, err := store.Get(providertypes.SlashMeterKey())
-	if err != nil || bz == nil {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(providertypes.SlashMeterKey())
+	if bz == nil {
 		// Slash meter should be set as a part of InitGenesis and periodically updated by throttle logic,
 		// there is no deletion method exposed, so nil bytes would indicate something is very wrong.
 		panic("slash meter not set")
 	}
 	value := math.ZeroInt()
-	err = value.Unmarshal(bz)
+	err := value.Unmarshal(bz)
 	if err != nil {
 		// We should have obtained value bytes that were serialized in SetSlashMeter,
 		// so an error here would indicate something is very wrong.
@@ -628,7 +607,7 @@ func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value math.Int) {
 	if value.LT(math.NewInt(-tmtypes.MaxTotalVotingPower)) {
 		panic("slash meter value cannot be less than negative tendermint's MaxTotalVotingPower")
 	}
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	bz, err := value.Marshal()
 	if err != nil {
 		// A returned error for marshaling an int would indicate something is very wrong.
@@ -642,9 +621,9 @@ func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value math.Int) {
 // Note: this value is the next time the slash meter will be replenished IFF the slash meter is NOT full.
 // Otherwise this value will be updated in every future block until the slash meter becomes NOT full.
 func (k Keeper) GetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context) time.Time {
-	store := k.storeService.OpenKVStore(ctx)
-	bz, err := store.Get(providertypes.SlashMeterReplenishTimeCandidateKey())
-	if err != nil || bz == nil {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(providertypes.SlashMeterReplenishTimeCandidateKey())
+	if bz == nil {
 		// Slash meter replenish time candidate should be set as a part of InitGenesis and periodically updated by throttle logic,
 		// there is no deletion method exposed, so nil bytes would indicate something is very wrong.
 		panic("slash meter replenish time candidate not set")
@@ -664,7 +643,7 @@ func (k Keeper) GetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context) time.T
 // Note: this value is the next time the slash meter will be replenished IFF the slash meter is NOT full.
 // Otherwise this value will be updated in every future block until the slash meter becomes NOT full.
 func (k Keeper) SetSlashMeterReplenishTimeCandidate(ctx sdktypes.Context) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	timeToStore := ctx.BlockTime().UTC().Add(k.GetSlashMeterReplenishPeriod(ctx))
 	store.Set(providertypes.SlashMeterReplenishTimeCandidateKey(), sdktypes.FormatTimeBytes(timeToStore))
 }

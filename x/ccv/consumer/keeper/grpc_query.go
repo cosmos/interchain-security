@@ -36,10 +36,7 @@ func (k Keeper) QueryParams(c context.Context, //nolint:golint
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	p, err := k.GetConsumerParams(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "no consumer parameters found")
-	}
+	p := k.GetConsumerParams(ctx)
 
 	return &types.QueryParamsResponse{Params: p}, nil
 }

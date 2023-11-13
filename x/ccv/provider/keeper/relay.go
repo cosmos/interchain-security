@@ -514,10 +514,6 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 		}
 	}
 
-	params, err := k.GetParams(ctx)
-	if err != nil {
-		panic(fmt.Errorf("invalid provider parameters: %v", err))
-	}
 	for _, channelToChain := range k.GetAllChannelToChains(ctx) {
 		// Check if the first vscSendTimestamp in iterator + VscTimeoutPeriod
 		// exceed the current block time.
@@ -526,7 +522,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 		// Note: GetFirstVscSendTimestamp panics if the internal state is invalid
 		vscSendTimestamp, found := k.GetFirstVscSendTimestamp(ctx, channelToChain.ChainId)
 		if found {
-			timeoutTimestamp := vscSendTimestamp.Timestamp.Add(params.VscTimeoutPeriod)
+			timeoutTimestamp := vscSendTimestamp.Timestamp.Add(k.GetParams(ctx).VscTimeoutPeriod)
 			if currentTime.After(timeoutTimestamp) {
 				// vscTimeout expired
 				// stop the consumer chain and release unbondings

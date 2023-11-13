@@ -22,12 +22,12 @@ func (k Keeper) GetValidatorConsumerPubKey(
 	chainID string,
 	providerAddr types.ProviderConsAddress,
 ) (consumerKey tmprotocrypto.PublicKey, found bool) {
-	store := k.storeService.OpenKVStore(ctx)
-	bz, err := store.Get(types.ConsumerValidatorsKey(chainID, providerAddr))
-	if err != nil || bz == nil {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerValidatorsKey(chainID, providerAddr))
+	if bz == nil {
 		return consumerKey, false
 	}
-	err = consumerKey.Unmarshal(bz)
+	err := consumerKey.Unmarshal(bz)
 	if err != nil {
 		// An error here would indicate something is very wrong,
 		// the consumer key is assumed to be correctly serialized in SetValidatorConsumerPubKey.
@@ -43,7 +43,7 @@ func (k Keeper) SetValidatorConsumerPubKey(
 	providerAddr types.ProviderConsAddress,
 	consumerKey tmprotocrypto.PublicKey,
 ) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	bz, err := consumerKey.Marshal()
 	if err != nil {
 		// An error here would indicate something is very wrong,
@@ -62,7 +62,7 @@ func (k Keeper) SetValidatorConsumerPubKey(
 //   - in ascending order of providerAddresses, if chainID is not nil;
 //   - in undetermined order, if chainID is nil.
 func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID *string) (validatorConsumerPubKeys []types.ValidatorConsumerPubKey) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	var prefix []byte
 	if chainID == nil {
 		// iterate over the validators public keys assigned for all consumer chains
@@ -71,13 +71,8 @@ func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID *string)
 		// iterate over the validators public keys assigned for chainID
 		prefix = types.ChainIdWithLenKey(types.ConsumerValidatorsBytePrefix, *chainID)
 	}
-	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
-	if err != nil {
-		k.Logger(ctx).Error("error getting public keys of a all validators of chain %s: %v", chainID, err)
-		return
-	}
+	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
-
 	for ; iterator.Valid(); iterator.Next() {
 		// TODO: store chainID and provider cons address in value bytes, marshaled as protobuf type
 		chainID, providerAddrTmp, err := types.ParseChainIdAndConsAddrKey(types.ConsumerValidatorsBytePrefix, iterator.Key())
@@ -107,7 +102,7 @@ func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID *string)
 
 // DeleteValidatorConsumerPubKey deletes a validator's public key assigned for a consumer chain
 func (k Keeper) DeleteValidatorConsumerPubKey(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerValidatorsKey(chainID, providerAddr))
 }
 
@@ -118,9 +113,9 @@ func (k Keeper) GetValidatorByConsumerAddr(
 	chainID string,
 	consumerAddr types.ConsumerConsAddress,
 ) (providerAddr types.ProviderConsAddress, found bool) {
-	store := k.storeService.OpenKVStore(ctx)
-	bz, err := store.Get(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr))
-	if err != nil || bz == nil {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr))
+	if bz == nil {
 		return providerAddr, false
 	}
 	providerAddr = types.NewProviderConsAddress(bz)
@@ -135,7 +130,7 @@ func (k Keeper) SetValidatorByConsumerAddr(
 	consumerAddr types.ConsumerConsAddress,
 	providerAddr types.ProviderConsAddress,
 ) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	// Cons address is a type alias for a byte string, no marshaling needed
 	bz := providerAddr.ToSdkConsAddr()
 	store.Set(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr), bz)
@@ -151,7 +146,7 @@ func (k Keeper) SetValidatorByConsumerAddr(
 //   - in ascending order of consumerAddresses, if chainID is not nil;
 //   - in undetermined order, if chainID is nil.
 func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	var prefix []byte
 	if chainID == nil {
 		// iterate over the mappings from consensus addresses on all consumer chains
@@ -160,14 +155,8 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string)
 		// iterate over the mappings from consensus addresses on chainID
 		prefix = types.ChainIdWithLenKey(types.ValidatorsByConsumerAddrBytePrefix, *chainID)
 	}
-
-	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
-	if err != nil {
-		k.Logger(ctx).Error("error getting all validators by consumer address: %v", err)
-		return []types.ValidatorByConsumerAddr{}
-	}
+	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
-
 	for ; iterator.Valid(); iterator.Next() {
 		// TODO: store chainID and consumer cons address in value bytes, marshaled as protobuf type
 		chainID, consumerAddrTmp, err := types.ParseChainIdAndConsAddrKey(types.ValidatorsByConsumerAddrBytePrefix, iterator.Key())
@@ -192,7 +181,7 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string)
 // DeleteValidatorByConsumerAddr deletes the mapping from a validator's consensus address on a consumer
 // to the validator's consensus address on the provider
 func (k Keeper) DeleteValidatorByConsumerAddr(ctx sdk.Context, chainID string, consumerAddr types.ConsumerConsAddress) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr))
 }
 
@@ -205,13 +194,13 @@ func (k Keeper) GetKeyAssignmentReplacement(
 	providerAddr types.ProviderConsAddress,
 ) (prevCKey tmprotocrypto.PublicKey, power int64, found bool) {
 	var pubKeyAndPower abci.ValidatorUpdate
-	store := k.storeService.OpenKVStore(ctx)
-	bz, err := store.Get(types.KeyAssignmentReplacementsKey(chainID, providerAddr))
-	if err != nil || bz == nil {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.KeyAssignmentReplacementsKey(chainID, providerAddr))
+	if bz == nil {
 		return pubKeyAndPower.PubKey, pubKeyAndPower.Power, false
 	}
 
-	err = pubKeyAndPower.Unmarshal(bz)
+	err := pubKeyAndPower.Unmarshal(bz)
 	if err != nil {
 		// An error here would indicate something is very wrong,
 		// the public key and power are assumed to be correctly serialized in SetKeyAssignmentReplacement.
@@ -230,7 +219,7 @@ func (k Keeper) SetKeyAssignmentReplacement(
 	prevCKey tmprotocrypto.PublicKey,
 	power int64,
 ) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	pubKeyAndPower := abci.ValidatorUpdate{PubKey: prevCKey, Power: power}
 	bz, err := pubKeyAndPower.Marshal()
 	if err != nil {
@@ -250,15 +239,10 @@ func (k Keeper) SetKeyAssignmentReplacement(
 // KeyAssignmentReplacementsBytePrefix | len(chainID) | chainID | providerAddress
 // Thus, the iteration is in ascending order of providerAddresses.
 func (k Keeper) GetAllKeyAssignmentReplacements(ctx sdk.Context, chainID string) (replacements []types.KeyAssignmentReplacement) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := types.ChainIdWithLenKey(types.KeyAssignmentReplacementsBytePrefix, chainID)
-	iterator, err := store.Iterator(iteratorPrefix, storetypes.PrefixEndBytes(iteratorPrefix))
-	if err != nil {
-		k.Logger(ctx).Error("error getting all paris of previous assigned consumer keys: %v", err)
-		return []types.KeyAssignmentReplacement{}
-	}
+	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
-
 	for ; iterator.Valid(); iterator.Next() {
 		// TODO: store chainID and provider cons address in value bytes, marshaled as protobuf type
 		_, providerAddrTmp, err := types.ParseChainIdAndConsAddrKey(types.KeyAssignmentReplacementsBytePrefix, iterator.Key())
@@ -290,7 +274,7 @@ func (k Keeper) GetAllKeyAssignmentReplacements(ctx sdk.Context, chainID string)
 // for a provider validator for which a key assignment was received in this block. Both are
 // needed to update the validator's power on the consumer chain at the end of the current block.
 func (k Keeper) DeleteKeyAssignmentReplacement(ctx sdk.Context, chainID string, providerAddr types.ProviderConsAddress) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.KeyAssignmentReplacementsKey(chainID, providerAddr))
 }
 
@@ -303,10 +287,10 @@ func (k Keeper) DeleteKeyAssignmentReplacement(ctx sdk.Context, chainID string, 
 //     s.t. hash(ValidatorConsumerPubKey(pAddr)) = cAddr
 //   - or there exists a vscID in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(vscID)
 func (k Keeper) AppendConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID uint64, consumerAddr types.ConsumerConsAddress) {
-	store := k.storeService.OpenKVStore(ctx)
-	bz, err := store.Get(types.ConsumerAddrsToPruneKey(chainID, vscID))
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerAddrsToPruneKey(chainID, vscID))
 	var consumerAddrsToPrune types.AddressList
-	if err == nil && bz != nil {
+	if bz != nil {
 		err := consumerAddrsToPrune.Unmarshal(bz)
 		if err != nil {
 			// An error here would indicate something is very wrong,
@@ -315,7 +299,7 @@ func (k Keeper) AppendConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscI
 		}
 	}
 	consumerAddrsToPrune.Addresses = append(consumerAddrsToPrune.Addresses, consumerAddr.ToSdkConsAddr())
-	bz, err = consumerAddrsToPrune.Marshal()
+	bz, err := consumerAddrsToPrune.Marshal()
 	if err != nil {
 		// An error here would indicate something is very wrong,
 		// consumerAddrsToPrune is instantiated in this method and should be able to be marshaled.
@@ -331,12 +315,12 @@ func (k Keeper) GetConsumerAddrsToPrune(
 	chainID string,
 	vscID uint64,
 ) (consumerAddrsToPrune types.AddressList) {
-	store := k.storeService.OpenKVStore(ctx)
-	bz, err := store.Get(types.ConsumerAddrsToPruneKey(chainID, vscID))
-	if err != nil || bz == nil {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerAddrsToPruneKey(chainID, vscID))
+	if bz == nil {
 		return
 	}
-	err = consumerAddrsToPrune.Unmarshal(bz)
+	err := consumerAddrsToPrune.Unmarshal(bz)
 	if err != nil {
 		// An error here would indicate something is very wrong,
 		// the list of consumer addresses is assumed to be correctly serialized in AppendConsumerAddrsToPrune.
@@ -351,15 +335,10 @@ func (k Keeper) GetConsumerAddrsToPrune(
 // ConsumerAddrsToPruneBytePrefix | len(chainID) | chainID | vscID
 // Thus, the returned array is in ascending order of vscIDs.
 func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, chainID string) (consumerAddrsToPrune []types.ConsumerAddrsToPrune) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := types.ChainIdWithLenKey(types.ConsumerAddrsToPruneBytePrefix, chainID)
-	iterator, err := store.Iterator(iteratorPrefix, storetypes.PrefixEndBytes(iteratorPrefix))
-	if err != nil {
-		k.Logger(ctx).Error("error getting all consumer addresses to be pruned: %v", err)
-		return
-	}
+	iterator := storetypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
-
 	for ; iterator.Valid(); iterator.Next() {
 		_, vscID, err := types.ParseChainIdAndUintIdKey(types.ConsumerAddrsToPruneBytePrefix, iterator.Key())
 		if err != nil {
@@ -387,7 +366,7 @@ func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, chainID string) (con
 
 // DeleteConsumerAddrsToPrune deletes the list of consumer addresses mapped to a given VSC ID
 func (k Keeper) DeleteConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID uint64) {
-	store := k.storeService.OpenKVStore(ctx)
+	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerAddrsToPruneKey(chainID, vscID))
 }
 
