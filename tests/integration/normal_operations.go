@@ -5,10 +5,16 @@ import (
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
+// TODO: Refactor -> this test is difficult to figure out and follow
+// * There are new validators being added
+// * There are calls to NextBlock() that are not obvious why they are there and what is going on (or why)
+// * There is a tmproto.Header that is being used for something that is not obvious
+//
 // Tests the tracking of historical info in the context of new blocks being committed
 func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so we can copy locks
 	consumerKeeper := k.consumerApp.GetConsumerKeeper()
@@ -60,30 +66,30 @@ func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so
 	// is below CurrentHeight - HistoricalEntries, and check that their valset gets updated
 	testCases := []struct {
 		height int64
-		found  bool
+		err    error
 		expLen int
 	}{
 		{
+			height: initHeight,
+			err:    nil,
+			expLen: initValsetLen + 1,
+		},
+		{
 			height: initHeight + 1,
-			found:  false,
-			expLen: 0,
-		},
-		{
-			height: initHeight + 2,
-			found:  false,
-			expLen: 0,
-		},
-		{
-			height: initHeight + ccvtypes.DefaultHistoricalEntries + 2,
-			found:  true,
+			err:    nil,
 			expLen: initValsetLen + 2,
+		},
+		{
+			height: initHeight + ccvtypes.DefaultHistoricalEntries + 3,
+			err:    stakingtypes.ErrNoHistoricalInfo,
+			expLen: 0,
 		},
 	}
 
 	for _, tc := range testCases {
 		cCtx().WithBlockHeight(tc.height)
-		hi, found := consumerKeeper.GetHistoricalInfo(cCtx().WithBlockHeight(tc.height), tc.height)
-		k.Require().Equal(tc.found, found)
+		hi, err := consumerKeeper.GetHistoricalInfo(cCtx().WithBlockHeight(tc.height), tc.height)
+		k.Require().ErrorIs(err, tc.err)
 		k.Require().Len(hi.Valset, tc.expLen)
 	}
 }

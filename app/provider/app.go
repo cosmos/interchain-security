@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	stdlog "log"
 	"os"
 	"path/filepath"
 
@@ -32,6 +31,7 @@ import (
 	"cosmossdk.io/x/evidence"
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
 	evidencetypes "cosmossdk.io/x/evidence/types"
+	"cosmossdk.io/x/tx/signing"
 	"cosmossdk.io/x/upgrade"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
@@ -41,6 +41,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
@@ -59,6 +60,8 @@ import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	"github.com/cosmos/cosmos-sdk/x/auth/posthandler"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+
+	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
@@ -104,6 +107,8 @@ import (
 	tmos "github.com/cometbft/cometbft/libs/os"
 	dbm "github.com/cosmos/cosmos-db"
 
+	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
+
 	appparams "github.com/cosmos/interchain-security/v3/app/params"
 	testutil "github.com/cosmos/interchain-security/v3/testutil/integration"
 	icsprovider "github.com/cosmos/interchain-security/v3/x/ccv/provider"
@@ -113,9 +118,8 @@ import (
 )
 
 const (
-	AppName              = "interchain-security-p"
-	upgradeName          = "ics-v1-to-v2"
-	AccountAddressPrefix = "cosmos"
+	AppName     = "interchain-security-p"
+	upgradeName = "ics-v1-to-v2"
 )
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -230,7 +234,7 @@ type App struct { // nolint: golint
 func init() {
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
-		stdlog.Println("Failed to get home dir %2", err)
+		panic(fmt.Sprintf("Failed to get home dir %v", err))
 	}
 
 	DefaultNodeHome = filepath.Join(userHomeDir, "."+AppName)
@@ -245,15 +249,23 @@ func New(
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
-	encodingConfig := makeEncodingConfig()
+	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
+		ProtoFiles: proto.HybridResolver,
+		SigningOptions: signing.Options{
+			AddressCodec: address.Bech32Codec{
+				Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
+			},
+			ValidatorAddressCodec: address.Bech32Codec{
+				Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
+			},
+		},
+	})
+	appCodec := codec.NewProtoCodec(interfaceRegistry)
+	legacyAmino := codec.NewLegacyAmino()
+	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
 
-	interfaceRegistry := encodingConfig.InterfaceRegistry
-	appCodec := encodingConfig.Codec
-	legacyAmino := encodingConfig.Amino
-	txConfig := encodingConfig.TxConfig
 	std.RegisterLegacyAminoCodec(legacyAmino)
 	std.RegisterInterfaces(interfaceRegistry)
-
 	// ABCI++, v50
 	voteExtOp := func(bApp *baseapp.BaseApp) {
 		voteExtHandler := NewVoteExtensionHandler()
@@ -560,6 +572,21 @@ func New(
 	ModuleBasics.RegisterLegacyAminoCodec(app.legacyAmino)
 	ModuleBasics.RegisterInterfaces(app.interfaceRegistry)
 
+	enabledSignModes := append(authtx.DefaultSignModes,
+		sigtypes.SignMode_SIGN_MODE_TEXTUAL)
+	txConfigOpts := authtx.ConfigOptions{
+		EnabledSignModes:           enabledSignModes,
+		TextualCoinMetadataQueryFn: txmodule.NewBankKeeperCoinMetadataQueryFn(app.BankKeeper),
+	}
+	txConfig, err := authtx.NewTxConfigWithOptions(
+		appCodec,
+		txConfigOpts,
+	)
+	if err != nil {
+		panic(err)
+	}
+	app.txConfig = txConfig
+
 	app.MM.SetOrderPreBlockers(
 		upgradetypes.ModuleName,
 	)
@@ -638,7 +665,7 @@ func New(
 
 	app.MM.RegisterInvariants(&app.CrisisKeeper)
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
-	err := app.MM.RegisterServices(app.configurator)
+	err = app.MM.RegisterServices(app.configurator)
 	if err != nil {
 		panic(err)
 	}
@@ -699,7 +726,7 @@ func New(
 			HandlerOptions: ante.HandlerOptions{
 				AccountKeeper:   app.AccountKeeper,
 				BankKeeper:      app.BankKeeper,
-				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
+				SignModeHandler: txConfig.SignModeHandler(),
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
 			IBCKeeper: app.IBCKeeper,
