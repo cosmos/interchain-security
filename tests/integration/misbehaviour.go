@@ -95,6 +95,15 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
 	altSigners[clientTMValset.Validators[2].Address.String()] = clientSigners[clientTMValset.Validators[2].Address.String()]
 
+	// maliciousSigner := tmtypes.NewMockPV()
+
+	// // Create a subset of the consumer client validator set
+	// altValset2 := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:3])
+	// altSigners2 := make(map[string]tmtypes.PrivValidator, 3)
+	// altSigners2[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
+	// altSigners2[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
+	// altSigners2[clientTMValset.Validators[2].Address.String()] = maliciousSigner
+
 	// create a consumer client header
 	clientHeader := s.consumerChain.CreateTMClientHeader(
 		s.consumerChain.ChainID,
@@ -133,6 +142,81 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 				}
 			},
 			nil,
+			false,
+		},
+		{
+			"incorrect valset - shouldn't pass",
+			func() *ibctmtypes.Misbehaviour {
+				clientHeader := s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					altTime.Add(time.Minute),
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				)
+
+				// create conflicting header with 2/4 validators voting nil
+				clientHeaderWithNilVotes := s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					altTime.Add(time.Hour),
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				)
+
+				testutil.CorruptValidatorPubkeyInHeader(clientHeaderWithNilVotes, clientTMValset.Validators[0].Address)
+
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1:  clientHeader,
+					Header2:  clientHeaderWithNilVotes,
+				}
+			},
+			// Expect validators who did NOT vote nil
+			[]*tmtypes.Validator{},
+			false,
+		},
+		{
+			"incorrect signatures - shouldn't pass",
+			func() *ibctmtypes.Misbehaviour {
+				clientHeader := s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					altTime.Add(time.Minute),
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				)
+
+				// create conflicting header with 2/4 validators voting nil
+				clientHeaderWithNilVotes := s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					altTime.Add(time.Hour),
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				)
+				testutil.CorruptCommitSigsInHeader(clientHeaderWithNilVotes, clientTMValset.Validators[0].Address)
+
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1:  clientHeader,
+					Header2:  clientHeaderWithNilVotes,
+				}
+			},
+			// Expect validators who did NOT vote nil
+			[]*tmtypes.Validator{},
 			false,
 		},
 		{
@@ -212,43 +296,6 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 			[]*tmtypes.Validator{},
 			true,
 		},
-		{
-			"validators who did vote nil should not be returned",
-			func() *ibctmtypes.Misbehaviour {
-				clientHeader := s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					altTime.Add(time.Minute),
-					clientTMValset,
-					clientTMValset,
-					clientTMValset,
-					clientSigners,
-				)
-
-				// create conflicting header with 2/4 validators voting nil
-				clientHeaderWithNilVotes := s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					altTime.Add(time.Hour),
-					clientTMValset,
-					clientTMValset,
-					clientTMValset,
-					clientSigners,
-				)
-				testutil.UpdateHeaderCommitWithNilVotes(clientHeaderWithNilVotes, clientTMValset.Validators[:2])
-
-				return &ibctmtypes.Misbehaviour{
-					ClientId: s.path.EndpointA.ClientID,
-					Header1:  clientHeader,
-					Header2:  clientHeaderWithNilVotes,
-				}
-			},
-			// Expect validators who did NOT vote nil
-			clientTMValset.Validators[2:],
-			true,
-		},
 	}
 
 	for _, tc := range testCases {
@@ -299,9 +346,14 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 
 	// create an alternative validator set using more than 1/3 of the trusted validator set
 	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:2])
-	altSigners := make(map[string]tmtypes.PrivValidator, 1)
+	altSigners := make(map[string]tmtypes.PrivValidator, 2)
 	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
+
+	// create an alternative validator set using less 1/3 of the trusted validator set
+	altValset2 := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:1])
+	altSigners2 := make(map[string]tmtypes.PrivValidator, 1)
+	altSigners2[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
 
 	clientHeader := s.consumerChain.CreateTMClientHeader(
 		s.consumerChain.ChainID,
@@ -315,19 +367,17 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 	)
 
 	// create a conflicting client header with insufficient voting power
-	// by changing 3/4 of its validators votes to nil
-	clientHeaderWithNilVotes := s.consumerChain.CreateTMClientHeader(
+	clientHeader2 := s.consumerChain.CreateTMClientHeader(
 		s.consumerChain.ChainID,
 		int64(clientHeight.RevisionHeight+1),
 		clientHeight,
 		// use a different block time to change the header BlockID
 		headerTs.Add(time.Hour),
+		altValset2,
+		altValset2,
 		clientTMValset,
-		clientTMValset,
-		clientTMValset,
-		clientSigners,
+		altSigners2,
 	)
-	testutil.UpdateHeaderCommitWithNilVotes(clientHeaderWithNilVotes, clientTMValset.Validators[:4])
 
 	testCases := []struct {
 		name         string
@@ -402,7 +452,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 			&ibctmtypes.Misbehaviour{
 				ClientId: s.path.EndpointA.ClientID,
 				Header1:  clientHeader,
-				Header2:  clientHeaderWithNilVotes,
+				Header2:  clientHeader2,
 			},
 			false,
 		},

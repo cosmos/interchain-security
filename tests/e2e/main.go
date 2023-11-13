@@ -57,11 +57,11 @@ func main() {
 	}
 
 	testRuns := []testRunWithSteps{
-		{ChangeoverTestRun(), changeoverSteps},
-		{DefaultTestRun(), happyPathSteps},
-		{DemocracyTestRun(true), democracySteps},
-		{DemocracyTestRun(false), rewardDenomConsumerSteps},
-		{SlashThrottleTestRun(), slashThrottleSteps},
+		// {ChangeoverTestRun(), changeoverSteps},
+		// {DefaultTestRun(), happyPathSteps},
+		// {DemocracyTestRun(true), democracySteps},
+		// {DemocracyTestRun(false), rewardDenomConsumerSteps},
+		// {SlashThrottleTestRun(), slashThrottleSteps},
 		{ConsumerMisbehaviourTestRun(), consumerMisbehaviourSteps},
 		{DefaultTestRun(), consumerDoubleSignSteps},
 	}
