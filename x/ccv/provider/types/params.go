@@ -55,11 +55,6 @@ var (
 	KeyConsumerRewardDenomRegistrationFee = []byte("ConsumerRewardDenomRegistrationFee")
 )
 
-// ParamKeyTable returns a key table with the necessary registered provider params
-func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
-}
-
 // NewParams creates new provider parameters with provided arguments
 func NewParams(
 	cs *ibctmtypes.ClientState,

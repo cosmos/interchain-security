@@ -60,7 +60,10 @@ func (suite *CCVTestSuite) TestInitTimeout() {
 
 	for i, tc := range testCases {
 		providerKeeper := suite.providerApp.GetProviderKeeper()
-		initTimeout := providerKeeper.GetParams(suite.providerCtx()).InitTimeoutPeriod
+		params, err := providerKeeper.GetParams(suite.providerCtx())
+		suite.Require().NoError(err)
+		initTimeout := params.InitTimeoutPeriod
+
 		chainID := suite.consumerChain.ChainID
 
 		// check that the init timeout timestamp is set

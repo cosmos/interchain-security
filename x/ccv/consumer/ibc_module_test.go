@@ -1,6 +1,7 @@
 package consumer_test
 
 import (
+	"fmt"
 	"testing"
 
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
@@ -226,7 +227,10 @@ func TestOnChanOpenAck(t *testing.T) {
 					transfertypes.PortID,
 					"", // signer unused
 				)
-
+				err := keeper.SetParams(params.ctx, ccv.DefaultParams())
+				if err != nil {
+					panic(fmt.Sprintf("Setting params failed %v", err))
+				}
 				transferChannelID := ""
 				keeper.SetDistributionTransmissionChannel(params.ctx, transferChannelID)
 

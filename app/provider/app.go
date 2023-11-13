@@ -436,8 +436,7 @@ func New(
 
 	app.ProviderKeeper = icsproviderkeeper.NewKeeper(
 		appCodec,
-		keys[providertypes.StoreKey],
-		app.GetSubspace(providertypes.ModuleName),
+		runtime.NewKVStoreService(keys[providertypes.StoreKey]),
 		scopedIBCProviderKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.PortKeeper,

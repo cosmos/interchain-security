@@ -151,7 +151,10 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		consumerAddrsToPrune = append(consumerAddrsToPrune, k.GetAllConsumerAddrsToPrune(ctx, chain.ChainId)...)
 	}
 
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		panic(fmt.Errorf("error getting provider parameters: %v", err))
+	}
 
 	return types.NewGenesisState(
 		k.GetValidatorSetUpdateId(ctx),

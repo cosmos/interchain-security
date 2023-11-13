@@ -116,7 +116,11 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *ccv.GenesisState) []abci.Val
 
 // ExportGenesis returns the CCV consumer module's exported genesis
 func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *ccv.GenesisState) {
-	params := k.GetConsumerParams(ctx)
+	params, err := k.GetConsumerParams(ctx)
+	if err != nil {
+		panic(fmt.Sprintf("failed getting consumer parameters: %v", err))
+	}
+
 	if !params.Enabled {
 		return ccv.DefaultGenesisState()
 	}

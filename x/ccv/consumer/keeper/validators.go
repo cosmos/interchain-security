@@ -207,11 +207,11 @@ func (k Keeper) UnbondingTime(ctx context.Context) (time.Duration, error) {
 // GetHistoricalInfo gets the historical info at a given height
 func (k Keeper) GetHistoricalInfo(ctx context.Context, height int64) (stakingtypes.HistoricalInfo, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	store := sdkCtx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(sdkCtx)
 	key := types.HistoricalInfoKey(height)
 
-	value := store.Get(key)
-	if value == nil {
+	value, err := store.Get(key)
+	if err != nil || value == nil {
 		return stakingtypes.HistoricalInfo{}, stakingtypes.ErrNoHistoricalInfo
 	}
 
@@ -221,7 +221,7 @@ func (k Keeper) GetHistoricalInfo(ctx context.Context, height int64) (stakingtyp
 // SetHistoricalInfo sets the historical info at a given height
 func (k Keeper) SetHistoricalInfo(ctx context.Context, height int64, hi *stakingtypes.HistoricalInfo) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	store := sdkCtx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(sdkCtx)
 	key := types.HistoricalInfoKey(height)
 	value := k.cdc.MustMarshal(hi)
 
@@ -231,7 +231,7 @@ func (k Keeper) SetHistoricalInfo(ctx context.Context, height int64, hi *staking
 // DeleteHistoricalInfo deletes the historical info at a given height
 func (k Keeper) DeleteHistoricalInfo(ctx context.Context, height int64) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	store := sdkCtx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(sdkCtx)
 	key := types.HistoricalInfoKey(height)
 
 	store.Delete(key)

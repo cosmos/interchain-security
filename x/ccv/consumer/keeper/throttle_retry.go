@@ -83,12 +83,12 @@ func (k Keeper) UpdateSlashRecordOnBounce(ctx sdktypes.Context) {
 }
 
 func (k Keeper) GetSlashRecord(ctx sdktypes.Context) (record consumertypes.SlashRecord, found bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(consumertypes.SlashRecordKey())
-	if bz == nil {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(consumertypes.SlashRecordKey())
+	if err != nil || bz == nil {
 		return record, false
 	}
-	err := record.Unmarshal(bz)
+	err = record.Unmarshal(bz)
 	if err != nil {
 		// This should never happen
 		panic(fmt.Sprintf("could not unmarshal slash record: %v", err))
@@ -97,7 +97,7 @@ func (k Keeper) GetSlashRecord(ctx sdktypes.Context) (record consumertypes.Slash
 }
 
 func (k Keeper) SetSlashRecord(ctx sdktypes.Context, record consumertypes.SlashRecord) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	bz, err := record.Marshal()
 	if err != nil {
 		// This should never happen
@@ -107,6 +107,6 @@ func (k Keeper) SetSlashRecord(ctx sdktypes.Context, record consumertypes.SlashR
 }
 
 func (k Keeper) ClearSlashRecord(ctx sdktypes.Context) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(consumertypes.SlashRecordKey())
 }

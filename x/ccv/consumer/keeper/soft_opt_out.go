@@ -12,7 +12,7 @@ import (
 
 // SetSmallestNonOptOutPower sets the smallest validator power that cannot soft opt out.
 func (k Keeper) SetSmallestNonOptOutPower(ctx sdk.Context, power uint64) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Set(types.SmallestNonOptOutPowerKey(), sdk.Uint64ToBigEndian(power))
 }
 
@@ -67,9 +67,9 @@ func (k Keeper) UpdateSmallestNonOptOutPower(ctx sdk.Context) {
 
 // GetSmallestNonOptOutPower returns the smallest validator power that cannot soft opt out.
 func (k Keeper) GetSmallestNonOptOutPower(ctx sdk.Context) int64 {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.SmallestNonOptOutPowerKey())
-	if bz == nil {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.SmallestNonOptOutPowerKey())
+	if err != nil || bz == nil {
 		return 0
 	}
 	return int64(binary.BigEndian.Uint64(bz))

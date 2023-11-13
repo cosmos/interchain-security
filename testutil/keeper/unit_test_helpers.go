@@ -19,6 +19,7 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -116,8 +117,7 @@ func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) providerkeeper.Keeper {
 	return providerkeeper.NewKeeper(
 		params.Cdc,
-		params.StoreKey,
-		*params.ParamsSubspace,
+		runtime.NewKVStoreService(params.StoreKey),
 		mocks.MockScopedKeeper,
 		mocks.MockChannelKeeper,
 		mocks.MockPortKeeper,
@@ -139,8 +139,7 @@ func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) provi
 func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consumerkeeper.Keeper {
 	return consumerkeeper.NewKeeper(
 		params.Cdc,
-		params.StoreKey,
-		*params.ParamsSubspace,
+		runtime.NewKVStoreService(params.StoreKey),
 		mocks.MockScopedKeeper,
 		mocks.MockChannelKeeper,
 		mocks.MockPortKeeper,

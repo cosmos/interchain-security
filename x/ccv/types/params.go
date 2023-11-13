@@ -6,7 +6,6 @@ import (
 
 	"cosmossdk.io/math"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -56,11 +55,6 @@ var (
 	KeyRewardDenoms                      = []byte("RewardDenoms")
 	KeyProviderRewardDenoms              = []byte("ProviderRewardDenoms")
 )
-
-// ParamKeyTable type declaration for parameters
-func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
-}
 
 // NewParams creates new consumer parameters with provided arguments
 func NewParams(enabled bool, blocksPerDistributionTransmission int64,
@@ -144,35 +138,6 @@ func (p Params) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// ParamSetPairs implements params.ParamSet
-func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
-	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, ValidateBool),
-		paramtypes.NewParamSetPair(KeyBlocksPerDistributionTransmission,
-			p.BlocksPerDistributionTransmission, ValidatePositiveInt64),
-		paramtypes.NewParamSetPair(KeyDistributionTransmissionChannel,
-			p.DistributionTransmissionChannel, ValidateDistributionTransmissionChannel),
-		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
-			p.ProviderFeePoolAddrStr, ValidateProviderFeePoolAddrStr),
-		paramtypes.NewParamSetPair(KeyCCVTimeoutPeriod,
-			p.CcvTimeoutPeriod, ValidateDuration),
-		paramtypes.NewParamSetPair(KeyTransferTimeoutPeriod,
-			p.TransferTimeoutPeriod, ValidateDuration),
-		paramtypes.NewParamSetPair(KeyConsumerRedistributionFrac,
-			p.ConsumerRedistributionFraction, ValidateStringFraction),
-		paramtypes.NewParamSetPair(KeyHistoricalEntries,
-			p.HistoricalEntries, ValidatePositiveInt64),
-		paramtypes.NewParamSetPair(KeyConsumerUnbondingPeriod,
-			p.UnbondingPeriod, ValidateDuration),
-		paramtypes.NewParamSetPair(KeySoftOptOutThreshold,
-			p.SoftOptOutThreshold, ValidateSoftOptOutThreshold),
-		paramtypes.NewParamSetPair(KeyRewardDenoms,
-			p.RewardDenoms, ValidateDenoms),
-		paramtypes.NewParamSetPair(KeyProviderRewardDenoms,
-			p.ProviderRewardDenoms, ValidateDenoms),
-	}
 }
 
 func ValidateProviderFeePoolAddrStr(i interface{}) error {

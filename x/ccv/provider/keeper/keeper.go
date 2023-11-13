@@ -22,7 +22,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
 	"cosmossdk.io/log"
@@ -38,11 +37,9 @@ type Keeper struct {
 	// should be the x/gov module account.
 	authority string
 
-	storeKey     storetypes.StoreKey // TODO: remove
 	storeService store.KVStoreService
 
 	cdc                codec.BinaryCodec
-	paramSpace         paramtypes.Subspace
 	scopedKeeper       ccv.ScopedKeeper
 	channelKeeper      ccv.ChannelKeeper
 	portKeeper         ccv.PortKeeper
@@ -61,7 +58,7 @@ type Keeper struct {
 
 // NewKeeper creates a new provider Keeper instance
 func NewKeeper(
-	cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper ccv.ScopedKeeper,
+	cdc codec.BinaryCodec, storeService store.KVStoreService, scopedKeeper ccv.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
@@ -70,16 +67,10 @@ func NewKeeper(
 	feeCollectorName, authority string, validatorAddressCodec,
 	consensusAddressCodec addresscodec.Codec,
 ) Keeper {
-	// set KeyTable if it has not already been set
-	if !paramSpace.HasKeyTable() {
-		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
-	}
-
 	k := Keeper{
 		cdc:                   cdc,
-		storeKey:              key,
+		storeService:          storeService,
 		authority:             authority,
-		paramSpace:            paramSpace,
 		scopedKeeper:          scopedKeeper,
 		channelKeeper:         channelKeeper,
 		portKeeper:            portKeeper,
@@ -114,19 +105,13 @@ func (k Keeper) ConsensusAddressCodec() addresscodec.Codec {
 	return k.consensusAddressCodec
 }
 
-// SetParamSpace sets the param space for the provider keeper.
-// Note: this is only used for testing!
-func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
-	k.paramSpace = ps
-}
-
 // TODO: @MSalopek -> redo validation; some fields will be removed
 // Validates that the provider keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 18 {
-		panic("number of fields in provider keeper is not 18")
+	if reflect.ValueOf(k).NumField() != 16 {
+		panic("number of fields in provider keeper is not 16")
 	}
 
 	// TODO: @MSalopek -> validate once connected and AccountKeeper interface is updated
@@ -140,24 +125,23 @@ func (k Keeper) mustValidateFields() {
 	}
 
 	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                                     // 1
-	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                           // 2
-	ccv.PanicIfZeroOrNil(k.paramSpace, "paramSpace")                       // 3
-	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")                   // 4
-	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")                 // 5
-	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")                       // 6
-	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")           // 7
-	ccv.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")                 // 8
-	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")                   // 9
-	ccv.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")                 // 10
-	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")               // 11
-	ccv.PanicIfZeroOrNil(k.distributionKeeper, "distributionKeeper")       // 12
-	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                       // 13
-	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")           // 14
-	ccv.PanicIfZeroOrNil(k.authority, "authority")                         // 15
-	ccv.PanicIfZeroOrNil(k.validatorAddressCodec, "validatorAddressCodec") // 16
-	ccv.PanicIfZeroOrNil(k.consensusAddressCodec, "consensusAddressCodec") // 17
+	ccv.PanicIfZeroOrNil(k.storeService, "storeService")                   // 2
+	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")                   // 3
+	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")                 // 4
+	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")                       // 5
+	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")           // 6
+	ccv.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")                 // 7
+	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")                   // 8
+	ccv.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")                 // 9
+	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")               // 10
+	ccv.PanicIfZeroOrNil(k.distributionKeeper, "distributionKeeper")       // 11
+	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                       // 12
+	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")           // 13
+	ccv.PanicIfZeroOrNil(k.authority, "authority")                         // 14
+	ccv.PanicIfZeroOrNil(k.validatorAddressCodec, "validatorAddressCodec") // 15
+	ccv.PanicIfZeroOrNil(k.consensusAddressCodec, "consensusAddressCodec") // 16
 	// TODO: @MSalopek -> validate once connected
-	// ccv.PanicIfZeroOrNil(k.storeService, "storeService")                   // 18
+	// ccv.PanicIfZeroOrNil(k.storeService, "storeService")                   // 17
 }
 
 // Logger returns a module-specific logger.
@@ -183,14 +167,22 @@ func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
 
 // GetPort returns the portID for the CCV module. Used in ExportGenesis
 func (k Keeper) GetPort(ctx sdk.Context) string {
-	store := ctx.KVStore(k.storeKey)
-	return string(store.Get(types.PortKey()))
+	store := k.storeService.OpenKVStore(ctx)
+	port, err := store.Get(types.PortKey())
+	if err != nil {
+		k.Logger(ctx).Error("error getting port ID: %v", err)
+		return ""
+	}
+	return string(port)
 }
 
 // SetPort sets the portID for the CCV module. Used in InitGenesis
 func (k Keeper) SetPort(ctx sdk.Context, portID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.PortKey(), []byte(portID))
+	store := k.storeService.OpenKVStore(ctx)
+	err := store.Set(types.PortKey(), []byte(portID))
+	if err != nil {
+		k.Logger(ctx).Error("error setting port ID: %v", err)
+	}
 }
 
 // AuthenticateCapability wraps the scopedKeeper's AuthenticateCapability function
@@ -206,15 +198,15 @@ func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability
 
 // SetChainToChannel sets the mapping from a consumer chainID to the CCV channel ID for that consumer chain.
 func (k Keeper) SetChainToChannel(ctx sdk.Context, chainID, channelID string) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Set(types.ChainToChannelKey(chainID), []byte(channelID))
 }
 
 // GetChainToChannel gets the CCV channelID for the given consumer chainID
 func (k Keeper) GetChainToChannel(ctx sdk.Context, chainID string) (string, bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ChainToChannelKey(chainID))
-	if bz == nil {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.ChainToChannelKey(chainID))
+	if err != nil || bz == nil {
 		return "", false
 	}
 	return string(bz), true
@@ -222,7 +214,7 @@ func (k Keeper) GetChainToChannel(ctx sdk.Context, chainID string) (string, bool
 
 // DeleteChainToChannel deletes the CCV channel ID for the given consumer chain ID
 func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(types.ChainToChannelKey(chainID))
 }
 
@@ -233,8 +225,13 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 // ChainToClientBytePrefix | chainID
 // Thus, the returned array is in ascending order of chainIDs.
 func (k Keeper) GetAllConsumerChains(ctx sdk.Context) (chains []types.Chain) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
+	store := k.storeService.OpenKVStore(ctx)
+	prefix := []byte{types.ChainToClientBytePrefix}
+	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
+	if err != nil {
+		k.Logger(ctx).Error("error getting consumer chains: %v", err)
+		return []types.Chain{}
+	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -253,15 +250,15 @@ func (k Keeper) GetAllConsumerChains(ctx sdk.Context) (chains []types.Chain) {
 
 // SetChannelToChain sets the mapping from the CCV channel ID to the consumer chainID.
 func (k Keeper) SetChannelToChain(ctx sdk.Context, channelID, chainID string) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Set(types.ChannelToChainKey(channelID), []byte(chainID))
 }
 
 // GetChannelToChain gets the consumer chainID for a given CCV channelID
 func (k Keeper) GetChannelToChain(ctx sdk.Context, channelID string) (string, bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ChannelToChainKey(channelID))
-	if bz == nil {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.ChannelToChainKey(channelID))
+	if err != nil || bz == nil {
 		return "", false
 	}
 	return string(bz), true
@@ -269,7 +266,7 @@ func (k Keeper) GetChannelToChain(ctx sdk.Context, channelID string) (string, bo
 
 // DeleteChannelToChain deletes the consumer chain ID for a given CCV channelID
 func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(types.ChannelToChainKey(channelID))
 }
 
@@ -281,8 +278,13 @@ func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 // ChannelToChainBytePrefix | channelID
 // Thus, the returned array is in ascending order of channelIDs.
 func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.ChannelToChain) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
+	store := k.storeService.OpenKVStore(ctx)
+	prefix := []byte{types.ChannelToChainBytePrefix}
+	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
+	if err != nil {
+		k.Logger(ctx).Error("error getting channel to chain mapping: %v", err)
+		return []types.ChannelToChain{}
+	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -300,7 +302,7 @@ func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.Channel
 }
 
 func (k Keeper) SetConsumerGenesis(ctx sdk.Context, chainID string, gen ccv.GenesisState) error {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	bz, err := gen.Marshal()
 	if err != nil {
 		return err
@@ -311,9 +313,9 @@ func (k Keeper) SetConsumerGenesis(ctx sdk.Context, chainID string, gen ccv.Gene
 }
 
 func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (ccv.GenesisState, bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ConsumerGenesisKey(chainID))
-	if bz == nil {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.ConsumerGenesisKey(chainID))
+	if err != nil || bz == nil {
 		return ccv.GenesisState{}, false
 	}
 
@@ -327,7 +329,7 @@ func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (ccv.Genesis
 }
 
 func (k Keeper) DeleteConsumerGenesis(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(types.ConsumerGenesisKey(chainID))
 }
 
@@ -408,7 +410,7 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 
 // SetUnbondingOp sets the UnbondingOp by its unique ID
 func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp types.UnbondingOp) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	bz, err := unbondingOp.Marshal()
 	if err != nil {
 		// An error here would indicate something is very wrong,
@@ -422,9 +424,9 @@ func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp types.UnbondingOp) {
 
 // GetUnbondingOp gets a UnbondingOp by its unique ID
 func (k Keeper) GetUnbondingOp(ctx sdk.Context, id uint64) (types.UnbondingOp, bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.UnbondingOpKey(id))
-	if bz == nil {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.UnbondingOpKey(id))
+	if err != nil || bz == nil {
 		return types.UnbondingOp{}, false
 	}
 
@@ -440,7 +442,7 @@ func (k Keeper) GetUnbondingOp(ctx sdk.Context, id uint64) (types.UnbondingOp, b
 
 // DeleteUnbondingOp deletes a UnbondingOp given its ID
 func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(types.UnbondingOpKey(id))
 }
 
@@ -452,8 +454,13 @@ func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 // UnbondingOpBytePrefix | ID
 // Thus, the iteration is in ascending order of IDs.
 func (k Keeper) GetAllUnbondingOps(ctx sdk.Context) (ops []types.UnbondingOp) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.UnbondingOpBytePrefix})
+	store := k.storeService.OpenKVStore(ctx)
+	prefix := []byte{types.UnbondingOpBytePrefix}
+	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
+	if err != nil {
+		k.Logger(ctx).Error("error getting all UnbondingOps: %v", err)
+		return []types.UnbondingOp{}
+	}
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -519,7 +526,7 @@ func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemo
 // SetUnbondingOpIndex sets the IDs of unbonding operations that are waiting for
 // a VSCMaturedPacket with vscID from a consumer with chainID
 func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint64, ids []uint64) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 
 	vscUnbondingOps := types.VscUnbondingOps{
 		VscId:          vscID,
@@ -543,8 +550,13 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint6
 // UnbondingOpIndexBytePrefix | len(chainID) | chainID | vscID
 // Thus, the returned array is in ascending order of vscIDs.
 func (k Keeper) GetAllUnbondingOpIndexes(ctx sdk.Context, chainID string) (indexes []types.VscUnbondingOps) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.UnbondingOpIndexBytePrefix, chainID))
+	store := k.storeService.OpenKVStore(ctx)
+	prefix := types.ChainIdWithLenKey(types.UnbondingOpIndexBytePrefix, chainID)
+	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
+	if err != nil {
+		k.Logger(ctx).Error("error getting all unbonding indexes: %v", err)
+		return []types.VscUnbondingOps{}
+	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -567,10 +579,10 @@ func (k Keeper) GetAllUnbondingOpIndexes(ctx sdk.Context, chainID string) (index
 // GetUnbondingOpIndex gets the IDs of unbonding operations that are waiting for
 // a VSCMaturedPacket with vscID from a consumer with chainID
 func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint64) ([]uint64, bool) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 
-	bz := store.Get(types.UnbondingOpIndexKey(chainID, vscID))
-	if bz == nil {
+	bz, err := store.Get(types.UnbondingOpIndexKey(chainID, vscID))
+	if err != nil || bz == nil {
 		return []uint64{}, false
 	}
 
@@ -587,7 +599,7 @@ func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint6
 // DeleteUnbondingOpIndex deletes the IDs of unbonding operations that are waiting for
 // a VSCMaturedPacket with vscID from a consumer with chainID
 func (k Keeper) DeleteUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint64) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(types.UnbondingOpIndexKey(chainID, vscID))
 }
 
@@ -613,9 +625,9 @@ func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valset
 
 // GetMaturedUnbondingOps returns the list of matured unbonding operation ids
 func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.MaturedUnbondingOpsKey())
-	if bz == nil {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.MaturedUnbondingOpsKey())
+	if err != nil || bz == nil {
 		// Note that every call to ConsumeMaturedUnbondingOps
 		// deletes the MaturedUnbondingOpsKey, which means that
 		// the first call to GetMaturedUnbondingOps after that
@@ -642,7 +654,7 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) {
 		Ids: append(existingIds, ids...),
 	}
 
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	bz, err := maturedOps.Marshal()
 	if err != nil {
 		// An error here would indicate something is very wrong,
@@ -655,7 +667,7 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) {
 // ConsumeMaturedUnbondingOps empties and returns list of matured unbonding operation ids (if it exists)
 func (k Keeper) ConsumeMaturedUnbondingOps(ctx sdk.Context) []uint64 {
 	ids := k.GetMaturedUnbondingOps(ctx)
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(types.MaturedUnbondingOpsKey())
 	return ids
 }
@@ -699,7 +711,7 @@ func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
 }
 
 func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, valUpdateID uint64) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 
 	// Convert back into bytes for storage
 	bz := make([]byte, 8)
@@ -709,10 +721,10 @@ func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, valUpdateID uint64) {
 }
 
 func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId uint64) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ValidatorSetUpdateIdKey())
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.ValidatorSetUpdateIdKey())
 
-	if bz == nil {
+	if err != nil || bz == nil {
 		validatorSetUpdateId = 0
 	} else {
 		// Unmarshal
@@ -724,7 +736,7 @@ func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId u
 
 // SetValsetUpdateBlockHeight sets the block height for a given valset update id
 func (k Keeper) SetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId, blockHeight uint64) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	heightBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(heightBytes, blockHeight)
 	store.Set(types.ValsetUpdateBlockHeightKey(valsetUpdateId), heightBytes)
@@ -732,9 +744,9 @@ func (k Keeper) SetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId, bloc
 
 // GetValsetUpdateBlockHeight gets the block height for a given valset update id
 func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) (uint64, bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
-	if bz == nil {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
+	if err != nil || bz == nil {
 		return 0, false
 	}
 	return binary.BigEndian.Uint64(bz), true
@@ -746,10 +758,15 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint6
 // ValsetUpdateBlockHeightBytePrefix | vscID
 // Thus, the returned array is in ascending order of vscIDs.
 func (k Keeper) GetAllValsetUpdateBlockHeights(ctx sdk.Context) (valsetUpdateBlockHeights []types.ValsetUpdateIdToHeight) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.ValsetUpdateBlockHeightBytePrefix})
-
+	store := k.storeService.OpenKVStore(ctx)
+	prefix := []byte{types.ValsetUpdateBlockHeightBytePrefix}
+	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
+	if err != nil {
+		k.Logger(ctx).Error("error getting all block heights for valset updates: %v", err)
+		return []types.ValsetUpdateIdToHeight{}
+	}
 	defer iterator.Close()
+
 	for ; iterator.Valid(); iterator.Next() {
 		valsetUpdateId := binary.BigEndian.Uint64(iterator.Key()[1:])
 		height := binary.BigEndian.Uint64(iterator.Value())
@@ -765,7 +782,7 @@ func (k Keeper) GetAllValsetUpdateBlockHeights(ctx sdk.Context) (valsetUpdateBlo
 
 // DeleteValsetUpdateBlockHeight deletes the block height value for a given vaset update id
 func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
 }
 
@@ -774,7 +791,7 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId ui
 // TODO: SlashAcks should be persisted as a list of ConsumerConsAddr types, not strings.
 // See https://github.com/cosmos/interchain-security/issues/728
 func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 
 	sa := types.SlashAcks{
 		Addresses: acks,
@@ -793,9 +810,9 @@ func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 // TODO: SlashAcks should be persisted as a list of ConsumerConsAddr types, not strings.
 // See https://github.com/cosmos/interchain-security/issues/728
 func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.SlashAcksKey(chainID))
-	if bz == nil {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.SlashAcksKey(chainID))
+	if err != nil || bz == nil {
 		return nil
 	}
 	var acks types.SlashAcks
@@ -814,14 +831,14 @@ func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []string
 	if len(acks) < 1 {
 		return
 	}
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(types.SlashAcksKey(chainID))
 	return
 }
 
 // DeleteSlashAcks deletes the slash acks for a given chain ID
 func (k Keeper) DeleteSlashAcks(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(types.SlashAcksKey(chainID))
 }
 
@@ -836,7 +853,7 @@ func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID,
 
 // SetInitChainHeight sets the provider block height when the given consumer chain was initiated
 func (k Keeper) SetInitChainHeight(ctx sdk.Context, chainID string, height uint64) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	heightBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(heightBytes, height)
 
@@ -845,9 +862,9 @@ func (k Keeper) SetInitChainHeight(ctx sdk.Context, chainID string, height uint6
 
 // GetInitChainHeight returns the provider block height when the given consumer chain was initiated
 func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) (uint64, bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.InitChainHeightKey(chainID))
-	if bz == nil {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.InitChainHeightKey(chainID))
+	if err != nil || bz == nil {
 		return 0, false
 	}
 
@@ -856,7 +873,7 @@ func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) (uint64, boo
 
 // DeleteInitChainHeight deletes the block height value for which the given consumer chain's channel was established
 func (k Keeper) DeleteInitChainHeight(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(types.InitChainHeightKey(chainID))
 }
 
@@ -864,9 +881,9 @@ func (k Keeper) DeleteInitChainHeight(ctx sdk.Context, chainID string) {
 func (k Keeper) GetPendingVSCPackets(ctx sdk.Context, chainID string) []ccv.ValidatorSetChangePacketData {
 	var packets types.ValidatorSetChangePackets
 
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PendingVSCsKey(chainID))
-	if bz == nil {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.PendingVSCsKey(chainID))
+	if err != nil || bz == nil {
 		return []ccv.ValidatorSetChangePacketData{}
 	}
 	if err := packets.Unmarshal(bz); err != nil {
@@ -882,7 +899,7 @@ func (k Keeper) GetPendingVSCPackets(ctx sdk.Context, chainID string) []ccv.Vali
 func (k Keeper) AppendPendingVSCPackets(ctx sdk.Context, chainID string, newPackets ...ccv.ValidatorSetChangePacketData) {
 	pds := append(k.GetPendingVSCPackets(ctx, chainID), newPackets...)
 
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	packets := types.ValidatorSetChangePackets{List: pds}
 	buf, err := packets.Marshal()
 	if err != nil {
@@ -895,21 +912,21 @@ func (k Keeper) AppendPendingVSCPackets(ctx sdk.Context, chainID string, newPack
 
 // DeletePendingVSCPackets deletes the list of pending ValidatorSetChange packets for chain ID
 func (k Keeper) DeletePendingVSCPackets(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(types.PendingVSCsKey(chainID))
 }
 
 // SetConsumerClientId sets the client ID for the given chain ID
 func (k Keeper) SetConsumerClientId(ctx sdk.Context, chainID, clientID string) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Set(types.ChainToClientKey(chainID), []byte(clientID))
 }
 
 // GetConsumerClientId returns the client ID for the given chain ID.
 func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bool) {
-	store := ctx.KVStore(k.storeKey)
-	clientIdBytes := store.Get(types.ChainToClientKey(chainID))
-	if clientIdBytes == nil {
+	store := k.storeService.OpenKVStore(ctx)
+	clientIdBytes, err := store.Get(types.ChainToClientKey(chainID))
+	if err != nil || clientIdBytes == nil {
 		return "", false
 	}
 	return string(clientIdBytes), true
@@ -917,13 +934,13 @@ func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bo
 
 // DeleteConsumerClientId removes from the store the clientID for the given chainID.
 func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(types.ChainToClientKey(chainID))
 }
 
 // SetInitTimeoutTimestamp sets the init timeout timestamp for the given chain ID
 func (k Keeper) SetInitTimeoutTimestamp(ctx sdk.Context, chainID string, ts uint64) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	tsBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(tsBytes, ts)
 	store.Set(types.InitTimeoutTimestampKey(chainID), tsBytes)
@@ -932,9 +949,9 @@ func (k Keeper) SetInitTimeoutTimestamp(ctx sdk.Context, chainID string, ts uint
 // GetInitTimeoutTimestamp returns the init timeout timestamp for the given chain ID.
 // This method is used only in testing.
 func (k Keeper) GetInitTimeoutTimestamp(ctx sdk.Context, chainID string) (uint64, bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.InitTimeoutTimestampKey(chainID))
-	if bz == nil {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.InitTimeoutTimestampKey(chainID))
+	if err != nil || bz == nil {
 		return 0, false
 	}
 	return binary.BigEndian.Uint64(bz), true
@@ -942,7 +959,7 @@ func (k Keeper) GetInitTimeoutTimestamp(ctx sdk.Context, chainID string) (uint64
 
 // DeleteInitTimeoutTimestamp removes from the store the init timeout timestamp for the given chainID.
 func (k Keeper) DeleteInitTimeoutTimestamp(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(types.InitTimeoutTimestampKey(chainID))
 }
 
@@ -952,8 +969,13 @@ func (k Keeper) DeleteInitTimeoutTimestamp(ctx sdk.Context, chainID string) {
 // InitTimeoutTimestampBytePrefix | chainID
 // Thus, the returned array is in ascending order of chainIDs (NOT in timestamp order).
 func (k Keeper) GetAllInitTimeoutTimestamps(ctx sdk.Context) (initTimeoutTimestamps []types.InitTimeoutTimestamp) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.InitTimeoutTimestampBytePrefix})
+	store := k.storeService.OpenKVStore(ctx)
+	prefix := []byte{types.InitTimeoutTimestampBytePrefix}
+	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
+	if err != nil {
+		k.Logger(ctx).Error("error getting all init timeout timestamps: %v", err)
+		return []types.InitTimeoutTimestamp{}
+	}
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -977,7 +999,7 @@ func (k Keeper) SetVscSendTimestamp(
 	vscID uint64,
 	timestamp time.Time,
 ) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 
 	// Convert timestamp into bytes for storage
 	timeBz := sdk.FormatTimeBytes(timestamp)
@@ -989,10 +1011,10 @@ func (k Keeper) SetVscSendTimestamp(
 //
 // Note: This method is used only for testing.
 func (k Keeper) GetVscSendTimestamp(ctx sdk.Context, chainID string, vscID uint64) (time.Time, bool) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 
-	timeBz := store.Get(types.VscSendingTimestampKey(chainID, vscID))
-	if timeBz == nil {
+	timeBz, err := store.Get(types.VscSendingTimestampKey(chainID, vscID))
+	if err != nil || timeBz == nil {
 		return time.Time{}, false
 	}
 
@@ -1006,7 +1028,7 @@ func (k Keeper) GetVscSendTimestamp(ctx sdk.Context, chainID string, vscID uint6
 // DeleteVscSendTimestamp removes from the store a specific VSC send timestamp
 // for the given chainID and vscID.
 func (k Keeper) DeleteVscSendTimestamp(ctx sdk.Context, chainID string, vscID uint64) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Delete(types.VscSendingTimestampKey(chainID, vscID))
 }
 
@@ -1016,8 +1038,13 @@ func (k Keeper) DeleteVscSendTimestamp(ctx sdk.Context, chainID string, vscID ui
 // VscSendTimestampBytePrefix | len(chainID) | chainID | vscID
 // Thus, the iteration is in ascending order of vscIDs, and as a result in send timestamp order.
 func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSendTimestamps []types.VscSendTimestamp) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))
+	store := k.storeService.OpenKVStore(ctx)
+	prefix := types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID)
+	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
+	if err != nil {
+		k.Logger(ctx).Error("error getting all vsc send timestamps: %v", err)
+		return []types.VscSendTimestamp{}
+	}
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -1045,8 +1072,13 @@ func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSen
 
 // DeleteVscSendTimestampsForConsumer deletes all VSC send timestamps for a given consumer chain
 func (k Keeper) DeleteVscSendTimestampsForConsumer(ctx sdk.Context, consumerChainID string) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, consumerChainID))
+	store := k.storeService.OpenKVStore(ctx)
+	prefix := types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, consumerChainID)
+	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
+	if err != nil {
+		k.Logger(ctx).Error("error deleting all VSC send timestamps: %v", err)
+		return
+	}
 	defer iterator.Close()
 
 	keysToDel := [][]byte{}
@@ -1062,8 +1094,13 @@ func (k Keeper) DeleteVscSendTimestampsForConsumer(ctx sdk.Context, consumerChai
 
 // GetFirstVscSendTimestamp gets the vsc send timestamp with the lowest vscID for the given chainID.
 func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSendTimestamp types.VscSendTimestamp, found bool) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))
+	store := k.storeService.OpenKVStore(ctx)
+	prefix := types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID)
+	iterator, err := store.Iterator(prefix, storetypes.PrefixEndBytes(prefix))
+	if err != nil {
+		k.Logger(ctx).Error("error getting first VSC send timestamps: %v", err)
+		return types.VscSendTimestamp{}, false
+	}
 	defer iterator.Close()
 
 	if iterator.Valid() {
@@ -1096,7 +1133,7 @@ func (k Keeper) SetSlashLog(
 	ctx sdk.Context,
 	providerAddr types.ProviderConsAddress,
 ) {
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	store.Set(types.SlashLogKey(providerAddr), []byte{})
 }
 
@@ -1106,9 +1143,9 @@ func (k Keeper) GetSlashLog(
 	ctx sdk.Context,
 	providerAddr types.ProviderConsAddress,
 ) (found bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.SlashLogKey(providerAddr))
-	return bz != nil
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.SlashLogKey(providerAddr))
+	return err == nil && bz != nil
 }
 
 func (k Keeper) BondDenom(ctx sdk.Context) (string, error) {

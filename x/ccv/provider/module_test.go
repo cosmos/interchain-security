@@ -177,7 +177,9 @@ func TestInitGenesis(t *testing.T) {
 		// Expect slash meter to be initialized to it's allowance value
 		// (replenish fraction * mocked value defined above)
 		slashMeter := providerKeeper.GetSlashMeter(ctx)
-		replenishFraction, err := math.LegacyNewDecFromStr(providerKeeper.GetParams(ctx).SlashMeterReplenishFraction)
+		params, err := providerKeeper.GetParams(ctx)
+		require.NoError(t, err)
+		replenishFraction, err := math.LegacyNewDecFromStr(params.SlashMeterReplenishFraction)
 		require.NoError(t, err)
 		expectedSlashMeterValue := math.NewInt(replenishFraction.MulInt(math.NewInt(100)).RoundInt64())
 		require.Equal(t, expectedSlashMeterValue, slashMeter)
