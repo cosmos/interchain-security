@@ -4,7 +4,6 @@
 
 Add an entry to the unreleased provider section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a provider release.
 
-* (refactor) [#1294](https://github.com/cosmos/interchain-security/pull/1294) Remove the equivocation proposal handler.
 * (feature!) [#1280](https://github.com/cosmos/interchain-security/pull/1280) provider proposal for changing reward denoms
 * (feature!) [#1244](https://github.com/cosmos/interchain-security/pull/1244) Update the default consumer unbonding period to 2 weeks.
 * (deps) [#1259](https://github.com/cosmos/interchain-security/pull/1259) Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to [v0.47.5](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.5).
@@ -12,6 +11,9 @@ Add an entry to the unreleased provider section whenever merging a PR to main th
 * (deps) [#1258](https://github.com/cosmos/interchain-security/pull/1258) Bump [cosmos-sdk](https://github.com/cosmos/cosmos-sdk) to [v0.47.4](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.47.4).
 * (deps!) [#1196](https://github.com/cosmos/interchain-security/pull/1196) Bump [ibc-go](https://github.com/cosmos/ibc-go) to [v7.2.0](https://github.com/cosmos/ibc-go/releases/tag/v7.2.0).
 * `[x/ccv/provider]` (fix) [#1076](https://github.com/cosmos/interchain-security/pull/1076) Add `InitTimeoutTimestamps` and `ExportedVscSendTimestamps` to exported genesis.
+* (fix!) [#1422](https://github.com/cosmos/interchain-security/pull/1422) Fix the misbehaviour handling by verifying the signatures of byzantine validators.
+
+## v2.2.0-provider-lsm
 
 ### Cryptographic verification of equivocation
 * New feature enabling the provider chain to verify equivocation evidence on its own instead of trusting consumer chains, see [EPIC](https://github.com/cosmos/interchain-security/issues/732).

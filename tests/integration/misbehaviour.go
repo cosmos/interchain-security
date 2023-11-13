@@ -9,6 +9,7 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
+	testutil "github.com/cosmos/interchain-security/v3/testutil/crypto"
 	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 )
 
@@ -138,6 +139,119 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 			false,
 		},
 		{
+			"incorrect valset - shouldn't pass",
+			func() *ibctmtypes.Misbehaviour {
+				clientHeader := s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					altTime.Add(time.Minute),
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				)
+
+				clientHeaderWithCorruptedValset := s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					altTime.Add(time.Hour),
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				)
+
+				// change a validator public key in one the second header
+				testutil.CorruptValidatorPubkeyInHeader(clientHeaderWithCorruptedValset, clientTMValset.Validators[0].Address)
+
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1:  clientHeader,
+					Header2:  clientHeaderWithCorruptedValset,
+				}
+			},
+			[]*tmtypes.Validator{},
+			false,
+		},
+		{
+			"incorrect valset 2 - shouldn't pass",
+			func() *ibctmtypes.Misbehaviour {
+				clientHeader := s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					altTime.Add(time.Minute),
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				)
+
+				clientHeaderWithCorruptedSigs := s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					altTime.Add(time.Hour),
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				)
+
+				// change the valset in the header
+				vs, _ := altValset.ToProto()
+				clientHeader.ValidatorSet.Validators = vs.Validators[:3]
+				clientHeaderWithCorruptedSigs.ValidatorSet.Validators = vs.Validators[:3]
+
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1:  clientHeader,
+					Header2:  clientHeaderWithCorruptedSigs,
+				}
+			},
+			[]*tmtypes.Validator{},
+			false,
+		},
+		{
+			"incorrect signatures - shouldn't pass",
+			func() *ibctmtypes.Misbehaviour {
+				clientHeader := s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					altTime.Add(time.Minute),
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				)
+
+				clientHeaderWithCorruptedSigs := s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					altTime.Add(time.Hour),
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				)
+
+				// change the signature of one of the validator in the header
+				testutil.CorruptCommitSigsInHeader(clientHeaderWithCorruptedSigs, clientTMValset.Validators[0].Address)
+
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1:  clientHeader,
+					Header2:  clientHeaderWithCorruptedSigs,
+				}
+			},
+			[]*tmtypes.Validator{},
+			false,
+		},
+		{
 			"light client attack - lunatic attack",
 			func() *ibctmtypes.Misbehaviour {
 				return &ibctmtypes.Misbehaviour{
@@ -226,8 +340,8 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 				s.NoError(err)
 				s.Equal(len(tc.expByzantineValidators), len(byzantineValidators))
 
-				// For both lunatic and equivocation attacks all the validators
-				// who signed the bad header (Header2) should be in returned in the evidence
+				// For both lunatic and equivocation attacks, all the validators
+				// who signed both headers
 				if len(tc.expByzantineValidators) > 0 {
 					equivocatingVals := tc.getMisbehaviour().Header2.ValidatorSet
 					s.Equal(len(equivocatingVals.Validators), len(byzantineValidators))
@@ -267,7 +381,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 
 	// create an alternative validator set using more than 1/3 of the trusted validator set
 	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:2])
-	altSigners := make(map[string]tmtypes.PrivValidator, 1)
+	altSigners := make(map[string]tmtypes.PrivValidator, 2)
 	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
 
@@ -347,7 +461,16 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 			},
 			false,
 		},
-		// TODO: Add valset signature test case here
+		// TODO: should pass after 1401 is merged
+		// {
+		// 	"one header of the misbehaviour has insufficient voting power - shouldn't pass",
+		// 	&ibctmtypes.Misbehaviour{
+		// 		ClientId: s.path.EndpointA.ClientID,
+		// 		Header1:  clientHeader,
+		// 		Header2:  clientHeader2,
+		// 	},
+		// 	false,
+		// },
 		{
 			"valid misbehaviour - should pass",
 			&ibctmtypes.Misbehaviour{

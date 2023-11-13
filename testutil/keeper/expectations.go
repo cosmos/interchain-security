@@ -3,7 +3,6 @@ package keeper
 import (
 	time "time"
 
-	math "cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -11,6 +10,8 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 	extra "github.com/oxyno-zeta/gomock-extra-matcher"
+
+	math "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -217,5 +218,4 @@ func GetMocksForSlashValidator(
 			SlashWithInfractionReason(ctx, consAddr, expectedInfractionHeight, expectedSlashPower, slashFraction, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN).
 			Times(1),
 	}
-
 }

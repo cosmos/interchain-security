@@ -412,7 +412,7 @@ func TestSlashValidator(t *testing.T) {
 		mocks.MockStakingKeeper.EXPECT().
 			SlashUnbondingDelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			DoAndReturn(
-				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ sdk.Dec) sdk.Int {
+				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ sdk.Dec) math.Int {
 					sum := sdk.NewInt(0)
 					for _, r := range undelegation.Entries {
 						if r.IsMature(ctx.BlockTime()) {
@@ -425,7 +425,7 @@ func TestSlashValidator(t *testing.T) {
 		mocks.MockStakingKeeper.EXPECT().
 			SlashRedelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			DoAndReturn(
-				func(_ sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ sdk.Dec) sdk.Int {
+				func(_ sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ sdk.Dec) math.Int {
 					sum := sdk.NewInt(0)
 					for _, r := range redelegation.Entries {
 						if r.IsMature(ctx.BlockTime()) {
