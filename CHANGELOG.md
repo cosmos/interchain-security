@@ -45,6 +45,9 @@
 - [Provider](x/ccv/provider)
   - Add `InitTimeoutTimestamps` and `ExportedVscSendTimestamps` to exported
     genesis. ([\#1076](https://github.com/cosmos/interchain-security/pull/1076))
+  - Add a governance proposal for setting on the provider the denominations for
+    rewards from consumer chains.
+    ([\#1280](https://github.com/cosmos/interchain-security/pull/1280))
   - Add the provider-side changes for jail throttling with retries (cf. ADR 008).
     ([\#1321](https://github.com/cosmos/interchain-security/pull/1321))
 
@@ -90,6 +93,9 @@
   - Increment consumer consensus version and register consumer migration.
     ([\#1295](https://github.com/cosmos/interchain-security/pull/1295))
 - [Provider](x/ccv/provider)
+  - Add a governance proposal for setting on the provider the denominations for
+    rewards from consumer chains.
+    ([\#1280](https://github.com/cosmos/interchain-security/pull/1280))
   - Add the provider-side changes for jail throttling with retries (cf. ADR 008).
     ([\#1321](https://github.com/cosmos/interchain-security/pull/1321))
 
