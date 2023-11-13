@@ -149,8 +149,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 					clientSigners,
 				)
 
-				// create conflicting header with 2/4 validators voting nil
-				clientHeaderWithNilVotes := s.consumerChain.CreateTMClientHeader(
+				clientHeaderWithCorruptedValset := s.consumerChain.CreateTMClientHeader(
 					s.consumerChain.ChainID,
 					int64(clientHeight.RevisionHeight+1),
 					clientHeight,
@@ -161,15 +160,54 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 					clientSigners,
 				)
 
-				testutil.CorruptValidatorPubkeyInHeader(clientHeaderWithNilVotes, clientTMValset.Validators[0].Address)
+				// change a validator public key in one the second header
+				testutil.CorruptValidatorPubkeyInHeader(clientHeaderWithCorruptedValset, clientTMValset.Validators[0].Address)
 
 				return &ibctmtypes.Misbehaviour{
 					ClientId: s.path.EndpointA.ClientID,
 					Header1:  clientHeader,
-					Header2:  clientHeaderWithNilVotes,
+					Header2:  clientHeaderWithCorruptedValset,
 				}
 			},
-			// Expect validators who did NOT vote nil
+			[]*tmtypes.Validator{},
+			false,
+		},
+		{
+			"incorrect valset 2 - shouldn't pass",
+			func() *ibctmtypes.Misbehaviour {
+				clientHeader := s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					altTime.Add(time.Minute),
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				)
+
+				clientHeaderWithCorruptedSigs := s.consumerChain.CreateTMClientHeader(
+					s.consumerChain.ChainID,
+					int64(clientHeight.RevisionHeight+1),
+					clientHeight,
+					altTime.Add(time.Hour),
+					clientTMValset,
+					clientTMValset,
+					clientTMValset,
+					clientSigners,
+				)
+
+				// change the valset in the header
+				vs, _ := altValset.ToProto()
+				clientHeader.ValidatorSet.Validators = vs.Validators[:3]
+				clientHeaderWithCorruptedSigs.ValidatorSet.Validators = vs.Validators[:3]
+
+				return &ibctmtypes.Misbehaviour{
+					ClientId: s.path.EndpointA.ClientID,
+					Header1:  clientHeader,
+					Header2:  clientHeaderWithCorruptedSigs,
+				}
+			},
 			[]*tmtypes.Validator{},
 			false,
 		},
@@ -187,8 +225,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 					clientSigners,
 				)
 
-				// create conflicting header with 2/4 validators voting nil
-				clientHeaderWithNilVotes := s.consumerChain.CreateTMClientHeader(
+				clientHeaderWithCorruptedSigs := s.consumerChain.CreateTMClientHeader(
 					s.consumerChain.ChainID,
 					int64(clientHeight.RevisionHeight+1),
 					clientHeight,
@@ -198,15 +235,16 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 					clientTMValset,
 					clientSigners,
 				)
-				testutil.CorruptCommitSigsInHeader(clientHeaderWithNilVotes, clientTMValset.Validators[0].Address)
+
+				// change the signature of one of the validator in the header
+				testutil.CorruptCommitSigsInHeader(clientHeaderWithCorruptedSigs, clientTMValset.Validators[0].Address)
 
 				return &ibctmtypes.Misbehaviour{
 					ClientId: s.path.EndpointA.ClientID,
 					Header1:  clientHeader,
-					Header2:  clientHeaderWithNilVotes,
+					Header2:  clientHeaderWithCorruptedSigs,
 				}
 			},
-			// Expect validators who did NOT vote nil
 			[]*tmtypes.Validator{},
 			false,
 		},
@@ -300,7 +338,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 				s.Equal(len(tc.expByzantineValidators), len(byzantineValidators))
 
 				// For both lunatic and equivocation attacks, all the validators
-				// who signed both headers and didn't vote nil should be returned
+				// who signed both headers
 				if len(tc.expByzantineValidators) > 0 {
 					expValset := tmtypes.NewValidatorSet(tc.expByzantineValidators)
 					s.NoError(err)
