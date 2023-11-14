@@ -5,16 +5,20 @@ module ccv_model {
     import Time.* from "./libraries/Time"
     import extraSpells.* from "./libraries/extraSpells"
 
-    pure val consumerChains = Set("consumer1", "consumer2", "consumer3")
+    pure val consumerChainList = List("consumer1", "consumer2", "consumer3")
+    pure val consumerChains = consumerChainList.toSet()
     pure val chains = consumerChains.union(Set(PROVIDER_CHAIN))
-    pure val unbondingPeriods = chains.mapBy(chain => 2 * Week)
-    pure val trustingPeriods = chains.mapBy(chain => 1 * Week)
+    pure val defUnbondingPeriod = 2 * Week
+    pure val unbondingPeriods = chains.mapBy(chain => defUnbondingPeriod)
+    pure val trustingPeriods = chains.mapBy(chain => defUnbondingPeriod - 1 * Hour)
     pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
 
     pure val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8", "node9", "node10")
     pure val InitialValidatorSet = nodes.mapBy(node => 100)
 
     import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains, TrustingPeriodPerChain = trustingPeriods).* from "./ccv"
+
+    // TODO: introduce max clock drift to produce traces with bounded drift
 
     type Parameters = {
         VscTimeout: Time,
@@ -69,46 +73,6 @@ module ccv_model {
                 changeAmount: 0,
             }
 
-    // step allows the most generic nondeterminism, in particular it becomes relatively likely
-    // that over a long enough runtime, all consumers would time out by mismatching their time advancements,
-    // and each endblock has a good chance to stop consumers, ...
-    // step is thus suited to test also unhappy paths.
-    action step = any {
-        all {
-            runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
-            nondet chain = oneOf(runningConsumers)
-            nondet timeAdvancement = oneOf(timeAdvancements)
-            EndAndBeginBlockForConsumer(chain, timeAdvancement),
-        },
-
-        val consumerStatus = currentState.providerState.consumerStatus
-        nondet consumersToStart = oneOf(nonConsumers.powerset())
-        nondet consumersToStop = oneOf(runningConsumers.powerset())
-        nondet timeAdvancement = oneOf(timeAdvancements)
-        EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
-
-        nondet node = oneOf(nodes)
-        // very restricted set of voting powers. exact values are not important,
-        // and this keeps the state space smaller.
-        nondet newVotingPower = oneOf(Set(-50, 50))
-        VotingPowerChange(node, newVotingPower),
-
-        // try to send a packet. we could filter by chains that can actually send,
-        // but it's probably not much faster than just trying and failing.
-        all {
-            runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
-            nondet sender = oneOf(runningConsumers)
-            DeliverVscMaturedPacket(sender),
-        },
-
-        // again, we could filter by chains that can actually receive,
-        // but it's probably not much faster than just trying and failing.
-        all {
-            runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
-            nondet recciver = oneOf(runningConsumers)
-            DeliverVscPacket(recciver),
-        },
-    }
 
     // some utility stateful vals to make invariants easier to define
     val providerValidatorHistory = currentState.providerState.chainState.votingPowerHistory
@@ -206,6 +170,53 @@ module ccv_model {
             trace' = trace.append(emptyAction.with("kind", "EndAndBeginBlockForConsumer").with("consumerChain", chain).with("timeAdvancement", timeAdvancement)),
             params' = params,
         }
+
+     // step_common is the core functionality of steps that does not have anything to do with time.
+    // Thus, it is part of both step and stepBoundedDrift.
+    action step_common = any {
+        nondet node = oneOf(nodes)
+        // very restricted set of voting powers. exact values are not important,
+        // and this keeps the state space smaller.
+        nondet newVotingPower = oneOf(Set(-50, 50))
+        VotingPowerChange(node, newVotingPower),
+
+        // try to send a packet. we could filter by chains that can actually send,
+        // but it's probably not much faster than just trying and failing.
+        all {
+            runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
+            nondet sender = oneOf(runningConsumers)
+            DeliverVscMaturedPacket(sender),
+        },
+
+        // again, we could filter by chains that can actually receive,
+        // but it's probably not much faster than just trying and failing.
+        all {
+            runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
+            nondet recciver = oneOf(runningConsumers)
+            DeliverVscPacket(recciver),
+        },
+    }
+
+    // step allows the most generic nondeterminism, in particular it becomes relatively likely
+    // that over a long enough runtime, all consumers would time out by mismatching their time advancements,
+    // and each endblock has a good chance to stop consumers, ...
+    // step is thus suited to test also unhappy paths.
+    action step = any {
+        all {
+            runningConsumers.size() > 0, // ensure there is a running consumer, otherwise this action does not make sense
+            nondet chain = oneOf(runningConsumers)
+            nondet timeAdvancement = oneOf(timeAdvancements)
+            EndAndBeginBlockForConsumer(chain, timeAdvancement),
+        },
+
+        val consumerStatus = currentState.providerState.consumerStatus
+        nondet consumersToStart = oneOf(nonConsumers.powerset())
+        nondet consumersToStop = oneOf(runningConsumers.powerset())
+        nondet timeAdvancement = oneOf(timeAdvancements)
+        EndAndBeginBlockForProvider(timeAdvancement, consumersToStart, consumersToStop),
+
+        step_common
+    }
 
     // ==================
     // UTILITY FUNCTIONS
@@ -399,6 +410,9 @@ module ccv_model {
             consumer => 
                 currentState.providerState.outstandingPacketsToConsumer.get(consumer).length() > 0
         ))
+
+    val CanReceiveVscPackets =
+        not(trace[length(trace)-1].kind == "DeliverVscPacket")
 
     val CanSendVscMaturedPackets =
         not(ConsumerChains.exists(
