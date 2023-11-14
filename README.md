@@ -43,7 +43,7 @@ Inspect the [Makefile](./Makefile) if curious.
 
 ## Testing
 
-See [testing docs](./docs/old/testing.md).
+See [testing docs](./TESTING.md).
 
 ## Learn more
 
