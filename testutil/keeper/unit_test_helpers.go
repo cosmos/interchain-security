@@ -257,15 +257,6 @@ func TestProviderStateIsCleanedAfterConsumerChainIsStopped(t *testing.T, ctx sdk
 	require.Empty(t, providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &expectedChainID))
 	require.Empty(t, providerKeeper.GetAllKeyAssignmentReplacements(ctx, expectedChainID))
 	require.Empty(t, providerKeeper.GetAllConsumerAddrsToPrune(ctx, expectedChainID))
-
-	allGlobalEntries := providerKeeper.GetAllGlobalSlashEntries(ctx)
-	for _, entry := range allGlobalEntries {
-		require.NotEqual(t, expectedChainID, entry.ConsumerChainID)
-	}
-
-	slashPacketData, vscMaturedPacketData, _, _ := providerKeeper.GetAllThrottledPacketData(ctx, expectedChainID)
-	require.Empty(t, slashPacketData)
-	require.Empty(t, vscMaturedPacketData)
 }
 
 func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {

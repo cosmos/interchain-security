@@ -24,8 +24,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": null
       }
@@ -53,8 +52,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": null
       }
@@ -98,8 +96,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": null
       }
@@ -144,8 +141,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": {
           "1": {
@@ -185,8 +181,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": {
           "1": {
@@ -239,8 +234,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": {
           "1": {
@@ -288,8 +282,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": {
           "1": {
@@ -346,8 +339,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": null
       },
@@ -364,8 +356,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": null
       }
@@ -414,8 +405,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": null
       }
@@ -443,8 +433,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": null
       },
@@ -461,8 +450,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": null
       }
@@ -490,8 +478,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": null
       }
@@ -517,8 +504,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": null
       }
@@ -546,8 +532,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": null
       },
@@ -564,8 +549,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": null
       }
@@ -593,8 +577,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "Proposals": null
       }

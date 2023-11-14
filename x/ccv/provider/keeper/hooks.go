@@ -225,7 +225,7 @@ func (h Hooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64)
 }
 
 // GetConsumerAdditionLegacyPropFromProp extracts a consumer addition legacy proposal from
-// the proposal with given ID
+// the proposal with the given ID
 func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
 	ctx sdk.Context,
 	proposalID uint64,

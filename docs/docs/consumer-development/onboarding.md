@@ -21,7 +21,7 @@ To help validators and other node runners onboard onto your chain, please prepar
 This should include (at minimum):
 
 - [ ] genesis.json without CCV data (before the proposal passes)
-- [ ] genesis.json with CCV data (after spawn time passes)
+- [ ] genesis.json with CCV data (after spawn time passes). Check if CCV data needs to be transformed (see [Transform Consumer Genesis](./consumer-genesis-transformation.md))
 - [ ] information about relevant seed/peer nodes you are running
 - [ ] relayer information (compatible versions)
 - [ ] copy of your governance proposal (as JSON)

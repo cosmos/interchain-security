@@ -27,8 +27,7 @@ type ChainState struct {
 	ConsumerChains                 *map[ChainID]bool
 	AssignedKeys                   *map[ValidatorID]string
 	ProviderKeys                   *map[ValidatorID]string // validatorID: validator provider key
-	ConsumerChainQueueSizes        *map[ChainID]uint
-	GlobalSlashQueueSize           *uint
+	ConsumerPendingPacketQueueSize *uint                   // Only relevant to consumer chains
 	RegisteredConsumerRewardDenoms *[]string
 }
 
@@ -174,22 +173,14 @@ func (tr TestConfig) getChainState(chain ChainID, modelState ChainState) ChainSt
 		chainState.ProviderKeys = &providerKeys
 	}
 
-	if modelState.GlobalSlashQueueSize != nil {
-		globalQueueSize := tr.getGlobalSlashQueueSize()
-		chainState.GlobalSlashQueueSize = &globalQueueSize
-	}
-
-	if modelState.ConsumerChainQueueSizes != nil {
-		consumerChainQueueSizes := map[ChainID]uint{}
-		for c := range *modelState.ConsumerChainQueueSizes {
-			consumerChainQueueSizes[c] = tr.getConsumerChainPacketQueueSize(c)
-		}
-		chainState.ConsumerChainQueueSizes = &consumerChainQueueSizes
-	}
-
 	if modelState.RegisteredConsumerRewardDenoms != nil {
 		registeredConsumerRewardDenoms := tr.getRegisteredConsumerRewardDenoms(chain)
 		chainState.RegisteredConsumerRewardDenoms = &registeredConsumerRewardDenoms
+	}
+
+	if modelState.ConsumerPendingPacketQueueSize != nil {
+		pendingPacketQueueSize := tr.getPendingPacketQueueSize(chain)
+		chainState.ConsumerPendingPacketQueueSize = &pendingPacketQueueSize
 	}
 
 	if *verbose {
@@ -673,9 +664,10 @@ func (tr TestConfig) getProviderAddressFromConsumer(consumerChain ChainID, valid
 	return addr
 }
 
-func (tr TestConfig) getGlobalSlashQueueSize() uint {
+func (tr TestConfig) getSlashMeter() int64 {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
+	cmd := exec.Command("docker", "exec",
+		tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
 
 		"query", "provider", "throttle-state",
 		`--node`, tr.getQueryNode(ChainID("provi")),
@@ -686,26 +678,8 @@ func (tr TestConfig) getGlobalSlashQueueSize() uint {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	packets := gjson.Get(string(bz), "packets").Array()
-	return uint(len(packets))
-}
-
-func (tr TestConfig) getConsumerChainPacketQueueSize(consumerChain ChainID) uint {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[ChainID("provi")].BinaryName,
-
-		"query", "provider", "throttled-consumer-packet-data",
-		string(consumerChain),
-		`--node`, tr.getQueryNode(ChainID("provi")),
-		`-o`, `json`,
-	)
-	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	size := gjson.Get(string(bz), "size").Uint()
-	return uint(size)
+	slashMeter := gjson.Get(string(bz), "slash_meter")
+	return slashMeter.Int()
 }
 
 func (tr TestConfig) getRegisteredConsumerRewardDenoms(chain ChainID) []string {
@@ -728,6 +702,27 @@ func (tr TestConfig) getRegisteredConsumerRewardDenoms(chain ChainID) []string {
 	}
 
 	return rewardDenoms
+}
+
+func (tr TestConfig) getPendingPacketQueueSize(chain ChainID) uint {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+
+		"query", "ccvconsumer", "throttle-state",
+		`--node`, tr.getQueryNode(chain),
+		`-o`, `json`,
+	)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	if !gjson.ValidBytes(bz) {
+		panic("invalid json response from query ccvconsumer throttle-state: " + string(bz))
+	}
+
+	packetData := gjson.Get(string(bz), "packet_data_queue").Array()
+	return uint(len(packetData))
 }
 
 func (tr TestConfig) getValidatorNode(chain ChainID, validator ValidatorID) string {
@@ -799,4 +794,8 @@ func (tr TestConfig) getProposedConsumerChains(chain ChainID) []string {
 	}
 
 	return chains
+}
+
+func uintPtr(i uint) *uint {
+	return &i
 }

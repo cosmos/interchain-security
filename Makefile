@@ -183,3 +183,10 @@ build-docs:
 	@cd docs && ./build.sh
 
 .PHONY: build-docs
+
+###############################################################################
+### 							Test Traces									###
+###############################################################################
+
+e2e-traces:
+	cd tests/e2e; go test -timeout 30s -run ^TestWriteExamples -v

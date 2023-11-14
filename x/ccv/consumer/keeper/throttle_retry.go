@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"time"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
@@ -44,9 +43,6 @@ import (
 // This design is implemented below, and in relay.go under SendPackets() and OnAcknowledgementPacket().
 //
 
-// Retry delay period could be implemented as a param, but 1 hour is reasonable
-const RetryDelayPeriod = time.Hour
-
 // PacketSendingPermitted returns whether the consumer is allowed to send packets
 // from the pending packets queue.
 func (k Keeper) PacketSendingPermitted(ctx sdktypes.Context) bool {
@@ -60,7 +56,7 @@ func (k Keeper) PacketSendingPermitted(ctx sdktypes.Context) bool {
 		return false
 	}
 	// If retry delay period has elapsed, we can send again
-	return ctx.BlockTime().After(record.SendTime.Add(RetryDelayPeriod))
+	return ctx.BlockTime().After(record.SendTime.Add(k.GetRetryDelayPeriod(ctx)))
 }
 
 func (k Keeper) UpdateSlashRecordOnSend(ctx sdktypes.Context) {
