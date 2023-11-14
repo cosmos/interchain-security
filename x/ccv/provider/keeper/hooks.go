@@ -224,6 +224,8 @@ func (h Hooks) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr s
 func (h Hooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64) {
 }
 
+// GetConsumerAdditionLegacyPropFromProp extracts a consumer addition legacy proposal from
+// the proposal with given ID
 func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
 	ctx sdk.Context,
 	proposalID uint64,
@@ -234,7 +236,7 @@ func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
 	}
 
 	// Iterate over the messages in the proposal
-	// Note that only ONE message can contain a consumer addition proposal
+	// Note that it's assumed that at most ONE message can contain a consumer addition proposal
 	for _, msg := range p.GetMessages() {
 		sdkMsg, isLegacyProposal := msg.GetCachedValue().(*v1.MsgExecLegacyContent)
 		if !isLegacyProposal {

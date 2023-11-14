@@ -91,7 +91,7 @@ func TestValidatorConsensusKeyInUse(t *testing.T) {
 	}
 }
 
-func TestAfterSubmissionAndAfterProposalVotingPeriodEnded(t *testing.T) {
+func TestAfterPropSubmissionAndVotingPeriodEnded(t *testing.T) {
 	acct := cryptotestutil.NewCryptoIdentityFromIntSeed(0)
 
 	propMsg, err := v1.NewLegacyContent(
@@ -142,48 +142,40 @@ func TestGetConsumerAdditionLegacyPropFromProp(t *testing.T) {
 		Amount:      sdk.NewCoins(sdk.NewCoin("stake", math.OneInt())),
 	}
 
+	textProp, err := v1.NewLegacyContent(
+		v1beta1.NewTextProposal("a title", "a legacy text prop"),
+		authtypes.NewModuleAddress("gov").String(),
+	)
+	require.NoError(t, err)
+
+	consuProp, err := v1.NewLegacyContent(
+		testkeeper.GetTestConsumerAdditionProp(),
+		authtypes.NewModuleAddress("gov").String(),
+	)
+	require.NoError(t, err)
+
 	testCases := map[string]struct {
-		propMsg func() sdk.Msg
+		propMsg sdk.Msg
 		// setup 			func(sdk.Context, k providerkeeper, proposalID uint64)
 		expPanic        bool
 		expConsuAddProp bool
 	}{
-
 		"prop not found": {
-			propMsg: func() sdk.Msg {
-				return dummyMsg
-			},
+			propMsg:  nil,
 			expPanic: true,
 		},
 		"msgs in prop contain no legacy props": {
-			propMsg: func() sdk.Msg {
-				return dummyMsg
-			},
-			expConsuAddProp: false,
+			propMsg: dummyMsg,
 		},
 		"msgs contain a legacy prop but not of ConsumerAdditionProposal type": {
-			propMsg: func() sdk.Msg {
-				textProp, err := v1.NewLegacyContent(
-					v1beta1.NewTextProposal("a title", "a legacy text prop"),
-					authtypes.NewModuleAddress("gov").String(),
-				)
-				require.NoError(t, err)
-
-				return textProp
-			},
-			expConsuAddProp: false,
+			propMsg: textProp,
+		},
+		"msgs contain an invalid legacy prop": {
+			propMsg:  &v1.MsgExecLegacyContent{},
+			expPanic: true,
 		},
 		"msg contains a prop of ConsumerAdditionProposal type - hook should create a new proposed chain": {
-			propMsg: func() sdk.Msg {
-				// create a dummy consumer addition prop
-				consuProp, err := v1.NewLegacyContent(
-					testkeeper.GetTestConsumerAdditionProp(),
-					authtypes.NewModuleAddress("gov").String(),
-				)
-				require.NoError(t, err)
-
-				return consuProp
-			},
+			propMsg:         consuProp,
 			expConsuAddProp: true,
 		},
 	}
@@ -193,30 +185,33 @@ func TestGetConsumerAdditionLegacyPropFromProp(t *testing.T) {
 			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 			defer ctrl.Finish()
 
-			// create a dummy prop for each test case
-			prop, err := v1.NewProposal(
-				[]sdk.Msg{tc.propMsg()},
-				0,
-				time.Now(),
-				time.Now(),
-				"",
-				"",
-				"",
-				sdk.AccAddress(acct.SDKValOpAddress()),
+			var (
+				prop      v1.Proposal
+				propFound bool
 			)
-			require.NoError(t, err)
 
-			if !tc.expPanic {
-				// pass the prop to the mocked gov keeper,
-				// which is called by the AfterProposalSubmission gov hook
-				gomock.InOrder(
-					mocks.MockGovKeeper.EXPECT().GetProposal(ctx, prop.Id).Return(prop, true),
+			if tc.propMsg != nil {
+				propFound = true
+				prop, err = v1.NewProposal(
+					[]sdk.Msg{tc.propMsg},
+					0,
+					time.Now(),
+					time.Now(),
+					"",
+					"",
+					"",
+					sdk.AccAddress(acct.SDKValOpAddress()),
 				)
-			} else {
-				gomock.InOrder(
-					mocks.MockGovKeeper.EXPECT().GetProposal(ctx, prop.Id).Return(v1.Proposal{}, false),
-				)
+				require.NoError(t, err)
+			}
+
+			gomock.InOrder(
+				mocks.MockGovKeeper.EXPECT().GetProposal(ctx, prop.Id).Return(prop, propFound),
+			)
+
+			if tc.expPanic {
 				defer func() {
+					// fail test if not panic was recovered
 					if r := recover(); r == nil {
 						require.Fail(t, r.(string))
 					}
