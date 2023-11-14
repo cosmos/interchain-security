@@ -45,6 +45,9 @@
 - [Provider](x/ccv/provider)
   - Add `InitTimeoutTimestamps` and `ExportedVscSendTimestamps` to exported
     genesis. ([\#1076](https://github.com/cosmos/interchain-security/pull/1076))
+  - Add a governance proposal for setting on the provider the denominations for
+    rewards from consumer chains.
+    ([\#1280](https://github.com/cosmos/interchain-security/pull/1280))
 
 ### IMPROVEMENTS
 
@@ -87,6 +90,10 @@
     ([\#1262](https://github.com/cosmos/interchain-security/pull/1262))
   - Increment consumer consensus version and register consumer migration.
     ([\#1295](https://github.com/cosmos/interchain-security/pull/1295))
+- [Provider](x/ccv/provider)
+  - Add a governance proposal for setting on the provider the denominations for
+    rewards from consumer chains.
+    ([\#1280](https://github.com/cosmos/interchain-security/pull/1280))
 
 ## v3.1.0
 
