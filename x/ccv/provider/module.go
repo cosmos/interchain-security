@@ -120,11 +120,8 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	providertypes.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	providertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
-	migrator := keeper.NewMigrator(*am.keeper)
-	err := cfg.RegisterMigration(am.Name(), 2,
-		func(ctx sdk.Context) error {
-			return migrator.MigrateParams(ctx, am.paramSpace)
-		})
+	migrator := keeper.NewMigrator(*am.keeper, am.paramSpace)
+	err := cfg.RegisterMigration(am.Name(), 2, migrator.MigrateParams)
 	if err != nil {
 		panic(err)
 	}
