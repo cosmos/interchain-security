@@ -3,7 +3,6 @@ package interchain_security.ccv.provider.v1;
 
 option go_package = "github.com/cosmos/interchain-security/v3/x/ccv/provider/types";
 
-import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "google/protobuf/any.proto";

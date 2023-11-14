@@ -12,23 +12,17 @@ const (
 	EventTypeRemoveConsumerRewardDenom  = "remove_consumer_reward_denom"
 	EventTypeSubmitConsumerMisbehaviour = "submit_consumer_misbehaviour"
 	EventTypeSubmitConsumerDoubleVoting = "submit_consumer_double_voting"
+	EventTypeExecuteConsumerChainSlash  = "execute_consumer_chain_slash"
+	EventTypeFeeDistribution            = "fee_distribution"
+	EventTypeConsumerSlashRequest       = "consumer_slash_request"
+	EventTypeVSCMatured                 = "vsc_matured"
 
-	EventTypeExecuteConsumerChainSlash = "execute_consumer_chain_slash"
-	EventTypeFeeDistribution           = "fee_distribution"
-	EventTypeConsumerSlashRequest      = "consumer_slash_request"
-	EventTypeVSCMatured                = "vsc_matured"
-
-	AttributeKeyAckSuccess = "success"
-	AttributeKeyAck        = "acknowledgement"
-	AttributeKeyAckError   = "error"
-
-	AttributeChainID                  = "chain_id"
-	AttributeValidatorAddress         = "validator_address"
+	AttributeKeyAckSuccess            = "success"
+	AttributeKeyAck                   = "acknowledgement"
+	AttributeKeyAckError              = "error"
 	AttributeValidatorConsumerAddress = "validator_consumer_address"
-	AttributeInfractionType           = "infraction_type"
 	AttributeInfractionHeight         = "infraction_height"
 	AttributeConsumerHeight           = "consumer_height"
-	AttributeValSetUpdateID           = "valset_update_id"
 	AttributeTimestamp                = "timestamp"
 	AttributeInitialHeight            = "initial_height"
 	AttributeInitializationTimeout    = "initialization_timeout"
@@ -42,13 +36,8 @@ const (
 	AttributeMisbehaviourHeight1      = "misbehaviour_height_1"
 	AttributeMisbehaviourHeight2      = "misbehaviour_height_2"
 	AttributeConsumerDoubleVoting     = "consumer_double_voting"
-
-	AttributeDistributionCurrentHeight = "current_distribution_height"
-	//#nosec G101 -- (false positive) this is not a hardcoded credential
-	AttributeDistributionNextHeight = "next_distribution_height"
-	AttributeDistributionFraction   = "distribution_fraction"
-	AttributeDistributionTotal      = "total"
-	AttributeDistributionToProvider = "provider_amount"
-
-	AttributeConsumerRewardDenom = "consumer_reward_denom"
+	AttributeChainID                  = "chain_id"
+	AttributeValidatorAddress         = "validator_address"
+	AttributeInfractionType           = "infraction_type"
+	AttributeValSetUpdateID           = "valset_update_id"
 )

@@ -39,6 +39,9 @@ const (
 
 	// By default, the bottom 5% of the validator set can opt out of validating consumer chains
 	DefaultSoftOptOutThreshold = "0.05"
+
+	// Default retry delay period is 1 hour.
+	DefaultRetryDelayPeriod = time.Hour
 )
 
 // Reflection based keys for params subspace
@@ -54,6 +57,7 @@ var (
 	KeySoftOptOutThreshold               = []byte("SoftOptOutThreshold")
 	KeyRewardDenoms                      = []byte("RewardDenoms")
 	KeyProviderRewardDenoms              = []byte("ProviderRewardDenoms")
+	KeyRetryDelayPeriod                  = []byte("RetryDelayPeriod")
 )
 
 // ParamKeyTable type declaration for parameters
@@ -66,7 +70,8 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
 	ccvTimeoutPeriod, transferTimeoutPeriod time.Duration,
 	consumerRedistributionFraction string, historicalEntries int64,
-	consumerUnbondingPeriod time.Duration, softOptOutThreshold string, rewardDenoms, providerRewardDenoms []string,
+	consumerUnbondingPeriod time.Duration, softOptOutThreshold string,
+	rewardDenoms, providerRewardDenoms []string, retryDelayPeriod time.Duration,
 ) ConsumerParams {
 	return ConsumerParams{
 		Enabled:                           enabled,
@@ -81,6 +86,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		SoftOptOutThreshold:               softOptOutThreshold,
 		RewardDenoms:                      rewardDenoms,
 		ProviderRewardDenoms:              providerRewardDenoms,
+		RetryDelayPeriod:                  retryDelayPeriod,
 	}
 }
 
@@ -101,6 +107,7 @@ func DefaultParams() ConsumerParams {
 		DefaultSoftOptOutThreshold,
 		rewardDenoms,
 		provideRewardDenoms,
+		DefaultRetryDelayPeriod,
 	)
 }
 
@@ -142,6 +149,9 @@ func (p ConsumerParams) Validate() error {
 	if err := ValidateDenoms(p.ProviderRewardDenoms); err != nil {
 		return err
 	}
+	if err := ValidateDuration(p.RetryDelayPeriod); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -171,6 +181,8 @@ func (p *ConsumerParams) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.RewardDenoms, ValidateDenoms),
 		paramtypes.NewParamSetPair(KeyProviderRewardDenoms,
 			p.ProviderRewardDenoms, ValidateDenoms),
+		paramtypes.NewParamSetPair(KeyRetryDelayPeriod,
+			p.RetryDelayPeriod, ValidateDuration),
 	}
 }
 

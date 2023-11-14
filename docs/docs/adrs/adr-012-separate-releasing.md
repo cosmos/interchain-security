@@ -8,10 +8,11 @@ title: Separate Releasing
 
 * {8/18/22}: Initial draft of idea in [#801](https://github.com/cosmos/interchain-security/issues/801)
 * {8/22/22}: Put idea in this ADR
+* {11/10/22}: Reject this ADR
 
 ## Status
 
-Accepted
+Rejected
 
 ## Context
 
@@ -63,7 +64,7 @@ We upgrade `main` to use a new version of SDK. This is a major version bump, tri
 
 ### Negative
 
-* Slightly more complexity.
+* ~~Slightly more complexity.~~Considerably more complex to manage the ICS library. 
 * This solution does not allow having provider and consumer on separate versions of e.g. the Cosmos SDK
 
 ### Neutral

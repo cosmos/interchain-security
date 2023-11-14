@@ -8,7 +8,6 @@ import "gogoproto/gogo.proto";
 import "interchain_security/ccv/v1/shared_consumer.proto";
 import "interchain_security/ccv/v1/wire.proto";
 import "interchain_security/ccv/provider/v1/provider.proto";
-import "tendermint/crypto/keys.proto";
 
 // GenesisState defines the CCV provider chain genesis state
 message GenesisState {

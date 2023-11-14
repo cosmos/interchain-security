@@ -104,20 +104,28 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 	// and return the intersection of validators who signed both
 
 	// create a map with the validators' address that signed header1
-	header1Signers := map[string]struct{}{}
-	for _, sign := range lightBlock1.Commit.Signatures {
+	header1Signers := map[string]int{}
+	for idx, sign := range lightBlock1.Commit.Signatures {
 		if sign.Absent() {
 			continue
 		}
-		header1Signers[sign.ValidatorAddress.String()] = struct{}{}
+		header1Signers[sign.ValidatorAddress.String()] = idx
 	}
 
 	// iterate over the header2 signers and check if they signed header1
-	for _, sign := range lightBlock2.Commit.Signatures {
+	for sigIdxHeader2, sign := range lightBlock2.Commit.Signatures {
 		if sign.Absent() {
 			continue
 		}
-		if _, ok := header1Signers[sign.ValidatorAddress.String()]; ok {
+		if sigIdxHeader1, ok := header1Signers[sign.ValidatorAddress.String()]; ok {
+			if err := verifyLightBlockCommitSig(*lightBlock1, sigIdxHeader1); err != nil {
+				return nil, err
+			}
+
+			if err := verifyLightBlockCommitSig(*lightBlock2, sigIdxHeader2); err != nil {
+				return nil, err
+			}
+
 			_, val := lightBlock1.ValidatorSet.GetByAddress(sign.ValidatorAddress)
 			validators = append(validators, val)
 		}
@@ -187,4 +195,28 @@ func headersStateTransitionsAreConflicting(h1, h2 tmtypes.Header) bool {
 		!bytes.Equal(h1.ConsensusHash, h2.ConsensusHash) ||
 		!bytes.Equal(h1.AppHash, h2.AppHash) ||
 		!bytes.Equal(h1.LastResultsHash, h2.LastResultsHash)
+}
+
+func verifyLightBlockCommitSig(lightBlock tmtypes.LightBlock, sigIdx int) error {
+	// get signature
+	sig := lightBlock.Commit.Signatures[sigIdx]
+
+	// get validator
+	idx, val := lightBlock.ValidatorSet.GetByAddress(sig.ValidatorAddress)
+	if idx == -1 {
+		return fmt.Errorf("incorrect signature: validator address %s isn't part of the validator set", sig.ValidatorAddress.String())
+	}
+
+	// verify validator pubkey corresponds to signature validator address
+	if !bytes.Equal(val.PubKey.Address(), sig.ValidatorAddress) {
+		return fmt.Errorf("validator public key doesn't correspond to signature validator address: %s!= %s", val.PubKey.Address(), sig.ValidatorAddress)
+	}
+
+	// validate signature
+	voteSignBytes := lightBlock.Commit.VoteSignBytes(lightBlock.ChainID, int32(sigIdx))
+	if !val.PubKey.VerifySignature(voteSignBytes, sig.Signature) {
+		return fmt.Errorf("wrong signature (#%d): %X", sigIdx, sig.Signature)
+	}
+
+	return nil
 }
