@@ -145,7 +145,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 
 	// use InitialValSet as the valset on the consumer
 	var valz []*tmtypes.Validator
-	for _, update := range consumerGenesisState.InitialValSet {
+	for _, update := range consumerGenesisState.Provider.InitialValSet {
 		// tmPubKey update.PubKey
 		tmPubKey, err := tmencoding.PubKeyFromProto(update.PubKey)
 		s.Require().NoError(err)
@@ -158,7 +158,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	}
 
 	// create and instantiate consumer chain
-	ibctesting.DefaultTestingAppInit = appIniter(consumerGenesisState.InitialValSet)
+	ibctesting.DefaultTestingAppInit = appIniter(consumerGenesisState.Provider.InitialValSet)
 	testChain := ibctesting.NewTestChainWithValSet(s.T(), coordinator, chainID,
 		tmtypes.NewValidatorSet(valz), providerChain.Signers)
 	coordinator.Chains[chainID] = testChain

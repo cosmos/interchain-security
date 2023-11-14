@@ -7,7 +7,6 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // Migrator is a struct for handling in-place store migrations.
@@ -32,7 +31,7 @@ func (m Migrator) Migrate1to2(ctx sdk.Context) error {
 // Note an equivalent migration is not required for providers.
 func (k Keeper) MigrateConsumerPacketData(ctx sdk.Context) error {
 	// deserialize packet data from old format
-	var depreciatedType ccvtypes.ConsumerPacketDataList
+	var depreciatedType consumertypes.ConsumerPacketDataList
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get([]byte{consumertypes.PendingDataPacketsBytePrefix})
 	if bz == nil {
@@ -64,7 +63,7 @@ func PendingDataPacketsKeyOnlyForTesting() []byte {
 
 // Note: a better test of the old functionality would be to directly reference the old ICS version,
 // including the version of ccv.ConsumerPacketDataList has a list of ccv.ConsumerPacketData without indexes.
-func (k Keeper) SetPendingPacketsOnlyForTesting(ctx sdk.Context, packets ccvtypes.ConsumerPacketDataList) {
+func (k Keeper) SetPendingPacketsOnlyForTesting(ctx sdk.Context, packets consumertypes.ConsumerPacketDataList) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := packets.Marshal()
 	if err != nil {

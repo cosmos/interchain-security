@@ -7,6 +7,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -16,7 +17,7 @@ import (
 //  1. A client to the provider was never created, i.e. a new consumer chain is started for the first time.
 //  2. A consumer chain restarts after a client to the provider was created, but the CCV channel handshake is still in progress
 //  3. A consumer chain restarts after the CCV channel handshake was completed.
-func (k Keeper) InitGenesis(ctx sdk.Context, state *ccv.ConsumerGenesisState) []abci.ValidatorUpdate {
+func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.ValidatorUpdate {
 	// PreCCV is true during the process of a standalone to consumer changeover.
 	// At the PreCCV point in the process, the standalone chain has just been upgraded to include
 	// the consumer ccv module, but the standalone staking keeper is still managing the validator set.
@@ -26,7 +27,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *ccv.ConsumerGenesisState) []
 	if state.PreCCV {
 		k.SetPreCCVTrue(ctx)
 		k.MarkAsPrevStandaloneChain(ctx)
-		k.SetInitialValSet(ctx, state.InitialValSet)
+		k.SetInitialValSet(ctx, state.Provider.InitialValSet)
 	}
 	k.SetInitGenesisHeight(ctx, ctx.BlockHeight()) // Usually 0, but not the case for changeover chains
 
@@ -55,7 +56,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *ccv.ConsumerGenesisState) []
 	// start a new chain
 	if state.NewChain {
 		// create the provider client in InitGenesis for new consumer chain. CCV Handshake must be established with this client id.
-		clientID, err := k.clientKeeper.CreateClient(ctx, state.ProviderClientState, state.ProviderConsensusState)
+		clientID, err := k.clientKeeper.CreateClient(ctx, state.Provider.ClientState, state.Provider.ConsensusState)
 		if err != nil {
 			// If the client creation fails, the chain MUST NOT start
 			panic(err)
@@ -110,15 +111,15 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *ccv.ConsumerGenesisState) []
 	}
 
 	// populate cross chain validators states with initial valset
-	k.ApplyCCValidatorChanges(ctx, state.InitialValSet)
-	return state.InitialValSet
+	k.ApplyCCValidatorChanges(ctx, state.Provider.InitialValSet)
+	return state.Provider.InitialValSet
 }
 
 // ExportGenesis returns the CCV consumer module's exported genesis
-func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *ccv.ConsumerGenesisState) {
+func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *types.GenesisState) {
 	params := k.GetConsumerParams(ctx)
 	if !params.Enabled {
-		return ccv.DefaultConsumerGenesisState()
+		return types.DefaultGenesisState()
 	}
 
 	// export the current validator set
@@ -126,7 +127,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *ccv.ConsumerGenesisStat
 
 	// export pending packets using the depreciated ConsumerPacketDataList type
 	pendingPackets := k.GetPendingPackets(ctx)
-	pendingPacketsDepreciated := ccv.ConsumerPacketDataList{}
+	pendingPacketsDepreciated := types.ConsumerPacketDataList{}
 	pendingPacketsDepreciated.List = append(pendingPacketsDepreciated.List, pendingPackets...)
 
 	// export all the states created after a provider channel got established
@@ -137,7 +138,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *ccv.ConsumerGenesisStat
 			panic("provider client does not exist although provider channel does exist")
 		}
 
-		genesis = ccv.NewRestartConsumerGenesisState(
+		genesis = types.NewRestartGenesisState(
 			clientID,
 			channelID,
 			k.GetAllPacketMaturityTimes(ctx),
@@ -153,11 +154,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *ccv.ConsumerGenesisStat
 		// if provider clientID and channelID don't exist on the consumer chain,
 		// then CCV protocol is disabled for this chain return a default genesis state
 		if !ok {
-			return ccv.DefaultConsumerGenesisState()
+			return types.DefaultGenesisState()
 		}
 
 		// export client states and pending slashing requests into a new chain genesis
-		genesis = ccv.NewRestartConsumerGenesisState(
+		genesis = types.NewRestartGenesisState(
 			clientID,
 			"",
 			nil,
@@ -165,7 +166,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *ccv.ConsumerGenesisStat
 			k.GetAllHeightToValsetUpdateIDs(ctx),
 			pendingPacketsDepreciated,
 			nil,
-			ccv.LastTransmissionBlockHeight{},
+			types.LastTransmissionBlockHeight{},
 			params,
 		)
 	}

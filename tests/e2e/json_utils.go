@@ -215,8 +215,14 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 		if err == nil {
 			return a, nil
 		}
-	case "main.slashThrottleDequeueAction":
-		var a slashThrottleDequeueAction
+	case "main.slashMeterReplenishmentAction":
+		var a slashMeterReplenishmentAction
+		err := json.Unmarshal(rawAction, &a)
+		if err == nil {
+			return a, nil
+		}
+	case "main.waitTimeAction":
+		var a waitTimeAction
 		err := json.Unmarshal(rawAction, &a)
 		if err == nil {
 			return a, nil
