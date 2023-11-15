@@ -2,6 +2,7 @@
 
 - [Releases](#releases)
   - [Semantic Versioning](#semantic-versioning)
+    - [Breaking Changes](#breaking-changes)
   - [Release Cycle](#release-cycle)
   - [Stable Release Policy](#stable-release-policy)
   - [Version Matrix](#version-matrix)
@@ -15,17 +16,16 @@ Interchain Security (ICS) follows [semantic versioning](https://semver.org), but
 - A state-machine breaking change will result in an increase of the MINOR version number (x.Y.z | x > 0).
 - Any other changes (including node API breaking changes) will result in an increase of the PATCH version number (x.y.Z | x > 0).
 
-> **More context on breaking changes:** 
-> - A change is considered to be _library API breaking_ if it modifies the integration of ICS on either consumer or provider chains (i.e., it changes the way ICS is used as a library). 
->   Note that bumping the major version of [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) or [IBC](https://github.com/cosmos/ibc-go) will be considered as a library API breaking change.
-> - A change is considered to be _state-machine breaking_ if it requires a coordinated upgrade and/or state migration for either consumer or provider chains. 
->   Note that when bumping the dependencies of [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) and [IBC](https://github.com/cosmos/ibc-go) we will only treat patch releases as non state-machine breaking.
-> - A change is considered to be _node API breaking_ if it modifies the API provided by a node of either consumer or provider chains. 
->   This includes events, queries, CLI interfaces. 
+### Breaking Changes
 
-❗**State compatibility**: It is critical for the patch releases to be state-machine compatible with prior releases in the same minor version. 
-For example, v3.2.1 must be state-machine compatible with v3.2.0. 
-This is to ensure **determinism**, i.e., given the same input, the nodes will always produce the same output.
+A change is considered to be ***library API breaking*** if it modifies the integration of ICS on either consumer or provider chains (i.e., it changes the way ICS is used as a library). 
+Note that bumping the major version of [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) or [IBC](https://github.com/cosmos/ibc-go) will be considered as a library API breaking change.
+
+A change is considered to be ***state-machine breaking*** if it requires a coordinated upgrade and/or state migration for either consumer or provider chains in order to preserve [state compatibility](./STATE-COMPATIBILITY.md). 
+Note that when bumping the dependencies of [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) and [IBC](https://github.com/cosmos/ibc-go) we will only treat patch releases as non state-machine breaking.
+
+A change is considered to be ***node API breaking*** if it modifies the API provided by a node of either consumer or provider chains. 
+This includes events, queries, CLI interfaces. 
 
 ## Release Cycle
 
