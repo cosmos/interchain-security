@@ -379,17 +379,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
 	clientSigners := s.consumerChain.Signers
 
-	// create an alternative validator set using more than 1/3 of the trusted validator set
-	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:2])
-	altSigners := make(map[string]tmtypes.PrivValidator, 2)
-	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
-	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
-
-	// create an alternative validator set using less than 1/3 of the trusted validator set
-	altValset2 := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:1])
-	altSigners2 := make(map[string]tmtypes.PrivValidator, 1)
-	altSigners2[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
-
+	// create a valid client header
 	clientHeader := s.consumerChain.CreateTMClientHeader(
 		s.consumerChain.ChainID,
 		int64(clientHeight.RevisionHeight+1),
@@ -401,8 +391,32 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 		clientSigners,
 	)
 
+	// create an alternative validator set using more than 1/3 of the trusted validator set
+	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:2])
+	altSigners := make(map[string]tmtypes.PrivValidator, 2)
+	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
+	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
+
+	// create a conflicting client with different block ID using
+	// to alternative validator set
+	clientHeaderWithDiffBlockID := s.consumerChain.CreateTMClientHeader(
+		s.consumerChain.ChainID,
+		int64(clientHeight.RevisionHeight+1),
+		clientHeight,
+		headerTs,
+		altValset,
+		altValset,
+		clientTMValset, // trusted valset stays the same
+		altSigners,
+	)
+
+	// create an alternative validator set using less than 1/3 of the trusted validator set
+	altValset2 := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:1])
+	altSigners2 := make(map[string]tmtypes.PrivValidator, 1)
+	altSigners2[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
+
 	// create a conflicting client header with insufficient voting power
-	clientHeader2 := s.consumerChain.CreateTMClientHeader(
+	clientHeaderWithInsufficientVotingPower := s.consumerChain.CreateTMClientHeader(
 		s.consumerChain.ChainID,
 		int64(clientHeight.RevisionHeight+1),
 		clientHeight,
@@ -451,16 +465,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 			&ibctmtypes.Misbehaviour{
 				ClientId: "clientID",
 				Header1:  clientHeader,
-				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					altValset,
-					altValset,
-					clientTMValset,
-					altSigners,
-				),
+				Header2:  clientHeaderWithDiffBlockID,
 			},
 			false,
 		},
@@ -487,7 +492,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 			&ibctmtypes.Misbehaviour{
 				ClientId: s.path.EndpointA.ClientID,
 				Header1:  clientHeader,
-				Header2:  clientHeader2,
+				Header2:  clientHeaderWithInsufficientVotingPower,
 			},
 			false,
 		},
@@ -497,16 +502,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 				ClientId: s.path.EndpointA.ClientID,
 				Header1:  clientHeader,
 				// create header using a different validator set
-				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					altValset,
-					altValset,
-					clientTMValset,
-					altSigners,
-				),
+				Header2: clientHeaderWithDiffBlockID,
 			},
 			true,
 		},
