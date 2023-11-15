@@ -89,7 +89,8 @@ Once the **final release** is cut, the new changelog section must be added to ma
 
 ## Tagging Procedure
 
-**Important**: _**Always create tags from your local machine**_ since all release tags should be signed and annotated.
+**Important**: _**Always create tags from your local machine**_ since all release 
+tags should be [signed and annotated](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits).
 
 The following steps are the default for tagging a specific branch commit using git 
 on your local machine. Usually, release branches are labeled `release/v*`:

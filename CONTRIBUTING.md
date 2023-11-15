@@ -225,7 +225,8 @@ where:
 
 - `section` is one of 
   `dependencies`, `improvements`, `features`, `bug-fixes`, `state-breaking`, `api-breaking`, 
-  and _**if multiple apply, create multiple files**_;
+  and _**if multiple apply, create multiple files**_, 
+  not necessarily with the same `short-description` or content;
 - `pr-number` is the PR number;
 - `short-description` is a short (4 to 6 word), hyphen separated description of the change;
 - `component` is used for changes that affect one of the components defined in the [config](.changelog/config.toml), e.g., `provider`, `consumer`.
@@ -235,19 +236,19 @@ For examples, see the [.changelog](.changelog) folder.
 Use `unclog` to add a changelog entry in `.changelog` (check the [requirements](https://github.com/informalsystems/unclog#requirements) first): 
 ```bash
 # add a general entry
-unclog add 
-   -i "${pr-number}-${short-description}" 
-   -p "${pr-number}" 
-   -s "${section}" 
-   -m "${description}"
+unclog add \
+   -i "${pr-number}-${short-description}" \
+   -p "${pr-number}" \
+   -s "${section}" \
+   -m "${description}" \
 
 # add a entry to a component 
 unclog add 
-   -i "${pr-number}-${short-description}" 
-   -p "${pr-number}" 
-   -c "${component}"
-   -s "${section}" 
-   -m "${description}"
+   -i "${pr-number}-${short-description}" \
+   -p "${pr-number}" \
+   -c "${component}" \
+   -s "${section}" \
+   -m "${description}" \
 ```
 where `${description}` is a detailed description of the changelog entry.
 
