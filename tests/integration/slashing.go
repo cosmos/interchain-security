@@ -9,9 +9,11 @@ import (
 
 	"cosmossdk.io/core/comet"
 	"cosmossdk.io/math"
+	"cosmossdk.io/x/evidence/types"
 	evidencetypes "cosmossdk.io/x/evidence/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -20,6 +22,7 @@ import (
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	keepertestutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
@@ -609,14 +612,11 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	)
 	expCommit := suite.commitSlashPacket(ctx, *packetData)
 
-	// expect to send slash packet when handling double-sign evidence
-	// NOTE: using IBCKeeper Authority as msg submitter (equal to gov module addr)
-	addr, err := sdk.AccAddressFromBech32(suite.consumerApp.GetIBCKeeper().GetAuthority())
+	// HACK: prior to v50, HandleEquivocationEvidence was a public method on the x/evidence keeper
+	// and could be called directly. Now it is a private method and it is not easy to submit replicate the behaviour.
+	// In production the x/evidence module gets misbehaviour data from CometBFT, and we cannot replicate that easily.
+	err := suite.handleEquivocationEvidence(e)
 	suite.Require().NoError(err)
-	evidenceMsg, err := evidencetypes.NewMsgSubmitEvidence(addr, e)
-	suite.Require().NoError(err)
-	suite.Require().NotEmpty(evidenceMsg)
-	suite.consumerApp.GetTestEvidenceKeeper().SubmitEvidence(ctx, e)
 
 	// check slash packet is queued
 	pendingPackets := suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)
@@ -765,4 +765,105 @@ func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 	// Slash record should now be found (slash sent)
 	_, found = consumerKeeper.GetSlashRecord(suite.consumerCtx())
 	suite.Require().True(found)
+}
+
+// EvidenceKeeper.HandleEquivocationEvidence was made private in cosmos-sdk@v0.50 so we cannot access it any more in tests
+// This function replicates how the evidence is handled in that function
+// Testing without this function becomes cumbersome because in production the app (and the evidence keeper) gets the
+// evidence from CometBFT block events. That is not easily done in tests so we must manually call the function and replicate the behaviour.
+//
+// In an actual app, the function is called as part of x/evidence BeginBlocker.
+// NOTE: we may need to refactor the tests using this function.
+func (suite *CCVTestSuite) handleEquivocationEvidence(evidence *evidencetypes.Equivocation) error {
+	ctx := sdk.WrapSDKContext(suite.consumerCtx())
+	sdkCtx := suite.consumerCtx()
+
+	ibcStakingKeeper := suite.consumerApp.GetStakingKeeper()
+	// cast so all methods become available (removes the ibcStakingKeeper interface constraints)
+	stakingKeeper := ibcStakingKeeper.(consumerkeeper.Keeper)
+
+	ibcSlashingKeeper := suite.consumerApp.GetTestSlashingKeeper()
+	slashingKeeper := ibcSlashingKeeper.(slashingkeeper.Keeper)
+
+	evidenceKeeper := suite.consumerApp.GetTestEvidenceKeeper()
+
+	consAddr := evidence.GetConsensusAddress(stakingKeeper.ConsensusAddressCodec())
+
+	validator, err := stakingKeeper.ValidatorByConsAddr(ctx, consAddr)
+	if err != nil {
+		return err
+	}
+
+	if validator == nil || validator.IsUnbonded() {
+		// Defensive: Simulation doesn't take unbonding periods into account, and
+		// CometBFT might break this assumption at some point.
+		return nil
+	}
+
+	if len(validator.GetOperator()) != 0 {
+		if _, err := slashingKeeper.GetPubkey(ctx, consAddr.Bytes()); err != nil {
+			// Ignore evidence that cannot be handled.
+			return nil
+		}
+	}
+
+	// calculate the age of the evidence
+	infractionHeight := evidence.GetHeight()
+	infractionTime := evidence.GetTime()
+	ageDuration := sdkCtx.BlockHeader().Time.Sub(infractionTime)
+	ageBlocks := sdkCtx.BlockHeader().Height - infractionHeight
+
+	// reject too outdated evidence
+	cp := sdkCtx.ConsensusParams()
+	if cp.Evidence != nil {
+		if ageDuration > cp.Evidence.MaxAgeDuration && ageBlocks > cp.Evidence.MaxAgeNumBlocks {
+			return nil
+		}
+	}
+
+	if ok := slashingKeeper.HasValidatorSigningInfo(ctx, consAddr); !ok {
+		panic(fmt.Sprintf("expected signing info for validator %s but not found", consAddr))
+	}
+
+	// ignore if the validator is already tombstoned
+	if slashingKeeper.IsTombstoned(ctx, consAddr) {
+		return nil
+	}
+
+	distributionHeight := infractionHeight - sdk.ValidatorUpdateDelay
+
+	slashFractionDoubleSign, err := slashingKeeper.SlashFractionDoubleSign(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = slashingKeeper.SlashWithInfractionReason(
+		ctx,
+		consAddr,
+		slashFractionDoubleSign,
+		evidence.GetValidatorPower(), distributionHeight,
+		stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
+	)
+	if err != nil {
+		return err
+	}
+
+	if !validator.IsJailed() {
+		err = slashingKeeper.Jail(ctx, consAddr)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = slashingKeeper.JailUntil(ctx, consAddr, types.DoubleSignJailEndTime)
+	if err != nil {
+		return err
+	}
+
+	err = slashingKeeper.Tombstone(ctx, consAddr)
+	if err != nil {
+		return err
+	}
+	return evidenceKeeper.Evidences.Set(ctx, evidence.Hash(), evidence)
+
 }
