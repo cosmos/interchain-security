@@ -11,7 +11,7 @@
 
 Interchain Security (ICS) follows [semantic versioning](https://semver.org), but with the following deviations (similar to [IBC-Go](https://github.com/cosmos/ibc-go/blob/main/RELEASES.md)):
 
-- A library API breaking change will result in an increase of the MAJOR version number (X.y.z | x > 0). 
+- A library API breaking change will result in an increase of the MAJOR version number (X.y.z | X > 0). 
 - A state-machine breaking change (change requiring coordinated upgrade and/or state migration for the consumer, the provider, or both) will result in an increase of the MINOR version number (x.Y.z | x > 0).
 - Any other changes (including node API breaking changes) will result in an increase of the PATCH version number (x.y.Z | x > 0).
 
