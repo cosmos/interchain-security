@@ -138,7 +138,7 @@ const (
 	// handled in the current block
 	VSCMaturedHandledThisBlockBytePrefix
 
-	// ParametersKey is the is the single byte key for storing consumer's parameters.
+	// ParametersKey is the is the single byte key for storing provider's parameters.
 	ParametersByteKey
 
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
@@ -148,6 +148,7 @@ const (
 // Fully defined key func section
 //
 
+// ParametersKey returns the key for the parameters of the provider module in the store
 func ParametersKey() []byte {
 	return []byte{ParametersByteKey}
 }

@@ -230,9 +230,9 @@ func (k Keeper) QueryThrottledConsumerPacketData(goCtx context.Context, req *typ
 // getSlashPacketData fetches a slash packet data from the store using consumerChainId and ibcSeqNum (direct access)
 // If the returned bytes do not unmarshal to SlashPacketData, the data is considered not found.
 func (k Keeper) getSlashPacketData(ctx sdk.Context, consumerChainID string, ibcSeqNum uint64) (ccvtypes.SlashPacketData, bool) {
-	store := k.storeService.OpenKVStore(ctx)
-	bz, err := store.Get(types.ThrottledPacketDataKey(consumerChainID, ibcSeqNum))
-	if err != nil || len(bz) == 0 {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ThrottledPacketDataKey(consumerChainID, ibcSeqNum))
+	if len(bz) == 0 {
 		return ccvtypes.SlashPacketData{}, false
 	}
 
@@ -241,7 +241,7 @@ func (k Keeper) getSlashPacketData(ctx sdk.Context, consumerChainID string, ibcS
 	}
 
 	packet := ccvtypes.SlashPacketData{}
-	err = packet.Unmarshal(bz[1:])
+	err := packet.Unmarshal(bz[1:])
 	if err != nil {
 		// If the data cannot be unmarshaled, it is considered not found
 		return ccvtypes.SlashPacketData{}, false

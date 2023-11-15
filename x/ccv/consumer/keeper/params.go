@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -18,10 +17,7 @@ func (k Keeper) GetConsumerParams(ctx sdk.Context) ccvtypes.Params {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ParametersKey())
 	var params ccvtypes.Params
-	err := k.cdc.Unmarshal(bz, &params)
-	if err != nil {
-		panic(fmt.Sprintf("error unmarshalling module parameters: %v:", err))
-	}
+	k.cdc.MustUnmarshal(bz, &params)
 	return params
 }
 

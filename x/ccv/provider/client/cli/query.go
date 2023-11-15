@@ -363,15 +363,7 @@ func CmdProviderParams() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "params [flags]",
 		Short: "Query values set as provider parameters",
-		/* 		Long: strings.TrimSpace(
-					fmt.Sprintf(`Returns the registered consumer reward denoms.
-		Example:
-		$ %s query provider registered-consumer-reward-denoms
-		`,
-						version.AppName,
-					),
-				), */
-		Args: cobra.NoArgs,
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {

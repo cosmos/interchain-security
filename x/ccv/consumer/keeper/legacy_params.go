@@ -11,7 +11,7 @@ import (
 
 // Legacy: used for migration only!
 // GetConsumerParamsLegacy returns the params for the consumer ccv module from x/param subspace
-// which will be depreacted soon
+// which will be deprecated soon
 func (k Keeper) GetConsumerParamsLegacy(ctx sdk.Context, paramSpace paramtypes.Subspace) ccvtypes.Params {
 	return ccvtypes.NewParams(
 		getEnabled(ctx, paramSpace),
