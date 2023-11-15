@@ -8,7 +8,6 @@ import (
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
@@ -229,7 +228,7 @@ func (h Hooks) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64)
 func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
 	ctx sdk.Context,
 	proposalID uint64,
-) (types.ConsumerAdditionProposal, bool) {
+) (providertypes.ConsumerAdditionProposal, bool) {
 	p, ok := h.k.govKeeper.GetProposal(ctx, proposalID)
 	if !ok {
 		panic(fmt.Errorf("failed to get proposal %d from store", proposalID))
@@ -249,10 +248,10 @@ func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
 		}
 
 		// returns if legacy prop is of ConsumerAddition proposal type
-		prop, ok := content.(*types.ConsumerAdditionProposal)
+		prop, ok := content.(*providertypes.ConsumerAdditionProposal)
 		if ok {
 			return *prop, true
 		}
 	}
-	return types.ConsumerAdditionProposal{}, false
+	return providertypes.ConsumerAdditionProposal{}, false
 }
