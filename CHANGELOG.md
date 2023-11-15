@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Unreleased
+
+Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
+
 ## v2.3.0-provider-lsm
 
 *November 15, 2023*
