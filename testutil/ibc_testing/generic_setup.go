@@ -134,8 +134,8 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		// using time.Now() could set the spawn time to be too far in the past or too far in the future
 		SpawnTime:                         coordinator.CurrentTime,
 		UnbondingPeriod:                   ccvtypes.DefaultConsumerUnbondingPeriod,
-		CcvTimeoutPeriod:                  ccvtypes.DefaultBlocksPerDistributionTransmission,
-		TransferTimeoutPeriod:             ccvtypes.DefaultCCVTimeoutPeriod,
+		CcvTimeoutPeriod:                  ccvtypes.DefaultCCVTimeoutPeriod,
+		TransferTimeoutPeriod:             ccvtypes.DefaultTransferTimeoutPeriod,
 		ConsumerRedistributionFraction:    ccvtypes.DefaultConsumerRedistributeFrac,
 		BlocksPerDistributionTransmission: ccvtypes.DefaultBlocksPerDistributionTransmission,
 		HistoricalEntries:                 ccvtypes.DefaultHistoricalEntries,

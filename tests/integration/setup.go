@@ -165,7 +165,8 @@ func (s *CCVTestSuite) registerPacketSniffer(chain *ibctesting.TestChain) {
 	if s.packetSniffers == nil {
 		s.packetSniffers = make(map[*ibctesting.TestChain]*packetSniffer)
 	}
-	p := newPacketSniffer()
+
+	p := newPacketSniffer(chain.ChainID)
 	chain.App.GetBaseApp().SetStreamingManager(store.StreamingManager{
 		ABCIListeners: []store.ABCIListener{p},
 	})
@@ -376,15 +377,17 @@ func preProposalKeyAssignment(s *CCVTestSuite, chainID string) {
 }
 
 // packetSniffer implements the StreamingService interface.
-// Implements ListenEndBlock to record packets from events.
+// Implements ListenFinalizeBlock to record packets from events.
 type packetSniffer struct {
+	chainID string
 	packets map[string]channeltypes.Packet
 }
 
 var _ store.ABCIListener = &packetSniffer{}
 
-func newPacketSniffer() *packetSniffer {
+func newPacketSniffer(chainID string) *packetSniffer {
 	return &packetSniffer{
+		chainID: chainID,
 		packets: make(map[string]channeltypes.Packet),
 	}
 }
@@ -403,7 +406,7 @@ func getSentPacketKey(sequence uint64, channelID string) string {
 	return fmt.Sprintf("%s-%d", channelID, sequence)
 }
 
-func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit, cs []*store.StoreKVPair) error {
+func (ps *packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit, cs []*store.StoreKVPair) error {
 	return nil
 }
 
