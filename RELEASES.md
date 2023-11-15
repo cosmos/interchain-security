@@ -11,12 +11,12 @@
 
 Interchain Security (ICS) follows [semantic versioning](https://semver.org), but with the following deviations (similar to [IBC-Go](https://github.com/cosmos/ibc-go/blob/main/RELEASES.md)):
 
-- A library API breaking change will result in an increase of the MAJOR version number (X.y.z | x > 0). 
+- A library API breaking change will result in an increase of the MAJOR version number (X.y.z | X > 0). 
 - A state-machine breaking change (change requiring coordinated upgrade and/or state migration for the consumer, the provider, or both) will result in an increase of the MINOR version number (x.Y.z | x > 0).
 - Any other changes (including node API breaking changes) will result in an increase of the PATCH version number (x.y.Z | x > 0).
 
 ❗**State compatibility**: It is critical for the patch releases to be state-machine compatible with prior releases in the same minor version. 
-For example, v3.2.1 must be state-machine compatible with v3.2.1.
+For example, v3.2.1 must be state-machine compatible with v3.2.0.
 
 When bumping the dependencies of [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) and [IBC](https://github.com/cosmos/ibc-go) we will only treat patch releases as non state-machine breaking.
 
