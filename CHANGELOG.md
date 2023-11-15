@@ -1,8 +1,8 @@
 # CHANGELOG
 
-## [Unreleased]
+## v2.3.0-provider-lsm
 
-Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
+*November 15, 2023*
 
 * (fix!) [#1422](https://github.com/cosmos/interchain-security/pull/1422) Fix the misbehaviour handling by verifying the signatures of byzantine validators.
 
