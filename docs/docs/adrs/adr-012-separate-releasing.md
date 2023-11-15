@@ -65,7 +65,11 @@ We upgrade `main` to use a new version of SDK. This is a major version bump, tri
 ### Negative
 
 * ~~Slightly more complexity.~~Considerably more complex to manage the ICS library. 
-* This solution does not allow having provider and consumer on separate versions of e.g. the Cosmos SDK
+  This is because ICS needs to support multiple versions of SDK (e.g., 0.45, 0.47, 0.50). 
+  In addition, ICS needs to support a special fork of SDK (with LSM included) for the Cosmos Hub. 
+  This means that instead of focusing on main the development team needs to manage multiple release 
+  branches with different dependency trees. 
+* This solution does not allow having provider and consumer on separate versions of e.g. the Cosmos SDK.
 
 ### Neutral
 
