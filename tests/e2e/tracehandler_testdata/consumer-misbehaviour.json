@@ -31,8 +31,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "Proposals": null
@@ -66,8 +65,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "Proposals": {
@@ -111,8 +109,7 @@
         "ProviderKeys": {
           "alice": "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
         },
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "Proposals": null
@@ -146,8 +143,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "Proposals": {
@@ -193,8 +189,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "Proposals": null
@@ -211,8 +206,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "Proposals": null
@@ -263,8 +257,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "Proposals": null
@@ -281,8 +274,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "Proposals": null
@@ -310,8 +302,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "Proposals": null
@@ -351,8 +342,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "Proposals": null
@@ -372,8 +362,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "Proposals": null
@@ -401,8 +390,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "Proposals": null
@@ -422,8 +410,7 @@
         "ConsumerChains": null,
         "AssignedKeys": null,
         "ProviderKeys": null,
-        "ConsumerChainQueueSizes": null,
-        "GlobalSlashQueueSize": null,
+        "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": {
           "07-tendermint-0": {

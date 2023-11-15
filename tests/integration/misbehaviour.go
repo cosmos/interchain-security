@@ -379,11 +379,54 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
 	clientSigners := s.consumerChain.Signers
 
+	// create a valid client header
+	clientHeader := s.consumerChain.CreateTMClientHeader(
+		s.consumerChain.ChainID,
+		int64(clientHeight.RevisionHeight+1),
+		clientHeight,
+		headerTs,
+		clientTMValset,
+		clientTMValset,
+		clientTMValset,
+		clientSigners,
+	)
+
 	// create an alternative validator set using more than 1/3 of the trusted validator set
 	altValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:2])
 	altSigners := make(map[string]tmtypes.PrivValidator, 2)
 	altSigners[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
 	altSigners[clientTMValset.Validators[1].Address.String()] = clientSigners[clientTMValset.Validators[1].Address.String()]
+
+	// create a conflicting client with different block ID using
+	// to alternative validator set
+	clientHeaderWithDiffBlockID := s.consumerChain.CreateTMClientHeader(
+		s.consumerChain.ChainID,
+		int64(clientHeight.RevisionHeight+1),
+		clientHeight,
+		headerTs,
+		altValset,
+		altValset,
+		clientTMValset, // trusted valset stays the same
+		altSigners,
+	)
+
+	// create an alternative validator set using less than 1/3 of the trusted validator set
+	altValset2 := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators[0:1])
+	altSigners2 := make(map[string]tmtypes.PrivValidator, 1)
+	altSigners2[clientTMValset.Validators[0].Address.String()] = clientSigners[clientTMValset.Validators[0].Address.String()]
+
+	// create a conflicting client header with insufficient voting power
+	clientHeaderWithInsufficientVotingPower := s.consumerChain.CreateTMClientHeader(
+		s.consumerChain.ChainID,
+		int64(clientHeight.RevisionHeight+1),
+		clientHeight,
+		// use a different block time to change the header BlockID
+		headerTs.Add(time.Hour),
+		altValset2,
+		altValset2,
+		clientTMValset,
+		altSigners2,
+	)
 
 	testCases := []struct {
 		name         string
@@ -391,38 +434,20 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 		expPass      bool
 	}{
 		{
-			"client state not found - shouldn't pass",
+			"identical headers - shouldn't pass",
 			&ibctmtypes.Misbehaviour{
-				ClientId: "clientID",
-				Header1: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					clientTMValset,
-					clientTMValset,
-					clientTMValset,
-					clientSigners,
-				),
-				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					altValset,
-					altValset,
-					clientTMValset,
-					altSigners,
-				),
+				ClientId: s.path.EndpointA.ClientID,
+				Header1:  clientHeader,
+				Header2:  clientHeader,
 			},
 			false,
 		},
 		{
-			"invalid misbehaviour with empty header1 - shouldn't pass",
+			"misbehaviour isn't for a consumer chain - shouldn't pass",
 			&ibctmtypes.Misbehaviour{
-				Header1: &ibctmtypes.Header{},
-				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
+				ClientId: s.path.EndpointA.ClientID,
+				Header1: s.consumerChain.CreateTMClientHeader(
+					"aChainID",
 					int64(clientHeight.RevisionHeight+1),
 					clientHeight,
 					headerTs,
@@ -431,6 +456,16 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 					clientTMValset,
 					altSigners,
 				),
+				Header2: clientHeader,
+			},
+			false,
+		},
+		{
+			"client ID doesn't correspond to the client ID of consumer chain  - shouldn't pass",
+			&ibctmtypes.Misbehaviour{
+				ClientId: "clientID",
+				Header1:  clientHeader,
+				Header2:  clientHeaderWithDiffBlockID,
 			},
 			false,
 		},
@@ -438,16 +473,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 			"invalid misbehaviour with different header height  - shouldn't pass",
 			&ibctmtypes.Misbehaviour{
 				ClientId: s.path.EndpointA.ClientID,
-				Header1: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					clientTMValset,
-					clientTMValset,
-					clientTMValset,
-					clientSigners,
-				),
+				Header1:  clientHeader,
 				Header2: s.consumerChain.CreateTMClientHeader(
 					s.consumerChain.ChainID,
 					int64(clientHeight.RevisionHeight+2),
@@ -461,41 +487,22 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 			},
 			false,
 		},
-		// TODO: should pass after 1401 is merged
-		// {
-		// 	"one header of the misbehaviour has insufficient voting power - shouldn't pass",
-		// 	&ibctmtypes.Misbehaviour{
-		// 		ClientId: s.path.EndpointA.ClientID,
-		// 		Header1:  clientHeader,
-		// 		Header2:  clientHeader2,
-		// 	},
-		// 	false,
-		// },
+		{
+			"one header of the misbehaviour has insufficient voting power - shouldn't pass",
+			&ibctmtypes.Misbehaviour{
+				ClientId: s.path.EndpointA.ClientID,
+				Header1:  clientHeader,
+				Header2:  clientHeaderWithInsufficientVotingPower,
+			},
+			false,
+		},
 		{
 			"valid misbehaviour - should pass",
 			&ibctmtypes.Misbehaviour{
 				ClientId: s.path.EndpointA.ClientID,
-				Header1: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					clientTMValset,
-					clientTMValset,
-					clientTMValset,
-					clientSigners,
-				),
+				Header1:  clientHeader,
 				// create header using a different validator set
-				Header2: s.consumerChain.CreateTMClientHeader(
-					s.consumerChain.ChainID,
-					int64(clientHeight.RevisionHeight+1),
-					clientHeight,
-					headerTs,
-					altValset,
-					altValset,
-					clientTMValset,
-					altSigners,
-				),
+				Header2: clientHeaderWithDiffBlockID,
 			},
 			true,
 		},

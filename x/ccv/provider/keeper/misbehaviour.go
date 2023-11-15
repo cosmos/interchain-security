@@ -83,11 +83,11 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 	// construct the trusted and conflicted light blocks
 	lightBlock1, err := headerToLightBlock(*misbehaviour.Header1)
 	if err != nil {
-		return
+		return validators, err
 	}
 	lightBlock2, err := headerToLightBlock(*misbehaviour.Header2)
 	if err != nil {
-		return
+		return validators, err
 	}
 
 	// Check if the misbehaviour corresponds to an Amnesia attack,
@@ -97,7 +97,7 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 	//
 	// Note that we cannot differentiate which of the headers is trusted or malicious,
 	if !headersStateTransitionsAreConflicting(*lightBlock1.Header, *lightBlock2.Header) && lightBlock1.Commit.Round != lightBlock2.Commit.Round {
-		return
+		return validators, nil
 	}
 
 	// compare the signatures of the headers
@@ -153,9 +153,21 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 }
 
 // CheckMisbehaviour checks that headers in the given misbehaviour forms
-// a valid light client attack and that the corresponding light client isn't expired
+// a valid light client attack from an ICS consumer chain and that the light client isn't expired
 func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
-	clientState, found := k.clientKeeper.GetClientState(ctx, misbehaviour.ClientId)
+	// check that the misbehaviour is for an ICS consumer chain
+	clientId, found := k.GetConsumerClientId(ctx, misbehaviour.Header1.Header.ChainID)
+	if !found {
+		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain: %s", misbehaviour.Header1.Header.ChainID)
+	} else if misbehaviour.ClientId != clientId {
+		return fmt.Errorf("incorrect misbehaviour: expected client ID for consumer chain %s is %s got %s",
+			misbehaviour.Header1.Header.ChainID,
+			clientId,
+			misbehaviour.ClientId,
+		)
+	}
+
+	clientState, found := k.clientKeeper.GetClientState(ctx, clientId)
 	if !found {
 		return errorsmod.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot check misbehaviour for client with ID %s", misbehaviour.ClientId)
 	}
@@ -169,14 +181,19 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 		return errorsmod.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
 	}
 
-	// CheckMisbehaviour verifies that the headers have both he same block height and
-	// different blockID hashes
+	// CheckForMisbehaviour verifies that the headers have different blockID hashes
 	ok := clientState.CheckForMisbehaviour(ctx, k.cdc, clientStore, &misbehaviour)
 	if !ok {
 		return errorsmod.Wrapf(ibcclienttypes.ErrInvalidMisbehaviour, "invalid misbehaviour for client-id: %s", misbehaviour.ClientId)
 	}
 
-	// TODO check misb valset signatures here
+	// VerifyClientMessage calls verifyMisbehaviour which verifies that the headers in the misbehaviour
+	// are valid against their respective trusted consensus states and that at least a TrustLevel of the validator set signed their commit,
+	// see checkMisbehaviourHeader in ibc-go/blob/v7.3.0/modules/light-clients/07-tendermint/misbehaviour_handle.go#L126
+	if err := clientState.VerifyClientMessage(ctx, k.cdc, clientStore, &misbehaviour); err != nil {
+		return err
+	}
+
 	return nil
 }
 
