@@ -204,7 +204,7 @@ type App struct { // nolint: golint
 	// different fee-pool from the consumer chain ConsumerKeeper
 	DistrKeeper distrkeeper.Keeper
 
-	GovKeeper             govkeeper.Keeper
+	GovKeeper             *govkeeper.Keeper // Gov Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	CrisisKeeper          crisiskeeper.Keeper
 	UpgradeKeeper         upgradekeeper.Keeper
 	ParamsKeeper          paramskeeper.Keeper
@@ -412,6 +412,17 @@ func New(
 		app.SlashingKeeper,
 	)
 
+	app.GovKeeper = govkeeper.NewKeeper(
+		appCodec,
+		keys[govtypes.StoreKey],
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.StakingKeeper,
+		app.MsgServiceRouter(),
+		govtypes.DefaultConfig(),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
 	app.ProviderKeeper = ibcproviderkeeper.NewKeeper(
 		appCodec,
 		keys[providertypes.StoreKey],
@@ -427,6 +438,7 @@ func New(
 		app.EvidenceKeeper,
 		app.DistrKeeper,
 		app.BankKeeper,
+		app.GovKeeper,
 		authtypes.FeeCollectorName,
 	)
 
@@ -441,25 +453,12 @@ func New(
 		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(providertypes.RouterKey, ibcprovider.NewProviderProposalHandler(app.ProviderKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
-	govConfig := govtypes.DefaultConfig()
-
-	govKeeper := govkeeper.NewKeeper(
-		appCodec,
-		keys[govtypes.StoreKey],
-		app.AccountKeeper,
-		app.BankKeeper,
-		app.StakingKeeper,
-		app.MsgServiceRouter(),
-		govConfig,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
 
 	// Set legacy router for backwards compatibility with gov v1beta1
-	govKeeper.SetLegacyRouter(govRouter)
+	app.GovKeeper.SetLegacyRouter(govRouter)
 
-	govHook := app.ProviderKeeper.GovHooks(govKeeper)
-	app.GovKeeper = *govKeeper.SetHooks(
-		govtypes.NewMultiGovHooks(govHook),
+	app.GovKeeper = app.GovKeeper.SetHooks(
+		govtypes.NewMultiGovHooks(app.ProviderKeeper.Hooks()),
 	)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
@@ -498,7 +497,7 @@ func New(
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
-		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
+		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName)),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
@@ -595,7 +594,7 @@ func New(
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
-		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
+		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
