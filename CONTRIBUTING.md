@@ -263,6 +263,10 @@ unclog add -i "1024-jail-throttling-v2" -p 1024 -c consumer -s state-breaking -m
 unclog add -i "1024-jail-throttling-v2" -p 1024 -c consumer -s features -m "Add the consumer-side changes for jail throttling with retries (cf. ADR 008)." 
 ```
 
+**Note:** `unclog add` requires an editor. This can be set either by configuring 
+an `$EDITOR` environment variable or by manually specify an editor binary path 
+via the `--editor` flag. 
+
 **Note:** Changelog entries should answer the question: "what is important about this
 change for users to know?" or "what problem does this solve for users?". It
 should not simply be a reiteration of the title of the associated PR, unless the
