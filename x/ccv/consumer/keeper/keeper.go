@@ -578,21 +578,6 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 	return validators
 }
 
-// Implement from stakingkeeper interface
-func (k Keeper) GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Validator) {
-	store := ctx.KVStore(k.storeKey)
-
-	iterator := sdk.KVStorePrefixIterator(store, stakingtypes.ValidatorsKey)
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		validator := stakingtypes.MustUnmarshalValidator(k.cdc, iterator.Value())
-		validators = append(validators, validator)
-	}
-
-	return validators
-}
-
 // getAndIncrementPendingPacketsIdx returns the current pending packets index and increments it.
 // This index is used for implementing a FIFO queue of pending packets in the KV store.
 func (k Keeper) getAndIncrementPendingPacketsIdx(ctx sdk.Context) (toReturn uint64) {
