@@ -657,6 +657,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -678,6 +679,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": 1,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {

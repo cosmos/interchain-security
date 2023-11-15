@@ -610,10 +610,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
-<<<<<<< HEAD
         "ClientsFrozenHeights": null,
-=======
->>>>>>> main
         "Proposals": {
           "1": {
             "RawProposal": {
