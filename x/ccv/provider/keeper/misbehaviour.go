@@ -83,11 +83,11 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 	// construct the trusted and conflicted light blocks
 	lightBlock1, err := headerToLightBlock(*misbehaviour.Header1)
 	if err != nil {
-		return validators, nil
+		return validators, err
 	}
 	lightBlock2, err := headerToLightBlock(*misbehaviour.Header2)
 	if err != nil {
-		return validators, nil
+		return validators, err
 	}
 
 	// Check if the misbehaviour corresponds to an Amnesia attack,
