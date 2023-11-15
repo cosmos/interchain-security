@@ -83,11 +83,11 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 	// construct the trusted and conflicted light blocks
 	lightBlock1, err := headerToLightBlock(*misbehaviour.Header1)
 	if err != nil {
-		return
+		return validators, nil
 	}
 	lightBlock2, err := headerToLightBlock(*misbehaviour.Header2)
 	if err != nil {
-		return
+		return validators, nil
 	}
 
 	// Check if the misbehaviour corresponds to an Amnesia attack,
@@ -97,7 +97,7 @@ func (k Keeper) GetByzantineValidators(ctx sdk.Context, misbehaviour ibctmtypes.
 	//
 	// Note that we cannot differentiate which of the headers is trusted or malicious,
 	if !headersStateTransitionsAreConflicting(*lightBlock1.Header, *lightBlock2.Header) && lightBlock1.Commit.Round != lightBlock2.Commit.Round {
-		return
+		return validators, nil
 	}
 
 	// compare the signatures of the headers
