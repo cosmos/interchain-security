@@ -201,7 +201,7 @@ func TestPacketMaturityTime(t *testing.T) {
 	defer ctrl.Finish()
 
 	now := time.Now().UTC()
-	packets := []ccv.MaturingVSCPacket{
+	packets := []types.MaturingVSCPacket{
 		{
 			VscId:        2,
 			MaturityTime: now,
@@ -220,9 +220,9 @@ func TestPacketMaturityTime(t *testing.T) {
 		},
 	}
 	// sort by MaturityTime and not by VscId
-	expectedGetAllOrder := []ccv.MaturingVSCPacket{packets[2], packets[1], packets[0], packets[3]}
+	expectedGetAllOrder := []types.MaturingVSCPacket{packets[2], packets[1], packets[0], packets[3]}
 	// only packets with MaturityTime before or equal to now
-	expectedGetElapsedOrder := []ccv.MaturingVSCPacket{packets[2], packets[1], packets[0]}
+	expectedGetElapsedOrder := []types.MaturingVSCPacket{packets[2], packets[1], packets[0]}
 
 	// test SetPacketMaturityTime
 	for _, packet := range packets {
@@ -502,7 +502,7 @@ func TestGetAllHeightToValsetUpdateIDs(t *testing.T) {
 	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	cases := []ccv.HeightToValsetUpdateID{
+	cases := []types.HeightToValsetUpdateID{
 		{
 			ValsetUpdateId: 2,
 			Height:         22,
@@ -549,9 +549,9 @@ func TestGetAllOutstandingDowntimes(t *testing.T) {
 		sdk.ConsAddress([]byte("consAddress4")),
 		sdk.ConsAddress([]byte("consAddress3")),
 	}
-	expectedGetAllOrder := []ccv.OutstandingDowntime{}
+	expectedGetAllOrder := []types.OutstandingDowntime{}
 	for _, addr := range addresses {
-		expectedGetAllOrder = append(expectedGetAllOrder, ccv.OutstandingDowntime{ValidatorConsensusAddress: addr.String()})
+		expectedGetAllOrder = append(expectedGetAllOrder, types.OutstandingDowntime{ValidatorConsensusAddress: addr.String()})
 	}
 	// sorting by ConsAddress
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
