@@ -118,7 +118,8 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.Require().True(ok)
 	s.Require().NotEmpty(sdkDistKeeper)
 
-	feePool, err := sdkDistKeeper.FeePool.Get(s.consumerCtx().Context())
+	s.providerChain.NextBlock()
+	feePool, err := sdkDistKeeper.FeePool.Get(s.providerCtx())
 	s.Require().NoError(err)
 	s.Require().NotEmpty(feePool)
 
