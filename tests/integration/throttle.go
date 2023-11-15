@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"time"
 
 	"cosmossdk.io/math"
@@ -44,6 +45,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		s.setupValidatorPowers()
 
 		providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
+		providerKeeper := s.providerApp.GetProviderKeeper()
 
 		// Use default params (incl replenish period), but set replenish fraction to tc value.
 		params := providertypes.DefaultParams()
@@ -78,7 +80,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		slashedVal := vals[0]
 		s.Require().True(slashedVal.IsJailed())
 
-		slashedValOperator, err := sdk.ValAddressFromHex(slashedVal.GetOperator())
+		slashedValOperator, err := providerKeeper.ValidatorAddressCodec().StringToBytes(slashedVal.GetOperator())
 		s.Require().NoError(err)
 		lastValPower, err := providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), slashedValOperator)
 		s.Require().NoError(err)
@@ -90,6 +92,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		s.Require().Equal(tc.expectedAllowanceAfterFirstSlash,
 			s.providerApp.GetProviderKeeper().GetSlashMeterAllowance(s.providerCtx()).Int64())
 
+		fmt.Println("# CHECKMARK 5 #")
 		// Now send a second slash packet from consumer to provider for a different validator.
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
 		tmVal = s.providerChain.Vals.Validators[2]
@@ -100,6 +103,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		vals, err = providerStakingKeeper.GetAllValidators(s.providerCtx())
 		s.Require().NoError(err)
 		s.Require().False(vals[2].IsJailed())
+		fmt.Println("# CHECKMARK 6 #")
 
 		// Assert slash meter value is still the same
 		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
@@ -142,6 +146,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 				s.Require().False(slashMeter.IsPositive())
 			}
 		}
+		fmt.Println("# CHECKMARK 7 #")
 
 		// Meter is positive at this point, and ready to handle the second slash packet.
 		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(cacheCtx)
@@ -153,12 +158,16 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		s.Require().NoError(err)
 		slashedVal = vals[2]
 		s.Require().True(slashedVal.IsJailed())
+		fmt.Println("# CHECKMARK 8 #")
 
 		// Assert validator 2 has no power, this should be apparent next block,
 		// since the staking endblocker runs before the ccv endblocker.
 		s.providerChain.NextBlock()
 
-		slashedValOperator, err = sdk.ValAddressFromHex(slashedVal.GetOperator())
+		fmt.Println("# CHECKMARK 9 #")
+
+		slashedValOperator, err = providerKeeper.ValidatorAddressCodec().StringToBytes(slashedVal.GetOperator())
+		fmt.Println("# CHECKMARK 10 #")
 		s.Require().NoError(err)
 		lastValPower, err = providerStakingKeeper.GetLastValidatorPower(cacheCtx, slashedValOperator)
 		s.Require().NoError(err)
@@ -440,7 +449,8 @@ func (s *CCVTestSuite) TestDoubleSignDoesNotAffectThrottling() {
 		s.Require().NoError(err)
 		s.Require().Equal(int64(1000), power)
 		stakingVal, err := stakingKeeper.GetValidatorByConsAddr(s.providerCtx(), sdk.ConsAddress(val.Address))
-		s.Require().Error(err)
+		fmt.Println("@@@@@@@@", err, stakingVal)
+		s.Require().NoError(err)
 		s.Require().False(stakingVal.Jailed)
 
 		// 4th validator should have no slash log, all the others do
