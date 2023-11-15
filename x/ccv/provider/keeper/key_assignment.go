@@ -447,15 +447,15 @@ func (k Keeper) AssignConsumerKey(
 			oldConsumerKey = providerKey
 		}
 
-		// NOTE: @MSalopek validator.GetOperator() now returns a Hex string instead of sdk.ValAddress
-		valAddrBech32, err := sdk.ValAddressFromHex(validator.GetOperator())
+		// NOTE: @MSalopek validator.GetOperator() now returns a bech32 string instead of sdk.ValAddress
+		valAddrBytes, err := k.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
 		if err != nil {
 			return err
 		}
 
 		// NOTE: @MSalopek this changed to return errs from store
 		// check whether the validator is valid, i.e., its power is positive
-		power, err := k.stakingKeeper.GetLastValidatorPower(ctx.Context(), valAddrBech32)
+		power, err := k.stakingKeeper.GetLastValidatorPower(ctx.Context(), valAddrBytes)
 		if err != nil {
 			return err
 		}
