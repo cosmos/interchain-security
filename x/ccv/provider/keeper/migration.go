@@ -18,6 +18,11 @@ func NewMigrator(keeper Keeper, subspace paramtypes.Subspace) Migrator {
 	}
 }
 
+// Migration from consensus version 2 to 3
+func (m Migrator) Migrate2to3(ctx sdk.Context) error {
+	return m.MigrateParams(ctx)
+}
+
 // MigrateParams migrates the provider module's parameters from the x/params to self store.
 func (m Migrator) MigrateParams(ctx sdk.Context) error {
 	params := GetParamsLegacy(ctx, m.legacySubspace)

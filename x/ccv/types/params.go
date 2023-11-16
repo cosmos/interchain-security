@@ -43,6 +43,7 @@ const (
 )
 
 // Reflection based keys for params subspace
+// [DEPRECATED]
 var (
 	KeyEnabled                           = []byte("Enabled")
 	KeyBlocksPerDistributionTransmission = []byte("BlocksPerDistributionTransmission")

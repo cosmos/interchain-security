@@ -121,7 +121,8 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	providertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
 	migrator := keeper.NewMigrator(*am.keeper, am.paramSpace)
-	err := cfg.RegisterMigration(am.Name(), 2, migrator.MigrateParams)
+	// TODO: check/adapt 'fromVersion' once v0.50 branch merged with main
+	err := cfg.RegisterMigration(am.Name(), 2, migrator.Migrate2to3)
 	if err != nil {
 		panic(err)
 	}
