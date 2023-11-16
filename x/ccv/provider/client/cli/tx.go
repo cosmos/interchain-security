@@ -131,7 +131,7 @@ func NewSubmitConsumerDoubleVotingCmd() *cobra.Command {
 			fmt.Sprintf(`Submit a Tendermint duplicated vote evidence detected on a consumer chain with
  the IBC light client header for the infraction height.
  The DuplicateVoteEvidence type definition can be found in the Tendermint messages,
- , see cometbft/proto/tendermint/types/evidence.proto and the IBC header
+ see cometbft/proto/tendermint/types/evidence.proto and the IBC header
  definition can be found in the IBC messages, see ibc-go/proto/ibc/lightclients/tendermint/v1/tendermint.proto.
 
 Example:
