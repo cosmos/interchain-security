@@ -16,7 +16,7 @@ import (
 )
 
 // HandleConsumerDoubleVoting verifies a double voting evidence for a given a consumer chain ID
-// and a public key and, if successful, executes the jailing of the malicious validator.
+// and a public key and, if successful, executes the slashing, jailing, and tombstoning of the malicious validator.
 func (k Keeper) HandleConsumerDoubleVoting(
 	ctx sdk.Context,
 	evidence *tmtypes.DuplicateVoteEvidence,
