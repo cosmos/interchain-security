@@ -20,7 +20,6 @@ const (
 	AttributeKeyAckSuccess            = "success"
 	AttributeKeyAck                   = "acknowledgement"
 	AttributeKeyAckError              = "error"
-	AttributeValidatorConsumerAddress = "validator_consumer_address"
 	AttributeInfractionHeight         = "infraction_height"
 	AttributeConsumerHeight           = "consumer_height"
 	AttributeTimestamp                = "timestamp"

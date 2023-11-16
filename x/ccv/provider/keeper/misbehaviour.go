@@ -153,7 +153,7 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 }
 
 // CheckMisbehaviour checks that headers in the given misbehaviour forms
-// a valid light client attack from an ICS consumer chain and that the light client isn't expired
+// a valid light client attack on a light client that tracks an ICS consumer chain
 func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
 	// check that the misbehaviour is for an ICS consumer chain
 	clientId, found := k.GetConsumerClientId(ctx, misbehaviour.Header1.Header.ChainID)

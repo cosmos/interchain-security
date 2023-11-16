@@ -111,7 +111,6 @@ var consumerMisbehaviourSteps = concatSteps(
 var consumerDoubleSignSteps = concatSteps(
 	// start provider and consumer chain
 	stepsStartChains([]string{"consu"}, false),
-
 	// make a consumer validator double sign and get jailed
 	stepsCauseDoubleSignOnConsumer("consu", "provi"),
 )

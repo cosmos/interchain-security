@@ -38,7 +38,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	blockID2 := testutil.MakeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
 
 	// Note that votes are signed along with the chain ID
-	// see VoteSignBytes in https://github.com/cometbft/cometbft/blob/main/types/vote.go#L139
+	// see VoteSignBytes in https://github.com/cometbft/cometbft/blob/v0.37.2/types/vote.go#L93
 
 	// create two votes using the consumer validator key
 	consuVote := testutil.MakeAndSignVote(
