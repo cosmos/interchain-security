@@ -79,7 +79,7 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 		evidence.VoteA.Type != evidence.VoteB.Type {
 		return errorsmod.Wrapf(
 			ccvtypes.ErrInvalidDoubleVotingEvidence,
-			"h/r/s does not match: %d/%d/%v vs %d/%d/%v",
+			"height/round/type are not the same: %d/%d/%v vs %d/%d/%v",
 			evidence.VoteA.Height, evidence.VoteA.Round, evidence.VoteA.Type,
 			evidence.VoteB.Height, evidence.VoteB.Round, evidence.VoteB.Type)
 	}
