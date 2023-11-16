@@ -70,8 +70,7 @@ func (k Keeper) VerifyDoubleVotingEvidence(
 		)
 	}
 
-	// Note that since we're only jailing validators for double voting on a consumer chain,
-	// the age of the evidence is irrelevant and therefore isn't checked.
+	// Note the age of the evidence isn't checked.
 
 	// height/round/type must be the same
 	if evidence.VoteA.Height != evidence.VoteB.Height ||
