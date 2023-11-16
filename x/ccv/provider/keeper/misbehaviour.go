@@ -172,7 +172,7 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 		return errorsmod.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot find client state for client with ID %s", clientId)
 	}
 
-	clientStore := k.clientKeeper.ClientStore(ctx, misbehaviour.ClientId)
+	clientStore := k.clientKeeper.ClientStore(ctx, clientId)
 
 	// Check that the headers are at the same height to ensure that
 	// the misbehaviour is for a light client attack and not a time violation,
