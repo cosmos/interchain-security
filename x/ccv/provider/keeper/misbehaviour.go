@@ -169,7 +169,7 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 
 	clientState, found := k.clientKeeper.GetClientState(ctx, clientId)
 	if !found {
-		return errorsmod.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot check misbehaviour for client with ID %s", misbehaviour.ClientId)
+		return errorsmod.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot find client state for client with ID %s", clientId)
 	}
 
 	clientStore := k.clientKeeper.ClientStore(ctx, misbehaviour.ClientId)
