@@ -13,6 +13,7 @@ import (
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
 
 	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
@@ -164,12 +165,12 @@ func (s *Driver) providerTokens(i int64) int64 {
 	return v.Tokens.Int64()
 }
 
-func (s *Driver) validatorSet(chain ChainId) []stakingtypes.Validator {
-	if chain == P {
-		return s.providerStakingKeeper().GetAllValidators(s.ctx(P))
-	} else {
-		return s.consumerKeeper(chain).GetAllValidators(s.ctx(chain))
-	}
+func (s *Driver) providerValidatorSet(chain ChainId) []stakingtypes.Validator {
+	return s.providerStakingKeeper().GetAllValidators(s.ctx(P))
+}
+
+func (s *Driver) consumerValidatorSet(chain ChainId) []consumertypes.CrossChainValidator {
+	return s.consumerKeeper(chain).GetAllCCValidator(s.ctx(chain))
 }
 
 // delegatorBalance returns the balance of the delegator account
@@ -236,6 +237,33 @@ func (s *Driver) deliver(chain ChainId, numPackets int) {
 	s.path(chain).DeliverAcks(string(chain), 999999)
 	// Consume deliverable packets from the network
 	s.path(chain).DeliverPackets(string(chain), numPackets)
+}
+
+// packetQueue returns the queued packet sfrom sender to receiver,
+// where either sender or receiver must be the provider.
+func (s *Driver) packetQueue(sender ChainId, receiver ChainId) []simibc.Packet {
+	var path *simibc.RelayedPath
+	if sender == P {
+		path = s.path(receiver)
+	} else {
+		path = s.path(sender)
+	}
+	outboxes := path.Outboxes
+	outboxPackets := outboxes.OutboxPackets
+	res, ok := outboxPackets[string(sender)]
+	if !ok {
+		return []simibc.Packet{}
+	} else {
+		return res
+	}
+}
+
+func (s *Driver) getPacketsFromProviderToConsumer(consumer ChainId) []simibc.Packet {
+	return s.path(consumer).Outboxes.OutboxPackets[string(consumer)]
+}
+
+func (s *Driver) getPacketsFromConsumerToProvider(consumer ChainId) []simibc.Packet {
+	return s.path(consumer).Outboxes.OutboxPackets[P]
 }
 
 func (s *Driver) getStateString() string {
@@ -322,13 +350,13 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 		outboxInfo.WriteString("OutgoingPackets: \n")
 		outgoing := s.path(chain).Outboxes.OutboxPackets[string(chain)]
 		for _, packet := range outgoing {
-			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet))
+			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet.Packet.String()))
 		}
 
 		outboxInfo.WriteString("IncomingPackets: \n")
 		incoming := s.path(chain).Outboxes.OutboxPackets[P]
 		for _, packet := range incoming {
-			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet))
+			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet.Packet.String()))
 		}
 
 		outboxInfo.WriteString("OutboxAcks:\n")
@@ -336,13 +364,13 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 		outboxInfo.WriteString("OutgoingAcks: \n")
 		outgoingAcks := s.path(chain).Outboxes.OutboxAcks[string(chain)]
 		for _, packet := range outgoingAcks {
-			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet))
+			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet.Packet.String()))
 		}
 
 		outboxInfo.WriteString("IncomingAcks: \n")
 		incomingAcks := s.path(chain).Outboxes.OutboxAcks[P]
 		for _, packet := range incomingAcks {
-			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet))
+			outboxInfo.WriteString(fmt.Sprintf("%v\n", packet.Packet.String()))
 		}
 
 		chainInfo.WriteString(outboxInfo.String())
@@ -352,24 +380,15 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 }
 
 // endAndBeginBlock ends the current block and begins a new one.
-// Before Comitting, it runs the preCommitCallback, which allows
-// checks to be run before the context of the old block is discarded.
 // After comitting, it processes any packets that have been sent by the chain,
 // as witnessed by events, and adds them to the correct paths.
 // It also updates the client header on the paths
 // that involve the chain.
-func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) { //}, preCommitCallback func()) {
+func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) {
 	testChain, found := s.coordinator.Chains[string(chain)]
 	require.True(s.t, found, "chain %s not found", chain)
 
-	header, packets := simibc.EndBlock(testChain) //, preCommitCallback)
-
-	for _, path := range s.simibcs {
-		if path.InvolvesChain(string(chain)) {
-			path.AddClientHeader(string(chain), header)
-			path.Outboxes.Commit(string(chain))
-		}
-	}
+	header, packets := simibc.EndBlock(testChain, func() {})
 
 	// for each packet, find the path it should be sent on
 	for _, p := range packets {
@@ -383,6 +402,13 @@ func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) 
 		}
 		if !found {
 			s.t.Fatal("packet does not belong to any path: ", p)
+		}
+	}
+
+	for _, path := range s.simibcs {
+		if path.InvolvesChain(string(chain)) {
+			path.AddClientHeader(string(chain), header)
+			path.Outboxes.Commit(string(chain))
 		}
 	}
 

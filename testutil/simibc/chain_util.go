@@ -41,7 +41,7 @@ func BeginBlock(c *ibctesting.TestChain, dt time.Duration) {
 // NOTE: this method may be used independently of the rest of simibc.
 func EndBlock(
 	c *ibctesting.TestChain,
-	// preCommitCallback func(),
+	preCommitCallback func(),
 ) (*ibctmtypes.Header, []channeltypes.Packet) {
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
 

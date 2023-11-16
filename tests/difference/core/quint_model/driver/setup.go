@@ -18,6 +18,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
+	"github.com/cosmos/interchain-security/v3/testutil/integration"
 	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
 	"github.com/stretchr/testify/require"
 
@@ -45,6 +46,46 @@ const (
 var (
 	ConsensusParams = cmttypes.DefaultConsensusParams()
 )
+
+// Given a map from node names to voting powers, create a validator set with the right voting powers.
+// All nodes should be included in the voting power map, even if they have voting power 0.
+// This way, the nodes will have validators (that can later be assigned voting powers) and signers created for them.
+//
+// Returns:
+// - a validator set
+// - a map from node names to validator objects and
+// - a map from validator addresses to private validators (signers)
+func CreateValSet(t *testing.T, initialValidatorSet map[string]int64) (*cmttypes.ValidatorSet, map[string]*cmttypes.Validator, map[string]cmttypes.PrivValidator) {
+	// create a valSet and signers, but the voting powers will not yet be right
+	valSet, _, signers := integration.CreateValidators(t, len(initialValidatorSet))
+
+	// create a map from validator names to validators
+	valMap := make(map[string]*cmttypes.Validator)
+
+	// impose an order on the validators
+	valNames := make([]string, 0, len(initialValidatorSet))
+	for valName := range initialValidatorSet {
+		valNames = append(valNames, valName)
+	}
+
+	// assign the validators from the created valSet to valNames in the chosen order
+	for i, valName := range valNames {
+		_, val := valSet.GetByIndex(int32(i))
+		valMap[valName] = val
+	}
+
+	// create a valSet that has the right voting powers
+	vals := make([]*cmttypes.Validator, len(valNames))
+	for index, valName := range valNames {
+		_, val := valSet.GetByIndex(int32(index))
+		val.VotingPower = initialValidatorSet[valName]
+		vals[index] = val
+	}
+
+	// override the valSet by creating a new one with the right voting powers
+	valSet = cmttypes.NewValidatorSet(vals)
+	return valSet, valMap, signers
+}
 
 func getAppBytesAndSenders(
 	chainID string,
@@ -287,16 +328,26 @@ func (s *Driver) ConfigureNewPath(consumerChain *ibctesting.TestChain, providerC
 	tmCfg := providerEndPoint.ClientConfig.(*ibctesting.TendermintConfig)
 	tmCfg.UnbondingPeriod = params.UnbondingPeriodPerChain[ChainId(providerChain.ChainID)]
 	tmCfg.TrustingPeriod = params.TrustingPeriodPerChain[ChainId(providerChain.ChainID)]
+	tmCfg.MaxClockDrift = params.TrustingPeriodPerChain[ChainId(providerChain.ChainID)] // make the clock drift a non-issue
 	err := providerEndPoint.CreateClient()
 	require.NoError(s.t, err, "Error creating client on provider for chain %v", consumerChain.ChainID)
 
 	// Create the Consumer chain ID mapping in the provider state
 	s.providerKeeper().SetConsumerClientId(providerChain.GetContext(), consumerChain.ChainID, providerEndPoint.ClientID)
 
+	// create consumer key assignment
+	// for _, val := range s.providerValidatorSet(ChainId(providerChain.ChainID)) {
+	// 	pubKey, err := val.TmConsPublicKey()
+	// 	require.NoError(s.t, err, "Error getting consensus pubkey for validator %v", val)
+
+	// 	err = s.providerKeeper().AssignConsumerKey(providerChain.GetContext(), consumerChain.ChainID, val, pubKey)
+	// }
+
 	// Configure and create the client on the consumer
 	tmCfg = consumerEndPoint.ClientConfig.(*ibctesting.TendermintConfig)
 	tmCfg.UnbondingPeriod = params.UnbondingPeriodPerChain[consumerChainId]
 	tmCfg.TrustingPeriod = params.TrustingPeriodPerChain[consumerChainId]
+	tmCfg.MaxClockDrift = params.TrustingPeriodPerChain[ChainId(providerChain.ChainID)] // make the clock drift a non-issue
 
 	consumerClientState := ibctmtypes.NewClientState(
 		providerChain.ChainID, tmCfg.TrustLevel, tmCfg.TrustingPeriod, tmCfg.UnbondingPeriod, tmCfg.MaxClockDrift,
@@ -326,8 +377,8 @@ func (s *Driver) ConfigureNewPath(consumerChain *ibctesting.TestChain, providerC
 	// Commit a block on both chains, giving us two committed headers from
 	// the same time and height. This is the starting point for all our
 	// data driven testing.
-	lastConsumerHeader, _ := simibc.EndBlock(consumerChain) //, func() {})
-	lastProviderHeader, _ = simibc.EndBlock(providerChain)  //, func() {})
+	lastConsumerHeader, _ := simibc.EndBlock(consumerChain, func() {})
+	lastProviderHeader, _ = simibc.EndBlock(providerChain, func() {})
 
 	// Get ready to update clients.
 	simibc.BeginBlock(providerChain, 5)
@@ -357,7 +408,7 @@ func (s *Driver) setupChains(
 	providerChain := newChain(s.t, params, s.coordinator, icstestingutils.ProviderAppIniter, "provider", valSet, signers, nodes, valNames)
 	s.coordinator.Chains["provider"] = providerChain
 
-	providerHeader, _ := simibc.EndBlock(providerChain) //, func() {})
+	providerHeader, _ := simibc.EndBlock(providerChain, func() {})
 	simibc.BeginBlock(providerChain, 0)
 
 	// start consumer chains
