@@ -338,23 +338,25 @@ module ccv_model {
         )
 
     // For every ValidatorSetChangePacket received by a consumer chain at 
-    // time t, a MaturedVscPacket is sent back to the provider in the first block 
+    // time t, a MaturedVscPacket is sent back to the provider when we end the first block 
     // with a timestamp >= t + UnbondingPeriod
     // NOTE: because we remove the maturationTimes entry when we send the packets,
-    // it suffices to check that there is never an entry in maturationTimes
-    // that has already matured, i.e. where the maturationTime is smaller-or-equal than the lastTimestamp
+    // it suffices to check that after we end/begin a block, there is never an entry in maturationTimes
+    // that has already matured, i.e. where the maturationTime is smaller-or-equal than the
+    // timestamp of the block we just ended
+    val MaturationPrecondition = trace[trace.length()-1].kind == "EndAndBeginBlockForConsumer"
+    val ConsumerWithPotentialMaturations = trace[trace.length()-1].consumerChain
+    val lastTimeAdvancement = trace[trace.length()-1].timeAdvancement
+    val lastBlockTime = currentState.consumerStates.get(ConsumerWithPotentialMaturations).chainState.lastTimestamp - lastTimeAdvancement
     val MatureOnTimeInv =
-        runningConsumers.forall(
-            consumer => {
-                val maturationTimes = currentState.consumerStates.get(consumer).maturationTimes
-                maturationTimes.listForAll(
-                    // check that the maturation time is in the future
-                    pair => 
-                    val maturationTime = pair._2
-                    maturationTime >= currentState.consumerStates.get(consumer).chainState.lastTimestamp
-                )
-            }
+        MaturationPrecondition
+        implies
+        currentState.consumerStates.get(ConsumerWithPotentialMaturations).maturationTimes.toSet().forall(
+            pair => 
+            val maturationTime = pair._2 
+            maturationTime > lastBlockTime
         )
+
 
     // If we send a VscPacket, this is eventually responded to by all consumers
     // that were running at the time the packet was sent (and are still running).
@@ -500,7 +502,18 @@ module ccv_model {
             )
             .then(
                 all {
-                    // the packet has matured, so it was sent by the consumer
+                    // the packet has not matured yet - the timestamp for the current block is after the naturation time,
+                    // but packets are only sent on EndBlock
+                    assert(currentState.consumerStates.get("consumer1").outstandingPacketsToProvider.length() == 0),
+                    // the packet is still waiting to mature
+                    assert(currentState.consumerStates.get("consumer1").maturationTimes.length() == 1),
+                    // end another block, this time after the time has been reached
+                    EndAndBeginBlockForConsumer("consumer1", 1 * Second)
+                }
+            )
+            .then(
+                all {
+                    // the packet now was sent by the consumer
                     assert(currentState.consumerStates.get("consumer1").outstandingPacketsToProvider.length() == 1),
                     // it was removed from the maturationTimes
                     assert(currentState.consumerStates.get("consumer1").maturationTimes.length() == 0),

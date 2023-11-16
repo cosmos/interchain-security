@@ -413,6 +413,7 @@ module ccv {
         )
 
         // for each consumer we just set to running, set its initial validator set to be the current one on the provider.
+        val valSet = providerStateAfterConsumerAdvancement.chainState.currentValidatorSet
         val newConsumerStateMap =
             tmpState.consumerStates.keys().mapBy(
                 (consumer) => 
@@ -420,7 +421,10 @@ module ccv {
                     val currentConsumerState: ConsumerState = tmpState.consumerStates.get(consumer)
                     val newConsumerState: ConsumerState = currentConsumerState.with(
                         "chainState", currentConsumerState.chainState.with(
-                            "currentValidatorSet", providerStateAfterConsumerAdvancement.chainState.currentValidatorSet
+                            "currentValidatorSet", valSet
+                        ).with(
+                            "votingPowerHistory",
+                            List(valSet)
                         )
                     )
                     newConsumerState
@@ -462,6 +466,7 @@ module ccv {
                 Err("chain is not a consumer")
             } else {
                 val currentConsumerState: ConsumerState = currentState.consumerStates.get(chain)
+                val oldChainState: ChainState = currentConsumerState.chainState
                 val newChainState: ChainState = currentConsumerState.chainState.endAndBeginBlockShared(timeAdvancement)
                 val newConsumerState: ConsumerState = currentConsumerState.with(
                     "chainState", newChainState
@@ -470,19 +475,23 @@ module ccv {
                     pair =>
                     val packet = pair._1 
                     val maturationTime = pair._2
-                    maturationTime <= newChainState.lastTimestamp
+                    // important that the old chain state is used here, because sending packets happens on EndBlock,
+                    // but the new timestamp only appears after BeginBlock
+                    maturationTime <= oldChainState.lastTimestamp
                 ).transform(pair => pair._1)
                 val newMaturationTimes = newConsumerState.maturationTimes.select(
                     pair =>
                     val packet = pair._1 
                     val maturationTime = pair._2
-                    maturationTime > newChainState.lastTimestamp
+                    // important that the old chain state is used here, because sending packets happens on EndBlock,
+                    // but the new timestamp only appears after BeginBlock
+                    maturationTime > oldChainState.lastTimestamp
                 )
                 val newOutstandingPackets = newConsumerState.outstandingPacketsToProvider.concat(
                     maturedPackets.transform(
                         packet => {
                             id: packet.id, 
-                            sendingTime: newConsumerState.chainState.lastTimestamp
+                            sendingTime: oldChainState.lastTimestamp
                         }
                     )
                 )
