@@ -59,6 +59,9 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 			fmt.Sprintf("cannot create client for existent consumer chain: %s", chainID))
 	}
 
+	// Set minimum height for equivocation evidence from this consumer chain
+	k.SetEquivocationEvidenceMinHeight(ctx, chainID, prop.InitialHeight.RevisionHeight)
+
 	// Consumers start out with the unbonding period from the consumer addition prop
 	consumerUnbondingPeriod := prop.UnbondingPeriod
 
@@ -164,6 +167,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 	// Note: this call panics if the key assignment state is invalid
 	k.DeleteKeyAssignments(ctx, chainID)
+	k.DeleteEquivocationEvidenceMinHeight(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
 	if channelID, found := k.GetChainToChannel(ctx, chainID); found {

@@ -179,11 +179,12 @@ func TestCreateConsumerClient(t *testing.T) {
 		tc.setup(&providerKeeper, ctx, &mocks)
 
 		// Call method with same arbitrary values as defined above in mock expectations.
-		err := providerKeeper.CreateConsumerClient(ctx, testkeeper.GetTestConsumerAdditionProp())
+		prop := testkeeper.GetTestConsumerAdditionProp()
+		err := providerKeeper.CreateConsumerClient(ctx, prop)
 
 		if tc.expClientCreated {
 			require.NoError(t, err)
-			testCreatedConsumerClient(t, ctx, providerKeeper, "chainID", "clientID")
+			testCreatedConsumerClient(t, ctx, providerKeeper, "chainID", "clientID", prop.InitialHeight.GetRevisionHeight())
 		} else {
 			require.Error(t, err)
 		}
@@ -197,13 +198,18 @@ func TestCreateConsumerClient(t *testing.T) {
 //
 // Note: Separated from TestCreateConsumerClient to also be called from TestCreateConsumerChainProposal.
 func testCreatedConsumerClient(t *testing.T,
-	ctx sdk.Context, providerKeeper providerkeeper.Keeper, expectedChainID, expectedClientID string,
+	ctx sdk.Context, providerKeeper providerkeeper.Keeper,
+	expectedChainID, expectedClientID string, expectedEquivocationEvidenceMinHeight uint64,
 ) {
 	t.Helper()
 	// ClientID should be stored.
 	clientId, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
 	require.True(t, found, "consumer client not found")
 	require.Equal(t, expectedClientID, clientId)
+
+	// check that the equivocation evidence min height was set
+	h := providerKeeper.GetEquivocationEvidenceMinHeight(ctx, expectedChainID)
+	require.Equal(t, h, expectedEquivocationEvidenceMinHeight)
 
 	// Only assert that consumer genesis was set,
 	// more granular tests on consumer genesis should be defined in TestMakeConsumerGenesis
