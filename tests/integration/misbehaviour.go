@@ -408,7 +408,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 		altSigners2,
 	)
 
-	// Set the equivocation evidence min height to a the previous block height
+	// Set the equivocation evidence min height to the previous block height
 	equivocationEvidenceMinHeight := clientHeight.RevisionHeight + 1
 	s.providerApp.GetProviderKeeper().SetEquivocationEvidenceMinHeight(
 		s.providerCtx(),
@@ -485,7 +485,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 			false,
 		},
 		{
-			"invalid misbehaviour older than min equivocation evidence height - shouldn't pass",
+			"invalid misbehaviour older than the min equivocation evidence height - shouldn't pass",
 			&ibctmtypes.Misbehaviour{
 				ClientId: s.path.EndpointA.ClientID,
 				Header1: s.consumerChain.CreateTMClientHeader(

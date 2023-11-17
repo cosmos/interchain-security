@@ -35,7 +35,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	blockID1 := testutil.MakeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
 	blockID2 := testutil.MakeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
 
-	// Set the equivocation evidence min height to a the previous block height
+	// Set the equivocation evidence min height to the previous block height
 	equivocationEvidenceMinHeight := uint64(s.consumerCtx().BlockHeight() - 1)
 	s.providerApp.GetProviderKeeper().SetEquivocationEvidenceMinHeight(
 		s.providerCtx(),
