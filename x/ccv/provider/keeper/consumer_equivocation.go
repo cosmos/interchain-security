@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
@@ -36,6 +37,18 @@ func (k Keeper) HandleConsumerDoubleVoting(
 			ccvtypes.ErrInvalidDoubleVotingEvidence,
 			"cannot find consumer chain %s",
 			chainID,
+		)
+	}
+
+	// check that the evidence is not too old
+	minHeight := k.GetEquivocationEvidenceMinHeight(ctx, chainID)
+	if uint64(evidence.VoteA.Height) < minHeight {
+		return errorsmod.Wrapf(
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
+			"evidence for consumer chain %s is too old - evidence height (%d), min (%d)",
+			chainID,
+			evidence.VoteA.Height,
+			minHeight,
 		)
 	}
 
@@ -276,15 +289,39 @@ func headerToLightBlock(h ibctmtypes.Header) (*tmtypes.LightBlock, error) {
 // CheckMisbehaviour checks that headers in the given misbehaviour forms
 // a valid light client attack from an ICS consumer chain and that the light client isn't expired
 func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbehaviour) error {
+	consumerChainID := misbehaviour.Header1.Header.ChainID
+
 	// check that the misbehaviour is for an ICS consumer chain
-	clientId, found := k.GetConsumerClientId(ctx, misbehaviour.Header1.Header.ChainID)
+	clientId, found := k.GetConsumerClientId(ctx, consumerChainID)
 	if !found {
-		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain: %s", misbehaviour.Header1.Header.ChainID)
+		return fmt.Errorf("incorrect misbehaviour with conflicting headers from a non-existent consumer chain: %s", consumerChainID)
 	} else if misbehaviour.ClientId != clientId {
 		return fmt.Errorf("incorrect misbehaviour: expected client ID for consumer chain %s is %s got %s",
-			misbehaviour.Header1.Header.ChainID,
+			consumerChainID,
 			clientId,
 			misbehaviour.ClientId,
+		)
+	}
+
+	// Check that the headers are at the same height to ensure that
+	// the misbehaviour is for a light client attack and not a time violation,
+	// see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
+	if !misbehaviour.Header1.GetHeight().EQ(misbehaviour.Header2.GetHeight()) {
+		return sdkerrors.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
+	}
+
+	// Check that the evidence is not too old
+	minHeight := k.GetEquivocationEvidenceMinHeight(ctx, consumerChainID)
+	evidenceHeight := misbehaviour.Header1.GetHeight().GetRevisionHeight()
+	// Note that the revision number is not relevant for checking the age of evidence
+	// as it's already part of the chain ID and the minimum height is mapped to chain IDs
+	if evidenceHeight < minHeight {
+		return errorsmod.Wrapf(
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
+			"evidence for consumer chain %s is too old - evidence height (%d), min (%d)",
+			consumerChainID,
+			evidenceHeight,
+			minHeight,
 		)
 	}
 
@@ -294,13 +331,6 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, misbehaviour ibctmtypes.Misbe
 	}
 
 	clientStore := k.clientKeeper.ClientStore(ctx, misbehaviour.GetClientID())
-
-	// Check that the headers are at the same height to ensure that
-	// the misbehaviour is for a light client attack and not a time violation,
-	// see ibc-go/modules/light-clients/07-tendermint/types/misbehaviour_handle.go
-	if !misbehaviour.Header1.GetHeight().EQ(misbehaviour.Header2.GetHeight()) {
-		return sdkerrors.Wrap(ibcclienttypes.ErrInvalidMisbehaviour, "headers are not at same height")
-	}
 
 	// CheckMisbehaviourAndUpdateState verifies the misbehaviour against the trusted consensus states
 	// but does NOT update the light client state.
@@ -444,3 +474,32 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr providertypes.Provi
 //
 // CRUD section
 //
+
+// SetEquivocationEvidenceMinHeight sets the the minimum height
+// of a valid consumer equivocation evidence for a given consumer chain ID
+func (k Keeper) SetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string, height uint64) {
+	store := ctx.KVStore(k.storeKey)
+	heightBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(heightBytes, height)
+
+	store.Set(providertypes.EquivocationEvidenceMinHeightKey(chainID), heightBytes)
+}
+
+// GetEquivocationEvidenceMinHeight returns the the minimum height
+// of a valid consumer equivocation evidence for a given consumer chain ID
+func (k Keeper) GetEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(providertypes.EquivocationEvidenceMinHeightKey(chainID))
+	if bz == nil {
+		return 0
+	}
+
+	return binary.BigEndian.Uint64(bz)
+}
+
+// DeleteEquivocationEvidenceMinHeight deletes the the minimum height
+// of a valid consumer equivocation evidence for a given consumer chain ID
+func (k Keeper) DeleteEquivocationEvidenceMinHeight(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(providertypes.EquivocationEvidenceMinHeightKey(chainID))
+}

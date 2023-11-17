@@ -52,6 +52,7 @@ func getAllKeyPrefixes() []byte {
 		providertypes.ConsumerAddrsToPruneBytePrefix,
 		providertypes.SlashLogBytePrefix,
 		providertypes.VSCMaturedHandledThisBlockBytePrefix,
+		providertypes.EquivocationEvidenceMinHeightBytePrefix,
 	}
 }
 
@@ -96,6 +97,7 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.ConsumerAddrsToPruneKey("chainID", 88),
 		providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.VSCMaturedHandledThisBlockKey(),
+		providertypes.EquivocationEvidenceMinHeightKey("chainID"),
 	}
 }
 
