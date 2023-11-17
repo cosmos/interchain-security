@@ -12,7 +12,6 @@ import (
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	cryptotestutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
-	testutil "github.com/cosmos/interchain-security/v2/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v2/testutil/keeper"
 	"github.com/cosmos/interchain-security/v2/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
@@ -34,8 +33,8 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 
 	valSet := tmtypes.NewValidatorSet([]*tmtypes.Validator{val1, val2})
 
-	blockID1 := testutil.MakeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
-	blockID2 := testutil.MakeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
+	blockID1 := cryptotestutil.MakeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
+	blockID2 := cryptotestutil.MakeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
 
 	ctx = ctx.WithBlockTime(time.Now())
 
@@ -55,7 +54,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 		{
 			"invalid verifying public key - shouldn't pass",
 			[]*tmtypes.Vote{
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID1,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -63,7 +62,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 					signer1,
 					chainID,
 				),
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID2,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -81,7 +80,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 			// signer2 is used to derive the validator addresss of the same vote
 			"verifying public key doesn't correspond to validator address",
 			[]*tmtypes.Vote{
-				testutil.MakeAndSignVoteWithForgedValAddress(
+				cryptotestutil.MakeAndSignVoteWithForgedValAddress(
 					blockID1,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -90,7 +89,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 					signer2,
 					chainID,
 				),
-				testutil.MakeAndSignVoteWithForgedValAddress(
+				cryptotestutil.MakeAndSignVoteWithForgedValAddress(
 					blockID2,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -107,7 +106,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 		{
 			"evidence has votes with different block height - shouldn't pass",
 			[]*tmtypes.Vote{
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID1,
 					ctx.BlockHeight()+1,
 					ctx.BlockTime(),
@@ -115,7 +114,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 					signer1,
 					chainID,
 				),
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID2,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -131,7 +130,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 		{
 			"evidence has votes with different validator address - shouldn't pass",
 			[]*tmtypes.Vote{
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID1,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -139,7 +138,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 					signer1,
 					chainID,
 				),
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID2,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -155,7 +154,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 		{
 			"evidence has votes with same block IDs - shouldn't pass",
 			[]*tmtypes.Vote{
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID1,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -163,7 +162,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 					signer1,
 					chainID,
 				),
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID1,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -179,7 +178,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 		{
 			"given chain ID isn't the same as the one used to sign the votes - shouldn't pass",
 			[]*tmtypes.Vote{
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID1,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -187,7 +186,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 					signer1,
 					chainID,
 				),
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID2,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -203,7 +202,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 		{
 			"voteA is signed using the wrong chain ID - shouldn't pass",
 			[]*tmtypes.Vote{
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID1,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -211,7 +210,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 					signer1,
 					"WrongChainID",
 				),
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID2,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -227,7 +226,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 		{
 			"voteB is signed using the wrong chain ID - shouldn't pass",
 			[]*tmtypes.Vote{
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID1,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -235,7 +234,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 					signer1,
 					chainID,
 				),
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID2,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -251,7 +250,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 		{
 			"wrong public key - shouldn't pass",
 			[]*tmtypes.Vote{
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID1,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -259,7 +258,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 					signer1,
 					chainID,
 				),
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID2,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -275,7 +274,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 		{
 			"valid double voting evidence should pass",
 			[]*tmtypes.Vote{
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID1,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -283,7 +282,7 @@ func TestVerifyDoubleVotingEvidence(t *testing.T) {
 					signer1,
 					chainID,
 				),
-				testutil.MakeAndSignVote(
+				cryptotestutil.MakeAndSignVote(
 					blockID2,
 					ctx.BlockHeight(),
 					ctx.BlockTime(),
@@ -778,4 +777,22 @@ func TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded(t *testing.T) {
 
 	gomock.InOrder(expectedCalls...)
 	keeper.SlashValidator(ctx, providerAddr)
+}
+
+func TestEquivocationEvidenceMinHeightCRUD(t *testing.T) {
+	chainID := consumer
+	expMinHeight := uint64(12)
+	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	height := keeper.GetEquivocationEvidenceMinHeight(ctx, chainID)
+	require.Zero(t, height, "equivocation evidence min height should be 0")
+
+	keeper.SetEquivocationEvidenceMinHeight(ctx, chainID, expMinHeight)
+	height = keeper.GetEquivocationEvidenceMinHeight(ctx, chainID)
+	require.Equal(t, height, expMinHeight)
+
+	keeper.DeleteEquivocationEvidenceMinHeight(ctx, chainID)
+	height = keeper.GetEquivocationEvidenceMinHeight(ctx, chainID)
+	require.Zero(t, height, "equivocation evidence min height should be 0")
 }
