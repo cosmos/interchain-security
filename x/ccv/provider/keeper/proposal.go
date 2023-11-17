@@ -59,6 +59,9 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 			fmt.Sprintf("cannot create client for existent consumer chain: %s", chainID))
 	}
 
+	// Set minimum height for equivocation evidence from this consumer chain
+	k.SetEquivocationEvidenceMinHeight(ctx, chainID, prop.InitialHeight.RevisionHeight)
+
 	// Consumers start out with the unbonding period from the consumer addition prop
 	consumerUnbondingPeriod := prop.UnbondingPeriod
 
