@@ -4,6 +4,10 @@
 
 Add an entry to the unreleased section whenever merging a PR to main that is not targeted at a specific release. These entries will eventually be included in a release.
 
+## v2.4.0-lsm
+
+*November 17, 2023*
+
 * (feat!) [#1435](https://github.com/cosmos/interchain-security/pull/1435) Add height-base filter for consumer equivocation evidence.
 
 ## v2.3.0-provider-lsm
