@@ -35,6 +35,13 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 	blockID1 := testutil.MakeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
 	blockID2 := testutil.MakeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
 
+	// Set the equivocation evidence min height to a the previous block height
+	equivocationEvidenceMinHeight := uint64(s.consumerCtx().BlockHeight() - 1)
+	s.providerApp.GetProviderKeeper().SetEquivocationEvidenceMinHeight(
+		s.providerCtx(),
+		s.consumerChain.ChainID,
+		equivocationEvidenceMinHeight,
+	)
 	// Note that votes are signed along with the chain ID
 	// see VoteSignBytes in https://github.com/cometbft/cometbft/blob/main/types/vote.go#L139
 
@@ -76,6 +83,17 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		s.consumerChain.ChainID,
 	)
 
+	// create a vote using the consumer validator key
+	// with block height that is smaller than the equivocation evidence min height
+	consuVoteOld := testutil.MakeAndSignVote(
+		blockID1,
+		int64(equivocationEvidenceMinHeight-1),
+		s.consumerCtx().BlockTime(),
+		consuValSet,
+		consuSigner,
+		s.consumerChain.ChainID,
+	)
+
 	testCases := []struct {
 		name    string
 		ev      *tmtypes.DuplicateVoteEvidence
@@ -84,7 +102,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		expPass bool
 	}{
 		{
-			"invalid consumer chain id - shouldn't pass",
+			"cannot find consumer chain for the given chain ID - shouldn't pass",
 			&tmtypes.DuplicateVoteEvidence{
 				VoteA:            consuVote,
 				VoteB:            consuBadVote,
@@ -93,6 +111,32 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 				Timestamp:        s.consumerCtx().BlockTime(),
 			},
 			"chainID",
+			consuVal.PubKey,
+			false,
+		},
+		{
+			"evidence is older than equivocation evidence min height - shouldn't pass",
+			&tmtypes.DuplicateVoteEvidence{
+				VoteA:            consuVoteOld,
+				VoteB:            consuBadVote,
+				ValidatorPower:   consuVal.VotingPower,
+				TotalVotingPower: consuVal.VotingPower,
+				Timestamp:        s.consumerCtx().BlockTime(),
+			},
+			s.consumerChain.ChainID,
+			consuVal.PubKey,
+			false,
+		},
+		{
+			"the votes in the evidence are for different height - shouldn't pass",
+			&tmtypes.DuplicateVoteEvidence{
+				VoteA:            consuVote,
+				VoteB:            consuVoteOld,
+				ValidatorPower:   consuVal.VotingPower,
+				TotalVotingPower: consuVal.VotingPower,
+				Timestamp:        s.consumerCtx().BlockTime(),
+			},
+			s.consumerChain.ChainID,
 			consuVal.PubKey,
 			false,
 		},
