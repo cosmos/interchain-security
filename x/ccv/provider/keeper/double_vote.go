@@ -21,6 +21,15 @@ func (k Keeper) HandleConsumerDoubleVoting(
 	chainID string,
 	pubkey cryptotypes.PubKey,
 ) error {
+	// check that the evidence is for an ICS consumer chain
+	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
+		return errorsmod.Wrapf(
+			ccvtypes.ErrInvalidDoubleVotingEvidence,
+			"cannot find consumer chain %s",
+			chainID,
+		)
+	}
+
 	// verifies the double voting evidence using the consumer chain public key
 	if err := k.VerifyDoubleVotingEvidence(*evidence, chainID, pubkey); err != nil {
 		return err
