@@ -42,7 +42,6 @@ type Keeper struct {
 	storeService store.KVStoreService
 
 	cdc                codec.BinaryCodec
-	paramSpace         paramtypes.Subspace
 	scopedKeeper       ccv.ScopedKeeper
 	channelKeeper      ccv.ChannelKeeper
 	portKeeper         ccv.PortKeeper
@@ -79,7 +78,6 @@ func NewKeeper(
 		cdc:                   cdc,
 		storeKey:              key,
 		authority:             authority,
-		paramSpace:            paramSpace,
 		scopedKeeper:          scopedKeeper,
 		channelKeeper:         channelKeeper,
 		portKeeper:            portKeeper,
@@ -114,19 +112,13 @@ func (k Keeper) ConsensusAddressCodec() addresscodec.Codec {
 	return k.consensusAddressCodec
 }
 
-// SetParamSpace sets the param space for the provider keeper.
-// Note: this is only used for testing!
-func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
-	k.paramSpace = ps
-}
-
 // TODO: @MSalopek -> redo validation; some fields will be removed
 // Validates that the provider keeper is initialized with non-zero and
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 18 {
-		panic("number of fields in provider keeper is not 18")
+	if reflect.ValueOf(k).NumField() != 17 {
+		panic("number of fields in provider keeper is not 17")
 	}
 
 	// TODO: @MSalopek -> validate once connected and AccountKeeper interface is updated
@@ -141,23 +133,22 @@ func (k Keeper) mustValidateFields() {
 
 	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                                     // 1
 	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                           // 2
-	ccv.PanicIfZeroOrNil(k.paramSpace, "paramSpace")                       // 3
-	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")                   // 4
-	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")                 // 5
-	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")                       // 6
-	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")           // 7
-	ccv.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")                 // 8
-	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")                   // 9
-	ccv.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")                 // 10
-	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")               // 11
-	ccv.PanicIfZeroOrNil(k.distributionKeeper, "distributionKeeper")       // 12
-	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                       // 13
-	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")           // 14
-	ccv.PanicIfZeroOrNil(k.authority, "authority")                         // 15
-	ccv.PanicIfZeroOrNil(k.validatorAddressCodec, "validatorAddressCodec") // 16
-	ccv.PanicIfZeroOrNil(k.consensusAddressCodec, "consensusAddressCodec") // 17
+	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")                   // 3
+	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")                 // 4
+	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")                       // 5
+	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")           // 6
+	ccv.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")                 // 7
+	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")                   // 8
+	ccv.PanicIfZeroOrNil(k.stakingKeeper, "stakingKeeper")                 // 9
+	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")               // 10
+	ccv.PanicIfZeroOrNil(k.distributionKeeper, "distributionKeeper")       // 11
+	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                       // 12
+	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")           // 13
+	ccv.PanicIfZeroOrNil(k.authority, "authority")                         // 14
+	ccv.PanicIfZeroOrNil(k.validatorAddressCodec, "validatorAddressCodec") // 15
+	ccv.PanicIfZeroOrNil(k.consensusAddressCodec, "consensusAddressCodec") // 16
 	// TODO: @MSalopek -> validate once connected
-	// ccv.PanicIfZeroOrNil(k.storeService, "storeService")                   // 18
+	// ccv.PanicIfZeroOrNil(k.storeService, "storeService")                   // 17
 }
 
 // Logger returns a module-specific logger.

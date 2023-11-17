@@ -21,6 +21,19 @@ func NewMigrator(ccvConsumerKeeper Keeper, ccvConsumerParamSpace paramtypes.Subs
 	return Migrator{ccvConsumerKeeper: ccvConsumerKeeper, ccvConsumerParamSpace: ccvConsumerParamSpace}
 }
 
+// MigrateParams migrates the consumers module's parameters from the x/params subspace to the
+// consumer modules store.
+func (m Migrator) MigrateParams(ctx sdk.Context) error {
+	params := m.ccvConsumerKeeper.GetConsumerParamsLegacy(ctx, m.ccvConsumerParamSpace)
+	err := params.Validate()
+	if err != nil {
+		return err
+	}
+	m.ccvConsumerKeeper.SetParams(ctx, params)
+	m.ccvConsumerKeeper.Logger(ctx).Info("successfully migrated provider parameters")
+	return nil
+}
+
 // MigrateConsumerPacketData migrates consumer packet data according to
 // https://github.com/cosmos/interchain-security/pull/1037
 //

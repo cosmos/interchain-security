@@ -81,6 +81,10 @@ service Query {
     option (google.api.http).get =
         "/interchain_security/ccv/provider/registered_consumer_reward_denoms";
   }
+
+  rpc QueryParams(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/provider/params";
+  }
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
@@ -186,4 +190,13 @@ message QueryRegisteredConsumerRewardDenomsRequest {}
 
 message QueryRegisteredConsumerRewardDenomsResponse {
   repeated string denoms = 1;
+}
+
+// Request to query values set for provider parameters
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  interchain_security.ccv.provider.v1.Params params = 1 [ (gogoproto.nullable) = false ];
 }

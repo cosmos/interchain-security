@@ -3,9 +3,13 @@ package keeper_test
 import (
 	"testing"
 
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
 
 	testutil "github.com/cosmos/interchain-security/v3/testutil/keeper"
+
+	"github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
+
 	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
@@ -60,4 +64,34 @@ func TestMigrateConsumerPacketData(t *testing.T) {
 	require.Equal(t, uint64(77), obtainedPackets[0].GetSlashPacketData().ValsetUpdateId)
 	require.Equal(t, uint64(88), obtainedPackets[1].GetVscMaturedPacketData().ValsetUpdateId)
 	require.Equal(t, uint64(99), obtainedPackets[2].GetVscMaturedPacketData().ValsetUpdateId)
+}
+
+func TestMigrateParams(t *testing.T) {
+	params := testutil.NewInMemKeeperParams(t)
+	consumerKeeper, ctx, ctrl, _ := testutil.GetConsumerKeeperAndCtx(t, params)
+	defer ctrl.Finish()
+
+	testCases := []struct {
+		name          string
+		legacyParams  func() paramtypes.Subspace
+		expetedParams ccvtypes.Params
+	}{
+		{
+			"default params",
+			func() paramtypes.Subspace {
+				subspace := params.ParamsSubspace
+				defaultParams := ccvtypes.DefaultParams()
+				subspace.SetParamSet(ctx, &defaultParams)
+				return *subspace
+			},
+			ccvtypes.DefaultParams(),
+		},
+	}
+	for _, tc := range testCases {
+		migrator := keeper.NewMigrator(consumerKeeper, tc.legacyParams())
+		err := migrator.MigrateParams(ctx)
+		require.NoError(t, err)
+		params := consumerKeeper.GetConsumerParams(ctx)
+		require.Equal(t, tc.expetedParams, params)
+	}
 }

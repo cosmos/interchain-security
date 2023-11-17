@@ -36,6 +36,16 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 	return &types.QueryConsumerGenesisResponse{GenesisState: gen}, nil
 }
 
+func (k Keeper) QueryParams(goCtx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	params := k.GetParams(ctx)
+	return &types.QueryParamsResponse{Params: params}, nil
+}
+
 func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsumerChainsRequest) (*types.QueryConsumerChainsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
