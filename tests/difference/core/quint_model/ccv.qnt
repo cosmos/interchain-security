@@ -474,7 +474,7 @@ module ccv {
                 val maturedPackets = newConsumerState.maturationTimes.select(
                     pair =>
                     val packet = pair._1 
-                    val maturationTime = pair._2
+                    val maturationTime: Time = pair._2
                     // important that the old chain state is used here, because sending packets happens on EndBlock,
                     // but the new timestamp only appears after BeginBlock
                     maturationTime <= oldChainState.lastTimestamp
@@ -482,7 +482,7 @@ module ccv {
                 val newMaturationTimes = newConsumerState.maturationTimes.select(
                     pair =>
                     val packet = pair._1 
-                    val maturationTime = pair._2
+                    val maturationTime: Time = pair._2
                     // important that the old chain state is used here, because sending packets happens on EndBlock,
                     // but the new timestamp only appears after BeginBlock
                     maturationTime > oldChainState.lastTimestamp
