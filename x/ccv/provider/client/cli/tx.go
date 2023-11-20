@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -141,17 +143,28 @@ Example:
 				WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
 			submitter := clientCtx.GetFromAddress()
-			var ev *tmproto.DuplicateVoteEvidence
-			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[1]), &ev); err != nil {
+
+			ev := tmproto.DuplicateVoteEvidence{}
+			evidenceJson, err := os.ReadFile(args[0])
+			if err != nil {
 				return err
 			}
 
-			var header ibctmtypes.Header
-			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[2]), &header); err != nil {
+			if err := json.Unmarshal(evidenceJson, &ev); err != nil {
+				return fmt.Errorf("duplicate vote evidence unmarshalling failed: %s", err)
+			}
+
+			headerRaw, err := os.ReadFile(args[1])
+			if err != nil {
 				return err
 			}
 
-			msg, err := types.NewMsgSubmitConsumerDoubleVoting(submitter, ev, &header)
+			header := ibctmtypes.Header{}
+			if err := types.ModuleCdc.UnmarshalJSON(headerRaw, &header); err != nil {
+				return fmt.Errorf("infraction IBC header unmarshalling failed: %s", err)
+			}
+
+			msg, err := types.NewMsgSubmitConsumerDoubleVoting(submitter, &ev, &header)
 			if err != nil {
 				return err
 			}
