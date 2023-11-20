@@ -6,8 +6,9 @@ Add an entry to the unreleased section whenever merging a PR to main that is not
 
 ## v2.4.0-lsm
 
-*November 17, 2023*
+*November 20, 2023*
 
+* (fix) [#1439](https://github.com/cosmos/interchain-security/pull/1439) Fix unmarshaling for the CLI consumer double vote cmd.
 * (feat!) [#1435](https://github.com/cosmos/interchain-security/pull/1435) Add height-base filter for consumer equivocation evidence.
 
 ## v2.3.0-provider-lsm
