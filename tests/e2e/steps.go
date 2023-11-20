@@ -13,6 +13,18 @@ func concatSteps(steps ...[]Step) []Step {
 	return concat
 }
 
+// Limited amount of sanity tests to use for compatibility testing
+var compatibilitySteps = concatSteps(
+	stepsStartChains([]string{"consu"}, false),
+	stepsDelegate("consu"),
+	stepsUnbond("consu"),
+	stepsRedelegateShort("consu"),
+	stepsDowntime("consu"),
+	stepsStartRelayer(),
+	stepsConsumerRemovalPropNotPassing("consu", 2), // submit removal prop but vote no on it - chain should stay
+	stepsStopChain("consu", 3),                     // stop chain
+)
+
 var happyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),

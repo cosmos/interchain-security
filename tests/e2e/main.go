@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"reflect"
 	"strconv"
@@ -33,6 +34,23 @@ func (t *TestSet) String() string {
 	return fmt.Sprint(*t)
 }
 
+type VersionSet []string
+
+func (c *VersionSet) Set(value string) error {
+	// Check and skip duplicates
+	for _, v := range *c {
+		if v == value {
+			return nil
+		}
+	}
+	*c = append(*c, value)
+	return nil
+}
+
+func (t *VersionSet) String() string {
+	return fmt.Sprint(*t)
+}
+
 var (
 	verbose              = flag.Bool("verbose", false, "turn verbose logging on/off")
 	includeMultiConsumer = flag.Bool("include-multi-consumer", false, "include multiconsumer tests in run")
@@ -46,6 +64,14 @@ var (
 var (
 	useGaia = flag.Bool("use-gaia", false, "use gaia instead of ICS provider app")
 	gaiaTag = flag.String("gaia-tag", "", "gaia tag to use - default is latest")
+)
+
+var (
+	//useConsumerVersion = flag.String("consumer-version", "", "ICS tag to specify the consumer version to test the provider against")
+	//useProviderVersion = flag.String("provider-version", "", "ICS tag to specify the provider version to test the consumer against")
+	consumerVersions VersionSet
+	providerVersions VersionSet
+	transformGenesis = flag.Bool("transform-genesis", false, "do consumer genesis transformation for newer clients. Needed when provider chain is on an older version")
 )
 
 var (
@@ -68,6 +94,12 @@ var (
 var selectedTestfiles TestSet
 
 var stepChoices = map[string]StepChoice{
+	"compatibility": {
+		name:        "compatibility",
+		steps:       compatibilitySteps,
+		description: `Minimal set of test steps to perform compatibility tests`,
+		testConfig:  DefaultTestConfig(),
+	},
 	"happy-path-short": {
 		name:        "happy-path-short",
 		steps:       shortHappyPathSteps,
@@ -208,6 +240,10 @@ func parseArguments() (err error) {
 
 	flag.Var(&selectedTestfiles, "test-file",
 		getTestFileUsageString())
+
+	flag.Var(&consumerVersions, "cv", "Consumer version")
+	flag.Var(&providerVersions, "pv", "Provider version")
+
 	flag.Parse()
 
 	// Enforce go-relayer in case of cometmock as hermes is not yet supported
@@ -287,6 +323,50 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet) (tests []t
 	return tests
 }
 
+// Create multiversion test cases
+// Based on the original set of test cases a multitude of test cases
+// for the provided consumer and provider versions are generated.
+func multiVersionConfig(testCases []testStepsWithConfig, providerVersions, consumerVerions VersionSet) []testStepsWithConfig {
+	var newTCs []testStepsWithConfig
+	if len(consumerVerions) == 0 && len(providerVersions) == 0 {
+		return testCases
+	}
+
+	if len(consumerVersions) == 0 {
+		consumerVerions = append(consumerVerions, "")
+	}
+	if len(providerVersions) == 0 {
+		providerVersions = append(providerVersions, "")
+	}
+
+	for _, provider := range providerVersions {
+		for _, consumer := range consumerVerions {
+			if consumer == provider {
+				log.Printf("Skipping same version '%s' for provider & consumer", consumer)
+				continue
+			}
+			log.Printf("Configuring test cases for: provider version %s, consumer version %s", provider, consumer)
+			for _, tc := range testCases {
+				tc.testRun.consumerVersion = consumer
+				tc.testRun.providerVersion = provider
+				tc.testRun.transformGenesis = *transformGenesis
+				suffix := ""
+				if consumer != "" {
+					suffix = fmt.Sprintf("_cons-%s", consumer)
+				}
+				if provider != "" {
+					suffix += fmt.Sprintf("_prov-%s", provider)
+				}
+				tc.testRun.containerConfig.ContainerName += suffix
+				tc.testRun.containerConfig.InstanceName += suffix
+				tc.testRun.name += suffix
+				newTCs = append(newTCs, tc)
+			}
+		}
+	}
+	return newTCs
+}
+
 // runs E2E tests
 // all docker containers are built sequentially to avoid race conditions when using local cosmos-sdk
 // after building docker containers, all tests are run in parallel using their respective docker containers
@@ -297,6 +377,7 @@ func main() {
 	}
 
 	testCases := getTestCases(selectedTests, selectedTestfiles)
+	testCases = multiVersionConfig(testCases, providerVersions, consumerVersions)
 
 	start := time.Now()
 	err := executeTests(testCases)
@@ -309,7 +390,8 @@ func main() {
 // Run sets up docker container and executes the steps in the test run.
 // Docker containers are torn down after the test run is complete.
 func (tr *TestConfig) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag string) {
-	tr.SetDockerConfig(localSdkPath, useGaia, gaiaTag)
+
+	tr.SetDockerConfig(localSdkPath, useGaia, gaiaTag, tr.consumerVersion, tr.providerVersion)
 	tr.SetCometMockConfig(*useCometmock)
 	tr.SetRelayerConfig(*useGorelayer)
 
@@ -436,16 +518,50 @@ func (tr *TestConfig) executeSteps(steps []Step) {
 	fmt.Printf("=============== finished %s tests in %v ===============\n", tr.name, time.Since(start))
 }
 
-func (tr *TestConfig) startDocker() {
-	fmt.Printf("=============== building %s testRun ===============\n", tr.name)
-	localSdk := tr.localSdkPath
-	if localSdk == "" {
-		localSdk = "default"
+func (tr *TestConfig) buildDockerImages() {
+	fmt.Printf("=============== building %s images ===============\n", tr.name)
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "e2eWorkTree")
+	if err != nil {
+		log.Fatalf("Error createing temp directory for docker creation")
 	}
-	useGaia := "false"
-	gaiaTag := ""
+
+	// Build ICS image of a given version
+	icsVersions := []string{}
+	if tr.consumerVersion != "" {
+		icsVersions = append(icsVersions, tr.consumerVersion)
+	}
+	if tr.providerVersion != "" && tr.consumerVersion != tr.providerVersion {
+		icsVersions = append(icsVersions, tr.providerVersion)
+	}
+	for _, icsVersion := range icsVersions {
+		imageName := fmt.Sprintf("cosmos-ics:%s", icsVersion)
+		err := buildDockerImage(imageName, icsVersion, tmpDir)
+		if err != nil {
+			log.Fatalf("Error building docker image '%s':%v", icsVersion, err)
+		}
+	}
+}
+
+func (tr *TestConfig) startDocker() {
+	tr.buildDockerImages()
+	fmt.Printf("=============== building %s testRun ===============\n", tr.name)
+
+	options := []string{}
+
+	localSdk := tr.localSdkPath
+	if localSdk != "" {
+		options = append(options, fmt.Sprintf("-s %s", tr.localSdkPath))
+	}
+
+	if tr.consumerVersion != "" {
+		options = append(options, fmt.Sprintf("-c %s", tr.consumerVersion))
+	}
+
+	if tr.providerVersion != "" {
+		options = append(options, fmt.Sprintf("-p %s", tr.providerVersion))
+	}
+
 	if tr.useGaia {
-		useGaia = "true"
 		if tr.gaiaTag != "" {
 			majVersion, err := strconv.Atoi(tr.gaiaTag[1:strings.Index(tr.gaiaTag, ".")])
 			if err != nil {
@@ -454,16 +570,14 @@ func (tr *TestConfig) startDocker() {
 			if majVersion < 9 {
 				panic(fmt.Sprintf("gaia version %s is not supported - supporting only v9.x.x and newer", tr.gaiaTag))
 			}
-			gaiaTag = tr.gaiaTag
+			options = append(options, fmt.Sprintf("-g %s", tr.gaiaTag))
 		}
 	}
 	scriptStr := fmt.Sprintf(
-		"tests/e2e/testnet-scripts/start-docker.sh %s %s %s %s %s",
+		"tests/e2e/testnet-scripts/start-docker.sh %s %s %s",
+		strings.Join(options, " "),
 		tr.containerConfig.ContainerName,
 		tr.containerConfig.InstanceName,
-		localSdk,
-		useGaia,
-		gaiaTag,
 	)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.

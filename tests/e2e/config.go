@@ -81,7 +81,11 @@ type TestConfig struct {
 	// Used with CometMock. The time by which chains have been advanced. Used to keep chains in sync: when a new chain is started, advance its time by this value to keep chains in sync.
 	timeOffset time.Duration
 
-	name string
+	// consumer version the provider should be tested against
+	consumerVersion  string
+	providerVersion  string
+	transformGenesis bool
+	name             string
 }
 
 // Initialize initializes the TestConfig instance by setting the runningChains field to an empty map.
@@ -483,7 +487,7 @@ func ConsumerMisbehaviourTestConfig() TestConfig {
 	return tc
 }
 
-func (s *TestConfig) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string) {
+func (s *TestConfig) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string, consumerVersion string, providerVersion string) {
 	if localSdkPath != "" {
 		fmt.Println("USING LOCAL SDK", localSdkPath)
 	}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -131,9 +132,19 @@ func (tr *TestConfig) startChain(
 		cometmockArg = "false"
 	}
 
+	startChainScript := "/testnet-scripts/start-chain.sh"
+	if tr.providerVersion != "" && chainConfig.BinaryName == "interchain-security-pd" {
+		log.Printf("Using start-chain script for provider version '%s'", tr.providerVersion)
+		startChainScript = "/provider/testnet-scripts/start-chain.sh"
+	}
+	if tr.consumerVersion != "" && chainConfig.BinaryName != "interchain-security-pd" {
+		log.Printf("Using start-chain script for consumer version '%s'", tr.consumerVersion)
+		startChainScript = "/consumer/testnet-scripts/start-chain.sh"
+	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "/bin/bash",
-		"/testnet-scripts/start-chain.sh", chainConfig.BinaryName, string(vals),
+		startChainScript, chainConfig.BinaryName, string(vals),
 		string(chainConfig.ChainId), chainConfig.IpPrefix, genesisChanges,
 		fmt.Sprint(action.IsConsumer),
 		// override config/config.toml for each node on chain
@@ -501,6 +512,30 @@ func (tr *TestConfig) startConsumerChain(
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
+	}
+
+	// only needed when consumer is running v3.2.x and later
+	if tr.transformGenesis {
+		log.Printf("@@@@ Transforming consumer genesis for a newer version: %s\n", tr.consumerVersion)
+		log.Printf("Original ccv genesis: %s\n", string(bz))
+
+		file, err := os.Create("consumer_genesis.json")
+		if err != nil {
+			panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
+		}
+		os.WriteFile(file.Name(), bz, 0644)
+		cmd := exec.Command("docker", "cp", file.Name(), fmt.Sprintf("%s:/tmp/%s", tr.containerConfig.InstanceName, file.Name()))
+		bz, err = cmd.CombinedOutput()
+		if err != nil {
+			log.Fatal(err, "\n", string(bz))
+		}
+		cmd = exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[action.ConsumerChain].BinaryName,
+			"genesis", "transform", fmt.Sprintf("/tmp/%s", file.Name()))
+		bz, err = cmd.CombinedOutput()
+		if err != nil {
+			log.Fatal(err, "CCV consumer genesis transformation failed: %s", string(bz))
+		}
+		log.Printf("Transformed genesis is: %s", string(bz))
 	}
 
 	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
