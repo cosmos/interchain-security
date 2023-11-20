@@ -77,7 +77,10 @@ type TestRun struct {
 	useGorelayer             bool // if false, Hermes is used as the relayer
 	gaiaTag                  string
 
-	name string
+	// consumer version the provider should be tested against
+	consumerVersion string
+	providerVersion string
+	name            string
 }
 
 func getDefaultValidators() map[validatorID]ValidatorConfig {
@@ -460,7 +463,7 @@ func ConsumerMisbehaviourTestRun() TestRun {
 	}
 }
 
-func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string) {
+func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string, consumerVersion string, providerVersion string) {
 	if localSdkPath != "" {
 		fmt.Println("USING LOCAL SDK", localSdkPath)
 	}
@@ -468,6 +471,8 @@ func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag str
 		fmt.Println("USING GAIA INSTEAD OF ICS provider app", gaiaTag)
 	}
 
+	s.consumerVersion = consumerVersion
+	s.providerVersion = providerVersion
 	s.useGaia = useGaia
 	s.gaiaTag = gaiaTag
 	s.localSdkPath = localSdkPath
