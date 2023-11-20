@@ -81,7 +81,10 @@ type TestRun struct {
 	// Used with CometMock. The time by which chains have been advanced. Used to keep chains in sync: when a new chain is started, advance its time by this value to keep chains in sync.
 	timeOffset time.Duration
 
-	name string
+	// consumer version the provider should be tested against
+	consumerVersion string
+	providerVersion string
+	name            string
 }
 
 // Initialize initializes the TestRun instance by setting the runningChains field to an empty map.
@@ -395,7 +398,7 @@ func ChangeoverTestRun() TestRun {
 	return tr
 }
 
-func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string) {
+func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag string, consumerVersion string, providerVersion string) {
 	if localSdkPath != "" {
 		fmt.Println("USING LOCAL SDK", localSdkPath)
 	}
@@ -403,6 +406,8 @@ func (s *TestRun) SetDockerConfig(localSdkPath string, useGaia bool, gaiaTag str
 		fmt.Println("USING GAIA INSTEAD OF ICS provider app", gaiaTag)
 	}
 
+	s.consumerVersion = consumerVersion
+	s.providerVersion = providerVersion
 	s.useGaia = useGaia
 	s.gaiaTag = gaiaTag
 	s.localSdkPath = localSdkPath
