@@ -84,13 +84,15 @@ Versions of Golang, IBC, Cosmos SDK and CometBFT used by ICS in the currently ac
 | [v2.4.0-lsm](https://github.com/cosmos/interchain-security/releases/tag/v2.4.0-lsm) | 1.19 | v4.4.2 | v0.45.16-ics-lsm | v0.34.28 | Provider only (Cosmos Hub specific) |
 | [v3.1.0](https://github.com/cosmos/interchain-security/releases/tag/v3.1.0) | 1.20 | v7.1.0 | v0.47.3 | v0.37.2 |
 
+**Note:** For a list of major ICS features available in the currently active releases, see [FEATURES.md](./FEATURES.md).
+
 ### Backwards Compatibility
 
 A MAJOR version of ICS will always be backwards compatible with the previous MAJOR version of ICS. 
 
 The following table indicates the compatibility of currently active releases:
 
-| consumer | provider | `v2.0.0` | `v2.1.0-provider-lsm` | `v2.4.0-lsm` | `v3.1.0` |
+| Consumer | Provider | `v2.0.0` | `v2.1.0-provider-lsm` | `v2.4.0-lsm` | `v3.1.0` |
 |----------|----------|--------:|----------------------:|----------------------:|---------:|
 | `v1.2.0-multiden` || ✅ | ✅ | ✅ | ✅ | 
 | `v2.0.0` || ✅ | ✅ | ✅ | ✅ | 
