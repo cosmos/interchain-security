@@ -11,6 +11,8 @@ import (
 	"github.com/golang/mock/gomock"
 	extra "github.com/oxyno-zeta/gomock-extra-matcher"
 
+	math "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -154,5 +156,66 @@ func GetMocksForSendIBCPacket(ctx sdk.Context, mocks MockedKeepers, channelID st
 			gomock.Any(),
 			gomock.Any(),
 		).Return(uint64(888), nil).Times(times),
+	}
+}
+
+func GetMocksForSlashValidator(
+	ctx sdk.Context,
+	mocks MockedKeepers,
+	validator stakingtypes.Validator,
+	consAddr sdk.ConsAddress,
+	undelegations []stakingtypes.UnbondingDelegation,
+	redelegations []stakingtypes.Redelegation,
+	powerReduction math.Int,
+	slashFraction math.LegacyDec,
+	currentPower,
+	expectedInfractionHeight,
+	expectedSlashPower int64,
+) []*gomock.Call {
+	return []*gomock.Call{
+		mocks.MockStakingKeeper.EXPECT().
+			GetUnbondingDelegationsFromValidator(ctx, validator.GetOperator()).
+			Return(undelegations),
+		mocks.MockStakingKeeper.EXPECT().
+			GetRedelegationsFromSrcValidator(ctx, validator.GetOperator()).
+			Return(redelegations),
+		mocks.MockStakingKeeper.EXPECT().
+			GetLastValidatorPower(ctx, validator.GetOperator()).
+			Return(currentPower),
+		mocks.MockStakingKeeper.EXPECT().
+			PowerReduction(ctx).
+			Return(powerReduction),
+		mocks.MockStakingKeeper.EXPECT().
+			SlashUnbondingDelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			DoAndReturn(
+				func(_ sdk.Context, undelegation stakingtypes.UnbondingDelegation, _ int64, _ sdk.Dec) math.Int {
+					sum := sdk.NewInt(0)
+					for _, r := range undelegation.Entries {
+						if r.IsMature(ctx.BlockTime()) {
+							continue
+						}
+						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+					}
+					return sum
+				}).AnyTimes(),
+		mocks.MockStakingKeeper.EXPECT().
+			SlashRedelegation(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			DoAndReturn(
+				func(_ sdk.Context, _ stakingtypes.Validator, redelegation stakingtypes.Redelegation, _ int64, _ sdk.Dec) math.Int {
+					sum := sdk.NewInt(0)
+					for _, r := range redelegation.Entries {
+						if r.IsMature(ctx.BlockTime()) {
+							continue
+						}
+						sum = sum.Add(sdk.NewInt(r.InitialBalance.Int64()))
+					}
+					return sum
+				}).AnyTimes(),
+		mocks.MockSlashingKeeper.EXPECT().
+			SlashFractionDoubleSign(ctx).
+			Return(slashFraction),
+		mocks.MockStakingKeeper.EXPECT().
+			SlashWithInfractionReason(ctx, consAddr, expectedInfractionHeight, expectedSlashPower, slashFraction, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN).
+			Times(1),
 	}
 }

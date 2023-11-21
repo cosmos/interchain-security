@@ -54,12 +54,14 @@ var (
 	// map the test config names to their structs to allow for easy selection of test configs,
 	// and also to programatically set parameters, i.e. see DemocracyTestConfig
 	testConfigs = map[string]TestConfig{
-		"default":          DefaultTestConfig(),
-		"changeover":       ChangeoverTestConfig(),
-		"democracy":        DemocracyTestConfig(false),
-		"democracy-reward": DemocracyTestConfig(true),
-		"slash-throttle":   SlashThrottleTestConfig(),
-		"multiconsumer":    MultiConsumerTestConfig(),
+		"default":               DefaultTestConfig(),
+		"changeover":            ChangeoverTestConfig(),
+		"democracy":             DemocracyTestConfig(false),
+		"democracy-reward":      DemocracyTestConfig(true),
+		"slash-throttle":        SlashThrottleTestConfig(),
+		"multiconsumer":         MultiConsumerTestConfig(),
+		"consumer-misbehaviour": ConsumerMisbehaviourTestConfig(),
+		"consumer-double-sign":  DefaultTestConfig(),
 	}
 )
 
@@ -113,6 +115,18 @@ var stepChoices = map[string]StepChoice{
 		steps:       multipleConsumers,
 		description: "multi consumer tests",
 		testConfig:  MultiConsumerTestConfig(),
+	},
+	"consumer-misbehaviour": {
+		name:        "consumer-misbehaviour",
+		steps:       consumerMisbehaviourSteps,
+		description: "consumer light client misbehaviour tests",
+		testConfig:  ConsumerMisbehaviourTestConfig(),
+	},
+	"consumer-double-sign": {
+		name:        "consumer-double-sign",
+		steps:       consumerDoubleSignSteps,
+		description: "consumer double signing tests",
+		testConfig:  DefaultTestConfig(),
 	},
 }
 
@@ -216,7 +230,8 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet) (tests []t
 	if len(selectedPredefinedTests) == 0 && len(selectedTestFiles) == 0 {
 		selectedPredefinedTests = TestSet{
 			"changeover", "happy-path",
-			"democracy-reward", "democracy", "slash-throttle",
+			"democracy-reward", "democracy",
+			"slash-throttle", "consumer-double-sign", "consumer-misbehaviour",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")
@@ -331,8 +346,6 @@ func (tr *TestConfig) runStep(step Step, verbose bool) {
 		tr.submitConsumerAdditionProposal(action, verbose)
 	case submitConsumerRemovalProposalAction:
 		tr.submitConsumerRemovalProposal(action, verbose)
-	case submitEquivocationProposalAction:
-		tr.submitEquivocationProposal(action, verbose)
 	case submitParamChangeLegacyProposalAction:
 		tr.submitParamChangeProposal(action, verbose)
 	case voteGovProposalAction:
@@ -383,6 +396,12 @@ func (tr *TestConfig) runStep(step Step, verbose bool) {
 		tr.waitForTime(action, verbose)
 	case startRelayerAction:
 		tr.startRelayer(action, verbose)
+	case forkConsumerChainAction:
+		tr.forkConsumerChain(action, verbose)
+	case updateLightClientAction:
+		tr.updateLightClient(action, verbose)
+	case startConsumerEvidenceDetectorAction:
+		tr.startConsumerEvidenceDetector(action, verbose)
 	case submitChangeRewardDenomsProposalAction:
 		tr.submitChangeRewardDenomsProposal(action, verbose)
 	default:

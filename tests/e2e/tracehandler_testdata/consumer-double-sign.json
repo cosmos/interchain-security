@@ -1,66 +1,5 @@
 [
   {
-    "ActionType": "main.StartSovereignChainAction",
-    "Action": {
-      "Chain": "sover",
-      "Validators": [
-        {
-          "Id": "alice",
-          "Allocation": 10000000000,
-          "Stake": 500000000
-        }
-      ],
-      "GenesisChanges": ""
-    },
-    "State": {
-      "sover": {
-        "ValBalances": {
-          "alice": 9500000000
-        },
-        "ValPowers": null,
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerPendingPacketQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      }
-    }
-  },
-  {
-    "ActionType": "main.delegateTokensAction",
-    "Action": {
-      "Chain": "sover",
-      "From": "alice",
-      "To": "alice",
-      "Amount": 11000000
-    },
-    "State": {
-      "sover": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 0,
-          "carol": 0
-        },
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerPendingPacketQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      }
-    }
-  },
-  {
     "ActionType": "main.StartChainAction",
     "Action": {
       "Chain": "provi",
@@ -106,125 +45,18 @@
     }
   },
   {
-    "ActionType": "main.createIbcClientsAction",
-    "Action": {
-      "ChainA": "sover",
-      "ChainB": "provi"
-    },
-    "State": {}
-  },
-  {
-    "ActionType": "main.addIbcChannelAction",
-    "Action": {
-      "ChainA": "sover",
-      "ChainB": "provi",
-      "ConnectionA": 0,
-      "PortA": "transfer",
-      "PortB": "transfer",
-      "Order": "unordered",
-      "Version": "ics20-1"
-    },
-    "State": {}
-  },
-  {
-    "ActionType": "main.LegacyUpgradeProposalAction",
-    "Action": {
-      "ChainID": "sover",
-      "UpgradeTitle": "sovereign-changeover",
-      "Proposer": "alice",
-      "UpgradeHeight": 110
-    },
-    "State": {
-      "sover": {
-        "ValBalances": null,
-        "ValPowers": null,
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerPendingPacketQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": {
-          "1": {
-            "RawProposal": {
-              "Title": "sovereign-changeover",
-              "Description": "",
-              "UpgradeHeight": 110,
-              "Type": "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
-              "Deposit": 10000000,
-              "Status": "PROPOSAL_STATUS_VOTING_PERIOD"
-            },
-            "Type": "main.UpgradeProposal"
-          }
-        }
-      }
-    }
-  },
-  {
-    "ActionType": "main.voteGovProposalAction",
-    "Action": {
-      "Chain": "sover",
-      "From": [
-        "alice"
-      ],
-      "Vote": [
-        "yes"
-      ],
-      "PropNumber": 1
-    },
-    "State": {
-      "sover": {
-        "ValBalances": null,
-        "ValPowers": null,
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerPendingPacketQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": {
-          "1": {
-            "RawProposal": {
-              "Title": "sovereign-changeover",
-              "Description": "",
-              "UpgradeHeight": 110,
-              "Type": "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
-              "Deposit": 10000000,
-              "Status": "PROPOSAL_STATUS_PASSED"
-            },
-            "Type": "main.UpgradeProposal"
-          }
-        }
-      }
-    }
-  },
-  {
-    "ActionType": "main.waitUntilBlockAction",
-    "Action": {
-      "Block": 110,
-      "Chain": "sover"
-    },
-    "State": {}
-  },
-  {
     "ActionType": "main.submitConsumerAdditionProposalAction",
     "Action": {
-      "PreCCV": true,
+      "PreCCV": false,
       "Chain": "provi",
       "From": "alice",
       "Deposit": 10000001,
-      "ConsumerChain": "sover",
+      "ConsumerChain": "consu",
       "SpawnTime": 0,
       "InitialHeight": {
-        "revision_height": 111
+        "revision_height": 1
       },
-      "DistributionChannel": "channel-0"
+      "DistributionChannel": ""
     },
     "State": {
       "provi": {
@@ -246,16 +78,91 @@
           "1": {
             "RawProposal": {
               "Deposit": 10000001,
-              "Chain": "sover",
+              "Chain": "consu",
               "SpawnTime": 0,
               "InitialHeight": {
-                "revision_height": 111
+                "revision_height": 1
               },
               "Status": "PROPOSAL_STATUS_VOTING_PERIOD"
             },
             "Type": "main.ConsumerAdditionProposal"
           }
         }
+      }
+    }
+  },
+  {
+    "ActionType": "main.assignConsumerPubKeyAction",
+    "Action": {
+      "Chain": "consu",
+      "Validator": "carol",
+      "ConsumerPubkey": "{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=\"}",
+      "ReconfigureNode": false,
+      "ExpectError": false,
+      "ExpectedError": ""
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": null,
+        "StakedTokens": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": {
+          "carol": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
+        },
+        "ProviderKeys": {
+          "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
+        },
+        "ConsumerPendingPacketQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.assignConsumerPubKeyAction",
+    "Action": {
+      "Chain": "consu",
+      "Validator": "carol",
+      "ConsumerPubkey": "{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=\"}",
+      "ReconfigureNode": false,
+      "ExpectError": true,
+      "ExpectedError": "a validator has assigned the consumer key already: consumer key is already in use by a validator"
+    },
+    "State": {}
+  },
+  {
+    "ActionType": "main.assignConsumerPubKeyAction",
+    "Action": {
+      "Chain": "consu",
+      "Validator": "bob",
+      "ConsumerPubkey": "{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":\"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=\"}",
+      "ReconfigureNode": false,
+      "ExpectError": true,
+      "ExpectedError": "a validator has assigned the consumer key already: consumer key is already in use by a validator"
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": null,
+        "StakedTokens": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": {
+          "bob": "",
+          "carol": "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
+        },
+        "ProviderKeys": {
+          "carol": "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
+        },
+        "ConsumerPendingPacketQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
+        "Proposals": null
       }
     }
   },
@@ -295,10 +202,10 @@
           "1": {
             "RawProposal": {
               "Deposit": 10000001,
-              "Chain": "sover",
+              "Chain": "consu",
               "SpawnTime": 0,
               "InitialHeight": {
-                "revision_height": 111
+                "revision_height": 1
               },
               "Status": "PROPOSAL_STATUS_PASSED"
             },
@@ -309,18 +216,18 @@
     }
   },
   {
-    "ActionType": "main.ChangeoverChainAction",
+    "ActionType": "main.startConsumerChainAction",
     "Action": {
-      "SovereignChain": "sover",
+      "ConsumerChain": "consu",
       "ProviderChain": "provi",
       "Validators": [
         {
-          "Id": "alice",
+          "Id": "bob",
           "Allocation": 10000000000,
           "Stake": 500000000
         },
         {
-          "Id": "bob",
+          "Id": "alice",
           "Allocation": 10000000000,
           "Stake": 500000000
         },
@@ -333,13 +240,13 @@
       "GenesisChanges": ".app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.05\""
     },
     "State": {
-      "provi": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 500,
-          "bob": 500,
-          "carol": 500
+      "consu": {
+        "ValBalances": {
+          "alice": 10000000000,
+          "bob": 10000000000,
+          "carol": 10000000000
         },
+        "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
         "Rewards": null,
@@ -351,13 +258,13 @@
         "ClientsFrozenHeights": null,
         "Proposals": null
       },
-      "sover": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 500,
-          "bob": 500,
-          "carol": 500
+      "provi": {
+        "ValBalances": {
+          "alice": 9500000000,
+          "bob": 9500000000,
+          "carol": 9500000000
         },
+        "ValPowers": null,
         "StakedTokens": null,
         "Params": null,
         "Rewards": null,
@@ -374,19 +281,19 @@
   {
     "ActionType": "main.addIbcConnectionAction",
     "Action": {
-      "ChainA": "sover",
+      "ChainA": "consu",
       "ChainB": "provi",
-      "ClientA": 1,
-      "ClientB": 1
+      "ClientA": 0,
+      "ClientB": 0
     },
     "State": {}
   },
   {
     "ActionType": "main.addIbcChannelAction",
     "Action": {
-      "ChainA": "sover",
+      "ChainA": "consu",
       "ChainB": "provi",
-      "ConnectionA": 1,
+      "ConnectionA": 0,
       "PortA": "consumer",
       "PortB": "provider",
       "Order": "ordered",
@@ -395,60 +302,13 @@
     "State": {}
   },
   {
-    "ActionType": "main.SendTokensAction",
+    "ActionType": "main.doublesignSlashAction",
     "Action": {
-      "Chain": "sover",
-      "From": "alice",
-      "To": "bob",
-      "Amount": 100
+      "Validator": "bob",
+      "Chain": "consu"
     },
     "State": {
-      "sover": {
-        "ValBalances": {
-          "bob": 0
-        },
-        "ValPowers": null,
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerPendingPacketQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      }
-    }
-  },
-  {
-    "ActionType": "main.delegateTokensAction",
-    "Action": {
-      "Chain": "provi",
-      "From": "alice",
-      "To": "alice",
-      "Amount": 11000000
-    },
-    "State": {
-      "provi": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 500,
-          "carol": 500
-        },
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerPendingPacketQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      },
-      "sover": {
+      "consu": {
         "ValBalances": null,
         "ValPowers": {
           "alice": 500,
@@ -465,78 +325,41 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "Proposals": null
-      }
-    }
-  },
-  {
-    "ActionType": "main.relayPacketsAction",
-    "Action": {
-      "ChainA": "provi",
-      "ChainB": "sover",
-      "Port": "provider",
-      "Channel": 1
-    },
-    "State": {
-      "sover": {
-        "ValBalances": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 500,
-          "carol": 500
-        },
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerPendingPacketQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      }
-    }
-  },
-  {
-    "ActionType": "main.SendTokensAction",
-    "Action": {
-      "Chain": "sover",
-      "From": "alice",
-      "To": "bob",
-      "Amount": 100
-    },
-    "State": {
-      "sover": {
-        "ValBalances": {
-          "bob": 100
-        },
-        "ValPowers": null,
-        "StakedTokens": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerPendingPacketQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "Proposals": null
-      }
-    }
-  },
-  {
-    "ActionType": "main.unbondTokensAction",
-    "Action": {
-      "Chain": "provi",
-      "Sender": "alice",
-      "UnbondFrom": "alice",
-      "Amount": 1000000
-    },
-    "State": {
+      },
       "provi": {
         "ValBalances": null,
         "ValPowers": {
-          "alice": 510,
+          "alice": 500,
+          "bob": 500,
+          "carol": 500
+        },
+        "StakedTokens": {
+          "alice": 500000000,
+          "bob": 500000000,
+          "carol": 500000000
+        },
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerPendingPacketQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
+        "Proposals": null
+      }
+    }
+  },
+  {
+    "ActionType": "main.startConsumerEvidenceDetectorAction",
+    "Action": {
+      "Chain": "consu"
+    },
+    "State": {
+      "consu": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 500,
           "bob": 500,
           "carol": 500
         },
@@ -551,14 +374,18 @@
         "ClientsFrozenHeights": null,
         "Proposals": null
       },
-      "sover": {
+      "provi": {
         "ValBalances": null,
         "ValPowers": {
-          "alice": 511,
-          "bob": 500,
+          "alice": 500,
+          "bob": 0,
           "carol": 500
         },
-        "StakedTokens": null,
+        "StakedTokens": {
+          "alice": 500000000,
+          "bob": 475000000,
+          "carol": 500000000
+        },
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,
@@ -575,19 +402,41 @@
     "ActionType": "main.relayPacketsAction",
     "Action": {
       "ChainA": "provi",
-      "ChainB": "sover",
+      "ChainB": "consu",
       "Port": "provider",
-      "Channel": 1
+      "Channel": 0
     },
     "State": {
-      "sover": {
+      "consu": {
         "ValBalances": null,
         "ValPowers": {
-          "alice": 510,
-          "bob": 500,
+          "alice": 500,
+          "bob": 0,
           "carol": 500
         },
         "StakedTokens": null,
+        "Params": null,
+        "Rewards": null,
+        "ConsumerChains": null,
+        "AssignedKeys": null,
+        "ProviderKeys": null,
+        "ConsumerPendingPacketQueueSize": null,
+        "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
+        "Proposals": null
+      },
+      "provi": {
+        "ValBalances": null,
+        "ValPowers": {
+          "alice": 500,
+          "bob": 0,
+          "carol": 500
+        },
+        "StakedTokens": {
+          "alice": 500000000,
+          "bob": 475000000,
+          "carol": 500000000
+        },
         "Params": null,
         "Rewards": null,
         "ConsumerChains": null,

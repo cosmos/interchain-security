@@ -242,6 +242,33 @@ func TestRecycleTransferChannel(t *testing.T) {
 }
 
 //
+// Misbehaviour tests
+//
+
+func TestHandleConsumerMisbehaviour(t *testing.T) {
+	runCCVTestByName(t, "TestHandleConsumerMisbehaviour")
+}
+
+func TestGetByzantineValidators(t *testing.T) {
+	runCCVTestByName(t, "TestGetByzantineValidators")
+}
+
+func TestCheckMisbehaviour(t *testing.T) {
+	runCCVTestByName(t, "TestCheckMisbehaviour")
+}
+
+//
+// Consumer Equivocation test
+//
+
+func TestHandleConsumerDoubleVoting(t *testing.T) {
+	runCCVTestByName(t, "TestHandleConsumerDoubleVoting")
+}
+
+func TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations(t *testing.T) {
+	runCCVTestByName(t, "TestHandleConsumerDoubleVotingSlashesUndelegationsAndRelegations")
+}
+
 // Throttle retry tests
 //
 

@@ -29,7 +29,7 @@ RUN go mod tidy
 RUN make install
 
 # Get Hermes build
-FROM ghcr.io/informalsystems/hermes:1.4.1 AS hermes-builder
+FROM otacrew/hermes-ics:evidence-cmd AS hermes-builder
 
 # Get CometMock
 FROM ghcr.io/informalsystems/cometmock:v0.37.x as cometmock-builder

@@ -87,7 +87,6 @@ type MockedKeepers struct {
 	*MockBankKeeper
 	*MockIBCTransferKeeper
 	*MockIBCCoreKeeper
-	*MockEvidenceKeeper
 	*MockDistributionKeeper
 }
 
@@ -105,7 +104,6 @@ func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 		MockBankKeeper:         NewMockBankKeeper(ctrl),
 		MockIBCTransferKeeper:  NewMockIBCTransferKeeper(ctrl),
 		MockIBCCoreKeeper:      NewMockIBCCoreKeeper(ctrl),
-		MockEvidenceKeeper:     NewMockEvidenceKeeper(ctrl),
 		MockDistributionKeeper: NewMockDistributionKeeper(ctrl),
 	}
 }
@@ -124,7 +122,6 @@ func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) provi
 		mocks.MockStakingKeeper,
 		mocks.MockSlashingKeeper,
 		mocks.MockAccountKeeper,
-		mocks.MockEvidenceKeeper,
 		mocks.MockDistributionKeeper,
 		mocks.MockBankKeeper,
 		authtypes.FeeCollectorName,
