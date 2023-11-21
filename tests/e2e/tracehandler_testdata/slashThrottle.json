@@ -21,7 +21,7 @@
         }
       ],
       "GenesisChanges": "",
-      "SkipGentx": false
+      "IsConsumer": false
     },
     "State": {
       "provi": {
@@ -40,6 +40,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -74,6 +75,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -118,6 +120,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -162,6 +165,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -198,6 +202,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -256,6 +261,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -274,6 +280,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -326,6 +333,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -344,6 +352,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -372,6 +381,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -401,6 +411,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -429,6 +440,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -456,6 +468,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -474,6 +487,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -503,6 +517,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -523,6 +538,7 @@
         },
         "GlobalSlashQueueSize": 0,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -550,6 +566,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -568,6 +585,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -597,6 +615,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -617,6 +636,7 @@
         },
         "GlobalSlashQueueSize": 1,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -646,6 +666,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -715,6 +736,7 @@
         },
         "GlobalSlashQueueSize": 0,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -745,6 +767,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "2": {
             "RawProposal": {
@@ -790,6 +813,7 @@
         "ConsumerChainQueueSizes": null,
         "GlobalSlashQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "2": {
             "RawProposal": {

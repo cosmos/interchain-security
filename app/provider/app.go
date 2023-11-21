@@ -140,7 +140,6 @@ var (
 				ibcclientclient.UpgradeProposalHandler,
 				ibcproviderclient.ConsumerAdditionProposalHandler,
 				ibcproviderclient.ConsumerRemovalProposalHandler,
-				ibcproviderclient.EquivocationProposalHandler,
 				ibcproviderclient.ChangeRewardDenomsProposalHandler,
 			},
 		),
@@ -404,14 +403,6 @@ func New(
 		scopedIBCKeeper,
 	)
 
-	// create evidence keeper with router
-	app.EvidenceKeeper = *evidencekeeper.NewKeeper(
-		appCodec,
-		keys[evidencetypes.StoreKey],
-		app.StakingKeeper,
-		app.SlashingKeeper,
-	)
-
 	app.ProviderKeeper = ibcproviderkeeper.NewKeeper(
 		appCodec,
 		keys[providertypes.StoreKey],
@@ -424,7 +415,6 @@ func New(
 		app.StakingKeeper,
 		app.SlashingKeeper,
 		app.AccountKeeper,
-		app.EvidenceKeeper,
 		app.DistrKeeper,
 		app.BankKeeper,
 		authtypes.FeeCollectorName,
@@ -476,6 +466,16 @@ func New(
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcmodule)
 	ibcRouter.AddRoute(providertypes.ModuleName, providerModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
+
+	// create evidence keeper with router
+	evidenceKeeper := evidencekeeper.NewKeeper(
+		appCodec,
+		keys[evidencetypes.StoreKey],
+		app.StakingKeeper,
+		app.SlashingKeeper,
+	)
+
+	app.EvidenceKeeper = *evidenceKeeper
 
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 

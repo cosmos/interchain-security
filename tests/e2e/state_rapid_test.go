@@ -174,7 +174,6 @@ func GetProposalGen() *rapid.Generator[Proposal] {
 		gen := rapid.OneOf(
 			GetConsumerAdditionProposalGen().AsAny(),
 			GetConsumerRemovalProposalGen().AsAny(),
-			GetEquivocationProposalGen().AsAny(),
 			GetTextProposalGen().AsAny(),
 			GetParamsProposalGen().AsAny(),
 		)
@@ -201,18 +200,6 @@ func GetConsumerRemovalProposalGen() *rapid.Generator[ConsumerRemovalProposal] {
 			Chain:    GetChainIDGen().Draw(t, "Chain"),
 			StopTime: rapid.Int().Draw(t, "StopTime"),
 			Status:   rapid.String().Draw(t, "Status"),
-		}
-	})
-}
-
-func GetEquivocationProposalGen() *rapid.Generator[EquivocationProposal] {
-	return rapid.Custom(func(t *rapid.T) EquivocationProposal {
-		return EquivocationProposal{
-			Power:            rapid.Uint().Draw(t, "Power"),
-			Height:           rapid.Uint().Draw(t, "Height"),
-			ConsensusAddress: rapid.String().Draw(t, "ConesnsuAddress"),
-			Deposit:          rapid.Uint().Draw(t, "Deposit"),
-			Status:           rapid.String().Draw(t, "Status"),
 		}
 	})
 }

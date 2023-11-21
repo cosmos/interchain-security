@@ -186,3 +186,4 @@ In addition, RS has the following features:
 
 - **Key Assignment**: Enables validator operators to use different consensus keys for each consumer chain validator node that they operate.
 - **Jail Throttling**: Enables the provider to slow down a "worst case scenario" attack where a malicious consumer binary attempts to jail a significant amount (> 2/3) of the voting power, effectively taking control of the provider.
+
