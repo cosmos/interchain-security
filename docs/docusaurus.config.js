@@ -18,7 +18,7 @@ const config = {
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: "Cosmos",
+  organizationName: "cosmos",
   projectName: "interchain-security",
 
   // Even if you don't use internalization, you can use this field to set useful
