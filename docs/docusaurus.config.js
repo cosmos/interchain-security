@@ -72,7 +72,8 @@ const config = {
         logo: {
           alt: 'Interchain Security Logo',
           src: '/interchain-security/img/hub.svg',
-          href: 'https://github.com/cosmos/interchain-security',
+          src: '/img/hub.svg',
+          href: '/',
           target: '_self',
         },        
         items: [
