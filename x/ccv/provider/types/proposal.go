@@ -204,7 +204,7 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 }
 
 // NewEquivocationProposal creates a new equivocation proposal.
-// [DEPRECATED]: do not use since that equivocations can be submitted
+// [DEPRECATED]: do not use because equivocations can be submitted
 // and verified automatically on the provider.
 func NewEquivocationProposal(title, description string, equivocations []*evidencetypes.Equivocation) govv1beta1.Content {
 	return &EquivocationProposal{
