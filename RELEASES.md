@@ -92,8 +92,9 @@ A MAJOR version of ICS will always be backwards compatible with the previous MAJ
 
 The following table indicates the compatibility of currently active releases:
 
-| Consumer | Provider | `v2.0.0` | `v2.1.0-provider-lsm` | `v2.4.0-lsm` | `v3.1.0` |
-|----------|----------|--------:|----------------------:|----------------------:|---------:|
-| `v1.2.0-multiden` || ✅ | ✅ | ✅ | ✅ | 
-| `v2.0.0` || ✅ | ✅ | ✅ | ✅ | 
-| `v3.1.0` || ✅ | ✅ | ✅ | ✅ | 
+| Consumer | Provider | `v2.0.0` | `v2.1.0-provider-lsm` | `v2.4.0-lsm` | `v3.1.0` | `v3.2.0` |
+|----------|----------|--------:|-----------------------:|-------------:|---------:|---------:|
+| `v1.2.0-multiden` || ✅ | ✅ | ✅ | ✅ | ❌ |
+| `v2.0.0` || ✅ | ✅ | ✅ | ✅ | ❌ |
+| `v3.1.0` || ✅ | ✅ | ✅ | ✅ | ❌ |
+| `v3.2.0` || ✅ | ✅ | ✅ | ✅ | ✅ |
