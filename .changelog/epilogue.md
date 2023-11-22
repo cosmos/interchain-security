@@ -23,6 +23,28 @@ Interchain Security v3 uses SDK 0.47 and IBC 7.
 * `[x/ccv/provider]` (fix) [#977](https://github.com/cosmos/interchain-security/pull/977) Avoids panicking the provider when an unbonding delegation was removed through a `CancelUnbondingDelegation` message.
 * `[x/ccv/democracy]` (feat) [#1019](https://github.com/cosmos/interchain-security/pull/1019) Whitelisting non-legacy params in the "democracy module" require the entire module to be whitelisted. 
 
+## v2.4.0-lsm
+
+*November 20, 2023*
+
+* (fix) [#1439](https://github.com/cosmos/interchain-security/pull/1439) Fix unmarshaling for the CLI consumer double vote cmd.
+* (feat!) [#1435](https://github.com/cosmos/interchain-security/pull/1435) Add height-base filter for consumer equivocation evidence.
+
+## v2.3.0-provider-lsm
+
+*November 15, 2023*
+
+❗ *This release is deprecated and should not be used in production.*
+
+* (fix!) [#1422](https://github.com/cosmos/interchain-security/pull/1422) Fix the misbehaviour handling by verifying the signatures of byzantine validators.
+
+## v2.2.0-provider-lsm
+
+❗ *This release is deprecated and should not be used in production.*
+
+### Cryptographic verification of equivocation
+* New feature enabling the provider chain to verify equivocation evidence on its own instead of trusting consumer chains, see [EPIC](https://github.com/cosmos/interchain-security/issues/732).
+
 ## v2.1.0-provider-lsm
 
 Date: September 15th, 2023
