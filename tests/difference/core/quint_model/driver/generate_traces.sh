@@ -1,1 +1,1 @@
-go run ./... -modelPath=../ccv_happy.qnt -init initHappy -step stepHappy -invariant CanReceiveMaturations -traceFolder traces -numTraces 50
+go run ./... -modelPath=../ccv_model.qnt -init init -step step -traceFolder traces -numTraces 50
