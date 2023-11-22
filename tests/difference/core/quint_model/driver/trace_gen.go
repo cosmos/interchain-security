@@ -43,12 +43,18 @@ func GenerateTraces(numTraces int, modelConfig ModelConfig, invConfig InvariantC
 }
 
 func GenerateTrace(modelConfig ModelConfig, invConfig InvariantConfig, traceName string) {
+	var invariant_config string
+	if invConfig.invariant != "" {
+		invariant_config = fmt.Sprintf("--invariant=%v", invConfig.invariant)
+	} else {
+		invariant_config = ""
+	}
 	cmd := fmt.Sprintf(
-		"quint run --out-itf %v --init %v --step %v --invariant=%v --max-steps=%v --max-samples=%v %v",
+		"quint run --out-itf %v --init %v --step %v %v --max-steps=%v --max-samples=%v %v",
 		traceName,
 		modelConfig.init,
 		modelConfig.step,
-		invConfig.invariant,
+		invariant_config,
 		invConfig.numSteps,
 		invConfig.numSamples,
 		modelConfig.modelPath,

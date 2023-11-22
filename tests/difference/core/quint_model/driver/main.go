@@ -29,11 +29,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *invariant == "" {
-		fmt.Println("Error: invariant flag is required")
-		os.Exit(1)
-	}
-
 	if *traceFolder == "" {
 		fmt.Println("Error: traceFolder flag is required")
 		os.Exit(1)
