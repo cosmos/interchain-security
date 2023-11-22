@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -433,6 +434,15 @@ func (s *Driver) DeliverPacketToConsumer(recipient ChainId) {
 // Since the channel is ordered, the packet that is delivered is the first packet in the outbox.
 func (s *Driver) DeliverPacketFromConsumer(sender ChainId) {
 	s.path(sender).DeliverPackets(P, 1) // deliver to the provider
+}
+
+// DeliverAcks delivers, for each path,
+// all possible acks (up to math.MaxInt many per path).
+func (s *Driver) DeliverAcks() {
+	for _, path := range s.simibcs {
+		path.DeliverAcks(string(path.Path.EndpointA.Chain.ChainID), math.MaxInt)
+		path.DeliverAcks(string(path.Path.EndpointB.Chain.ChainID), math.MaxInt)
+	}
 }
 
 // newDriver creates a new Driver object.

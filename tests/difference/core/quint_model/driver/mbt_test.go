@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const verbose = false
+const verbose = true
 
 func TestItfTrace(t *testing.T) {
 	path := "trace.json"
@@ -176,6 +176,9 @@ func TestItfTrace(t *testing.T) {
 			log.Fatalf("Error loading trace file %s, step %v: do not know action type %s",
 				path, index, actionKind)
 		}
+
+		// deliver all acks that are ready
+		driver.DeliverAcks()
 
 		if verbose {
 			t.Logf("Current actual state: %s", driver.getStateString())
