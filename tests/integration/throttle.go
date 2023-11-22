@@ -233,10 +233,10 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	s.confirmValidatorJailed(valsToSlash[0], true)
 
 	// Packets were bounced for the second and third consumers.
-	s.confirmValidatorNotJailed(valsToSlash[1], 1000)
+	s.confirmValidatorNotJailed(valsToSlash[1], 1000) // each validator has 1000 power from the setup
 	s.confirmValidatorNotJailed(valsToSlash[2], 1000)
 
-	// Total power is now 3000
+	// Total power is now 3000 (as one validator was jailed)
 	s.Require().Equal(int64(3000),
 		providerStakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
 
