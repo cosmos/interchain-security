@@ -1123,3 +1123,19 @@ func (k Keeper) GetSlashLog(
 func (k Keeper) BondDenom(ctx sdk.Context) string {
 	return k.stakingKeeper.BondDenom(ctx)
 }
+
+func (k Keeper) GetAllRegisteredAndProposedChainIDs(ctx sdk.Context) []string {
+	allConsumerChains := []string{}
+	consumerChains := k.GetAllConsumerChains(ctx)
+	for _, consumerChain := range consumerChains {
+		allConsumerChains = append(allConsumerChains, consumerChain.ChainId)
+	}
+	proposedChains := k.GetAllProposedConsumerChainIDs(ctx)
+	for _, proposedChain := range proposedChains {
+		allConsumerChains = append(allConsumerChains, proposedChain.ChainID)
+	}
+	pendingChainIDs := k.GetAllPendingConsumerChainIDs(ctx)
+	allConsumerChains = append(allConsumerChains, pendingChainIDs...)
+
+	return allConsumerChains
+}

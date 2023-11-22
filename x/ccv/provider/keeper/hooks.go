@@ -91,50 +91,8 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, id uint64) error {
 	return nil
 }
 
-// ValidatorConsensusKeyInUse is called when a new validator is created
-// in the x/staking module of cosmos-sdk. In case it panics, the TX aborts
-// and thus, the validator is not created. See AfterValidatorCreated hook.
-func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddress) bool {
-	// Get the validator being added in the staking module.
-	val, found := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if !found {
-		// Abort TX, do NOT allow validator to be created
-		panic("did not find newly created validator in staking module")
-	}
-
-	// Get the consensus address of the validator being added
-	consensusAddr, err := val.GetConsAddr()
-	if err != nil {
-		// Abort TX, do NOT allow validator to be created
-		panic("could not get validator cons addr ")
-	}
-
-	allConsumerChains := []string{}
-	consumerChains := k.GetAllConsumerChains(ctx)
-	for _, consumerChain := range consumerChains {
-		allConsumerChains = append(allConsumerChains, consumerChain.ChainId)
-	}
-	proposedChains := k.GetAllProposedConsumerChainIDs(ctx)
-	for _, proposedChain := range proposedChains {
-		allConsumerChains = append(allConsumerChains, proposedChain.ChainID)
-	}
-	pendingChainIDs := k.GetAllPendingConsumerChainIDs(ctx)
-	allConsumerChains = append(allConsumerChains, pendingChainIDs...)
-
-	for _, c := range allConsumerChains {
-		if _, exist := k.GetValidatorByConsumerAddr(
-			ctx,
-			c,
-			providertypes.NewConsumerConsAddress(consensusAddr)); exist {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) error {
-	if ValidatorConsensusKeyInUse(h.k, ctx, valAddr) {
+	if h.k.ValidatorConsensusKeyInUse(ctx, valAddr) {
 		// Abort TX, do NOT allow validator to be created
 		panic("cannot create a validator with a consensus key that is already in use or was recently in use as an assigned consumer chain key")
 	}
