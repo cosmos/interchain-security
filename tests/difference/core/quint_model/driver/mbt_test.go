@@ -30,6 +30,9 @@ func TestMBT(t *testing.T) {
 		t.Log("Running trace ", dirEntry.Name())
 		RunItfTrace(t, "traces/"+dirEntry.Name())
 	}
+
+	t.Log("✅ Running traces from the traces folder done")
+	t.Log(len(dirEntries), "traces run")
 }
 
 func RunItfTrace(t *testing.T, path string) {
@@ -223,6 +226,7 @@ func RunItfTrace(t *testing.T, path string) {
 		}
 		t.Log("Packet queues match")
 	}
+	t.Log("🟢 Trace is ok!")
 }
 
 func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[string]itf.Expr, consumers []string, index int) {
@@ -329,15 +333,24 @@ func CompareTimes(
 // The names in the model validator set are expected to correspond to the monikers in the system validator set.
 func CompareValSet(modelValSet map[string]itf.Expr, systemValSet map[string]int64) error {
 	expectedValSet := make(map[string]int64, len(modelValSet))
+	// strip away vals with power 0, because they are not always in the system validator set
 	for val, power := range modelValSet {
-		// strip away vals with power 0, since they do not appear at all in the system val set
 		if power.Value.(int64) == 0 {
 			continue
 		}
 		expectedValSet[val] = power.Value.(int64)
 	}
-	if !reflect.DeepEqual(expectedValSet, systemValSet) {
-		return fmt.Errorf("Model validator set %v, system validator set %v", expectedValSet, systemValSet)
+
+	actualValSet := make(map[string]int64, len(systemValSet))
+	for val, power := range systemValSet {
+		if power == 0 {
+			continue
+		}
+		actualValSet[val] = power
+	}
+
+	if !reflect.DeepEqual(expectedValSet, actualValSet) {
+		return fmt.Errorf("Model validator set %v, system validator set %v", expectedValSet, actualValSet)
 	}
 	return nil
 }
