@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 type ModelConfig struct {
@@ -24,7 +26,7 @@ type InvariantConfig struct {
 // For each trace that is produced, quint will run at most for numSteps steps,
 // and run numSamples samples.
 // If a quint run does not produce a trace that violates the invariant,
-// it will not be retried, and there will simply be fewer than numTraces traces.
+// the trace will still be stored in the folder.
 func GenerateTraces(numTraces int, modelConfig ModelConfig, invConfig InvariantConfig, traceFolder string) {
 	// make sure the folder exists
 	if err := os.MkdirAll(traceFolder, 0o755); err != nil {
@@ -33,8 +35,10 @@ func GenerateTraces(numTraces int, modelConfig ModelConfig, invConfig InvariantC
 
 	for i := 0; i < numTraces; i++ {
 		// Generate trace
-		traceName := fmt.Sprintf("trace_%d", i)
+		traceName := fmt.Sprintf("%v/trace_%d", traceFolder, i)
 		GenerateTrace(modelConfig, invConfig, traceName)
+
+		log.Println("Generated trace", traceName)
 	}
 }
 
@@ -54,6 +58,9 @@ func GenerateTrace(modelConfig ModelConfig, invConfig InvariantConfig, traceName
 
 	out, err := exec.Command("bash", "-c", cmd).CombinedOutput()
 	if err != nil {
+		if strings.Contains(string(out), "Invariant violated") {
+			return // this is an expected error, so no need to panic
+		}
 		fmt.Println(string(out))
 		panic(err)
 	}

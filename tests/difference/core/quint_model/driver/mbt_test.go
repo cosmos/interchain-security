@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -15,16 +16,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const verbose = true
+const verbose = false
 
-func TestItfTrace(t *testing.T) {
-	path := "trace.json"
+func TestMBT(t *testing.T) {
+	dirEntries, err := os.ReadDir("traces")
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
+	t.Log("Running traces from the traces folder")
+
+	for _, dirEntry := range dirEntries {
+		t.Log("Running trace ", dirEntry.Name())
+		RunItfTrace(t, "traces/"+dirEntry.Name())
+	}
+}
+
+func RunItfTrace(t *testing.T, path string) {
 	t.Logf("🟡 Testing trace %s", path)
 
 	// Load trace
 	trace := &itf.Trace{}
 	if err := trace.LoadFromFile(path); err != nil {
-		log.Fatalf("Error loading trace file: %s", err)
+		t.Fatalf("Error loading trace file: %s", err)
 	}
 
 	expectedVarNames := []string{"currentState", "params", "trace"}
@@ -209,7 +223,6 @@ func TestItfTrace(t *testing.T) {
 		}
 		t.Log("Packet queues match")
 	}
-	t.FailNow()
 }
 
 func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[string]itf.Expr, consumers []string, index int) {
@@ -317,9 +330,12 @@ func CompareTimes(
 func CompareValSet(modelValSet map[string]itf.Expr, systemValSet map[string]int64) error {
 	expectedValSet := make(map[string]int64, len(modelValSet))
 	for val, power := range modelValSet {
+		// strip away vals with power 0, since they do not appear at all in the system val set
+		if power.Value.(int64) == 0 {
+			continue
+		}
 		expectedValSet[val] = power.Value.(int64)
 	}
-
 	if !reflect.DeepEqual(expectedValSet, systemValSet) {
 		return fmt.Errorf("Model validator set %v, system validator set %v", expectedValSet, systemValSet)
 	}
