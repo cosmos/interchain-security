@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const verbose = false
+const verbose = true
 
 func TestMBT(t *testing.T) {
 	dirEntries, err := os.ReadDir("traces")
@@ -114,15 +115,14 @@ func RunItfTrace(t *testing.T, path string) {
 	}
 
 	driver := newDriver(t, nodes, valNames)
-	driver.setupChains(modelParams, valSet, signers, nodes, valNames, consumers)
+
+	driver.setupProvider(modelParams, valSet, signers, nodes, valNames)
 
 	// remember the time offsets to be able to compare times to the model
 	// this is necessary because the system needs to do many steps to initialize the chains,
 	// which is abstracted away in the model
 	timeOffsets := make(map[ChainId]time.Time, len(chains))
-	for _, chain := range chains {
-		timeOffsets[ChainId(chain)] = driver.time(ChainId(chain))
-	}
+	timeOffsets[Provider] = driver.time(Provider)
 
 	t.Log("Started chains")
 
@@ -167,8 +167,81 @@ func RunItfTrace(t *testing.T, path string) {
 			// and then increment the rest of the time]
 
 			// TODO: start and stop consumers
-			driver.endAndBeginBlock("provider", 1)
-			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-1)
+			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
+			driver.endAndBeginBlock("provider", 1*time.Nanosecond)
+
+			// save the last timestamp for each chain,
+			// because setting up chains will modify timestamps
+			// when the coordinator is starting chains
+			lastTimestamps := driver.allTimes()
+			// start consumers
+			for _, consumer := range consumersToStart {
+				driver.setupConsumer(
+					consumer.Value.(string),
+					modelParams,
+					driver.providerChain().Vals,
+					signers,
+					nodes,
+					valNames,
+					driver.providerChain(),
+				)
+				lastTimestamps[ChainId(consumer.Value.(string))] = driver.time(ChainId(consumer.Value.(string)))
+			}
+
+			// stop consumers
+			for _, consumer := range consumersToStop {
+				consumerChain := ChainId(consumer.Value.(string))
+				driver.stopConsumer(consumerChain)
+
+				// remove the consumer from timestamps map and time offsets
+				delete(lastTimestamps, consumerChain)
+				delete(timeOffsets, consumerChain)
+			}
+
+			// remove the stopped consumers from the timestamps
+			for _, consumer := range consumersToStop {
+				consumerChain := ChainId(consumer.Value.(string))
+				delete(lastTimestamps, consumerChain)
+				delete(timeOffsets, consumerChain)
+			}
+
+			// restore the old timestamps, but increment by 1 nanosecond to avoid duplicate timestamps in headers
+			for chain, oldTimestamp := range lastTimestamps {
+				// if the chain was stopped, we don't need to restore the timestamp
+				driver.setTime(ChainId(chain), oldTimestamp.Add(1*time.Nanosecond))
+				// also set the offset for each chain correctly - offset is incremented by 1 nanosecond
+				timeOffsets[ChainId(chain)] = timeOffsets[ChainId(chain)].Add(1 * time.Nanosecond)
+			}
+
+			// set the timeOffsets for the newly started chains
+			for _, consumer := range consumersToStart {
+				consumerChain := ChainId(consumer.Value.(string))
+				timeOffsets[consumerChain] = driver.time(consumerChain)
+			}
+
+			// need to produce another block to fix messed up times because the provider comitted blocks with
+			// times that were fixed by the coordinator
+			driver.endAndBeginBlock("provider", 0)
+			providerHeader := driver.providerChain().LastHeader
+
+			// same for the consumers that were started
+			for _, consumer := range consumersToStart {
+				consumerChainId := string(consumer.Value.(string))
+				driver.endAndBeginBlock(ChainId(consumerChainId), 0)
+			}
+
+			// for all connected consumers, update the clients...
+			// unless it was the last consumer to be started, in which case it already has the header
+			for _, consumer := range driver.runningConsumers() {
+				if len(consumersToStart) > 0 && consumer.ChainId == consumersToStart[len(consumersToStart)-1].Value.(string) {
+					continue
+				}
+				consumerChainId := string(consumer.ChainId)
+
+				driver.path(ChainId(consumerChainId)).AddClientHeader(Provider, providerHeader)
+				driver.path(ChainId(consumerChainId)).UpdateClient(consumerChainId)
+			}
+
 		case "EndAndBeginBlockForConsumer":
 			consumerChain := lastAction["consumerChain"].Value.(string)
 			timeAdvancement := lastAction["timeAdvancement"].Value.(int64)
@@ -176,8 +249,16 @@ func RunItfTrace(t *testing.T, path string) {
 
 			// as in EndAndBeginBlockForProvider, we need to produce 2 blocks,
 			// while still honoring the time advancement
-			driver.endAndBeginBlock(ChainId(consumerChain), 1)
-			driver.endAndBeginBlock(ChainId(consumerChain), time.Duration(timeAdvancement)*time.Second-1)
+			headerBefore := driver.chain(ChainId(consumerChain)).LastHeader
+			_ = headerBefore
+
+			driver.endAndBeginBlock(ChainId(consumerChain), time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
+			driver.endAndBeginBlock(ChainId(consumerChain), 1*time.Nanosecond)
+
+			// update the client on the provider
+			consumerHeader := driver.chain(ChainId(consumerChain)).LastHeader
+			driver.path(ChainId(consumerChain)).AddClientHeader(consumerChain, consumerHeader)
+			driver.path(ChainId(consumerChain)).UpdateClient(Provider)
 		case "DeliverVscPacket":
 			consumerChain := lastAction["consumerChain"].Value.(string)
 			t.Log("DeliverVscPacket", consumerChain)
@@ -204,24 +285,38 @@ func RunItfTrace(t *testing.T, path string) {
 		currentModelState := state.VarValues["currentState"].Value.(itf.MapExprType)
 		// check that the actual state is the same as the model state
 
-		// check validator sets - provider current validator set should be the one from the staking keeper
+		// compare the running consumers
+		modelRunningConsumers := RunningConsumers(currentModelState)
 
-		// provider
-		// consumers - current validator set does not correspond to anything,
-		// we can only check the head of the voting power history
-		// no assignment found, so providerConsAddr is the consumerConsAddr
+		systemRunningConsumers := driver.runningConsumers()
+		actualRunningConsumers := make([]string, len(systemRunningConsumers))
+		for i, chain := range systemRunningConsumers {
+			actualRunningConsumers[i] = chain.ChainId
+		}
+
+		// sort the slices so that we can compare them
+		sort.Slice(modelRunningConsumers, func(i, j int) bool {
+			return modelRunningConsumers[i] < modelRunningConsumers[j]
+		})
+		sort.Slice(actualRunningConsumers, func(i, j int) bool {
+			return actualRunningConsumers[i] < actualRunningConsumers[j]
+		})
+
+		require.Equal(t, modelRunningConsumers, actualRunningConsumers, "Running consumers do not match")
+
+		// check validator sets - provider current validator set should be the one from the staking keeper
 		t.Log("Comparing validator sets")
-		CompareValidatorSets(t, driver, currentModelState, consumers, index)
+		CompareValidatorSets(t, driver, currentModelState, actualRunningConsumers, index)
 		t.Log("Validator sets match")
 
 		// check times - sanity check that the block times match the ones from the model
 		t.Log("Comparing timestamps")
-		CompareTimes(t, driver, consumers, currentModelState, timeOffsets)
+		CompareTimes(t, driver, actualRunningConsumers, currentModelState, timeOffsets)
 		t.Log("Timestamps match")
 
 		// check sent packets: we check that the package queues in the model and the system have the same length.
 		t.Log("Comparing packet queues")
-		for _, consumer := range consumers {
+		for _, consumer := range actualRunningConsumers {
 			ComparePacketQueues(t, driver, currentModelState, consumer)
 		}
 		t.Log("Packet queues match")

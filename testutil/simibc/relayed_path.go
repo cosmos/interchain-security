@@ -21,6 +21,7 @@ type RelayedPath struct {
 	// have been committed to that chain. The headers are used to update the
 	// client of the counterparty chain.
 	clientHeaders map[string][]*ibctmtypes.Header
+
 	// TODO: Make this private and expose methods to add packets and acks.
 	//       Currently, packets and acks are added directly to the outboxes,
 	//       but we should hide this implementation detail.

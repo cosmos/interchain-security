@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/stretchr/testify/require"
 
@@ -15,6 +16,7 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	consumertypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 
 	appConsumer "github.com/cosmos/interchain-security/v3/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/v3/app/provider"
@@ -23,6 +25,7 @@ import (
 	consumerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v3/x/ccv/provider/keeper"
 
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 )
 
@@ -96,7 +99,17 @@ func (s *Driver) height(chain ChainId) int64 {
 
 // time returns the time of the current header of chain
 func (s *Driver) time(chain ChainId) time.Time {
-	return s.chain(chain).CurrentHeader.Time
+	testChain := s.chain(chain)
+	return testChain.CurrentHeader.Time
+}
+
+func (s *Driver) allTimes() map[ChainId]time.Time {
+	chains := s.coordinator.Chains
+	times := make(map[ChainId]time.Time, len(chains))
+	for _, chain := range chains {
+		times[ChainId(chain.ChainID)] = chain.CurrentHeader.Time
+	}
+	return times
 }
 
 // delegator retrieves the address for the delegator account
@@ -385,7 +398,8 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 // as witnessed by events, and adds them to the correct paths.
 // It also updates the client header on the paths
 // that involve the chain.
-func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) {
+// Returns the header of the chain.
+func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) *tendermint.Header {
 	testChain, found := s.coordinator.Chains[string(chain)]
 	require.True(s.t, found, "chain %s not found", chain)
 
@@ -408,17 +422,29 @@ func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) 
 
 	for _, path := range s.simibcs {
 		if path.InvolvesChain(string(chain)) {
-			path.AddClientHeader(string(chain), header)
 			path.Outboxes.Commit(string(chain))
 		}
 	}
 
 	simibc.BeginBlock(testChain, timeAdvancement)
+	return header
+}
 
-	for _, path := range s.simibcs {
-		if path.InvolvesChain(string(chain)) {
-			path.UpdateClient(path.Counterparty(string(chain)))
-		}
+func (s *Driver) runningConsumers() []providertypes.Chain {
+	return s.providerKeeper().GetAllConsumerChains(s.providerCtx())
+}
+
+func (s *Driver) setTime(chain ChainId, newTime time.Time) {
+	testChain, found := s.coordinator.Chains[string(chain)]
+	require.True(s.t, found, "chain %s not found", chain)
+
+	testChain.CurrentHeader.Time = newTime
+	testChain.App.BeginBlock(abcitypes.RequestBeginBlock{Header: testChain.CurrentHeader})
+}
+
+func (s *Driver) setAllTimes(newTimes map[ChainId]time.Time) {
+	for chain, newTime := range newTimes {
+		s.setTime(chain, newTime)
 	}
 }
 
@@ -443,6 +469,16 @@ func (s *Driver) DeliverAcks() {
 		path.DeliverAcks(string(path.Path.EndpointA.Chain.ChainID), math.MaxInt)
 		path.DeliverAcks(string(path.Path.EndpointB.Chain.ChainID), math.MaxInt)
 	}
+}
+
+// stopConsumer stops a given consumer chain.
+func (s *Driver) stopConsumer(chain ChainId) {
+	// stop the consumer chain on the provider
+	s.providerKeeper().StopConsumerChain(s.providerCtx(), string(chain), true)
+	// delete the chain from the coordinator
+	delete(s.coordinator.Chains, string(chain))
+	// delete the path from the driver
+	delete(s.simibcs, chain)
 }
 
 // newDriver creates a new Driver object.

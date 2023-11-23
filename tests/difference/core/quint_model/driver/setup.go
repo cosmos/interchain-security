@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -17,6 +18,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
+	tendermint "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	icstestingutils "github.com/cosmos/interchain-security/v3/testutil/ibc_testing"
 	"github.com/cosmos/interchain-security/v3/testutil/integration"
 	simibc "github.com/cosmos/interchain-security/v3/testutil/simibc"
@@ -140,10 +142,13 @@ func getAppBytesAndSenders(
 
 	for i, val := range nodes {
 		_, valSetVal := initialValSet.GetByAddress(val.Address.Bytes())
+		var tokens math.Int
 		if valSetVal == nil {
-			log.Panicf("error getting validator with address %v from valSet %v", val, initialValSet)
+			tokens = sdk.NewInt(0)
+		} else {
+			tokens = sdk.NewInt(valSetVal.VotingPower)
 		}
-		tokens := sdk.NewInt(valSetVal.VotingPower)
+
 		sumBonded = sumBonded.Add(tokens)
 
 		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
@@ -394,32 +399,47 @@ func (s *Driver) ConfigureNewPath(consumerChain *ibctesting.TestChain, providerC
 	return path
 }
 
-func (s *Driver) setupChains(
+func (s *Driver) providerHeader() *tendermint.Header {
+	return s.coordinator.Chains["provider"].LastHeader
+}
+
+func (s *Driver) setupProvider(
 	params ModelParams,
 	valSet *cmttypes.ValidatorSet, // the initial validator set
 	signers map[string]cmttypes.PrivValidator, // a map of validator addresses to private validators (signers)
 	nodes []*cmttypes.Validator, // the list of nodes, even ones that have no voting power initially
 	valNames []string,
-	consumers []string, // a list of consumer chain names
 ) {
-	initValUpdates := cmttypes.TM2PB.ValidatorUpdates(valSet)
 	// start provider
 	s.t.Log("Creating provider chain")
 	providerChain := newChain(s.t, params, s.coordinator, icstestingutils.ProviderAppIniter, "provider", valSet, signers, nodes, valNames)
 	s.coordinator.Chains["provider"] = providerChain
 
-	providerHeader, _ := simibc.EndBlock(providerChain, func() {})
+	// produce a first block
+	simibc.EndBlock(providerChain, func() {})
 	simibc.BeginBlock(providerChain, 0)
+}
+
+func (s *Driver) setupConsumer(
+	chain string,
+	params ModelParams,
+	valSet *cmttypes.ValidatorSet, // the current validator set on the provider chain
+	signers map[string]cmttypes.PrivValidator, // a map of validator addresses to private validators (signers)
+	nodes []*cmttypes.Validator, // the list of nodes, even ones that have no voting power initially
+	valNames []string,
+	providerChain *ibctesting.TestChain,
+) {
+	s.t.Logf("Starting consumer %v", chain)
+
+	initValUpdates := cmttypes.TM2PB.ValidatorUpdates(valSet)
 
 	// start consumer chains
-	for _, chain := range consumers {
-		s.t.Logf("Creating consumer chain %v", chain)
-		consumerChain := newChain(s.t, params, s.coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes, valNames)
-		s.coordinator.Chains[chain] = consumerChain
+	s.t.Logf("Creating consumer chain %v", chain)
+	consumerChain := newChain(s.t, params, s.coordinator, icstestingutils.ConsumerAppIniter(initValUpdates), chain, valSet, signers, nodes, valNames)
+	s.coordinator.Chains[chain] = consumerChain
 
-		path := s.ConfigureNewPath(consumerChain, providerChain, params, providerHeader)
-		s.simibcs[ChainId(chain)] = simibc.MakeRelayedPath(s.t, path)
-	}
+	path := s.ConfigureNewPath(consumerChain, providerChain, params, s.providerHeader())
+	s.simibcs[ChainId(chain)] = simibc.MakeRelayedPath(s.t, path)
 }
 
 func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.TestChain, consumerClientState *ibctmtypes.ClientState) *consumertypes.GenesisState {

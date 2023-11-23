@@ -55,3 +55,17 @@ func PacketQueue(curStateExpr itf.MapExprType, sender string, receiver string) i
 		return consumerState["outstandingPacketsToProvider"].Value.([]itf.Expr)
 	}
 }
+
+// RunningConsumers returns a slice containing the names of the consumers
+// that are currently running.
+func RunningConsumers(curStateExpr itf.MapExprType) []string {
+	exprSlice := ProviderState(curStateExpr)["consumerStatus"].Value.(itf.MapExprType)
+	runningConsumers := make([]string, 0)
+	for consumer, statusExpr := range exprSlice {
+		status := statusExpr.Value.(string)
+		if status == "running" {
+			runningConsumers = append(runningConsumers, consumer)
+		}
+	}
+	return runningConsumers
+}
