@@ -299,10 +299,14 @@ module ccv_model {
         val providerValSetInCurBlock = providerValidatorHistory.head()
         // ... for each consumer that is running then ...
         runningConsumers.forall(
-            // ...the validator set is in a sent packet
+            // ...the validator set is in a sent packet...
             consumer => currentState.providerState.sentVscPacketsToConsumer.get(consumer).toSet().exists(
                 packet => packet.validatorSet == providerValSetInCurBlock
             )
+            // or the consumer was just started, which we detect by the consumer having a timestamp of 0
+            // and the consumer having the validator set that was just sent in the block
+            or 
+            (currentState.consumerStates.get(consumer).chainState.lastTimestamp == 0 and currentState.consumerStates.get(consumer).chainState.currentValidatorSet == providerValSetInCurBlock)
         )
 
     // Every consumer chain receives the same sequence of 
@@ -476,12 +480,18 @@ module ccv_model {
                 all {
                     // consumer1 was started
                     assert(currentState.providerState.consumerStatus.get("consumer1") == RUNNING),
-                    // a packet was sent to consumer1
-                    assert(currentState.providerState.outstandingPacketsToConsumer.get("consumer1").length() == 1),
+                    // but no packet was sent to consumer 1
+                    assert(currentState.providerState.outstandingPacketsToConsumer.get("consumer1").length() == 0),
                     // the validator set on the provider was entered into the history
                     assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet.put("node1", 150), InitialValidatorSet)),
-                    // deliver the packet
-                    DeliverVscPacket("consumer1")
+                    // change voting power on provider again
+                    VotingPowerChange("node1", 50).then(
+                        // end another block
+                        EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+                    ).then(
+                        // deliver packet to consumer1
+                        DeliverVscPacket("consumer1")
+                    )
                 }
             )
             .then(
@@ -491,7 +501,7 @@ module ccv_model {
                     // ensure the maturation time was entered on the consumer
                     assert(currentState.consumerStates.get("consumer1").maturationTimes.length() == 1),
                     // the validator set was put as the current validator set
-                    assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet == InitialValidatorSet.put("node1", 150)),
+                    assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet == InitialValidatorSet.put("node1", 200)),
                     // advance time on provider until the unbonding period is over
                     EndAndBeginBlockForProvider(UnbondingPeriodPerChain.get("consumer1"), Set(), Set()),
                 }

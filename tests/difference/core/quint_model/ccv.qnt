@@ -399,60 +399,61 @@ module ccv {
             res._1
         )
 
+        // send vsc packets
+        val providerStateAfterSending =
+            if (currentProviderState.providerValidatorSetChangedInThisBlock and 
+                // important: check this on the provider state after the consumer advancement, not on the current state.
+                getRunningConsumers(providerStateAfterTimeAdvancement).size() > 0) {
+                    providerStateAfterTimeAdvancement.sendVscPackets()
+                } else {
+                    providerStateAfterTimeAdvancement
+                }
+
 
         // start/stop chains
-        val res = providerStateAfterTimeAdvancement.consumerStatus.StartStopConsumers(
+        val res = providerStateAfterSending.consumerStatus.StartStopConsumers(
             consumersToStart,
             consumersToStop,
             timedOutConsumers
         )
         val newConsumerStatus = res._1
         val err = res._2
-        val providerStateAfterConsumerAdvancement = providerStateAfterTimeAdvancement.with(
+        val providerStateAfterConsumerAdvancement = providerStateAfterSending.with(
             "consumerStatus", newConsumerStatus
-        )
-
-        // for each consumer we just set to running, set its initial validator set to be the current one on the provider.
-        val valSet = providerStateAfterConsumerAdvancement.chainState.currentValidatorSet
-        val newConsumerStateMap =
-            tmpState.consumerStates.keys().mapBy(
-                (consumer) => 
-                if (consumersToStart.contains(consumer)) {
-                    val currentConsumerState: ConsumerState = tmpState.consumerStates.get(consumer)
-                    val newConsumerState: ConsumerState = currentConsumerState.with(
-                        "chainState", currentConsumerState.chainState.with(
-                            "currentValidatorSet", valSet
-                        ).with(
-                            "votingPowerHistory",
-                            List(valSet)
-                        )
-                    )
-                    newConsumerState
-                } else {
-                    currentState.consumerStates.get(consumer)
-                }
-            )
-        val newState = tmpState.with(
-            "providerState", providerStateAfterConsumerAdvancement
         ).with(
-            "consumerStates", newConsumerStateMap
+            "providerValidatorSetChangedInThisBlock", false
         )
 
         if (err != "") {
             Err(err)
         } else {
-            val providerStateAfterSending =
-            if (currentProviderState.providerValidatorSetChangedInThisBlock and 
-                // important: check this on the provider state after the consumer advancement, not on the current state.
-                getRunningConsumers(providerStateAfterConsumerAdvancement).size() > 0) {
-                    providerStateAfterConsumerAdvancement.sendVscPackets()
-                } else {
-                    providerStateAfterConsumerAdvancement
-                }
-            val finalState = newState.with(
-                "providerState", providerStateAfterSending
+            // for each consumer we just set to running, set its initial validator set to be the current one on the provider.
+            val valSet = providerStateAfterConsumerAdvancement.chainState.currentValidatorSet
+            val newConsumerStateMap =
+                tmpState.consumerStates.keys().mapBy(
+                    (consumer) => 
+                    if (consumersToStart.contains(consumer)) {
+                        val currentConsumerState: ConsumerState = tmpState.consumerStates.get(consumer)
+                        val newConsumerState: ConsumerState = currentConsumerState.with(
+                            "chainState", currentConsumerState.chainState.with(
+                                "currentValidatorSet", valSet
+                            ).with(
+                                "votingPowerHistory",
+                                List(valSet)
+                            )
+                        )
+                        newConsumerState
+                    } else {
+                        currentState.consumerStates.get(consumer)
+                    }
+                )
+            val newState = tmpState.with(
+                "providerState", providerStateAfterConsumerAdvancement
+            ).with(
+                "consumerStates", newConsumerStateMap
             )
-            Ok(finalState)
+
+            Ok(newState)
         }
     }
 
