@@ -1,1 +1,1 @@
-go run ./... -modelPath=../ccv_model.qnt -init init -step step -traceFolder traces -numTraces 50
+go run ./... -modelPath=../ccv_model.qnt -init init -step step -traceFolder traces -numTraces 100 --numSamples 1

@@ -35,7 +35,7 @@ func GenerateTraces(numTraces int, modelConfig ModelConfig, invConfig InvariantC
 
 	for i := 0; i < numTraces; i++ {
 		// Generate trace
-		traceName := fmt.Sprintf("%v/trace_%d", traceFolder, i)
+		traceName := fmt.Sprintf("%v/trace_%d.itf", traceFolder, i)
 		GenerateTrace(modelConfig, invConfig, traceName)
 
 		log.Println("Generated trace", traceName)
