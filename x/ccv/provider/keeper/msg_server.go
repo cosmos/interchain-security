@@ -26,15 +26,10 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 
 var _ types.MsgServer = msgServer{}
 
-// CreateValidator defines a method for creating a new validator
+// AssignConsumerKey defines a method to assign a consensus key on a consumer chain
+// for a given validator on the provider
 func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssignConsumerKey) (*types.MsgAssignConsumerKeyResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	// It is possible to assign keys for consumer chains that are not yet approved.
-	// TODO: In future, a mechanism will be added to limit assigning keys to chains
-	// which are approved or pending approval, only.
-	// Note that current attack potential is restricted because validators must sign
-	// the transaction, and the chainID size is limited.
 
 	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {

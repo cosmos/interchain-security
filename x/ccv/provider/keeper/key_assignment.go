@@ -370,7 +370,8 @@ func (k Keeper) DeleteConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscI
 }
 
 // AssignConsumerKey assigns the consumerKey to the validator with providerAddr
-// on the consumer chain with ID chainID
+// on the consumer chain with ID chainID, if it is either registered or currently
+// voted on in a ConsumerAddition governance proposal
 func (k Keeper) AssignConsumerKey(
 	ctx sdk.Context,
 	chainID string,
@@ -398,15 +399,15 @@ func (k Keeper) AssignConsumerKey(
 	providerAddr := types.NewProviderConsAddress(consAddrTmp)
 
 	if existingVal, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consumerAddr.ToSdkConsAddr()); found {
-		// If there is a validator using the consumer key to validate on the provider
-		// we prevent assigning the consumer key, unless the validator is assigning validator.
-		// This ensures that a validator joining the active set who has not explicitly assigned
-		// a consumer key, will be able to use their provider key as consumer key (as per default).
+		// If there is already a different validator using the consumer key to validate on the provider
+		// we prevent assigning the consumer key.
 		if existingVal.OperatorAddress != validator.OperatorAddress {
 			return errorsmod.Wrapf(
 				types.ErrConsumerKeyInUse, "a different validator already uses the consumer key",
 			)
 		}
+		// We prevent a validator from assigning the default provider key as a consumer key
+		// if it has not already assigned a different consumer key
 		_, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 		if !found {
 			return errorsmod.Wrapf(
