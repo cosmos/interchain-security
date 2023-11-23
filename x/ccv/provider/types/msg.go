@@ -114,7 +114,7 @@ func ParseConsumerKeyFromJson(jsonStr string) (pkType, key string, err error) {
 // If the validator address is not same as delegator's, then the validator must
 // sign the msg as well.
 func (msg *MsgConsumerAddition) GetSigners() []sdk.AccAddress {
-	valAddr, err := sdk.ValAddressFromBech32(msg.Signer)
+	valAddr, err := sdk.ValAddressFromBech32(msg.Authority)
 	if err != nil {
 		// same behavior as in cosmos-sdk
 		panic(err)
