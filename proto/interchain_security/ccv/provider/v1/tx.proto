@@ -38,10 +38,10 @@ service Msg {
 
 // MsgUpdateParams is the Msg/UpdateParams request type
 message MsgUpdateParams {
-  option (cosmos.msg.v1.signer) = "signer";
+  option (cosmos.msg.v1.signer) = "authority";
 
   // signer is the address of the governance account.
-  string signer = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // params defines the x/provider parameters to update.
   Params params = 2 [(gogoproto.nullable) = false];
@@ -77,7 +77,7 @@ message MsgAssignConsumerKeyResponse {}
 //
 // Note: this replaces ConsumerAdditionProposal which is deprecated and will be removed soon
 message MsgConsumerAddition {
-  option (cosmos.msg.v1.signer) = "signer";
+  option (cosmos.msg.v1.signer) = "authority";
 
    // the proposed chain-id of the new consumer chain, must be different from all
   // other consumer chain ids of the executing provider chain.
@@ -132,7 +132,7 @@ message MsgConsumerAddition {
   string distribution_transmission_channel = 12;
 
   // signer address
-  string signer = 13 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string authority = 13 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 // MsgConsumerAdditionResponse defines response type for MsgConsumerAddition messages
@@ -146,7 +146,7 @@ message MsgConsumerAdditionResponse {}
 //
 // Note: this replaces ConsumerRemovalProposal which is deprecated and will be removed soon
 message MsgConsumerRemoval {
-  option (cosmos.msg.v1.signer) = "signer";
+  option (cosmos.msg.v1.signer) = "authority";
 
   // the chain-id of the consumer chain to be stopped
   string chain_id = 1;
@@ -156,7 +156,7 @@ message MsgConsumerRemoval {
       [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 
   // signer address
-  string signer = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string authority = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 // MsgConsumerRemovalResponse defines response type for MsgConsumerRemoval messages
@@ -167,14 +167,14 @@ message MsgConsumerRemovalResponse {}
 //
 // Note: this replaces ChangeRewardDenomsProposal which is deprecated and will be removed soon
 message MsgChangeRewardDenoms {
-  option (cosmos.msg.v1.signer) = "signer";
+  option (cosmos.msg.v1.signer) = "authority";
 
   // the list of consumer reward denoms to add
   repeated string denoms_to_add = 1;
   // the list of consumer reward denoms to remove
   repeated string denoms_to_remove = 2;
   // signer address
-  string signer = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string authority = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
 }
 
