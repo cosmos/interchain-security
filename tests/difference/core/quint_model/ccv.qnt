@@ -164,20 +164,7 @@ module ccv_types {
     pure def Err(msg: str): Result = {
         {
             newState: {
-                providerState: {
-                    chainState: {
-                        votingPowerHistory: List(),
-                        currentValidatorSet: Map(),
-                        lastTimestamp: 0,
-                    },
-                    outstandingPacketsToConsumer: Map(),
-                    receivedMaturations: Set(),
-                    sentVscPacketsToConsumer: Map(),
-                    providerValidatorSetChangedInThisBlock: false,
-                    consumerStatus: Map(),
-                    runningVscId: 0,
-                },
-                consumerStates: Map(),
+                GetEmptyProtocolState
             },
             error: msg
         }
