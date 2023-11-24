@@ -42,6 +42,9 @@ module ccv_types {
         // e.g. there may be more modifications in the current block.
         currentValidatorSet: ValidatorSet,
 
+
+        // TODO: split into lastTimestamp and runningTimestamp
+        // TODO: check how expiry needs to work (checks own chains runningTimestamp, but for foreign chain it's tracking the last comitted timestamp)
         // the latest timestamp that was comitted on chain
         lastTimestamp: Time,
     }
@@ -117,6 +120,9 @@ module ccv_types {
         // ordered by recency, so the head is the oldest packet.
         // In the implementation, essentially unacknowledged IBC packets.
         outstandingPacketsToProvider: List[VscMaturedPacket],
+
+        // true if the local client of that chain has expired, false otherwise.
+        localClientExpired: bool,
     }
 
     // utility function: returns a consumer state that is initialized minimally.
@@ -126,6 +132,7 @@ module ccv_types {
             maturationTimes: List(),
             outstandingPacketsToProvider: List(),
             receivedVscPackets: List(),
+            localClientExpired: false,
         }
 
     // the state of the protocol consists of the composition of the state of one provider chain with potentially many consumer chains.
@@ -242,7 +249,8 @@ module ccv {
             if (amount == 0) {
                 Err("Voting power cannot change by zero!")
             } else {
-                pure val newValidatorSet = currentValidatorSet.put(validator, oldVotingPower + amount)
+                pure val newVotingPower = oldVotingPower + amount
+                pure val newValidatorSet = currentValidatorSet.put(validator, if(newVotingPower >= 0) newVotingPower else 0)
                 // set the validator set changed flag
                 val newProviderState = currentState.providerState.with(
                     "providerValidatorSetChangedInThisBlock", true
@@ -496,10 +504,19 @@ module ccv {
                         }
                     )
                 )
+                // checks whether the local client for the provider chain has expired on the consumer
+                val clientExpired = 
+                    if (newChainState.lastTimestamp > currentState.providerState.chainState.lastTimestamp + TrustingPeriodPerChain.get(chain)) {
+                        true
+                    } else {
+                        false
+                    }
                 val newConsumerState2: ConsumerState = newConsumerState.with(
                     "maturationTimes", newMaturationTimes
                 ).with(
                     "outstandingPacketsToProvider", newOutstandingPackets
+                ).with(
+                    "localClientExpired", clientExpired
                 )
                 val newConsumerStates = currentState.consumerStates.set(chain, newConsumerState2)
                 val newState: ProtocolState = currentState.with(
