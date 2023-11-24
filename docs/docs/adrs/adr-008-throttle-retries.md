@@ -52,7 +52,7 @@ Instead, we will now introduce the following logic on `EndBlock`:
 
 To prevent the provider from having to keep track of what `SlashPackets` have been rejected, the consumer will have to retry the sending of `SlashPackets` over some period of time. 
 This can be achieved with an on-chain consumer param, i.e., `RetryDelayPeriod`. 
-The suggested param value would probably be 1/2 of the provider's `SlashMeterReplenishmentPeriod`, although it doesn't matter too much as long as the param value is sane.
+To reduce the amount of redundant re-sends, we recommend setting `RetryDelayPeriod ~ SlashMeterReplenishmentPeriod`, i.e., waiting for the provider slash meter to be replenished before resending the rejected `SlashPacket`.
 
 Note to prevent weird edge case behavior, a retry would not be attempted until either a success ack or failure ack has been recv from the provider.
 
@@ -61,7 +61,7 @@ Obviously the queueing and blocking logic is moved, and the two chains would hav
 
 In the normal case, when no or a few `SlashPackets` are being sent, the `VSCMaturedPackets` will not be delayed, and hence unbonding will not be delayed.
 
-For the implementation of this design, see [throttle_retry.go](../../../x/ccv/consumer/keeper/throttle_retry.go).
+For the implementation of this design, see [throttle_retry.go](https://github.com/cosmos/interchain-security/blob/fec3eccad59416cbdb6844e279f59e3f81242888/x/ccv/consumer/keeper/throttle_retry.go).
 
 #### Consumer pending packets storage optimization
 
@@ -74,7 +74,7 @@ See older version of [AppendPendingPacket](https://github.com/cosmos/interchain-
 That is, a single append operation has O(N) complexity, where N is the size of the list.
 
 This poor append performance isn't a problem when the pending packets list is small. 
-But with this ADR being implemented, the pending packets list could potentially grow to the order of thousands of entries, in the scenario that a `SlashPacket` is bouncing.
+But with this ADR being implemented, the pending packets list could potentially grow to the order of thousands of entries when `SlashPackets` need to be resent.
 
 We can improve the append time for this queue by converting it from a protobuf-esq list, to a queue implemented with sdk-esq code. 
 The idea is to persist an uint64 index that will be incremented each time you queue up a packet. 
