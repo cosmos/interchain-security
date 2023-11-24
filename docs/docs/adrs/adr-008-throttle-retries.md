@@ -56,7 +56,7 @@ The suggested param value would probably be 1/2 of the provider's `SlashMeterRep
 
 Note to prevent weird edge case behavior, a retry would not be attempted until either a success ack or failure ack has been recv from the provider.
 
-With the behavior described, we maintain very similar behavior to the current throttling mechanism regarding the timing that `SlashPackets` and `VSCMaturedPackets` are handled on the provider. 
+With the behavior described, we maintain very similar behavior to the previous throttling mechanism regarding the timing that `SlashPackets` and `VSCMaturedPackets` are handled on the provider. 
 Obviously the queueing and blocking logic is moved, and the two chains would have to send more messages between one another (only in the case the throttling mechanism is triggered).
 
 In the normal case, when no or a few `SlashPackets` are being sent, the `VSCMaturedPackets` will not be delayed, and hence unbonding will not be delayed.
