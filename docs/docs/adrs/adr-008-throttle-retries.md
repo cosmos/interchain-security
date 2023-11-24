@@ -44,17 +44,17 @@ Those packets are dequeued in every `EndBlock` in `SendPackets` and sent to the 
 Instead, we will now introduce the following logic on `EndBlock`:
 
 * Slash packets will always be sent to the provider once they're at the head of the queue. 
-  However, once sent, the consumer will not send any trailing `VSCMaturedPackets` from the queue until the provider responds with an ack that the `SlashPacket` has been handled (ie. validator was jailed). 
-  That is, `SlashPackets` block the sending of trailing `VSCMaturedPackets` in the consumer queue.
-* If two `SlashPackets` are at the head of the queue, the consumer will send the first `SlashPacket`, and then wait for a success ack from the provider before sending the second `SlashPacket`. 
+  However, once sent, the consumer will not send any subsequent `VSCMaturedPackets` from the queue until the provider responds with an acknowledgement that the sent `SlashPacket` has been handled, i.e., validator was jailed. 
+  That is, `SlashPackets` block the sending of subsequent `VSCMaturedPackets` in the consumer queue.
+* If two `SlashPackets` are at the head of the queue, the consumer will send the first `SlashPacket`, and then wait for a success acknowledgement from the provider before sending the second `SlashPacket`. 
   This seems like it'd simplify implementation.
-* `VSCMaturedPackets` at the head of the queue (ie. NOT trailing a `SlashPacket`) can be sent immediately, and do not block any other packets in the queue, since the provider always handles them immediately.
+* `VSCMaturedPackets` at the head of the queue (i.e., NOT following a `SlashPacket`) can be sent immediately, and do not block any other packets in the queue, since the provider always handles them immediately.
 
 To prevent the provider from having to keep track of what `SlashPackets` have been rejected, the consumer will have to retry the sending of `SlashPackets` over some period of time. 
 This can be achieved with an on-chain consumer param, i.e., `RetryDelayPeriod`. 
 To reduce the amount of redundant re-sends, we recommend setting `RetryDelayPeriod ~ SlashMeterReplenishmentPeriod`, i.e., waiting for the provider slash meter to be replenished before resending the rejected `SlashPacket`.
 
-Note to prevent weird edge case behavior, a retry would not be attempted until either a success ack or failure ack has been recv from the provider.
+Note to prevent weird edge case behavior, a retry would not be attempted until either a success or failure acknowledgement has been received from the provider.
 
 With the behavior described, we maintain very similar behavior to the previous throttling mechanism regarding the timing that `SlashPackets` and `VSCMaturedPackets` are handled on the provider. 
 Obviously the queueing and blocking logic is moved, and the two chains would have to send more messages between one another (only in the case the throttling mechanism is triggered).
@@ -91,7 +91,8 @@ Two things are achieved with this approach:
 
 The main change needed for the provider is the removal of queuing logic for `SlashPackets` and `VSCMaturedPackets` upon being received.
 
-Instead, the provider will consult the slash meter to determine if a `SlashPacket` can be handled immediately. If not, the provider will return an ack message to the consumer communicating that the `SlashPacket` could not be handled, and needs to be sent again in the future (retried).
+Instead, the provider will consult the slash meter to determine if a `SlashPacket` can be handled immediately. 
+If not, the provider will return an acknowledgement message to the consumer communicating that the `SlashPacket` could not be handled, and needs to be sent again in the future (retried).
 
 `VSCMaturedPackets` will always be handled immediately upon being received by the provider.
 
@@ -99,7 +100,7 @@ Note [spec](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain
 
 Now this property will be maintained by the consumer sending packets in the correct order, and blocking the sending of `VSCMaturedPackets` as needed. Then, the ordered IBC channel will ensure that `SlashPackets` and `VSCMaturedPackets` are received in the correct order on the provider.
 
-The provider's main responsibility regarding throttling will now be to determine if a received `SlashPacket` can be handled via slash meter etc., and appropriately ack to the sending consumer.
+The provider's main responsibility regarding throttling will now be to determine if a received `SlashPacket` can be handled via slash meter etc., and appropriately acknowledge to the sending consumer.
 
 #### Handling `VSCMaturedPackets` immediately 
 
