@@ -333,7 +333,7 @@ func (s *Driver) ConfigureNewPath(consumerChain *ibctesting.TestChain, providerC
 	tmCfg := providerEndPoint.ClientConfig.(*ibctesting.TendermintConfig)
 	tmCfg.UnbondingPeriod = params.UnbondingPeriodPerChain[ChainId(providerChain.ChainID)]
 	tmCfg.TrustingPeriod = params.TrustingPeriodPerChain[ChainId(providerChain.ChainID)]
-	tmCfg.MaxClockDrift = params.TrustingPeriodPerChain[ChainId(providerChain.ChainID)] // make the clock drift a non-issue
+	tmCfg.MaxClockDrift = params.TrustingPeriodPerChain[ChainId(providerChain.ChainID)] * 5 // make the clock drift a non-issue
 	err := providerEndPoint.CreateClient()
 	require.NoError(s.t, err, "Error creating client on provider for chain %v", consumerChain.ChainID)
 
@@ -352,7 +352,7 @@ func (s *Driver) ConfigureNewPath(consumerChain *ibctesting.TestChain, providerC
 	tmCfg = consumerEndPoint.ClientConfig.(*ibctesting.TendermintConfig)
 	tmCfg.UnbondingPeriod = params.UnbondingPeriodPerChain[consumerChainId]
 	tmCfg.TrustingPeriod = params.TrustingPeriodPerChain[consumerChainId]
-	tmCfg.MaxClockDrift = params.TrustingPeriodPerChain[ChainId(providerChain.ChainID)] // make the clock drift a non-issue
+	tmCfg.MaxClockDrift = params.TrustingPeriodPerChain[ChainId(providerChain.ChainID)] * 5 // make the clock drift a non-issue
 
 	consumerClientState := ibctmtypes.NewClientState(
 		providerChain.ChainID, tmCfg.TrustLevel, tmCfg.TrustingPeriod, tmCfg.UnbondingPeriod, tmCfg.MaxClockDrift,
@@ -390,9 +390,9 @@ func (s *Driver) ConfigureNewPath(consumerChain *ibctesting.TestChain, providerC
 	simibc.BeginBlock(consumerChain, 5)
 
 	// Update clients to the latest header.
-	err = simibc.UpdateReceiverClient(consumerEndPoint, providerEndPoint, lastConsumerHeader)
+	err = simibc.UpdateReceiverClient(consumerEndPoint, providerEndPoint, lastConsumerHeader, false)
 	require.NoError(s.t, err, "Error updating client on consumer for chain %v", consumerChain.ChainID)
-	err = simibc.UpdateReceiverClient(providerEndPoint, consumerEndPoint, lastProviderHeader)
+	err = simibc.UpdateReceiverClient(providerEndPoint, consumerEndPoint, lastProviderHeader, false)
 	require.NoError(s.t, err, "Error updating client on provider for chain %v", consumerChain.ChainID)
 
 	// path is ready to go

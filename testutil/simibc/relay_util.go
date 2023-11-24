@@ -7,7 +7,6 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	simapp "github.com/cosmos/ibc-go/v7/testing/simapp"
-	"github.com/stretchr/testify/require"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -23,7 +22,7 @@ import (
 // must have a client of the sender chain that it can update.
 //
 // NOTE: this function MAY be used independently of the rest of simibc.
-func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmtypes.Header) (err error) {
+func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmtypes.Header, expectExpiration bool) (err error) {
 	err = augmentHeader(sender.Chain, receiver.Chain, receiver.ClientID, header)
 
 	if err != nil {
@@ -34,8 +33,9 @@ func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmty
 		receiver.ClientID, header,
 		receiver.Chain.SenderAccount.GetAddress().String(),
 	)
-
-	require.NoError(receiver.Chain.T, err)
+	if err != nil {
+		return err
+	}
 
 	_, _, err = simapp.SignAndDeliver(
 		receiver.Chain.T,
@@ -46,7 +46,7 @@ func UpdateReceiverClient(sender, receiver *ibctesting.Endpoint, header *ibctmty
 		receiver.Chain.ChainID,
 		[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
 		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
-		true, true, receiver.Chain.SenderPrivKey,
+		true, !expectExpiration, receiver.Chain.SenderPrivKey,
 	)
 
 	if err != nil {

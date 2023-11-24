@@ -110,14 +110,15 @@ func (f *RelayedPath) InvolvesChain(chainID string) bool {
 // UpdateClient updates the chain with the latest sequence
 // of available headers committed by the counterparty chain since
 // the last call to UpdateClient (or all for the first call).
-func (f *RelayedPath) UpdateClient(chainID string) {
+func (f *RelayedPath) UpdateClient(chainID string, expectExpiration bool) error {
 	for _, header := range f.clientHeaders[f.Counterparty(chainID)] {
-		err := UpdateReceiverClient(f.endpoint(f.Counterparty(chainID)), f.endpoint(chainID), header)
+		err := UpdateReceiverClient(f.endpoint(f.Counterparty(chainID)), f.endpoint(chainID), header, expectExpiration)
 		if err != nil {
-			f.t.Fatal("in relayed path could not update client of chain: ", chainID, " with header: ", header, " err: ", err)
+			return err
 		}
 	}
 	f.clientHeaders[f.Counterparty(chainID)] = []*ibctmtypes.Header{}
+	return nil
 }
 
 // DeliverPackets delivers UP TO <num> packets to the chain which have been

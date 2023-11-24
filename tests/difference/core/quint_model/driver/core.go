@@ -38,6 +38,7 @@ type ModelParams struct {
 	CcvTimeout              map[ChainId]time.Duration
 	UnbondingPeriodPerChain map[ChainId]time.Duration
 	TrustingPeriodPerChain  map[ChainId]time.Duration
+	MaxClockDrift           time.Duration
 }
 
 type Driver struct {
@@ -147,10 +148,13 @@ func (s *Driver) consumerPower(i int64, chain ChainId) (int64, error) {
 
 // consumerTokens returns the number of tokens that the validator with
 // id (ix) i has delegated to it in total on the provider chain
-func (s *Driver) providerPower(i int64) int64 {
+func (s *Driver) providerPower(i int64) (int64, error) {
 	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-	require.True(s.t, found, "GetValidator(%v) -> !found", s.validator(i))
-	return v.BondedTokens().Int64()
+	if !found {
+		return 0, fmt.Errorf("Validator with id %v not found on provider!", i)
+	} else {
+		return v.BondedTokens().Int64(), nil
+	}
 }
 
 // delegation returns the number of delegated tokens in the delegation from
@@ -179,7 +183,7 @@ func (s *Driver) providerTokens(i int64) int64 {
 	return v.Tokens.Int64()
 }
 
-func (s *Driver) providerValidatorSet(chain ChainId) []stakingtypes.Validator {
+func (s *Driver) providerValidatorSet() []stakingtypes.Validator {
 	return s.providerStakingKeeper().GetAllValidators(s.ctx(P))
 }
 
@@ -239,14 +243,12 @@ func (s *Driver) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool, ch
 	}
 }
 
-func (s *Driver) updateClient(chain ChainId) {
-	s.path(chain).UpdateClient(string(chain))
+func (s *Driver) updateClient(chain ChainId) error {
+	return s.path(chain).UpdateClient(string(chain), false)
 }
 
 // deliver numPackets packets from the network to chain
 func (s *Driver) deliver(chain ChainId, numPackets int) {
-	// Makes sure client is updated
-	s.updateClient(chain)
 	// Deliver any outstanding acks
 	s.path(chain).DeliverAcks(string(chain), 999999)
 	// Consume deliverable packets from the network
@@ -347,7 +349,7 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 	for index, valName := range s.valNames {
 		var power int64
 		if s.isProviderChain(chain) {
-			power = s.providerPower(int64(index))
+			power, _ = s.providerPower(int64(index))
 		} else {
 			power, _ = s.consumerPower(int64(index), chain)
 		}

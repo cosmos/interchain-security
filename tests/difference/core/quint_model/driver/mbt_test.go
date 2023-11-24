@@ -11,7 +11,9 @@ import (
 
 	cmttypes "github.com/cometbft/cometbft/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
+	"github.com/kylelemons/godebug/pretty"
 
 	"github.com/informalsystems/itf-go/itf"
 	"github.com/stretchr/testify/require"
@@ -26,6 +28,8 @@ func TestMBT(t *testing.T) {
 	}
 
 	t.Log("Running traces from the traces folder")
+
+	ibctesting.TimeIncrement = 1 * time.Nanosecond
 
 	for _, dirEntry := range dirEntries {
 		t.Log("Running trace ", dirEntry.Name())
@@ -129,12 +133,14 @@ func RunItfTrace(t *testing.T, path string) {
 	t.Log("Reading the trace...")
 
 	for index, state := range trace.States {
-		t.Logf("Reading state %v", index)
+		t.Logf("Reading state %v of trace %v", index, path)
 
 		// modelState := state.VarValues["currentState"]
 		trace := state.VarValues["trace"].Value.(itf.ListExprType)
 		// fmt.Println(modelState)
 		lastAction := trace[len(trace)-1].Value.(itf.MapExprType)
+
+		currentModelState := state.VarValues["currentState"].Value.(itf.MapExprType)
 
 		actionKind := lastAction["kind"].Value.(string)
 		switch actionKind {
@@ -165,15 +171,18 @@ func RunItfTrace(t *testing.T, path string) {
 			// needs a header of height H+1 to accept the packet
 			// so we do one time advancement with a very small increment,
 			// and then increment the rest of the time]
-
-			// TODO: start and stop consumers
-			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
 			driver.endAndBeginBlock("provider", 1*time.Nanosecond)
+			driver.endAndBeginBlock("provider", time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
 
-			// save the last timestamp for each chain,
+			// save the last timestamp for runningConsumers,
 			// because setting up chains will modify timestamps
 			// when the coordinator is starting chains
-			lastTimestamps := driver.allTimes()
+			lastTimestamps := make(map[ChainId]time.Time, len(consumers))
+			for _, consumer := range driver.runningConsumers() {
+				lastTimestamps[ChainId(consumer.ChainId)] = driver.time(ChainId(consumer.ChainId))
+			}
+
+			driver.coordinator.CurrentTime = driver.time("provider")
 			// start consumers
 			for _, consumer := range consumersToStart {
 				driver.setupConsumer(
@@ -185,7 +194,6 @@ func RunItfTrace(t *testing.T, path string) {
 					valNames,
 					driver.providerChain(),
 				)
-				lastTimestamps[ChainId(consumer.Value.(string))] = driver.time(ChainId(consumer.Value.(string)))
 			}
 
 			// stop consumers
@@ -194,40 +202,23 @@ func RunItfTrace(t *testing.T, path string) {
 				driver.stopConsumer(consumerChain)
 
 				// remove the consumer from timestamps map and time offsets
-				delete(lastTimestamps, consumerChain)
 				delete(timeOffsets, consumerChain)
+				delete(lastTimestamps, consumerChain)
 			}
 
-			// remove the stopped consumers from the timestamps
-			for _, consumer := range consumersToStop {
-				consumerChain := ChainId(consumer.Value.(string))
-				delete(lastTimestamps, consumerChain)
-				delete(timeOffsets, consumerChain)
-			}
-
-			// restore the old timestamps, but increment by 1 nanosecond to avoid duplicate timestamps in headers
-			for chain, oldTimestamp := range lastTimestamps {
-				// if the chain was stopped, we don't need to restore the timestamp
-				driver.setTime(ChainId(chain), oldTimestamp.Add(1*time.Nanosecond))
-				// also set the offset for each chain correctly - offset is incremented by 1 nanosecond
-				timeOffsets[ChainId(chain)] = timeOffsets[ChainId(chain)].Add(1 * time.Nanosecond)
+			// reset the times for the consumers that were not stopped or started just now
+			// their times were messed up by the coordinator
+			for consumer, timestamp := range lastTimestamps {
+				driver.setTime(consumer, timestamp)
 			}
 
 			// set the timeOffsets for the newly started chains
 			for _, consumer := range consumersToStart {
 				consumerChain := ChainId(consumer.Value.(string))
-				timeOffsets[consumerChain] = driver.time(consumerChain)
-			}
-
-			// need to produce another block to fix messed up times because the provider comitted blocks with
-			// times that were fixed by the coordinator
-			driver.endAndBeginBlock("provider", 0)
-			providerHeader := driver.providerChain().LastHeader
-
-			// same for the consumers that were started
-			for _, consumer := range consumersToStart {
-				consumerChainId := string(consumer.Value.(string))
-				driver.endAndBeginBlock(ChainId(consumerChainId), 0)
+				// the time offset is the time of the provider,
+				// because the model sets the timestamp on the consumer to the provider time
+				// when the consumer is started
+				timeOffsets[consumerChain] = timeOffsets["provider"]
 			}
 
 			// for all connected consumers, update the clients...
@@ -238,8 +229,14 @@ func RunItfTrace(t *testing.T, path string) {
 				}
 				consumerChainId := string(consumer.ChainId)
 
-				driver.path(ChainId(consumerChainId)).AddClientHeader(Provider, providerHeader)
-				driver.path(ChainId(consumerChainId)).UpdateClient(consumerChainId)
+				driver.path(ChainId(consumerChainId)).AddClientHeader(Provider, driver.providerHeader())
+				var err error
+				if ConsumerStatus(currentModelState, consumerChainId) == "expired" {
+					err = driver.path(ChainId(consumerChainId)).UpdateClient(consumerChainId, true)
+				} else {
+					err = driver.path(ChainId(consumerChainId)).UpdateClient(consumerChainId, false)
+				}
+				require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChainId, err)
 			}
 
 		case "EndAndBeginBlockForConsumer":
@@ -252,13 +249,20 @@ func RunItfTrace(t *testing.T, path string) {
 			headerBefore := driver.chain(ChainId(consumerChain)).LastHeader
 			_ = headerBefore
 
-			driver.endAndBeginBlock(ChainId(consumerChain), time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
 			driver.endAndBeginBlock(ChainId(consumerChain), 1*time.Nanosecond)
+			driver.endAndBeginBlock(ChainId(consumerChain), time.Duration(timeAdvancement)*time.Second-1*time.Nanosecond)
 
 			// update the client on the provider
 			consumerHeader := driver.chain(ChainId(consumerChain)).LastHeader
 			driver.path(ChainId(consumerChain)).AddClientHeader(consumerChain, consumerHeader)
-			driver.path(ChainId(consumerChain)).UpdateClient(Provider)
+			var err error
+			if LocalClientExpired(currentModelState, consumerChain) {
+				err = driver.path(ChainId(consumerChain)).UpdateClient(Provider, true)
+			} else {
+				err = driver.path(ChainId(consumerChain)).UpdateClient(Provider, false)
+			}
+			require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChain, err)
+
 		case "DeliverVscPacket":
 			consumerChain := lastAction["consumerChain"].Value.(string)
 			t.Log("DeliverVscPacket", consumerChain)
@@ -282,7 +286,6 @@ func RunItfTrace(t *testing.T, path string) {
 			t.Logf("Current actual state: %s", driver.getStateString())
 		}
 
-		currentModelState := state.VarValues["currentState"].Value.(itf.MapExprType)
 		// check that the actual state is the same as the model state
 
 		// compare the running consumers
@@ -326,7 +329,7 @@ func RunItfTrace(t *testing.T, path string) {
 
 func CompareValidatorSets(t *testing.T, driver *Driver, currentModelState map[string]itf.Expr, consumers []string, index int) {
 	modelValSet := ValidatorSet(currentModelState, "provider")
-	curValSet := driver.providerValidatorSet("provider")
+	curValSet := driver.providerValidatorSet()
 
 	actualValSet := make(map[string]int64, len(curValSet))
 
@@ -395,6 +398,8 @@ func ComparePacketQueue(t *testing.T, driver *Driver, currentModelState map[stri
 // CompareTimes compares the block times in the model to the block times in the system.
 // It takes into account the timeOffsets, which should be the starting times
 // of the chains in the system after the system has been initialized.
+// We only compare down to seconds, because the model and system will differ
+// on the order of nanoseconds.
 func CompareTimes(
 	t *testing.T,
 	driver *Driver,
@@ -409,7 +414,7 @@ func CompareTimes(
 	require.Equal(t,
 		providerLastTimestamp,
 		actualProviderTime.Unix()-providerOffset.Unix(),
-		"Block times do not match")
+		"Block times do not match for provider")
 
 	for _, chain := range consumers {
 		modelLastTimestamp := Time(currentModelState, chain)
@@ -418,7 +423,7 @@ func CompareTimes(
 		require.Equal(t,
 			modelLastTimestamp,
 			actualChainTime.Unix()-timeOffsets[ChainId(chain)].Unix(),
-			"Block times do not match")
+			"Block times do not match for chain %v", chain)
 	}
 }
 
@@ -445,7 +450,7 @@ func CompareValSet(modelValSet map[string]itf.Expr, systemValSet map[string]int6
 	}
 
 	if !reflect.DeepEqual(expectedValSet, actualValSet) {
-		return fmt.Errorf("Model validator set %v, system validator set %v", expectedValSet, actualValSet)
+		return fmt.Errorf("Validator sets do not match: (+ expected, - actual): %v", pretty.Compare(expectedValSet, actualValSet))
 	}
 	return nil
 }

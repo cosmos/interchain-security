@@ -69,3 +69,11 @@ func RunningConsumers(curStateExpr itf.MapExprType) []string {
 	}
 	return runningConsumers
 }
+
+func ConsumerStatus(curStateExpr itf.MapExprType, consumer string) string {
+	return ProviderState(curStateExpr)["consumerStatus"].Value.(itf.MapExprType)[consumer].Value.(string)
+}
+
+func LocalClientExpired(curStateExpr itf.MapExprType, consumer string) bool {
+	return ConsumerState(curStateExpr, consumer)["localClientExpired"].Value.(bool)
+}
