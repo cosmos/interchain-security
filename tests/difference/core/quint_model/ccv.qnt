@@ -177,6 +177,7 @@ module ccv_types {
     pure val TIMEDOUT = "timedout" // the chain has timed out and was dropped by the provider. This is only used for involuntary drops.
     pure val RUNNING = "running" // the chain is currently a consumer chain. Running chains are those that get sent VscPackets.
     pure val NOT_CONSUMER = "not consumer" // the chain has never been a consumer chain, and is available to become one.
+    pure val EXPIRED = "expired" // The channel between the chains is expired. This is only used for involuntary drops.
     // When a chain is dropped, it cannot become a consumer again - we assume that would be done by another consumer becoming running.
 
     // the provider chain.
@@ -226,7 +227,7 @@ module ccv {
     // The trusting period on each chain.
     // If headers on a channel between two chains are not updated within this period,
     // they expire and the channel will be closed.
-    const TrustingPeriodPerChain: Chain -> int // TODO: USE THIS!
+    const TrustingPeriodPerChain: Chain -> int
 
     // ===================
     // PROTOCOL LOGIC contains the meat of the protocol
@@ -273,7 +274,8 @@ module ccv {
                 val result = stopConsumers(
                     currentState.providerState.consumerStatus,
                     Set(),
-                    Set(sender)
+                    Set(sender),
+                    Set()
                 )
 
                 val newConsumerStatus = result._1
@@ -322,7 +324,8 @@ module ccv {
                 val result = stopConsumers(
                     currentState.providerState.consumerStatus,
                     Set(),
-                    Set(receiver)
+                    Set(receiver),
+                    Set()
                 )
 
                 val newConsumerStatus = result._1
@@ -386,6 +389,12 @@ module ccv {
             res._1
         )
 
+        val expiredConsumers = getRunningConsumers(providerStateAfterTimeAdvancement).filter(
+            consumer => 
+            val res = TimeoutDueToVscTimeout(tmpState, consumer)
+            res._1
+        ).exclude(timedOutConsumers)
+
         // send vsc packets
         val providerStateAfterSending =
             if (currentProviderState.providerValidatorSetChangedInThisBlock and 
@@ -401,7 +410,8 @@ module ccv {
         val res = providerStateAfterSending.consumerStatus.StartStopConsumers(
             consumersToStart,
             consumersToStop,
-            timedOutConsumers
+            timedOutConsumers,
+            expiredConsumers
         )
         val newConsumerStatus = res._1
         val err = res._2
@@ -427,6 +437,9 @@ module ccv {
                             ).with(
                                 "votingPowerHistory",
                                 List(valSet)
+                            ).with(
+                                "lastTimestamp", 
+                                providerStateAfterConsumerAdvancement.chainState.lastTimestamp
                             )
                         )
                         newConsumerState
@@ -509,7 +522,8 @@ module ccv {
     pure def stopConsumers(
         currentConsumerStatusMap: Chain -> str,
         consumersToStop: Set[Chain],
-        consumersToTimeout: Set[Chain]): (Chain -> str, str) = {
+        consumersToTimeout: Set[Chain],
+        expiredConsumers: Set[Chain]): (Chain -> str, str) = {
             val runningConsumers = currentConsumerStatusMap.keys().filter(
                 chain => currentConsumerStatusMap.get(chain) == RUNNING
             )
@@ -521,6 +535,8 @@ module ccv {
                     (chain) => 
                     if (consumersToTimeout.contains(chain)) {
                         TIMEDOUT
+                    } else if (expiredConsumers.contains(chain)) {
+                        EXPIRED
                     } else if (consumersToStop.contains(chain)) {
                         STOPPED
                     } else {
@@ -560,7 +576,8 @@ module ccv {
         currentConsumerStatusMap: Chain -> str,
         consumersToStart: Set[Chain],
         consumersToStop: Set[Chain],
-        consumersToTimeout: Set[Chain]
+        consumersToTimeout: Set[Chain],
+        expiredConsumers: Set[Chain]
     ): (Chain -> str, str) = {
         // check if any consumer is both started and stopped
         if (consumersToStart.intersect(consumersToStop).size() > 0) {
@@ -569,7 +586,7 @@ module ccv {
             val res1 = currentConsumerStatusMap.startConsumers(consumersToStart)
             val newConsumerStatus = res1._1
             val err1 = res1._2
-            val res2 = newConsumerStatus.stopConsumers(consumersToStop, consumersToTimeout)
+            val res2 = newConsumerStatus.stopConsumers(consumersToStop, consumersToTimeout, expiredConsumers)
             val err2 = res2._2
             if (err1 != "") {
                 (currentConsumerStatusMap, err1)
