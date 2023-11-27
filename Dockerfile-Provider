@@ -57,7 +57,9 @@ COPY --from=cometmock-builder /usr/local/bin/cometmock /usr/local/bin/cometmock
 COPY --from=gorelayer-builder /bin/rly /usr/local/bin/
 
 # Copy provider from specified image
+ARG PROVIDER_VERSION="latest"
 COPY --from=provider /usr/local/bin/interchain-security-pd /usr/local/bin/interchain-security-pd
+COPY --from=provider /testnet-scripts /provider-${PROVIDER_VERSION}/testnet-scripts
 
 # Copy provider from local build
 COPY --from=is-builder /go/bin/interchain-security-cd /usr/local/bin/interchain-security-cd
