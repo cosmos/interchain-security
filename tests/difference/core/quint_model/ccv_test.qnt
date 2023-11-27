@@ -10,6 +10,7 @@ module ccv_test {
     pure val chains = consumerChains.union(Set(PROVIDER_CHAIN))
     pure val unbondingPeriods = chains.mapBy(chain => 2 * Week)
     pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
+    pure val trustingPeriods = chains.mapBy(chain => 2 * Week - 1 * Hour)
 
     import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains).* from "./ccv"
 
@@ -195,6 +196,7 @@ module ccv_test {
             currentConsumerStatusMap,
             Set("chain1"),
             Set("chain2"),
+            Set(),
             Set()
         )
         res._2 == "" and
@@ -214,6 +216,7 @@ module ccv_test {
             currentConsumerStatusMap,
             Set("chain2"),
             Set("chain3"),
+            Set(),
             Set()
         )
         res._2 == "cannot start a consumer that is stopped or already a consumer"
@@ -230,6 +233,7 @@ module ccv_test {
             currentConsumerStatusMap,
             Set("chain1"),
             Set("chain3"),
+            Set(),
             Set()
         )
         res._2 == "Cannot stop a consumer that is not running"
@@ -246,6 +250,7 @@ module ccv_test {
             currentConsumerStatusMap,
             Set("chain1"),
             Set("chain1"),
+            Set(),
             Set()
         )
         res._2 == "Cannot start and stop a consumer at the same time"

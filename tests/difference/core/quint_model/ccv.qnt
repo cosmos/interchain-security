@@ -43,10 +43,11 @@ module ccv_types {
         currentValidatorSet: ValidatorSet,
 
 
-        // TODO: split into lastTimestamp and runningTimestamp
-        // TODO: check how expiry needs to work (checks own chains runningTimestamp, but for foreign chain it's tracking the last comitted timestamp)
         // the latest timestamp that was comitted on chain
         lastTimestamp: Time,
+
+        // the running timestamp of the current block (that will be put on chain when the block is ended)
+        runningTimestamp: Time,
     }
 
     // utility function: returns a chain state that is initialized minimally.
@@ -55,6 +56,7 @@ module ccv_types {
             votingPowerHistory: List(),
             currentValidatorSet: Map(),
             lastTimestamp: 0,
+            runningTimestamp: 0,
         }
 
     // Defines the current state of the provider chain. Essentially, all information here is stored by the provider on-chain (or could be derived purely by information that is on-chain).
@@ -277,7 +279,7 @@ module ccv {
             (Err("No outstanding packets to deliver"), false)
         } else {
             val packet = currentState.consumerStates.get(sender).outstandingPacketsToProvider.head()
-            if(packet.sendingTime + CcvTimeout.get(sender) < currentState.providerState.chainState.lastTimestamp) {
+            if(packet.sendingTime + CcvTimeout.get(sender) < currentState.providerState.chainState.runningTimestamp) {
                 // drop consumer
                 val result = stopConsumers(
                     currentState.providerState.consumerStatus,
@@ -327,7 +329,7 @@ module ccv {
         } else {
             val packet = currentState.providerState.outstandingPacketsToConsumer.get(receiver).head()
             // check if the consumer timed out
-            if (packet.sendingTime + CcvTimeout.get(PROVIDER_CHAIN) < currentState.consumerStates.get(receiver).chainState.lastTimestamp) {
+            if (packet.sendingTime + CcvTimeout.get(PROVIDER_CHAIN) < currentState.consumerStates.get(receiver).chainState.runningTimestamp) {
                 // drop consumer
                 val result = stopConsumers(
                     currentState.providerState.consumerStatus,
@@ -399,8 +401,7 @@ module ccv {
 
         val expiredConsumers = getRunningConsumers(providerStateAfterTimeAdvancement).filter(
             consumer => 
-            val res = TimeoutDueToVscTimeout(tmpState, consumer)
-            res._1
+            providerStateAfterTimeAdvancement.chainState.runningTimestamp > tmpState.consumerStates.get(consumer).chainState.lastTimestamp + TrustingPeriodPerChain.get("provider")
         ).exclude(timedOutConsumers)
 
         // send vsc packets
@@ -448,6 +449,9 @@ module ccv {
                             ).with(
                                 "lastTimestamp", 
                                 providerStateAfterConsumerAdvancement.chainState.lastTimestamp
+                            ).with(
+                                "runningTimestamp", 
+                                providerStateAfterConsumerAdvancement.chainState.runningTimestamp
                             )
                         )
                         newConsumerState
@@ -484,29 +488,28 @@ module ccv {
                     pair =>
                     val packet = pair._1 
                     val maturationTime: Time = pair._2
-                    // important that the old chain state is used here, because sending packets happens on EndBlock,
-                    // but the new timestamp only appears after BeginBlock
-                    maturationTime <= oldChainState.lastTimestamp
+                    // important: this uses the last comitted timestamp, not the running timestamp!
+                    maturationTime <= newChainState.lastTimestamp
                 ).transform(pair => pair._1)
                 val newMaturationTimes = newConsumerState.maturationTimes.select(
                     pair =>
                     val packet = pair._1 
                     val maturationTime: Time = pair._2
-                    // important that the old chain state is used here, because sending packets happens on EndBlock,
-                    // but the new timestamp only appears after BeginBlock
-                    maturationTime > oldChainState.lastTimestamp
+                    // important: this uses the last comitted timestamp, not the running timestamp!
+
+                    maturationTime > newChainState.lastTimestamp
                 )
                 val newOutstandingPackets = newConsumerState.outstandingPacketsToProvider.concat(
                     maturedPackets.transform(
                         packet => {
                             id: packet.id, 
-                            sendingTime: oldChainState.lastTimestamp
+                            sendingTime: newChainState.runningTimestamp
                         }
                     )
                 )
                 // checks whether the local client for the provider chain has expired on the consumer
                 val clientExpired = 
-                    if (newChainState.lastTimestamp > currentState.providerState.chainState.lastTimestamp + TrustingPeriodPerChain.get(chain)) {
+                    if (newChainState.runningTimestamp > currentState.providerState.chainState.lastTimestamp + TrustingPeriodPerChain.get(chain)) {
                         true
                     } else {
                         false
@@ -626,10 +629,11 @@ module ccv {
     }
 
     // Advances the timestamp in the chainState by timeAdvancement
-    pure def advanceTime(chainState: ChainState, timeAdvancement: Time): ChainState = {
-        chainState.with(
-            "lastTimestamp", chainState.lastTimestamp + timeAdvancement
-        )
+    pure def advanceTime(chainState: ChainState, timeAdvancement: Time): ChainState = 
+    {
+        lastTimestamp: chainState.runningTimestamp,
+        runningTimestamp: chainState.runningTimestamp + timeAdvancement,
+        ...chainState
     }
 
     // common logic to update the chain state, used by both provider and consumers.
@@ -652,7 +656,7 @@ module ccv {
                 List({
                         id: providerState.runningVscId,
                         validatorSet: providerState.chainState.currentValidatorSet,
-                          sendingTime: providerState.chainState.lastTimestamp
+                          sendingTime: providerState.chainState.runningTimestamp
                 })
             } else {
                 List()
@@ -699,7 +703,7 @@ module ccv {
                     maturationTimes: currentConsumerState.maturationTimes.append(
                         (
                             packet, 
-                            currentConsumerState.chainState.lastTimestamp + UnbondingPeriodPerChain.get(receiver)
+                            currentConsumerState.chainState.runningTimestamp + UnbondingPeriodPerChain.get(receiver)
                         )
                     ),
                     receivedVscPackets: currentConsumerState.receivedVscPackets.prepend(packet)
@@ -816,7 +820,7 @@ module ccv {
             val sentVscPacketsToConsumer = providerState.sentVscPacketsToConsumer.get(consumer)
             if(sentVscPacketsToConsumer.length() > 0) {
                 val oldestSentVscPacket = sentVscPacketsToConsumer.head() // if length is 0, this is undefined, but we check for this before we use it
-                if(oldestSentVscPacket.sendingTime + VscTimeout < providerState.chainState.lastTimestamp) {
+                if(oldestSentVscPacket.sendingTime + VscTimeout < providerState.chainState.runningTimestamp) {
                     (true, "")
                 } else {
                     // no timeout yet, it has not been VscTimeout since that packet was sent

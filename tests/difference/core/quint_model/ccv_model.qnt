@@ -18,13 +18,11 @@ module ccv_model {
 
     import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains, TrustingPeriodPerChain = trustingPeriods).* from "./ccv"
 
-    // TODO: introduce max clock drift to produce traces with bounded drift
-
     type Parameters = {
         VscTimeout: Time,
         CcvTimeout: Chain -> Time,
         UnbondingPeriodPerChain: Chain -> Time,
-        TrustingPeriodPerChain: Chain -> Time, // TODO: integrate trusting period in logic
+        TrustingPeriodPerChain: Chain -> Time,
         ConsumerChains: Set[Chain],
         Nodes: Set[Node],
         InitialValidatorSet: Node -> int,
@@ -614,5 +612,32 @@ module ccv_model {
                 )),
                 VotingPowerChange("node1", 50) // action needs to be there but does not matter what it is
             }
+        )
+
+    // check that when the running timestamp of a chain and the last timestamp of a counterparty differ by more than the trusting period,
+    // the client is expired
+    run ExpiredClientTest = 
+        init.then(
+            EndAndBeginBlockForProvider(1 * Second, Set("consumer1"), Set())
+        ).then(
+            20.reps(
+                i => all {
+                        {   
+                            // if the trusting period has passed 
+                            (currentState.consumerStates.get("consumer1").chainState.lastTimestamp + TrustingPeriodPerChain.get("provider") < currentState.providerState.chainState.runningTimestamp or 
+                            currentState.providerState.chainState.lastTimestamp + TrustingPeriodPerChain.get("consumer1") < currentState.consumerStates.get("consumer1").chainState.runningTimestamp)
+                            implies
+                            (currentState.consumerStates.get("consumer1").localClientExpired or
+                            currentState.providerState.consumerStatus.get("consumer1") == EXPIRED or
+                            currentState.providerState.consumerStatus.get("consumer1") == TIMEDOUT)
+                        },
+                        any {
+                            // advance time on the provider
+                            EndAndBeginBlockForProvider(1 * Week, Set(), Set()),
+                            // advance time on the consumer
+                            EndAndBeginBlockForConsumer("consumer1", 1 * Week),
+                        }
+                    }
+                )
         )
 }
