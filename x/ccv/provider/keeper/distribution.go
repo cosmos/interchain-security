@@ -14,6 +14,12 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 	k.TransferRewardsToFeeCollector(ctx)
 }
 
+func (k Keeper) SonarCloudTestFunctionDoNotMerge(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ConsumerRewardDenomsKey("uatom"), []byte{})
+	return
+}
+
 func (k Keeper) GetConsumerRewardsPoolAddressStr(ctx sdk.Context) string {
 	return k.accountKeeper.GetModuleAccount(
 		ctx, types.ConsumerRewardsPool).GetAddress().String()
