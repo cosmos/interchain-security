@@ -68,6 +68,9 @@ func buildDockerImage(imageName string, revision string, tmpDir string) error {
 
 	log.Printf("Building docker image")
 	// TODO: TBD if we should use option "--no-cache" here
+	/* 	cmd := exec.Command("docker", "build", "--no-cache", "-t",
+	fmt.Sprintf("cosmos-ics:%s", revision), "-f", "./Dockerfile", "./")
+	*/
 	cmd := exec.Command("docker", "build", "-t",
 		fmt.Sprintf("cosmos-ics:%s", revision), "-f", "./Dockerfile", "./")
 	cmd.Dir = workSpace

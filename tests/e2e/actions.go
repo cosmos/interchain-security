@@ -129,9 +129,13 @@ func (tr TestRun) startChain(
 	}
 
 	startChainScript := "/testnet-scripts/start-chain.sh"
-	if tr.providerVersion != "" && chainConfig.BinaryName == "interchain-security-pd" {
+	if tr.providerVersion != "" && chainConfig.binaryName == "interchain-security-pd" {
 		log.Printf("Using start-chain script for provider version '%s'", tr.providerVersion)
 		startChainScript = fmt.Sprintf("/provider-%s/testnet-scripts/start-chain.sh", tr.providerVersion)
+	}
+	if tr.consumerVersion != "" && chainConfig.binaryName != "interchain-security-pd" {
+		log.Printf("Using start-chain script for consumer version '%s'", tr.consumerVersion)
+		startChainScript = fmt.Sprintf("/consumer-%s/testnet-scripts/start-chain.sh", tr.consumerVersion)
 	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
