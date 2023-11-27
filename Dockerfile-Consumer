@@ -59,6 +59,7 @@ COPY --from=gorelayer-builder /bin/rly /usr/local/bin/
 
 # Copy consumer from specified image
 COPY --from=consumer /usr/local/bin/interchain-security-pd /usr/local/bin/interchain-security-pd
+COPY --from=consumer /testnet-scripts /provider-${PROVIDER_VERSION}/testnet-scripts
 
 # Copy provider from local build
 COPY --from=is-builder /go/bin/interchain-security-cd /usr/local/bin/interchain-security-cd
