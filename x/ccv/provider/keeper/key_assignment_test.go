@@ -653,6 +653,10 @@ func TestCannotReassignDefaultKeyAssignment(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	providerKeeper.SetPendingConsumerAdditionProp(ctx, &types.ConsumerAdditionProposal{
+		ChainId: "chain",
+	})
+
 	// Mock that the validator is validating with the single key, as confirmed by provider's staking keeper
 	gomock.InOrder(
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
