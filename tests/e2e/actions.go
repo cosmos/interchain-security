@@ -133,9 +133,14 @@ func (tr *TestConfig) startChain(
 		cometmockArg = "false"
 	}
 
+	startChainScript := "/testnet-scripts/start-chain.sh"
+	if tr.providerVersion != "" && chainConfig.BinaryName == "interchain-security-pd" {
+		log.Printf("Using start-chain script for provider version '%s'", tr.providerVersion)
+		startChainScript = fmt.Sprintf("/provider-%s/testnet-scripts/start-chain.sh", tr.providerVersion)
+	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.InstanceName, "/bin/bash",
-		"/testnet-scripts/start-chain.sh", chainConfig.BinaryName, string(vals),
+		startChainScript, chainConfig.BinaryName, string(vals),
 		string(chainConfig.ChainId), chainConfig.IpPrefix, genesisChanges,
 		fmt.Sprint(action.SkipGentx),
 		// override config/config.toml for each node on chain
