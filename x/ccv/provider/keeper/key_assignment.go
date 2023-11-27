@@ -379,8 +379,8 @@ func (k Keeper) AssignConsumerKey(
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
 	// check that the consumer chain is either registered or that
-	// ConsumerAdditionProposal was voted on.
-	if !k.CheckIfConsumerIsProposedOrRegistered(ctx, chainID) {
+	// a ConsumerAdditionProposal was submitted.
+	if !k.IsConsumerProposedOrRegistered(ctx, chainID) {
 		return errorsmod.Wrapf(
 			types.ErrUnknownConsumerChainId, chainID,
 		)
@@ -639,9 +639,9 @@ func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
 	}
 }
 
-// CheckIfConsumerIsProposedOrRegistered checks if a consumer chain is either registered, meaning either already running
+// IsConsumerProposedOrRegistered checks if a consumer chain is either registered, meaning either already running
 // or will run soon, or proposed its ConsumerAdditionProposal was submitted but the chain was not yet added to ICS yet.
-func (k Keeper) CheckIfConsumerIsProposedOrRegistered(ctx sdk.Context, chainID string) bool {
+func (k Keeper) IsConsumerProposedOrRegistered(ctx sdk.Context, chainID string) bool {
 	allConsumerChains := k.GetAllRegisteredAndProposedChainIDs(ctx)
 	for _, c := range allConsumerChains {
 		if c == chainID {
