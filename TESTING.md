@@ -29,14 +29,23 @@ Tests can be run using `make`:
 # run unit, integration, diff, and E2E tests
 make test
 
-# run unit and integration tests - prefer this for local development
-make test-short
+# run unit tests
+make test-unit
+
+# run integration tests
+make test-integration
 
 # run difference tests
-make test-diff
+make test-difference
+
+# run unit, integration, and difference tests - shortcut for local development
+mate test-dev
 
 # run E2E tests
 make test-e2e
+
+# run only happy path E2E tests
+make test-e2e-short
 
 # equivalent to make test with caching disabled
 make test-no-cache
