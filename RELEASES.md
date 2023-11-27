@@ -7,6 +7,7 @@
   - [Stable Release Policy](#stable-release-policy)
   - [Version Matrix](#version-matrix)
     - [Backwards Compatibility](#backwards-compatibility)
+      - [Notes](#notes)
 
 ## Semantic Versioning 
 
@@ -98,10 +99,19 @@ A MAJOR version of ICS will always be backwards compatible with the previous MAJ
 The following table indicates the compatibility of currently active releases:
 
 | Consumer | Provider | `v2.0.0` | `v2.1.0-provider-lsm` | `v2.4.0-lsm` | `v3.1.0` | `v3.2.0` | `v3.3.0` | `v4.0.0` | 
-|----------|----------|--------:|-----------------------:|-------------:|---------:|---------:|---------:|---------:|
-| `v1.2.0-multiden` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `v2.0.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `v3.1.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `v3.2.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+|----------|----------|----------|-----------------------|--------------|----------|----------|----------|----------|
+| `v1.2.0-multiden` || ✅ (1) | ✅ (1) | ✅ (1) | ✅ (1),(2) | ✅ (1),(2) | ✅ (1),(2),(4) | ❌ |
+| `v2.0.0` || ✅ | ✅ | ✅ | ✅ (2) | ✅ (2) | ✅ (2),(4) | ❌ |
+| `v3.1.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (4) | ❌ |
+| `v3.2.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (4) | ✅ |
 | `v3.3.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `v4.0.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `v4.0.0` || ✅ (3) | ✅ (3) | ✅ (3) | ✅ (3) | ✅ | ✅ | ✅ |
+
+#### Notes
+
+The following adjustments must be made to the CCV consumer genesis state that is obtained from the provider chain after the spawn time is reached in order for the consumer chain to start without errors. 
+
+- (1) Remove “preCCV” key
+- (2) Remove “prehash_key_before_comparison” keys
+- (3) Add .params.retry_delay_period: “3600s”
+- (4) Use `interchain-security-cd genesis transform` to transform the consumer genesis file obtained from the provider.
