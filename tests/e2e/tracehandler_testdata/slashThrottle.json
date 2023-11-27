@@ -21,7 +21,7 @@
         }
       ],
       "GenesisChanges": "",
-      "SkipGentx": false
+      "IsConsumer": false
     },
     "State": {
       "provi": {
@@ -39,6 +39,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -72,6 +73,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -115,6 +117,7 @@
         },
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -158,6 +161,7 @@
         },
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -193,6 +197,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -250,6 +255,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -267,6 +273,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -318,6 +325,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -335,6 +343,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -362,6 +371,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -390,6 +400,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -417,6 +428,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -443,6 +455,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": 1,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -460,6 +473,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -488,6 +502,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": 0,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -505,6 +520,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -531,6 +547,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": 1,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -548,6 +565,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -576,6 +594,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": 1,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -593,6 +612,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -619,6 +639,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": 1,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -636,6 +657,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -657,6 +679,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": 1,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -674,6 +697,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -698,6 +722,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": 0,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       },
       "provi": {
@@ -715,6 +740,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": null
       }
     }
@@ -744,6 +770,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "2": {
             "RawProposal": {
@@ -788,6 +815,7 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
+        "ClientsFrozenHeights": null,
         "Proposals": {
           "2": {
             "RawProposal": {

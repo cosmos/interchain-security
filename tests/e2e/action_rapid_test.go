@@ -66,7 +66,6 @@ func GetActionGen() *rapid.Generator[any] {
 		GetSubmitConsumerAdditionProposalActionGen().AsAny(),
 		GetSubmitConsumerRemovalProposalActionGen().AsAny(),
 		GetSubmitParamChangeProposalActionGen().AsAny(),
-		GetSubmitEquivocationProposalActionGen().AsAny(),
 		GetVoteGovProposalActionGen().AsAny(),
 		GetStartConsumerChainActionGen().AsAny(),
 		GetAddChainToRelayerActionGen().AsAny(),
@@ -91,6 +90,9 @@ func GetActionGen() *rapid.Generator[any] {
 		CreateLightClientEquivocationAttackActionGen().AsAny(),
 		CreateLightClientAmnesiaAttackActionGen().AsAny(),
 		CreateLightClientLunaticAttackActionGen().AsAny(),
+		GetStartConsumerEvidenceDetectorActionGen().AsAny(),
+		GetForkConsumerChainActionGen().AsAny(),
+		GetUpdateLightClientActionGen().AsAny(),
 	)
 }
 
@@ -209,7 +211,7 @@ func GetStartChainActionGen() *rapid.Generator[StartChainAction] {
 			Chain:          GetChainIDGen().Draw(t, "Chain"),
 			Validators:     GetStartChainValidatorsGen().Draw(t, "Validators"),
 			GenesisChanges: rapid.String().Draw(t, "GenesisChanges"),
-			SkipGentx:      rapid.Bool().Draw(t, "SkipGentx"),
+			IsConsumer:     rapid.Bool().Draw(t, "IsConsumer"),
 		}
 	})
 }
@@ -276,19 +278,6 @@ func GetSubmitParamChangeProposalActionGen() *rapid.Generator[submitParamChangeL
 			Subspace: rapid.String().Draw(t, "Subspace"),
 			Key:      rapid.String().Draw(t, "Key"),
 			Value:    rapid.String().Draw(t, "Value"), // could make this more generic in the future, since Value takes interfaces
-		}
-	})
-}
-
-func GetSubmitEquivocationProposalActionGen() *rapid.Generator[submitEquivocationProposalAction] {
-	return rapid.Custom(func(t *rapid.T) submitEquivocationProposalAction {
-		return submitEquivocationProposalAction{
-			Chain:   GetChainIDGen().Draw(t, "Chain"),
-			From:    GetValidatorIDGen().Draw(t, "From"),
-			Deposit: rapid.Uint().Draw(t, "Deposit"),
-			Height:  rapid.Int64().Draw(t, "Height"),
-			Time:    GetTimeGen().Draw(t, "Time"),
-			Power:   rapid.Int64().Draw(t, "Power"),
 		}
 	})
 }
@@ -503,6 +492,36 @@ func GetWaitTimeAction() *rapid.Generator[waitTimeAction] {
 	return rapid.Custom(func(t *rapid.T) waitTimeAction {
 		return waitTimeAction{
 			WaitTime: time.Duration(rapid.Int().Draw(t, "Timeout")) * time.Millisecond,
+		}
+	})
+}
+
+func GetForkConsumerChainActionGen() *rapid.Generator[forkConsumerChainAction] {
+	return rapid.Custom(func(t *rapid.T) forkConsumerChainAction {
+		return forkConsumerChainAction{
+			ConsumerChain: GetChainIDGen().Draw(t, "ConsumerChain"),
+			ProviderChain: GetChainIDGen().Draw(t, "ProviderChain"),
+			Validator:     GetValidatorIDGen().Draw(t, "Validator"),
+			RelayerConfig: rapid.String().Draw(t, "RelayerConfig"),
+		}
+	})
+}
+
+func GetStartConsumerEvidenceDetectorActionGen() *rapid.Generator[startConsumerEvidenceDetectorAction] {
+	return rapid.Custom(func(t *rapid.T) startConsumerEvidenceDetectorAction {
+		return startConsumerEvidenceDetectorAction{
+			Chain: GetChainIDGen().Draw(t, "Chain"),
+		}
+	})
+}
+
+func GetUpdateLightClientActionGen() *rapid.Generator[updateLightClientAction] {
+	return rapid.Custom(func(t *rapid.T) updateLightClientAction {
+		return updateLightClientAction{
+			Chain:         GetChainIDGen().Draw(t, "Chain"),
+			HostChain:     GetChainIDGen().Draw(t, "HostChain"),
+			RelayerConfig: rapid.String().Draw(t, "RelayerConfig"),
+			ClientID:      rapid.String().Draw(t, "ClientID"),
 		}
 	})
 }

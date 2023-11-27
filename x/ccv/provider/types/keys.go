@@ -138,8 +138,13 @@ const (
 	// handled in the current block
 	VSCMaturedHandledThisBlockBytePrefix
 
+	// EquivocationEvidenceMinHeightBytePrefix is the byte prefix storing the mapping from consumer chain IDs
+	// to the minimum height of a valid consumer equivocation evidence
+	EquivocationEvidenceMinHeightBytePrefix
+
 	// ProposedConsumerChainByteKey is the byte prefix storing the consumer chainId in consumerAddition gov proposal submitted before voting finishes
 	ProposedConsumerChainByteKey
+
 	// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO getAllKeyPrefixes() IN keys_test.go
 )
 
@@ -377,6 +382,12 @@ func SlashLogKey(providerAddr ProviderConsAddress) []byte {
 // ConsumerRewardDenomsKey returns the key under which consumer reward denoms are stored
 func ConsumerRewardDenomsKey(denom string) []byte {
 	return append([]byte{ConsumerRewardDenomsBytePrefix}, []byte(denom)...)
+}
+
+// EquivocationEvidenceMinHeightKey returns the key storing the minimum height
+// of a valid consumer equivocation evidence for a given consumer chain ID
+func EquivocationEvidenceMinHeightKey(consumerChainID string) []byte {
+	return append([]byte{EquivocationEvidenceMinHeightBytePrefix}, []byte(consumerChainID)...)
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go

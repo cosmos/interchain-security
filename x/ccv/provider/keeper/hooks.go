@@ -213,3 +213,7 @@ func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
 	}
 	return providertypes.ConsumerAdditionProposal{}, false
 }
+
+func (h Hooks) BeforeTokenizeShareRecordRemoved(_ sdk.Context, _ uint64) error {
+	return nil
+}

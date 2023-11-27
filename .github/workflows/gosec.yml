@@ -9,7 +9,7 @@ on:
       - main
       - feat/*
 jobs:
-  tests:
+  Gosec:
     runs-on: ubuntu-latest
     env:
       GO111MODULE: on
