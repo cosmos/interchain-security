@@ -71,8 +71,10 @@ func buildDockerImage(imageName string, revision string, tmpDir string) error {
 	/* 	cmd := exec.Command("docker", "build", "--no-cache", "-t",
 	fmt.Sprintf("cosmos-ics:%s", revision), "-f", "./Dockerfile", "./")
 	*/
+
 	cmd := exec.Command("docker", "build", "-t",
 		fmt.Sprintf("cosmos-ics:%s", revision), "-f", "./Dockerfile", "./")
+
 	cmd.Dir = workSpace
 
 	if err := cmd.Start(); err != nil {
