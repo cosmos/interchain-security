@@ -17,6 +17,7 @@ import (
 
 	app "github.com/cosmos/interchain-security/v3/app/consumer"
 	consumerTypes "github.com/cosmos/interchain-security/v3/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v3/x/ccv/types"
 )
 
 // Testdata mapping consumer genesis exports to a provider module version as
@@ -210,4 +211,5 @@ func TestConsumerGenesisTransformationV2(t *testing.T) {
 
 	require.Empty(t, consumerGenesis.InitialValSet)
 	require.NotEmpty(t, consumerGenesis.Provider.InitialValSet)
+	require.Equal(t, consumerGenesis.Params.RetryDelayPeriod, ccvtypes.DefaultRetryDelayPeriod)
 }
