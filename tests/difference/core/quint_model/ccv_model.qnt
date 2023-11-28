@@ -628,8 +628,8 @@ module ccv_model {
                 i => all {
                         {   
                             // if the trusting period has passed 
-                            (currentState.consumerStates.get("consumer1").chainState.lastTimestamp + TrustingPeriodPerChain.get("provider") < currentState.providerState.chainState.runningTimestamp or 
-                            currentState.providerState.chainState.lastTimestamp + TrustingPeriodPerChain.get("consumer1") < currentState.consumerStates.get("consumer1").chainState.runningTimestamp)
+                            (currentState.consumerStates.get("consumer1").chainState.runningTimestamp + TrustingPeriodPerChain.get("provider") < currentState.providerState.chainState.lastTimestamp or 
+                            currentState.providerState.chainState.runningTimestamp + TrustingPeriodPerChain.get("consumer1") < currentState.consumerStates.get("consumer1").chainState.lastTimestamp)
                             implies
                             (currentState.consumerStates.get("consumer1").localClientExpired or
                             currentState.providerState.consumerStatus.get("consumer1") == EXPIRED or
