@@ -21,8 +21,11 @@ func NewValidatorSetChangePacketData(valUpdates []abci.ValidatorUpdate, valUpdat
 
 // ValidateBasic is used for validating the CCV packet data.
 func (vsc ValidatorSetChangePacketData) ValidateBasic() error {
-	// Note that vsc.ValidatorUpdate can be empty in the case of unbonding
+	// Note that vsc.ValidatorUpdates can be empty in the case of unbonding
 	// operations w/o changes in the voting power of the validators in the validator set
+	if vsc.ValidatorUpdates == nil {
+		return errorsmod.Wrap(ErrInvalidPacketData, "validator updates cannot be nil")
+	}
 	if vsc.ValsetUpdateId == 0 {
 		return errorsmod.Wrap(ErrInvalidPacketData, "valset update id cannot be equal to zero")
 	}

@@ -32,17 +32,17 @@ func TestPacketDataValidateBasic(t *testing.T) {
 		packetData types.ValidatorSetChangePacketData
 	}{
 		{
-			"nil packet data",
+			"invalid: nil packet data",
 			true,
 			types.NewValidatorSetChangePacketData(nil, 1, nil),
 		},
 		{
-			"empty packet data",
-			true,
+			"valid: empty packet data",
+			false,
 			types.NewValidatorSetChangePacketData([]abci.ValidatorUpdate{}, 2, nil),
 		},
 		{
-			"invalid slash ack",
+			"invalid: slash ack not consensus address",
 			true,
 			types.NewValidatorSetChangePacketData(
 				[]abci.ValidatorUpdate{
@@ -58,7 +58,7 @@ func TestPacketDataValidateBasic(t *testing.T) {
 			),
 		},
 		{
-			"valid packet data with valid slash ack",
+			"valid: packet data with valid slash ack",
 			false,
 			types.NewValidatorSetChangePacketData(
 				[]abci.ValidatorUpdate{
@@ -74,7 +74,7 @@ func TestPacketDataValidateBasic(t *testing.T) {
 			),
 		},
 		{
-			"too long slash ack",
+			"invalid: slash ack is too long",
 			true,
 			types.NewValidatorSetChangePacketData(
 				[]abci.ValidatorUpdate{
@@ -90,7 +90,7 @@ func TestPacketDataValidateBasic(t *testing.T) {
 			),
 		},
 		{
-			"valid packet data",
+			"valid: packet data with nil slash ack",
 			false,
 			types.NewValidatorSetChangePacketData(
 				[]abci.ValidatorUpdate{
