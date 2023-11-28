@@ -1,4 +1,4 @@
-module ccv_happy {
+module ccv_sync {
     import ccv_model.* from "ccv_model"
     import ccv_types as ccvt from "ccv"
     import ccv from "ccv"
@@ -6,7 +6,7 @@ module ccv_happy {
     import extraSpells.* from "./libraries/extraSpells"
 
 
-    // The happy path module has its own init and step functions.
+    // The sync module has its own init and step functions.
     // They ensure that chains do not drift from each other in terms of time,
     // and all chains produce blocks synchronously.
     // To do so, it makes use of
@@ -15,7 +15,7 @@ module ccv_happy {
 
     // QueuedEndBlocks contains a list of chains which will end their blocks next,
     // together with the time advancement they should advance by.
-    // When stepHappyPath selects an action, it checks if there are any chains in this list,
+    // When stepHappy selects an action, it checks if there are any chains in this list,
     // and if so, it will only select actions that end blocks on the head of the list.
     // QueuedEndBlocks is thus used to schedule actions.
     var QueuedEndBlocks: List[(ccvt::Chain, Time)]

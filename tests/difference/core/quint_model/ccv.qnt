@@ -399,9 +399,10 @@ module ccv {
             res._1
         )
 
+        // check whether the local client for the provider has expired on any consumer
         val expiredConsumers = getRunningConsumers(providerStateAfterTimeAdvancement).filter(
             consumer => 
-            providerStateAfterTimeAdvancement.chainState.runningTimestamp > tmpState.consumerStates.get(consumer).chainState.lastTimestamp + TrustingPeriodPerChain.get("provider")
+            providerStateAfterTimeAdvancement.chainState.lastTimestamp > tmpState.consumerStates.get(consumer).chainState.runningTimestamp + TrustingPeriodPerChain.get(consumer)
         ).exclude(timedOutConsumers)
 
         // send vsc packets
@@ -507,9 +508,9 @@ module ccv {
                         }
                     )
                 )
-                // checks whether the local client for the provider chain has expired on the consumer
+                // checks whether the local client for the consumer has expired on the provider
                 val clientExpired = 
-                    if (newChainState.runningTimestamp > currentState.providerState.chainState.lastTimestamp + TrustingPeriodPerChain.get(chain)) {
+                    if (newChainState.lastTimestamp > currentState.providerState.chainState.runningTimestamp + TrustingPeriodPerChain.get(chain)) {
                         true
                     } else {
                         false

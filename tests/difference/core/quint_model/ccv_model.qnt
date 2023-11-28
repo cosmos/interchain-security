@@ -170,7 +170,6 @@ module ccv_model {
         }
 
      // step_common is the core functionality of steps that does not have anything to do with time.
-    // Thus, it is part of both step and stepBoundedDrift.
     action step_common = any {
         nondet node = oneOf(nodes)
         // very restricted set of voting powers. exact values are not important,
