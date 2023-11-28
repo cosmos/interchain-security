@@ -1,4 +1,4 @@
-module ccv_happy {
+module ccv_boundeddrift {
     import ccv_model.* from "ccv_model"
     import ccv_types as Ccvt from "ccv"
     import ccv from "ccv"
@@ -22,7 +22,7 @@ module ccv_happy {
         val otherChainsLastTimes = otherChains.map(c => c.lastTimestamp)
         // start with advancingChain.RunningTime - if this is the minimal element, we can advance by maxDrift anyways
         val otherChainsMinLastTime = otherChainsLastTimes.fold(advancingChain.runningTimestamp, (acc, t) => if (acc < t) acc else t)
-        val maxTime = advancingChain.runningTimestamp - otherChainsMinLastTime + maximalDrift
+        val maxTime = otherChainsMinLastTime - advancingChain.runningTimestamp + maximalDrift
         maxTime
 
     // Given the name of a chain, gets a set with the chain states of all other chains.
@@ -42,7 +42,7 @@ module ccv_happy {
             currentState.consumerStates.get(advancingChain).chainState
         }
 
-    def GetChainStates(): Set[Ccvt::ChainState] = 
+    def GetRunningChainStates(): Set[Ccvt::ChainState] = 
         val runCons = ccv::getRunningConsumers(currentState.providerState)
         val consumerChainStates = runCons.map(c => currentState.consumerStates.get(c).chainState)
         consumerChainStates.union(Set(currentState.providerState.chainState))
@@ -75,9 +75,9 @@ module ccv_happy {
     // The maxDrift between chains is never exceeded.
     // This *should* be ensured by the step function.
     val BoundedDriftInv = 
-        GetChainStates.forall(
-            chain1 => GetChainStates.forall(
-                chain2 => chain1.runningTimestamp - chain2.lastTimestamp <= maxDrift
+        GetRunningChainStates.forall(
+            chain1 => GetRunningChainStates.forall(
+                chain2 => abs(chain1.runningTimestamp - chain2.lastTimestamp) <= maxDrift
             )
         )
 }
