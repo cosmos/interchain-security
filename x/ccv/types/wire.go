@@ -5,6 +5,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -20,11 +21,17 @@ func NewValidatorSetChangePacketData(valUpdates []abci.ValidatorUpdate, valUpdat
 
 // ValidateBasic is used for validating the CCV packet data.
 func (vsc ValidatorSetChangePacketData) ValidateBasic() error {
-	if len(vsc.ValidatorUpdates) == 0 {
-		return errorsmod.Wrap(ErrInvalidPacketData, "validator updates cannot be empty")
-	}
+	// Note that vsc.ValidatorUpdate can be empty in the case of unbonding
+	// operations w/o changes in the voting power of the validators in the validator set
 	if vsc.ValsetUpdateId == 0 {
 		return errorsmod.Wrap(ErrInvalidPacketData, "valset update id cannot be equal to zero")
+	}
+	// Validate the slash acks - must be consensus addresses
+	for _, ack := range vsc.SlashAcks {
+		_, err := sdk.ConsAddressFromBech32(ack)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

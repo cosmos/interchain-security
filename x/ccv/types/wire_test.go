@@ -22,6 +22,10 @@ func TestPacketDataValidateBasic(t *testing.T) {
 	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	require.NoError(t, err)
 
+	cId := crypto.NewCryptoIdentityFromIntSeed(4732894342)
+	validSlashAck := cId.SDKValConsAddress().String()
+	tooLongSlashAck := string(make([]byte, 1024))
+
 	cases := []struct {
 		name       string
 		expError   bool
@@ -38,6 +42,54 @@ func TestPacketDataValidateBasic(t *testing.T) {
 			types.NewValidatorSetChangePacketData([]abci.ValidatorUpdate{}, 2, nil),
 		},
 		{
+			"invalid slash ack",
+			true,
+			types.NewValidatorSetChangePacketData(
+				[]abci.ValidatorUpdate{
+					{
+						PubKey: pk1,
+						Power:  30,
+					},
+				},
+				3,
+				[]string{
+					"some_string",
+				},
+			),
+		},
+		{
+			"valid packet data with valid slash ack",
+			false,
+			types.NewValidatorSetChangePacketData(
+				[]abci.ValidatorUpdate{
+					{
+						PubKey: pk2,
+						Power:  20,
+					},
+				},
+				4,
+				[]string{
+					validSlashAck,
+				},
+			),
+		},
+		{
+			"too long slash ack",
+			true,
+			types.NewValidatorSetChangePacketData(
+				[]abci.ValidatorUpdate{
+					{
+						PubKey: pk2,
+						Power:  20,
+					},
+				},
+				5,
+				[]string{
+					tooLongSlashAck,
+				},
+			),
+		},
+		{
 			"valid packet data",
 			false,
 			types.NewValidatorSetChangePacketData(
@@ -51,7 +103,7 @@ func TestPacketDataValidateBasic(t *testing.T) {
 						Power:  20,
 					},
 				},
-				3,
+				6,
 				nil,
 			),
 		},
