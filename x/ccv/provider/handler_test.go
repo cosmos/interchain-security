@@ -51,6 +51,9 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
+				k.SetPendingConsumerAdditionProp(ctx, &providertypes.ConsumerAdditionProposal{
+					ChainId: "chainid",
+				})
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
@@ -65,10 +68,28 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			chainID:  "chainid",
 		},
 		{
+			name: "fail: chain ID not registered",
+			setup: func(ctx sdk.Context,
+				k keeper.Keeper, mocks testkeeper.MockedKeepers,
+			) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidator(
+						ctx, providerCryptoId.SDKValOpAddress(),
+						// Return a valid validator, found!
+					).Return(providerCryptoId.SDKStakingValidator(), true).Times(1),
+				)
+			},
+			expError: true,
+			chainID:  "chainid",
+		},
+		{
 			name: "fail: missing validator",
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
+				k.SetPendingConsumerAdditionProp(ctx, &providertypes.ConsumerAdditionProposal{
+					ChainId: "chainid",
+				})
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, providerCryptoId.SDKValOpAddress(),
@@ -84,6 +105,9 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers,
 			) {
+				k.SetPendingConsumerAdditionProp(ctx, &providertypes.ConsumerAdditionProposal{
+					ChainId: "chainid",
+				})
 				// Use the consumer key already
 				k.SetValidatorByConsumerAddr(ctx, "chainid", consumerConsAddr, providerConsAddr)
 

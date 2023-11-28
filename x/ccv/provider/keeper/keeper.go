@@ -43,6 +43,7 @@ type Keeper struct {
 	slashingKeeper     ccv.SlashingKeeper
 	distributionKeeper ccv.DistributionKeeper
 	bankKeeper         ccv.BankKeeper
+	govKeeper          ccv.GovKeeper
 	feeCollectorName   string
 }
 
@@ -52,9 +53,9 @@ func NewKeeper(
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
-	accountKeeper ccv.AccountKeeper, distributionKeeper ccv.DistributionKeeper,
-	bankKeeper ccv.BankKeeper,
-	feeCollectorName string,
+	accountKeeper ccv.AccountKeeper,
+	distributionKeeper ccv.DistributionKeeper, bankKeeper ccv.BankKeeper,
+	govKeeper ccv.GovKeeper, feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -75,6 +76,7 @@ func NewKeeper(
 		accountKeeper:      accountKeeper,
 		distributionKeeper: distributionKeeper,
 		bankKeeper:         bankKeeper,
+		govKeeper:          govKeeper,
 		feeCollectorName:   feeCollectorName,
 	}
 
@@ -92,8 +94,8 @@ func (k *Keeper) SetParamSpace(ctx sdk.Context, ps paramtypes.Subspace) {
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 14 {
-		panic("number of fields in provider keeper is not 14")
+	if reflect.ValueOf(k).NumField() != 15 {
+		panic("number of fields in provider keeper is not 15")
 	}
 
 	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                               // 1
@@ -109,7 +111,8 @@ func (k Keeper) mustValidateFields() {
 	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")         // 11
 	ccv.PanicIfZeroOrNil(k.distributionKeeper, "distributionKeeper") // 12
 	ccv.PanicIfZeroOrNil(k.bankKeeper, "bankKeeper")                 // 13
-	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")     // 14
+	ccv.PanicIfZeroOrNil(k.govKeeper, "govKeeper")                   // 14
+	ccv.PanicIfZeroOrNil(k.feeCollectorName, "feeCollectorName")     // 15
 }
 
 // Logger returns a module-specific logger.
@@ -173,6 +176,60 @@ func (k Keeper) GetChainToChannel(ctx sdk.Context, chainID string) (string, bool
 func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ChainToChannelKey(chainID))
+}
+
+// SetProposedConsumerChain stores a consumer chainId corresponding to a submitted consumer addition proposal
+// This consumer chainId is deleted once the voting period for the proposal ends.
+func (k Keeper) SetProposedConsumerChain(ctx sdk.Context, chainID string, proposalID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ProposedConsumerChainKey(proposalID), []byte(chainID))
+}
+
+// GetProposedConsumerChain returns the proposed chainID for the given consumerAddition proposal ID.
+func (k Keeper) GetProposedConsumerChain(ctx sdk.Context, proposalID uint64) string {
+	store := ctx.KVStore(k.storeKey)
+	return string(store.Get(types.ProposedConsumerChainKey(proposalID)))
+}
+
+// DeleteProposedConsumerChainInStore deletes the consumer chainID from store
+// which is in gov consumerAddition proposal
+func (k Keeper) DeleteProposedConsumerChainInStore(ctx sdk.Context, proposalID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ProposedConsumerChainKey(proposalID))
+}
+
+// GetAllProposedConsumerChainIDs returns the proposed chainID of all gov consumerAddition proposals that are still in the voting period.
+func (k Keeper) GetAllProposedConsumerChainIDs(ctx sdk.Context) []types.ProposedChain {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ProposedConsumerChainByteKey})
+	defer iterator.Close()
+
+	proposedChains := []types.ProposedChain{}
+	for ; iterator.Valid(); iterator.Next() {
+		proposalID, err := types.ParseProposedConsumerChainKey(types.ProposedConsumerChainByteKey, iterator.Key())
+		if err != nil {
+			panic(fmt.Errorf("proposed chains cannot be parsed: %w", err))
+		}
+
+		proposedChains = append(proposedChains, types.ProposedChain{
+			ChainID:    string(iterator.Value()),
+			ProposalID: proposalID,
+		})
+
+	}
+
+	return proposedChains
+}
+
+// GetAllPendingConsumerChainIDs gets pending consumer chains have not reach spawn time
+func (k Keeper) GetAllPendingConsumerChainIDs(ctx sdk.Context) []string {
+	chainIDs := []string{}
+	props := k.GetAllPendingConsumerAdditionProps(ctx)
+	for _, prop := range props {
+		chainIDs = append(chainIDs, prop.ChainId)
+	}
+
+	return chainIDs
 }
 
 // GetAllConsumerChains gets all of the consumer chains, for which the provider module
@@ -1062,4 +1119,20 @@ func (k Keeper) GetSlashLog(
 
 func (k Keeper) BondDenom(ctx sdk.Context) string {
 	return k.stakingKeeper.BondDenom(ctx)
+}
+
+func (k Keeper) GetAllRegisteredAndProposedChainIDs(ctx sdk.Context) []string {
+	allConsumerChains := []string{}
+	consumerChains := k.GetAllConsumerChains(ctx)
+	for _, consumerChain := range consumerChains {
+		allConsumerChains = append(allConsumerChains, consumerChain.ChainId)
+	}
+	proposedChains := k.GetAllProposedConsumerChainIDs(ctx)
+	for _, proposedChain := range proposedChains {
+		allConsumerChains = append(allConsumerChains, proposedChain.ChainID)
+	}
+	pendingChainIDs := k.GetAllPendingConsumerChainIDs(ctx)
+	allConsumerChains = append(allConsumerChains, pendingChainIDs...)
+
+	return allConsumerChains
 }

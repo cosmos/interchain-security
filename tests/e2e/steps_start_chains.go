@@ -54,6 +54,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 							Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
 						},
 					},
+					ProposedConsumerChains: &[]string{consumerName},
 				},
 			},
 		},
@@ -163,6 +164,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 						ValidatorID("bob"):   9500000000,
 						ValidatorID("carol"): 9500000000,
 					},
+					ProposedConsumerChains: &[]string{},
 				},
 				ChainID(consumerName): ChainState{
 					ValBalances: &map[ValidatorID]uint{
