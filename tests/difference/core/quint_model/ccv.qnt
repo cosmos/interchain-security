@@ -55,7 +55,7 @@ module ccv_types {
         {
             votingPowerHistory: List(),
             currentValidatorSet: Map(),
-            lastTimestamp: 0,
+            lastTimestamp: -1, // last timestamp -1 means that in the model, there was no block comitted on chain yet.
             runningTimestamp: 0,
         }
 

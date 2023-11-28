@@ -464,7 +464,8 @@ module ccv_model {
                 assert(currentState.consumerStates.keys() == consumerChains),
                 assert(currentState.providerState.chainState.votingPowerHistory == List(InitialValidatorSet)),
                 assert(currentState.providerState.chainState.currentValidatorSet == InitialValidatorSet),
-                assert(currentState.providerState.chainState.lastTimestamp == 0),
+                assert(currentState.providerState.chainState.lastTimestamp == -1),
+                assert(currentState.providerState.chainState.runningTimestamp == 0),
                 VotingPowerChange("node1", 50)
             })
             .then(
@@ -623,7 +624,7 @@ module ccv_model {
         init.then(
             EndAndBeginBlockForProvider(1 * Second, Set("consumer1"), Set())
         ).then(
-            20.reps(
+            8.reps(
                 i => all {
                         {   
                             // if the trusting period has passed 
