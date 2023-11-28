@@ -20,6 +20,7 @@ type State map[ChainID]ChainState
 type ChainState struct {
 	ValBalances                    *map[ValidatorID]uint
 	Proposals                      *map[uint]Proposal
+	ProposedConsumerChains         *[]string
 	ValPowers                      *map[ValidatorID]uint
 	StakedTokens                   *map[ValidatorID]uint
 	Params                         *[]Param
@@ -121,6 +122,11 @@ func (tr TestConfig) getChainState(chain ChainID, modelState ChainState) ChainSt
 	if modelState.Proposals != nil {
 		proposals := tr.getProposals(chain, *modelState.Proposals)
 		chainState.Proposals = &proposals
+	}
+
+	if modelState.ProposedConsumerChains != nil {
+		proposedConsumerChains := tr.getProposedConsumerChains(chain)
+		chainState.ProposedConsumerChains = &proposedConsumerChains
 	}
 
 	if modelState.ValPowers != nil {
@@ -834,6 +840,28 @@ func (tc TestConfig) getTrustedHeight(
 		log.Fatal(err)
 	}
 	return clienttypes.Height{RevisionHeight: uint64(revHeight), RevisionNumber: uint64(revNumber)}
+}
+
+func (tr TestConfig) getProposedConsumerChains(chain ChainID) []string {
+	tr.waitBlocks(chain, 1, 10*time.Second)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.InstanceName, tr.chainConfigs[chain].BinaryName,
+		"query", "provider", "list-proposed-consumer-chains",
+		`--node`, tr.getQueryNode(chain),
+		`-o`, `json`,
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	arr := gjson.Get(string(bz), "proposedChains").Array()
+	chains := []string{}
+	for _, c := range arr {
+		cid := c.Get("chainID").String()
+		chains = append(chains, cid)
+	}
+
+	return chains
 }
 
 func uintPtr(i uint) *uint {
