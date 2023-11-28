@@ -1,0 +1,1 @@
+go run ./... -modelPath=../ccv_boundeddrift.qnt -step stepBoundedDrift  -traceFolder traces -numTraces 100

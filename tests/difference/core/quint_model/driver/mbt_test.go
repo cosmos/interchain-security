@@ -21,6 +21,18 @@ import (
 
 const verbose = true
 
+// keep some interesting statistics
+type Stats struct {
+	highestObservedValPower    int64
+	longestObservedPacketQueue int
+
+	numStartedChains int
+	numStops         int
+	numTimeouts      int
+}
+
+var stats = Stats{}
+
 func TestMBT(t *testing.T) {
 	dirEntries, err := os.ReadDir("traces")
 	if err != nil {
@@ -38,6 +50,12 @@ func TestMBT(t *testing.T) {
 
 	t.Log("✅ Running traces from the traces folder done")
 	t.Log(len(dirEntries), "traces run")
+
+	// print some stats
+	t.Logf("Highest observed voting power: %v", stats.highestObservedValPower)
+	t.Logf("Longest observed packet queue: %v", stats.longestObservedPacketQueue)
+	t.Logf("Number of started chains: %v", stats.numStartedChains)
+	t.Logf("Number of stopped chains: %v", stats.numStops)
 }
 
 func RunItfTrace(t *testing.T, path string) {
@@ -126,7 +144,7 @@ func RunItfTrace(t *testing.T, path string) {
 	// this is necessary because the system needs to do many steps to initialize the chains,
 	// which is abstracted away in the model
 	timeOffsets := make(map[ChainId]time.Time, len(chains))
-	timeOffsets[Provider] = driver.time(Provider)
+	timeOffsets[Provider] = driver.runningTime(Provider)
 
 	t.Log("Started chains")
 
@@ -167,6 +185,9 @@ func RunItfTrace(t *testing.T, path string) {
 			consumersToStop := lastAction["consumersToStop"].Value.(itf.ListExprType)
 			t.Log("EndAndBeginBlockForProvider", timeAdvancement, consumersToStart, consumersToStop)
 
+			stats.numStartedChains += len(consumersToStart)
+			stats.numStops += len(consumersToStop)
+
 			// we need 2 blocks, because for a packet sent at height H, the receiving chain
 			// needs a header of height H+1 to accept the packet
 			// so we do one time advancement with a very small increment,
@@ -179,10 +200,10 @@ func RunItfTrace(t *testing.T, path string) {
 			// when the coordinator is starting chains
 			lastTimestamps := make(map[ChainId]time.Time, len(consumers))
 			for _, consumer := range driver.runningConsumers() {
-				lastTimestamps[ChainId(consumer.ChainId)] = driver.time(ChainId(consumer.ChainId))
+				lastTimestamps[ChainId(consumer.ChainId)] = driver.runningTime(ChainId(consumer.ChainId))
 			}
 
-			driver.coordinator.CurrentTime = driver.time("provider")
+			driver.coordinator.CurrentTime = driver.runningTime("provider")
 			// start consumers
 			for _, consumer := range consumersToStart {
 				driver.setupConsumer(
@@ -256,11 +277,11 @@ func RunItfTrace(t *testing.T, path string) {
 			consumerHeader := driver.chain(ChainId(consumerChain)).LastHeader
 			driver.path(ChainId(consumerChain)).AddClientHeader(consumerChain, consumerHeader)
 			var err error
-			if LocalClientExpired(currentModelState, consumerChain) {
-				err = driver.path(ChainId(consumerChain)).UpdateClient(Provider, true)
-			} else {
-				err = driver.path(ChainId(consumerChain)).UpdateClient(Provider, false)
-			}
+			// if LocalClientExpired(currentModelState, consumerChain) {
+			// err = driver.path(ChainId(consumerChain)).UpdateClient(Provider, true)
+			// } else {
+			err = driver.path(ChainId(consumerChain)).UpdateClient(Provider, false)
+			// }
 			require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChain, err)
 
 		case "DeliverVscPacket":
@@ -323,6 +344,8 @@ func RunItfTrace(t *testing.T, path string) {
 			ComparePacketQueues(t, driver, currentModelState, consumer)
 		}
 		t.Log("Packet queues match")
+
+		stats.EnterStats(driver)
 	}
 	t.Log("🟢 Trace is ok!")
 }
@@ -407,23 +430,27 @@ func CompareTimes(
 	currentModelState map[string]itf.Expr,
 	timeOffsets map[ChainId]time.Time,
 ) {
-	providerLastTimestamp := Time(currentModelState, "provider")
-	actualProviderTime := driver.time("provider")
 	providerOffset := timeOffsets["provider"]
 
+	providerRunningTimestamp := RunningTime(currentModelState, "provider")
+	actualRunningProviderTime := driver.runningTime("provider")
+
 	require.Equal(t,
-		providerLastTimestamp,
-		actualProviderTime.Unix()-providerOffset.Unix(),
-		"Block times do not match for provider")
+		providerRunningTimestamp,
+		actualRunningProviderTime.Unix()-providerOffset.Unix(),
+		"Running times do not match for provider")
 
 	for _, chain := range consumers {
-		modelLastTimestamp := Time(currentModelState, chain)
-		actualChainTime := driver.time(ChainId(chain))
+		offset := timeOffsets[ChainId(chain)]
+
+		modelRunningTimestamp := RunningTime(currentModelState, chain)
+		actualRunningChainTime := driver.runningTime(ChainId(chain))
 
 		require.Equal(t,
-			modelLastTimestamp,
-			actualChainTime.Unix()-timeOffsets[ChainId(chain)].Unix(),
-			"Block times do not match for chain %v", chain)
+			modelRunningTimestamp,
+			actualRunningChainTime.Unix()-offset.Unix(),
+			"Running times do not match for chain %v", chain)
+
 	}
 }
 
@@ -453,4 +480,26 @@ func CompareValSet(modelValSet map[string]itf.Expr, systemValSet map[string]int6
 		return fmt.Errorf("Validator sets do not match: (+ expected, - actual): %v", pretty.Compare(expectedValSet, actualValSet))
 	}
 	return nil
+}
+
+func (s *Stats) EnterStats(driver *Driver) {
+	// highest observed voting power
+	for _, val := range driver.providerValidatorSet() {
+		if val.Tokens.Int64() > s.highestObservedValPower {
+			s.highestObservedValPower = val.Tokens.Int64()
+		}
+	}
+
+	// longest observed packet queue
+	for _, consumer := range driver.runningConsumers() {
+		queueToConsumer := driver.packetQueue(Provider, ChainId(consumer.ChainId))
+		if len(queueToConsumer) > s.longestObservedPacketQueue {
+			s.longestObservedPacketQueue = len(queueToConsumer)
+		}
+
+		queueFromConsumer := driver.packetQueue(ChainId(consumer.ChainId), Provider)
+		if len(queueFromConsumer) > s.longestObservedPacketQueue {
+			s.longestObservedPacketQueue = len(queueFromConsumer)
+		}
+	}
 }

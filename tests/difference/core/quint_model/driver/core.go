@@ -98,10 +98,16 @@ func (s *Driver) height(chain ChainId) int64 {
 	return s.chain(chain).CurrentHeader.GetHeight()
 }
 
-// time returns the time of the current header of chain
-func (s *Driver) time(chain ChainId) time.Time {
+// runningTime returns the timestamp of the current header of chain
+func (s *Driver) runningTime(chain ChainId) time.Time {
 	testChain := s.chain(chain)
 	return testChain.CurrentHeader.Time
+}
+
+// lastTime returns the timestamp of the last header of chain
+func (s *Driver) lastTime(chain ChainId) time.Time {
+	testChain := s.chain(chain)
+	return testChain.LastHeader.Header.Time
 }
 
 func (s *Driver) allTimes() map[ChainId]time.Time {
@@ -318,12 +324,16 @@ func (s *Driver) getChainStateString(chain ChainId) string {
 	height := ctx.BlockHeight()
 
 	// Get the current block time
-	blockTime := ctx.BlockTime()
+	runningTime := s.runningTime(chain)
+
+	// get the time of the last block
+	lastTime := s.lastTime(chain)
 
 	// Build the chain info string
 	var chainInfo strings.Builder
 	chainInfo.WriteString(fmt.Sprintf("  Height: %d\n", height))
-	chainInfo.WriteString(fmt.Sprintf("  Time: %s\n", blockTime))
+	chainInfo.WriteString(fmt.Sprintf("  Running Time: %s\n", runningTime))
+	chainInfo.WriteString(fmt.Sprintf("  Last Time entered on chain: %s\n", lastTime))
 
 	if !s.isProviderChain(chain) {
 		// Check whether the chain is in the consumer chains on the provider

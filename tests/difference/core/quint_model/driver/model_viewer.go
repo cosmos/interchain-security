@@ -36,8 +36,12 @@ func HistoricalValidatorSet(curStateExpr itf.MapExprType, chain string, index in
 	return history[index].Value.(itf.MapExprType)
 }
 
-func Time(curStateExpr itf.MapExprType, chain string) int64 {
+func LastTime(curStateExpr itf.MapExprType, chain string) int64 {
 	return ChainState(curStateExpr, chain)["lastTimestamp"].Value.(int64)
+}
+
+func RunningTime(curStateExpr itf.MapExprType, chain string) int64 {
+	return ChainState(curStateExpr, chain)["runningTimestamp"].Value.(int64)
 }
 
 // PacketQueue returns the queued packets between sender and receiver.
