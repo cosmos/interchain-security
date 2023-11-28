@@ -40,7 +40,8 @@ RUN make install
 FROM --platform=linux/amd64 ${CONSUMER_IMAGE}:${CONSUMER_VERSION} AS consumer
 
 # Get Hermes build
-FROM ghcr.io/informalsystems/hermes:1.4.1 AS hermes-builder
+#FROM ghcr.io/informalsystems/hermes:v1.4.0 AS hermes-builder
+FROM ghcr.io/informalsystems/hermes:v1..1@sha256:1ab0a894b9b1d7e2473515258c3d9615021647afcde27a4f82b1acc313f06b32 AS hermes-builder
 
 # Get CometMock
 FROM ghcr.io/informalsystems/cometmock:v0.37.x as cometmock-builder

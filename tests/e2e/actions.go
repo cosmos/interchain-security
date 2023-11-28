@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -34,6 +35,11 @@ func (tr TestRun) sendTokens(
 	verbose bool,
 ) {
 	binaryName := tr.chainConfigs[action.chain].binaryName
+	broadcastMode := "block"
+	// TODO: Hack to make compatiblity test work. Don't commit this !!!!
+	if binaryName == "interchain-security-cd" && tr.consumerVersion != "" {
+		broadcastMode = "sync"
+	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, binaryName,
 
@@ -46,7 +52,7 @@ func (tr TestRun) sendTokens(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
-		`-b`, `block`,
+		`-b`, broadcastMode,
 		`-y`,
 	)
 	if verbose {
@@ -56,6 +62,9 @@ func (tr TestRun) sendTokens(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+	if broadcastMode == "sync" {
+		time.Sleep(8 * time.Second)
+	}
 }
 
 type StartChainAction struct {
@@ -64,6 +73,7 @@ type StartChainAction struct {
 	// Genesis changes specific to this action, appended to genesis changes defined in chain config
 	genesisChanges string
 	skipGentx      bool
+	IsConsumer     bool
 }
 
 type StartChainValidator struct {
@@ -564,6 +574,32 @@ func (tr TestRun) startConsumerChain(
 		log.Fatal(err, "\n", string(bz))
 	}
 
+	if tr.consumerVersion != "" {
+		log.Printf("Transforming consumer genesis for a newer version: %s\n", tr.consumerVersion)
+		log.Printf("Original ccv genesis: %s\n", string(bz))
+
+		file, err := os.Create("consumer_genesis.json")
+		if err != nil {
+			panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
+		}
+		os.WriteFile(file.Name(), bz, 0644)
+		cmd := exec.Command("docker", "cp", file.Name(), fmt.Sprintf("%s:/tmp/%s", tr.containerConfig.instanceName, file.Name()))
+		bz, err = cmd.CombinedOutput()
+		if err != nil {
+			log.Fatal(err, "\n", string(bz))
+		}
+		cmd = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.consumerChain].binaryName,
+			"genesis", "transform", fmt.Sprintf("/tmp/%s", file.Name()))
+		bz, err = cmd.CombinedOutput()
+		if err != nil {
+			log.Fatal(err, "CCV consumer genesis transformation failed: %s", string(bz))
+		}
+		/* 		new := strings.Replace(string(bz), "\"retry_delay_period\":\"0s\"", "\"retry_delay_period\": \"1000s\"", -1)
+		   		bz = []byte(new)
+		*/
+		log.Printf("Transformed genesis is: %s", string(bz))
+	}
+
 	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
 	consumerGenesisChanges := tr.chainConfigs[action.consumerChain].genesisChanges
 	if consumerGenesisChanges != "" {
@@ -575,6 +611,7 @@ func (tr TestRun) startConsumerChain(
 		validators:     action.validators,
 		genesisChanges: consumerGenesis,
 		skipGentx:      true,
+		IsConsumer:     true,
 	}, verbose)
 }
 
@@ -706,8 +743,9 @@ func (tr TestRun) startChangeover(
 }
 
 type addChainToRelayerAction struct {
-	chain     chainID
-	validator validatorID
+	chain      chainID
+	validator  validatorID
+	IsConsumer bool
 }
 
 const hermesChainConfigTemplate = `
@@ -724,11 +762,12 @@ rpc_addr = "%s"
 rpc_timeout = "10s"
 store_prefix = "ibc"
 trusting_period = "14days"
-websocket_addr = "%s"
+event_source = { mode = "push", url = "%s", batch_delay = "50ms" }
+ccv_consumer_chain = %v
 
 [chains.gas_price]
 	denom = "stake"
-	price = 0.00
+	price = 0.000
 
 [chains.trust_threshold]
 	denominator = "3"
@@ -823,7 +862,7 @@ func (tr TestRun) addChainToHermes(
 		keyName,
 		rpcAddr,
 		wsAddr,
-		// action.consumer,
+		action.IsConsumer,
 	)
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, "/root/.hermes/config.toml")

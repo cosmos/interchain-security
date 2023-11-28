@@ -235,7 +235,7 @@ func (tr *TestRun) buildDockerImages() {
 }
 
 func (tr *TestRun) startDocker() {
-	//tr.buildDockerImages() // failing due to #1448
+	tr.buildDockerImages()
 	fmt.Printf("=============== building %s testRun ===============\n", tr.name)
 
 	options := []string{}
