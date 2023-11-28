@@ -500,13 +500,16 @@ module ccv_model {
                     assert(currentState.consumerStates.get("consumer1").maturationTimes.length() == 1),
                     // the validator set was put as the current validator set
                     assert(currentState.consumerStates.get("consumer1").chainState.currentValidatorSet == InitialValidatorSet.put("node1", 200)),
-                    // advance time on provider until the unbonding period is over
-                    EndAndBeginBlockForProvider(UnbondingPeriodPerChain.get("consumer1"), Set(), Set()),
+                    // advance time on provider and consumer until unbonding period is over - ensure that the consumer and provider
+                    // stay in sync relative to each other
+                    4.reps(
+                        i => 
+                        EndAndBeginBlockForProvider(UnbondingPeriodPerChain.get("consumer1")/4, Set(), Set()).then(
+                            EndAndBeginBlockForConsumer("consumer1", UnbondingPeriodPerChain.get("consumer1")/4)
+                        )
+
+                    )
                 }
-            )
-            .then(
-                // advance time on consumer until the unbonding period is over
-                EndAndBeginBlockForConsumer("consumer1", UnbondingPeriodPerChain.get("consumer1"))
             )
             .then(
                 all {

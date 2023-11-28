@@ -12,7 +12,7 @@ module ccv_test {
     pure val ccvTimeouts = chains.mapBy(chain => 3 * Week)
     pure val trustingPeriods = chains.mapBy(chain => 2 * Week - 1 * Hour)
 
-    import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains).* from "./ccv"
+    import ccv(VscTimeout = 5 * Week, CcvTimeout = ccvTimeouts, UnbondingPeriodPerChain = unbondingPeriods, ConsumerChains = consumerChains, TrustingPeriodPerChain=trustingPeriods).* from "./ccv"
 
     // changing voting power by zero gives an error
     run VotingPowerZeroChangeTest =
@@ -158,7 +158,7 @@ module ccv_test {
             "providerState", DeliverPacketToProviderHappyPathTest_testState.providerState.with(
                 "chainState", DeliverPacketToProviderHappyPathTest_testState.providerState.chainState.with(
                     // set the timestamp to be after the timeout
-                    "lastTimestamp", CcvTimeout.get("sender") + 1
+                    "runningTimestamp", CcvTimeout.get("sender") + 1
                 )
             )
         )
