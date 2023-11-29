@@ -7,6 +7,7 @@
   - [Stable Release Policy](#stable-release-policy)
   - [Version Matrix](#version-matrix)
     - [Backwards Compatibility](#backwards-compatibility)
+      - [Notes](#notes)
 
 ## Semantic Versioning 
 
@@ -64,6 +65,8 @@ All missing minor release versions have been discontinued.
 | `v2.4.x-lsm` | June 09, 2024 |
 | `v3.1.x` | July 10, 2024 |
 | `v3.2.x` | July 10, 2024 |
+| `v3.3.x` | July 10, 2024 |
+| `v4.0.x` | TBA |
 
 **Note**: As of [Gaia v12.0.0](https://github.com/cosmos/gaia/releases/tag/v12.0.0), 
 the Cosmos Hub uses a fork of Cosmos SDK ([v0.45.16-ics-lsm](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.45.16-ics-lsm)) 
@@ -83,6 +86,9 @@ Versions of Golang, IBC, Cosmos SDK and CometBFT used by ICS in the currently ac
 | [v2.1.0-provider-lsm](https://github.com/cosmos/interchain-security/releases/tag/v2.1.0-provider-lsm) | 1.19 | v4.4.2 | v0.45.16-ics-lsm | v0.34.28 | Provider only (Cosmos Hub specific) |
 | [v2.4.0-lsm](https://github.com/cosmos/interchain-security/releases/tag/v2.4.0-lsm) | 1.19 | v4.4.2 | v0.45.16-ics-lsm | v0.34.28 | Provider only (Cosmos Hub specific) |
 | [v3.1.0](https://github.com/cosmos/interchain-security/releases/tag/v3.1.0) | 1.20 | v7.1.0 | v0.47.3 | v0.37.2 |
+| v3.2.0 | 1.20 | v7.3.0 | v0.47.5 | v0.37.2 |
+| v3.3.0 | 1.20 | v7.3.0 | v0.47.5 | v0.37.2 |
+| v4.0.0 | 1.20 | v7.3.0 | v0.47.5 | v0.37.2 | Provider on >= v4.0.0 backwards compatible with consumers >= v3.2.0 |
 
 **Note:** For a list of major ICS features available in the currently active releases, see [FEATURES.md](./FEATURES.md).
 
@@ -92,8 +98,20 @@ A MAJOR version of ICS will always be backwards compatible with the previous MAJ
 
 The following table indicates the compatibility of currently active releases:
 
-| Consumer | Provider | `v2.0.0` | `v2.1.0-provider-lsm` | `v2.4.0-lsm` | `v3.1.0` |
-|----------|----------|--------:|----------------------:|----------------------:|---------:|
-| `v1.2.0-multiden` || ✅ | ✅ | ✅ | ✅ | 
-| `v2.0.0` || ✅ | ✅ | ✅ | ✅ | 
-| `v3.1.0` || ✅ | ✅ | ✅ | ✅ | 
+| Consumer | Provider | `v2.0.0` | `v2.1.0-provider-lsm` | `v2.4.0-lsm` | `v3.1.0` | `v3.2.0` | `v3.3.0` | `v4.0.0` | 
+|----------|----------|----------|-----------------------|--------------|----------|----------|----------|----------|
+| `v1.2.0-multiden` || ✅ (1) | ✅ (1) | ✅ (1) | ✅ (1),(2) | ✅ (1),(2) | ✅ (1),(2),(4) | ❌ |
+| `v2.0.0` || ✅ | ✅ | ✅ | ✅ (2) | ✅ (2) | ✅ (2),(4) | ❌ |
+| `v3.1.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (4) | ❌ |
+| `v3.2.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (4) | ✅ |
+| `v3.3.0` || ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `v4.0.0` || ✅ (3) | ✅ (3) | ✅ (3) | ✅ (3) | ✅ | ✅ | ✅ |
+
+#### Notes
+
+The following adjustments must be made to the CCV consumer genesis state that is obtained from the provider chain after the spawn time is reached in order for the consumer chain to start without errors. 
+
+- (1) Remove “preCCV” key
+- (2) Remove “prehash_key_before_comparison” keys
+- (3) Add .params.retry_delay_period: “3600s”
+- (4) Use `interchain-security-cd genesis transform` to transform the consumer genesis file obtained from the provider.
