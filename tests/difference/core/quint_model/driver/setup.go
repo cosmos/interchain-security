@@ -160,20 +160,13 @@ func getAppBytesAndSenders(
 			log.Panicf("error getting pubkeyAny for val %v", val)
 		}
 
-		var valStatus stakingtypes.BondStatus
-		if tokens.Int64() > 0 {
-			valStatus = stakingtypes.Bonded
-		} else {
-			valStatus = stakingtypes.Unbonded
-		}
-
 		delShares := sdk.NewDec(tokens.Int64()) // as many shares as tokens
 
 		validator := stakingtypes.Validator{
 			OperatorAddress: sdk.ValAddress(val.Address).String(),
 			ConsensusPubkey: pkAny,
 			Jailed:          false,
-			Status:          valStatus,
+			Status:          stakingtypes.Bonded,
 			Tokens:          tokens,
 			DelegatorShares: delShares,
 			Description: stakingtypes.Description{

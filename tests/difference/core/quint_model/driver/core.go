@@ -27,6 +27,8 @@ import (
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmttypes "github.com/cometbft/cometbft/types"
+
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 )
 
 // Define a new type for ChainIds to be more explicit
@@ -52,6 +54,8 @@ type Driver struct {
 	// keep around validators for easy access
 	validators []*cmttypes.Validator
 	valNames   []string
+
+	DriverStats *Stats
 }
 
 // ctx returns the sdk.Context for the chain
@@ -172,11 +176,14 @@ func (s *Driver) delegation(i int64) int64 {
 }
 
 // validatorStatus returns the validator status for validator with id (ix) i
-// on the provider chain
-func (s *Driver) validatorStatus(i int64) stakingtypes.BondStatus {
+// on the provider chain, and also whether the validator was found.
+// If the validator was not found, the status is returned as Unbonded.
+func (s *Driver) validatorStatus(i int64) (stakingtypes.BondStatus, bool) {
 	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
-	require.True(s.t, found, "GetValidator(%v) -> !found", s.validator(i))
-	return v.GetStatus()
+	if !found {
+		return stakingtypes.Unbonded, false
+	}
+	return v.GetStatus(), true
 }
 
 // providerTokens returns the number of tokens that the validator with
@@ -417,6 +424,10 @@ func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) 
 
 	header, packets := simibc.EndBlock(testChain, func() {})
 
+	s.DriverStats.numSentPackets += len(packets)
+	s.DriverStats.numBlocks += 1
+	s.DriverStats.totalBlockTimePassedPerTrace += timeAdvancement
+
 	// for each packet, find the path it should be sent on
 	for _, p := range packets {
 		found := false
@@ -443,7 +454,18 @@ func (s *Driver) endAndBeginBlock(chain ChainId, timeAdvancement time.Duration) 
 }
 
 func (s *Driver) runningConsumers() []providertypes.Chain {
-	return s.providerKeeper().GetAllConsumerChains(s.providerCtx())
+	// consumers that are still consumers on the provider
+	consumersOnProvider := s.providerKeeper().GetAllConsumerChains(s.providerCtx())
+
+	consumersWithIntactChannel := make([]providertypes.Chain, 0)
+	for _, consumer := range consumersOnProvider {
+		if s.path(ChainId(consumer.ChainId)).Path.EndpointA.GetChannel().State == channeltypes.CLOSED ||
+			s.path(ChainId(consumer.ChainId)).Path.EndpointB.GetChannel().State == channeltypes.CLOSED {
+			continue
+		}
+		consumersWithIntactChannel = append(consumersWithIntactChannel, consumer)
+	}
+	return consumersWithIntactChannel
 }
 
 func (s *Driver) setTime(chain ChainId, newTime time.Time) {
