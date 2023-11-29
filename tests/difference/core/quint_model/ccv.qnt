@@ -796,7 +796,7 @@ module ccv {
             val sentVscPacketsToConsumer = providerState.sentVscPacketsToConsumer.get(consumer)
             if(sentVscPacketsToConsumer.length() > 0) {
                 val oldestSentVscPacket = sentVscPacketsToConsumer.head() // if length is 0, this is undefined, but we check for this before we use it
-                if(oldestSentVscPacket.sendingTime + VscTimeout < providerState.chainState.runningTimestamp) {
+                if(oldestSentVscPacket.sendingTime + VscTimeout < providerState.chainState.lastTimestamp) {
                     (true, "")
                 } else {
                     // no timeout yet, it has not been VscTimeout since that packet was sent
