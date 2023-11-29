@@ -393,7 +393,8 @@ module ccv {
         )
         
         // check for Vsc timeouts
-        val timedOutConsumers = getRunningConsumers(providerStateAfterTimeAdvancement).filter(
+        // needs to be done with the old provider state, since this happens during EndBlock
+        val timedOutConsumers = getRunningConsumers(currentProviderState).filter(
             consumer => 
             val res = TimeoutDueToVscTimeout(tmpState, consumer)
             res._1
@@ -404,7 +405,8 @@ module ccv {
             if (currentProviderState.providerValidatorSetChangedInThisBlock and 
                 // important: check this on the provider state after the consumer advancement, not on the current state.
                 getRunningConsumers(providerStateAfterTimeAdvancement).size() > 0) {
-                    providerStateAfterTimeAdvancement.sendVscPackets()
+                    // need to use the old timestamp because this happens during EndBlock
+                    providerStateAfterTimeAdvancement.sendVscPackets(currentProviderState.chainState.runningTimestamp)
                 } else {
                     providerStateAfterTimeAdvancement
                 }
@@ -497,8 +499,9 @@ module ccv {
                     maturedPackets.transform(
                         packet => {
                             id: packet.id, 
-                            sendingTime: newChainState.runningTimestamp,
-                            timeoutTime: newChainState.runningTimestamp + CcvTimeout.get(chain)
+                            // it is important to use the oldChainState here, since this happens during EndBlock
+                            sendingTime: oldChainState.runningTimestamp,
+                            timeoutTime: oldChainState.runningTimestamp + CcvTimeout.get(chain)
                         }
                     )
                 )
@@ -624,12 +627,12 @@ module ccv {
     }
 
     // returns the providerState with the following modifications:
-    // * sends VscPackets to all running consumers
+    // * sends VscPackets to all running consumers, using the provided timestamp as sending time
     // * increments the runningVscId
     // This should only be called when the provider chain is ending a block,
     // and only when the running validator set is considered to have changed
     // and there is a consumer to send a packet to.
-    pure def sendVscPackets(providerState: ProviderState): ProviderState = {
+    pure def sendVscPackets(providerState: ProviderState, sendingTimestamp: Time): ProviderState = {
         val newSentPacketsPerConsumer = ConsumerChains.mapBy(
             (consumer) => 
             // if validator set changed and the consumer is running, send a packet
@@ -638,8 +641,8 @@ module ccv {
                 List({
                         id: providerState.runningVscId,
                         validatorSet: providerState.chainState.currentValidatorSet,
-                        sendingTime: providerState.chainState.runningTimestamp,
-                        timeoutTime: providerState.chainState.runningTimestamp + CcvTimeout.get(PROVIDER_CHAIN)
+                        sendingTime: sendingTimestamp,
+                        timeoutTime: sendingTimestamp + CcvTimeout.get(PROVIDER_CHAIN)
                 })
             } else {
                 List()
