@@ -619,6 +619,10 @@ module ccv_model {
             EndAndBeginBlockForProvider(VscTimeout + 1 * Second, Set(), Set())
         )
         .then(
+            // end a block with the advanced time
+            EndAndBeginBlockForProvider(1 * Second, Set(), Set())
+        )
+        .then(
             all {
                 // the consumer chains should have timed out
                 assert(ConsumerChains.forall(
