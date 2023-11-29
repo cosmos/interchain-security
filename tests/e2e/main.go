@@ -52,6 +52,7 @@ var (
 var (
 	useConsumerVersion = flag.String("consumer-version", "", "ICS tag to specify the consumer version to test the provider against")
 	useProviderVersion = flag.String("provider-version", "", "ICS tag to specify the provider version to test the consumer against")
+	transformGenesis   = flag.Bool("transform-genesis", false, "do consumer genesis transformation for newer clients. Needed when provider chain is on an older version")
 )
 
 var (
@@ -285,7 +286,7 @@ func main() {
 	if err := parseArguments(); err != nil {
 		flag.Usage()
 		log.Fatalf("Error parsing command arguments %s\n", err)
-	}
+		}
 
 	if *useConsumerVersion != "" && *useProviderVersion != "" {
 		log.Fatalf("consumer-version & provider-version specified! Note: for compatibility tests current checked out version can only be tested against a different provider or consumer version")
@@ -302,10 +303,13 @@ func main() {
 
 // Run sets up docker container and executes the steps in the test run.
 // Docker containers are torn down after the test run is complete.
-func (tr *TestConfig) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag string, consumerVersion string, providerVersion string) {
+func (tr *TestConfig) Run(steps []Step, localSdkPath string, useGaia bool, gaiaTag string, consumerVersion string, providerVersion string, transformGenesis bool) {
 	tr.SetDockerConfig(localSdkPath, useGaia, gaiaTag, consumerVersion, providerVersion)
 	tr.SetCometMockConfig(*useCometmock)
 	tr.SetRelayerConfig(*useGorelayer)
+
+	// Hack to disable genesis transformation... do it smarter
+	tr.transformGenesis = transformGenesis
 
 	tr.validateStringLiterals()
 	tr.startDocker()

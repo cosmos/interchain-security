@@ -82,9 +82,10 @@ type TestConfig struct {
 	timeOffset time.Duration
 
 	// consumer version the provider should be tested against
-	consumerVersion string
-	providerVersion string
-	name            string
+	consumerVersion  string
+	providerVersion  string
+	transformGenesis bool
+	name             string
 }
 
 // Initialize initializes the TestConfig instance by setting the runningChains field to an empty map.
