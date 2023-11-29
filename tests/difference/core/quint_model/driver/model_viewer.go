@@ -87,3 +87,17 @@ func LocalClientExpired(curStateExpr itf.MapExprType, consumer string) bool {
 func GetTimeoutForPacket(packetExpr itf.MapExprType) int64 {
 	return packetExpr["timeoutTime"].Value.(int64)
 }
+
+func GetSendingTimeForPacket(packetExpr itf.MapExprType) int64 {
+	return packetExpr["sendingTime"].Value.(int64)
+}
+
+func VscSendTimestamps(curStateExpr itf.MapExprType, consumer string) []int64 {
+	sentVscPackets := ProviderState(curStateExpr)["sentVscPacketsToConsumer"].Value.(itf.MapExprType)[consumer].Value.(itf.ListExprType)
+
+	res := make([]int64, 0)
+	for _, packetExpr := range sentVscPackets {
+		res = append(res, GetSendingTimeForPacket(packetExpr.Value.(itf.MapExprType)))
+	}
+	return res
+}

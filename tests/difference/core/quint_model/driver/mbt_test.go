@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"testing"
@@ -11,36 +12,51 @@ import (
 
 	cmttypes "github.com/cometbft/cometbft/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	providertypes "github.com/cosmos/interchain-security/v3/x/ccv/provider/types"
 	"github.com/kylelemons/godebug/pretty"
 
 	"github.com/informalsystems/itf-go/itf"
 	"github.com/stretchr/testify/require"
+
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 )
 
-const verbose = true
+const verbose = false
 
 // keep some interesting statistics
 var stats = Stats{}
 
 func TestMBT(t *testing.T) {
-	dirEntries, err := os.ReadDir("traces")
+	dir := "traces"
+
+	numTraces := 0
+
+	ibctesting.TimeIncrement = 1 * time.Nanosecond
+
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		ext := filepath.Ext(path)
+		if ext == ".json" || ext == ".itf" {
+			fmt.Println("Running trace:", path)
+			numTraces++
+			RunItfTrace(t, path)
+		}
+
+		return nil
+	})
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
 
-	t.Log("Running traces from the traces folder")
-
-	ibctesting.TimeIncrement = 1 * time.Nanosecond
-
-	for _, dirEntry := range dirEntries {
-		t.Log("Running trace ", dirEntry.Name())
-		RunItfTrace(t, "traces/"+dirEntry.Name())
-	}
-
 	t.Log("✅ Running traces from the traces folder done")
-	t.Log(len(dirEntries), "traces run")
+	t.Log(numTraces, "traces run")
 
 	// print some stats
 	t.Logf("Highest observed voting power: %v", stats.highestObservedValPower)
@@ -50,7 +66,7 @@ func TestMBT(t *testing.T) {
 	t.Logf("Number of sent packets: %v", stats.numSentPackets)
 	t.Logf("Number of blocks: %v", stats.numBlocks)
 	t.Logf("Number of transactions: %v", stats.numTxs)
-	t.Logf("Average summed block time delta passed per trace: %v", stats.totalBlockTimePassedPerTrace/time.Duration(len(dirEntries)))
+	t.Logf("Average summed block time delta passed per trace: %v", stats.totalBlockTimePassedPerTrace/time.Duration(numTraces))
 }
 
 func RunItfTrace(t *testing.T, path string) {
@@ -353,6 +369,9 @@ func RunItfTrace(t *testing.T, path string) {
 		}
 		t.Log("Packet queues match")
 
+		// compare that the sent packets on the proider match the model
+		CompareSentPacketsOnProvider(driver, currentModelState, timeOffset)
+
 		stats.EnterStats(driver)
 	}
 	t.Log("🟢 Trace is ok!")
@@ -510,6 +529,30 @@ func CompareValSet(modelValSet map[string]itf.Expr, systemValSet map[string]int6
 	return nil
 }
 
+func CompareSentPacketsOnProvider(driver *Driver, currentModelState map[string]itf.Expr, timeOffset time.Time) {
+	for _, consumer := range driver.runningConsumers() {
+		vscSendTimestamps := driver.providerKeeper().GetAllVscSendTimestamps(driver.providerCtx(), consumer.ChainId)
+
+		actualVscSendTimestamps := make([]time.Time, 0)
+		for _, vscSendTimestamp := range vscSendTimestamps {
+			actualVscSendTimestamps = append(actualVscSendTimestamps, vscSendTimestamp.Timestamp)
+		}
+
+		modelVscSendTimestamps := VscSendTimestamps(currentModelState, consumer.ChainId)
+
+		for i, modelVscSendTimestamp := range modelVscSendTimestamps {
+			actualTimeWithOffset := actualVscSendTimestamps[i].Unix() - timeOffset.Unix()
+			require.Equal(
+				driver.t,
+				modelVscSendTimestamp,
+				actualTimeWithOffset,
+				"Vsc send timestamps do not match for consumer %v",
+				consumer.ChainId,
+			)
+		}
+	}
+}
+
 func (s *Stats) EnterStats(driver *Driver) {
 	// highest observed voting power
 	for _, val := range driver.providerValidatorSet() {
@@ -527,6 +570,4 @@ func (s *Stats) EnterStats(driver *Driver) {
 	if inFlightPackets > s.maxNumInFlightPackets {
 		s.maxNumInFlightPackets = inFlightPackets
 	}
-
-	// number of sent packets
 }

@@ -721,7 +721,10 @@ module ccv {
             // prune the sentVscPacket
             val newSentVscPacket = currentState.providerState.sentVscPacketsToConsumer.get(sender).tail()
             val newState = currentState.with(
-                "providerState", newProviderState
+                "providerState", 
+                    {...newProviderState,
+                    sentVscPacketsToConsumer: currentState.providerState.sentVscPacketsToConsumer.set(sender, newSentVscPacket)
+                    }
             )
             Ok(newState)
         }
