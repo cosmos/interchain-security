@@ -508,7 +508,7 @@ func (tr TestRun) startConsumerChain(
 	}
 
 	if tr.consumerVersion != "" {
-		log.Printf("Transforming consumer genesis for a newer version: %s\n", tr.consumerVersion)
+		log.Printf("@@@@ Transforming consumer genesis for a newer version: %s\n", tr.consumerVersion)
 		log.Printf("Original ccv genesis: %s\n", string(bz))
 
 		file, err := os.Create("consumer_genesis.json")
@@ -527,9 +527,6 @@ func (tr TestRun) startConsumerChain(
 		if err != nil {
 			log.Fatal(err, "CCV consumer genesis transformation failed: %s", string(bz))
 		}
-		/* 		new := strings.Replace(string(bz), "\"retry_delay_period\":\"0s\"", "\"retry_delay_period\": \"1000s\"", -1)
-		   		bz = []byte(new)
-		*/
 		log.Printf("Transformed genesis is: %s", string(bz))
 	}
 
@@ -868,6 +865,8 @@ func (tr TestRun) addIbcConnection(
 	action addIbcConnectionAction,
 	verbose bool,
 ) {
+	// Hack..
+	time.Sleep(7 * time.Second)
 	if !tr.useGorelayer {
 		tr.addIbcConnectionHermes(action, verbose)
 	} else {
@@ -943,6 +942,7 @@ func (tr TestRun) createIbcClientsHermes(
 		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
 		"--b-chain", string(tr.chainConfigs[action.chainB].chainId),
 	)
+	//log.Fatalf("@@@@@ creating hermes clients %v", cmd) /// TODO: REMOVE ME !!!!
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -981,6 +981,8 @@ func (tr TestRun) addIbcConnectionHermes(
 		"--a-client", "07-tendermint-"+fmt.Sprint(action.clientA),
 		"--b-client", "07-tendermint-"+fmt.Sprint(action.clientB),
 	)
+
+	log.Printf("@@@@ running command %v", cmd) // TODO: REMOVE ME
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -1059,6 +1061,7 @@ func (tr TestRun) startHermes(
 	cmd := exec.Command("docker", "exec", "-d", tr.containerConfig.instanceName, "hermes",
 		"start",
 	)
+	// log.Fatalf("@@@@@ hermes start: %v", cmd) /// TODO: REMOVE ME !!!!
 
 	if err := cmd.Start(); err != nil {
 		log.Fatal(err)
@@ -1120,6 +1123,8 @@ func (tr TestRun) addIbcChannelHermes(
 		"--order", action.order,
 	)
 
+	// log.Fatalf("@@@@ hermes addIbcChannel Hermes: %v", cmd) //TODO: Delete ME !!!!
+
 	if verbose {
 		fmt.Println("addIbcChannel cmd:", cmd.String())
 	}
@@ -1179,6 +1184,8 @@ func (tr TestRun) transferChannelComplete(
 		"--src-port", action.portA,
 		"--src-channel", "channel-"+fmt.Sprint(action.channelA),
 	)
+	// log.Fatalf("@@@@@ hermes: %v", chanOpenTryCmd) /// TODO: REMOVE ME !!!!
+
 	executeCommand(chanOpenTryCmd, "transferChanOpenTry")
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenAckCmd arguments.
@@ -1192,6 +1199,8 @@ func (tr TestRun) transferChannelComplete(
 		"--dst-channel", "channel-"+fmt.Sprint(action.channelA),
 		"--src-channel", "channel-"+fmt.Sprint(action.channelB),
 	)
+	// log.Fatalf("@@@@@ hermes: %v", chanOpenAckCmd) /// TODO: REMOVE ME !!!!
+
 	executeCommand(chanOpenAckCmd, "transferChanOpenAck")
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenConfirmCmd arguments.
@@ -1205,6 +1214,8 @@ func (tr TestRun) transferChannelComplete(
 		"--dst-channel", "channel-"+fmt.Sprint(action.channelB),
 		"--src-channel", "channel-"+fmt.Sprint(action.channelA),
 	)
+	// log.Fatalf("@@@@@ hermes: %v", chanOpenConfirmCmd) /// TODO: REMOVE ME !!!!
+
 	executeCommand(chanOpenConfirmCmd, "transferChanOpenConfirm")
 }
 
@@ -1286,6 +1297,8 @@ func (tr TestRun) relayPacketsHermes(
 		"--port", action.port,
 		"--channel", "channel-"+fmt.Sprint(action.channel),
 	)
+	// log.Fatalf("@@@@@ hermes: %v", cmd) /// TODO: REMOVE ME !!!!
+
 	if verbose {
 		log.Println("relayPackets cmd:", cmd.String())
 	}
